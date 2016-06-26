@@ -1,0 +1,9 @@
+version: '2'
+services:
+  postgres:
+    environment:
+      DO_BACKUP: 1
+  nginx:
+    command: echo 'done'
+  odoo:
+    command: echo 'done'

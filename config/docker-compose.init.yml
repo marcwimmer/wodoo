@@ -1,0 +1,9 @@
+version: '2'
+services:
+  odoo:
+    environment:
+      DO_INIT: 1
+  postgres:
+    command: echo 'done'
+  nginx:
+    command: echo 'done'

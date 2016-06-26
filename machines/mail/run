@@ -1,0 +1,19 @@
+#!/bin/bash
+set -ex
+
+echo "Starting..."
+
+echo "Compiling config files"
+newaliases
+postmap /etc/postfix/mydestinations
+postmap /etc/postfix/virtual
+#dovecot start
+/usr/sbin/postfix upgrade-configuration
+/usr/sbin/postfix check
+/usr/sbin/dovecot
+/usr/bin/supervisord -c /etc/supervisor/supervisord.conf &
+sleep 3
+
+/test.sh
+cat /var/log/mail.err
+tail -f /var/log/mail.log

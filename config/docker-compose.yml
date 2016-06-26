@@ -1,0 +1,98 @@
+version: '2'
+volumes:
+  postgresdata:
+    external:
+      name: ${DCPREFIX}_odoo_postgresdata
+  filestorage:
+    external:
+      name: ${DCPREFIX}_odoo_filestorage
+  sourcestorage:
+    external:
+      name: ${DCPREFIX}_odoo_sourcestorage
+
+services:
+  odoo:
+    container_name: ${DCPREFIX}_odoo_odoo
+    build: ../machines/odoo
+    links:
+      - postgres:postgres
+    volumes:
+      - ../../../marcvim/build:/opt/marcvim:ro
+      - ../../../openerp.git:/opt/openerp.git:ro
+      - ../../../odoo.git:/opt/odoo.git:ro
+      - /opt/md5
+      - sourcestorage:/opt/openerp
+      - filestorage:/home/odoo/.local/share/Odoo/
+    env_file:
+      ../customs.env
+
+  postgres:
+    container_name: ${DCPREFIX}_odoo_postgres
+    build: ../machines/postgres
+    volumes:
+      - ../dumps:/opt/dumps
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 1
+      PGDATA: /var/lib/postgresql/data/pgdata
+    env_file:
+      ../customs.env
+
+  nginx:
+    container_name: ${DCPREFIX}_odoo_nginx
+    image: nginx:stable
+    links:
+      - odoo:odoo
+    ports:
+      - "80:80"
+    env_file:
+      ../customs.env
+    volumes:
+      - ../machines/nginx/nginx.conf:/mysite.template
+    command: /bin/bash -c "echo 'setting up nginx conf'; cp /mysite.template /etc/nginx/conf.d/default.conf && sed -i "s/__HTTP_HOST__/$HTTP_HOST/g" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+
+  mail:
+    container_name: cpb_odoo_mail
+    build: ../machines/mail
+    expose:
+      - "25"
+      - "143"
+
+  roundcube:
+    container_name: cpb_odoo_roundcube
+    build: ../machines/roundcube
+    links:
+      - mail:mail
+    ports:
+      - "8000:80"
+
+  asterisk:
+    container_name: cpb_odoo_asterisk
+    build: ../machines/asterisk/cpb
+    expose:
+      # ari
+      - 8088
+    ports:
+      - "8088:8088"
+      - "9080:80"
+      - "5060:5060/tcp"
+      - "5060:5060/udp"
+      # must match asterisk rtp.conf
+      - "16384-16404:16384-16404/udp"
+          
+  asterisk_ari:
+    container_name: cpb_odoo_ari
+    build: ../machines/asterisk/ari
+    links:
+      - asterisk:asterisk
+      - odoo:odoo
+    environment:
+      ODOO_USER_ID: 1
+      ODOO_PASSWORD: 1
+      ODOO_DB: cpb
+      ODOO_PORT: 8069
+      ODOO_HOST: odoo
+      USERNAME_ASTERISK: asterisk
+      PASSWORD_ASTERISK: asterisk
+      HOST_ASTERISK: asterisk
+      PORT_ASTERISK: 8088

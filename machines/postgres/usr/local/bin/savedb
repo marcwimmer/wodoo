@@ -1,0 +1,7 @@
+set -e
+touch /tmp/stop
+sleep 2
+mkdir -p /var/lib/postgres/data/snapshot
+rsync -avrP /var/lib/postgresql/data/pgdata/ /var/lib/postgresql/data/snapshot/
+
+touch /tmp/start

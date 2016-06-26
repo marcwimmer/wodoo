@@ -1,0 +1,37 @@
+https://nolabnoparty.com/en/setup-mail-server-postfix-dovecot-roundcube-centos/
+
+telnet localhost smtp
+
+        Trying ::1... 
+        Connected to localhost. 
+        Escape character is '^]'. 
+        220 server.domain.com ESMTP Postfix 
+        ehlo localhost 
+        250-server.domain.com 
+        250-PIPELINING 
+        250-SIZE 10240000 
+        250-VRFY 
+        250-ETRN 
+        250-ENHANCEDSTATUSCODES 
+        250-8BITMIME 
+        250 DSN 
+        mail from: username@domain.com
+        250 2.1.0 Ok 
+        rcpt to: username@domain.com
+        250 2.1.5 Ok 
+        data 
+        354 End data with <CR><LF>.<CR><LF> 
+        test
+        .
+        250 2.0.0 Ok: queued as 2C55A94 
+        quit
+        221 2.0.0 Bye 
+        Connection closed by foreign host.
+
+
+
+To check if the email has been received, have a look at the /home/username/Maildir/new directory.
+
+# cd /home/username/Maildir/new/
+# ll
+# cat xxxxx.xxxxx.server.domain.com
