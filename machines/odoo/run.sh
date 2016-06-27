@@ -55,6 +55,17 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     cat /opt/openerp/versions/.version
 fi
 
+ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
+echo "Odoo version is $ODOO_VERSION"
+
+# install requirements
+if [[ -n "$DO_INIT" ]]; then
+    echo "Installing requirements from odoo"
+    wget https://raw.githubusercontent.com/odoo/odoo/$ODOO_VERSION/requirements.txt -O /root/requirements_odoo.txt
+    pip install -r /root/requirements_odoo.txt
+fi
+
+
 if [[ -n "$DO_UPDATE" ]]; then
     sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -u all --stop-after-init --log-level=debug || echo 'odoo update executed'
     echo "Update of odoo done"

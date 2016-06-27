@@ -13,6 +13,7 @@ if [ -z "$1" ]; then
     echo "attach <machine> - attaches to running machine"
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
     echo "bash_into <machine-name> - starts /bin/bash for just that machine and connects to it"
+    echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
     echo "clean - clears support data"
     echo "dbinit - recreates database CAREFUL: ctrl+c to abort - all data gone "
     echo "fetch - fetches support data"
@@ -22,7 +23,7 @@ if [ -z "$1" ]; then
     echo "restart - restarts docker-machines"
     echo "setup-startup-script - makes skript in /etc/init/odoo"
     echo "update - fetch latest source code of modules and run update all on odoo; machines are stopped after that"
-    echo "upall - starts all machines equivalent to service <service> start "
+    echo "up - starts all machines equivalent to service <service> start "
     echo "kill - kills running machines"
     exit -1
 fi
@@ -94,7 +95,7 @@ springclean)
     echo "delete unwanted volumes (can pass -dry-run)"
     docker rmi $(docker images -q -f='dangling=true')
     ;;
-upall)
+up)
     $dc up -d
     ;;
 bash_into)
@@ -119,18 +120,18 @@ dbinit)
     ;;
 rebuild)
     cd $DIR/machines/odoo
-    # TODO move into docker file/run.sh
-    [ -f requirements.txt ] && rm requirements.txt
-    wget https://raw.githubusercontent.com/odoo/odoo/$ODOO_VERSION/requirements.txt
     cd $DIR
     eval "$dc stop"
     eval "$dc build --no-cache"
-    eval "$dc -f config/docker-compose.init.yml up odoo"
+    echo ""
+    echo ""
+    echo ""
+    echo "You should now init everything with ./manage.sh init"
     ;;
 build)
     cd $DIR
     eval "$dc stop"
-    eval "$dc build"
+    eval "$dc build $2 $3 $4"
     ;;
 kill)
     cd $DIR

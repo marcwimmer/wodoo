@@ -1,2 +1,0 @@
-glob2
-gitpython

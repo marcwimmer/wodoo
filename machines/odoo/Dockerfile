@@ -92,9 +92,7 @@ RUN rm -Rf /usr/local/man
 RUN mkdir -p /usr/local/man/man1
 RUN echo $ODOO_VERSION
 ADD requirements.txt /root/requirements.txt
-ADD requirements_2.txt /root/requirements_2.txt
 RUN pip install -r /root/requirements.txt
-RUN pip install -r /root/requirements_2.txt
 
 # syntastic checker
 RUN npm install -g jshint
