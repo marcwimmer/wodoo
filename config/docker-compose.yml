@@ -17,9 +17,8 @@ services:
     links:
       - postgres:postgres
     volumes:
-      - ../../../marcvim/build:/opt/marcvim:ro
-      - ../../../openerp.git:/opt/openerp.git:ro
-      - ../../../odoo.git:/opt/odoo.git:ro
+      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
       - sourcestorage:/opt/openerp
       - filestorage:/home/odoo/.local/share/Odoo/
