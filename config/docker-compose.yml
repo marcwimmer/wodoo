@@ -52,14 +52,14 @@ services:
     command: /bin/bash -c "echo 'setting up nginx conf'; cp /mysite.template /etc/nginx/conf.d/default.conf && sed -i "s/__HTTP_HOST__/$HTTP_HOST/g" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
 
   mail:
-    container_name: $DCPREFIX_odoo_mail
+    container_name: ${DCPREFIX}_odoo_mail
     build: ../machines/mail
     expose:
       - "25"
       - "143"
 
   roundcube:
-    container_name: $DCPREFIX_odoo_roundcube
+    container_name: ${DCPREFIX}_odoo_roundcube
     build: ../machines/roundcube
     links:
       - mail:mail
@@ -67,7 +67,7 @@ services:
       - "8000:80"
 
   asterisk:
-    container_name: $DCPREFIX_odoo_asterisk
+    container_name: ${DCPREFIX}_odoo_asterisk
     build: ../machines/asterisk/asterisk
     expose:
       # ari
@@ -81,7 +81,7 @@ services:
       - "16384-16404:16384-16404/udp"
           
   asterisk_ari:
-    container_name: $DCPREFIX_odoo_ari
+    container_name: ${DCPREFIX}_odoo_ari
     build: ../machines/asterisk/ari
     links:
       - asterisk:asterisk

@@ -13,8 +13,10 @@ if [ -z "$1" ]; then
     echo "attach <machine> - attaches to running machine"
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
     echo "bash_into <machine-name> - starts /bin/bash for just that machine and connects to it"
+    echo "clean - clears support data"
     echo "dbinit - recreates database CAREFUL: ctrl+c to abort - all data gone "
-    echo "init: "
+    echo "fetch - fetches support data"
+    echo "init: fetches latest support data (odoo.git, openerp.git) and recreates source directories"
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machines"
@@ -33,11 +35,15 @@ function update_support_data {
         mkdir $SUPPORTDIR
     fi
     cd $SUPPORTDIR
+    echo "Syncing openerp.git..."
     rsync git.mt-software.de:/git/openerp/ openerp.git -ar
 
+    echo "Checking for odoo.git..."
     if [[ ! -d "odoo.git" ]]; then
+        echo "Cloning odoo.git..."
         git clone https://github.com/odoo/odoo odoo.git
     else
+        echo "Pulling odoo.git..."
         cd odoo.git
         git pull
     fi
@@ -45,8 +51,17 @@ function update_support_data {
 
 
 case $1 in
-init)
+clean)
+    echo "Deleting support data"
+    if [[ -d $DIR/support_data ]]; then
+        rm -Rf $DIR/support_data/*
+    fi
+    ;;
+fetch)
+    echo "Updating support data"
     update_support_data
+    ;;
+init)
     cd $DIR
     eval "$dc stop"
     eval "$dc -f config/docker-compose.init.yml up odoo"
