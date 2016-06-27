@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 set +x
-source customs.env
-export $(cut -d= -f1 customs.env)
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source $DIR/customs.env
+export $(cut -d= -f1 $DIR/customs.env)
 
 if [ -z "$1" ]; then
     echo Management of odoo instance
@@ -27,8 +27,31 @@ fi
 
 dc="docker-compose -f config/docker-compose.yml"
 
+function update_support_data {
+    SUPPORTDIR=$DIR/support_data
+    if [[ ! -d "$SUPPORTDIR" ]]; then
+        mkdir $SUPPORTDIR
+    fi
+    cd $SUPPORTDIR
+    rsync git.mt-software.de:/git/openerp/ openerp.git -ar
+
+    if [[ ! -d "odoo.git" ]]; then
+        git clone https://github.com/odoo/odoo odoo.git
+    else
+        cd odoo.git
+        git pull
+    fi
+}
+
 
 case $1 in
+init)
+    update_support_data
+    cd $DIR
+    eval "$dc stop"
+    eval "$dc -f config/docker-compose.init.yml up odoo"
+    ;;
+
 setup-startup-script)
     echo "Setting up startup script in /etc/init"
     ;;
@@ -94,12 +117,6 @@ build)
     eval "$dc stop"
     eval "$dc build"
     ;;
-init)
-    cd $DIR
-    eval "$dc stop"
-    eval "$dc -f config/docker-compose.init.yml up odoo"
-    ;;
-
 kill)
     cd $DIR
     eval "$dc kill"
