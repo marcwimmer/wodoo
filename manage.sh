@@ -10,6 +10,18 @@ if [ -z "$1" ]; then
     echo Management of odoo instance
     echo
     echo "Please call manage.sh init|springclean|dbinit|update|backup|run_standalone|upall|attach_running|rebuild|restart"
+    echo "attach <machine> - attaches to running machine"
+    echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
+    echo "bash_into <machine-name> - starts /bin/bash for just that machine and connects to it"
+    echo "dbinit - recreates database CAREFUL: ctrl+c to abort - all data gone "
+    echo "init: "
+    echo "springclean - remove dead containers, untagged images, delete unwanted volums"
+    echo "rebuild - rebuilds docker-machines - data not deleted"
+    echo "restart - restarts docker-machines"
+    echo "setup-startup-script - makes skript in /etc/init/odoo"
+    echo "update - fetch latest source code of modules and run update all on odoo; machines are stopped after that"
+    echo "upall - starts all machines equivalent to service <service> start "
+    echo "kill - kills running machines"
     exit -1
 fi
 
@@ -17,16 +29,22 @@ dc="docker-compose -f config/docker-compose.yml"
 
 
 case $1 in
+setup-startup-script)
+    echo "Setting up startup script in /etc/init"
+    ;;
 backup)
-    if [[ -z "$BACKUPDIR" ]]; then
+    if [[ -z "$2" ]]; then
         echo "Please suppply backup directory env variable BACKUPDIR!"
         exit -1
     fi
+    BACKUPDIR=$2
     docker exec ${DCPREFIX}_odoo_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$DBNAME.gz
     filename=$BACKUPDIR/$DBNAME.$(date "+%Y-%m-%d_%H:%M:%S").dump
     mv $DIR/dumps/$DBNAME.gz $filename
     echo "Dumped to $filename"
+    # TODO backup files
     ;;
+
 springclean)
     #!/bin/bash
     echo removing dead containers
@@ -41,7 +59,7 @@ springclean)
 upall)
     $dc up -d
     ;;
-run_standalone)
+bash_into)
     if [[ -z "$2" ]]; then
         echo "Please give machine name as second parameter e.g. postgres, odoo"
         exit -1
@@ -49,7 +67,7 @@ run_standalone)
     set -x
     $dc run "${2}" bash
     ;;
-attach_running)
+attach)
     if [[ -z "$2" ]]; then
         echo "Please give machine name as second parameter e.g. postgres, odoo"
         exit -1
@@ -59,10 +77,11 @@ attach_running)
 dbinit)
     read -p "Init deletes database! Continue? Press ctrl+c otherwise"
     $dc kill
-    $dc -f config/docker-compose.$1.yml up postgres
+    $dc -f config/docker-compose.dbinit.yml up postgres
     ;;
 rebuild)
     cd $DIR/machines/odoo
+    # TODO move into docker file/run.sh
     [ -f requirements.txt ] && rm requirements.txt
     wget https://raw.githubusercontent.com/odoo/odoo/$ODOO_VERSION/requirements.txt
     cd $DIR
@@ -78,7 +97,7 @@ build)
 init)
     cd $DIR
     eval "$dc stop"
-    eval "$dc -f config/docker-compose.$1.yml up odoo"
+    eval "$dc -f config/docker-compose.init.yml up odoo"
     ;;
 
 kill)
@@ -88,7 +107,7 @@ kill)
 
 update)
     $dc stop
-    $dc -f config/docker-compose.$1.yml up odoo
+    $dc -f config/docker-compose.update.yml up odoo
     ;;
 *)
     echo "Invalid option $1"
