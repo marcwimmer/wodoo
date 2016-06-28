@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
 cd /opt
-if [[ -n "$DO_INIT" ]]; then
+if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     [ -d asterisk_ari ] && rm -Rf /opt/asterisk_ari
     git clone --depth 1 --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
+    echo 'done updating ari'
+    exit 0
 fi
 WAIT=20
 
