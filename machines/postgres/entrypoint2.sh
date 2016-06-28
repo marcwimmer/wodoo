@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 cd /
 
 echo "Executing postgres entrypoint2.sh"
@@ -26,7 +27,16 @@ else
         gunzip -c /opt/dumps/$DBNAME.gz |psql $DBNAME
         psql template1 -c "alter database $DBNAME owner to odoo;"
         echo "Restoring snapshot done!"
-        pkill postgres
+        pkill -f postgres
+        echo "waiting for postgres to stop"
+        while true; do
+            if [[ -n "$(pgrep postgres)" ]]; then
+                sleep 1
+                echo "waiting for postgres to stop another second"
+            else
+                break
+            fi
+        done
     else
         echo 'Normal postgres start...'
         /docker-entrypoint.sh postgres
