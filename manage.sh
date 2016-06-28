@@ -6,6 +6,13 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
+echo $DCPREFIX
+# replace params in configuration file
+cd $DIR
+sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl
+
+# replace variables in docker-compose;
+
 if [ -z "$1" ]; then
     echo Management of odoo instance
     echo
