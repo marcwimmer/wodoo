@@ -1,5 +1,0 @@
-set -e
-touch /tmp/stop
-sleep 2
-rsync -avrP /var/lib/postgresql/data/snapshot/ /var/lib/postgresql/data/pgdata/ 
-touch /tmp/start

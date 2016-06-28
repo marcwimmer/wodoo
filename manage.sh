@@ -52,6 +52,8 @@ if [ -z "$1" ]; then
     echo
     echo "restart - restarts docker-machines"
     echo
+    echo "restore_dump <filename> - restores the given dump as odoo database"
+    echo
     echo "setup-startup-script - makes skript in /etc/init/odoo"
     echo
     echo "stop - like docker-compose stop"
@@ -148,11 +150,6 @@ attach)
     fi
     docker exec -it "${DCPREFIX}_${2}" bash
     ;;
-dbinit)
-    read -p "Init deletes database! Continue? Press ctrl+c otherwise"
-    $dc kill
-    $dc -f config/docker-compose.dbinit.yml up postgres
-    ;;
 rebuild)
     cd $DIR/machines/odoo
     cd $DIR
@@ -183,6 +180,12 @@ restart)
     cd $DIR
     eval "$dc stop"
     eval "$dc up -d"
+    ;;
+restoredb)
+    read -p "Deletes database! Continue? Press ctrl+c otherwise"
+    cp $2 ./dumps/$DBNAME.gz
+    eval "$dc kill"
+    $dc -f config/docker-compose.restoredb.yml up postgres
     ;;
 update)
     $dc stop

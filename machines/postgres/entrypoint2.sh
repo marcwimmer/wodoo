@@ -21,14 +21,26 @@ if [[ -n "$DO_INIT" ]]; then
     sleep 2
     exit 0
 else
-    echo 'Starting up existing postgres'
-    if [ "$DO_BACKUP" ]; then
+    if [[ -n "$DO_BACKUP" ]]; then
         /docker-entrypoint.sh postgres &
         sleep 10
         pg_dump $DBNAME|gzip > /opt/dumps/$DBNAME_$(date).gz
         pkill postgres
     else
-        /docker-entrypoint.sh postgres
+        if [[ -n "$RESTORE_DUMP" ]]; then 
+            echo "Restoring database $DBNAME"
+            /docker-entrypoint.sh postgres &
+            sleep 5
+            dropdb $DBNAME || echo 'database did not exist'
+            createdb $DBNAME
+            gunzip -c /opt/dumps/$DBNAME.gz |psql $DBNAME
+            psql template1 -c "alter database $DBNAME owner to odoo;"
+            echo "Restoring snapshot done!"
+            pkill postgres
+        else
+            echo 'Normal postgres start...'
+            /docker-entrypoint.sh postgres
+        fi
     fi
 fi
 

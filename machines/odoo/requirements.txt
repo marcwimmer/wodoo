@@ -3,3 +3,5 @@ gitpython
 Weasyprint==0.29
 xlwt
 phonenumbers
+pydub
+arrow

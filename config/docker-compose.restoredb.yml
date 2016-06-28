@@ -2,7 +2,8 @@ version: '2'
 services:
   postgres:
     environment:
-      DO_INIT: 1
+      RESTORE_DUMP: 1
+      DBNAME: ${DBNAME}
   odoo:
     command: echo 'done'
   nginx:

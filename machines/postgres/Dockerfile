@@ -19,9 +19,6 @@ RUN chmod 400 authorized_keys
 RUN chown root authorized_keys
 
 
-ADD usr/local/bin/ /usr/local/bin/
-RUN chmod a+x /usr/local/bin/*
-
 RUN ls -lha /root/
 
 ADD entrypoint2.sh /entrypoint2.sh
