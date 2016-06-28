@@ -58,12 +58,8 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
         echo Customs failed to checkout
         exit -1
     fi
-    if [[ -d /home/odoo/.local/share/Odoo ]]; then
-        rm -Rf /home/odoo/.local/share/Odoo/*
-    fi
 fi
 chown odoo:odoo /opt/openerp/ -R
-chown odoo:odoo /home/odoo/.local -R
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     cd /opt/openerp/customs/$CUSTOMS
