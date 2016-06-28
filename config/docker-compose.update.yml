@@ -13,3 +13,5 @@ services:
     command: echo 'done'
   roundcube:
     command: echo 'done'
+  postgres:
+    command: echo 'done'
