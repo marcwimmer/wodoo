@@ -36,11 +36,9 @@ if [ -z "$1" ]; then
     echo
     echo "clean - clears support data"
     echo
-    echo "dbinit - recreates database CAREFUL: ctrl+c to abort - all data gone "
-    echo
     echo "fetch - fetches support data"
     echo
-    echo "init: fetches latest support data (odoo.git, openerp.git) and recreates source directories"
+    echo "init <machine-name, empty for all>: depending on machine does basic reinitialization"
     echo
     echo "kill - kills running machines"
     echo
@@ -102,7 +100,7 @@ fetch)
 init)
     cd $DIR
     eval "$dc stop"
-    eval "$dc -f config/docker-compose.init.yml up odoo"
+    eval "$dc -f config/docker-compose.init.yml up $2"
     ;;
 
 setup-startup-script)
