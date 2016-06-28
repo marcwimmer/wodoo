@@ -6,7 +6,8 @@ services:
   nginx:
     command: echo 'done'
   odoo:
-    command: echo 'done'
+    environment:
+      DO_BACKUP: 1
   asterisk:
     command: echo 'done'
   asterisk_ari:

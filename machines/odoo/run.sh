@@ -10,6 +10,17 @@ if [[ -z "$CUSTOMS" ]]; then
     exit -1
 fi
 
+if [[ -n "$DO_INIT" ]]; then
+    echo "setting ownership of /opt/oefiles to odoo"
+    chown odoo:odoo /opt/oefiles -R
+fi
+
+if [[ -n "$DO_BACKUP" ]]; then
+    echo 'Tarring /opt/oefiles'
+    tar cf /opt/dumps/oefiles.tar /opt/oefiles
+    exit 0
+fi
+
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     echo "installing required minimum pip packages"
     pip install --upgrade pip

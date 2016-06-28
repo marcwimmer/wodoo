@@ -24,7 +24,8 @@ services:
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
       - sourcestorage:/opt/openerp
-      - filestorage:/home/odoo/.local/share/Odoo/
+      - filestorage:/opt/oefiles
+      - ../dumps:/opt/dumps
     env_file:
       ../customs.env
 
