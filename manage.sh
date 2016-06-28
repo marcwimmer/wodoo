@@ -104,10 +104,10 @@ init)
     ;;
 
 setup-startup)
-    echo "Setting up startup script in /etc/init"
     file=/etc/init/$CUSTOMS_odoo
+    echo "Setting up startup script in $file"
     cp $DIR/config/upstart $file
-    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file > config/docker-compose.yml
+    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
     initctl reload-configuration
     initctl list
     ;;
