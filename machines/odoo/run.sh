@@ -60,7 +60,6 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     git checkout deploy -f
     git pull
     git submodule update --init --recursive
-    /opt/openerp/admin/git-sub-set-branch
     /opt/openerp/admin/oeln $CUSTOMS
     cat /opt/openerp/versions/.version
 fi
