@@ -2,7 +2,5 @@ description "ODOO ${CUSTOMS}"
 author "Marc Wimmer"
 start on filesystem and started docker
 stop on runlevel [!2345]
-respawn
-script
-  ${PATH}/manage.sh up
-end script
+exec ${PATH}/manage.sh up
+pre-stop exec ${PATH}/manage.sh stop

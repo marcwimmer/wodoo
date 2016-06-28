@@ -111,7 +111,6 @@ setup-startup)
     /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
     /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
     /sbin/initctl reload-configuration
-    /sbin/initctl list
     ;;
 backup)
     if [[ -z "$2" ]]; then
