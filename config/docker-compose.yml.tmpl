@@ -95,7 +95,7 @@ services:
       CUSTOMS: ${CUSTOMS}
           
   asterisk_ari:
-    container_name: ${DCPREFIX}_ari
+    container_name: ${DCPREFIX}_asterisk_ari
     build: ../machines/asterisk/ari
     networks:
       - ${DCPREFIX}_default
