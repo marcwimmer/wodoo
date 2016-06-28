@@ -17,4 +17,6 @@ ADD id_rsa id_rsa
 ADD ssh_config_repo config
 RUN chmod 600 id_rsa
 
+VOLUME /opt
+
 CMD ["/run.sh"]
