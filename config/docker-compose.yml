@@ -43,7 +43,7 @@ services:
     links:
       - odoo:odoo
     ports:
-      - "80:80"
+      - "80:44480"
     env_file:
       ../customs.env
     volumes:
@@ -97,3 +97,14 @@ services:
       PASSWORD_ASTERISK: asterisk
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 4.4.4.0/24
+          gateway: 4.4.4.1

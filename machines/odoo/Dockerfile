@@ -66,7 +66,8 @@ RUN apt-get install -y --no-install-recommends \
             sudo \
             less \
             freetds-dev \
-            libsasl2-dev python-dev libldap2-dev libssl-dev
+            libsasl2-dev python-dev libldap2-dev libssl-dev \
+            wget
 
 # weasy print dependencies
 RUN apt-get install -y libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info

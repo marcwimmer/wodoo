@@ -97,7 +97,7 @@ springclean)
     docker rmi $(docker images -q -f='dangling=true')
     ;;
 up)
-    $dc up -d $2
+    $dc up $2 $3 $4
     ;;
 bash_into)
     if [[ -z "$2" ]]; then
@@ -131,7 +131,6 @@ rebuild)
     ;;
 build)
     cd $DIR
-    eval "$dc stop"
     eval "$dc build $2 $3 $4"
     ;;
 kill)
@@ -142,7 +141,11 @@ logs)
     cd $DIR
     eval "$dc logs -f $2 $3"
     ;;
-
+restart)
+    cd $DIR
+    eval "$dc stop"
+    eval "$dc up -d"
+    ;;
 update)
     $dc stop
     $dc -f config/docker-compose.update.yml up odoo
