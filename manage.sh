@@ -109,7 +109,7 @@ setup-startup)
     PATH=$DIR
     /bin/cp $DIR/config/upstart $file
     /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
-    /bin/sed -i -e "s/\${PATH}/$PATH/" -e "s/\${PATH}/$PATH/" $file
+    /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
     /sbin/initctl reload-configuration
     /sbin/initctl list
     ;;
