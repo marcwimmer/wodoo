@@ -89,8 +89,6 @@ RUN chown odoo:odoo /home/odoo -R
 RUN apt-get install -y python-pip
 RUN pip install --upgrade pip
 RUN pip install requests[security]
-RUN pip install glob2
-RUN pip install gitpython
 
 
 # pip packages:

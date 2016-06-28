@@ -10,6 +10,14 @@ if [[ -z "$CUSTOMS" ]]; then
     exit -1
 fi
 
+if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
+    echo "installing required minimum pip packages"
+    pip install --upgrade pip
+    pip install requests[security]
+    pip install glob2
+    pip install gitpython
+fi
+
 # installl initial openerp version source codes
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     echo "Initialising odoo...$DO_INIT_$DO_UPDATE"
@@ -50,6 +58,7 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     cd /opt/openerp/customs/$CUSTOMS
     echo "Trying to checkout deploy branch"
     git checkout deploy -f
+    git pull
     git submodule update --init --recursive
     /opt/openerp/admin/oeln $CUSTOMS
     cat /opt/openerp/versions/.version
