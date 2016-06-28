@@ -13,8 +13,6 @@ ADD id_rsa id_rsa
 ADD ssh_config_repo config
 RUN chmod 600 id_rsa
 
-ADD ./etc/asterisk /opt/etc.base
-
 RUN apt-get install -y build-essential
 RUN apt-get install -y linux-headers-generic
 RUN apt-get install -y subversion git
@@ -45,6 +43,10 @@ RUN make install
 RUN make config 
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
+
+# add base config
+ADD ./etc/asterisk /opt/etc.base
+
 
 VOLUME /opt
 
