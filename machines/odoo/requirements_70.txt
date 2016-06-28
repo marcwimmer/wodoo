@@ -9,7 +9,7 @@ psutil
 psycopg2
 pychart
 pydot
-python-dateutil==1.9
+python-dateutil==1.5
 python-ldap
 python-openid
 pytz
