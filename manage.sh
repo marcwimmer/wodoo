@@ -104,7 +104,7 @@ init)
     ;;
 
 setup-startup)
-    file=/etc/init/${CUSTOMS}_odoo
+    file=/etc/init/${CUSTOMS}_odoo.conf
     echo "Setting up startup script in $file"
     cp $DIR/config/upstart $file
     sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
