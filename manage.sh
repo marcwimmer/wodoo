@@ -18,13 +18,14 @@ if [ -z "$1" ]; then
     echo "dbinit - recreates database CAREFUL: ctrl+c to abort - all data gone "
     echo "fetch - fetches support data"
     echo "init: fetches latest support data (odoo.git, openerp.git) and recreates source directories"
+    echo "kill - kills running machines"
+    echo "logs - show log output; use parameter to specify machine"
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machines"
     echo "setup-startup-script - makes skript in /etc/init/odoo"
     echo "update - fetch latest source code of modules and run update all on odoo; machines are stopped after that"
     echo "up - starts all machines equivalent to service <service> start "
-    echo "kill - kills running machines"
     exit -1
 fi
 
@@ -96,7 +97,7 @@ springclean)
     docker rmi $(docker images -q -f='dangling=true')
     ;;
 up)
-    $dc up -d
+    $dc up -d $2
     ;;
 bash_into)
     if [[ -z "$2" ]]; then
@@ -136,6 +137,10 @@ build)
 kill)
     cd $DIR
     eval "$dc kill"
+    ;;
+logs)
+    cd $DIR
+    eval "$dc logs -f $2 $3"
     ;;
 
 update)

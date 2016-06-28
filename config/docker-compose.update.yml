@@ -3,3 +3,13 @@ services:
   odoo:
     environment:
       DO_UPDATE: 1
+  asterisk:
+    environment:
+      DO_UPDATE: 1
+  asterisk_ari:
+    environment:
+      DO_UPDATE: 1
+  mail:
+    command: echo 'done'
+  roundcube:
+    command: echo 'done'

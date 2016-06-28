@@ -7,3 +7,12 @@ services:
     command: echo 'done'
   nginx:
     command: echo 'done'
+  asterisk:
+    command: echo 'done'
+  asterisk_ari:
+    command: echo 'done'
+  mail:
+    command: echo 'done'
+  roundcube:
+    command: echo 'done'
+

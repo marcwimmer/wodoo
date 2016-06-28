@@ -7,3 +7,11 @@ services:
     command: echo 'done'
   odoo:
     command: echo 'done'
+  asterisk:
+    command: echo 'done'
+  asterisk_ari:
+    command: echo 'done'
+  mail:
+    command: echo 'done'
+  roundcube:
+    command: echo 'done'

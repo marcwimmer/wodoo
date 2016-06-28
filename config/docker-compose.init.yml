@@ -3,7 +3,17 @@ services:
   odoo:
     environment:
       DO_INIT: 1
+  asterisk:
+    environment:
+      DO_INIT: 1
+  asterisk_ari:
+    environment:
+      DO_INIT: 1
   postgres:
     command: echo 'done'
   nginx:
+    command: echo 'done'
+  mail:
+    command: echo 'done'
+  roundcube:
     command: echo 'done'
