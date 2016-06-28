@@ -52,7 +52,7 @@ if [ -z "$1" ]; then
     echo
     echo "restore_dump <filename> - restores the given dump as odoo database"
     echo
-    echo "setup-startup-script - makes skript in /etc/init/odoo"
+    echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo
     echo "stop - like docker-compose stop"
     echo
@@ -103,8 +103,13 @@ init)
     eval "$dc -f config/docker-compose.init.yml up $2"
     ;;
 
-setup-startup-script)
+setup-startup)
     echo "Setting up startup script in /etc/init"
+    file=/etc/init/$CUSTOMS_odoo
+    cp $DIR/config/upstart $file
+    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file > config/docker-compose.yml
+    initctl reload-configuration
+    initctl list
     ;;
 backup)
     if [[ -z "$2" ]]; then
