@@ -5,7 +5,7 @@ gdata
 Jinja2
 mako
 mock
-psutil
+psutil==1.2.1
 psycopg2
 pychart
 pydot
