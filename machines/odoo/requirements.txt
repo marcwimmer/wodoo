@@ -5,3 +5,6 @@ xlwt
 phonenumbers
 pydub
 arrow
+xlsxwriter
+xlrd
+BeautifulSoup
