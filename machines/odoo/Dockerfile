@@ -93,6 +93,8 @@ RUN rm -Rf /usr/local/man
 RUN mkdir -p /usr/local/man/man1
 ADD requirements.txt /root/requirements.txt
 ADD requirements_70.txt /root/requirements_70.txt
+RUN pip install glob2
+RUN pip install gitpython
 
 # syntastic checker
 RUN npm install -g jshint
