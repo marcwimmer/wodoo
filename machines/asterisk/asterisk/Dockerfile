@@ -38,11 +38,12 @@ ADD id_rsa id_rsa
 ADD ssh_config_repo config
 RUN chmod 600 id_rsa
 
+ADD ./etc/asterisk/ /etc/asterisk
 WORKDIR /tmp
-RUN git clone git.mt-software.de:/opt/git/cpb_asterisk
-RUN rsync -ar cpb_asterisk/ /etc/asterisk
+RUN git clone git.mt-software.de:/opt/git/openerp/customs/cpb
+WORKDIR /tmp/cpb
+RUN git checkout deploy
+RUN rsync -ar ./asterisk/etc/ /etc/asterisk/
+RUN rsync ./asterisk/sounds /var/lib/asterisk/sounds/en/
 
-ADD ./sounds /var/lib/asterisk/sounds/en/
-
-ADD ./etc/asterisk/ /opt/forced_asterisk
 CMD ["/run.sh"]
