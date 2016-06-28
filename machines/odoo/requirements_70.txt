@@ -13,7 +13,7 @@ python-dateutil==1.5
 python-ldap
 python-openid
 pytz
-pywebdav==0.9.7
+pywebdav==0.9.4.1
 pyyaml
 reportlab
 simplejson
