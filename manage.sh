@@ -31,6 +31,7 @@ if [ -z "$1" ]; then
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machines"
     echo "setup-startup-script - makes skript in /etc/init/odoo"
+    echo "stop - like docker-compose stop"
     echo "update - fetch latest source code of modules and run update all on odoo; machines are stopped after that"
     echo "up - starts all machines equivalent to service <service> start "
     exit -1
@@ -142,7 +143,11 @@ build)
     ;;
 kill)
     cd $DIR
-    eval "$dc kill"
+    eval "$dc kill $2 $3"
+    ;;
+stop)
+    cd $DIR
+    eval "$dc stop $2 $3 $4"
     ;;
 logs)
     cd $DIR

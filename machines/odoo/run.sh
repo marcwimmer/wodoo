@@ -62,7 +62,7 @@ echo "Odoo version is $ODOO_VERSION"
 if [[ -n "$DO_INIT" ]]; then
     echo "Installing requirements from odoo"
     if [[ "$ODOO_VERSION" == "7.0" ]]; then
-        # no requirements file at odoo 7
+        echo "using downloaded requirements file"
         pip install -r /root/requirements_70.txt
     else
         wget https://raw.githubusercontent.com/odoo/odoo/$ODOO_VERSION/requirements.txt -O /root/requirements_odoo.txt
