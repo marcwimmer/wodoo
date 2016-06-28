@@ -23,4 +23,4 @@ fi
     exit 0
 }
 
-/usr/sbin/asterisk -v > /dev/null
+/usr/sbin/asterisk -vvvvv -ddddd
