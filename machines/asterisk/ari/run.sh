@@ -7,10 +7,16 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     echo 'done updating ari'
     exit 0
 fi
-WAIT=20
 
-echo Waiting $WAIT seconds to start ari...
-sleep $WAIT
+echo "Waiting for odoo to arrive at port 8069"
+while true; do
+    if $(nc -z odoo 8069); then
+        break
+    fi
+    sleep 1
+done
+echo "Odoo arrived! connecting..."
+
 cd /opt/asterisk_ari/connector
 python ariconnector.py \
     --username-asterisk $USERNAME_ASTERISK \
