@@ -1,6 +1,9 @@
 FROM ubuntu:15.10
 MAINTAINER marc@itewimmer.de
 
+# to remember requirements installations at run.sh
+VOLUME /usr/local/lib/python2.7/dist-packages
+
 # Install latest git
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-software-properties
@@ -146,8 +149,6 @@ RUN chmod a+x /usr/local/bin/*
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
 
-# to remember requirements installations at run.sh
-VOLUME /usr/local/lib/python2.7/dist-packages
 
 USER root
 CMD /run.sh
