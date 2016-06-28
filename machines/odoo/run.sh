@@ -48,8 +48,8 @@ chown odoo:odoo /home/odoo/.local -R
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     cd /opt/openerp/customs/$CUSTOMS
-    echo "Trying to checkout deploy branch, if not existent, then master branch"
-    git checkout deploy || git checkout master
+    echo "Trying to checkout deploy branch"
+    git checkout deploy -f
     git submodule update --init --recursive
     /opt/openerp/admin/oeln $CUSTOMS
     cat /opt/openerp/versions/.version

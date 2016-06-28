@@ -78,6 +78,8 @@ services:
       - "5060:5060/udp"
       # must match asterisk rtp.conf
       - "16384-16404:16384-16404/udp"
+    environment:
+      CUSTOMS: ${CUSTOMS}
           
   asterisk_ari:
     container_name: ${DCPREFIX}_odoo_ari
@@ -86,8 +88,8 @@ services:
       - asterisk:asterisk
       - odoo:odoo
     environment:
-      ODOO_USER_ID: 1
-      ODOO_PASSWORD: 1
+      ODOO_USER: asterisk_ari
+      ODOO_PASSWORD: ari_connector
       ODOO_DB: $DBNAME
       ODOO_PORT: 8069
       ODOO_HOST: odoo

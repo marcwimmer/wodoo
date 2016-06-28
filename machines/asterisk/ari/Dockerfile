@@ -17,8 +17,4 @@ ADD id_rsa id_rsa
 ADD ssh_config_repo config
 RUN chmod 600 id_rsa
 
-
-#defined in consts.py in ari connector
-EXPOSE 29925 
-
 CMD ["/run.sh"]

@@ -1,5 +1,20 @@
 FROM ubuntu:14.04
+# if in customizations is an asterisk directory, then enable asterisk, otherwise not
 RUN apt-get update
+RUN apt-get install -y build-essential
+RUN apt-get install -y linux-headers-generic
+RUN apt-get install -y subversion git
+
+WORKDIR /root
+RUN mkdir -p .ssh
+
+WORKDIR /root/.ssh
+ADD id_rsa id_rsa
+ADD ssh_config_repo config
+RUN chmod 600 id_rsa
+
+ADD ./etc/asterisk /opt/etc.base
+
 RUN apt-get install -y build-essential
 RUN apt-get install -y linux-headers-generic
 RUN apt-get install -y subversion git
@@ -25,25 +40,10 @@ RUN ./configure
 ADD menuselect.makeopts menuselect.makeopts
 RUN make -j4
 RUN make install
+
 #  init jobs
 RUN make config 
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
-
-WORKDIR /root
-RUN mkdir -p .ssh
-
-WORKDIR /root/.ssh
-ADD id_rsa id_rsa
-ADD ssh_config_repo config
-RUN chmod 600 id_rsa
-
-ADD ./etc/asterisk/ /etc/asterisk
-WORKDIR /tmp
-RUN git clone git.mt-software.de:/opt/git/openerp/customs/cpb
-WORKDIR /tmp/cpb
-RUN git checkout deploy
-RUN rsync -ar ./asterisk/etc/ /etc/asterisk/
-RUN rsync ./asterisk/sounds /var/lib/asterisk/sounds/en/
 
 CMD ["/run.sh"]

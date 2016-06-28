@@ -90,7 +90,6 @@ RUN pip install requests[security]
 # pip packages:
 RUN rm -Rf /usr/local/man
 RUN mkdir -p /usr/local/man/man1
-RUN echo $ODOO_VERSION
 ADD requirements.txt /root/requirements.txt
 RUN pip install -r /root/requirements.txt
 
