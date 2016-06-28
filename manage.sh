@@ -16,24 +16,50 @@ sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-
 if [ -z "$1" ]; then
     echo Management of odoo instance
     echo
+    echo
+    echo First init:
+    echo './manage.sh fetch && ./manage.sh init && ./manage.sh setup-startup-script'
+    echo
+    echo Update:
+    echo './manage.sh update'
+    echo
+    echo
+    echo
     echo "Please call manage.sh init|springclean|dbinit|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
+    echo
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
+    echo
     echo "bash_into <machine-name> - starts /bin/bash for just that machine and connects to it"
+    echo
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
+    echo
     echo "clean - clears support data"
+    echo
     echo "dbinit - recreates database CAREFUL: ctrl+c to abort - all data gone "
+    echo
     echo "fetch - fetches support data"
+    echo
     echo "init: fetches latest support data (odoo.git, openerp.git) and recreates source directories"
+    echo
     echo "kill - kills running machines"
+    echo
     echo "logs - show log output; use parameter to specify machine"
+    echo
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
+    echo
     echo "rebuild - rebuilds docker-machines - data not deleted"
+    echo
     echo "restart - restarts docker-machines"
+    echo
     echo "setup-startup-script - makes skript in /etc/init/odoo"
+    echo
     echo "stop - like docker-compose stop"
+    echo
     echo "update - fetch latest source code of modules and run update all on odoo; machines are stopped after that"
+    echo
     echo "up - starts all machines equivalent to service <service> start "
+    echo
     exit -1
 fi
 
