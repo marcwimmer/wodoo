@@ -9,7 +9,7 @@ export $(cut -d= -f1 $DIR/customs.env)
 echo $DCPREFIX
 # replace params in configuration file
 cd $DIR
-sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl
+sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl > config/docker-compose.yml
 
 # replace variables in docker-compose;
 
