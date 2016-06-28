@@ -8,9 +8,18 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     exit 0
 fi
 
-echo "Waiting for odoo to arrive at port 8069"
+echo "Waiting for asterisk to arrive at port $PORT_ASTERISK"
 while true; do
-    if $(nc -z odoo 8069); then
+    if $(nc -z $HOST_ASTERISK $PORT_ASTERISK); then
+        break
+    fi
+    sleep 1
+done
+echo "Asterisk arrived! connecting..."
+
+echo "Waiting for odoo to arrive at port $ODOO_PORT"
+while true; do
+    if $(nc -z $ODOO_HOST $ODOO_PORT); then
         break
     fi
     sleep 1
