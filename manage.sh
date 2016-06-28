@@ -107,11 +107,11 @@ setup-startup)
     file=/etc/init/${CUSTOMS}_odoo.conf
     echo "Setting up startup script in $file"
     PATH=$DIR
-    cp $DIR/config/upstart $file
-    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
-    sed -i -e "s/\${PATH}/$DCPREFIX/" -e "s/\${PATH}/$DCPREFIX/" $file
-    initctl reload-configuration
-    initctl list
+    /bin/cp $DIR/config/upstart $file
+    /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
+    /bin/sed -i -e "s/\${PATH}/$PATH/" -e "s/\${PATH}/$PATH/" $file
+    /sbin/initctl reload-configuration
+    /sbin/initctl list
     ;;
 backup)
     if [[ -z "$2" ]]; then
