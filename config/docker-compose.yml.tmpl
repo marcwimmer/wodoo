@@ -86,12 +86,13 @@ services:
       # ari
       - 8088
     ports:
+      # lsof -i -n -P
       - "8088:8088"
-      - "2000:2000/tcp"
+      - "5060:5060/udp"
       - "4569:4569/udp"
+      - "2000:2000/tcp"
       - "4520:4520/udp"
       - "5000:5000/udp"
-      - "5060:5060/udp"
       # must match asterisk rtp.conf
       - "16384-16404:16384-16404/udp"
     environment:
