@@ -3,15 +3,15 @@ services:
   odoo:
     environment:
       DO_INIT: 1
-    restart: no
+    restart: 'no'
   asterisk:
     environment:
       DO_INIT: 1
-    restart: no
+    restart: 'no'
   asterisk_ari:
     environment:
       DO_INIT: 1
-    restart: no
+    restart: 'no'
   postgres:
     command: echo 'done'
   nginx:
