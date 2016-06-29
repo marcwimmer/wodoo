@@ -44,10 +44,6 @@ RUN make config
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
 
-# add base config
-ADD ./etc/asterisk /opt/etc.base
-
-
 VOLUME /opt
 VOLUME /etc/asterisk
 

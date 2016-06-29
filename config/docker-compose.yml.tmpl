@@ -31,7 +31,6 @@ services:
       - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
-      - recordingstorage:/opt/asterisk_recordings
     env_file:
       ../customs.env
 
@@ -105,6 +104,7 @@ services:
       CUSTOMS: ${CUSTOMS}
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
+      - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
