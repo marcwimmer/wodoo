@@ -14,7 +14,7 @@ if [[ -n "$DO_UPDATE" || -n "$DO_INIT" ]]; then
     cd /opt/$CUSTOMS
     git pull
     [[ -d asterisk ]] && rsync ./asterisk/etc/ /etc/asterisk/ -ar
-    [[ -d asterisk ]] && rsync ./asterisk/sounds /var/lib/asterisk/sounds/en/ -ar
+    [[ -d asterisk ]] && rsync ./asterisk/sounds/ /var/lib/asterisk/sounds/ -ar
     echo "done updating asterisk"
     exit 0
 fi

@@ -84,6 +84,7 @@ services:
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
+    restart: always
     build: ../machines/asterisk/asterisk
     networks:
       - ${DCPREFIX}_default
@@ -108,6 +109,7 @@ services:
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
+    restart: always
     build: ../machines/asterisk/ari
     expose:
       - 29925
