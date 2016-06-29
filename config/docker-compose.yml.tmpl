@@ -102,6 +102,8 @@ services:
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
     build: ../machines/asterisk/ari
+    expose:
+      - 29925
     networks:
       - ${DCPREFIX}_default
     links:
