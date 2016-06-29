@@ -19,7 +19,8 @@ services:
       - ${DCPREFIX}_default
     links:
       - postgres:postgres
-      - asterisk_ari:asterisk_ari
+      #circular...
+      # - asterisk_ari:asterisk_ari
     volumes:
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
