@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+set -x
 
 # Setting up productive odoo
 echo Setting up odoo for customs $CUSTOMS

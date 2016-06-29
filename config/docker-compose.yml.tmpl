@@ -126,6 +126,8 @@ services:
       PASSWORD_ASTERISK: asterisk
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
+    volumes:
+      - recordingstorage:/var/spool/asterisk/recording
 
 networks:
   ${DCPREFIX}_default:
