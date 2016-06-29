@@ -3,12 +3,15 @@ services:
   odoo:
     environment:
       DO_UPDATE: 1
+    restart: no
   asterisk:
     environment:
       DO_UPDATE: 1
+    restart: no
   asterisk_ari:
     environment:
       DO_UPDATE: 1
+    restart: no
   mail:
     command: echo 'done'
   roundcube:
