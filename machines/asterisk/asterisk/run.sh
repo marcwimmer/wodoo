@@ -3,6 +3,7 @@ rsync /opt/etc.base/ /etc/asterisk/ -ar
 
 if [[ -n "$DO_INIT" ]]; then
     cd /opt
+    [[ -d "${CUSTOMS}" ]] && rm -Rf ${CUSTOMS}
     git clone git.mt-software.de:/opt/git/openerp/customs/${CUSTOMS}
     cd /opt/$CUSTOMS
     git checkout deploy -f
