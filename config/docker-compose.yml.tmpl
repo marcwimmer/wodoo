@@ -10,6 +10,9 @@ volumes:
   sourcestorage:
     external:
       name: ${DCPREFIX}_odoo_sourcestorage
+  recordingstorage:
+    external:
+      name: ${DCPREFIX}_odoo_recordingstorage
 
 services:
   odoo:
@@ -28,6 +31,7 @@ services:
       - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
+      - recordingstorage:/opt/asterisk_recordings
     env_file:
       ../customs.env
 
@@ -99,6 +103,8 @@ services:
       - "16384-16404:16384-16404/udp"
     environment:
       CUSTOMS: ${CUSTOMS}
+    volumes:
+      - recordingstorage:/var/spool/asterisk/recording
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
