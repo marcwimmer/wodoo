@@ -49,5 +49,6 @@ ADD ./etc/asterisk /opt/etc.base
 
 
 VOLUME /opt
+VOLUME /etc/asterisk
 
 CMD ["/run.sh"]
