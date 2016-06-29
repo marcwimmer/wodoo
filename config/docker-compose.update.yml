@@ -13,3 +13,6 @@ services:
     command: echo 'done'
   roundcube:
     command: echo 'done'
+  # NO! odoo needs postgres to update...
+  #postgres:
+  #  command: echo 'done'

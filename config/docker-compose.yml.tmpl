@@ -19,6 +19,8 @@ services:
       - ${DCPREFIX}_default
     links:
       - postgres:postgres
+      #circular...
+      # - asterisk_ari:asterisk_ari
     volumes:
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
@@ -74,8 +76,8 @@ services:
       - ${DCPREFIX}_default
     links:
       - mail:mail
-    ports:
-      - "8000:80"
+    #ports:
+    #  - "8000:80"
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
@@ -86,10 +88,13 @@ services:
       # ari
       - 8088
     ports:
+      # lsof -i -n -P
       - "8088:8088"
-      - "9080:80"
-      - "5060:5060/tcp"
       - "5060:5060/udp"
+      - "4569:4569/udp"
+      - "2000:2000/tcp"
+      - "4520:4520/udp"
+      - "5000:5000/udp"
       # must match asterisk rtp.conf
       - "16384-16404:16384-16404/udp"
     environment:
@@ -98,6 +103,8 @@ services:
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
     build: ../machines/asterisk/ari
+    expose:
+      - 29925
     networks:
       - ${DCPREFIX}_default
     links:

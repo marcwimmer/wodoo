@@ -3,7 +3,7 @@ RUN mkdir -p  /docker-entrypoint-initdb.d
 ENV SNAPSHOT /opt/snapshot
 RUN mkdir -p $SNAPSHOT
 
-RUN apt-get update && apt-get install -y ssh rsync python2.7 sudo
+RUN apt-get update && apt-get install -y ssh rsync python2.7 sudo procps
 RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN service ssh restart
 

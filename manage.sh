@@ -18,12 +18,12 @@ if [ -z "$1" ]; then
     echo
     echo
     echo First init:
-    echo './manage.sh fetch && ./manage.sh init && ./manage.sh setup-startup-script'
+    echo './manage.sh fetch && ./manage.sh init && ./manage.sh setup-startup'
     echo
     echo Update:
     echo './manage.sh update'
     echo
-    echo
+    echo No data is lost at init! Wether oefiles nor database.
     echo
     echo "Please call manage.sh init|springclean|dbinit|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
@@ -38,7 +38,7 @@ if [ -z "$1" ]; then
     echo
     echo "fetch - fetches support data"
     echo
-    echo "init <machine-name, empty for all>: depending on machine does basic reinitialization"
+    echo "init <machine-name, empty for all>: depending on machine does basic reinitialization; NO DATA DELETED!"
     echo
     echo "kill - kills running machines"
     echo
@@ -56,7 +56,7 @@ if [ -z "$1" ]; then
     echo
     echo "stop - like docker-compose stop"
     echo
-    echo "update - fetch latest source code of modules and run update all on odoo; machines are stopped after that"
+    echo "update <machine name>- fetch latest source code of modules and run update all on odoo; machines are stopped after that"
     echo
     echo "up - starts all machines equivalent to service <service> start "
     echo
@@ -193,7 +193,7 @@ restoredb)
     ;;
 update)
     $dc stop
-    $dc -f config/docker-compose.update.yml up odoo
+    eval "$dc -f config/docker-compose.update.yml up $2"
     ;;
 *)
     echo "Invalid option $1"
