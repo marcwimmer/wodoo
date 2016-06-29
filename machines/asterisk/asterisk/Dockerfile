@@ -46,5 +46,6 @@ RUN chmod a+x /run.sh
 
 VOLUME /opt
 VOLUME /etc/asterisk
+VOLUME /var/lib/asterisk/sounds
 
 CMD ["/run.sh"]
