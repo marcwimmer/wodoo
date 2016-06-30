@@ -72,6 +72,11 @@ RUN apt-get install -y --no-install-recommends \
             libsasl2-dev python-dev libldap2-dev libssl-dev \
             wget
 
+# https://github.com/odoo/odoo/issues/5177
+RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
+RUN tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1
+RUN ln -s /bin/wkhtmlto* /usr/bin/
+
 # pydub dependencies for cutting asterisk recordings
 RUN apt-get install -y libav-tools
 
