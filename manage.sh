@@ -113,7 +113,7 @@ setup-startup)
     ;;
 backup)
     BACKUPDIR=$DIR/dumps
-    filename=$DBNAME.$(date "+%Y-%m-%d_%H:%M:%S").dump
+    filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump
     filepath=$BACKUPDIR/$filename
     docker exec ${DCPREFIX}_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$filename.gz
     echo "Dumped to $filepath"
