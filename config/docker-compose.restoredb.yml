@@ -4,6 +4,7 @@ services:
     environment:
       RESTORE_DUMP: 1
       DBNAME: ${DBNAME}
+    restart: 'no'
   odoo:
     command: echo 'done'
   nginx:

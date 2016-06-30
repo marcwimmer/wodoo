@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+set +x
 cd /
 
 echo "Executing postgres entrypoint2.sh"
@@ -24,7 +24,7 @@ else
         sleep 5
         dropdb $DBNAME || echo 'database did not exist'
         createdb $DBNAME
-        gunzip -c /opt/dumps/$DBNAME.gz |psql $DBNAME
+        pg_restore -d $DBNAME /opt/dumps/$DBNAME.gz
         psql template1 -c "alter database $DBNAME owner to odoo;"
         echo "Restoring snapshot done!"
         pkill -f postgres
