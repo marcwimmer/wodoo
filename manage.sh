@@ -6,7 +6,6 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
-echo $DCPREFIX
 # replace params in configuration file
 cd $DIR
 sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl > config/docker-compose.yml
@@ -113,16 +112,14 @@ setup-startup)
     /sbin/initctl reload-configuration
     ;;
 backup)
-    if [[ -z "$2" ]]; then
-        echo "Please suppply backup directory env variable BACKUPDIR!"
-        exit -1
-    fi
-    BACKUPDIR=$2
-    docker exec ${DCPREFIX}_odoo_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$DBNAME.gz
-    filename=$BACKUPDIR/$DBNAME.$(date "+%Y-%m-%d_%H:%M:%S").dump
-    mv $DIR/dumps/$DBNAME.gz $filename
-    echo "Dumped to $filename"
-    # TODO backup files
+    BACKUPDIR=$DIR/dumps
+    filename=$DBNAME.$(date "+%Y-%m-%d_%H:%M:%S").dump
+    filepath=$BACKUPDIR/$filename
+    docker exec ${DCPREFIX}_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$filename.gz
+    echo "Dumped to $filepath"
+    echo "Backuping files..."
+    docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/oefiles.tar /opt/oefiles
+    echo 'Backup files done to $DIR/dumps/oefiles.tar'
     ;;
 
 springclean)
