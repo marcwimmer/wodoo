@@ -145,7 +145,9 @@ debug)
         exit -1
     fi
     $dc kill $2
-    $dc up -d $2
+    echo "${DCPREFIX}_${2}"
+    sed "s/TEMPLATE/${2}/g" $DIR/config/docker-compose.debug.tmpl.yml > $DIR/config/docker-compose.debug.yml
+    eval "$dc -f $DIR/config/docker-compose.debug.yml up -d $2"
     docker exec -it "${DCPREFIX}_${2}" bash
     ;;
 attach)
