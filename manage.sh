@@ -30,7 +30,7 @@ if [ -z "$1" ]; then
     echo
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
     echo
-    echo "bash_into <machine-name> - starts /bin/bash for just that machine and connects to it"
+    echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
     echo
@@ -139,13 +139,14 @@ springclean)
 up)
     $dc up $2 $3 $4
     ;;
-bash_into)
+debug)
     if [[ -z "$2" ]]; then
         echo "Please give machine name as second parameter e.g. postgres, odoo"
         exit -1
     fi
-    set -x
-    $dc run "${2}" bash
+    $dc kill $2
+    $dc up -d $2
+    docker exec -it "${DCPREFIX}_${2}" bash
     ;;
 attach)
     if [[ -z "$2" ]]; then

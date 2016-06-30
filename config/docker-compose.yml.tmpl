@@ -18,6 +18,9 @@ services:
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
+    restart: on-failure
+    depends_on:
+      - postgres
     networks:
       - ${DCPREFIX}_default
     links:
@@ -37,6 +40,7 @@ services:
   postgres:
     container_name: ${DCPREFIX}_postgres
     build: ../machines/postgres
+    restart: on-failure
     networks:
       - ${DCPREFIX}_default
     volumes:
@@ -51,6 +55,8 @@ services:
   nginx:
     container_name: ${DCPREFIX}_nginx
     image: nginx:stable
+    depends_on:
+      - odoo
     networks:
       - ${DCPREFIX}_default
     links:
@@ -66,6 +72,8 @@ services:
   mail:
     container_name: ${DCPREFIX}_mail
     build: ../machines/mail
+    depends_on:
+      - odoo
     networks:
       - ${DCPREFIX}_default
     expose:
@@ -75,6 +83,8 @@ services:
   roundcube:
     container_name: ${DCPREFIX}_roundcube
     build: ../machines/roundcube
+    depends_on:
+      - mail
     networks:
       - ${DCPREFIX}_default
     links:
@@ -84,7 +94,7 @@ services:
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
-    restart: always
+    restart: on-failure
     build: ../machines/asterisk/asterisk
     networks:
       - ${DCPREFIX}_default
@@ -109,7 +119,10 @@ services:
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
-    restart: always
+    restart: on-failure
+    depends_on:
+      - asterisk
+      - odoo
     build: ../machines/asterisk/ari
     expose:
       - 29925
