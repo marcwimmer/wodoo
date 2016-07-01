@@ -117,7 +117,7 @@ services:
       CUSTOMS: ${CUSTOMS}
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
-      - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base
+      - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base:ro
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
