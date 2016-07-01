@@ -111,6 +111,8 @@ services:
       - "5000:5000/udp"
       # must match asterisk rtp.conf
       - "16384-16404:16384-16404/udp"
+      # next one not needed i think
+      #- "63535:63535/udp"
     environment:
       CUSTOMS: ${CUSTOMS}
     volumes:
