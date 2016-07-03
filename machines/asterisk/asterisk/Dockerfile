@@ -23,6 +23,7 @@ RUN apt-get install -y libvorbis-dev  # For Ogg Vorbis format support
 RUN apt-get install -y libssl-dev # Needed for SIP
 RUN apt-get install -y libspeex-dev libspeexdsp-dev  # For speex codec
 RUN apt-get install -y mpg123 libmpg123-0 sox openssl wget subversion openssh-server # Odds and ends
+RUN apt-get install -y unzip
 
 WORKDIR /tmp
 ENV ASTERISK_VERSION=13.2.1
@@ -47,5 +48,8 @@ RUN chmod a+x /run.sh
 VOLUME /opt
 VOLUME /etc/asterisk
 VOLUME /var/lib/asterisk/sounds
+
+# add default sounds
+ADD sounds/ /opt/default_sounds/
 
 CMD ["/run.sh"]

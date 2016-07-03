@@ -1,4 +1,17 @@
 #!/bin/bash
+#copy default sounds
+rsync /opt/default_sounds /var/lib/asterisk/sounds/ -ar
+cd /var/lib/asterisk/sounds
+
+function extract_lang() {
+    mkdir -p $1
+    cd $1
+    unzip /opt/default_sounds/$1/core.zip
+    unzip /opt/default_sounds/$1/extra.zip
+}
+extract_lang de
+
+#copy default configuration
 rsync /opt/etc.base/ /etc/asterisk/ -ar
 
 if [[ -n "$DO_INIT" ]]; then
@@ -23,5 +36,6 @@ fi
     echo "No asterisk directory found in customizations - shutting down"
     exit 0
 }
+
 
 /usr/sbin/asterisk -vvvvv -ddddd
