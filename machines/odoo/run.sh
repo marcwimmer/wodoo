@@ -101,7 +101,6 @@ if [[ -n "$DO_INIT" ]]; then
 fi
 
 # RUN Scripts from autosetup
-sleep 10000
 /run_autosetup.sh
 
 echo "Starting up odoo"
