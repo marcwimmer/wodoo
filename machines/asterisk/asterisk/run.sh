@@ -32,6 +32,9 @@ if [[ -n "$DO_UPDATE" || -n "$DO_INIT" ]]; then
     exit 0
 fi
 
+#copy music on hold
+rsync /opt/$CUSTOMS/asterisk/moh_custom/ /var/lib/asterisk/moh_custom/ -ar
+
 [[ ! -d /opt/$CUSTOMS/asterisk ]] && {
     echo "No asterisk directory found in customizations - shutting down"
     exit 0
