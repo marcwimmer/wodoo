@@ -63,8 +63,8 @@ chown odoo:odoo /opt/openerp/ -R
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     cd /opt/openerp/customs/$CUSTOMS
-    echo "Trying to checkout deploy branch"
-    git checkout deploy -f
+    echo "Trying to checkout $BRANCH branch"
+    git checkout $BRANCH -f
     git pull
     git submodule update --init --recursive
     /opt/openerp/admin/oeln $CUSTOMS
