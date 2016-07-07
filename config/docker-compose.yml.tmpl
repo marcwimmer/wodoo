@@ -118,6 +118,8 @@ services:
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base:ro
+    env_file:
+      ../customs.env
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
@@ -145,6 +147,8 @@ services:
       PORT_ASTERISK: 8088
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
+    env_file:
+      ../customs.env
 
 networks:
   ${DCPREFIX}_default:

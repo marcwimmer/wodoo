@@ -1,5 +1,11 @@
 #!/bin/bash
 set -e
+
+if [[ "$RUN_ASTERISK" == "0" ]]; then
+    echo "asterisk is turned off by customs.env - good bye! :)"
+    exit 0
+fi
+
 cd /opt
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     [ -d asterisk_ari ] && rm -Rf /opt/asterisk_ari

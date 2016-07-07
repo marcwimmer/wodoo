@@ -1,5 +1,11 @@
 #!/bin/bash
 #copy default sounds
+
+if [[ "$RUN_ASTERISK" == "0" ]]; then
+    echo "asterisk is turned off by customs.env - good bye! :)"
+    exit 0
+fi
+
 rsync /opt/default_sounds /var/lib/asterisk/sounds/ -ar
 cd /var/lib/asterisk/sounds
 
