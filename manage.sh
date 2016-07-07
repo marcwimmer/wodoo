@@ -119,7 +119,7 @@ backup)
     echo "Dumped to $filepath"
     echo "Backuping files..."
     docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/oefiles.tar /opt/oefiles
-    echo 'Backup files done to $DIR/dumps/oefiles.tar'
+    echo "Backup files done to $DIR/dumps/oefiles.tar"
     ;;
 
 springclean)
