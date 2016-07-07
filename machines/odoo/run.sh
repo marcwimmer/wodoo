@@ -100,6 +100,10 @@ if [[ -n "$DO_INIT" ]]; then
     exit 0
 fi
 
+# RUN Scripts from autosetup
+sleep 10000
+/run_autosetup.sh
+
 echo "Starting up odoo"
 START_LINE="sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME --log-level=debug"
 eval $START_LINE

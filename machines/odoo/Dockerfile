@@ -155,6 +155,8 @@ RUN chmod a+x /usr/local/bin/*
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
 
+ADD run_autosetup.sh /run_autosetup.sh
+RUN chmod a+x /run_autosetup.sh
 
 USER root
 CMD /run.sh
