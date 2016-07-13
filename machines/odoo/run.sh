@@ -78,16 +78,23 @@ echo "Odoo version is $ODOO_VERSION"
 . /usr/local/bin/virtualenvwrapper.sh
 workon $ODOO_VERSION
 
-if [[ -n "$DO_UPDATE" ]]; then
-    sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -u all --stop-after-init --log-level=debug || echo 'odoo update executed'
-    echo "Update of odoo done"
-    exit 0
-fi
 
 if [[ -n "$DO_INIT" ]]; then
     echo "Init of odoo done"
     exit 0
+
+elif [[ -n "$DO_UPDATE" ]]; then
+
+    sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
+        -d $DBNAME \
+        -u all \
+        --stop-after-init \
+        --log-level=debug || echo 'odoo update executed'
+    echo "Update of odoo done"
+    exit 0
 fi
+
+# NORMAL STARTUP - start odo here
 
 # RUN Scripts from autosetup
 /run_autosetup.sh
