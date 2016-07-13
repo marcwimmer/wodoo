@@ -75,9 +75,6 @@ ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
 
 # use virtualenv installed packages for odoo
-. /usr/local/bin/virtualenvwrapper.sh
-workon $ODOO_VERSION
-
 
 if [[ -n "$DO_INIT" ]]; then
     echo "Init of odoo done"

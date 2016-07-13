@@ -7,10 +7,12 @@ source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
 # replace params in configuration file
-cd $DIR
-sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl > config/docker-compose.yml
-
 # replace variables in docker-compose;
+cd $DIR
+echo $ODOO_VERSION
+sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl > config/docker-compose.yml
+sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
+
 
 if [ -z "$1" ]; then
     echo Management of odoo instance

@@ -108,12 +108,10 @@ ADD requirements_70.txt /root/requirements_70.txt
 # syntastic checker
 RUN npm install -g jshint
 
-#
+#install pip packages depending on version
 ADD install_python_packages.sh /install_python_packages.sh
 RUN pip install --upgrade pip
-RUN /bin/bash /install_python_packages.sh 7.0 
-# add ssh support for git
-USER root
+RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION} 
 
 USER odoo
 WORKDIR /home/odoo
