@@ -154,6 +154,13 @@ attach)
     fi
     docker exec -it "${DCPREFIX}_${2}" bash
     ;;
+runbash)
+    if [[ -z "$2" ]]; then
+        echo "Please give machine name as second parameter e.g. postgres, odoo"
+        exit -1
+    fi
+    eval "$dc run $2 bash"
+    ;;
 rebuild)
     cd $DIR/machines/odoo
     cd $DIR
@@ -193,7 +200,11 @@ restoredb)
     ;;
 update)
     $dc stop
-    eval "$dc -f config/docker-compose.update.yml up $2"
+    $dc -f config/docker-compose.update.yml run asterisk /run.sh
+    $dc -f config/docker-compose.update.yml run odoo /run.sh
+    $dc -f config/docker-compose.update.yml run asterisk_ari /run.sh
+    $dc stop
+
     ;;
 *)
     echo "Invalid option $1"
