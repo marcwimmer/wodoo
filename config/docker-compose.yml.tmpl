@@ -2,17 +2,9 @@
 version: '2'
 volumes:
   postgresdata:
-    external:
-      name: ${DCPREFIX}_odoo_postgresdata
   filestorage:
-    external:
-      name: ${DCPREFIX}_odoo_filestorage
   sourcestorage:
-    external:
-      name: ${DCPREFIX}_odoo_sourcestorage
   recordingstorage:
-    external:
-      name: ${DCPREFIX}_odoo_recordingstorage
 
 services:
   odoo:
