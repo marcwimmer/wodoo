@@ -26,37 +26,22 @@ if [ -z "$1" ]; then
     echo
     echo "Please call manage.sh init|springclean|dbinit|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
-    echo
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
-    echo
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
-    echo
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
-    echo
     echo "clean - clears support data"
-    echo
     echo "fetch - fetches support data"
-    echo
     echo "init <machine-name, empty for all>: depending on machine does basic reinitialization; NO DATA DELETED!"
-    echo
     echo "kill - kills running machines"
-    echo
     echo "logs - show log output; use parameter to specify machine"
-    echo
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
-    echo
     echo "rebuild - rebuilds docker-machines - data not deleted"
-    echo
     echo "restart - restarts docker-machines"
-    echo
     echo "restore_dump <filename> - restores the given dump as odoo database"
-    echo
+    echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
-    echo
     echo "stop - like docker-compose stop"
-    echo
     echo "update <machine name>- fetch latest source code of modules and run update all on odoo; machines are stopped after that"
-    echo
     echo "up - starts all machines equivalent to service <service> start "
     echo
     exit -1
