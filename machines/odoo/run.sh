@@ -74,20 +74,9 @@ fi
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
 
-# install requirements
-if [[ -n "$DO_INIT" ]]; then
-    echo "Installing requirements from odoo"
-    pip install -r /root/requirements.txt
-
-    if [[ "$ODOO_VERSION" == "7.0" ]]; then
-        echo "using downloaded requirements file"
-        pip install -r /root/requirements_70.txt
-    else
-        wget https://raw.githubusercontent.com/odoo/odoo/$ODOO_VERSION/requirements.txt -O /root/requirements_odoo.txt
-        pip install -r /root/requirements_odoo.txt
-    fi
-fi
-
+# use virtualenv installed packages for odoo
+. /usr/local/bin/virtualenvwrapper.sh
+workon $ODOO_VERSION
 
 if [[ -n "$DO_UPDATE" ]]; then
     sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -u all --stop-after-init --log-level=debug || echo 'odoo update executed'

@@ -108,8 +108,12 @@ ADD requirements_70.txt /root/requirements_70.txt
 # syntastic checker
 RUN npm install -g jshint
 
-# FIX NODE
-#RUN apt-get purge 
+#
+ADD install_python_packages.sh /install_python_packages.sh
+RUN pip install --upgrade pip
+RUN pip install virtualenv virtualenvwrapper
+RUN /bin/bash /install_python_packages.sh 7.0
+RUN /bin/bash /install_python_packages.sh 9.0
 
 # add ssh support for git
 USER root
@@ -157,6 +161,7 @@ RUN chmod a+x /run.sh
 
 ADD run_autosetup.sh /run_autosetup.sh
 RUN chmod a+x /run_autosetup.sh
+
 
 USER root
 CMD /run.sh
