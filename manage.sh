@@ -150,7 +150,7 @@ rebuild)
     cd $DIR/machines/odoo
     cd $DIR
     eval "$dc stop"
-    eval "$dc build --no-cache"
+    eval "$dc build --no-cache $2"
     echo ""
     echo ""
     echo ""
