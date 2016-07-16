@@ -6,3 +6,4 @@ arrow
 xlsxwriter
 xlrd
 BeautifulSoup
+swaggerpy
