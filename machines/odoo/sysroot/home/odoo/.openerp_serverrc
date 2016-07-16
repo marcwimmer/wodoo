@@ -3,6 +3,7 @@ addons_path=/opt/openerp/versions/server/openerp/addons,/opt/openerp/versions/se
 admin_passwd = admin
 auto_reload = False
 csv_internal_sep = ,
+data_dir = /opt/oefiles
 db_host = postgres
 db_maxconn = 500
 db_name = False
