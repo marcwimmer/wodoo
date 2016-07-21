@@ -179,7 +179,7 @@ restart)
     eval "$dc stop"
     eval "$dc up -d"
     ;;
-restoredb)
+restore_dump)
     read -p "Deletes database! Continue? Press ctrl+c otherwise"
     cp $2 ./dumps/$DBNAME.gz
     eval "$dc kill"
