@@ -118,8 +118,8 @@ RUN echo "alias gs='git status'" >> .bash_profile
 
 # config git environmnet
 USER odoo
-RUN git config --global user.name heineorange
-RUN git config --global user.email heineorange
+RUN git config --global user.name odooprod
+RUN git config --global user.email odooprod
 RUN git config --global http.postBuffer 1048576000
 RUN git config --global push.default simple
 
