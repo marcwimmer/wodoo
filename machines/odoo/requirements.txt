@@ -7,3 +7,4 @@ xlsxwriter
 xlrd
 BeautifulSoup
 swaggerpy
+humanize
