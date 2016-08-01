@@ -111,9 +111,9 @@ setup-startup)
         /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
         /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
 
-        systemctl daemon-reload
-        systemctl enable $servicename
-        systemctl start $servicename
+        /bin/systemctl daemon-reload
+        /bin/systemctl enable $servicename
+        /bin/systemctl start $servicename
     fi
     ;;
 backup)
