@@ -90,13 +90,31 @@ init)
     ;;
 
 setup-startup)
-    file=/etc/init/${CUSTOMS}_odoo.conf
-    echo "Setting up startup script in $file"
     PATH=$DIR
-    /bin/cp $DIR/config/upstart $file
-    /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
-    /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
-    /sbin/initctl reload-configuration
+
+    if [[ -f /sbin/initctl ]]; then
+        # ubuntu 14.04 upstart
+        file=/etc/init/${CUSTOMS}_odoo.conf
+
+        echo "Setting up upstart script in $file"
+        /bin/cp $DIR/config/upstart $file
+        /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
+        /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
+        /sbin/initctl reload-configuration
+    else
+        echo "Setting up systemd script for startup"
+        servicename=${CUSTOMS}_odoo.service
+        file=/etc/systemd/system/$servicename
+
+        echo "Setting up upstart script in $file"
+        /bin/cp $DIR/config/systemd $file
+        /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
+        /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
+
+        systemctl daemon-reload
+        systemctl enable $servicename
+        systemctl start $servicename
+    fi
     ;;
 backup)
     BACKUPDIR=$DIR/dumps

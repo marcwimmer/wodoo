@@ -1,0 +1,14 @@
+[Unit]
+Description=Odoo Server ${CUSTOMS}
+Requires=docker.service
+After=docker.service
+
+[Service]
+Environment=
+WorkingDirectory=${PATH}
+ExecStart=/bin/bash manage.sh up
+ExecStop=/bin/bash manage.sh stop
+Restart=always
+
+[Install]
+WantedBy=default.target
