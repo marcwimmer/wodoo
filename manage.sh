@@ -100,6 +100,7 @@ setup-startup)
         /bin/cp $DIR/config/upstart $file
         /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
         /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
+        /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" $file
         /sbin/initctl reload-configuration
     else
         echo "Setting up systemd script for startup"
@@ -110,6 +111,7 @@ setup-startup)
         /bin/cp $DIR/config/systemd $file
         /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
         /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
+        /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" $file
 
         /bin/systemctl daemon-reload
         /bin/systemctl enable $servicename
