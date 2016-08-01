@@ -1,4 +1,4 @@
-babel
+babel==1.3
 docutils
 feedparser
 gdata
