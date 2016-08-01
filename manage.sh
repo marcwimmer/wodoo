@@ -28,7 +28,7 @@ if [ -z "$1" ]; then
     echo
     echo "Please call manage.sh init|springclean|dbinit|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
-    echo "backup <backup-dir> - backup database and/or files to the given location with timestamp "
+    echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
     echo "clean - clears support data"
@@ -119,14 +119,25 @@ setup-startup)
     fi
     ;;
 backup)
-    BACKUPDIR=$DIR/dumps
+    if [[ -n "$2" ]]; then
+        BACKUPDIR=$2
+    else
+        BACKUPDIR=$DIR/dumps
+    fi
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump
     filepath=$BACKUPDIR/$filename
     docker exec ${DCPREFIX}_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$filename.gz
     echo "Dumped to $filepath"
     echo "Backuping files..."
-    docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/oefiles.tar /opt/oefiles
-    echo "Backup files done to $DIR/dumps/oefiles.tar"
+    filename_oefiles=oefiles.tar
+    docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/$filename_oefiles /opt/oefiles
+    if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
+        cp $DIR/dumps/$filename.gz $BACKUPDIR
+        rm $DIR/dumps/$filename.gz
+        cp $DIR/dumps/$filename_oefiles $BACKUPDIR
+        rm $DIR/dumps/$filename_oefiles
+    fi
+    echo "Backup files done to $BACKUPDIR/$filename_oefiles"
     ;;
 
 springclean)
