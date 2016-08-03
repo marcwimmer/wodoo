@@ -18,5 +18,7 @@ ADD ssh_config_repo config
 RUN chmod 600 id_rsa
 
 VOLUME /opt
+RUN mkdir -p /opt/finished_calls
+
 
 CMD ["/run.sh"]
