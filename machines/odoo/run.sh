@@ -2,6 +2,14 @@
 set -e
 set -x
 
+if [[ -n "$RESTORE_FILES" ]]; then
+    while true;
+    do
+        # command is executed via manage.sh docker exec; wait here until killed
+        sleep 1
+    done
+fi
+
 # Setting up productive odoo
 echo Setting up odoo for customs $CUSTOMS
 

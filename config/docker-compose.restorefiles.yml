@@ -1,0 +1,20 @@
+version: '2'
+services:
+  postgres:
+    command: echo 'done'
+  odoo:
+    environment:
+      RESTORE_FILES: 1
+      DBNAME: ${DBNAME}
+    restart: 'no'
+  nginx:
+    command: echo 'done'
+  asterisk:
+    command: echo 'done'
+  asterisk_ari:
+    command: echo 'done'
+  mail:
+    command: echo 'done'
+  roundcube:
+    command: echo 'done'
+

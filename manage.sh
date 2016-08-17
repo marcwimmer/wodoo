@@ -39,7 +39,7 @@ if [ -z "$1" ]; then
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machines"
-    echo "restore_dump <filename> - restores the given dump as odoo database"
+    echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo "stop - like docker-compose stop"
@@ -130,6 +130,8 @@ backup)
     echo "Dumped to $filepath"
     echo "Backuping files..."
     filename_oefiles=oefiles.tar
+
+    # execute in running container via exec
     docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/$filename_oefiles /opt/oefiles
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
         cp $DIR/dumps/$filename.gz $BACKUPDIR
@@ -138,6 +140,39 @@ backup)
         rm $DIR/dumps/$filename_oefiles
     fi
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
+    ;;
+
+restore)
+    read -p "Deletes database! Continue? Press ctrl+c otherwise"
+    if [[ ! -f $2 ]]; then
+        echo "File $2 not found!"
+        exit -1
+    fi
+    if [[ ! -f $3 ]]; then
+        echo "File $3 not found!"
+        exit -1
+    fi
+    filename_oefiles=oefiles.tar
+    mkdir -p ../restore
+    rm ../restore/* || true
+    cp $2 ../restore/$DBNAME.gz
+    cp $3 ../restore/$filename_oefiles
+
+    echo "Shutting down containers"
+    eval "$dc kill"
+
+    $dc -f config/docker-compose.restoredb.yml up postgres
+
+    $dc -f config/docker-compose.restorefiles.yml up -d odoo  # runs in endless loop; run exec command here, to better compare it to backup) option above
+
+    echo 'Extracting files...'
+    docker exec ${DCPREFIX}_odoo tar vxfz /opt/restore/$filename_oefiles 
+
+    echo 'Shutting down systems'
+    $dc -f config/docker-compose.restorefiles.yml stop odoo
+
+    echo ''
+    echo 'Restart systems by ./manage up -d'
     ;;
 
 springclean)
@@ -210,12 +245,6 @@ restart)
     eval "$dc stop"
     eval "$dc up -d"
     ;;
-restore_dump)
-    read -p "Deletes database! Continue? Press ctrl+c otherwise"
-    cp $2 ./dumps/$DBNAME.gz
-    eval "$dc kill"
-    $dc -f config/docker-compose.restoredb.yml up postgres
-    ;;
 update)
     $dc stop
     $dc -f config/docker-compose.update.yml run asterisk /run.sh
@@ -229,3 +258,7 @@ update)
     exit -1
     ;;
 esac
+
+if [[ -f config/docker-compose.yml ]]; then
+    rm config/docker-compose.yml
+fi

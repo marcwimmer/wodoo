@@ -26,6 +26,7 @@ services:
       - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
     env_file:
       ../customs.env
 
@@ -37,6 +38,7 @@ services:
       - ${DCPREFIX}_default
     volumes:
       - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
       - postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 1

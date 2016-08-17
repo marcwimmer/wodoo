@@ -24,8 +24,10 @@ else
         sleep 5
         dropdb $DBNAME || echo 'database did not exist'
         createdb $DBNAME
-        pg_restore -d $DBNAME /opt/dumps/$DBNAME.gz || {
-            gunzip -c /opt/dumps/$DBNAME.gz | psql $DBNAME
+
+        # try postgres-format or custom gzipped format
+        pg_restore -d $DBNAME /opt/restore/$DBNAME.gz || {
+            gunzip -c /opt/restore/$DBNAME.gz | psql $DBNAME
         }
         psql template1 -c "alter database $DBNAME owner to odoo;"
         echo "Restoring snapshot done!"
