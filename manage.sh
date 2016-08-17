@@ -154,10 +154,10 @@ restore)
         exit -1
     fi
     filename_oefiles=oefiles.tar
-    mkdir -p ../restore
-    rm ../restore/* || true
-    cp $2 ../restore/$DBNAME.gz
-    cp $3 ../restore/$filename_oefiles
+    mkdir -p $DIR/restore
+    rm $DIR/restore/* || true
+    cp $2 $DIR/restore/$DBNAME.gz
+    cp $3 $DIR/restore/$filename_oefiles
 
     echo "Shutting down containers"
     eval "$dc kill"
