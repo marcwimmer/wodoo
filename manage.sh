@@ -37,6 +37,7 @@ if [ -z "$1" ]; then
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
+    echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machines"
     echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
@@ -239,6 +240,10 @@ stop)
 logs)
     cd $DIR
     eval "$dc logs -f $2 $3"
+    ;;
+rm)
+    cd $DIR
+    $dc $@
     ;;
 restart)
     cd $DIR
