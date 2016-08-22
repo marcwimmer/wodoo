@@ -7,6 +7,44 @@ volumes:
   recordingstorage:
 
 services:
+  ovpn_ca:
+    build: ../machines/openvpn/openvpn_ca
+#    ports:
+#        -   "9998:8080"
+    volumes:
+        - ../machines/openvpn/ovpn_data/CA/keys:/root/openvpn-ca/keys
+        - ../machines/openvpn/ovpn_data/CA:/root/transfer
+        - ../machines/openvpn/confs:/root/confs:ro
+        - ../machines/openvpn/ovpn_data/server:/root/server_out
+        - ../machines/openvpn/ovpn_data/client:/root/client_out
+    env_file: ../machines/openvpn/env
+
+  ovpn_server:
+    container_name: ${DCPREFIX}_odoo_ovpn_server
+    build: ../machines/openvpn/openvpn_server
+    ports:
+        - "5566:1194/UDP"
+        - "123:123/UDP"
+    
+    volumes:
+        - ../machines/openvpn/confs:/root/confs:ro
+        - ../machines/openvpn/ovpn_data/CA/keys:/root/openvpn-ca/keys:ro
+        - ../machines/openvpn/ovpn_data/server:/root/server_out
+        - ../machines/openvpn/ovpn_data/client:/root/client_out
+    env_file: ../machines/openvpn/env
+    cap_add:
+        - NET_ADMIN
+
+  ovpn_web:
+    container_name: ${DCPREFIX}_odoo_ovpn_web
+    build: ../machines/openvpn/openvpn_web
+    ports:
+        - "9991:8080"
+    volumes:
+        - ../machines/openvpn/ovpn_data/client:/root/transfer:ro
+    command: python3 -m http.server 8080
+
+
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
