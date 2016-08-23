@@ -46,6 +46,7 @@ if [ -z "$1" ]; then
     echo "stop - like docker-compose stop"
     echo "update <machine name>- fetch latest source code of modules and run update all on odoo; machines are stopped after that"
     echo "up - starts all machines equivalent to service <service> start "
+    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client."
     echo
     exit -1
 fi
@@ -257,7 +258,16 @@ update)
     # using up, so that postgres is also started
     $dc -f config/docker-compose.update.yml up odoo
     $dc stop
-
+   ;;
+make-keys)
+    #create new Certificate Chain
+    echo "Please enter many enters :)"
+    $dc run ovpn_ca /root/tools/clean_keys.sh
+    $dc run ovpn_ca /root/tools/init.sh
+    $dc run ovpn_ca /root/tools/make_server_keys.sh
+    $dc run ovpn_ca /root/tools/make_client_keys.sh asterisk
+    # TODO check name in conf client.key
+    $dc run ovpn_ca /root/tools/make_client_keys.sh CLIENT
     ;;
 *)
     echo "Invalid option $1"

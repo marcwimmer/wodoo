@@ -17,7 +17,7 @@ services:
         - ../machines/openvpn/confs:/root/confs:ro
         - ../machines/openvpn/ovpn_data/server:/root/server_out
         - ../machines/openvpn/ovpn_data/client:/root/client_out
-    env_file: ../machines/openvpn/env
+    env_file: ../customs.env
 
   ovpn_server:
     container_name: ${DCPREFIX}_odoo_ovpn_server
@@ -31,9 +31,10 @@ services:
         - ../machines/openvpn/ovpn_data/CA/keys:/root/openvpn-ca/keys:ro
         - ../machines/openvpn/ovpn_data/server:/root/server_out
         - ../machines/openvpn/ovpn_data/client:/root/client_out
-    env_file: ../machines/openvpn/env
     cap_add:
         - NET_ADMIN
+    env_file: ../customs.env
+
 
   ovpn_web:
     container_name: ${DCPREFIX}_odoo_ovpn_web
