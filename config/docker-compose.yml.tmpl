@@ -156,6 +156,8 @@ services:
       - ../data/ovpn/client:/opt/certs:ro
     env_file:
       ../customs.env
+    cap_add:
+        - NET_ADMIN
           
   asterisk_ari:
     container_name: ${DCPREFIX}_asterisk_ari
