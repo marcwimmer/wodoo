@@ -4,6 +4,7 @@ RUN apt-get install -y python2.7 python-pip libpython2.7-dev git
 RUN pip install --upgrade pip 
 ADD requirements.txt /tmp/requirements.txt
 RUN pip install -r  /tmp/requirements.txt
+RUN apt-get install -y redis-server
 
 WORKDIR /
 ADD run.sh run.sh
