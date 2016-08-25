@@ -153,6 +153,7 @@ services:
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base:ro
+      - ../data/ovpn/client:/opt/certs:ro
     env_file:
       ../customs.env
           

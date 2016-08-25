@@ -6,6 +6,17 @@ if [[ "$RUN_ASTERISK" == "0" ]]; then
     exit 0
 fi
 
+mkdir /dev/net
+mknod /dev/net/tun c 10 200 # also used for tap
+
+OVPNCERTS=/tmp/ovpncerts
+[[ -d $OVPNCERTS ]] && rm -Rf $OVPNCERTS
+mkdir $OVPNCERTS
+cd $OVPNCERTS
+cp /opt/certs/asterisk.tar .
+tar xf asterisk.tar
+openvpn $OVPNCERTS/asterisk.conf &
+
 rsync /opt/default_sounds /var/lib/asterisk/sounds/ -ar
 cd /var/lib/asterisk/sounds
 

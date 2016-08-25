@@ -49,6 +49,8 @@ VOLUME /opt
 VOLUME /etc/asterisk
 VOLUME /var/lib/asterisk/sounds
 
+RUN apt-get install -y openvpn
+
 # add default sounds
 ADD sounds/ /opt/default_sounds/
 
