@@ -188,6 +188,9 @@ services:
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
       - arisourcestorage:/opt/asterisk_ari
+      - ./data/ari/calls:/calls
+      - ./data/ari/uploaded_calls:/uploaded_calls
+      - ./data/ari/record_clicked:/record_clicked
     env_file:
       ../customs.env
 
