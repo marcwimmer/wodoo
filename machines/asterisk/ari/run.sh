@@ -32,6 +32,8 @@ while true; do
 done
 echo "Odoo arrived! connecting..."
 
+/usr/bin/redis-server &
+sleep 2
 cd /opt/asterisk_ari/connector
 python ariconnector.py \
     --username-asterisk $USERNAME_ASTERISK \
