@@ -34,6 +34,8 @@ echo "Odoo arrived! connecting..."
 
 /usr/bin/redis-server &
 sleep 2
+
+echo "Starting ARI Connector...."
 cd /opt/asterisk_ari/connector
 python ariconnector.py \
     --username-asterisk $USERNAME_ASTERISK \
