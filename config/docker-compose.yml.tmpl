@@ -4,6 +4,7 @@ volumes:
   postgresdata:
   filestorage:
   sourcestorage:
+  arisourcestorage:
   recordingstorage:
 
 services:
@@ -186,6 +187,7 @@ services:
       PORT_ASTERISK: 8088
     volumes:
       - recordingstorage:/var/spool/asterisk/recording
+      - arisourcestorage:/opt/asterisk_ari
     env_file:
       ../customs.env
 
