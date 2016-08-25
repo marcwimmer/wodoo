@@ -8,3 +8,5 @@ xlrd
 BeautifulSoup
 swaggerpy
 humanize
+simplejson
+unittest2
