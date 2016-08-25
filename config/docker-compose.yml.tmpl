@@ -61,8 +61,6 @@ services:
       - ${DCPREFIX}_default
     links:
       - postgres:postgres
-      #circular...
-      # - asterisk_ari:asterisk_ari
     volumes:
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
@@ -162,8 +160,8 @@ services:
     cap_add:
         - NET_ADMIN
           
-  asterisk_ari:
-    container_name: ${DCPREFIX}_asterisk_ari
+  ari:
+    container_name: ${DCPREFIX}_ari
     restart: on-failure
     depends_on:
       - asterisk
