@@ -35,6 +35,9 @@ echo "... done, Installation of certificates finished"
 mkdir -p /dev/net
 mknod /dev/net/tun c 10 200  # also used for tap
 
+echo "Starting ntp service"
+service ntp start
+
 # start openvpnserver with not default config
 echo "Starting ovpn Server"
 /usr/sbin/openvpn /root/ovpn/server.conf
