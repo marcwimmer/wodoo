@@ -168,8 +168,8 @@ services:
       - asterisk
       - odoo
     build: ../machines/asterisk/ari
-    expose:
-      - 29925
+    ports:
+      - "29925:29925/TCP"
     networks:
       - ${DCPREFIX}_default
     links:
