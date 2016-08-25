@@ -60,7 +60,11 @@ source /opt/openerp/admin/setup_bash
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     echo "Switching to $CUSTOMS"
-    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS
+    while true;
+    do
+	    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS && break
+	    echo "Pulling failed - retrying until works"
+    done
     if [[ ! -d /opt/openerp/customs/$CUSTOMS ]]; then
         ls -lha /opt/openerp/customs
         echo Customs failed to checkout
