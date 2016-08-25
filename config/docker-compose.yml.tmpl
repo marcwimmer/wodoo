@@ -31,6 +31,8 @@ services:
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
+        - ../config/ovpn/ccd:/root/ccd
+
     cap_add:
         - NET_ADMIN
     env_file: ../customs.env
