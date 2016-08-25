@@ -154,6 +154,9 @@ RUN chmod a+x /run.sh
 ADD run_autosetup.sh /run_autosetup.sh
 RUN chmod a+x /run_autosetup.sh
 
+RUN pip install glob2
+RUN pip install gitpython
+
 
 USER root
 CMD /run.sh
