@@ -1,3 +1,4 @@
 websocket-client==0.34.0
 argparse
 flask
+redis
