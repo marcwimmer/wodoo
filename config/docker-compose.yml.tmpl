@@ -20,11 +20,14 @@ services:
     env_file: ../customs.env
 
   ovpn_server:
-    container_name: ${DCPREFIX}_odoo_ovpn_server
+    container_name: ${DCPREFIX}_ovpn_server
     build: ../machines/openvpn/openvpn_server
+    networks:
+      ${DCPREFIX}_default:
+        ipv4_address: 4.4.4.80
     ports:
         - "5566:1194/UDP"
-        - "123:123/UDP"
+        - "123:123/UDP4
     
     volumes:
         - ../config/ovpn:/root/confs:ro
