@@ -8,7 +8,7 @@ fi
 
 cd /opt
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
-    [ -d asterisk_ari ] && rm -Rf /opt/asterisk_ari
+    rm /opt/asterisk_ari/ -Rf || true
     git clone --depth 1 --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
     echo 'done updating ari'
     exit 0
