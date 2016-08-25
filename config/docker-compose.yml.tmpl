@@ -12,11 +12,11 @@ services:
 #    ports:
 #        -   "9998:8080"
     volumes:
-        - ../machines/openvpn/ovpn_data/CA/keys:/root/openvpn-ca/keys
-        - ../machines/openvpn/ovpn_data/CA:/root/transfer
-        - ../machines/openvpn/confs:/root/confs:ro
-        - ../machines/openvpn/ovpn_data/server:/root/server_out
-        - ../machines/openvpn/ovpn_data/client:/root/client_out
+        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
+        - ../data/ovpn/CA:/root/transfer
+        - ../config/ovpn/:/root/confs:ro
+        - ../data/ovpn/server:/root/server_out
+        - ../data/ovpn/client:/root/client_out
     env_file: ../customs.env
 
   ovpn_server:
@@ -27,10 +27,10 @@ services:
         - "123:123/UDP"
     
     volumes:
-        - ../machines/openvpn/confs:/root/confs:ro
-        - ../machines/openvpn/ovpn_data/CA/keys:/root/openvpn-ca/keys:ro
-        - ../machines/openvpn/ovpn_data/server:/root/server_out
-        - ../machines/openvpn/ovpn_data/client:/root/client_out
+        - ../config/ovpn:/root/confs:ro
+        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
+        - ../data/ovpn/server:/root/server_out
+        - ../data/ovpn/client:/root/client_out
     cap_add:
         - NET_ADMIN
     env_file: ../customs.env
@@ -42,7 +42,7 @@ services:
     ports:
         - "9991:8080"
     volumes:
-        - ../machines/openvpn/ovpn_data/client:/root/transfer:ro
+        - ../data/ovpn/client:/root/transfer:ro
     command: python3 -m http.server 8080
 
 
@@ -95,7 +95,7 @@ services:
     links:
       - odoo:odoo
     ports:
-      - "80:80"
+      - "8069:80"
     env_file:
       ../customs.env
     volumes:

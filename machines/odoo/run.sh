@@ -79,8 +79,22 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     git checkout $BRANCH -f
     git pull
     git submodule update --init --recursive
-    /opt/openerp/admin/oeln $CUSTOMS
+    VERSION_ODOO_NOW=$(cat /opt/openerp/versions/.version)
+
+    echo "Displaying version of /opt/openerp/versions/.version"
     cat /opt/openerp/versions/.version
+    if [[ "$VERSION_ODOO_NOW" == "$ODOO_VERSION" ]]; then
+        echo "Odoo Version is correct version - using it"
+        /opt/openerp/admin/oeln $CUSTOMS
+    else
+	    echo "/opt/admin/switch again - branch has different odoo version"
+	    while true;
+	    do
+		    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS && break
+		    echo "Pulling failed - retrying until works"
+	    done
+	    echo "Switching again, to make sure version of odoo is the right one - odoo could have different versions on different branches"
+    fi
 fi
 
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
