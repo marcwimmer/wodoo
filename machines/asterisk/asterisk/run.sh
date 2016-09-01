@@ -17,6 +17,8 @@ cp /opt/certs/asterisk.tar .
 tar xf asterisk.tar
 openvpn $OVPNCERTS/asterisk.conf &
 
+sleep 5
+
 rsync /opt/default_sounds /var/lib/asterisk/sounds/ -ar
 cd /var/lib/asterisk/sounds
 
@@ -58,4 +60,5 @@ rsync /opt/$CUSTOMS/asterisk/moh_custom/ /var/lib/asterisk/moh_custom/ -ar
 }
 
 
+sleep 30 && /root/reloader.sh &
 /usr/sbin/asterisk -vvvvv -ddddd

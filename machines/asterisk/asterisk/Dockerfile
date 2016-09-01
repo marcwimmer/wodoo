@@ -1,9 +1,6 @@
 FROM ubuntu:14.04
 # if in customizations is an asterisk directory, then enable asterisk, otherwise not
-RUN apt-get update
-RUN apt-get install -y build-essential
-RUN apt-get install -y linux-headers-generic
-RUN apt-get install -y subversion git
+RUN apt-get update && apt-get install -y build-essential linux-headers-generic subversion git openvpn
 
 WORKDIR /root
 RUN mkdir -p .ssh
@@ -13,17 +10,7 @@ ADD id_rsa id_rsa
 ADD ssh_config_repo config
 RUN chmod 600 id_rsa
 
-RUN apt-get install -y build-essential
-RUN apt-get install -y linux-headers-generic
-RUN apt-get install -y subversion git
-RUN apt-get install -y libxml2-dev # Required
-RUN apt-get install -y libncurses5-dev libreadline-dev libreadline6-dev  # Termcap stuff
-RUN apt-get install -y libiksemel-dev # For Google Talk support
-RUN apt-get install -y libvorbis-dev  # For Ogg Vorbis format support
-RUN apt-get install -y libssl-dev # Needed for SIP
-RUN apt-get install -y libspeex-dev libspeexdsp-dev  # For speex codec
-RUN apt-get install -y mpg123 libmpg123-0 sox openssl wget subversion openssh-server # Odds and ends
-RUN apt-get install -y unzip
+RUN apt-get update && apt-get install -y build-essential linux-headers-generic libxml2-dev libncurses5-dev libreadline-dev libreadline6-dev libiksemel-dev libvorbis-dev libssl-dev libspeex-dev libspeexdsp-dev mpg123 libmpg123-0 sox openssl wget subversion openssh-server unzip
 
 WORKDIR /tmp
 ENV ASTERISK_VERSION=13.2.1
@@ -40,18 +27,12 @@ ADD menuselect.makeopts menuselect.makeopts
 RUN make -j4
 RUN make install
 
+ADD reloader.sh /root/reloader.sh
+RUN chmod a+x /root/reloader.sh
+
 #  init jobs
 RUN make config 
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
-
-VOLUME /opt
-VOLUME /etc/asterisk
-VOLUME /var/lib/asterisk/sounds
-
-RUN apt-get install -y openvpn
-
-# add default sounds
-ADD sounds/ /opt/default_sounds/
 
 CMD ["/run.sh"]

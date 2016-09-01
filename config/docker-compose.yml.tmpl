@@ -5,7 +5,6 @@ volumes:
   filestorage:
   sourcestorage:
   arisourcestorage:
-  recordingstorage:
 
 services:
   ovpn_ca:
@@ -153,9 +152,12 @@ services:
     environment:
       CUSTOMS: ${CUSTOMS}
     volumes:
-      - recordingstorage:/var/spool/asterisk/recording
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base:ro
       - ../data/ovpn/client:/opt/certs:ro
+      - ../data/asterisk/moh:/var/lib/asterisk/moh:ro
+      - ../data/asterisk/recordings:/var/spool/asterisk/recording
+      - ../data/asterisk/reloader:/opt/reloader
+      - ../data/asterisk/sounds:/var/lib/asterisk/sounds:ro
     env_file:
       ../customs.env
     cap_add:
@@ -186,11 +188,15 @@ services:
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
     volumes:
-      - recordingstorage:/var/spool/asterisk/recording
       - arisourcestorage:/opt/asterisk_ari
-      - ./data/ari/calls:/calls
-      - ./data/ari/uploaded_calls:/uploaded_calls
-      - ./data/ari/record_clicked:/record_clicked
+      - ../data/ari/calls:/opt/permstore/calls
+      - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
+      - ../data/ari/record_clicked:/opt/permstore/record_clicked
+      - ../data/asterisk/moh:/opt/asterisk/moh
+      - ../data/asterisk/recordings:/opt/asterisk/recording
+      - ../data/asterisk/reloader:/opt/asterisk/reloader
+      - ../data/asterisk/sounds:/opt/asterisk/sounds
+      - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
       ../customs.env
 
