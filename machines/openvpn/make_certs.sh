@@ -14,5 +14,5 @@ docker-compose run ovpnca /root/tools/make_client_keys.sh CLIENT
 docker-compose run ovpn-server /root/tools/pack_server_conf.sh
 docker-compose run ovpn-server /root/tools/pack_client_conf.sh asterisk asterisk.conf tar asterisk.tar
 docker-compose run ovpn-server /root/tools/pack_client_conf.sh CLIENT vpn.cnf tar snom.tar
-docker-compose run ovpn-server /root/tools/pack_client_conf.sh CLIENT softphone.conf notar softphone.conf
+docker-compose run ovpn-server /root/tools/pack_client_conf.sh CLIENT osx_tunnelblick_3.6.7beta02.conf notar osx_tunnelblick_3.6.7beta02.conf
 
