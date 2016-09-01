@@ -15,7 +15,9 @@ services:
         - ../data/ovpn/CA:/root/transfer
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
-    env_file: ../customs.env
+    env_file:
+      - ../customs.env
+      - ../config/ovpn/docker_openvpn_internal.conf
 
   ovpn_server:
     container_name: ${DCPREFIX}_ovpn_server
@@ -33,7 +35,9 @@ services:
         - ../data/ovpn/client:/root/client_out
         - ../config/ovpn/ccd:/root/ccd
 
-    env_file: ../customs.env
+    env_file:
+      - ../customs.env
+      - ../config/ovpn/docker_openvpn_internal.conf
     cap_add:
         - NET_ADMIN
     command: /root/tools/run.sh
