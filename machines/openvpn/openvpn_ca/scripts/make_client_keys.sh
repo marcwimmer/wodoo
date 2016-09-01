@@ -25,7 +25,8 @@ sed -i 's|KEY_ALTNAMES="$KEY_CN"|KEY_ALTNAMES="DNS:${KEY_CN}"|g' /usr/share/easy
 ./build-key --batch $1
 
 echo "Please enter in your phones as openvpn url: "
-echo "http://<your ip>:9991/CLIENT.tar"
+echo "http://$REMOTE:9991/snom.tar"
 echo ""
-echo "And set phone name-server to: <your ip>"
+echo "And set phone registrar and outbound-proxy to $REMOTE"
+echo "Port-forward of 5000 (SIP) and 9991 required!"
 echo ""
