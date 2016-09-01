@@ -13,7 +13,7 @@ openvpn /opt/certs/asterisk.conf &
 
 while true;
 do
-    [[ $(ifconfig | grep -q tap0) ]] && break
+    ifconfig | grep -q tap0 && break
     echo 'Waiting for tap0'
     sleep 1
 done
