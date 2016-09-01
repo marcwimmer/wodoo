@@ -25,10 +25,8 @@ CLIENT_KEY=$KEYFOLDER/$1.key
 CLIENT_CERT=$KEYFOLDER/$1.crt
 CA_CERT=$KEYFOLDER/ca.crt
 TLS_KEY=$KEYFOLDER/ta.key
-if [[ ! -d ./openvpn ]]
-then 
-	mkdir openvpn 
-fi
+
+mkdir openvpn  
 cp $CONF ./openvpn
 sed -i "s|__REMOTE__|${REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${REMOTE_PORT}|g" $FILENAME

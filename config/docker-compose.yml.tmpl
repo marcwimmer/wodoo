@@ -9,12 +9,10 @@ volumes:
 services:
   ovpn_ca:
     build: ../machines/openvpn/openvpn_ca
-#    ports:
-#        -   "9998:8080"
     volumes:
+        - ../config/ovpn/:/root/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
         - ../data/ovpn/CA:/root/transfer
-        - ../config/ovpn/:/root/confs:ro
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
     env_file: ../customs.env
@@ -28,7 +26,6 @@ services:
     ports:
         - "5566:1194/UDP"
         - "123:123/UDP"
-    
     volumes:
         - ../config/ovpn:/root/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
@@ -36,10 +33,11 @@ services:
         - ../data/ovpn/client:/root/client_out
         - ../config/ovpn/ccd:/root/ccd
 
+    env_file: ../customs.env
     cap_add:
         - NET_ADMIN
-    env_file: ../customs.env
-
+    command: /root/tools/run.sh
+    restart: on-failure
 
   ovpn_web:
     container_name: ${DCPREFIX}_odoo_ovpn_web
@@ -49,7 +47,6 @@ services:
     volumes:
         - ../data/ovpn/client:/root/transfer:ro
     command: python3 -m http.server 8080
-
 
   odoo:
     container_name: ${DCPREFIX}_odoo

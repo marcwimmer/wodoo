@@ -14,4 +14,4 @@ touch ${KEYFOLDER}/index.txt
 
 [[ -f keys/serial ]] || echo 1000 > keys/serial
 
-./build-key-server server
+./build-key-server --batch server
