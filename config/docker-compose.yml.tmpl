@@ -51,6 +51,7 @@ services:
     volumes:
         - ../data/ovpn/client:/root/transfer:ro
     command: python3 -m http.server 8080
+    restart: on-failure
 
   odoo:
     container_name: ${DCPREFIX}_odoo
