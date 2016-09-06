@@ -48,6 +48,16 @@ services:
         - ../data/ovpn/client:/root/transfer:ro
     command: python3 -m http.server 8080
 
+  sslproxy:
+    container_name: ${DCPREFIX}_odoo_ssl_proxy
+    build: ../machines/sslproxy
+    
+    ports:
+        - "8068:8068"
+    volumes:
+        - ../config/sslproxy:/opt/conf
+    command: python /opt/src/proxy.py
+
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
