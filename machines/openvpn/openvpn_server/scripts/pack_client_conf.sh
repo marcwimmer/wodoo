@@ -20,6 +20,8 @@ mkdir openvpn
 cp $CONF ./openvpn
 sed -i "s|__REMOTE__|${REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${REMOTE_PORT}|g" $FILENAME
+sed -i "s|__REMOTE_INTERNAL__|${REMOTE_INTERNAL}|g" $FILENAME
+sed -i "s|__REMOTE_INTERNAL_PORT__|${REMOTE_INTERNAL_PORT}|g" $FILENAME
 
 echo "<key>" >> $FILENAME
 cat $CLIENT_KEY >> $FILENAME

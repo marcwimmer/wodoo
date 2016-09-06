@@ -7,7 +7,7 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
-cipher AES-128-CBC
+cipher AES-256-CBC  
 comp-lzo
 verb 3
 key-direction 1
