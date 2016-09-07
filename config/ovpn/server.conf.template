@@ -135,7 +135,7 @@ ifconfig-pool-persist ipp.txt
 # also has a small subnet behind his connecting
 # machine, such as 192.168.40.128/255.255.255.248.
 # First, uncomment out these lines:
-;client-config-dir ccd
+client-config-dir /root/ccd
 ;route 192.168.40.128 255.255.255.248
 # Then create a file ccd/Thelonious with this line:
 #   iroute 192.168.40.128 255.255.255.248
@@ -193,7 +193,7 @@ ifconfig-pool-persist ipp.txt
 # To force clients to only see the server, you
 # will also need to appropriately firewall the
 # server's TUN/TAP interface.
-;client-to-client
+client-to-client
 
 # Uncomment this directive if multiple clients
 # might connect with the same certificate/key

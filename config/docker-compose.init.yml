@@ -8,7 +8,7 @@ services:
     environment:
       DO_INIT: 1
     restart: 'no'
-  asterisk_ari:
+  ari:
     environment:
       DO_INIT: 1
     restart: 'no'

@@ -131,8 +131,8 @@ services:
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
-    restart: on-failure
     build: ../machines/asterisk/asterisk
+    restart: on-failure
     networks:
       - ${DCPREFIX}_default
     expose:
@@ -163,11 +163,11 @@ services:
           
   ari:
     container_name: ${DCPREFIX}_ari
+    build: ../machines/asterisk/ari
     restart: on-failure
     depends_on:
       - asterisk
       - odoo
-    build: ../machines/asterisk/ari
     ports:
       - "29925:29925/TCP"
     networks:
