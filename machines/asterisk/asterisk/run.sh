@@ -9,13 +9,14 @@ fi
 mkdir /dev/net
 mknod /dev/net/tun c 10 200 # also used for tap
 
-OVPNCERTS=/tmp/ovpncerts
-[[ -d $OVPNCERTS ]] && rm -Rf $OVPNCERTS
-mkdir $OVPNCERTS
-cd $OVPNCERTS
-cp /opt/certs/asterisk.tar .
-tar xf asterisk.tar
-openvpn $OVPNCERTS/asterisk.conf &
+openvpn /opt/certs/asterisk.conf &
+
+while true;
+do
+    ifconfig | grep -q tap0 && break
+    echo 'Waiting for tap0'
+    sleep 1
+done
 
 rsync /opt/default_sounds /var/lib/asterisk/sounds/ -ar
 cd /var/lib/asterisk/sounds
@@ -58,4 +59,5 @@ rsync /opt/$CUSTOMS/asterisk/moh_custom/ /var/lib/asterisk/moh_custom/ -ar
 }
 
 
+sleep 30 && /root/reloader.sh &
 /usr/sbin/asterisk -vvvvv -ddddd

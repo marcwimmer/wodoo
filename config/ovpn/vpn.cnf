@@ -7,13 +7,15 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
-cipher AES-128-CBC
+cipher AES-256-CBC  
 comp-lzo
 verb 3
 key-direction 1
 ns-cert-type server
 tls-client
 
+;snom hardware phone requires those entries, although 
+;files are not within tar
 ca ca.crt
 cert client.crt
 key client.key

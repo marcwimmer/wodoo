@@ -3,35 +3,25 @@ set -e
 
 cd /root/openvpn-ca
 
-if [ -z "$1" ] 
+if [[ -z "$1" || -z "$2" || -z "$3" || -z "$4" ]] 
 then
-    echo "Usage: $0 client";
-    exit; 
+    echo "Usage: pack_client_conf.sh keyname configuration-filename tar|notar <finalname>"
+    exit -1;
 fi
 
-if [[ "asterisk" == "$1" ]]
-then
-    CONF=/root/confs/asterisk.conf;
-elif [[ "CLIENT" == "$1" ]]
-then
-    CONF=/root/confs/vpn.cnf;
-else
-    echo "invalid: $1"
-    exit -1
-fi
-
+CONF="/root/confs/$2"
 FILENAME="./openvpn/$(basename $CONF)"
 CLIENT_KEY=$KEYFOLDER/$1.key
 CLIENT_CERT=$KEYFOLDER/$1.crt
 CA_CERT=$KEYFOLDER/ca.crt
 TLS_KEY=$KEYFOLDER/ta.key
-if [[ ! -d ./openvpn ]]
-then 
-	mkdir openvpn 
-fi
+
+mkdir openvpn  
 cp $CONF ./openvpn
 sed -i "s|__REMOTE__|${REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${REMOTE_PORT}|g" $FILENAME
+sed -i "s|__REMOTE_INTERNAL__|${REMOTE_INTERNAL}|g" $FILENAME
+sed -i "s|__REMOTE_INTERNAL_PORT__|${REMOTE_INTERNAL_PORT}|g" $FILENAME
 
 echo "<key>" >> $FILENAME
 cat $CLIENT_KEY >> $FILENAME
@@ -46,8 +36,13 @@ echo "<tls-auth>" >> $FILENAME
 cat $TLS_KEY  >> $FILENAME
 echo "</tls-auth>">>$FILENAME
 
-cd openvpn
-tar -cf ../$1.tar *
-cd ../
-mv $1.tar /root/client_out/
-rm -rf ./openvpn 
+if [[ "$3" == "tar" ]]; then
+    cd openvpn
+    tar -cf ../$4 *
+    cd ..
+    mv $4 /root/client_out/
+else
+    mv $FILENAME /root/client_out/$4
+fi
+
+rm -rf openvpn 

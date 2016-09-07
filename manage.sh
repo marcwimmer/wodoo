@@ -37,6 +37,7 @@ if [ -z "$1" ]; then
     echo "init <machine-name, empty for all>: depending on machine does basic reinitialization; NO DATA DELETED!"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
+    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client."
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
@@ -47,7 +48,6 @@ if [ -z "$1" ]; then
     echo "stop - like docker-compose stop"
     echo "update <machine name>- fetch latest source code of modules and run update all on odoo; machines are stopped after that"
     echo "up - starts all machines equivalent to service <service> start "
-    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client."
     echo
     exit -1
 fi
@@ -262,13 +262,7 @@ update)
    ;;
 make-keys)
     #create new Certificate Chain
-    echo "Please enter many enters :)"
-    $dc run ovpn_ca /root/tools/clean_keys.sh
-    $dc run ovpn_ca /root/tools/init.sh
-    $dc run ovpn_ca /root/tools/make_server_keys.sh
-    $dc run ovpn_ca /root/tools/make_client_keys.sh asterisk
-    # TODO check name in conf client.key
-    $dc run ovpn_ca /root/tools/make_client_keys.sh CLIENT
+    eval $DIR/machines/openvpn/make_certs.sh
     ;;
 *)
     echo "Invalid option $1"

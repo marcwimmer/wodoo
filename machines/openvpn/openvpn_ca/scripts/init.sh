@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 cd $KEYFOLDERROOT
 export EASY_RSA="`pwd`"
 export OPENSSL="openssl"
@@ -10,8 +10,8 @@ export KEY_NAME="odoo-VPN"
 export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
 export KEY_DIR="$EASY_RSA/keys"
 
-./build-ca 
-./build-dh 
+./build-ca  --batch --sign
+./build-dh  --batch --sign
 openvpn --genkey --secret $KEYFOLDER/ta.key 
 mkdir /root/transfer/ca 
 mkdir /root/transfer/ca/pub 
