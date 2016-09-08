@@ -161,6 +161,8 @@ services:
     cap_add:
         - NET_ADMIN
           
+  ari_redis:
+      image: redis
   ari:
     container_name: ${DCPREFIX}_ari
     restart: on-failure

@@ -16,3 +16,5 @@ services:
     command: echo 'done'
   roundcube:
     command: echo 'done'
+  ari_redis:
+    command: echo 'done'
