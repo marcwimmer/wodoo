@@ -37,6 +37,12 @@ if [[ -n "$DO_INIT" ]]; then
     git clone git.mt-software.de:/opt/git/openerp/customs/${CUSTOMS}
     cd /opt/$CUSTOMS
     git checkout deploy -f
+
+    rm /opt/stasis/* -Rf || true
+    cd /opt/stasis
+    git clone git.mt-software.de:/opt/git/modules/asterisk_ari
+    cd asterisk_ari
+    git checkout deploy -f
 fi
 
 # get latest config
@@ -44,7 +50,10 @@ if [[ -n "$DO_UPDATE" || -n "$DO_INIT" ]]; then
     cd /opt/$CUSTOMS
     git pull
     [[ -d asterisk ]] && rsync ./asterisk/etc/ /etc/asterisk/ -ar
-    [[ -d asterisk ]] && rsync ./asterisk/sounds/ /var/lib/asterisk/sounds/ -ar
+
+    echo 'pulling asterisk-ari'
+    cd /opt/stasis/asterisk_ari
+    git pull
     echo "done updating asterisk"
     exit 0
 fi
@@ -58,4 +67,11 @@ rsync /opt/$CUSTOMS/asterisk/moh_custom/ /var/lib/asterisk/moh_custom/ -ar
 }
 
 
-/usr/sbin/asterisk -vvvvv -ddddd
+/usr/sbin/asterisk -vvvvv -ddddd & 
+while true;
+do
+    set -e
+    cd /opt/stasis/asterisk_ari/stasis
+    python stasis.py
+    sleep 2
+done

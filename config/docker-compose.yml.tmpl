@@ -156,6 +156,7 @@ services:
       - recordingstorage:/var/spool/asterisk/recording
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base:ro
       - ../data/ovpn/client:/opt/certs:ro
+      - /opt/stasis
     env_file:
       ../customs.env
     cap_add:
