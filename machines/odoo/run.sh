@@ -62,7 +62,7 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     echo "Switching to $CUSTOMS"
     while true;
     do
-	    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS && break
+	    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH && break
 	    echo "Pulling failed - retrying until works"
     done
     if [[ ! -d /opt/openerp/customs/$CUSTOMS ]]; then
@@ -75,10 +75,6 @@ chown odoo:odoo /opt/openerp/ -R
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     cd /opt/openerp/customs/$CUSTOMS
-    echo "Trying to checkout $BRANCH branch"
-    git checkout $BRANCH -f
-    git pull
-    git submodule update --init --recursive
     VERSION_ODOO_NOW=$(cat /opt/openerp/versions/.version)
 
     echo "Displaying version of /opt/openerp/versions/.version"
