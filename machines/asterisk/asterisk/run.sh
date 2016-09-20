@@ -66,6 +66,7 @@ rsync /opt/$CUSTOMS/asterisk/moh_custom/ /var/lib/asterisk/moh_custom/ -ar
     exit 0
 }
 
+/usr/bin/redis-server &
 
 /usr/sbin/asterisk -vvvvv -ddddd & 
 while true;

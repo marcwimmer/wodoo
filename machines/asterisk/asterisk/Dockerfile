@@ -40,6 +40,12 @@ ADD menuselect.makeopts menuselect.makeopts
 RUN make -j4
 RUN make install
 
+RUN apt-get update && apt-get install -y redis-server
+ADD requirements.txt /root/requirements.txt
+RUN apt-get install -y python-pip
+RUN pip install pip --upgrade
+RUN pip install -r /root/requirements.txt
+
 #  init jobs
 RUN make config 
 ADD run.sh /run.sh

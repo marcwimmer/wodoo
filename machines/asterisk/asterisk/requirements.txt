@@ -1,0 +1,10 @@
+websocket-client==0.34.0
+argparse
+flask
+pudb
+flake8
+humanize
+redis
+requests
+arrow
+pydub
