@@ -8,7 +8,7 @@ services:
     environment:
       DO_INIT: 1
     restart: 'no'
-  asterisk_ari:
+  ari:
     environment:
       DO_INIT: 1
     restart: 'no'
@@ -24,6 +24,9 @@ services:
     command: echo 'done'
   ovpn_web:
     command: echo 'done'
+  sslproxy:
+    command: echo 'done'
+
 
 
 

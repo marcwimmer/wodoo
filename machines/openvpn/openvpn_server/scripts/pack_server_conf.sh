@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 cd $KEYFOLDERROOT
 mkdir server_export
 cp $KEYFOLDER/server.crt ./server_export/

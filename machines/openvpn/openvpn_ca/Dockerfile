@@ -1,7 +1,5 @@
 ###
-#
-# DOCKER File to Create - OVPN CA Certificates for ca,server and client.
-# 
+# DOCKER File to Create - OVPN CA Certificate Stuff.
 ###
 FROM ubuntu:16.04
 MAINTAINER daniel.petermeier@conpower.de
@@ -16,6 +14,5 @@ ADD ./scripts/* /root/tools/
 RUN chmod a+x /root/tools/*.sh
 VOLUME /root/server_out
 VOLUME /root/client_out
-
-CMD echo "Please execute the make-certs.sh to utilize this machine."
-
+#RUN  sh ./init.sh
+CMD echo "Please connect to this virtual machine and execute /root/transfer/init.sh"

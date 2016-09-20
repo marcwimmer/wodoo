@@ -39,7 +39,7 @@ proto udp
 # The hostname/IP and port of the server.
 # You can have multiple remote entries
 # to load balance between the servers.
-remote 192.168.1.53 1194
+remote erp.conpower.de 1194
 ;remote my-server-2 1194
 
 # Choose a random host from the remote
@@ -100,7 +100,7 @@ key client.key
 # your server certificates with the nsCertType
 # field set to "server".  The build-key-server
 # script in the easy-rsa folder will do this.
-;ns-cert-type server
+ns-cert-type server
 
 # If a tls-auth key is used on the server
 # then every client must also have the key.

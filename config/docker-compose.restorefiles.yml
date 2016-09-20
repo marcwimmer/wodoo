@@ -11,7 +11,7 @@ services:
     command: echo 'done'
   asterisk:
     command: echo 'done'
-  asterisk_ari:
+  ari:
     command: echo 'done'
   mail:
     command: echo 'done'
