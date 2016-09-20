@@ -24,6 +24,9 @@ services:
     command: echo 'done'
   ovpn_web:
     command: echo 'done'
+  odoo_ssl_proxy:
+    command: echo 'done'
+
 
 
 

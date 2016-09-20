@@ -23,3 +23,9 @@ services:
   # NO! odoo needs postgres to update...
   #postgres:
   #  command: echo 'done'
+  ovpn_server:
+    command: echo 'done'
+  ovpn_web:
+    command: echo 'done'
+  odoo_ssl_proxy:
+    command: echo 'done'
