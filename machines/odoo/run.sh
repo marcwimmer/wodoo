@@ -59,7 +59,7 @@ fi
 source /opt/openerp/admin/setup_bash
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
-    echo "Switching to $CUSTOMS"
+    echo "Switching to $CUSTOMS on branch $BRANCH"
     while true;
     do
 	    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH && break
