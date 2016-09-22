@@ -216,6 +216,7 @@ services:
   stasis:
       build: ../machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
+      restart: on-failure
       env_file:
         - ../customs.env
         - ../fixed.env
