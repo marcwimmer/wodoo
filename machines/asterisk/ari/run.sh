@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 if [[ "$RUN_ASTERISK" == "0" ]]; then
     echo "asterisk is turned off by customs.env - good bye! :)"
@@ -9,7 +10,7 @@ fi
 cd /opt/src
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     rm /opt/src/asterisk_ari -Rf || true
-    git clone --depth 1 --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
+    git clone --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
     echo 'done updating ari'
     exit 0
 fi
