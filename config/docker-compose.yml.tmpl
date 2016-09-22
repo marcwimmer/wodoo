@@ -234,7 +234,6 @@ services:
     build: ../machines/asterisk/ari
     restart: on-failure
     depends_on:
-      - asterisk
       - asterisk_redis
       - odoo
     ports:
