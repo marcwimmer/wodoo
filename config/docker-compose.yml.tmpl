@@ -256,7 +256,7 @@ services:
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
     volumes:
-      - arisourcestorage:/opt/asterisk_ari
+      - arisourcestorage:/opt/src
       - ../data/ari/calls:/opt/permstore/calls
       - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
       - ../data/ari/record_clicked:/opt/permstore/record_clicked

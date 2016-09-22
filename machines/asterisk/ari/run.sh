@@ -6,9 +6,9 @@ if [[ "$RUN_ASTERISK" == "0" ]]; then
     exit 0
 fi
 
-cd /opt
+cd /opt/src
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
-    rm /opt/asterisk_ari/ -Rf || true
+    rm /opt/src/asterisk_ari -Rf || true
     git clone --depth 1 --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
     echo 'done updating ari'
     exit 0
@@ -33,7 +33,7 @@ done
 echo "Odoo arrived! connecting..."
 
 echo "Starting ARI Connector...."
-cd /opt/asterisk_ari/connector
+cd /opt/src/asterisk_ari/connector
 python ariconnector.py \
     --username-asterisk $USERNAME_ASTERISK \
     --password-asterisk $PASSWORD_ASTERISK \
