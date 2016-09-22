@@ -254,7 +254,7 @@ restart)
     ;;
 update)
     $dc stop
-    $dc -f config/docker-compose.update.yml run asterisk_ari /run.sh
+    $dc -f config/docker-compose.update.yml run ari /run.sh
     # using up, so that postgres is also started
     $dc -f config/docker-compose.update.yml up odoo
     $dc stop
