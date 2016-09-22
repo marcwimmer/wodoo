@@ -33,6 +33,8 @@ while true; do
 done
 echo "Odoo arrived! connecting..."
 
+/usr/sbin/nginx
+
 echo "Starting ARI Connector...."
 cd /opt/src/asterisk_ari/connector
 python ariconnector.py \

@@ -1,8 +1,10 @@
 FROM ubuntu:16.04
-RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev git iputils-ping net-tools ffmpeg netcat sox
+RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev git iputils-ping net-tools ffmpeg netcat sox nginx
 RUN pip install --upgrade pip 
 ADD requirements.txt /tmp/requirements.txt
 RUN pip install -r  /tmp/requirements.txt
+
+ADD nginx-config /etc/nginx/sites-available/default
 
 WORKDIR /
 ADD run.sh run.sh

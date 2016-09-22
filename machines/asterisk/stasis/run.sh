@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+set -x
 
 git config --system user.name $GIT_USER_NAME
 git config --system user.email $GIT_USER_EMAIL
