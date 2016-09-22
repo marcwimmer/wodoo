@@ -1,5 +1,5 @@
 FROM ubuntu:16.04
-RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev git iputils-ping net-tools ffmpeg netcat
+RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev git iputils-ping net-tools ffmpeg netcat sox
 RUN pip install --upgrade pip 
 ADD requirements.txt /tmp/requirements.txt
 RUN pip install -r  /tmp/requirements.txt
