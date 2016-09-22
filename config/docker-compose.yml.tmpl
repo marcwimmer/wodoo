@@ -102,7 +102,6 @@ services:
       - ${DCPREFIX}_default
     links:
       - postgres:postgres
-      - ari:ari
     volumes:
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
@@ -236,6 +235,7 @@ services:
     depends_on:
       - asterisk
       - asterisk_redis
+      - odoo
     ports:
       - "29925:29925/TCP"
     networks:
@@ -243,6 +243,7 @@ services:
     links:
       - asterisk:asterisk
       - asterisk_redis:asterisk_redis
+      - odoo:odoo
     environment:
       ODOO_USER: admin
       ODOO_PASSWORD: 1
