@@ -12,6 +12,7 @@ cd /opt/src
     git clone git.mt-software.de:/git/openerp/modules/asterisk_ari
 }
 
+echo 'fetching latest stasis version from deploy'
 cd asterisk_ari
 git checkout -f deploy
 git pull
