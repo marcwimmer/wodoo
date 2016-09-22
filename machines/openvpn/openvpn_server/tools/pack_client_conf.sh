@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 if [[ -z "$REMOTE" ]]; then
     echo "Please set env \$REMOTE and \$REMOTE_PORT"
