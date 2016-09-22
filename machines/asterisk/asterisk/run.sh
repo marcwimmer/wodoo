@@ -1,6 +1,5 @@
 #!/bin/bash
 set -e
-set -x
 
 # if not then you can debug on ari the stasis
 if [[ "$RUN_STASIS_ON_ASTERISK" == "1" ]]; then
