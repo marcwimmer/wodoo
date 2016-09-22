@@ -24,25 +24,5 @@ do
     ifconfig 
 done
 
-sleep 30 && /root/reloader.sh &
-/usr/sbin/asterisk -vvvv -dddd &
-sleep 5
-
-if [[ "$RUN_STASIS_ON_ASTERISK" == "1" ]]; then
-    cd /opt/asterisk_ari/stasis
-    python stasis.py
-fi
-
-set +x
-while true;
-do
-
-    ps aux|grep -q asterisk || break
-    ps aux|grep -q nginx || break
-    if [[ "$RUN_STASIS_ON_ASTERISK" == "1" ]]; then
-        ps aux|grep -q stasis.py || break
-    fi
-
-    sleep 1
-done
-
+echo "starting reloader in 30 seconds..." && sleep 30 && /root/reloader.sh &
+/usr/sbin/asterisk -vvvv -dddd
