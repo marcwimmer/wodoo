@@ -111,7 +111,8 @@ services:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
     env_file:
-      ../customs.env
+      - ../customs.env
+      - ../fixed.env
 
   postgres:
     container_name: ${DCPREFIX}_postgres
@@ -213,11 +214,12 @@ services:
       build: ../machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
       env_file:
-        ../customs.env
+        - ../customs.env
+        - ../fixed.env
       depends_on:
         - asterisk
       volumes:
-        - stasissourcestorage:/opt/asterisk_ari
+        - stasissourcestorage:/opt/src
   ari:
     container_name: ${DCPREFIX}_ari
     build: ../machines/asterisk/ari
@@ -254,7 +256,8 @@ services:
       - ../data/asterisk/sounds:/opt/asterisk/sounds
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
-      ../customs.env
+      - ../customs.env
+      - ../fixed.env
 
 networks:
   ${DCPREFIX}_default:
