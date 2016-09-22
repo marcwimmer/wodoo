@@ -1,3 +1,4 @@
+set -x
 cd /root/tools
 ./pack_server_conf.sh
 ./pack_client_conf.sh asterisk            internalremote.conf   notar   asterisk.conf
