@@ -54,7 +54,7 @@ services:
     build: ../machines/openvpn/openvpn_server
     networks:
       ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.202
+        ipv4_address: ${REMOTE_INTERNAL}
     ports:
         - "5566:1194/UDP"
         - "123:123/UDP"
