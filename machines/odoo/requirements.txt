@@ -10,3 +10,4 @@ swaggerpy
 humanize
 simplejson
 unittest2
+redis
