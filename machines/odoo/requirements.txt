@@ -11,3 +11,4 @@ humanize
 simplejson
 unittest2
 redis
+gtts
