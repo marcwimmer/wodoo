@@ -36,10 +36,6 @@ echo "Odoo arrived! connecting..."
 echo "Starting ARI Connector...."
 cd /opt/src/asterisk_ari/connector
 python ariconnector.py \
-    --username-asterisk $USERNAME_ASTERISK \
-    --password-asterisk $PASSWORD_ASTERISK \
-    --host-asterisk $HOST_ASTERISK \
-    --port-asterisk $PORT_ASTERISK \
     --odoo-host $ODOO_HOST \
     --odoo-port $ODOO_PORT \
     --odoo-user $ODOO_USER \
