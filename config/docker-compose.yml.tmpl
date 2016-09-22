@@ -26,6 +26,8 @@ services:
       networks:
         ${DCPREFIX}_default:
           ipv4_address: 4.4.4.206
+      ports:
+        - "123:123/UDP"
   ovpnca:
     build: ../machines/openvpn/openvpn_ca
     volumes:
@@ -57,7 +59,6 @@ services:
         ipv4_address: ${REMOTE_INTERNAL}
     ports:
         - "5566:1194/UDP"
-        - "123:123/UDP"
     volumes:
         - ../config/ovpn:/root/input/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
