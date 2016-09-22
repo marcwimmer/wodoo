@@ -180,16 +180,16 @@ services:
     expose:
       # ari
       - 8088
-    ports:
+    #ports:
       # lsof -i -n -P
-      - "8088:8088"
-      - "5060:5060/udp"
-      - "4569:4569/udp"
-      - "2000:2000/tcp"
-      - "4520:4520/udp"
-      - "5000:5000/udp"
+      #- "8088:8088"
+      #- "5060:5060/udp"
+      #- "4569:4569/udp"
+      #- "2000:2000/tcp"
+      #- "4520:4520/udp"
+      #- "5000:5000/udp"
       # must match asterisk rtp.conf
-      - "16384-16404:16384-16404/udp"
+      #- "16384-16404:16384-16404/udp"
       # next one not needed i think
       #- "63535:63535/udp"
     environment:
@@ -197,7 +197,6 @@ services:
     volumes:
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/etc.base:ro
       - ../data/ovpn/client:/opt/certs:ro
-      - /opt/stasis
       - ../data/asterisk/moh:/var/lib/asterisk/moh:ro
       - ../data/asterisk/recordings:/var/spool/asterisk/recording
       - ../data/asterisk/reloader:/opt/reloader

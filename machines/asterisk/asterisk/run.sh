@@ -1,71 +1,48 @@
 #!/bin/bash
-#copy default sounds
+set -e
+set -x
 
-if [[ "$RUN_ASTERISK" == "0" ]]; then
-    echo "asterisk is turned off by customs.env - good bye! :)"
-    exit 0
+# if not then you can debug on ari the stasis
+if [[ "$RUN_STASIS_ON_ASTERISK" == "1" ]]; then
+    # clone latest stasis application from deploy branck
+    [[ -d /opt/asterisk_ari ]] && rm -Rf /opt/asterisk_ari
+    git clone git.mt-software.de:/git/openerp/modules/asterisk_ari --branch deploy --single-branch /opt/asterisk_ari
+    cd /opt/asterisk_ari
+    git checkout deploy -f
 fi
 
+#connect to openvpn server
 mkdir /dev/net
-mknod /dev/net/tun c 10 200 # also used for tap
+mknod /dev/net/tun c 10 200  # also used for tap
 
 openvpn /opt/certs/asterisk.conf &
-
 while true;
 do
     ifconfig | grep -q tap0 && break
-    echo 'Waiting for tap0'
+    sleep 1
+    echo 'waiting for tap device to arrive...'
+    ifconfig 
+done
+
+sleep 30 && /root/reloader.sh &
+/usr/sbin/asterisk -vvvv -dddd &
+sleep 5
+
+if [[ "$RUN_STASIS_ON_ASTERISK" == "1" ]]; then
+    cd /opt/asterisk_ari/stasis
+    python stasis.py
+fi
+
+set +x
+while true;
+do
+
+    ps aux|grep -q asterisk || break
+    ps aux|grep -q nginx || break
+    if [[ "$RUN_STASIS_ON_ASTERISK" == "1" ]]; then
+        ps aux|grep -q stasis.py || break
+    fi
+
     sleep 1
 done
 
-rsync /opt/default_sounds /var/lib/asterisk/sounds/ -ar
-cd /var/lib/asterisk/sounds
-
-function extract_lang() {
-    mkdir -p $1
-    cd $1
-    unzip /opt/default_sounds/$1/core.zip
-    unzip /opt/default_sounds/$1/extra.zip
-}
-extract_lang de
-
-#copy default configuration
-rsync /opt/etc.base/ /etc/asterisk/ -ar
-
-if [[ -n "$DO_INIT" ]]; then
-    cd /opt
-    [[ -d "${CUSTOMS}" ]] && rm -Rf ${CUSTOMS}
-    git clone git.mt-software.de:/opt/git/openerp/customs/${CUSTOMS}
-    cd /opt/$CUSTOMS
-    git checkout deploy -f
-
-    rm /opt/stasis/* -Rf || true
-    cd /opt/stasis
-    git clone git.mt-software.de:/opt/git/modules/asterisk_ari
-    cd asterisk_ari
-    git checkout deploy -f
-fi
-
-# get latest config
-if [[ -n "$DO_UPDATE" || -n "$DO_INIT" ]]; then
-    cd /opt/$CUSTOMS
-    git pull
-    [[ -d asterisk ]] && rsync ./asterisk/etc/ /etc/asterisk/ -ar
-
-    echo 'pulling asterisk-ari'
-    cd /opt/stasis/asterisk_ari
-    git pull
-    echo "done updating asterisk"
-    exit 0
-fi
-
-#copy music on hold
-rsync /opt/$CUSTOMS/asterisk/moh_custom/ /var/lib/asterisk/moh_custom/ -ar
-
-[[ ! -d /opt/$CUSTOMS/asterisk ]] && {
-    echo "No asterisk directory found in customizations - shutting down"
-    exit 0
-}
-
-sleep 30 && /root/reloader.sh &
-/usr/sbin/asterisk -vvvvv -ddddd
