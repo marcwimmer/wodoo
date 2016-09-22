@@ -7,11 +7,32 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
-cipher AES-256-CBC  
+
+;from http://wiki.snom.com/Networking/Virtual_Private_Network_(VPN)
+;DHE-RSA-AES256-SHA
+;DHE-DSS-AES256-SHA
+;AES256-SHA
+;EDH-RSA-DES-CBC3-SHA
+;EDH-DSS-DES-CBC3-SHA
+;DES-CBC3-SHA
+;DHE-RSA-AES128-SHA
+;DHE-DSS-AES128-SHA
+;AES128-SHA
+;RC4-SHA
+;RC4-MD5
+;EDH-RSA-DES-CBC-SHA
+;EDH-DSS-DES-CBC-SHA
+;DES-CBC-SHA
+;EXP-EDH-RSA-DES-CBC-SHA
+;EXP-EDH-DSS-DES-CBC-SHA
+;EXP-DES-CBC-SHA
+;EXP-RC2-CBC-MD5
+;EXP-RC4-MD5
+cipher __CIPHER__
 comp-lzo
 verb 3
 key-direction 1
-ns-cert-type server
+;ns-cert-type server
 tls-client
 
 ;snom hardware phone requires those entries, although 

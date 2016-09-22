@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+if [[ -z "$REMOTE" ]]; then
+    echo "Please set env \$REMOTE and \$REMOTE_PORT"
+    exit -1
+fi
+
 cd /root/openvpn-ca
 
 if [[ -z "$1" || -z "$2" || -z "$3" || -z "$4" ]] 
@@ -21,7 +26,7 @@ cp $CONF ./openvpn
 sed -i "s|__REMOTE__|${REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${REMOTE_PORT}|g" $FILENAME
 sed -i "s|__REMOTE_INTERNAL__|${REMOTE_INTERNAL}|g" $FILENAME
-sed -i "s|__REMOTE_INTERNAL_PORT__|${REMOTE_INTERNAL_PORT}|g" $FILENAME
+sed -i "s|__CIPHER__|${CIPHER}|g" $FILENAME
 
 echo "<key>" >> $FILENAME
 cat $CLIENT_KEY >> $FILENAME

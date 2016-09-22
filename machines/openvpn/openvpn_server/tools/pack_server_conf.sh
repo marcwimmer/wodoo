@@ -7,7 +7,11 @@ cp $KEYFOLDER/server.key ./server_export/server.key
 cp $KEYFOLDER/ca.crt ./server_export/ 
 cp $KEYFOLDER/ta.key ./server_export/ta.key
 cp $KEYFOLDER/dh$KEY_SIZE.pem ./server_export/dh$KEY_SIZE.pem
-cp /root/confs/server.conf ./server_export/
+FILENAME=./server_export/server.conf
+cp /root/confs/server.conf $FILENAME
+
+sed -i "s|__CIPHER__|${CIPHER}|g" $FILENAME
+
 cd server_export
 tar -czf ../server.tgz ./*
 cd ..

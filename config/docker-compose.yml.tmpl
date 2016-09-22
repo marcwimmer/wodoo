@@ -5,9 +5,28 @@ volumes:
   filestorage:
   sourcestorage:
   arisourcestorage:
+  stasissourcestorage:
 
 services:
-  ovpn_ca:
+  dns:
+      build: ../machines/openvpn/openvpn_dns
+      cap_add:
+        - NET_ADMIN
+      volumes:
+        - ../data/ovpn/client:/opt/certs:ro
+      networks:
+        ${DCPREFIX}_default:
+          ipv4_address: 4.4.4.205
+  ntp:
+      build: ../machines/openvpn/openvpn_ntp
+      cap_add:
+        - NET_ADMIN
+      volumes:
+        - ../data/ovpn/client:/opt/certs:ro
+      networks:
+        ${DCPREFIX}_default:
+          ipv4_address: 4.4.4.206
+  ovpnca:
     build: ../machines/openvpn/openvpn_ca
     volumes:
         - ../config/ovpn/:/root/confs:ro
@@ -17,10 +36,21 @@ services:
         - ../data/ovpn/client:/root/client_out
     env_file:
       - ../customs.env
-      - ../config/ovpn/docker_openvpn_internal.conf
 
-  ovpn_server:
-    container_name: ${DCPREFIX}_ovpn_server
+  ovpn_makekeys:
+    container_name: ${DCPREFIX}_ovpn_makekeys
+    build: ../machines/openvpn/openvpn_server
+    volumes:
+        - ../config/ovpn:/root/input/confs:ro
+        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
+        - ../data/ovpn/server:/root/server_out
+        - ../data/ovpn/client:/root/client_out
+        - ../config/ovpn/ccd:/root/ccd
+    env_file:
+      - ../customs.env
+
+  ovpn:
+    container_name: ${DCPREFIX}_ovpn
     build: ../machines/openvpn/openvpn_server
     networks:
       ${DCPREFIX}_default:
@@ -37,7 +67,6 @@ services:
 
     env_file:
       - ../customs.env
-      - ../config/ovpn/docker_openvpn_internal.conf
     cap_add:
         - NET_ADMIN
     command: /root/tools/run.sh
@@ -177,7 +206,17 @@ services:
         - NET_ADMIN
           
   ari_redis:
-      image: redis
+      build: ../machines/asterisk/redis
+      container_name: ${DCPREFIX}_redis
+  stasis:
+      build: ../machines/asterisk/stasis
+      container_name: ${DCPREFIX}_stasis
+      env_file:
+        ../customs.env
+      depends_on:
+        - asterisk
+      volumes:
+        - stasissourcestorage:/opt/asterisk_ari
   ari:
     container_name: ${DCPREFIX}_ari
     build: ../machines/asterisk/ari
@@ -185,6 +224,7 @@ services:
     depends_on:
       - asterisk
       - odoo
+      - ari_redis
     ports:
       - "29925:29925/TCP"
     networks:

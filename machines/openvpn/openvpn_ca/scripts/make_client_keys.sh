@@ -27,6 +27,5 @@ sed -i 's|KEY_ALTNAMES="$KEY_CN"|KEY_ALTNAMES="DNS:${KEY_CN}"|g' /usr/share/easy
 echo "Please enter in your phones as openvpn url: "
 echo "http://$REMOTE:9991/snom.tar"
 echo ""
-echo "And set phone registrar and outbound-proxy to $REMOTE"
-echo "Port-forward of 5000 (SIP) and 9991 required!"
+echo "And set phone registrar and outbound-proxy to 10.28.0.2"
 echo ""
