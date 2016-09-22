@@ -54,16 +54,16 @@ services:
     build: ../machines/openvpn/openvpn_server
     networks:
       ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.80
+        ipv4_address: 4.4.4.202
     ports:
         - "5566:1194/UDP"
         - "123:123/UDP"
     volumes:
-        - ../config/ovpn:/root/confs:ro
+        - ../config/ovpn:/root/input/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
-        - ../config/ovpn/ccd:/root/ccd
+        - ../config/ovpn/ccd:/tmp/ccd:ro
 
     env_file:
       - ../customs.env
@@ -171,6 +171,8 @@ services:
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
+    depends_on:
+      - ovpn
     build: ../machines/asterisk/asterisk
     restart: on-failure
     networks:
