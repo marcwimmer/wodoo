@@ -16,7 +16,7 @@ services:
     command: echo 'done'
   nginx:
     command: echo 'done'
-  ari_redis:
+  asterisk_redis:
     command: echo 'done'
   # NO! odoo needs postgres to update...
   #postgres:
