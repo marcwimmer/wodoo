@@ -5,13 +5,9 @@ services:
       DO_INIT: 1
     restart: 'no'
   asterisk:
-    environment:
-      DO_INIT: 1
-    restart: 'no'
+    command: echo 'done'
   ari:
-    environment:
-      DO_INIT: 1
-    restart: 'no'
+    command: echo 'done'
   postgres:
     command: echo 'done'
   nginx:
@@ -20,11 +16,15 @@ services:
     command: echo 'done'
   roundcube:
     command: echo 'done'
-  ovpn_server:
+  ovpn:
     command: echo 'done'
   ovpn_web:
     command: echo 'done'
   sslproxy:
+    command: echo 'done'
+  ntp:
+    command: echo 'done'
+  dns:
     command: echo 'done'
 
 

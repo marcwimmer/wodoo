@@ -19,4 +19,9 @@ services:
     command: echo 'done'
   ari_redis:
     command: echo 'done'
-
+  ovpn:
+    command: echo 'done'
+  ovpn_web:
+    command: echo 'done'
+  sslproxy:
+    command: echo 'done'
