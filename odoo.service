@@ -6,7 +6,7 @@ Requires=docker.service
 [Service]
 Type=simple
 WorkingDirectory=__PWD__
-ExecStart=./manage.sh up
+ExecStart=/bin/bash manage.sh up
 
 [Install]
 WantedBy=multi-user.target
