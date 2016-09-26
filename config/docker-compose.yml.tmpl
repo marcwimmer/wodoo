@@ -109,7 +109,7 @@ services:
       - /opt/md5
       - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
-      - ${DUMPDIR}:/opt/dumps
+      - ../dumps:/opt/dumps
       - ../restore:/opt/restore
     env_file:
       - ../customs.env
@@ -122,7 +122,7 @@ services:
     networks:
       - ${DCPREFIX}_default
     volumes:
-      - ${DUMPDIR}:/opt/dumps
+      - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - postgresdata:/var/lib/postgresql/data
     environment:
