@@ -13,7 +13,6 @@ if [[ "$1" == "7.0" ]]; then
 elif [[ "$1" == "6.1" ]]; then
     echo "Installing version 6.1 requirements - but nothing set"
     # use same requirements...
-    apt-get install -y libreoffice
     pip install -r /root/requirements_70.txt
 else
     echo "Installing version $1 requirements"
