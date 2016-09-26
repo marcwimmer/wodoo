@@ -109,7 +109,7 @@ services:
       - /opt/md5
       - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
-      - ../dumps:/opt/dumps
+      - ${DUMPDIR}:/opt/dumps
       - ../restore:/opt/restore
     env_file:
       - ../customs.env
@@ -122,7 +122,7 @@ services:
     networks:
       - ${DCPREFIX}_default
     volumes:
-      - ../dumps:/opt/dumps
+      - ${DUMPDIR}:/opt/dumps
       - ../restore:/opt/restore
       - postgresdata:/var/lib/postgresql/data
     environment:
@@ -141,7 +141,7 @@ services:
     links:
       - odoo:odoo
     ports:
-      - "8069:80"
+      - "${ODOO_PORT}:80"
     env_file:
       ../customs.env
     volumes:
