@@ -17,7 +17,7 @@ services:
     command: echo 'done'
   roundcube:
     command: echo 'done'
-  ari_redis:
+  asterisk_redis:
     command: echo 'done'
   ovpn:
     command: echo 'done'

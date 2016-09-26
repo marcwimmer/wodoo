@@ -151,7 +151,7 @@ restore)
         echo "File $2 not found!"
         exit -1
     fi
-    if [[ ! -f $3 ]]; then
+    if [[ -n "$3" && ! -f $3 ]]; then
         echo "File $3 not found!"
         exit -1
     fi
@@ -159,7 +159,9 @@ restore)
     mkdir -p $DIR/restore
     rm $DIR/restore/* || true
     cp $2 $DIR/restore/$DBNAME.gz
-    cp $3 $DIR/restore/$filename_oefiles
+    if [[ -n "$3" && -f "$3" ]]; then
+        cp $3 $DIR/restore/$filename_oefiles
+    fi
 
     echo "Shutting down containers"
     eval "$dc kill"
@@ -168,8 +170,10 @@ restore)
 
     $dc -f config/docker-compose.restorefiles.yml up -d odoo  # runs in endless loop; run exec command here, to better compare it to backup) option above
 
-    echo 'Extracting files...'
-    docker exec ${DCPREFIX}_odoo tar vxfz /opt/restore/$filename_oefiles 
+    if [[ -n "$3" ]]; then
+        echo 'Extracting files...'
+        docker exec ${DCPREFIX}_odoo tar vxfz /opt/restore/$filename_oefiles 
+    fi
 
     echo 'Shutting down systems'
     $dc -f config/docker-compose.restorefiles.yml stop odoo
