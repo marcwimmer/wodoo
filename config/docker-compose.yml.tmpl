@@ -115,8 +115,6 @@ services:
     env_file:
       - ../customs.env
       - ../fixed.env
-    ports:
-      - "18069:80"
 
   postgres:
     container_name: ${DCPREFIX}_postgres
