@@ -111,6 +111,7 @@ services:
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
+      - /opt/permanent
     env_file:
       - ../customs.env
       - ../fixed.env
