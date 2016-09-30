@@ -111,6 +111,7 @@ services:
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
+      - /opt/permanent
     env_file:
       - ../customs.env
       - ../fixed.env
@@ -141,7 +142,7 @@ services:
     links:
       - odoo:odoo
     ports:
-      - "8069:80"
+      - "${ODOO_PORT}:80"
     env_file:
       ../customs.env
     volumes:

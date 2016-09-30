@@ -1,0 +1,13 @@
+[Unit]
+Description=ODOO
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+WorkingDirectory=__PWD__
+ExecStart=/bin/bash manage.sh up
+
+[Install]
+WantedBy=multi-user.target
+

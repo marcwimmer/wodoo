@@ -2,6 +2,7 @@
 set -e
 set -x
 
+
 git config --global user.name $GIT_USER_NAME
 git config --global user.email $GIT_USER_EMAIL
 
@@ -102,6 +103,10 @@ echo "Odoo version is $ODOO_VERSION"
 # use virtualenv installed packages for odoo
 
 if [[ -n "$DO_INIT" ]]; then
+
+    echo "Storing server rc file"
+    cp /home/odoo/.openerp_serverrc /opt/permanent/.openerp_serverrc
+
     echo "Init of odoo done"
     exit 0
 
@@ -120,6 +125,16 @@ fi
 
 # RUN Scripts from autosetup
 /run_autosetup.sh
+
+echo "Recreating server rc file"
+cp /opt/permanent/.openerp_serverrc /home/odoo/.openerp_serverrc 
+chown odoo:odoo /home/odoo/.openerp_serverrc 
+
+echo on version 6.1 start soffice
+if [[ "$ODOO_VERSION" == "6.1" ]]; then
+    sudo -H -u odoo /usr/bin/soffice --nologo --nofirststartwizard --headless --norestore --invisible --accept="socket,host=localhostort=8100,tcpNoDelay=1;urp;" &
+
+fi
 
 echo "Starting up odoo"
 START_LINE="sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME --log-level=debug"

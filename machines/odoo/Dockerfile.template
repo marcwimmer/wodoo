@@ -109,6 +109,7 @@ RUN npm install -g jshint
 ADD install_python_packages.sh /install_python_packages.sh
 RUN pip install --upgrade pip
 RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION} 
+RUN /bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
 
 USER odoo
 WORKDIR /home/odoo
