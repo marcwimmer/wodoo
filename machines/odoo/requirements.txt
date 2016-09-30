@@ -13,3 +13,4 @@ unittest2
 redis
 gtts
 openpyxl
+validate_email
