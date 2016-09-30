@@ -11,7 +11,6 @@ fi
 cd autosetup
 
 for file in *.sh; do
-    chmod a+x $file
     echo "executing $file"
-    eval "./$file"
+    eval "bash ./$file"
 done
