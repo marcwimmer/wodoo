@@ -99,6 +99,10 @@ services:
     restart: on-failure
     depends_on:
       - postgres
+    security_opt:
+      - apparmor:unconfined
+    cap_add:
+      - SYS_ADMIN
     networks:
       - ${DCPREFIX}_default
     links:

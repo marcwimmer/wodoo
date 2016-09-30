@@ -12,3 +12,4 @@ simplejson
 unittest2
 redis
 gtts
+openpyxl
