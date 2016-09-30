@@ -99,6 +99,10 @@ services:
     restart: on-failure
     depends_on:
       - postgres
+    security_opt:
+      - apparmor:unconfined
+    cap_add:
+      - SYS_ADMIN
     networks:
       - ${DCPREFIX}_default
     links:
@@ -112,6 +116,8 @@ services:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - /opt/permanent
+    environment:
+      ODOO_PROD: 1
     env_file:
       - ../customs.env
       - ../fixed.env
