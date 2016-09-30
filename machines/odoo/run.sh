@@ -124,7 +124,7 @@ fi
 # NORMAL STARTUP - start odo here
 
 # RUN Scripts from autosetup
-/run_autosetup.sh
+/run_autosetup.sh $ODOO_PROD
 
 echo "Recreating server rc file"
 cp /opt/permanent/.openerp_serverrc /home/odoo/.openerp_serverrc 
