@@ -21,7 +21,5 @@ RUN chmod 600 id_rsa
 VOLUME /opt
 RUN mkdir -p /opt/finished_calls
 
-# TODO remove installer vimpudate kanns nun selbst; bauen dauerte aber...
-RUN mkdir /root/.vim/UltiSnips
 
 CMD ["/run.sh"]
