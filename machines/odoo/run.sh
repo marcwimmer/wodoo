@@ -97,7 +97,7 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     fi
 
     echo "Not fetching latest submodules - dangerous; just using the versions, that are defined by the commit"
-    cd /opt/openerp/$CUSTOMS
+    cd /opt/openerp/customs/$CUSTOMS
     rm * -Rf
     git checkout -f
     git submodule update --init --recursive
