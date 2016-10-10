@@ -8,12 +8,15 @@ if [[ "$RUN_ASTERISK" == "0" ]]; then
 fi
 
 cd /opt/src
-#if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
-    rm /opt/src/asterisk_ari -Rf || true
-    git clone --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
-    echo 'done updating ari'
-    #exit 0
-#fi
+
+# always updating
+rm /opt/src/asterisk_ari -Rf || true
+git clone --branch deploy git.mt-software.de:/git/openerp/modules/asterisk_ari
+echo 'done updating ari'
+
+if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
+    exit 0
+fi
 
 echo "Waiting for asterisk to arrive at port $PORT_ASTERISK"
 while true; do

@@ -7,9 +7,8 @@ services:
   asterisk:
     command: echo 'done'
   ari:
-    environment:
-      DO_UPDATE: 1
-    restart: 'no'
+    # updated sich bei start
+    command: echo 'done'
   stasis:
     command: echo 'done'
   mail:
