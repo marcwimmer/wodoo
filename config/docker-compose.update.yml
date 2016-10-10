@@ -9,7 +9,7 @@ services:
   ari:
     environment:
       DO_UPDATE: 1
-      restart: 'no'
+    restart: 'no'
   stasis:
     command: echo 'done'
   mail:
