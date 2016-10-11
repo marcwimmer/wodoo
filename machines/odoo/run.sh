@@ -105,6 +105,7 @@ fi
 
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
+/opt/openerp/admin/oeln $CUSTOMS
 
 # use virtualenv installed packages for odoo
 
