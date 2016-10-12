@@ -299,5 +299,5 @@ make-keys)
 esac
 
 if [[ -f config/docker-compose.yml ]]; then
-    rm config/docker-compose.yml
+    rm config/docker-compose.yml || true
 fi
