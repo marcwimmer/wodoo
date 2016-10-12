@@ -62,63 +62,41 @@ fi
 
 source /opt/openerp/admin/setup_bash
 
-if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
-    echo "Switching to $CUSTOMS on branch $BRANCH"
-    while true;
-    do
-            rm /opt/openerp/customs/$CUSTOMS || true
-	    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH && break
-	    echo "Pulling failed - retrying until works"
-    done
-    if [[ ! -d /opt/openerp/customs/$CUSTOMS ]]; then
-        ls -lha /opt/openerp/customs
-        echo Customs failed to checkout
-        exit -1
-    fi
-fi
+mkdir -p /opt/openerp/customs
 chown odoo:odoo /opt/openerp/ -R
 
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
-    cd /opt/openerp/customs/$CUSTOMS
-    VERSION_ODOO_NOW=$(cat /opt/openerp/versions/.version)
 
-    echo "Displaying version of /opt/openerp/versions/.version"
-    cat /opt/openerp/versions/.version
-    if [[ "$VERSION_ODOO_NOW" == "$ODOO_VERSION" ]]; then
-        echo "Odoo Version is correct version - using it"
-        /opt/openerp/admin/oeln $CUSTOMS
-    else
-	    echo "/opt/admin/switch again - branch has different odoo version"
-	    while true;
-	    do
-		    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS && break
-		    echo "Pulling failed - retrying until works"
-	    done
-	    echo "Switching again, to make sure version of odoo is the right one - odoo could have different versions on different branches"
+    if [[ -z "$DO_QUICK" ]]; then
+        rm -Rf /opt/openerp/customs/$CUSTOMS || true
+        while true;
+        do
+            rm /opt/openerp/customs/$CUSTOMS || true
+            HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH && break
+            echo "Pulling failed - retrying until works"
+        done
+        cd /opt/openerp/customs/$CUSTOMS
+        rm * -Rf
+        git checkout $BRANCH -f
     fi
-
-    echo "Not fetching latest submodules - dangerous; just using the versions, that are defined by the commit"
-    cd /opt/openerp/customs/$CUSTOMS
-    rm * -Rf
-    git checkout -f
     git submodule update --init --recursive
+    /opt/openerp/admin/oeln $CUSTOMS
 fi
 
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
-/opt/openerp/admin/oeln $CUSTOMS
 
 # use virtualenv installed packages for odoo
 
+echo "Storing server rc file"
+cp /home/odoo/.openerp_serverrc /opt/permanent/.openerp_serverrc
+
 if [[ -n "$DO_INIT" ]]; then
-
-    echo "Storing server rc file"
-    cp /home/odoo/.openerp_serverrc /opt/permanent/.openerp_serverrc
-
-    echo "Init of odoo done"
+    echo 'init done'
     exit 0
+fi
 
-elif [[ -n "$DO_UPDATE" ]]; then
+if [[ -n "$DO_UPDATE" ]]; then
 
     if [[ -z "$DO_QUICK" ]]; then
         sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
@@ -134,7 +112,9 @@ fi
 # NORMAL STARTUP - start odo here
 
 # RUN Scripts from autosetup
+echo "Executing autosetup..."
 /run_autosetup.sh $ODOO_PROD
+echo "Done autosetup"
 
 echo "Recreating server rc file"
 cp /opt/permanent/.openerp_serverrc /home/odoo/.openerp_serverrc 
