@@ -66,6 +66,7 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
     echo "Switching to $CUSTOMS on branch $BRANCH"
     while true;
     do
+            rm /opt/openerp/customs/$CUSTOMS || true
 	    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH && break
 	    echo "Pulling failed - retrying until works"
     done
@@ -105,6 +106,7 @@ fi
 
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
+/opt/openerp/admin/oeln $CUSTOMS
 
 # use virtualenv installed packages for odoo
 
