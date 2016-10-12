@@ -118,13 +118,15 @@ if [[ -n "$DO_INIT" ]]; then
 
 elif [[ -n "$DO_UPDATE" ]]; then
 
-    sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
-        -d $DBNAME \
-        -u all \
-        --stop-after-init \
-        --log-level=debug || echo 'odoo update executed'
-    echo "Update of odoo done"
-    exit 0
+    if [[ -z "$DO_QUICK" ]]; then
+        sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
+            -d $DBNAME \
+            -u all \
+            --stop-after-init \
+            --log-level=debug || echo 'odoo update executed'
+        echo "Update of odoo done"
+        exit 0
+    fi
 fi
 
 # NORMAL STARTUP - start odo here

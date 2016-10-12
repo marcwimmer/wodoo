@@ -24,6 +24,9 @@ if [ -z "$1" ]; then
     echo
     echo Update:
     echo './manage.sh update'
+    echo 
+    echo "Quick Update (fetch source code, restart, no db update)":
+    echo './manage.sh quickupdate'
     echo
     echo No data is lost at init! Wether oefiles nor database.
     echo
@@ -46,6 +49,7 @@ if [ -z "$1" ]; then
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo "stop - like docker-compose stop"
+    echo "quickupdate <machine name>- fetch latest source, oeln, restart (no dbupdate)"
     echo "update <machine name>- fetch latest source code of modules and run update all on odoo; machines are stopped after that"
     echo "up - starts all machines equivalent to service <service> start "
     echo
@@ -260,7 +264,15 @@ update)
     $dc stop
     # using up, so that postgres is also started
     $dc -f config/docker-compose.update.yml up odoo
+    eval "$dc kill odoo"
+    eval "$dc up -d"
+   ;;
+quickupdate)
     $dc stop
+    # using up, so that postgres is also started
+    $dc -f config/docker-compose.quickupdate.yml up odoo
+    eval "$dc kill odoo"
+    eval "$dc up -d"
    ;;
 make-keys)
     #create new Certificate Chain
