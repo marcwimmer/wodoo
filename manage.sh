@@ -268,7 +268,7 @@ update)
     eval "$dc up -d"
    ;;
 quickupdate)
-    $dc stop
+    $dc kill odoo
     # using up, so that postgres is also started
     $dc -f config/docker-compose.quickupdate.yml up odoo
     eval "$dc kill odoo"
