@@ -1,7 +1,10 @@
 #!/bin/bash
 set -ex
 
+echo "Correting directory permissions..."
+chown postmaster:postmaster /home/postmaster/Maildir
 echo "Starting..."
+
 
 echo "Compiling config files"
 newaliases
