@@ -21,12 +21,4 @@ RUN chmod a+x /test.sh
 ADD run /run.sh
 RUN chmod a+x /run.sh
 
-
-# SMTP ports
-EXPOSE  25
-
-# IMAP ports
-EXPOSE  143
-
-
 CMD ["/run.sh"]
