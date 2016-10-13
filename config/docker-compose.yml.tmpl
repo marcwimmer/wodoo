@@ -162,6 +162,8 @@ services:
       - odoo
     networks:
       - ${DCPREFIX}_default
+    ports:
+      - "25:25"
     expose:
       - "25"
       - "143"
@@ -175,8 +177,8 @@ services:
       - ${DCPREFIX}_default
     links:
       - mail:mail
-    #ports:
-    #  - "8000:80"
+    ports:
+      - "8000:80"
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
