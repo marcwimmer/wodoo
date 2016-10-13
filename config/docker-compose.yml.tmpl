@@ -6,6 +6,7 @@ volumes:
   sourcestorage:
   arisourcestorage:
   stasissourcestorage:
+  mailstorage:
 
 services:
   dns:
@@ -162,6 +163,8 @@ services:
       - odoo
     networks:
       - ${DCPREFIX}_default
+    volumes:
+      - mailstorage:/home/postmaster/Maildir
     expose:
       - "25"
       - "143"
