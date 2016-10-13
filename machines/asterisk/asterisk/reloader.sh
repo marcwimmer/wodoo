@@ -1,5 +1,4 @@
 #!/bin/bash
-set -x
 
 echo 'Starting script that watches for /opt/reload file; if exists then reloads asterisk config and deletes file'
 
