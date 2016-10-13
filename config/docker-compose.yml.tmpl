@@ -6,6 +6,7 @@ volumes:
   sourcestorage:
   arisourcestorage:
   stasissourcestorage:
+  mailstorage:
 
 services:
   dns:
@@ -164,6 +165,8 @@ services:
       - ${DCPREFIX}_default
     ports:
       - "25:25"
+    volumes:
+      - mailstorage:/home/postmaster/Maildir
     expose:
       - "25"
       - "143"
