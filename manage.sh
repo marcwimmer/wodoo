@@ -269,9 +269,9 @@ update)
    ;;
 quickupdate)
     # using up, so that postgres is also started
-    $dc -f config/docker-compose.quickupdate.yml run odoo bash -c "cd /opt/openerp/customs/$CUSTOMS && git pull && git submodule update --init && /opt/openerp/admin/oeln $CUSTOMS"
-    $dc -f config/docker-compose.quickupdate.yml kill odoo
-    $dc -f config/docker-compose.quickupdate.yml up -d odoo
+    $dc run odoo bash -c "cd /opt/openerp/customs/$CUSTOMS && git pull && git submodule update --init && /opt/openerp/admin/oeln $CUSTOMS"
+    $dc kill odoo
+    $dc up -d odoo
    ;;
 make-keys)
     #create new Certificate Chain
