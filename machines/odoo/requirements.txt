@@ -15,3 +15,4 @@ gtts
 openpyxl
 validate_email
 werkzeug==0.9.4
+pymssql
