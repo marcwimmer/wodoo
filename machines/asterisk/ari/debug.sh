@@ -7,6 +7,8 @@ cd /opt/src
 pip install pudb
 /usr/sbin/nginx
 
+pkill -9 -f ariconnector
+
 echo "Starting ARI Connector...."
 cd /opt/src/asterisk_ari/connector
 python ariconnector.py \

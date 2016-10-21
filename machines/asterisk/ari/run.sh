@@ -46,3 +46,9 @@ python ariconnector.py \
     --odoo-user $ODOO_USER \
     --odoo-password $ODOO_PASSWORD \
     --odoo-db $ODOO_DB
+
+while true;
+do
+    echo 'keep alive'
+    sleep 10
+done
