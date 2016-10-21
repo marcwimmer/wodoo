@@ -4,9 +4,6 @@ set -x
 
 cd /opt/src
 
-pip install pudb
-/usr/sbin/nginx
-
 pkill -9 -f ariconnector
 
 echo "Starting ARI Connector...."
