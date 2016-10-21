@@ -23,7 +23,7 @@ if [ -z "$1" ]; then
     echo './manage.sh fetch && ./manage.sh init && ./manage.sh setup-startup'
     echo
     echo Update:
-    echo './manage.sh update'
+    echo './manage.sh update <module>'
     echo 
     echo "Quick Update (fetch source code, restart, no db update)":
     echo './manage.sh quickupdate'
@@ -263,6 +263,10 @@ restart)
 update)
     $dc stop
     # using up, so that postgres is also started
+    export UPDATE_MODULE=$2
+    if [[ -z "$2" ]]; then
+        export UPDATE_MODULE=all
+    fi
     $dc -f config/docker-compose.update.yml up odoo
     eval "$dc kill odoo"
     eval "$dc up -d"

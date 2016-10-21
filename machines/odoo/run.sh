@@ -101,7 +101,7 @@ if [[ -n "$DO_UPDATE" ]]; then
     if [[ -z "$DO_QUICK" ]]; then
         sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
             -d $DBNAME \
-            -u all \
+            -u $UPDATE_MODULE \
             --stop-after-init \
             --log-level=debug || echo 'odoo update executed'
         echo "Update of odoo done"

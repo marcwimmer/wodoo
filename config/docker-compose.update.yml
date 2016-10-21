@@ -3,6 +3,7 @@ services:
   odoo:
     environment:
       DO_UPDATE: 1
+      UPDATE_MODULE: $UPDATE_MODULE
     restart: 'no'
   asterisk:
     command: echo 'done'
