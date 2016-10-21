@@ -3,6 +3,7 @@ RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev g
 RUN pip install --upgrade pip 
 ADD requirements.txt /tmp/requirements.txt
 RUN pip install -r  /tmp/requirements.txt
+RUN apt-get install -y vim
 
 ADD nginx-config /etc/nginx/sites-available/default
 
@@ -23,7 +24,6 @@ RUN chmod 600 id_rsa
 VOLUME /opt
 RUN mkdir -p /opt/finished_calls
 
-RUN apt-get install -y vim
 
 
 CMD ["/run.sh"]
