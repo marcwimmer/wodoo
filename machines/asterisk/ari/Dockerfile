@@ -9,6 +9,8 @@ ADD nginx-config /etc/nginx/sites-available/default
 WORKDIR /
 ADD run.sh run.sh
 RUN chmod a+x run.sh
+ADD debug.sh debug.sh
+RUN chmod a+x debug.sh
 
 WORKDIR /root
 RUN mkdir -p .ssh
