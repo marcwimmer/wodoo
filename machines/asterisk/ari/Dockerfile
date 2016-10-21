@@ -21,5 +21,7 @@ RUN chmod 600 id_rsa
 VOLUME /opt
 RUN mkdir -p /opt/finished_calls
 
+RUN apt-get install -y vim
+
 
 CMD ["/run.sh"]
