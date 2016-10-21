@@ -45,7 +45,7 @@ python ariconnector.py \
     --odoo-port $ODOO_PORT \
     --odoo-user $ODOO_USER \
     --odoo-password $ODOO_PASSWORD \
-    --odoo-db $ODOO_DB
+    --odoo-db $ODOO_DB &
 
 while true;
 do
