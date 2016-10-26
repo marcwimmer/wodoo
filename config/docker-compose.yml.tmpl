@@ -236,6 +236,7 @@ services:
         - asterisk
       volumes:
         - stasissourcestorage:/opt/src
+        - ../data/asterisk/reloader:/opt/reloader
       networks:
         - ${DCPREFIX}_default
       links:
