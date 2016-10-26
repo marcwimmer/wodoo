@@ -1,0 +1,3 @@
+;route __CLIENT_NET__ __CLIENT_NETMASK__
+;push "dhcp-option DNS 10.28.0.3"
+ifconfig-push 10.28.0.53 255.255.255.0
