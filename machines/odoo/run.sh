@@ -127,8 +127,8 @@ if [[ "$ODOO_VERSION" == "6.1" ]]; then
 fi
 
 echo "Starting up odoo"
-START_LINE="sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME --log-level=debug"
-eval $START_LINE
+sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME --log-level=debug &
+sleep 3
 
 while true;
 do
@@ -143,6 +143,12 @@ do
         rm /tmp/start
         eval $START_LINE &
     fi
+
+    pgrep -f openerp-server || {
+        [[ -f /tmp/debugging ]] || {
+            echo 'exiting - no odoo here...'
+        }
+    }
 
 
     sleep 1
