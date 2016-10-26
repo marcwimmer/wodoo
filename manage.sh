@@ -278,22 +278,8 @@ quickupdate)
     $dc up -d odoo
    ;;
 make-keys)
-    #create new Certificate Chain
-    $dc run ovpnca /root/tools/clean_keys.sh
-    $dc run ovpnca /root/tools/init.sh
-    $dc run ovpnca /root/tools/make_server_keys.sh
-
-    # create client keys (correspnds with name in ccd)
-    $dc run ovpnca /root/tools/make_client_keys.sh asterisk
-    $dc run ovpnca /root/tools/make_client_keys.sh dns
-    $dc run ovpnca /root/tools/make_client_keys.sh ntp
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route
-    $dc run ovpnca /root/tools/make_client_keys.sh client
-    $dc run ovpnca /root/tools/make_client_keys.sh server-as-client
-
-    # changing the openvpn config and just restarting also updates
-    # configurations for phones and so on
-    $dc run ovpn_makekeys /root/tools/run.sh JUSTPACK
+    export dc=$dc
+    bash $DIR/config/ovpn/pack.sh keys
     ;;
 *)
     echo "Invalid option $1"
