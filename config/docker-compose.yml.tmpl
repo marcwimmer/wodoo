@@ -159,17 +159,15 @@ services:
   mail:
     container_name: ${DCPREFIX}_mail
     build: ../machines/mail
-    depends_on:
-      - odoo
     networks:
       - ${DCPREFIX}_default
     ports:
       - "25:25"
     volumes:
       - mailstorage:/home/postmaster/Maildir
-    expose:
-      - "25"
-      - "143"
+    ports:
+      - "25:25"
+      - "143:143"
 
   roundcube:
     container_name: ${DCPREFIX}_roundcube
