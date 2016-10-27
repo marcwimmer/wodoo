@@ -127,7 +127,7 @@ if [[ "$ODOO_VERSION" == "6.1" ]]; then
 fi
 
 echo "Starting up odoo"
-sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME --log-level=debug &
+sudo -H -u odoo /opt/openerp/versions/server/openerp-gevent -d $DBNAME --log-level=debug &
 sleep 3
 
 while true;
