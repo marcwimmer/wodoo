@@ -40,6 +40,7 @@ if [ -z "$1" ]; then
     echo "init <machine-name, empty for all>: depending on machine does basic reinitialization; NO DATA DELETED!"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
+    echo "logall - shows log til now; use parameter to specify machine"
     echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client."
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rm - command"
@@ -248,6 +249,10 @@ stop)
     eval "$dc stop $2 $3 $4"
     ;;
 logs)
+    cd $DIR
+    eval "$dc logs --tail=400 -f $2 $3"
+    ;;
+logall)
     cd $DIR
     eval "$dc logs -f $2 $3"
     ;;
