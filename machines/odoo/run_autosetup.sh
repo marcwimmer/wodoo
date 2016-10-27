@@ -4,6 +4,8 @@
 # You can do setup there, like deploying ssh keys and so on
 set -e
 
+ODOO_PROD="$1"
+
 cd /opt/openerp/customs/$CUSTOMS
 if [[ ! -d autosetup ]]; then
     exit 0
@@ -11,7 +13,6 @@ fi
 cd autosetup
 
 for file in *.sh; do
-    chmod a+x $file
     echo "executing $file"
-    eval "./$file"
+    eval "bash ./$file $ODOO_PROD"
 done

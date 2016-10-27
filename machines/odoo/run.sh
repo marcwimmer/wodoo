@@ -95,6 +95,11 @@ if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
 	    done
 	    echo "Switching again, to make sure version of odoo is the right one - odoo could have different versions on different branches"
     fi
+
+    echo "Not fetching latest submodules - dangerous; just using the versions, that are defined by the commit"
+    cd /opt/openerp/$CUSTOMS
+    git checkout -f
+    git submodule update --init --recursive
 fi
 
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
@@ -124,7 +129,7 @@ fi
 # NORMAL STARTUP - start odo here
 
 # RUN Scripts from autosetup
-/run_autosetup.sh
+/run_autosetup.sh $ODOO_PROD
 
 echo "Recreating server rc file"
 cp /opt/permanent/.openerp_serverrc /home/odoo/.openerp_serverrc 

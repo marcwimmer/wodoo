@@ -32,7 +32,7 @@ cipher __CIPHER__
 comp-lzo
 verb 3
 key-direction 1
-;ns-cert-type server
+ns-cert-type server
 tls-client
 
 ;snom hardware phone requires those entries, although 

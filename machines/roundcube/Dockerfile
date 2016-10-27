@@ -10,9 +10,9 @@ RUN apt-get install -y --no-install-recommends \
     php-net-smtp php-mail-mime
 WORKDIR /root
 # when roundcube grows older, change version in the download link, but also in the 'mv' command
-RUN wget http://downloads.sourceforge.net/project/roundcubemail/roundcubemail/1.1.2/roundcubemail-1.1.2.tar.gz -O - | tar xz
 RUN rm -fr /usr/share/nginx/www 
-RUN mv /root/roundcubemail-1.1.2 /usr/share/nginx/www
+RUN wget --no-check-certificate http://github.com/roundcube/roundcubemail/archive/release-1.2.tar.gz -O - | tar xz
+RUN mv /root/roundcubemail-release-1.2 /usr/share/nginx/www
 #RUN rm -fr /usr/share/nginx/www/installer ;\
 
 RUN pear install Mail_Mime Net_SMTP Net_Socket Net_IDNA2 Auth_SASL Net_Sieve Crypt_GPG 
