@@ -147,9 +147,9 @@ do
     pgrep -f openerp-server || {
         [[ -f /tmp/debugging ]] || {
             echo 'exiting - no odoo here...'
+            exit -1
         }
     }
-
 
     sleep 1
 
