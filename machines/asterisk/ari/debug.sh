@@ -3,6 +3,14 @@ set -x
 
 cd /opt/src
 
+run apt-get install -y libruby wget
+
+cd /tmp
+wget http://vim.itewimmer.de/marcvim_installer_ubuntu-16.04.sh
+chmod a+x marcvim_installer_ubuntu-16.04.sh
+./marcvim_installer_ubuntu-16.04.sh
+pkill -9 -f vimupdate
+
 pkill -9 -f ariconnector
 
 echo "Starting ARI Connector...."
