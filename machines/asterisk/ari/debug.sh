@@ -3,12 +3,12 @@ set -x
 
 cd /opt/src
 
-apt-get install -y libruby wget
 
 # install marcvim
 cd /tmp
 VIM=marcvim_installer_ubuntu-16.04.sh
 if [[ ! -f $VIM ]]; then
+    apt-get install -y libruby wget
     wget http://vim.itewimmer.de/$VIM
     chmod a+x $VIM
     ./$VIM
