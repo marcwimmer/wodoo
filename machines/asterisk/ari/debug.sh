@@ -5,6 +5,7 @@ cd /opt/src
 
 
 # install marcvim
+cp ~/.bashrc /tmp
 cd /tmp
 VIM=marcvim_installer_ubuntu-16.04.sh
 if [[ ! -f $VIM ]]; then
@@ -13,8 +14,8 @@ if [[ ! -f $VIM ]]; then
     chmod a+x $VIM
     ./$VIM
 fi
-
 pkill -9 -f vimupdate
+cp /tmp/.bashrc /root
 
 pkill -9 -f ariconnector
 
