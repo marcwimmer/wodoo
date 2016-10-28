@@ -7,3 +7,4 @@ requests
 arrow
 pydub
 pudb
+phonenumbers
