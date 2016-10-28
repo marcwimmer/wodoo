@@ -1,7 +1,9 @@
 #!/bin/bash
 touch /tmp/debugging
 
+# install marcvim
 cd /tmp
+apt-get install -y libruby wget
 VIM=marcvim_installer_ubuntu-16.04.sh
 if [[ ! -f $VIM ]]; then
     wget http://vim.itewimmer.de/$VIM
