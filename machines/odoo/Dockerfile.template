@@ -23,7 +23,6 @@ RUN apt-get install -y --no-install-recommends \
 			node-clean-css \
             python-pyinotify \
             python-renderpm \
-            python-support \
 			libpython-dev \
 			libpq-dev \
 			libjpeg-dev \
