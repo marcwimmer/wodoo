@@ -256,8 +256,8 @@ services:
       - asterisk_redis:asterisk_redis
       - odoo:odoo
     environment:
-      ODOO_USER: admin
-      ODOO_PASSWORD: 1
+      ODOO_USER: $ASTERISK_ODOO_USER
+      ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD
       ODOO_DB: $DBNAME
       ODOO_PORT: 8072
       ODOO_HOST: odoo
