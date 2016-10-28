@@ -144,7 +144,7 @@ do
         eval $START_LINE &
     fi
 
-    pgrep -f openerp-server || {
+    pgrep -f openerp || {
         [[ -f /tmp/debugging ]] || {
             echo 'exiting - no odoo here...'
             exit -1
