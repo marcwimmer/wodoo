@@ -266,7 +266,7 @@ restart)
     eval "$dc up -d"
     ;;
 update)
-    $dc stop
+    $dc stop odoo
     # using up, so that postgres is also started
     export UPDATE_MODULE=$2
     if [[ -z "$2" ]]; then
