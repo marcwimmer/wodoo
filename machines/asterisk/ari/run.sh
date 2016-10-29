@@ -51,7 +51,7 @@ set +x
 while true;
 do
     pgrep -f ariconnector.py > /dev/null || {
-        [[ ! -f /tmp/debugg ]] && {
+        [[ ! -f /tmp/debugging ]] && {
             echo 'Ari seems dead and no debugging'
             exit -1
         }
