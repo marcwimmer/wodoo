@@ -24,6 +24,7 @@ RUN chmod 600 id_rsa
 VOLUME /opt
 RUN mkdir -p /opt/finished_calls
 
+RUN echo "cd /opt/src/asterisk_ari" >> /root/.bashrc
 
 
 CMD ["/run.sh"]
