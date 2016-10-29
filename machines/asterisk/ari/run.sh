@@ -47,8 +47,15 @@ python ariconnector.py \
     --odoo-password $ODOO_PASSWORD \
     --odoo-db $ODOO_DB &
 
+set +x
 while true;
 do
     echo 'keep alive'
-    sleep 10
+    pgrep -f ariconnector.py || {
+        [[ ! -f /tmp/debugg ]] && {
+            echo 'Ari seems dead and no debugging'
+            exit -1
+        }
+    }
+    sleep 1
 done
