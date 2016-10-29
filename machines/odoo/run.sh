@@ -131,10 +131,9 @@ sudo -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config
 #sudo -H -u odoo /opt/openerp/versions/server/openerp-gevent -c /home/odoo/config_gevent  -d $DBNAME --log-level=debug &
 sleep 3
 
+set +x
 while true;
 do
-    echo heartbeat
-
     if [[ -f /tmp/stop ]]; then
         pkill -9 -f openerp-server || true
         rm /tmp/stop
@@ -145,7 +144,7 @@ do
         eval $START_LINE &
     fi
 
-    pgrep -f openerp || {
+    pgrep -f openerp > /dev/null || {
         [[ -f /tmp/debugging ]] || {
             echo 'exiting - no odoo here...'
             exit -1
