@@ -50,8 +50,7 @@ python ariconnector.py \
 set +x
 while true;
 do
-    echo 'keep alive'
-    pgrep -f ariconnector.py || {
+    pgrep -f ariconnector.py > /dev/null || {
         [[ ! -f /tmp/debugg ]] && {
             echo 'Ari seems dead and no debugging'
             exit -1
