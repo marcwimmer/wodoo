@@ -36,16 +36,9 @@ while true; do
 done
 echo "Odoo arrived! connecting..."
 
-/usr/sbin/nginx
+pgre -f nginx || /usr/sbin/nginx
 
-echo "Starting ARI Connector...."
-cd /opt/src/asterisk_ari/connector
-python ariconnector.py \
-    --odoo-host $ODOO_HOST \
-    --odoo-port $ODOO_PORT \
-    --odoo-user $ODOO_USER \
-    --odoo-password $ODOO_PASSWORD \
-    --odoo-db $ODOO_DB &
+/runprod.sh
 
 set +x
 while true;

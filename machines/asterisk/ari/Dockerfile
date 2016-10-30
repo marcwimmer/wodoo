@@ -12,6 +12,8 @@ ADD run.sh run.sh
 RUN chmod a+x run.sh
 ADD debug.sh debug.sh
 RUN chmod a+x debug.sh
+ADD runprod.sh runprod.sh
+RUN chmod a+x runprod.sh
 
 WORKDIR /root
 RUN mkdir -p .ssh
