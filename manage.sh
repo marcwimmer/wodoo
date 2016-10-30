@@ -46,7 +46,7 @@ if [ -z "$1" ]; then
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
-    echo "restart - restarts docker-machines"
+    echo "restart - restarts docker-machine(s) - parameter name"
     echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
@@ -263,8 +263,8 @@ rm)
     ;;
 restart)
     cd $DIR
-    eval "$dc stop"
-    eval "$dc up -d"
+    eval "$dc stop $2"
+    eval "$dc up -d $2"
     ;;
 update)
     $dc stop odoo
@@ -281,7 +281,10 @@ quickupdate)
     # using up, so that postgres is also started
     $dc run odoo bash -c "cd /opt/openerp/customs/$CUSTOMS && git pull && git submodule update --init && /opt/openerp/admin/oeln $CUSTOMS"
     if [[ -n "$2" ]]; then 
-        $dc run odoo bash -c "sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -u $2 --log-level=info --stop-after-init"
+        set -x
+        echo 'fixxen!'
+	exit -1
+        #$dc run odoo bash -c "sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -u $2 --log-level=info --stop-after-init"
     fi
     $dc kill odoo
     $dc up -d odoo
