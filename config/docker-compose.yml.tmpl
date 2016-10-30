@@ -232,6 +232,7 @@ services:
         - ../fixed.env
       depends_on:
         - asterisk
+        - asterisk_redis
       volumes:
         - stasissourcestorage:/opt/src
         - ../data/asterisk/reloader:/opt/reloader
