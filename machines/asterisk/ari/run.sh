@@ -38,7 +38,7 @@ echo "Odoo arrived! connecting..."
 
 pgre -f nginx || /usr/sbin/nginx
 
-/runprod.sh
+/runprod.sh &
 
 set +x
 while true;
