@@ -61,4 +61,4 @@ timezone = False
 translate_modules = ['all']
 unaccent = False
 without_demo = False
-workers = 80
+workers = 0
