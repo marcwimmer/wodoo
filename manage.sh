@@ -27,6 +27,7 @@ if [ -z "$1" ]; then
     echo 
     echo "Quick Update (fetch source code, restart, no db update)":
     echo './manage.sh quickupdate'
+    echo './manage.sh quickpull'
     echo './manage.sh quickupdate <modulename> - to update modulename'
     echo
     echo No data is lost at init! Wether oefiles nor database.
@@ -288,6 +289,10 @@ quickupdate)
     fi
     $dc kill odoo
     $dc up -d odoo
+   ;;
+quickpull)
+    # using up, so that postgres is also started
+    $dc run odoo bash -c "cd /opt/openerp/customs/$CUSTOMS && git pull && git submodule update --init && /opt/openerp/admin/oeln $CUSTOMS"
    ;;
 make-keys)
     export dc=$dc
