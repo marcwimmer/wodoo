@@ -27,6 +27,7 @@ VOLUME /opt
 RUN mkdir -p /opt/finished_calls
 
 RUN echo "cd /opt/src/asterisk_ari" >> /root/.bashrc
+RUN echo "export TERM=xterm" >> /etc/environment
 
 
 CMD ["/run.sh"]
