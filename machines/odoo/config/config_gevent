@@ -62,3 +62,4 @@ translate_modules = ['all']
 unaccent = False
 without_demo = False
 workers = 0
+xmlrpc_port = 8069
