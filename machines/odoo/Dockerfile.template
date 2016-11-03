@@ -165,6 +165,7 @@ ADD config/.openerp_serverrc /home/odoo/.openerp_serverrc
 ADD config/config_openerp /home/odoo/config_openerp
 ADD config/config_gevent /home/odoo/config_gevent
 RUN chown odoo:odoo /home/odoo -R
+RUN echo 'export TERM=xterm' >> /etc/environment
 
 USER root
 CMD /run.sh
