@@ -3,6 +3,7 @@
 echo "Starting ARI Connector...."
 pkill -9 -f ari || true
 cd /opt/src/asterisk_ari/connector
+rm /tmp/starting || true
 python ariconnector.py \
     --odoo-host $ODOO_HOST \
     --odoo-port $ODOO_PORT \

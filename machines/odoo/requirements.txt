@@ -1,4 +1,4 @@
-Weasyprint==0.29
+Weasyprint==0.31
 xlwt
 phonenumbers
 pydub
