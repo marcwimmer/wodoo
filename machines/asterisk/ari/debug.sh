@@ -8,6 +8,8 @@ pkill -9 -f ariconnector
 
 echo "Starting ARI Connector...."
 cd /opt/src/asterisk_ari/connector
+
+python ariconnector.py --reset_locks
 python ariconnector.py \
     --debug
     --odoo-host $ODOO_HOST \
