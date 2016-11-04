@@ -6,7 +6,7 @@ cd /opt/src/asterisk_ari/connector
 rm /tmp/starting || true
 
 python ariconnector.py \
-    --reset_locks
+    --reset_locks \
     --odoo-host $ODOO_HOST \
     --odoo-port $ODOO_PORT \
     --odoo-user $ODOO_USER \
