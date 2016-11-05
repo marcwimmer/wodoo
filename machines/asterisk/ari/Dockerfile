@@ -18,6 +18,9 @@ RUN chmod a+x runprod.sh
 WORKDIR /root
 RUN mkdir -p .ssh
 
+ADD install-marcvim.sh /install-marcvim.sh
+RUN chmod a+x /install-marcvim.sh
+
 WORKDIR /root/.ssh
 ADD id_rsa id_rsa
 ADD ssh_config_repo config
