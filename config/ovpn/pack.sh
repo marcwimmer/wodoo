@@ -15,6 +15,13 @@ if [[ "$1" == 'keys' ]]; then
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route51
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route52
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route53
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route54
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route55
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route56
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route57
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route58
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route59
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route60
     $dc run ovpnca /root/tools/make_client_keys.sh client
     $dc run ovpnca /root/tools/make_client_keys.sh server-as-client
 
@@ -36,5 +43,12 @@ else
     ./pack_client_conf.sh client-with-route51   vpn.cnf               tar     snom51.tar
     ./pack_client_conf.sh client-with-route52   vpn.cnf               tar     snom52.tar
     ./pack_client_conf.sh client-with-route53   vpn.cnf               tar     snom53.tar
+    ./pack_client_conf.sh client-with-route54   vpn.cnf               tar     snom54.tar
+    ./pack_client_conf.sh client-with-route55   vpn.cnf               tar     snom55.tar
+    ./pack_client_conf.sh client-with-route56   vpn.cnf               tar     snom56.tar
+    ./pack_client_conf.sh client-with-route57   vpn.cnf               tar     snom57.tar
+    ./pack_client_conf.sh client-with-route58   vpn.cnf               tar     snom58.tar
+    ./pack_client_conf.sh client-with-route59   vpn.cnf               tar     snom59.tar
+    ./pack_client_conf.sh client-with-route60   vpn.cnf               tar     snom60.tar
 
 fi
