@@ -32,6 +32,10 @@ RUN git config --system http.postBuffer 1048576000
 VOLUME /opt
 RUN mkdir -p /install
 
+ADD install-marcvim.sh /install-marcvim.sh
+ADD debug.sh /debug.sh
+RUN chmod a+x /debug.sh /install-marcvim.sh
+
 WORKDIR /root
 RUN echo "export TERM=xterm" >> .bashrc
 

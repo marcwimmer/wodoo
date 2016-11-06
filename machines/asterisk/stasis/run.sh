@@ -19,4 +19,16 @@ git pull
 
 
 cd /opt/src/asterisk_ari/stasis
-python stasis.py
+python stasis.py &
+
+set +x
+while true;
+do
+    pgrep -f stasis.py > /dev/null || {
+	[[ ! -f /tmp/debugging ]] && {
+	    echo 'Stasis seems dead and no debugging'
+	    exit -1
+	}
+    }
+    sleep 1
+done
