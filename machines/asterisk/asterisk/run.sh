@@ -15,4 +15,4 @@ do
 done
 
 echo "starting reloader in 30 seconds..." && sleep 30 && /root/reloader.sh &
-/usr/sbin/asterisk -vvvv -dddd
+/usr/sbin/asterisk -vvvv -dddd 

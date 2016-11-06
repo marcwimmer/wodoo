@@ -7,6 +7,7 @@ volumes:
   arisourcestorage:
   stasissourcestorage:
   mailstorage:
+  asterisk_logs:
 
 services:
   dns:
@@ -213,6 +214,7 @@ services:
       - ../data/asterisk/recordings:/var/spool/asterisk/recording
       - ../data/asterisk/reloader:/opt/reloader
       - ../data/asterisk/sounds:/var/lib/asterisk/sounds:ro
+      - asterisk_logs:/var/log/asterisk
     env_file:
       ../customs.env
     cap_add:
@@ -236,6 +238,7 @@ services:
       volumes:
         - stasissourcestorage:/opt/src
         - ../data/asterisk/reloader:/opt/reloader
+        - asterisk_logs:/var/log/asterisk:ro
       networks:
         - ${DCPREFIX}_default
       links:

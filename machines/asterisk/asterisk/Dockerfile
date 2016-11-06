@@ -13,7 +13,8 @@ RUN chmod 600 id_rsa
 RUN apt-get update && apt-get install -y build-essential linux-headers-generic libxml2-dev libncurses5-dev libreadline-dev libreadline6-dev libiksemel-dev libvorbis-dev libssl-dev libspeex-dev libspeexdsp-dev mpg123 libmpg123-0 sox openssl wget subversion openssh-server unzip
 
 WORKDIR /tmp
-ENV ASTERISK_VERSION=13.2.1
+#ENV ASTERISK_VERSION=13.2.1
+ENV ASTERISK_VERSION=13.12.1
 RUN git clone --depth 1 --branch ${ASTERISK_VERSION} http://gerrit.asterisk.org/asterisk
 WORKDIR /tmp/asterisk
 RUN echo "Adding MP3 support"
@@ -24,9 +25,11 @@ RUN ./contrib/scripts/install_prereq install
 RUN ./contrib/scripts/install_prereq install-unpackaged
 RUN ./configure
 ADD menuselect.makeopts menuselect.makeopts
-RUN make -j4
-RUN make install
 
+
+RUN make -j8
+RUN make install
+#
 ADD requirements.txt /root/requirements.txt
 RUN apt-get install -y python-pip
 RUN pip install pip --upgrade
@@ -34,7 +37,7 @@ RUN pip install -r /root/requirements.txt
 
 ADD reloader.sh /root/reloader.sh
 RUN chmod a+x /root/reloader.sh
-
+#
 #  init jobs
 RUN make config 
 ADD run.sh /run.sh

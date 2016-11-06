@@ -244,7 +244,7 @@ build)
     ;;
 kill)
     cd $DIR
-    eval "$dc kill $2 $3"
+    eval "$dc kill $2 $3 $4 $5 $6 $7 $8 $9"
     ;;
 stop)
     cd $DIR
