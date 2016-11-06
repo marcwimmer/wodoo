@@ -1,7 +1,7 @@
 FROM ubuntu:16.04
 RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev git vim cmake sox
 # for marcvim 
-RUN apt-get update && apt-get install -y ctags nodejs npm automake pkg-config libpcre3-dev zlib1g-dev liblzma-dev inotify-tools nginx iputils-ping net-tools
+RUN apt-get update && apt-get install -y ctags nodejs npm automake pkg-config libpcre3-dev zlib1g-dev liblzma-dev inotify-tools nginx iputils-ping net-tools libruby
 RUN pip install --upgrade pip 
 ADD requirements.txt /tmp/requirements.txt
 RUN pip install -r  /tmp/requirements.txt
