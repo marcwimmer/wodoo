@@ -11,7 +11,17 @@ if [[ "$1" == 'keys' ]]; then
     $dc run ovpnca /root/tools/make_client_keys.sh dns
     $dc run ovpnca /root/tools/make_client_keys.sh ntp
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route50
+   
+    # create routed clients(phones)
+
+    # for loop requires CLIENT_START and CLIENT_END variables in environment
+    #for c in `seq $CLIENT_START $CLIENT_END`;
+    #do
+#	$dc run ovpnca /root/tools/make_client_keys.sh client-with-route$c
+    #done
+    # TODO: Generate matching IP's and generate ccd,
+    #       then client generation can be controlled by env
+
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route51
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route52
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route53
@@ -38,6 +48,16 @@ else
     ./pack_client_conf.sh ntp                 internalremote.conf   notar   ntp.conf
     ./pack_client_conf.sh client              defaultclient.conf    notar   softphone.conf
     ./pack_client_conf.sh server-as-client    internalremote.conf    notar   server-as-client.conf
+
+    # packing clients with for loop requires START and END variables in env
+    #for c in `seq $CLIENT_START $CLIENT_END`;
+    #do
+    #./pack_client_conf.sh client-with-route$c   vpn.cnf               tar     snom$c.tar
+    #done
+    # TODO: Generate matching IP's and generate ccd,
+    #       then client generation can be controlled by env
+
+
     ./pack_client_conf.sh client-with-route   vpn.cnf               tar     snom.tar
     ./pack_client_conf.sh client-with-route50   vpn.cnf               tar     snom50.tar
     ./pack_client_conf.sh client-with-route51   vpn.cnf               tar     snom51.tar

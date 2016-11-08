@@ -82,7 +82,9 @@ services:
         - "9991:8080"
     volumes:
         - ../data/ovpn/client:/root/transfer:ro
-    command: python3 -m http.server 8080
+        - ../config/ovpn:/root/config:ro
+#    command: python3 -m http.server 8080 #deprecated for security reasons
+    command: python3 /root/tools/monjerri.py
     restart: on-failure
 
   sslproxy:
@@ -238,7 +240,7 @@ services:
       volumes:
         - stasissourcestorage:/opt/src
         - ../data/asterisk/reloader:/opt/reloader
-        - asterisk_logs:/var/log/asterisk:ro
+        - asterisk_logs:/var/log/asterisk
       networks:
         - ${DCPREFIX}_default
       links:

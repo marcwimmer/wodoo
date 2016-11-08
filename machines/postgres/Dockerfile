@@ -1,4 +1,4 @@
-FROM postgres:9.4
+FROM postgres:9.5
 RUN mkdir -p  /docker-entrypoint-initdb.d
 ENV SNAPSHOT /opt/snapshot
 RUN mkdir -p $SNAPSHOT
