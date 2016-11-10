@@ -1,6 +1,7 @@
 client
 dev tap
-proto udp
+;proto udp
+proto tcp
 remote __REMOTE__ __REMOTE_PORT__
 resolv-retry infinite
 ;remote-cert-tls server
