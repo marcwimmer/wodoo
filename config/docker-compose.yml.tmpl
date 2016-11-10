@@ -101,6 +101,8 @@ services:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
     restart: on-failure
+    ports:
+      - "7777:8072"
     depends_on:
       - postgres
     security_opt:
