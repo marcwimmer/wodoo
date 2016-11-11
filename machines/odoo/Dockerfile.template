@@ -161,6 +161,9 @@ RUN pip install pudb
 ADD debug.sh /debug.sh
 RUN chmod a+x /debug.sh
 
+ADD install-marcvim.sh /install-marcvim.sh
+RUN chmod a+x /install-marcvim.sh
+
 ADD config/.openerp_serverrc /home/odoo/.openerp_serverrc
 ADD config/config_openerp /home/odoo/config_openerp
 ADD config/config_gevent /home/odoo/config_gevent
