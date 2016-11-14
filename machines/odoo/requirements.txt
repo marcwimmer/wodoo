@@ -1,3 +1,4 @@
+pybarcode==0.7
 Weasyprint==0.29
 xlwt
 phonenumbers
