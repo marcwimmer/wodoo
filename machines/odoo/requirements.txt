@@ -1,4 +1,5 @@
 Weasyprint==0.31
+pybarcode==0.7
 xlwt
 phonenumbers
 pydub
