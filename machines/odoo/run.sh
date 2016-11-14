@@ -68,10 +68,9 @@ chown odoo:odoo /opt/openerp/ -R
 if [[ -n "$DO_INIT" || -n "$DO_UPDATE" ]]; then
 
     if [[ -z "$DO_QUICK" ]]; then
-        rm -Rf /opt/openerp/customs/$CUSTOMS || true
         while true;
         do
-            rm /opt/openerp/customs/$CUSTOMS || true
+            rm -Rf /opt/openerp/customs/$CUSTOMS || true
             HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH && break
             echo "Pulling failed - retrying until works"
         done
