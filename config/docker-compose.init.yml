@@ -6,6 +6,8 @@ services:
     restart: 'no'
   asterisk:
     command: echo 'done'
+  asterisk_redis:
+    command: echo 'done'
   ari:
     # updated sich bei start
     command: echo 'done'
