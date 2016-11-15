@@ -231,12 +231,7 @@ runbash)
 rebuild)
     cd $DIR/machines/odoo
     cd $DIR
-    eval "$dc stop"
     eval "$dc build --no-cache $2"
-    echo ""
-    echo ""
-    echo ""
-    echo "You should now init everything with ./manage.sh init"
     ;;
 build)
     cd $DIR
