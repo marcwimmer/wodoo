@@ -123,6 +123,7 @@ services:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - /opt/permanent
+      - /opt/servers
     environment:
       ODOO_PROD: 1
     env_file:
