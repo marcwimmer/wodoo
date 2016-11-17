@@ -168,12 +168,10 @@ services:
     build: ../machines/mail
     networks:
       - ${DCPREFIX}_default
-    ports:
-      - "25:25"
     volumes:
       - mailstorage:/home/postmaster/Maildir
     ports:
-      - "25:25"
+      - "${SMTP_PORT}:25"
       - "143:143"
 
   roundcube:
