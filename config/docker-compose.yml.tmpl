@@ -29,7 +29,7 @@ services:
         ${DCPREFIX}_default:
           ipv4_address: 4.4.4.206
       ports:
-        - "123:123/UDP"
+        - "${NTP_PORT}:123/UDP"
   ovpnca:
     build: ../machines/openvpn/openvpn_ca
     volumes:
@@ -60,8 +60,8 @@ services:
       ${DCPREFIX}_default:
         ipv4_address: ${REMOTE_INTERNAL}
     ports:
-        - "5566:1194/TCP"
-        - "5566:1194/UDP"
+        - "${OVPN_PORT}:1194/TCP"
+        - "${OVPN_PORT}:1194/UDP"
     volumes:
         - ../config/ovpn:/root/input/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
@@ -80,7 +80,7 @@ services:
     container_name: ${DCPREFIX}_odoo_ovpn_web
     build: ../machines/openvpn/openvpn_web
     ports:
-        - "9991:8080"
+        - "${OVPNWEB_PORT}:8080"
     volumes:
         - ../data/ovpn/client:/root/transfer:ro
         - ../config/ovpn:/root/config:ro
@@ -93,7 +93,7 @@ services:
     build: ../machines/sslproxy
     
     ports:
-        - "8068:8068"
+        - "${SSL_PORT}:8068"
     volumes:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
@@ -102,8 +102,6 @@ services:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
     restart: on-failure
-    ports:
-      - "7777:8072"
     depends_on:
       - postgres
     security_opt:
@@ -172,7 +170,7 @@ services:
       - mailstorage:/home/postmaster/Maildir
     ports:
       - "${SMTP_PORT}:25"
-      - "143:143"
+      # - "143:143"
 
   roundcube:
     container_name: ${DCPREFIX}_roundcube
@@ -184,7 +182,7 @@ services:
     links:
       - mail:mail
     ports:
-      - "8000:80"
+      - "${ROUNDCUBE_PORT}:80"
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
@@ -195,20 +193,7 @@ services:
     networks:
       - ${DCPREFIX}_default
     expose:
-      # ari
       - 8088
-    #ports:
-      # lsof -i -n -P
-      #- "8088:8088"
-      #- "5060:5060/udp"
-      #- "4569:4569/udp"
-      #- "2000:2000/tcp"
-      #- "4520:4520/udp"
-      #- "5000:5000/udp"
-      # must match asterisk rtp.conf
-      #- "16384-16404:16384-16404/udp"
-      # next one not needed i think
-      #- "63535:63535/udp"
     environment:
       CUSTOMS: ${CUSTOMS}
     volumes:
@@ -255,8 +240,6 @@ services:
     depends_on:
       - asterisk_redis
       - odoo
-    ports:
-      - "29925:29925/TCP"
     networks:
       - ${DCPREFIX}_default
     links:
