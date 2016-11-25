@@ -272,7 +272,6 @@ update)
     $dc -f config/docker-compose.update.yml up odoo
     eval "$dc kill odoo"
     eval "$dc up -d"
-    eval "$dc up -d nginx"
    ;;
 quickupdate)
     # using up, so that postgres is also started
