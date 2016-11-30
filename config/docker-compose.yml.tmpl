@@ -147,6 +147,7 @@ services:
   nginx:
     container_name: ${DCPREFIX}_nginx
     image: nginx:stable
+    restart: on-failure
     depends_on:
       - odoo
     networks:
