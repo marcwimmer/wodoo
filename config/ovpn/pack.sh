@@ -10,6 +10,7 @@ if [[ "$1" == 'keys' ]]; then
     $dc run ovpnca /root/tools/make_client_keys.sh asterisk
     $dc run ovpnca /root/tools/make_client_keys.sh dns
     $dc run ovpnca /root/tools/make_client_keys.sh ntp
+    $dc run ovpnca /root/tools/make_client_keys.sh custom_client1
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route
    
     # create routed clients(phones)
@@ -22,6 +23,7 @@ if [[ "$1" == 'keys' ]]; then
     # TODO: Generate matching IP's and generate ccd,
     #       then client generation can be controlled by env
 
+    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route50
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route51
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route52
     $dc run ovpnca /root/tools/make_client_keys.sh client-with-route53
@@ -47,6 +49,7 @@ else
     ./pack_client_conf.sh dns                 internalremote.conf   notar   dns.conf
     ./pack_client_conf.sh ntp                 internalremote.conf   notar   ntp.conf
     ./pack_client_conf.sh client              defaultclient.conf    notar   softphone.conf
+    ./pack_client_conf.sh custom_client       defaultclient.conf    notar   custom_client1.conf
     ./pack_client_conf.sh server-as-client    internalremote.conf    notar   server-as-client.conf
 
     # packing clients with for loop requires START and END variables in env
