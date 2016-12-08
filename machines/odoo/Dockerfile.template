@@ -150,6 +150,11 @@ RUN chmod a+x /usr/local/bin/*
 
 ADD run.sh /run.sh
 RUN chmod a+x /run.sh
+ADD restore_files.sh /run.sh
+RUN chmod a+x /restore_files.sh
+
+ADD init.sh /init.sh
+RUN chmod a+x /init.sh
 
 ADD run_autosetup.sh /run_autosetup.sh
 RUN chmod a+x /run_autosetup.sh

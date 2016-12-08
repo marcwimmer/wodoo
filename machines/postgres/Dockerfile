@@ -18,6 +18,9 @@ WORKDIR /root/.ssh
 RUN chmod 400 authorized_keys
 RUN chown root authorized_keys
 
+ADD backup.sh /backup.sh
+ADD restore.sh /restore.sh
+RUN chmod a+x /backup.sh /restore.sh
 
 RUN ls -lha /root/
 

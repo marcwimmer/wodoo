@@ -95,8 +95,11 @@ fetch)
     ;;
 init)
     cd $DIR
+    eval "$dc run odoo /init.sh full"
+    eval "$dc run ari /init.sh full"
+    eval "$dc run stasis /init.sh full"
     eval "$dc stop"
-    eval "$dc -f config/docker-compose.init.yml up $2"
+    eval "$dc start"
     ;;
 
 setup-startup)
@@ -136,13 +139,16 @@ backup)
     fi
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump
     filepath=$BACKUPDIR/$filename
-    docker exec ${DCPREFIX}_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$filename.gz
-    echo "Dumped to $filepath"
-    echo "Backuping files..."
     filename_oefiles=oefiles.tar
 
+    $dc run -e filename=$filename postgres /backup.sh
+    echo "Dumped to $filepath"
+
+    echo "Backuping files..."
+
     # execute in running container via exec
-    docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/$filename_oefiles /opt/oefiles
+    $dc run -e filename=$filename_oefiles odoo /backup_files.sh
+
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
         cp $DIR/dumps/$filename.gz $BACKUPDIR
         rm $DIR/dumps/$filename.gz
@@ -153,6 +159,8 @@ backup)
     ;;
 
 restore)
+    filename_oefiles=oefiles.tar
+
     read -p "Deletes database! Continue? Press ctrl+c otherwise"
     if [[ ! -f $2 ]]; then
         echo "File $2 not found!"
@@ -162,7 +170,6 @@ restore)
         echo "File $3 not found!"
         exit -1
     fi
-    filename_oefiles=oefiles.tar
     mkdir -p $DIR/restore
     rm $DIR/restore/* || true
     cp $2 $DIR/restore/$DBNAME.gz
@@ -173,20 +180,15 @@ restore)
     echo "Shutting down containers"
     eval "$dc kill"
 
-    $dc -f config/docker-compose.restoredb.yml up postgres
-
-    $dc -f config/docker-compose.restorefiles.yml up -d odoo  # runs in endless loop; run exec command here, to better compare it to backup) option above
+    $dc run postgres /restore.sh
 
     if [[ -n "$3" ]]; then
         echo 'Extracting files...'
-        docker exec ${DCPREFIX}_odoo tar vxfz /opt/restore/$filename_oefiles 
+        $dc run -e filename=$filename_oefiles /restore_files.sh
     fi
 
-    echo 'Shutting down systems'
-    $dc -f config/docker-compose.restorefiles.yml stop odoo
-
     echo ''
-    echo 'Restart systems by ./manage up -d'
+    echo 'Restart systems by ./manage restart'
     ;;
 
 springclean)

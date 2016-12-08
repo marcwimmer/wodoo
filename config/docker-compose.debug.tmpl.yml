@@ -1,4 +1,0 @@
-version: '2'
-services:
-  TEMPLATE:
-    command: /bin/bash -c "while true; do sleep 10; echo 'debugged! original command replace by while loop - you can debug freely :)'; done"
