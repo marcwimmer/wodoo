@@ -13,9 +13,9 @@ ADD nginx-config /etc/nginx/sites-available/default
 # set root password
 RUN echo "root:odoo"|chpasswd 
 
-WORKDIR /
-ADD run.sh run.sh
-RUN chmod a+x run.sh
+ADD bin/ /
+ADD run.sh init.sh debug.sh /
+RUN chmod a+x /*.sh
 
 WORKDIR /root
 RUN mkdir -p .ssh
