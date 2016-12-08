@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+if [[ "$RUN_ASTERISK" == "0" ]]; then
+    echo "asterisk is turned off by customs.env - good bye! :)"
+    exit 0
+fi
+
 #connect to openvpn server
 mkdir /dev/net
 mknod /dev/net/tun c 10 200  # also used for tap

@@ -138,7 +138,8 @@ backup)
     filepath=$BACKUPDIR/$filename
     filename_oefiles=oefiles.tar
 
-    $dc run -e filename=$filename postgres /backup.sh
+    $dc exec postgres /backup.sh
+    mv $DIR/dumps/$DBNAME.gz $filepath
     echo "Dumped to $filepath"
 
     echo "Backuping files..."
