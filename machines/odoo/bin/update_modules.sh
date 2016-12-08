@@ -3,7 +3,7 @@ source /env.sh
 
 if [[ -n "$MODULE" ]]; then
     echo "updating just $MODULE"
-    MODULE=$(/opt/openerp/admin/update_custom_modules.py)
+    MODULE=$(/opt/openerp/admin/update_custom_modules.py $CUSTOMS)
 else
     echo "Getting list of custom modules"
 fi
