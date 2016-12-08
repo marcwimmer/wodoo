@@ -14,7 +14,6 @@ ADD nginx-config /etc/nginx/sites-available/default
 RUN echo "root:odoo"|chpasswd 
 
 ADD bin/ /
-ADD run.sh init.sh debug.sh /
 RUN chmod a+x /*.sh
 
 WORKDIR /root
@@ -31,10 +30,6 @@ RUN git config --system http.postBuffer 1048576000
 #defined in consts.py in ari connector
 VOLUME /opt
 RUN mkdir -p /install
-
-ADD install-marcvim.sh /install-marcvim.sh
-ADD debug.sh /debug.sh
-RUN chmod a+x /debug.sh /install-marcvim.sh
 
 WORKDIR /root
 RUN echo "export TERM=xterm" >> .bashrc

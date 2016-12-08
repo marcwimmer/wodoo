@@ -104,8 +104,10 @@ ADD requirements_70.txt /root/requirements_70.txt
 # syntastic checker
 RUN npm install -g jshint
 
+ADD bin/ /
+RUN chmod a+x /*.sh
+
 #install pip packages depending on version
-ADD install_python_packages.sh /install_python_packages.sh
 RUN pip install --upgrade pip
 RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION} 
 RUN /bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
@@ -166,8 +168,10 @@ RUN pip install pudb
 ADD debug.sh /debug.sh
 RUN chmod a+x /debug.sh
 
-ADD install-marcvim.sh /install-marcvim.sh
-RUN chmod a+x /install-marcvim.sh
+RUN pip install --upgrade pip
+RUN pip install requests[security]
+RUN pip install glob2
+RUN pip install gitpython
 
 ADD config/.openerp_serverrc /home/odoo/.openerp_serverrc
 ADD config/config_openerp /home/odoo/config_openerp
@@ -177,5 +181,4 @@ RUN echo 'export TERM=xterm' >> /etc/environment
 
 USER root
 CMD /run.sh
-
 
