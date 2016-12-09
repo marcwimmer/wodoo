@@ -135,7 +135,7 @@ backup)
     else
         BACKUPDIR=$DIR/dumps
     fi
-    filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump
+    filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
     filename_oefiles=oefiles.tar
 
