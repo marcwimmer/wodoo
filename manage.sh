@@ -35,7 +35,8 @@ if [ -z "$1" ]; then
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
-    echo "clean - clears support data"
+    echo "clean_supportdata - clears support data"
+    echo "clean_supportdata - clears support data"
     echo "fetch - fetches support data"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
@@ -80,7 +81,7 @@ function update_support_data {
 
 
 case $1 in
-clean)
+clean_supportdata)
     echo "Deleting support data"
     if [[ -d $DIR/support_data ]]; then
         rm -Rf $DIR/support_data/*
@@ -266,7 +267,7 @@ update)
     eval "$dc run ari /init.sh"
     eval "$dc run stasis /init.sh"
     $dc run odoo /update_src.sh
-    $dc run -e MODULE="$3" odoo /update_modules.sh
+    $dc run -e meinname=marc odoo /update_modules.sh $3
     $dc kill odoo ari stasis
     $dc up -d
    ;;
