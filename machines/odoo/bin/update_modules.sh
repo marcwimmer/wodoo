@@ -13,6 +13,10 @@ else
     MODULE=$(/opt/openerp/admin/update_custom_modules.py $CUSTOMS)
 fi
 
+touch /tmp/debugging
+/opt/openerp/admin oekill || {
+    echo 'could not terminate odoo'
+}
 
 echo "Updating modules $MODULE..."
 time sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
