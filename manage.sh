@@ -183,7 +183,7 @@ restore)
 
     if [[ -n "$3" ]]; then
         echo 'Extracting files...'
-        $dc run -e filename=$filename_oefiles /restore_files.sh
+        $dc run -e filename=$filename_oefiles odoo /restore_files.sh
     fi
 
     echo ''
