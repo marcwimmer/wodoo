@@ -20,26 +20,24 @@ if [ -z "$1" ]; then
     echo
     echo
     echo First init:
-    echo './manage.sh fetch && ./manage.sh init && ./manage.sh setup-startup'
+    echo './manage.sh fetch && ./manage.sh update && ./manage.sh setup-startup'
     echo
     echo Update:
-    echo './manage.sh update <module>'
+    echo './manage.sh update [module]'
+    echo 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
+    echo 'Minimal downtime - but there is a downtime, even for phones'
     echo 
-    echo "Quick Update (fetch source code, restart, no db update)":
-    echo './manage.sh quickupdate'
-    echo './manage.sh quickpull'
-    echo './manage.sh quickupdate <modulename> - to update modulename'
+    echo "Quick Pull (just pulls source codes for e.g. mako"
+    echo './manage.sh quickupdate [module]'
     echo
-    echo No data is lost at init! Wether oefiles nor database.
-    echo
-    echo "Please call manage.sh init|springclean|dbinit|update|backup|run_standalone|upall|attach_running|rebuild|restart"
+    echo "Please call manage.sh springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
-    echo "clean - clears support data"
+    echo "clean_supportdata - clears support data"
+    echo "clean_supportdata - clears support data"
     echo "fetch - fetches support data"
-    echo "init <machine-name, empty for all>: depending on machine does basic reinitialization; NO DATA DELETED!"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "logall - shows log til now; use parameter to specify machine"
@@ -52,8 +50,8 @@ if [ -z "$1" ]; then
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo "stop - like docker-compose stop"
-    echo "quickupdate <machine name>- fetch latest source, oeln, restart (no dbupdate)"
-    echo "update <machine name>- fetch latest source code of modules and run update all on odoo; machines are stopped after that"
+    echo "quickpull - fetch latest source, oeln - good for mako templates"
+    echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
     echo "up - starts all machines equivalent to service <service> start "
     echo
     exit -1
@@ -83,7 +81,7 @@ function update_support_data {
 
 
 case $1 in
-clean)
+clean_supportdata)
     echo "Deleting support data"
     if [[ -d $DIR/support_data ]]; then
         rm -Rf $DIR/support_data/*
@@ -95,8 +93,11 @@ fetch)
     ;;
 init)
     cd $DIR
+    eval "$dc run odoo /init.sh full"
+    eval "$dc run ari /init.sh full"
+    eval "$dc run stasis /init.sh full"
     eval "$dc stop"
-    eval "$dc -f config/docker-compose.init.yml up $2"
+    eval "$dc start"
     ;;
 
 setup-startup)
@@ -136,13 +137,17 @@ backup)
     fi
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump
     filepath=$BACKUPDIR/$filename
-    docker exec ${DCPREFIX}_postgres pg_dump $DBNAME -Z1 -Fc -f /opt/dumps/$filename.gz
-    echo "Dumped to $filepath"
-    echo "Backuping files..."
     filename_oefiles=oefiles.tar
 
+    $dc exec postgres /backup.sh
+    mv $DIR/dumps/$DBNAME.gz $filepath
+    echo "Dumped to $filepath"
+
+    echo "Backuping files..."
+
     # execute in running container via exec
-    docker exec ${DCPREFIX}_odoo tar cfz /opt/dumps/$filename_oefiles /opt/oefiles
+    $dc run -e filename=$filename_oefiles odoo /backup_files.sh
+
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
         cp $DIR/dumps/$filename.gz $BACKUPDIR
         rm $DIR/dumps/$filename.gz
@@ -153,6 +158,8 @@ backup)
     ;;
 
 restore)
+    filename_oefiles=oefiles.tar
+
     read -p "Deletes database! Continue? Press ctrl+c otherwise"
     if [[ ! -f $2 ]]; then
         echo "File $2 not found!"
@@ -162,7 +169,6 @@ restore)
         echo "File $3 not found!"
         exit -1
     fi
-    filename_oefiles=oefiles.tar
     mkdir -p $DIR/restore
     rm $DIR/restore/* || true
     cp $2 $DIR/restore/$DBNAME.gz
@@ -173,20 +179,15 @@ restore)
     echo "Shutting down containers"
     eval "$dc kill"
 
-    $dc -f config/docker-compose.restoredb.yml up postgres
-
-    $dc -f config/docker-compose.restorefiles.yml up -d odoo  # runs in endless loop; run exec command here, to better compare it to backup) option above
+    $dc run postgres /restore.sh
 
     if [[ -n "$3" ]]; then
         echo 'Extracting files...'
-        docker exec ${DCPREFIX}_odoo tar vxfz /opt/restore/$filename_oefiles 
+        $dc run -e filename=$filename_oefiles odoo /restore_files.sh
     fi
 
-    echo 'Shutting down systems'
-    $dc -f config/docker-compose.restorefiles.yml stop odoo
-
     echo ''
-    echo 'Restart systems by ./manage up -d'
+    echo 'Restart systems by ./manage restart'
     ;;
 
 springclean)
@@ -263,31 +264,16 @@ restart)
     eval "$dc up -d $2"
     ;;
 update)
-    $dc stop odoo
-    # using up, so that postgres is also started
-    export UPDATE_MODULE=$2
-    if [[ -z "$2" ]]; then
-        export UPDATE_MODULE=all
-    fi
-    $dc -f config/docker-compose.update.yml up odoo
-    eval "$dc kill odoo"
-    eval "$dc up -d"
-   ;;
-quickupdate)
-    # using up, so that postgres is also started
-    $dc run odoo bash -c "cd /opt/openerp/customs/$CUSTOMS && git pull && git submodule update --init && /opt/openerp/admin/oeln $CUSTOMS"
-    if [[ -n "$2" ]]; then 
-        set -x
-        echo 'fixxen!'
-	exit -1
-        #$dc run odoo bash -c "sudo -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -u $2 --log-level=info --stop-after-init"
-    fi
-    $dc kill odoo
-    $dc up -d odoo
+    eval "$dc run ari /init.sh"
+    eval "$dc run stasis /init.sh"
+    $dc run odoo /update_src.sh
+    $dc run -e meinname=marc odoo /update_modules.sh $3
+    $dc kill odoo ari stasis
+    $dc up -d
    ;;
 quickpull)
-    # using up, so that postgres is also started
-    $dc run odoo bash -c "cd /opt/openerp/customs/$CUSTOMS && git pull && git submodule update --init && /opt/openerp/admin/oeln $CUSTOMS"
+    # useful for updating just mako templates
+    $dc run odoo /update_src.sh
    ;;
 make-keys)
     export dc=$dc

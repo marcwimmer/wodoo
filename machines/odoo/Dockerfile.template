@@ -105,10 +105,14 @@ ADD requirements_70.txt /root/requirements_70.txt
 RUN npm install -g jshint
 
 #install pip packages depending on version
-ADD install_python_packages.sh /install_python_packages.sh
 RUN pip install --upgrade pip
+ADD install_python_packages.sh /install_python_packages.sh
+RUN chmod a+x /install_python_packages.sh
 RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION} 
 RUN /bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
+
+ADD bin/ /
+RUN chmod a+x /*.sh
 
 USER odoo
 WORKDIR /home/odoo
@@ -148,21 +152,10 @@ USER root
 RUN chmod a+x /update_repos_at_start.sh
 RUN chmod a+x /usr/local/bin/*
 
-ADD run.sh /run.sh
-RUN chmod a+x /run.sh
-
-ADD run_autosetup.sh /run_autosetup.sh
-RUN chmod a+x /run_autosetup.sh
-
+RUN pip install --upgrade pip
+RUN pip install requests[security]
 RUN pip install glob2
 RUN pip install gitpython
-RUN pip install pudb
-
-ADD debug.sh /debug.sh
-RUN chmod a+x /debug.sh
-
-ADD install-marcvim.sh /install-marcvim.sh
-RUN chmod a+x /install-marcvim.sh
 
 ADD config/.openerp_serverrc /home/odoo/.openerp_serverrc
 ADD config/config_openerp /home/odoo/config_openerp
@@ -172,5 +165,4 @@ RUN echo 'export TERM=xterm' >> /etc/environment
 
 USER root
 CMD /run.sh
-
 

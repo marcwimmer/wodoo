@@ -8,6 +8,8 @@ volumes:
   stasissourcestorage:
   mailstorage:
   asterisk_logs:
+  opt_servers:
+  opt_permanent:
 
 services:
   dns:
@@ -121,8 +123,8 @@ services:
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
-      - /opt/permanent
-      - /opt/servers
+      - opt_permanent:/opt/permanent
+      - opt_servers:/opt/servers
     environment:
       ODOO_PROD: 1
     env_file:

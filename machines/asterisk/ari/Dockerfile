@@ -7,19 +7,11 @@ RUN apt-get install -y vim
 
 ADD nginx-config /etc/nginx/sites-available/default
 
-WORKDIR /
-ADD run.sh run.sh
-RUN chmod a+x run.sh
-ADD debug.sh debug.sh
-RUN chmod a+x debug.sh
-ADD runprod.sh runprod.sh
-RUN chmod a+x runprod.sh
+ADD bin/ /
+RUN chmod a+x /*.sh
 
 WORKDIR /root
 RUN mkdir -p .ssh
-
-ADD install-marcvim.sh /install-marcvim.sh
-RUN chmod a+x /install-marcvim.sh
 
 WORKDIR /root/.ssh
 ADD id_rsa id_rsa
