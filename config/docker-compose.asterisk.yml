@@ -145,3 +145,28 @@ services:
       links:
         - asterisk:asterisk
         - asterisk_redis:asterisk_redis
+
+  asterisk:
+    container_name: cpb_asterisk
+    depends_on:
+      - ovpn
+    build: ../machines/asterisk/asterisk
+    restart: on-failure
+    networks:
+      - cpb_default
+    expose:
+      - 8088
+    environment:
+      CUSTOMS: ${CUSTOMS}
+    volumes:
+      - ../machines/asterisk/asterisk/etc/asterisk:/etc/asterisk:ro
+      - ../data/ovpn/client:/opt/certs:ro
+      - ../data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
+      - ../data/asterisk/recordings:/var/spool/asterisk/recording
+      - ../data/asterisk/reloader:/opt/reloader
+      - ../data/asterisk/sounds:/var/lib/asterisk/sounds:ro
+      - asterisk_logs:/var/log/asterisk
+    env_file:
+      ../customs.env
+    cap_add:
+        - NET_ADMIN
