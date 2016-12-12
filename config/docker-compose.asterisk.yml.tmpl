@@ -1,0 +1,147 @@
+# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+version: '2'
+volumes:
+  arisourcestorage:
+  stasissourcestorage:
+  asterisk_logs:
+
+services:
+  dns:
+      build: ../machines/openvpn/openvpn_dns
+      cap_add:
+        - NET_ADMIN
+      volumes:
+        - ../data/ovpn/client:/opt/certs:ro
+      networks:
+        ${DCPREFIX}_default:
+          ipv4_address: 4.4.4.205
+  ntp:
+      build: ../machines/openvpn/openvpn_ntp
+      cap_add:
+        - NET_ADMIN
+      volumes:
+        - ../data/ovpn/client:/opt/certs:ro
+      networks:
+        ${DCPREFIX}_default:
+          ipv4_address: 4.4.4.206
+      ports:
+        - "${NTP_PORT}:123/UDP"
+  ovpnca:
+    build: ../machines/openvpn/openvpn_ca
+    volumes:
+        - ../config/ovpn/:/root/confs:ro
+        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
+        - ../data/ovpn/CA:/root/transfer
+        - ../data/ovpn/server:/root/server_out
+        - ../data/ovpn/client:/root/client_out
+    env_file:
+      - ../customs.env
+
+  ovpn_makekeys:
+    container_name: ${DCPREFIX}_ovpn_makekeys
+    build: ../machines/openvpn/openvpn_server
+    volumes:
+        - ../config/ovpn:/root/input/confs:ro
+        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
+        - ../data/ovpn/server:/root/server_out
+        - ../data/ovpn/client:/root/client_out
+        - ../config/ovpn/ccd:/root/ccd
+    env_file:
+      - ../customs.env
+
+  ovpn:
+    container_name: ${DCPREFIX}_ovpn
+    build: ../machines/openvpn/openvpn_server
+    networks:
+      ${DCPREFIX}_default:
+        ipv4_address: ${REMOTE_INTERNAL}
+    ports:
+        - "${OVPN_PORT}:1194/TCP"
+        - "${OVPN_PORT}:1194/UDP"
+    volumes:
+        - ../config/ovpn:/root/input/confs:ro
+        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
+        - ../data/ovpn/server:/root/server_out
+        - ../data/ovpn/client:/root/client_out
+        - ../config/ovpn/ccd:/tmp/ccd:ro
+
+    env_file:
+      - ../customs.env
+    cap_add:
+        - NET_ADMIN
+    command: /root/tools/run.sh
+    restart: on-failure
+
+  ovpn_web:
+    container_name: ${DCPREFIX}_odoo_ovpn_web
+    build: ../machines/openvpn/openvpn_web
+    ports:
+        - "${OVPNWEB_PORT}:8080"
+    volumes:
+        - ../data/ovpn/client:/root/transfer:ro
+        - ../config/ovpn:/root/config:ro
+#    command: python3 -m http.server 8080 #deprecated for security reasons
+    command: python3 /root/tools/monjerri.py
+    restart: on-failure
+
+  asterisk_redis:
+      build: ../machines/asterisk/redis
+      container_name: ${DCPREFIX}_asterisk_redis
+      networks:
+        - ${DCPREFIX}_default
+  ari:
+    container_name: ${DCPREFIX}_ari
+    build: ../machines/asterisk/ari
+    restart: on-failure
+    depends_on:
+      - asterisk_redis
+      - odoo
+    networks:
+      - ${DCPREFIX}_default
+    links:
+      - asterisk:asterisk
+      - asterisk_redis:asterisk_redis
+      - odoo:odoo
+    environment:
+      ODOO_USER: $ASTERISK_ODOO_USER
+      ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD
+      ODOO_DB: $DBNAME
+      ODOO_PORT: 8072
+      ODOO_HOST: odoo
+      USERNAME_ASTERISK: asterisk
+      PASSWORD_ASTERISK: asterisk
+      HOST_ASTERISK: asterisk
+      PORT_ASTERISK: 8088
+    volumes:
+      - arisourcestorage:/opt/src
+      - ../data/ari/calls:/opt/permstore/calls
+      - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
+      - ../data/ari/record_clicked:/opt/permstore/record_clicked
+      - ../data/asterisk/moh_custom:/opt/asterisk/moh_custom
+      - ../data/asterisk/recordings:/opt/asterisk/recording
+      - ../data/asterisk/reloader:/opt/asterisk/reloader
+      - ../data/asterisk/sounds:/opt/asterisk/sounds
+      - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+
+  stasis:
+      build: ../machines/asterisk/stasis
+      container_name: ${DCPREFIX}_stasis
+      restart: on-failure
+      env_file:
+        - ../customs.env
+        - ../fixed.env
+      depends_on:
+        - asterisk
+        - asterisk_redis
+      volumes:
+        - stasissourcestorage:/opt/src
+        - ../data/asterisk/reloader:/opt/reloader
+        - asterisk_logs:/var/log/asterisk
+      networks:
+        - ${DCPREFIX}_default
+      links:
+        - asterisk:asterisk
+        - asterisk_redis:asterisk_redis

@@ -1,0 +1,119 @@
+# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+version: '2'
+volumes:
+  postgresdata:
+  filestorage:
+  sourcestorage:
+  mailstorage:
+  opt_servers:
+  opt_permanent:
+
+services:
+  sslproxy:
+    container_name: ${DCPREFIX}_odoo_ssl_proxy
+    build: ../machines/sslproxy
+    
+    ports:
+        - "${SSL_PORT}:8068"
+    volumes:
+        - ../config/sslproxy:/opt/conf
+    command: python /opt/src/proxy.py
+
+  odoo:
+    container_name: ${DCPREFIX}_odoo
+    build: ../machines/odoo
+    restart: on-failure
+    depends_on:
+      - postgres
+    security_opt:
+      - apparmor:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    networks:
+      - ${DCPREFIX}_default
+    links:
+      - postgres:postgres
+    volumes:
+      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../support_data/odoo.git:/opt/odoo.git:ro
+      - /opt/md5
+      - sourcestorage:/opt/openerp
+      - filestorage:/opt/oefiles
+      - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
+      - opt_permanent:/opt/permanent
+      - opt_servers:/opt/servers
+    environment:
+      ODOO_PROD: 1
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+
+  postgres:
+    container_name: ${DCPREFIX}_postgres
+    build: ../machines/postgres
+    restart: on-failure
+    networks:
+      - ${DCPREFIX}_default
+    volumes:
+      - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 1
+      PGDATA: /var/lib/postgresql/data/pgdata
+    env_file:
+      ../customs.env
+
+  nginx:
+    container_name: ${DCPREFIX}_nginx
+    image: nginx:stable
+    restart: on-failure
+    depends_on:
+      - odoo
+    networks:
+      - ${DCPREFIX}_default
+    links:
+      - odoo:odoo
+    ports:
+      - "${ODOO_PORT}:80"
+    env_file:
+      ../customs.env
+    volumes:
+      - ../machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
+    command: /bin/bash -c "echo 'setting up nginx conf'; cp /mysite.template /etc/nginx/conf.d/default.conf && sed -i "s/__HTTP_HOST__/$HTTP_HOST/g" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+
+  mail:
+    container_name: ${DCPREFIX}_mail
+    build: ../machines/mail
+    networks:
+      - ${DCPREFIX}_default
+    volumes:
+      - mailstorage:/home/postmaster/Maildir
+    ports:
+      - "${SMTP_PORT}:25"
+      # - "143:143"
+
+  roundcube:
+    container_name: ${DCPREFIX}_roundcube
+    build: ../machines/roundcube
+    depends_on:
+      - mail
+    networks:
+      - ${DCPREFIX}_default
+    links:
+      - mail:mail
+    ports:
+      - "${ROUNDCUBE_PORT}:80"
+
+networks:
+  ${DCPREFIX}_default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 4.4.4.0/24
+          gateway: 4.4.4.1

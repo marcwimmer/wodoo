@@ -10,10 +10,12 @@ export $(cut -d= -f1 $DIR/customs.env)
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/docker-compose.yml.tmpl > config/docker-compose.yml
+for file in docker-compose.odoo docker-compose.asterisk
+do
+    sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
+done
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
-sleep 0.2
-
+sync
 
 if [ -z "$1" ]; then
     echo Management of odoo instance
@@ -57,7 +59,13 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -f config/docker-compose.yml"
+dc="docker-compose -f config/docker-compose.odoo.yml"
+
+cat customs.env|grep -q 'RUN_ASTERISK=1' && {
+    dc="$dc -f config/docker-compose.asterisk.yml"
+}
+
+
 
 function update_support_data {
     SUPPORTDIR=$DIR/support_data
