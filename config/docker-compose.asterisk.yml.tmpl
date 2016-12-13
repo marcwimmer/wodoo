@@ -125,9 +125,9 @@ services:
     env_file:
       - ../customs.env
       - ../fixed.env
-      networks:
-        ${DCPREFIX}_default:
-          ipv4_address: 4.4.4.42
+    networks:
+      ${DCPREFIX}_default:
+        ipv4_address: 4.4.4.42
 
   stasis:
       build: ../machines/asterisk/stasis
