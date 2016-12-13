@@ -31,7 +31,8 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
     networks:
-      - ${DCPREFIX}_default
+      ${DCPREFIX}_default:
+        ipv4_address: 4.4.4.80
     links:
       - postgres:postgres
     volumes:
