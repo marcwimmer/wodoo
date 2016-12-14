@@ -274,9 +274,9 @@ restart)
 update)
     eval "$dc run ari /init.sh"
     eval "$dc run stasis /init.sh"
-    $dc run odoo /update_src.sh
     $dc kill odoo
-    $dc run -e meinname=marc odoo /update_modules.sh $3
+    $dc run odoo /update_src.sh
+    $dc run odoo /update_modules.sh $3
     $dc kill odoo ari stasis
     $dc up -d
    ;;
