@@ -61,7 +61,10 @@ fi
 
 dc="docker-compose -f config/docker-compose.odoo.yml"
 
+RUN_ASTERISK=0
+
 cat customs.env|grep -q 'RUN_ASTERISK=1' && {
+    RUN_ASTERISK=1
     dc="$dc -f config/docker-compose.asterisk.yml"
 }
 
@@ -102,8 +105,10 @@ fetch)
 init)
     cd $DIR
     eval "$dc run odoo /init.sh full"
-    eval "$dc run ari /init.sh full"
-    eval "$dc run stasis /init.sh full"
+    if [[ "$RUN_ASTERISK" == "1" ]]; then
+        eval "$dc run ari /init.sh full"
+        eval "$dc run stasis /init.sh full"
+    fi
     eval "$dc stop"
     eval "$dc start"
     ;;
@@ -272,12 +277,17 @@ restart)
     eval "$dc up -d $2"
     ;;
 update)
-    eval "$dc run ari /init.sh"
-    eval "$dc run stasis /init.sh"
+    if [[ "$RUN_ASTERISK" == "1" ]]; then
+        eval "$dc run ari /init.sh"
+        eval "$dc run stasis /init.sh"
+    fi
     $dc kill odoo
     $dc run odoo /update_src.sh
     $dc run odoo /update_modules.sh $3
-    $dc kill odoo ari stasis
+    $dc kill odoo
+    if [[ "$RUN_ASTERISK" == "1" ]]; then
+        $dc kill ari stasis
+    fi
     $dc up -d
    ;;
 quickpull)
