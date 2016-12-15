@@ -95,7 +95,6 @@ services:
     restart: on-failure
     depends_on:
       - asterisk_redis
-      - odoo
     networks:
       - ${DCPREFIX}_default
     links:
