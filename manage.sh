@@ -153,17 +153,18 @@ backup)
     fi
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
-    filename_oefiles=oefiles.tar
     LINKPATH=$BACKUPDIR/latest_dump
 
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
+    rm $LINKPATH || true
+    ln -s $filepath $LINKPATH
     echo "Dumped to $filepath"
 
     echo "Backuping files..."
 
     # execute in running container via exec
-    $dc run -e filename=$filename_oefiles odoo /backup_files.sh
+    $dc exec odoo /backup_files.sh
 
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
         cp $DIR/dumps/$filename.gz $BACKUPDIR
@@ -171,9 +172,6 @@ backup)
         cp $DIR/dumps/$filename_oefiles $BACKUPDIR
         rm $DIR/dumps/$filename_oefiles
     fi
-
-    rm $LINKPATH || true
-    ln -s $BACKUPDIR $LINKPATH
 
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
     ;;

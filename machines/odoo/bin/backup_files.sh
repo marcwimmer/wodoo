@@ -1,3 +1,3 @@
 #!/bin/bash
 /set_permissions.sh
-tar cfz /opt/dumps/$filename /opt/oefiles
+tar cfz /opt/dumps/oefiles.tar /opt/oefiles
