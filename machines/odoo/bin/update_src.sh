@@ -19,6 +19,7 @@ fi
 source /env.sh
 
 
+/set_permissions.sh
 
 ############################################################################
 #                        /opt/openerp/admin

@@ -13,9 +13,7 @@ fi
 # Setting up productive odoo
 echo Starting odoo for customs $CUSTOMS
 
-echo "setting ownership of /opt/oefiles to odoo"
-chown odoo:odoo /opt/oefiles -R
-chown odoo:odoo /opt/openerp/ -R
+/set_permissions.sh
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
 

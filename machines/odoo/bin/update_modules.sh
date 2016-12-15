@@ -1,6 +1,7 @@
 #!/bin/bash
 set -x
 source /env.sh
+/set_permissions.sh
 
 echo "Mainname: $meinname"
 
