@@ -13,7 +13,7 @@ else
 fi
 
 touch /tmp/debugging
-/opt/openerp/admin oekill || {
+/opt/openerp/admin/oekill || {
     echo 'could not terminate odoo'
 }
 
