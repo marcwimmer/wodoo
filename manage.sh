@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+set -x
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
@@ -155,6 +155,7 @@ backup)
     filepath=$BACKUPDIR/$filename
     LINKPATH=$BACKUPDIR/latest_dump
 
+    $dc up -d postgres odoo
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
     rm $LINKPATH || true
