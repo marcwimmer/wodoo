@@ -68,6 +68,9 @@ cat customs.env|grep -q 'RUN_ASTERISK=1' && {
     dc="$dc -f config/docker-compose.asterisk.yml"
 }
 
+if [[ -f "$DIR/docker-compose.customs" ]]; then
+    dc="$dc -f $DIR/docker-compose-custom.yml"
+fi
 
 
 function update_support_data {
