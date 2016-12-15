@@ -1,11 +1,9 @@
 #!/bin/bash
+MODULE=$1
 set -x
 source /env.sh
 /set_permissions.sh
 
-echo "Mainname: $meinname"
-
-MODULE=$1
 
 if [[ -n "$MODULE" ]]; then
     echo "updating just $MODULE"
