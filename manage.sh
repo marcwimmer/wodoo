@@ -296,6 +296,7 @@ update)
         $dc kill ari stasis
     fi
     $dc up -d
+    python $DIR/bin/telegram_msg.py "Update done"
    ;;
 quickpull)
     # useful for updating just mako templates
