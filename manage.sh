@@ -286,7 +286,7 @@ update)
     fi
     $dc kill odoo
     $dc run odoo /update_src.sh
-    $dc run odoo /update_modules.sh $3
+    $dc run odoo /update_modules.sh $2
     $dc kill odoo
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis
