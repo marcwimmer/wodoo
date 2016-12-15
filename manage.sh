@@ -154,6 +154,7 @@ backup)
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
     filename_oefiles=oefiles.tar
+    LINKPATH=$BACKUPDIR/latest_dump
 
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
@@ -170,6 +171,10 @@ backup)
         cp $DIR/dumps/$filename_oefiles $BACKUPDIR
         rm $DIR/dumps/$filename_oefiles
     fi
+
+    rm $LINKPATH || true
+    ln -s $BACKUPDIR $LINKPATH
+
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
     ;;
 
