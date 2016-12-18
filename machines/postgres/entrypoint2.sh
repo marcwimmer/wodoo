@@ -11,10 +11,10 @@ if [[ -z "$PGDATA" ]]; then
     exit -1
 fi
 
-FILE=postgres2.conf
+FILE=postgresql2.conf
 cp /opt/postgres.conf.d/$FILE $PGDATA/$FILE
 grep -q "include.*$FILE" || {
-	cat "include '$FILE'" >> $PGDATA/postgresql.conf
+	echo "include '$FILE'" >> $PGDATA/postgresql.conf
 }
 
 
