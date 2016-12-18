@@ -24,7 +24,10 @@ RUN chmod a+x /backup.sh /restore.sh
 
 RUN ls -lha /root/
 
-ADD postgres.conf /postgres.conf
+RUN mkdir /opt/postgres.conf.d
+RUN chown postgres:postgres /opt/postgres.conf.d
+ADD postgres2.conf /opt/postgres.conf.d/postgres2.conf
+RUN chown postgres:postgres /opt/postgres.conf.d -R
 ADD entrypoint2.sh /entrypoint2.sh
 RUN chmod a+x /entrypoint2.sh
 
