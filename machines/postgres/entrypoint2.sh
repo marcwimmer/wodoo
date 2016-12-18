@@ -12,8 +12,8 @@ if [[ -z "$PGDATA" ]]; then
 fi
 
 FILE=postgres2.conf
-grep -q $PGDATA/postgresql.conf "$CONFPATH" || {
-	cat "include_dir '$CONFPATH'" > $PGDATA/postgresql.conf
+grep -q "include.*$FILE" || {
+	cat "include '$FILE'" > $PGDATA/postgresql.conf
 }
 
 
