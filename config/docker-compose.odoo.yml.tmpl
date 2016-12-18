@@ -27,9 +27,11 @@ services:
       - postgres
     security_opt:
       - apparmor:unconfined
+      - seccomp:unconfined
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
+      - DAC_READ_SEARCH
     networks:
       ${DCPREFIX}_default:
         ipv4_address: 4.4.4.80

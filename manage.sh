@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+set +x
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
@@ -68,8 +68,12 @@ cat customs.env|grep -q 'RUN_ASTERISK=1' && {
     dc="$dc -f config/docker-compose.asterisk.yml"
 }
 
-if [[ -f "$DIR/docker-compose.customs" ]]; then
-    dc="$dc -f $DIR/docker-compose-custom.yml"
+CUSTOMSCONF=$DIR/docker-compose-custom.yml
+if [[ -f "$CUSTOMSCONF" ]]; then
+    echo "Including $CUSTOMSCONF"
+    dc="$dc -f $CUSTOMSCONF"
+else
+    echo "Not including $CUSTOMSCONF"
 fi
 
 
