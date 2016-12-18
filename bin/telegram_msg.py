@@ -14,5 +14,6 @@ with open(path, 'r') as f:
         TOKEN = content[0].split("=")[1]
 bot = telegram.Bot(TOKEN)
 updates = bot.getUpdates()
-chat_id = bot.getUpdates()[-1].message.chat_id
-bot.sendMessage(chat_id=chat_id, text=message)
+if updates:
+    chat_id = updates[-1].message.chat_id
+    bot.sendMessage(chat_id=chat_id, text=message)
