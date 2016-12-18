@@ -6,7 +6,7 @@ cd /
 echo "Executing postgres entrypoint2.sh"
 echo "DBNAME: $DBNAME"
 
-cat /postgres.conf > $PGDATA/postgreslc.onf
+cat /postgres.conf > $PGDATA/postgresql.onf
 
 
 if [[ -z "$PGDATA" ]]; then
