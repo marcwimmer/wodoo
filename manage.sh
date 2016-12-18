@@ -68,7 +68,6 @@ cat customs.env|grep -q 'RUN_ASTERISK=1' && {
     dc="$dc -f config/docker-compose.asterisk.yml"
 }
 
-set -x
 CUSTOMSCONF=$DIR/docker-compose.customs
 if [[ -f "$CUSTOMSCONF" ]]; then
     dc="$dc -f $CUSTOMSCONF"
