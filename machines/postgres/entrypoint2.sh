@@ -13,7 +13,7 @@ fi
 
 FILE=postgresql2.conf
 cp /opt/postgres.conf.d/$FILE $PGDATA/$FILE
-grep -q "include.*$FILE" || {
+grep -q "include.*$FILE" $PGDATA/postgresql.conf || {
 	echo "include '$FILE'" >> $PGDATA/postgresql.conf
 }
 
