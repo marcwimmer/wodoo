@@ -68,9 +68,12 @@ cat customs.env|grep -q 'RUN_ASTERISK=1' && {
     dc="$dc -f config/docker-compose.asterisk.yml"
 }
 
-CUSTOMSCONF=$DIR/docker-compose.customs
+CUSTOMSCONF=$DIR/docker-compose-custom.yml
 if [[ -f "$CUSTOMSCONF" ]]; then
+    echo "Including $CUSTOMSCONF"
     dc="$dc -f $CUSTOMSCONF"
+else
+    echo "Not including $CUSTOMSCONF"
 fi
 
 
