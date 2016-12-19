@@ -154,6 +154,9 @@ setup-startup)
         /bin/systemctl start $servicename
     fi
     ;;
+exec)
+    $dc exec $2 $3 $3 $4
+    ;;
 backup_db)
     if [[ -n "$2" ]]; then
         BACKUPDIR=$2
