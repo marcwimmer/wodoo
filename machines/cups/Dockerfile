@@ -18,6 +18,8 @@ VOLUME /var/spool/cups
 VOLUME /var/cache/cups
 
 ADD etc-pam.d-cups /etc/pam.d/cups
+ADD print.py /print.py
+RUN chmod a+x /print.py
 
 RUN apt-get -qq update
 RUN apt-get install -y wget samba-client
