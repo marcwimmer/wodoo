@@ -166,25 +166,6 @@ ADD config/config_gevent /home/odoo/config_gevent
 RUN chown odoo:odoo /home/odoo -R
 RUN echo 'export TERM=xterm' >> /etc/environment
 
-# CUPS setup
-RUN apt-get update && apt-get install cups cups-pdf whois -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN mv /usr/lib/cups/backend/parallel /usr/lib/cups/backend-available/
-RUN mv /usr/lib/cups/backend/serial /usr/lib/cups/backend-available/
-RUN mkdir -p /etc/cups/ssl
-VOLUME /etc/cups/
-VOLUME /var/log/cups
-VOLUME /var/spool/cups
-VOLUME /var/cache/cups
-ADD etc-pam.d-cups /etc/pam.d/cups
-RUN apt-get -qq update
-RUN apt-get install -y wget samba-client
-ADD smbc /usr/lib/cups/backend/smbc
-RUN chmod a+x /usr/lib/cups/backend/smbc
-RUN apt-get install -y smbclient
-ADD start_cups.sh /start_cups.sh
-RUN chmod +x /start_cups.sh
-# CUPS end
-
 USER root
 CMD /run.sh
 

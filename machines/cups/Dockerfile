@@ -23,7 +23,7 @@ RUN apt-get -qq update
 RUN apt-get install -y wget samba-client
 ADD smbc /usr/lib/cups/backend/smbc
 RUN chmod a+x /usr/lib/cups/backend/smbc
-RUN apt-get install -y smbclient
+RUN apt-get install -y python
 
 EXPOSE 631
 
