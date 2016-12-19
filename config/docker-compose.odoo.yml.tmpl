@@ -37,8 +37,6 @@ services:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
     restart: on-failure
-    depends_on:
-      - postgres
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
