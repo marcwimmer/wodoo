@@ -2,6 +2,13 @@
 set -e
 set -x
 
+locale-gen en_US.UTF-8
+update-locale
+
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+
 source /env.sh
 source /opt/openerp/admin/setup_bash
 
