@@ -65,6 +65,7 @@ services:
       - opt_servers:/opt/servers
     environment:
       ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
     env_file:
       - ../customs.env
       - ../fixed.env
