@@ -22,8 +22,8 @@ while True:
 
         for dirpath, dirnames, filenames in os.walk(PATH):
             for filename in [f for f in filenames if f.endswith(".pdf")]:
-                printer_queue = os.path.basename(dirpath)
                 path = os.path.join(dirpath, filename)
+                printer_queue = os.path.basename(path)
                 id = unicode(uuid).replace(u'-', u'')
                 conn = cups.Connection()
                 logger.info(u"Printing {} to queue: {}".format(path, printer_queue))
