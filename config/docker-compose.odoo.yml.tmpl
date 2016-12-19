@@ -7,6 +7,7 @@ volumes:
   mailstorage:
   opt_servers:
   opt_permanent:
+  cupsdata:
 
 services:
   sslproxy:
@@ -18,6 +19,16 @@ services:
     volumes:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
+  cups:
+    container_name: ${DCPREFIX}_cups
+    build: ../machines/cups
+    ports:
+      - "6631:631"
+    volumes:
+      - cupsdata:/opt/cups_etc 
+    environment:
+      CUPS_USER_ADMIN: odoo
+      CUPS_USER_PASSWORD: odoo
 
   odoo:
     container_name: ${DCPREFIX}_odoo
@@ -38,6 +49,7 @@ services:
     links:
       - postgres:postgres
     volumes:
+      - cupsdata:/opt/cups_etc 
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
