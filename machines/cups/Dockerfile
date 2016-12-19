@@ -3,7 +3,7 @@ FROM ubuntu:16.04
 MAINTAINER Nicolas Delaby "nicolas@ezeep.com"
 
 # Install cups
-RUN apt-get update && apt-get install cups cups-pdf whois -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update && apt-get install cups cups-pdf whois wget samba-client python python-cups -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Disbale some cups backend that are unusable within a container
 RUN mv /usr/lib/cups/backend/parallel /usr/lib/cups/backend-available/
@@ -21,11 +21,8 @@ ADD etc-pam.d-cups /etc/pam.d/cups
 ADD print.py /print.py
 RUN chmod a+x /print.py
 
-RUN apt-get -qq update
-RUN apt-get install -y wget samba-client
 ADD smbc /usr/lib/cups/backend/smbc
 RUN chmod a+x /usr/lib/cups/backend/smbc
-RUN apt-get install -y python python-cups
 
 EXPOSE 631
 
