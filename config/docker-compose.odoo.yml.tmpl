@@ -29,6 +29,9 @@ services:
     environment:
       CUPS_USER_ADMIN: odoo
       CUPS_USER_PASSWORD: odoo
+    networks:
+      ${DCPREFIX}_default:
+        ipv4_address: 4.4.4.65
 
   odoo:
     container_name: ${DCPREFIX}_odoo
