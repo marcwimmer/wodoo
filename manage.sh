@@ -144,16 +144,20 @@ setup-startup)
         /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
         /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" $file
 
+        set +e
+        /bin/systemctl disable $servicename
+        rm /etc/systemd/system/$servicename
+        rm lib/systemd/system/$servicename
         /bin/systemctl daemon-reload
+        /bin/systemctl reset-failed
         /bin/systemctl enable $servicename
         /bin/systemctl start $servicename
     fi
     ;;
-
 exec)
     $dc exec $2 $3 $3 $4
     ;;
-backup)
+backup_db)
     if [[ -n "$2" ]]; then
         BACKUPDIR=$2
     else
@@ -162,16 +166,19 @@ backup)
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
     LINKPATH=$BACKUPDIR/latest_dump
-
     $dc up -d postgres odoo
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
     rm $LINKPATH || true
     ln -s $filepath $LINKPATH
     echo "Dumped to $filepath"
-
-    echo "Backuping files..."
-
+    ;;
+backup_files)
+    if [[ -n "$2" ]]; then
+        BACKUPDIR=$2
+    else
+        BACKUPDIR=$DIR/dumps
+    fi
     # execute in running container via exec
     $dc exec odoo /backup_files.sh
 
@@ -183,6 +190,16 @@ backup)
     fi
 
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
+    ;;
+backup)
+    if [[ -n "$2" ]]; then
+        BACKUPDIR=$2
+    else
+        BACKUPDIR=$DIR/dumps
+    fi
+    $DIR/manage.sh backup_db $BACKUPDIR
+    $DIR/manage.sh backup_files $BACKUPDIR
+
     ;;
 
 restore)
