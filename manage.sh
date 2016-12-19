@@ -326,7 +326,7 @@ update)
    ;;
 quickpull)
     # useful for updating just mako templates
-    $dc run odoo /update_src.sh
+    $dc exec odoo /update_src.sh
    ;;
 make-keys)
     export dc=$dc
