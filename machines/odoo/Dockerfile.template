@@ -156,7 +156,6 @@ RUN pip install requests[security]
 RUN pip install glob2
 RUN pip install gitpython
 
-ADD config/.openerp_serverrc /home/odoo/.openerp_serverrc
 ADD config/config_openerp /home/odoo/config_openerp
 ADD config/config_gevent /home/odoo/config_gevent
 RUN chown odoo:odoo /home/odoo -R
