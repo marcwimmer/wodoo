@@ -12,7 +12,7 @@ if [[ -z "$DB_HOST" ]]; then
 fi
 
 FILES=(config_openerp config_gevent)
-for f in $FILES;
+for f in ${FILES[@]};
 do
     f=/home/odoo/$f
     sed -i "s|__DB_USER__|$DB_USER|g" $f
