@@ -135,10 +135,6 @@ USER root
 RUN chmod 644 /etc/python2.7/sitecustomize.py
 
 USER root
-RUN locale-gen "en_US.UTF-8"
-RUN dpkg-reconfigure locales
-
-USER root
 WORKDIR /home/odoo
 RUN chown odoo:odoo .ssh/authorized_keys
 RUN chmod 600 .ssh/authorized_keys
