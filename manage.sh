@@ -102,7 +102,7 @@ case $1 in
 clean_supportdata)
     echo "Deleting support data"
     if [[ -d $DIR/support_data ]]; then
-        rm -Rf $DIR/support_data/*
+        /bin/rm -Rf $DIR/support_data/*
     fi
     ;;
 fetch)
@@ -146,8 +146,8 @@ setup-startup)
 
         set +e
         /bin/systemctl disable $servicename
-        rm /etc/systemd/system/$servicename
-        rm lib/systemd/system/$servicename
+        /bin/rm /etc/systemd/system/$servicename
+        /bin/rm lib/systemd/system/$servicename
         /bin/systemctl daemon-reload
         /bin/systemctl reset-failed
         /bin/systemctl enable $servicename
@@ -169,7 +169,7 @@ backup_db)
     $dc up -d postgres odoo
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
-    rm $LINKPATH || true
+    /bin/rm $LINKPATH || true
     ln -s $filepath $LINKPATH
     echo "Dumped to $filepath"
     ;;
@@ -183,10 +183,10 @@ backup_files)
     $dc exec odoo /backup_files.sh
 
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
-        cp $DIR/dumps/$filename.gz $BACKUPDIR
-        rm $DIR/dumps/$filename.gz
-        cp $DIR/dumps/$filename_oefiles $BACKUPDIR
-        rm $DIR/dumps/$filename_oefiles
+        /bin/cp $DIR/dumps/$filename.gz $BACKUPDIR
+        /bin/rm $DIR/dumps/$filename.gz
+        /bin/cp $DIR/dumps/$filename_oefiles $BACKUPDIR
+        /bin/rm $DIR/dumps/$filename_oefiles
     fi
 
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
@@ -214,11 +214,11 @@ restore)
         echo "File $3 not found!"
         exit -1
     fi
-    mkdir -p $DIR/restore
-    rm $DIR/restore/* || true
-    cp $2 $DIR/restore/$DBNAME.gz
+    /bin/mkdir -p $DIR/restore
+    /bin/rm $DIR/restore/* || true
+    /bin/cp $2 $DIR/restore/$DBNAME.gz
     if [[ -n "$3" && -f "$3" ]]; then
-        cp $3 $DIR/restore/$filename_oefiles
+        /bin/cp $3 $DIR/restore/$filename_oefiles
     fi
 
     echo "Shutting down containers"
@@ -339,5 +339,5 @@ make-keys)
 esac
 
 if [[ -f config/docker-compose.yml ]]; then
-    rm config/docker-compose.yml || true
+    /bin/rm config/docker-compose.yml || true
 fi
