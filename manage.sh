@@ -144,7 +144,12 @@ setup-startup)
         /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
         /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" $file
 
+        set +e
+        /bin/systemctl disable $servicename
+        rm /etc/systemd/system/$servicename
+        rm lib/systemd/system/$servicename
         /bin/systemctl daemon-reload
+        /bin/systemctl reset-failed
         /bin/systemctl enable $servicename
         /bin/systemctl start $servicename
     fi
