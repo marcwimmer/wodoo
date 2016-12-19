@@ -8,6 +8,7 @@ volumes:
   opt_servers:
   opt_permanent:
   cupsdata:
+  cupsdatatoprint:
 
 services:
   sslproxy:
@@ -26,12 +27,10 @@ services:
       - "6631:631"
     volumes:
       - cupsdata:/opt/cups_etc 
+      - cupsdatatoprint:/opt/toprint 
     environment:
       CUPS_USER_ADMIN: odoo
-      CUPS_USER_PASSWORD: odoo
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.65
+      CUPS_USER_PASSWORD: odoo!#!881tTQadasdashu28
 
   odoo:
     container_name: ${DCPREFIX}_odoo
@@ -53,6 +52,7 @@ services:
       - postgres:postgres
     volumes:
       - cupsdata:/opt/cups_etc 
+      - cupsdatatoprint:/opt/toprint 
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
@@ -64,8 +64,6 @@ services:
       - opt_servers:/opt/servers
     environment:
       ODOO_PROD: 1
-      CUPS_USER_ADMIN: odoo
-      CUPS_USER_PASSWORD: odoo
     env_file:
       - ../customs.env
       - ../fixed.env
