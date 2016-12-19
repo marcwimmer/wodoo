@@ -21,8 +21,7 @@ ADD etc-pam.d-cups /etc/pam.d/cups
 
 RUN apt-get -qq update
 RUN apt-get install -y wget samba-client
-WORKDIR /usr/lib/cups/backend
-RUN wget http://willem.engen.nl/projects/cupssmb/smbc
+ADD smbc /usr/lib/cups/backend/smbc
 RUN chmod a+x smbc
 RUN apt-get install -y smbclient
 
