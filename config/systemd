@@ -6,6 +6,7 @@ After=docker.service
 [Service]
 Environment=
 WorkingDirectory=${PATH}
+ExecStartPre=-/bin/bash manage.sh rm -f
 ExecStart=/bin/bash manage.sh up
 ExecStop=/bin/bash manage.sh stop
 Restart=always
