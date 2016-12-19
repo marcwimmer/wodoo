@@ -136,7 +136,7 @@ setup-startup)
     else
         echo "Setting up systemd script for startup"
         servicename=${CUSTOMS}_odoo.service
-        file=/etc/systemd/system/$servicename
+        file=/lib/systemd/system/$servicename
 
         echo "Setting up upstart script in $file"
         /bin/cp $DIR/config/systemd $file
