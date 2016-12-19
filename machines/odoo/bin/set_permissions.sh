@@ -11,7 +11,7 @@ if [[ -z "$DB_HOST" ]]; then
     exit -1
 fi
 
-FILES=(config_openerp config_gevent)
+declare -a FILES=("config_openerp" "config_gevent")
 for f in ${FILES[@]};
 do
     f=/home/odoo/$f
