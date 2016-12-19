@@ -26,7 +26,7 @@ while True:
                 path = os.path.join(dirpath, filename)
                 id = unicode(uuid).replace(u'-', u'')
                 conn = cups.Connection()
-                logger.info(u"Printing {}".format(path))
+                logger.info(u"Printing {} to queue: {}".format(path, printer_queue))
                 conn.printFile(unicode(printer_queue), unicode(path), unicode(id), {})
                 os.unlink(path)
     except:
