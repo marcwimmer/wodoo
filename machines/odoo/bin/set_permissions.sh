@@ -6,7 +6,7 @@ chown odoo:odoo /opt/openerp/ -R
 chown odoo:odoo /opt/toprint -R
 
 
-if [[ -n "$DB_HOST" ]]; then
+if [[ -z "$DB_HOST" ]]; then
     echo "Please define all DB Env Variables!"
     exit -1
 fi
