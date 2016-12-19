@@ -247,6 +247,7 @@ springclean)
     docker rmi $(docker images -q -f='dangling=true')
     ;;
 up)
+    $dc rm -f
     $dc up $2 $3 $4
     ;;
 debug)
