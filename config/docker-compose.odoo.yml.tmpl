@@ -64,6 +64,8 @@ services:
       - opt_servers:/opt/servers
     environment:
       ODOO_PROD: 1
+      CUPS_USER_ADMIN: odoo
+      CUPS_USER_PASSWORD: odoo
     env_file:
       - ../customs.env
       - ../fixed.env
