@@ -7,6 +7,8 @@ volumes:
   mailstorage:
   opt_servers:
   opt_permanent:
+  cupsdata:
+  cupsdatatoprint:
 
 services:
   sslproxy:
@@ -28,24 +30,38 @@ services:
     volumes:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
+  cups:
+    container_name: ${DCPREFIX}_cups
+    build: ../machines/cups
+    ports:
+      - "6631:631"
+    volumes:
+      - cupsdata:/opt/cups_etc 
+      - cupsdatatoprint:/opt/toprint 
+    environment:
+      CUPS_USER_ADMIN: odoo
+      CUPS_USER_PASSWORD: odoo!#!881tTQadasdashu28
+      WATCHPATH: /opt/toprint
 
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
     restart: on-failure
-    depends_on:
-      - postgres
     security_opt:
       - apparmor:unconfined
+      - seccomp:unconfined
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
+      - DAC_READ_SEARCH
     networks:
       ${DCPREFIX}_default:
         ipv4_address: 4.4.4.80
     links:
       - postgres:postgres
     volumes:
+      - cupsdata:/opt/cups_etc 
+      - cupsdatatoprint:/opt/toprint 
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
@@ -57,6 +73,7 @@ services:
       - opt_servers:/opt/servers
     environment:
       ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
     env_file:
       - ../customs.env
       - ../fixed.env

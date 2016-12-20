@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+set +x
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
@@ -68,8 +68,12 @@ cat customs.env|grep -q 'RUN_ASTERISK=1' && {
     dc="$dc -f config/docker-compose.asterisk.yml"
 }
 
-if [[ -f "$DIR/docker-compose.customs" ]]; then
-    dc="$dc -f $DIR/docker-compose-custom.yml"
+CUSTOMSCONF=$DIR/docker-compose-custom.yml
+if [[ -f "$CUSTOMSCONF" ]]; then
+    echo "Including $CUSTOMSCONF"
+    dc="$dc -f $CUSTOMSCONF"
+else
+    echo "Not including $CUSTOMSCONF"
 fi
 
 
@@ -98,7 +102,7 @@ case $1 in
 clean_supportdata)
     echo "Deleting support data"
     if [[ -d $DIR/support_data ]]; then
-        rm -Rf $DIR/support_data/*
+        /bin/rm -Rf $DIR/support_data/*
     fi
     ;;
 fetch)
@@ -132,7 +136,7 @@ setup-startup)
     else
         echo "Setting up systemd script for startup"
         servicename=${CUSTOMS}_odoo.service
-        file=/etc/systemd/system/$servicename
+        file=/lib/systemd/system/$servicename
 
         echo "Setting up upstart script in $file"
         /bin/cp $DIR/config/systemd $file
@@ -140,12 +144,20 @@ setup-startup)
         /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" $file
         /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" $file
 
+        set +e
+        /bin/systemctl disable $servicename
+        /bin/rm /etc/systemd/system/$servicename
+        /bin/rm lib/systemd/system/$servicename
         /bin/systemctl daemon-reload
+        /bin/systemctl reset-failed
         /bin/systemctl enable $servicename
         /bin/systemctl start $servicename
     fi
     ;;
-backup)
+exec)
+    $dc exec $2 $3 $3 $4
+    ;;
+backup_db)
     if [[ -n "$2" ]]; then
         BACKUPDIR=$2
     else
@@ -154,27 +166,40 @@ backup)
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
     LINKPATH=$BACKUPDIR/latest_dump
-
     $dc up -d postgres odoo
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
-    rm $LINKPATH || true
+    /bin/rm $LINKPATH || true
     ln -s $filepath $LINKPATH
     echo "Dumped to $filepath"
-
-    echo "Backuping files..."
-
+    ;;
+backup_files)
+    if [[ -n "$2" ]]; then
+        BACKUPDIR=$2
+    else
+        BACKUPDIR=$DIR/dumps
+    fi
     # execute in running container via exec
     $dc exec odoo /backup_files.sh
 
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
-        cp $DIR/dumps/$filename.gz $BACKUPDIR
-        rm $DIR/dumps/$filename.gz
-        cp $DIR/dumps/$filename_oefiles $BACKUPDIR
-        rm $DIR/dumps/$filename_oefiles
+        /bin/cp $DIR/dumps/$filename.gz $BACKUPDIR
+        /bin/rm $DIR/dumps/$filename.gz
+        /bin/cp $DIR/dumps/$filename_oefiles $BACKUPDIR
+        /bin/rm $DIR/dumps/$filename_oefiles
     fi
 
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
+    ;;
+backup)
+    if [[ -n "$2" ]]; then
+        BACKUPDIR=$2
+    else
+        BACKUPDIR=$DIR/dumps
+    fi
+    $DIR/manage.sh backup_db $BACKUPDIR
+    $DIR/manage.sh backup_files $BACKUPDIR
+
     ;;
 
 restore)
@@ -189,11 +214,11 @@ restore)
         echo "File $3 not found!"
         exit -1
     fi
-    mkdir -p $DIR/restore
-    rm $DIR/restore/* || true
-    cp $2 $DIR/restore/$DBNAME.gz
+    /bin/mkdir -p $DIR/restore
+    /bin/rm $DIR/restore/* || true
+    /bin/cp $2 $DIR/restore/$DBNAME.gz
     if [[ -n "$3" && -f "$3" ]]; then
-        cp $3 $DIR/restore/$filename_oefiles
+        /bin/cp $3 $DIR/restore/$filename_oefiles
     fi
 
     echo "Shutting down containers"
@@ -222,6 +247,7 @@ springclean)
     docker rmi $(docker images -q -f='dangling=true')
     ;;
 up)
+    $dc rm -f
     $dc up $2 $3 $4
     ;;
 debug)
@@ -300,7 +326,7 @@ update)
    ;;
 quickpull)
     # useful for updating just mako templates
-    $dc run odoo /update_src.sh
+    $dc exec odoo /update_src.sh
    ;;
 make-keys)
     export dc=$dc
@@ -313,5 +339,5 @@ make-keys)
 esac
 
 if [[ -f config/docker-compose.yml ]]; then
-    rm config/docker-compose.yml || true
+    /bin/rm config/docker-compose.yml || true
 fi

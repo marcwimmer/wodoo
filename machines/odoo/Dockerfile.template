@@ -67,7 +67,9 @@ RUN apt-get install -y --no-install-recommends \
             freetds-dev \
             libsasl2-dev python-dev libldap2-dev libssl-dev \
             wget \
-            cifs-utils
+            cifs-utils \
+            imagemagick \
+            cups
 
 # https://github.com/odoo/odoo/issues/5177
 RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
@@ -133,10 +135,6 @@ USER root
 RUN chmod 644 /etc/python2.7/sitecustomize.py
 
 USER root
-RUN locale-gen "en_US.UTF-8"
-RUN dpkg-reconfigure locales
-
-USER root
 WORKDIR /home/odoo
 RUN chown odoo:odoo .ssh/authorized_keys
 RUN chmod 600 .ssh/authorized_keys
@@ -158,7 +156,6 @@ RUN pip install requests[security]
 RUN pip install glob2
 RUN pip install gitpython
 
-ADD config/.openerp_serverrc /home/odoo/.openerp_serverrc
 ADD config/config_openerp /home/odoo/config_openerp
 ADD config/config_gevent /home/odoo/config_gevent
 RUN chown odoo:odoo /home/odoo -R
