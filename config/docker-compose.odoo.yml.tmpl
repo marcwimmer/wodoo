@@ -12,9 +12,19 @@ services:
   sslproxy:
     container_name: ${DCPREFIX}_odoo_ssl_proxy
     build: ../machines/sslproxy
-    
+    depends_on: 
+        - odoo
+    restart: on-failure
+    links:
+        - odoo:odoo
+        - nginx:nginx
     ports:
         - "${SSL_PORT}:8068"
+
+    networks:
+      ${DCPREFIX}_default:
+        ipv4_address: 4.4.4.88
+
     volumes:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
