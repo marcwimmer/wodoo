@@ -60,7 +60,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -f config/docker-compose.odoo.yml"
+dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml"
 
 RUN_ASTERISK=0
 
