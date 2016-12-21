@@ -40,6 +40,7 @@ if [ -z "$1" ]; then
     echo "clean_supportdata - clears support data"
     echo "clean_supportdata - clears support data"
     echo "fetch - fetches support data"
+    echo "install-telegram-bot - installs required python libs"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "logall - shows log til now; use parameter to specify machine"
@@ -308,6 +309,9 @@ restart)
     cd $DIR
     eval "$dc stop $2"
     eval "$dc up -d $2"
+    ;;
+install-telegram-bot)
+    pip install python-telegram-bot
     ;;
 update)
     if [[ "$RUN_ASTERISK" == "1" ]]; then
