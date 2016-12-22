@@ -313,20 +313,29 @@ restart)
 install-telegram-bot)
     pip install python-telegram-bot
     ;;
+purge-source)
+    $dc up -d odoo
+    $dc exec odoo rm -Rf /opt/openerp/customs/$CUSTOMS
+    ;;
 update)
+    set -x
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         eval "$dc run ari /init.sh"
         eval "$dc run stasis /init.sh"
     fi
-    $dc kill odoo
-    $dc run odoo /update_src.sh
-    $dc run odoo /update_modules.sh $2
+    $dc up -d odoo
+    $dc exec odoo /update_src.sh
+    echo "HER1E"
+    $dc exec odoo /update_modules.sh $2
+    echo "HERE"
     $dc kill odoo
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis
     fi
     $dc up -d
-    python $DIR/bin/telegram_msg.py "Update done"
+    python $DIR/bin/telegram_msg.py "Update done" > /dev/null &2>1
+    echo 'Removing unneeded containers'
+    $dc rm -f
    ;;
 quickpull)
     # useful for updating just mako templates

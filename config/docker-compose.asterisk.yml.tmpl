@@ -97,10 +97,6 @@ services:
       - asterisk_redis
     networks:
       - ${DCPREFIX}_default
-    links:
-      - asterisk:asterisk
-      - asterisk_redis:asterisk_redis
-      - odoo:odoo
     environment:
       ODOO_USER: $ASTERISK_ODOO_USER
       ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD
@@ -144,9 +140,6 @@ services:
         - asterisk_logs:/var/log/asterisk
       networks:
         - ${DCPREFIX}_default
-      links:
-        - asterisk:asterisk
-        - asterisk_redis:asterisk_redis
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
