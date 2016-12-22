@@ -55,7 +55,7 @@ echo "Updating odoo src"
 /opt/openerp/admin/switch $CUSTOMS $BRANCH
 cd /opt/openerp/customs/$CUSTOMS
 git checkout $BRANCH -f
-git clean -d -x -f
+git clean -ffdx
 git pull
 git submodule update --init --recursive
 /opt/openerp/admin/oeln $CUSTOMS
