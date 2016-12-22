@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+set +x
 
 ############################################################################
 #                        Pre-Checks
@@ -50,6 +50,7 @@ chown odoo:odoo /opt/openerp/customs -R
 ############################################################################
 #                        /opt/openerp/versions
 ############################################################################
+set -x
 echo "Updating odoo src"
 /opt/openerp/admin/switch $CUSTOMS $BRANCH
 cd /opt/openerp/customs/$CUSTOMS
