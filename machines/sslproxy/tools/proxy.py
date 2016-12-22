@@ -5,6 +5,8 @@ import time
 import sys
 import configparser
 import os
+import ssl
+import logging
 
 
 class HTTPS_ConfigHandler(object):
@@ -16,16 +18,16 @@ class HTTPS_ConfigHandler(object):
     def write_default_config(self):
         for section in self.sections:
             self.config.add_section(section)
-        self.config.set(self.sections[0], "debug_mode", "0")
+        self.config.set(self.sections[0], "log_level", "DEBUG")
         self.config.set(self.sections[0], "modify_mode", "0")
         self.config.set(self.sections[0], "bind_ip", "0.0.0.0")
         self.config.set(self.sections[0], "bind_port", "8068")
-        self.config.set(self.sections[0], "referrer_ip", "192.168.60.52")
-        self.config.set(self.sections[0], "referrer_port", "8069")
-        self.config.set(self.sections[0],
+        self.config.set(self.sections[0], "referrer_ip", "tricross.no-ip.org")
+        self.config.set(self.sections[0], "referrer_port", "80")
+        self.config.set(self.sections[1],
                         "#If https is with a self-signed certificate, activate with verify_certificate",
                         "/path/to/chain-cert.pem")
-        self.config.set(self.sections[0], "verify_certificate", "./certs/ca-chain.cert.pem")
+        self.config.set(self.sections[1], "verify_certificate", "./certs/ca-chain.cert.pem")
         self.config.set(self.sections[1], "ssl_active", "0")
         self.config.set(self.sections[1], "server_private_key", "./certs/192.168.60.157.key.pem")
         self.config.set(self.sections[1], "server_certificate", "./certs/192.168.60.157.cert.pem")
@@ -42,24 +44,36 @@ class HTTPS_ConfigHandler(object):
 
 # Changing the buffer_size and delay, you can improve the speed and bandwidth.
 # But when buffer get to high or delay go too down, you can broke things
-conf=HTTPS_ConfigHandler().get_config()
+conf=HTTPS_ConfigHandler(conf_path="{}.cfg".format(os.path.basename(__file__[:-3]))).get_config()
 buffer_size = 8192
 delay = 0.00001
 forward_to = (
     conf["base_config"]["referrer_ip"],
     int(conf["base_config"]["referrer_port"])
 )
-debug=False
+# Logging
+logger = logging.getLogger("ssl_proxy")
+ch = logging.StreamHandler(sys.stdout)
+logger.setLevel(getattr(logging,conf["base_config"]["log_level"].upper()))
+logger.addHandler(ch)
 
-if conf["base_config"]["debug_mode"] == "1":
-    debug=True
+modify=False
+
+if conf["base_config"]["modify_mode"] == "1":
+    modify=True
 #forward_to = ('192.168.60.52', 8069)
 #redir_to = ('https://192.168.1.53',8069)
 
 class Forward:
     def __init__(self):
         self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+        self.forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        if conf["ssl_config"]["target_ssl_active"]=="1":
+            nosslverify = ssl._create_unverified_context()
+            #self.forward = ssl.wrap_socket(self.forward,context=nosslverify)
+            self.forward = nosslverify.wrap_socket(self.forward)
+            #urllib.urlopen("https://no-valid-cert", context=context)
     def start(self, host, port):
         try:
             self.forward.connect((host, port))
@@ -71,7 +85,7 @@ class Forward:
 class TheServer:
     input_list = []
     channel = {}
-
+    s=None
     def __init__(self, host, port):
         self.http = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         self.http.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR, 1)
@@ -81,27 +95,32 @@ class TheServer:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.server.bind((host, port))
+
         ssl_active = int(conf["ssl_config"]["ssl_active"])
         if ssl_active == 1:
-            print("loading_ssl")
+            logger.debug("loading_ssl")
             import ssl
             key = conf["ssl_config"]["server_private_key"]
             cer = conf["ssl_config"]["server_certificate"]
             cac = conf["ssl_config"]["ca_certificate"]
-            if debug:
-                print("""
+            req = bool(int(conf["ssl_config"]["client_cert_required"]))
+            logger.debug("""
 key:    {} ({})
 cert:   {} ({})
 cac:    {} ({})
-
-                """.format(key,os.path.exists(key),cer,os.path.exists(cer),cac,os.path.exists(cac)))
-
+req:    {} ({})
+                """.format(key,os.path.exists(key),cer,os.path.exists(cer),cac,os.path.exists(cac),req,type(req)))
+            cert_req = ssl.CERT_NONE
+            if req:
+                cert_req = ssl.CERT_REQUIRED
             self.server = ssl.wrap_socket(
                 self.server,
                 keyfile=key,
                 certfile=cer,
                 ca_certs=cac,
-                ssl_version=ssl.PROTOCOL_TLSv1_2)
+                ssl_version=ssl.PROTOCOL_TLSv1_2,
+                cert_reqs=cert_req)
+
         self.server.listen(200)
 
     def main_loop(self):
@@ -126,33 +145,37 @@ cac:    {} ({})
         forward = Forward().start(forward_to[0], forward_to[1])
         try:
             clientsock, clientaddr = self.server.accept()
-            if debug:
-                print("""
+            logger.debug("""
 client_sock:    {}
 client_addr:    {}
 """.format(clientsock,clientaddr))
+            client_cert = clientsock.getpeercert()
+            logger.debug("subject 3 0 = {}".format(client_cert["subject"][3][0][0]))
+            out=""
+            if client_cert["subject"][3][0][0] == "commonName":
+                out = "{} Connected".format(client_cert["subject"][3][0][1])
+            if client_cert["subject"][0][0][0] == "countryName":
+                out += " from {}".format(client_cert["subject"][0][0][1])
+            logger.debug(out)
+            logger.debug("PeerCert: {}".format(client_cert))
+            #logger.info(clientaddr, "has connected")
         except Exception as e:
-            print("Warning: {}".format(e))
-            print("Tried to connect on HTTP: Try to Redirect")
-            #forward = Forward().start(redir_to[0],redir_to[1])
-            #clientsock,clientaddr = self.server.accept()
+            logger.warning(e)
             return
 
-
         if forward:
-            print(clientaddr, "has connected")
             self.input_list.append(clientsock)
             self.input_list.append(forward)
             self.channel[clientsock] = forward
             self.channel[forward] = clientsock
         else:
-            print("Can't establish connection with remote server.")
-            print("Closing connection with client side", clientaddr)
+            logger.warning("Can't establish connection with remote server.")
+            logger.info("Closing connection with client side", clientaddr)
             clientsock.close()
 
     def on_close(self):
-        print(self.s.getpeername(), "has disconnected")
         #remove objects from input_list
+        logger.debug(self.channel)
         self.input_list.remove(self.s)
         self.input_list.remove(self.channel[self.s])
         out = self.channel[self.s]
@@ -164,23 +187,45 @@ client_addr:    {}
         del self.channel[out]
         del self.channel[self.s]
 
+    def modify_data(self, data):
+        try:
+            data = data.replace(b'<head>', b'<head><script type="text/javascript>alert("Testx","Testy","Testz")"')
+            logger.debug("Data replaced...")
+            logger.debug(data)
+            return data
+        except Exception as e:
+            print(e)
+            print("Data not replaced...")
+            return data
+
     def on_recv(self):
         data = self.data
         # here we can parse and/or modify the data before send forward
-        print(data)
+        logger.debug(data)
+        logger.debug(type(data))
+        if modify:
+            try:
+                data = self.modify_data(data)
+            except Exception as e:
+                logger.error(e)
         self.channel[self.s].send(data)
 
+def worker():
+    server = TheServer(
+        conf["base_config"]["bind_ip"],
+        # "192.168.1.53",
+        int(conf["base_config"]["bind_port"])
+    )
+    logger.info("Starting Proxyserver...")
+    logger.info("listening on: {} at {}".format(conf["base_config"]["bind_ip"], conf["base_config"]["bind_port"]))
+    try:
+        server.main_loop()
+    except Exception as e:
+        logger.error(e)
+
 if __name__ == '__main__':
-        conf = HTTPS_ConfigHandler().get_config()
-        server = TheServer(
-            conf["base_config"]["bind_ip"],
-            #"192.168.1.53",
-            int(conf["base_config"]["bind_port"])
-        )
-        print("Starting Proxyserver...")
-        print("listening on: {} at {}".format(conf["base_config"]["bind_ip"],conf["base_config"]["bind_port"]))
-        try:
-            server.main_loop()
-        except KeyboardInterrupt:
-            print("Ctrl C - Stopping server")
-            sys.exit(1)
+    try:
+        worker()
+    except KeyboardInterrupt:
+        logger.info("Ctrl C - Stopping server")
+        sys.exit(1)
