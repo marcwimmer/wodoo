@@ -40,6 +40,7 @@ if [ -z "$1" ]; then
     echo "clean_supportdata - clears support data"
     echo "clean_supportdata - clears support data"
     echo "fetch - fetches support data"
+    echo "install-telegram-bot - installs required python libs"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "logall - shows log til now; use parameter to specify machine"
@@ -59,7 +60,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -f config/docker-compose.odoo.yml"
+dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml"
 
 RUN_ASTERISK=0
 
@@ -308,6 +309,9 @@ restart)
     cd $DIR
     eval "$dc stop $2"
     eval "$dc up -d $2"
+    ;;
+install-telegram-bot)
+    pip install python-telegram-bot
     ;;
 update)
     if [[ "$RUN_ASTERISK" == "1" ]]; then
