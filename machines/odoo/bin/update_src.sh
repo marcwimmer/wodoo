@@ -42,25 +42,16 @@ git pull
 source /opt/openerp/admin/setup_bash
 
 ############################################################################
-#                        /opt/openerp/versions
-############################################################################
-echo "Updating odoo src"
-/opt/openerp/admin/switch $CUSTOMS
-
-
-############################################################################
 #                        /opt/openerp/customs/$CUSTOMS
 ############################################################################
 mkdir -p /opt/openerp/customs
 chown odoo:odoo /opt/openerp/ -R
 
-if [[ ! -d /opt/openerp/customs/$CUSTOMS ]]; then
-    HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH || {
-        rm -Rf /opt/openerp/customs/$CUSTOMS
-        echo "Pulling failed!"
-        exit -1
-    }
-fi
+############################################################################
+#                        /opt/openerp/versions
+############################################################################
+echo "Updating odoo src"
+/opt/openerp/admin/switch $CUSTOMS $BRANCH
 cd /opt/openerp/customs/$CUSTOMS
 git checkout $BRANCH -f
 git clean -d -x -f

@@ -324,8 +324,10 @@ update)
         eval "$dc run stasis /init.sh"
     fi
     $dc up -d odoo
+    echo "Updating source code"
     $dc exec odoo /update_src.sh
-    echo "HER1E"
+    exit -1
+    echo "Run module update"
     $dc exec odoo /update_modules.sh $2
     echo "HERE"
     $dc kill odoo
