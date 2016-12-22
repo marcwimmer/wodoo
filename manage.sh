@@ -314,22 +314,21 @@ install-telegram-bot)
     pip install python-telegram-bot
     ;;
 purge-source)
-    $dc up -d odoo
-    $dc exec odoo rm -Rf /opt/openerp/customs/$CUSTOMS
+    $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
     set -x
+    set -e
+    $dc kill
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         eval "$dc run ari /init.sh"
         eval "$dc run stasis /init.sh"
     fi
-    $dc up -d odoo
     echo "Updating source code"
-    $dc exec odoo /update_src.sh
-    exit -1
+    $dc run odoo /update_src.sh
     echo "Run module update"
-    $dc exec odoo /update_modules.sh $2
-    echo "HERE"
+    $dc up -d postgres
+    $dc run odoo /update_modules.sh $2
     $dc kill odoo
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis

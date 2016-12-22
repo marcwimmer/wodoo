@@ -37,7 +37,7 @@ if [ ! -d /opt/openerp/admin ]; then
     rm -Rf /tmp/admin
 fi
 cd /opt/openerp/admin
-git clean -d -x -f
+git clean -ffdx
 git pull
 source /opt/openerp/admin/setup_bash
 
