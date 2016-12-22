@@ -52,7 +52,7 @@ echo "Updating odoo src"
 #                        /opt/openerp/customs/$CUSTOMS
 ############################################################################
 mkdir -p /opt/openerp/customs
-chown odoo:odoo /opt/openerp/ -R
+chown odoo:odoo /opt/openerp/customs -R
 
 if [[ ! -d /opt/openerp/customs/$CUSTOMS ]]; then
     HOME=/home/odoo /opt/openerp/admin/switch $CUSTOMS $BRANCH || {
