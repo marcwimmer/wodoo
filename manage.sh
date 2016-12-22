@@ -248,7 +248,7 @@ springclean)
     docker rmi $(docker images -q -f='dangling=true')
     ;;
 up)
-    $dc up $@
+    $dc up ${@:2}
     ;;
 debug)
     if [[ -z "$2" ]]; then
