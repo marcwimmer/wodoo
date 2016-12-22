@@ -335,7 +335,7 @@ update)
         $dc kill ari stasis
     fi
     $dc up -d
-    python $DIR/bin/telegram_msg.py "Update done" > /dev/null &2>1
+    python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
     $dc rm -f
    ;;
