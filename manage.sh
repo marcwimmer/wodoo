@@ -110,17 +110,6 @@ fetch)
     echo "Updating support data"
     update_support_data
     ;;
-init)
-    cd $DIR
-    eval "$dc run odoo /init.sh full"
-    if [[ "$RUN_ASTERISK" == "1" ]]; then
-        eval "$dc run ari /init.sh full"
-        eval "$dc run stasis /init.sh full"
-    fi
-    eval "$dc stop"
-    eval "$dc start"
-    ;;
-
 setup-startup)
     PATH=$DIR
 
