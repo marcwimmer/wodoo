@@ -173,9 +173,9 @@ backup_files)
     $dc exec odoo /backup_files.sh
 
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
-        /bin/cp $DIR/dumps/$filename.gz $BACKUPDIR
+        /usr/bin/rsync $DIR/dumps/$filename.gz $BACKUPDIR -P
         /bin/rm $DIR/dumps/$filename.gz
-        /bin/cp $DIR/dumps/$filename_oefiles $BACKUPDIR
+        /usr/bin/rsync $DIR/dumps/$filename_oefiles $BACKUPDIR -P
         /bin/rm $DIR/dumps/$filename_oefiles
     fi
 
@@ -194,6 +194,7 @@ backup)
 
 restore)
     filename_oefiles=oefiles.tar
+    VOLUMENAME=${PROJECT_NAME}_postgresdata
 
     read -p "Deletes database! Continue? Press ctrl+c otherwise"
     if [[ ! -f $2 ]]; then
@@ -204,11 +205,18 @@ restore)
         echo "File $3 not found!"
         exit -1
     fi
+
+    # remove the postgres volume and reinit
+    eval "$dc kill" || true
+    $dc rm -f || true
+    echo "Removing docker volume postgres-data (irreversible)"
+    docker volume ls |grep -q $VOLUMENAME && docker volume rm ${PROJECT_NAME}_postgresdata
+
     /bin/mkdir -p $DIR/restore
-    /bin/rm $DIR/restore/* || true
-    /bin/cp $2 $DIR/restore/$DBNAME.gz
+    #/bin/rm $DIR/restore/* || true
+    /usr/bin/rsync $2 $DIR/restore/$DBNAME.gz -P
     if [[ -n "$3" && -f "$3" ]]; then
-        /bin/cp $3 $DIR/restore/$filename_oefiles
+        /usr/bin/rsync $3 $DIR/restore/$filename_oefiles -P
     fi
 
     echo "Shutting down containers"

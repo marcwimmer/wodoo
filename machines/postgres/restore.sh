@@ -1,16 +1,22 @@
 #!/bin/bash
+set -x
+set -e
 
 echo "Restoring database $DBNAME"
 /docker-entrypoint.sh postgres &
-sleep 5
-dropdb $DBNAME || echo 'database did not exist'
-createdb $DBNAME
+WAIT=15
+echo "Waiting $WAIT seconds for database system to come up"
+sleep $WAIT
+sudo -u postgres -E dropdb $DBNAME || echo 'database did not exist'
 
-# try postgres-format or custom gzipped format
-pg_restore -d $DBNAME /opt/restore/$DBNAME.gz || {
-    gunzip -c /opt/restore/$DBNAME.gz | psql $DBNAME
+echo "Creating database $DBNAME now per command line - if fails, then retry again please"
+sudo -u postgres -E createdb $DBNAME
+
+echo "try postgres-format or custom gzipped format"
+sudo -u postgres -E pg_restore -d $DBNAME /opt/restore/$DBNAME.gz || {
+    gunzip -c /opt/restore/$DBNAME.gz | sudo -u postgres -E psql $DBNAME
 }
-psql template1 -c "alter database $DBNAME owner to odoo;"
+sudo -u postgres -E psql template1 -c "alter database $DBNAME owner to odoo;"
 echo "Restoring snapshot done!"
 pkill -f postgres
 echo "waiting for postgres to stop"
