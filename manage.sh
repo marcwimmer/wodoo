@@ -110,17 +110,6 @@ fetch)
     echo "Updating support data"
     update_support_data
     ;;
-init)
-    cd $DIR
-    eval "$dc run odoo /init.sh full"
-    if [[ "$RUN_ASTERISK" == "1" ]]; then
-        eval "$dc run ari /init.sh full"
-        eval "$dc run stasis /init.sh full"
-    fi
-    eval "$dc stop"
-    eval "$dc start"
-    ;;
-
 setup-startup)
     PATH=$DIR
 
@@ -184,9 +173,9 @@ backup_files)
     $dc exec odoo /backup_files.sh
 
     if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
-        /bin/cp $DIR/dumps/$filename.gz $BACKUPDIR
+        /usr/bin/rsync $DIR/dumps/$filename.gz $BACKUPDIR -P
         /bin/rm $DIR/dumps/$filename.gz
-        /bin/cp $DIR/dumps/$filename_oefiles $BACKUPDIR
+        /usr/bin/rsync $DIR/dumps/$filename_oefiles $BACKUPDIR -P
         /bin/rm $DIR/dumps/$filename_oefiles
     fi
 
@@ -205,6 +194,7 @@ backup)
 
 restore)
     filename_oefiles=oefiles.tar
+    VOLUMENAME=${PROJECT_NAME}_postgresdata
 
     read -p "Deletes database! Continue? Press ctrl+c otherwise"
     if [[ ! -f $2 ]]; then
@@ -215,11 +205,18 @@ restore)
         echo "File $3 not found!"
         exit -1
     fi
+
+    # remove the postgres volume and reinit
+    eval "$dc kill" || true
+    $dc rm -f || true
+    echo "Removing docker volume postgres-data (irreversible)"
+    docker volume ls |grep -q $VOLUMENAME && docker volume rm ${PROJECT_NAME}_postgresdata
+
     /bin/mkdir -p $DIR/restore
-    /bin/rm $DIR/restore/* || true
-    /bin/cp $2 $DIR/restore/$DBNAME.gz
+    #/bin/rm $DIR/restore/* || true
+    /usr/bin/rsync $2 $DIR/restore/$DBNAME.gz -P
     if [[ -n "$3" && -f "$3" ]]; then
-        /bin/cp $3 $DIR/restore/$filename_oefiles
+        /usr/bin/rsync $3 $DIR/restore/$filename_oefiles -P
     fi
 
     echo "Shutting down containers"
@@ -248,8 +245,7 @@ springclean)
     docker rmi $(docker images -q -f='dangling=true')
     ;;
 up)
-    $dc rm -f
-    $dc up $2 $3 $4
+    $dc up ${@:2}
     ;;
 debug)
     if [[ -z "$2" ]]; then
@@ -314,26 +310,26 @@ install-telegram-bot)
     pip install python-telegram-bot
     ;;
 purge-source)
-    $dc up -d odoo
-    $dc exec odoo rm -Rf /opt/openerp/customs/$CUSTOMS
+    $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
     set -x
+    set -e
+    $dc kill
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         eval "$dc run ari /init.sh"
         eval "$dc run stasis /init.sh"
     fi
-    $dc up -d odoo
     echo "Updating source code"
-    $dc exec odoo /update_src.sh
-    exit -1
+    $dc run odoo /update_src.sh
     echo "Run module update"
-    $dc exec odoo /update_modules.sh $2
-    echo "HERE"
+    $dc up -d postgres
+    $dc run odoo /update_modules.sh $2
     $dc kill odoo
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis
     fi
+    $dc rm -f
     $dc up -d
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
