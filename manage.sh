@@ -70,7 +70,7 @@ cat customs.env|grep -q 'RUN_ASTERISK=1' && {
 }
 
 CUSTOMSCONF=$DIR/docker-compose-custom.yml
-if [[ -f "$CUSTOMSCONF" ]]; then
+if [[ -f "$CUSTOMSCONF" || -L "$CUSTOMSCONF" ]]; then
     echo "Including $CUSTOMSCONF"
     dc="$dc -f $CUSTOMSCONF"
 else
