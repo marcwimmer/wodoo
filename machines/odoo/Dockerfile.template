@@ -158,6 +158,7 @@ RUN pip install gitpython
 
 ADD config/config_openerp /home/odoo/config_openerp
 ADD config/config_gevent /home/odoo/config_gevent
+ADD config/config_debug /home/odoo/config_debug
 RUN chown odoo:odoo /home/odoo -R
 RUN echo 'export TERM=xterm' >> /etc/environment
 
