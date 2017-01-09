@@ -38,7 +38,6 @@ if [ -z "$1" ]; then
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
     echo "clean_supportdata - clears support data"
-    echo "clean_supportdata - clears support data"
     echo "fetch - fetches support data"
     echo "install-telegram-bot - installs required python libs"
     echo "kill - kills running machines"
@@ -313,8 +312,6 @@ purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
-    set -x
-    set -e
     $dc kill
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         eval "$dc run ari /init.sh"
