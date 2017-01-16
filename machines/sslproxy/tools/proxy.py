@@ -42,9 +42,16 @@ class HTTPS_ConfigHandler(object):
         return self.config
 
 
+name = "SSLProxy"
+version = "1.0"
 # Changing the buffer_size and delay, you can improve the speed and bandwidth.
 # But when buffer get to high or delay go too down, you can broke things
-conf=HTTPS_ConfigHandler(conf_path="{}.cfg".format(os.path.basename(__file__[:-3]))).get_config()
+c_path = None
+if os.path.exists("./debug"):
+    cpath = "{}.cfg".format(os.path.basename(__file__[:-3]))
+
+conf = HTTPS_ConfigHandler(conf_path=cpath).get_config()
+
 buffer_size = 8192
 delay = 0.00001
 forward_to = (
@@ -54,41 +61,51 @@ forward_to = (
 # Logging
 logger = logging.getLogger("ssl_proxy")
 ch = logging.StreamHandler(sys.stdout)
-logger.setLevel(getattr(logging,conf["base_config"]["log_level"].upper()))
+logger.setLevel(getattr(logging, conf["base_config"]["log_level"].upper()))
 logger.addHandler(ch)
+if conf["base_config"]["log_level"].upper() == "DEBUG":
+    for key in conf.keys():
+        for k in conf[key]:
+            logger.debug("kv : {} -> {} -> {}".format(key, k, conf[key][k]))
 
-modify=False
+modify = False
 
 if conf["base_config"]["modify_mode"] == "1":
-    modify=True
-#forward_to = ('192.168.60.52', 8069)
-#redir_to = ('https://192.168.1.53',8069)
+    modify = True
+
+logger.debug("modify_mode: {}".format(modify))
+
 
 class Forward:
     def __init__(self):
         self.forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        if conf["ssl_config"]["target_ssl_active"]=="1":
+        ssl_active = bool(int(conf["ssl_config"]["target_ssl_active"])) == 1
+        logger.debug("[Forward] ssl_active: {}".format(ssl_active))
+        if ssl_active:
             nosslverify = ssl._create_unverified_context()
-            #self.forward = ssl.wrap_socket(self.forward,context=nosslverify)
+            # self.forward = ssl.wrap_socket(self.forward,context=nosslverify)
             self.forward = nosslverify.wrap_socket(self.forward)
-            #urllib.urlopen("https://no-valid-cert", context=context)
+            # urllib.urlopen("https://no-valid-cert", context=context)
+
     def start(self, host, port):
         try:
             self.forward.connect((host, port))
             return self.forward
         except Exception as e:
-            print(e)
+            logger.error(e)
             return False
+
 
 class TheServer:
     input_list = []
     channel = {}
-    s=None
+    s = None
+
     def __init__(self, host, port):
-        self.http = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.http.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR, 1)
+        self.http = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.http.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.http.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -97,6 +114,7 @@ class TheServer:
         self.server.bind((host, port))
 
         ssl_active = int(conf["ssl_config"]["ssl_active"])
+        logger.debug("[Server] ssl_active: {}".format(ssl_active))
         if ssl_active == 1:
             logger.debug("loading_ssl")
             import ssl
@@ -109,7 +127,8 @@ key:    {} ({})
 cert:   {} ({})
 cac:    {} ({})
 req:    {} ({})
-                """.format(key,os.path.exists(key),cer,os.path.exists(cer),cac,os.path.exists(cac),req,type(req)))
+                """.format(key, os.path.exists(key), cer, os.path.exists(cer), cac, os.path.exists(cac), req,
+                           type(req)))
             cert_req = ssl.CERT_NONE
             if req:
                 cert_req = ssl.CERT_REQUIRED
@@ -124,6 +143,7 @@ req:    {} ({})
         self.server.listen(200)
 
     def main_loop(self):
+        logger.debug("Entering main_loop")
         self.input_list.append(self.server)
         while 1:
             time.sleep(delay)
@@ -131,10 +151,12 @@ req:    {} ({})
             inputready, outputready, exceptready = ss(self.input_list, [], [])
             for self.s in inputready:
                 if self.s == self.server:
+                    logger.debug("self.s == self.server")
                     self.on_accept()
                     break
 
                 self.data = self.s.recv(buffer_size)
+                logger.debug("self.data = {}".format(self.data))
                 if len(self.data) == 0:
                     self.on_close()
                     break
@@ -148,17 +170,17 @@ req:    {} ({})
             logger.debug("""
 client_sock:    {}
 client_addr:    {}
-""".format(clientsock,clientaddr))
+""".format(clientsock, clientaddr))
             client_cert = clientsock.getpeercert()
             logger.debug("subject 3 0 = {}".format(client_cert["subject"][3][0][0]))
-            out=""
+            out = ""
             if client_cert["subject"][3][0][0] == "commonName":
                 out = "{} Connected".format(client_cert["subject"][3][0][1])
             if client_cert["subject"][0][0][0] == "countryName":
                 out += " from {}".format(client_cert["subject"][0][0][1])
             logger.debug(out)
             logger.debug("PeerCert: {}".format(client_cert))
-            #logger.info(clientaddr, "has connected")
+            # logger.info(clientaddr, "has connected")
         except Exception as e:
             logger.warning(e)
             return
@@ -174,7 +196,7 @@ client_addr:    {}
             clientsock.close()
 
     def on_close(self):
-        #remove objects from input_list
+        # remove objects from input_list
         logger.debug(self.channel)
         self.input_list.remove(self.s)
         self.input_list.remove(self.channel[self.s])
@@ -194,11 +216,12 @@ client_addr:    {}
             logger.debug(data)
             return data
         except Exception as e:
-            print(e)
-            print("Data not replaced...")
+            logger.warning(e)
+            logger.warning("Data not replaced...")
             return data
 
     def on_recv(self):
+        logger.debug("Receiving data")
         data = self.data
         # here we can parse and/or modify the data before send forward
         logger.debug(data)
@@ -210,22 +233,27 @@ client_addr:    {}
                 logger.error(e)
         self.channel[self.s].send(data)
 
+
 def worker():
+    logger.debug("Starting Worker! 0xa0001")
     server = TheServer(
         conf["base_config"]["bind_ip"],
         # "192.168.1.53",
         int(conf["base_config"]["bind_port"])
     )
-    logger.info("Starting Proxyserver...")
+    logger.info("Starting {}({}) ...".format(name, version))
     logger.info("listening on: {} at {}".format(conf["base_config"]["bind_ip"], conf["base_config"]["bind_port"]))
-    try:
-        server.main_loop()
-    except Exception as e:
-        logger.error(e)
+    # try:
+    server.main_loop()
+    # except Exception as e:
+    #    logger.debug(e)
+    logger.debug("Exiting Worker! 0x00008")
+
 
 if __name__ == '__main__':
     try:
         worker()
+        logger.info("Exiting! 0x00009")
     except KeyboardInterrupt:
         logger.info("Ctrl C - Stopping server")
         sys.exit(1)
