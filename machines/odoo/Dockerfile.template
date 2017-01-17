@@ -2,14 +2,11 @@ FROM ubuntu:16.04
 MAINTAINER marc@itewimmer.de
 
 # Install latest git
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install python-software-properties
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common
+RUN apt-get update && \
+apt-get -y install python-software-properties software-properties-common
 RUN DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:git-core/ppa
-RUN apt-get update
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
 			man \
             cmake \
@@ -69,38 +66,35 @@ RUN apt-get install -y --no-install-recommends \
             wget \
             cifs-utils \
             imagemagick \
-            cups
+            cups \
+            libav-tools \
+            libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
 
 # https://github.com/odoo/odoo/issues/5177
-RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz
-RUN tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1
-RUN ln -s /bin/wkhtmlto* /usr/bin/
+RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
+tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1 && \
+ln -s /bin/wkhtmlto* /usr/bin/
 
-# pydub dependencies for cutting asterisk recordings
-RUN apt-get install -y libav-tools
-
-# weasy print dependencies
-RUN apt-get install -y libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
-
+WORKDIR /
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10
 
 # user odoo
 RUN useradd -ms /bin/bash odoo
 
-WORKDIR /
 ADD sysroot/ /
 RUN chown odoo:odoo /home/odoo -R
 
 
 # install latest pip
-RUN apt-get install -y python-pip
-RUN pip install --upgrade pip
-RUN pip install requests[security]
+RUN apt-get install -y python-pip && \
+pip install --upgrade pip && \
+pip install requests[security] && \
+pip install glob2 && \
+pip install gitpython
 
 
 # pip packages:
-RUN rm -Rf /usr/local/man
-RUN mkdir -p /usr/local/man/man1
+RUN rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD requirements.txt /root/requirements.txt
 ADD requirements_70.txt /root/requirements_70.txt
 
@@ -108,27 +102,26 @@ ADD requirements_70.txt /root/requirements_70.txt
 RUN npm install -g jshint
 
 #install pip packages depending on version
-RUN pip install --upgrade pip
 ADD install_python_packages.sh /install_python_packages.sh
-RUN chmod a+x /install_python_packages.sh
-RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION} 
-RUN /bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
+RUN chmod a+x /install_python_packages.sh && \
+/bin/bash /install_python_packages.sh ${ODOO_VERSION} && \
+/bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
 
 ADD bin/ /
 RUN chmod a+x /*.sh
 
 USER odoo
 WORKDIR /home/odoo
-RUN echo "git config --global credential.helper 'store [options]'" >> ~/.bashrc
-RUN echo "source /opt/openerp/admin/setup_bash" >> .bash_profile
-RUN echo "alias gs='git status'" >> .bash_profile
+RUN echo "git config --global credential.helper 'store [options]'" >> ~/.bashrc && \
+echo "source /opt/openerp/admin/setup_bash" >> .bash_profile && \
+echo "alias gs='git status'" >> .bash_profile
 
 # config git environmnet
 USER odoo
-RUN git config --global user.name odooprod
-RUN git config --global user.email odooprod
-RUN git config --global http.postBuffer 1048576000
-RUN git config --global push.default simple
+RUN git config --global user.name odooprod && \
+git config --global user.email odooprod && \
+git config --global http.postBuffer 1048576000 && \
+git config --global push.default simple
 
 # Adapt site customize
 USER root
@@ -136,31 +129,24 @@ RUN chmod 644 /etc/python2.7/sitecustomize.py
 
 USER root
 WORKDIR /home/odoo
-RUN chown odoo:odoo .ssh/authorized_keys
-RUN chmod 600 .ssh/authorized_keys
-RUN chmod go-rwx .ssh/*
+RUN chown odoo:odoo .ssh/authorized_keys && \
+chmod 600 .ssh/authorized_keys && \
+chmod go-rwx .ssh/*
 
 USER root
 WORKDIR /root
-RUN rsync /home/odoo/.ssh/ /root/.ssh -ar
-RUN chown root:root .ssh -R
-RUN chmod 600 .ssh/authorized_keys
-RUN chmod go-rwx .ssh/*
+RUN rsync /home/odoo/.ssh/ /root/.ssh -ar && \
+chown root:root .ssh -R && \
+chmod 600 .ssh/authorized_keys && \
+chmod go-rwx .ssh/*
 
 USER root
-RUN chmod a+x /update_repos_at_start.sh
-RUN chmod a+x /usr/local/bin/*
+RUN chmod a+x /update_repos_at_start.sh && \
+chmod a+x /usr/local/bin/*
 
-RUN pip install --upgrade pip
-RUN pip install requests[security]
-RUN pip install glob2
-RUN pip install gitpython
 
-ADD config/config_openerp /home/odoo/config_openerp
-ADD config/config_gevent /home/odoo/config_gevent
-ADD config/config_debug /home/odoo/config_debug
+ADD config/* /home/odoo/
 RUN chown odoo:odoo /home/odoo -R
-RUN echo 'export TERM=xterm' >> /etc/environment
 
 USER root
 CMD /run.sh

@@ -6,13 +6,15 @@ set -e
 
 ODOO_PROD="$1"
 
-cd /opt/openerp/customs/$CUSTOMS
-if [[ ! -d autosetup ]]; then
-    exit 0
-fi
-cd autosetup
+if [[ "$RUN_AUTOSETUP" == "1" ]]; then
+    cd /opt/openerp/customs/$CUSTOMS
+    if [[ ! -d autosetup ]]; then
+        exit 0
+    fi
+    cd autosetup
 
-for file in *.sh; do
-    echo "executing $file"
-    eval "bash ./$file $ODOO_PROD"
-done
+    for file in *.sh; do
+        echo "executing $file"
+        eval "bash ./$file $ODOO_PROD"
+    done
+fi
