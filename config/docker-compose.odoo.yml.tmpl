@@ -29,10 +29,10 @@ services:
     command: python /opt/src/proxy.py
   
   ovpn:
-    container_name: cpb_ovpn
+    container_name: ${DCPREFIX}_ovpn
     build: ../machines/openvpn/openvpn_server
     networks:
-      cpb_default:
+      ${DCPREFIX}_default:
         ipv4_address: ${REMOTE_INTERNAL}
     ports:
       - "${OVPN_PORT}:1194/TCP"
