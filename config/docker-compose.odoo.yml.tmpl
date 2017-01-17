@@ -16,7 +16,7 @@ services:
     build: ../machines/sslproxy
     depends_on: 
         - odoo
-    restart: on-failure
+    restart: always
     ports:
         - "${SSL_PORT}:8068"
 
@@ -27,6 +27,29 @@ services:
     volumes:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
+  
+  ovpn:
+    container_name: cpb_ovpn
+    build: ../machines/openvpn/openvpn_server
+    networks:
+      cpb_default:
+        ipv4_address: ${REMOTE_INTERNAL}
+    ports:
+      - "${OVPN_PORT}:1194/TCP"
+      - "${OVPN_PORT}:1194/UDP"
+    volumes:
+      - ../config/ovpn:/root/input/confs:ro
+      - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
+      - ../data/ovpn/server:/root/server_out
+      - ../data/ovpn/client:/root/client_out
+      - ../config/ovpn/ccd:/tmp/ccd:ro
+    env_file:
+      - ../customs.env
+    cap_add:
+      - NET_ADMIN
+    command: /root/tools/run.sh
+    restart: on-failure
+
   cups:
     container_name: ${DCPREFIX}_cups
     build: ../machines/cups
