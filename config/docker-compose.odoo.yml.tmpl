@@ -28,28 +28,6 @@ services:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
   
-  ovpn:
-    container_name: ${DCPREFIX}_ovpn
-    build: ../machines/openvpn/openvpn_server
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: ${REMOTE_INTERNAL}
-    ports:
-      - "${OVPN_PORT}:1194/TCP"
-      - "${OVPN_PORT}:1194/UDP"
-    volumes:
-      - ../config/ovpn:/root/input/confs:ro
-      - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
-      - ../data/ovpn/server:/root/server_out
-      - ../data/ovpn/client:/root/client_out
-      - ../config/ovpn/ccd:/tmp/ccd:ro
-    env_file:
-      - ../customs.env
-    cap_add:
-      - NET_ADMIN
-    command: /root/tools/run.sh
-    restart: on-failure
-
   cups:
     container_name: ${DCPREFIX}_cups
     build: ../machines/cups
@@ -74,9 +52,6 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
       - DAC_READ_SEARCH
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.80
     volumes:
       - cupsdata:/opt/cups_etc 
       - cupsdatatoprint:/opt/toprint 
@@ -100,8 +75,6 @@ services:
     container_name: ${DCPREFIX}_postgres
     build: ../machines/postgres
     restart: on-failure
-    networks:
-      - ${DCPREFIX}_default
     volumes:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
@@ -118,8 +91,6 @@ services:
     restart: on-failure
     depends_on:
       - odoo
-    networks:
-      - ${DCPREFIX}_default
     ports:
       - "${ODOO_PORT}:80"
     env_file:
@@ -131,8 +102,6 @@ services:
   mail:
     container_name: ${DCPREFIX}_mail
     build: ../machines/mail
-    networks:
-      - ${DCPREFIX}_default
     volumes:
       - mailstorage:/home/postmaster/Maildir
     ports:
@@ -144,18 +113,5 @@ services:
     build: ../machines/roundcube
     depends_on:
       - mail
-    networks:
-      - ${DCPREFIX}_default
     ports:
       - "${ROUNDCUBE_PORT}:80"
-
-networks:
-  ${DCPREFIX}_default:
-    driver: bridge
-    driver_opts:
-      com.docker.network.enable_ipv6: "false"
-    ipam:
-      driver: default
-      config:
-        - subnet: 4.4.4.0/24
-          gateway: 4.4.4.1
