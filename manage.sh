@@ -43,7 +43,8 @@ if [ -z "$1" ]; then
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "logall - shows log til now; use parameter to specify machine"
-    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client."
+    echo "make-CA - recreates CA caution!"
+    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
@@ -336,6 +337,10 @@ quickpull)
     # useful for updating just mako templates
     $dc exec odoo /update_src.sh
    ;;
+make-CA)
+    export dc=$dc
+    bash $DIR/config/ovpn/makeCA.sh keys
+    ;;
 make-keys)
     export dc=$dc
     bash $DIR/config/ovpn/pack.sh keys
