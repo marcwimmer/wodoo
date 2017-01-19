@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-rsync /root/openvpn-ca-tmpl/ /root/openvpn-ca/ -arL
+rsync /root/openvpn-ca-tmpl/ /root/openvpn-ca/ -arPL
 cd "$KEYFOLDERROOT"
 export EASY_RSA="`pwd`"
 export OPENSSL="openssl"

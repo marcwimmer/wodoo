@@ -10,7 +10,7 @@ export $(cut -d= -f1 $DIR/customs.env)
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-for file in docker-compose.odoo docker-compose.asterisk
+for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
 done
@@ -60,7 +60,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml"
+dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml"
 
 RUN_ASTERISK=0
 
@@ -338,8 +338,12 @@ quickpull)
     $dc exec odoo /update_src.sh
    ;;
 make-CA)
+    read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
     export dc=$dc
-    bash $DIR/config/ovpn/makeCA.sh keys
+    $dc kill ovpn
+    $dc run ovpn_ca /root/tools/clean_keys.sh
+    $dc run ovpn_ca /root/tools/make_ca.sh
+    $dc run ovpn_ca /root/tools/make_server_keys.sh
     ;;
 make-keys)
     export dc=$dc
