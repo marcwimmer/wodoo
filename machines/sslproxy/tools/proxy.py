@@ -46,11 +46,11 @@ name = "SSLProxy"
 version = "1.0"
 # Changing the buffer_size and delay, you can improve the speed and bandwidth.
 # But when buffer get to high or delay go too down, you can broke things
-c_path = None
+c_path = "/opt/conf/proxy.cfg"
 if os.path.exists("./debug"):
-    cpath = "{}.cfg".format(os.path.basename(__file__[:-3]))
+    c_path = "{}.cfg".format(os.path.basename(__file__[:-3]))
 
-conf = HTTPS_ConfigHandler(conf_path=cpath).get_config()
+conf = HTTPS_ConfigHandler(conf_path=c_path).get_config()
 
 buffer_size = 8192
 delay = 0.00001
