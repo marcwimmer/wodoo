@@ -10,9 +10,17 @@ if [[ "$1" == 'keys' ]]; then
     $dc run ovpnca /root/tools/make_client_keys.sh asterisk
     $dc run ovpnca /root/tools/make_client_keys.sh dns
     $dc run ovpnca /root/tools/make_client_keys.sh ntp
-    $dc run ovpnca /root/tools/make_client_keys.sh custom_client1
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route
-   
+    $dc run ovpnca /root/tools/make_client_keys.sh odoo
+    $dc run ovpnca /root/tools/make_client_keys.sh client
+    $dc run ovpnca /root/tools/make_client_keys.sh server-as-client
+
+    if [[ -n "$CUSTOM_VPN_CLIENTS" ]]; then
+        IFS=',' read -ra ARR <<< "$CUSTOM_VPN_CLIENTS"
+        for i in "${ARR[@]}"; do
+            $dc run ovpnca /root/tools/make_client_keys.sh $i
+        done
+    fi
+
     # create routed clients(phones)
 
     # for loop requires CLIENT_START and CLIENT_END variables in environment
@@ -23,19 +31,14 @@ if [[ "$1" == 'keys' ]]; then
     # TODO: Generate matching IP's and generate ccd,
     #       then client generation can be controlled by env
 
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route50
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route51
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route52
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route53
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route54
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route55
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route56
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route57
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route58
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route59
-    $dc run ovpnca /root/tools/make_client_keys.sh client-with-route60
-    $dc run ovpnca /root/tools/make_client_keys.sh client
-    $dc run ovpnca /root/tools/make_client_keys.sh server-as-client
+    if [[ -n "$PHONE_VPN_START" && -n "$PHONE_VPN_END" ]]; then
+        # $dc run ovpnca /root/tools/make_client_keys.sh client-with-route50
+        i=$((PHONE_VPN_START))
+        while $i < $((PHONE_VPN_END)); do
+            $dc run ovpnca /root/tools/make_client_keys.sh client-with-route$i
+            i=$((i + 1))
+        done
+    fi
 
     # changing the openvpn config and just restarting also updates
     # configurations for phones and so on
