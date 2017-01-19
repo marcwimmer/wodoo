@@ -46,9 +46,6 @@ services:
   ovpn:
     container_name: ${DCPREFIX}_ovpn
     build: ../machines/openvpn/openvpn_server
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: ${REMOTE_INTERNAL}
     ports:
         - "${OVPN_PORT}:1194/TCP"
         - "${OVPN_PORT}:1194/UDP"
@@ -81,16 +78,12 @@ services:
   asterisk_redis:
       build: ../machines/asterisk/redis
       container_name: ${DCPREFIX}_asterisk_redis
-      networks:
-        - ${DCPREFIX}_default
   ari:
     container_name: ${DCPREFIX}_ari
     build: ../machines/asterisk/ari
     restart: on-failure
     depends_on:
       - asterisk_redis
-    networks:
-      - ${DCPREFIX}_default
     environment:
       ODOO_USER: $ASTERISK_ODOO_USER
       ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD
@@ -129,8 +122,6 @@ services:
         - stasissourcestorage:/opt/src
         - ../data/asterisk/reloader:/opt/reloader
         - asterisk_logs:/var/log/asterisk
-      networks:
-        - ${DCPREFIX}_default
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
@@ -138,8 +129,6 @@ services:
       - ovpn
     build: ../machines/asterisk/asterisk
     restart: on-failure
-    networks:
-      - ${DCPREFIX}_default
     expose:
       - 8088
     environment:
