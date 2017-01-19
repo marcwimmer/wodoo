@@ -33,6 +33,7 @@ services:
         - ../data/ovpn/client:/root/client_out
     env_file:
       - ../customs.env
+    command: echo 'exiting'
 
   ovpn_makekeys:
     container_name: ${DCPREFIX}_ovpn_makekeys
@@ -45,6 +46,7 @@ services:
         - ../config/ovpn/ccd:/root/ccd
     env_file:
       - ../customs.env
+    command: echo 'exiting'
 
   ovpn:
     container_name: ${DCPREFIX}_ovpn

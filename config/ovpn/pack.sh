@@ -1,8 +1,12 @@
 #!/bin/bash
-set -x
+if [[ -z "$dc" ]]; then
+    echo "docker-compose instruction missing"
+    exit -1
+fi
 
 #create new Certificate Chain
 runca="$dc run ovpn_ca"
+runmakekeys="$dc run ovpn_makekeys"
 
 # create client keys (correspnds with name in ccd)
 $runca /root/tools/make_client_keys.sh asterisk
@@ -30,4 +34,4 @@ fi
 
 # changing the openvpn config and just restarting also updates
 # configurations for phones and so on
-$dc run ovpn_makekeys /root/tools/run.sh JUSTPACK
+$runmakekeys /root/tools/run.sh JUSTPACK

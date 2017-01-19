@@ -344,10 +344,12 @@ make-CA)
     $dc run ovpn_ca /root/tools/clean_keys.sh
     $dc run ovpn_ca /root/tools/make_ca.sh
     $dc run ovpn_ca /root/tools/make_server_keys.sh
+    $dc rm -f
     ;;
 make-keys)
     export dc=$dc
-    bash $DIR/config/ovpn/pack.sh keys
+    bash $DIR/config/ovpn/pack.sh
+    $dc rm -f
     ;;
 *)
     echo "Invalid option $1"
