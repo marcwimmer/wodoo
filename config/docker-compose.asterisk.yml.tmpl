@@ -12,18 +12,12 @@ services:
         - NET_ADMIN
       volumes:
         - ../data/ovpn/client:/opt/certs:ro
-      networks:
-        ${DCPREFIX}_default:
-          ipv4_address: 4.4.4.205
   ntp:
       build: ../machines/openvpn/openvpn_ntp
       cap_add:
         - NET_ADMIN
       volumes:
         - ../data/ovpn/client:/opt/certs:ro
-      networks:
-        ${DCPREFIX}_default:
-          ipv4_address: 4.4.4.206
       ports:
         - "${NTP_PORT}:123/UDP"
   ovpnca:
@@ -120,9 +114,6 @@ services:
     env_file:
       - ../customs.env
       - ../fixed.env
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.42
 
   stasis:
       build: ../machines/asterisk/stasis

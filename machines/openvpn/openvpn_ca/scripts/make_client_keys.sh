@@ -22,7 +22,11 @@ export KEY_CN=$1  # to match CCD
 #http://stackoverflow.com/questions/24255205/error-loading-extension-section-usr-cert/26078472#26078472
 sed -i 's|KEY_ALTNAMES="$KEY_CN"|KEY_ALTNAMES="DNS:${KEY_CN}"|g' /usr/share/easy-rsa/pkitool
 
-./build-key --batch $1
+if [[ ! -f "$1" ]]; then
+    ./build-key --batch $1
+else
+    echo "VPN Key already exists - $1"
+fi
 
 echo "Please enter in your phones as openvpn url: "
 echo "http://$REMOTE:9991/snom.tar"
