@@ -1,2 +1,0 @@
-;route __CLIENT_NET__ __CLIENT_NETMASK__
-push "dhcp-option DNS 10.28.0.3"
