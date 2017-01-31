@@ -18,12 +18,13 @@ rsync /opt/src/customs/$CUSTOMS/odoo/ /opt/openerp/customs/$CUSTOMS -arP --delet
 rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
 chown odoo:odoo /opt/openerp/versions -R
 chown odoo:odoo /opt/openerp/customs -R
+chmod a+x /opt/openerp/admin/*.sh
 
 echo "Applying patches"
-bash /opt/openerp/admin/apply_patches.sh
+/opt/openerp/admin/apply_patches.sh
 
 echo "oeln"
-bash /opt/openerp/admin/oeln $CUSTOMS
+/opt/openerp/admin/oeln $CUSTOMS
 
 # use virtualenv installed packages for odoo
 
