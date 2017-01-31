@@ -54,8 +54,8 @@ services:
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
-      - ../data/src/customs/${CUSTOMS}:/opt/openerp/customs/${CUSTOMS}
-      - ../data/src/admin:/opt/openerp/admin
+      - ../data/src/customs/${CUSTOMS}:/opt/openerp/customs/${CUSTOMS}:ro
+      - ../data/src/admin:/opt/openerp/admin:ro
       - sourcestorage:/opt/openerp/versions
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
