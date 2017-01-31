@@ -2,26 +2,14 @@
 set -e
 set -x
 
-locale-gen en_US.UTF-8
-update-locale
-
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LANGUAGE=en_US.UTF-8
 
 source /env.sh
 source /opt/openerp/admin/setup_bash
-
-if [[ -z "$CUSTOMS" ]]; then
-    echo "CUSTOMS required!"
-    exit -1
-fi
 
 # Setting up productive odoo
 echo Starting odoo for customs $CUSTOMS
 
 /set_permissions.sh
-ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
