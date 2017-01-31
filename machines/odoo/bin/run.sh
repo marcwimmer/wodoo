@@ -24,6 +24,14 @@ echo Starting odoo for customs $CUSTOMS
 ODOO_VERSION=$(cat /opt/openerp/customs/$CUSTOMS/.version)
 echo "Odoo version is $ODOO_VERSION"
 
+echo "Syncing odoo to executable dir"
+mkdir -p /opt/openerp/versions
+rsync /opt/openerp/customs/$CUSTOMS/odoo/ /opt/openerp/versions/server/ -arP
+chmod a+x odoo:odoo /opt/openerp/versions
+
+echo "Applying patches"
+/opt/openerp/admin/apply_patches.sh
+
 # use virtualenv installed packages for odoo
 
 echo "Executing autosetup..."
