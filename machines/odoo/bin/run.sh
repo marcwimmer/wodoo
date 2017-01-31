@@ -14,7 +14,7 @@ echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
 rsync /opt/openerp/customs/$CUSTOMS/odoo/ /opt/openerp/versions/server/ -arP
-chmod a+x odoo:odoo /opt/openerp/versions
+chown odoo:odoo /opt/openerp/versions -R
 
 echo "Applying patches"
 /opt/openerp/admin/apply_patches.sh
