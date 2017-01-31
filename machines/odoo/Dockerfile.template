@@ -149,5 +149,5 @@ ADD config/* /home/odoo/
 RUN chown odoo:odoo /home/odoo -R
 
 USER root
-CMD /run.sh
+CMD /rootrun.sh
 

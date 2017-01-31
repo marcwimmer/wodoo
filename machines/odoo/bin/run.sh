@@ -41,28 +41,3 @@ if [[ "$RUN_CRONJOBS" == "1" ]]; then
     sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config_openerp -d $DBNAME --log-level=error &
 fi
 sudo -E -H -u odoo /opt/openerp/versions/server/openerp-gevent -c /home/odoo/config_gevent  -d $DBNAME --log-level=error &
-sleep 3
-
-set +x
-while true;
-do
-    if [[ -f /tmp/stop ]]; then
-        pkill -9 -f openerp-server || true
-        rm /tmp/stop
-    fi
-
-    if [[ -f /tmp/start ]]; then
-        rm /tmp/start
-        eval $START_LINE &
-    fi
-
-    pgrep -f openerp > /dev/null || {
-        [[ -f /tmp/debugging ]] || {
-            echo 'exiting - no odoo here...'
-            exit -1
-        }
-    }
-
-    sleep 1
-
-done
