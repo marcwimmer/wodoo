@@ -13,7 +13,6 @@ echo Starting odoo for customs $CUSTOMS
 echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-mkdir -p /opt/openerp/versions
 rsync /opt/openerp/customs/$CUSTOMS/odoo/ /opt/openerp/versions/server/ -arP
 chmod a+x odoo:odoo /opt/openerp/versions
 
