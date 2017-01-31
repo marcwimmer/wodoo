@@ -20,10 +20,10 @@ chown odoo:odoo /opt/openerp/versions -R
 chown odoo:odoo /opt/openerp/customs -R
 
 echo "Applying patches"
-/opt/openerp/admin/apply_patches.sh
+bash /opt/openerp/admin/apply_patches.sh
 
 echo "oeln"
-/opt/openerp/admin/oeln $CUSTOMS
+bash /opt/openerp/admin/oeln $CUSTOMS
 
 # use virtualenv installed packages for odoo
 
