@@ -319,8 +319,6 @@ update)
         eval "$dc run ari /init.sh"
         eval "$dc run stasis /init.sh"
     fi
-    echo "Updating source code"
-    $dc run odoo /update_src.sh
     echo "Run module update"
     $dc up -d postgres
     $dc run odoo /update_modules.sh $2
@@ -333,10 +331,6 @@ update)
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
     $dc rm -f
-   ;;
-quickpull)
-    # useful for updating just mako templates
-    $dc exec odoo /update_src.sh
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
