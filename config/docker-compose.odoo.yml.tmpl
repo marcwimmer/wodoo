@@ -40,7 +40,7 @@ services:
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
-    restart: on-failure
+    # restart: on-failure
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
