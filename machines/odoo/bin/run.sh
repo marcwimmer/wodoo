@@ -13,11 +13,17 @@ echo Starting odoo for customs $CUSTOMS
 echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-rsync /opt/openerp/customs/$CUSTOMS/odoo/ /opt/openerp/versions/server/ -arP
+rsync /opt/src/customs/$CUSTOMS/odoo/ /opt/openerp/versions/server/ -arP --delete
+rsync /opt/src/customs/$CUSTOMS/odoo/ /opt/openerp/customs/$CUSTOMS -arP --delete
+rsync /opt/src/admin/ /opt/openerp/admin -arP --delete
 chown odoo:odoo /opt/openerp/versions -R
+chown odoo:odoo /opt/openerp/customs -R
 
 echo "Applying patches"
 /opt/openerp/admin/apply_patches.sh
+
+echo "oeln"
+/opt/openerp/admin/oeln $CUSTOMS
 
 # use virtualenv installed packages for odoo
 
