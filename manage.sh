@@ -13,6 +13,7 @@ echo "ODOO VERSION from customs.env $ODOO_VERSION"
 for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
+    sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
 done
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
