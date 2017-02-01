@@ -25,6 +25,7 @@ echo "Applying patches"
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
 
+rm -Rf /opt/openerp/versions || true
 mkdir -p /opt/openerp/versions
 ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
 
