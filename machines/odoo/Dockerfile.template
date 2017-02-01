@@ -86,7 +86,8 @@ RUN chown odoo:odoo /home/odoo -R
 
 
 # install latest pip
-RUN apt-get install -y python-pip && \
+RUN \
+apt-get install -y python-pip && \
 pip install --upgrade pip && \
 pip install requests[security] && \
 pip install glob2 && \
@@ -98,55 +99,31 @@ RUN rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD requirements.txt /root/requirements.txt
 ADD requirements_70.txt /root/requirements_70.txt
 
-# syntastic checker
-RUN npm install -g jshint
-
 #install pip packages depending on version
 ADD install_python_packages.sh /install_python_packages.sh
-RUN chmod a+x /install_python_packages.sh && \
+RUN \
+chmod a+x /install_python_packages.sh && \
 /bin/bash /install_python_packages.sh ${ODOO_VERSION} && \
 /bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
 
 ADD bin/ /
 RUN chmod a+x /*.sh
 
-USER odoo
-WORKDIR /home/odoo
-RUN echo "git config --global credential.helper 'store [options]'" >> ~/.bashrc && \
-echo "source /opt/openerp/admin/setup_bash" >> .bash_profile && \
-echo "alias gs='git status'" >> .bash_profile
-
-# config git environmnet
-USER odoo
-RUN git config --global user.name odooprod && \
-git config --global user.email odooprod && \
-git config --global http.postBuffer 1048576000 && \
-git config --global push.default simple
-
 # Adapt site customize
+ADD config/* /home/odoo/
 USER root
-RUN chmod 644 /etc/python2.7/sitecustomize.py
-
-USER root
-WORKDIR /home/odoo
-RUN chown odoo:odoo .ssh/authorized_keys && \
+RUN \
+chmod 644 /etc/python2.7/sitecustomize.py && \
+chown odoo:odoo /home/odoo/.ssh/authorized_keys && \
 chmod 600 .ssh/authorized_keys && \
-chmod go-rwx .ssh/*
-
-USER root
-WORKDIR /root
-RUN rsync /home/odoo/.ssh/ /root/.ssh -ar && \
+chmod go-rwx .ssh/* && \
+rsync /home/odoo/.ssh/ /root/.ssh -ar && \
 chown root:root .ssh -R && \
 chmod 600 .ssh/authorized_keys && \
-chmod go-rwx .ssh/*
-
-USER root
-RUN chmod a+x /update_repos_at_start.sh && \
-chmod a+x /usr/local/bin/*
-
-
-ADD config/* /home/odoo/
-RUN chown odoo:odoo /home/odoo -R
+chmod go-rwx .ssh/* && \
+chmod a+x /update_repos_at_start.sh && \
+chmod a+x /usr/local/bin/* \
+chown odoo:odoo /home/odoo -R \
 
 USER root
 CMD /rootrun.sh
