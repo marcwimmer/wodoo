@@ -115,10 +115,6 @@ ADD config/* /home/odoo/
 USER root
 RUN \
 chmod 644 /etc/python2.7/sitecustomize.py && \
-chmod go-rwx .ssh/* && \
-rsync /home/odoo/.ssh/ /root/.ssh -ar && \
-chown root:root .ssh -R && \
-chmod go-rwx .ssh/* && \
 chmod a+x /update_repos_at_start.sh && \
 chmod a+x /usr/local/bin/* \
 chown odoo:odoo /home/odoo -R \
