@@ -13,9 +13,9 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 
-/run.sh &
+/run.sh
 
-sleep 20
+sleep 2
 
 set +x
 while true;
