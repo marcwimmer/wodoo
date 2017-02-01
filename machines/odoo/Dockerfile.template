@@ -116,8 +116,8 @@ USER root
 RUN \
 chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /update_repos_at_start.sh && \
-chmod a+x /usr/local/bin/* \
-chown odoo:odoo /home/odoo -R \
+chmod a+x /usr/local/bin/* && \
+chown odoo:odoo /home/odoo -R
 
 USER root
 CMD /rootrun.sh
