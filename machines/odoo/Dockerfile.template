@@ -91,7 +91,8 @@ apt-get install -y python-pip && \
 pip install --upgrade pip && \
 pip install requests[security] && \
 pip install glob2 && \
-pip install gitpython
+pip install gitpython && \
+pip install pudb
 
 
 # pip packages:
