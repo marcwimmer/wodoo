@@ -42,7 +42,10 @@ if [[ "$ODOO_VERSION" == "6.1" ]]; then
 fi
 
 echo "Starting up odoo"
-if [[ "$RUN_CRONJOBS" == "1" ]]; then
-    sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config_openerp -d $DBNAME --log-level=$LOGLEVEL &
+if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
+    echo 'Starting odoo cronjobs'
+    sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config_openerp -d $DBNAME --log-level=$LOGLEVEL
+else
+    echo 'Starting odoo gevent'
+    sudo -E -H -u odoo /opt/openerp/versions/server/openerp-gevent -c /home/odoo/config_gevent  -d $DBNAME --log-level=$LOGLEVEL
 fi
-sudo -E -H -u odoo /opt/openerp/versions/server/openerp-gevent -c /home/odoo/config_gevent  -d $DBNAME --log-level=$LOGLEVEL &
