@@ -104,8 +104,6 @@ services:
   nginx:
     container_name: ${DCPREFIX}_nginx
     image: nginx:stable
-    depends_on:
-      - odoo
     ports:
       - "${ODOO_PORT}:80"
     env_file:
