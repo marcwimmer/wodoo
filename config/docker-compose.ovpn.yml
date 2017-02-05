@@ -66,7 +66,6 @@ services:
     cap_add:
         - NET_ADMIN
     command: /root/tools/run.sh
-    restart: on-failure
 
   ovpn_web:
     container_name: ${DCPREFIX}_odoo_ovpn_web
@@ -77,4 +76,3 @@ services:
         - ../data/ovpn/client:/root/transfer:ro
         - ../config/ovpn:/root/config:ro
     command: python3 /root/tools/monjerri.py
-    restart: on-failure
