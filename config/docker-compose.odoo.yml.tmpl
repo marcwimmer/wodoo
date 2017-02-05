@@ -16,7 +16,6 @@ services:
     build: ../machines/sslproxy
     depends_on: 
         - odoo
-    restart: always
     ports:
         - "${SSL_PORT}:8068"
 
@@ -40,7 +39,6 @@ services:
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
-    # restart: on-failure
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -72,7 +70,6 @@ services:
   postgres:
     container_name: ${DCPREFIX}_postgres
     build: ../machines/postgres
-    restart: on-failure
     volumes:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
@@ -86,7 +83,6 @@ services:
   nginx:
     container_name: ${DCPREFIX}_nginx
     image: nginx:stable
-    restart: on-failure
     depends_on:
       - odoo
     ports:

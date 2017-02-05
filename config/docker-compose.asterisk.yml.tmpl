@@ -12,7 +12,6 @@ services:
   ari:
     container_name: ${DCPREFIX}_ari
     build: ../machines/asterisk/ari
-    restart: on-failure
     depends_on:
       - asterisk_redis
     environment:
@@ -42,7 +41,6 @@ services:
   stasis:
       build: ../machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
-      restart: on-failure
       env_file:
         - ../customs.env
         - ../fixed.env
@@ -59,7 +57,6 @@ services:
     depends_on:
       - ovpn
     build: ../machines/asterisk/asterisk
-    restart: on-failure
     expose:
       - 8088
     environment:
