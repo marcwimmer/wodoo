@@ -7,7 +7,7 @@ set -e
 ODOO_PROD="$1"
 
 if [[ "$RUN_AUTOSETUP" == "1" ]]; then
-    cd /opt/openerp/customs/$CUSTOMS
+    cd /opt/openerp/active_customs/$CUSTOMS
     if [[ ! -d autosetup ]]; then
         exit 0
     fi
