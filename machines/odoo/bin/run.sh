@@ -2,6 +2,7 @@
 set -e
 set -x
 
+rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
 
 source /env.sh
 source /opt/openerp/admin/setup_bash
@@ -14,7 +15,8 @@ echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
 rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git
-rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
+mkdir -p /opt/openerp/versions
+mkdir -p /opt/openerp/customs
 chown odoo:odoo /opt/openerp/versions -R
 chown odoo:odoo /opt/openerp/customs -R
 chmod a+x /opt/openerp/admin/*.sh
