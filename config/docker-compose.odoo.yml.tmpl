@@ -77,7 +77,7 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
       - DAC_READ_SEARCH
-    volumes_form:
+    volumes_from:
       - odoo
     environment:
       IS_ODOO_CRONJOB: 1
