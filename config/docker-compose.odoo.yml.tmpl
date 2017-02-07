@@ -16,7 +16,6 @@ services:
     build: ../machines/sslproxy
     depends_on: 
         - odoo
-    restart: always
     ports:
         - "${SSL_PORT}:8068"
 
@@ -40,7 +39,6 @@ services:
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
-    # restart: on-failure
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -69,10 +67,30 @@ services:
       - ../customs.env
       - ../fixed.env
 
+  odoo_cronjobs:
+    container_name: ${DCPREFIX}_odoo_cronjobs
+    build: ../machines/odoo
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    volumes_from:
+      - odoo
+    environment:
+      IS_ODOO_CRONJOB: 1
+      ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+
+
   postgres:
     container_name: ${DCPREFIX}_postgres
     build: ../machines/postgres
-    restart: on-failure
     volumes:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
@@ -86,9 +104,6 @@ services:
   nginx:
     container_name: ${DCPREFIX}_nginx
     image: nginx:stable
-    restart: on-failure
-    depends_on:
-      - odoo
     ports:
       - "${ODOO_PORT}:80"
     env_file:

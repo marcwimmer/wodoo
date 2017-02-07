@@ -2,6 +2,7 @@
 set -e
 set -x
 
+rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
 
 source /env.sh
 source /opt/openerp/admin/setup_bash
@@ -14,7 +15,8 @@ echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
 rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git
-rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
+mkdir -p /opt/openerp/versions
+mkdir -p /opt/openerp/customs
 chown odoo:odoo /opt/openerp/versions -R
 chown odoo:odoo /opt/openerp/customs -R
 chmod a+x /opt/openerp/admin/*.sh
@@ -42,7 +44,10 @@ if [[ "$ODOO_VERSION" == "6.1" ]]; then
 fi
 
 echo "Starting up odoo"
-if [[ "$RUN_CRONJOBS" == "1" ]]; then
-    sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config_openerp -d $DBNAME --log-level=$LOGLEVEL &
+if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
+    echo 'Starting odoo cronjobs'
+    sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config_openerp -d $DBNAME --log-level=$LOGLEVEL
+else
+    echo 'Starting odoo gevent'
+    sudo -E -H -u odoo /opt/openerp/versions/server/openerp-gevent -c /home/odoo/config_gevent  -d $DBNAME --log-level=$LOGLEVEL
 fi
-sudo -E -H -u odoo /opt/openerp/versions/server/openerp-gevent -c /home/odoo/config_gevent  -d $DBNAME --log-level=$LOGLEVEL &
