@@ -320,7 +320,9 @@ update)
         eval "$dc run stasis /init.sh"
     fi
     echo "Run module update"
+    if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
+    fi
     $dc run odoo /update_modules.sh $2
     $dc kill odoo
     if [[ "$RUN_ASTERISK" == "1" ]]; then
