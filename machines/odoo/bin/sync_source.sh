@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
 
+mkdir -p /opt/openerp
 rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
 
 source /env.sh

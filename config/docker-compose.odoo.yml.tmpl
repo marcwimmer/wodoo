@@ -3,7 +3,6 @@ version: '2'
 volumes:
   postgresdata:
   filestorage:
-  sourcestorage:
   mailstorage:
   opt_servers:
   opt_permanent:
@@ -54,12 +53,12 @@ services:
       - /opt/md5
       - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
       - ../data/src/admin:/opt/src/admin:ro
-      - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
+      - /opt/openerp
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint
