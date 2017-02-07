@@ -2,6 +2,12 @@
 set -x
 
 cp /opt/cups_etc/* /etc/cups -r
+
+# samba printing auth
+PRINTAUTH=/etc/samba/printing.auth
+echo "username = $CUPS_DOMAIN_USER" > $PRINTAUTH
+echo "password = $CUPS_DOMAIN_PASSWORD" >> $PRINTAUTH
+echo "domain = $CUPS_DOMAIN" >> $PRINTAUTH
 cp /opt/cups_etc/printing.auth /etc/samba
 
 set -e
