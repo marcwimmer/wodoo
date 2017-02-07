@@ -9,15 +9,12 @@ source /opt/openerp/admin/setup_bash
 # Setting up productive odoo
 echo Starting odoo for customs $CUSTOMS
 
-/set_permissions.sh
 echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
 rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
-chown odoo:odoo /opt/openerp/versions -R
-chown odoo:odoo /opt/openerp/customs -R
 chmod a+x /opt/openerp/admin/*.sh
 
 echo "Applying patches"
@@ -35,3 +32,5 @@ ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
 echo "Executing autosetup..."
 /run_autosetup.sh $ODOO_PROD
 echo "Done autosetup"
+
+/set_permissions.sh
