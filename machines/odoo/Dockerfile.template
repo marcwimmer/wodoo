@@ -74,7 +74,7 @@ RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/w
 tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1 && \
 ln -s /bin/wkhtmlto* /usr/bin/ && \
 update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
-useradd -ms /bin/bash odoo && \
+useradd -ms /bin/bash odoo
 ADD sysroot/ /
 RUN \
 chown odoo:odoo /home/odoo -R && \
