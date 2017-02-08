@@ -29,9 +29,9 @@ services:
     volumes:
       - cupsdatatoprint:/opt/toprint 
       - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+    env_file:
+      - ../customs.env
     environment:
-      CUPS_USER_ADMIN: odoo
-      CUPS_USER_PASSWORD: ${CUPS_PASSWORD}
       WATCHPATH: /opt/toprint
 
   odoo:
