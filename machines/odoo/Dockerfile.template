@@ -105,7 +105,7 @@ ADD install_python_packages.sh /install_python_packages.sh
 RUN \
 chmod a+x /install_python_packages.sh && \
 /bin/bash /install_python_packages.sh ${ODOO_VERSION} && \
-/bin/bash -c "[[ ${ODOO_VERSION} == '6.1' ]] && apt-get install -y libreoffice || true"
+apt-get install -y libreoffice
 
 ADD bin/ /
 RUN chmod a+x /*.sh
