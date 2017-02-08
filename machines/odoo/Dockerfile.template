@@ -2,12 +2,10 @@ FROM ubuntu:16.04
 MAINTAINER marc@itewimmer.de
 
 # Install latest git
-RUN apt-get update && \
-apt-get -y install python-software-properties software-properties-common
-RUN DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:git-core/ppa
-
-# Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN apt-get install -y --no-install-recommends \
+RUN apt-get update --fix-missing && \
+apt-get -y install python-software-properties software-properties-common && \
+DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:git-core/ppa && \
+apt-get install -y --no-install-recommends \
 			man \
             cmake \
             ctags \
@@ -68,35 +66,26 @@ RUN apt-get install -y --no-install-recommends \
             imagemagick \
             cups \
             libav-tools \
+            libreoffice \
             libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
 
 # https://github.com/odoo/odoo/issues/5177
 RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
 tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1 && \
-ln -s /bin/wkhtmlto* /usr/bin/
-
-WORKDIR /
-RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10
-
-# user odoo
-RUN useradd -ms /bin/bash odoo
-
+ln -s /bin/wkhtmlto* /usr/bin/ && \
+update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
+useradd -ms /bin/bash odoo && \
 ADD sysroot/ /
-RUN chown odoo:odoo /home/odoo -R
-
-
-# install latest pip
 RUN \
+chown odoo:odoo /home/odoo -R && \
 apt-get install -y python-pip && \
 pip install --upgrade pip && \
 pip install requests[security] && \
 pip install glob2 && \
 pip install gitpython && \
-pip install pudb
+pip install pudb && \
+rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
-
-# pip packages:
-RUN rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD requirements.txt /root/requirements.txt
 ADD requirements_70.txt /root/requirements_70.txt
 
@@ -104,21 +93,13 @@ ADD requirements_70.txt /root/requirements_70.txt
 ADD install_python_packages.sh /install_python_packages.sh
 RUN \
 chmod a+x /install_python_packages.sh && \
-/bin/bash /install_python_packages.sh ${ODOO_VERSION} && \
-apt-get install -y libreoffice
+/bin/bash /install_python_packages.sh ${ODOO_VERSION}
 
 ADD bin/ /
-RUN chmod a+x /*.sh
-
-# Adapt site customize
 ADD config/* /home/odoo/
-USER root
-RUN \
+RUN chmod a+x /*.sh && \
 chmod 644 /etc/python2.7/sitecustomize.py && \
-chmod a+x /update_repos_at_start.sh && \
 chmod a+x /usr/local/bin/* && \
 chown odoo:odoo /home/odoo -R
 
-USER root
 CMD /rootrun.sh
-
