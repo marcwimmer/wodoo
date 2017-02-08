@@ -44,6 +44,9 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
       - DAC_READ_SEARCH
+    ports:
+      # debugging with /debug.sh
+      - "9000:9000"
     volumes:
       - cupsdatatoprint:/opt/toprint 
       - ../support_data/openerp.git:/opt/openerp.git:ro
