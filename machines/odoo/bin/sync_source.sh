@@ -7,7 +7,7 @@ if [[ -z "$CUSTOMS" ]]; then
 fi
 
 mkdir -p /opt/openerp
-rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
+rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git && break
 
 source /env.sh
 source /opt/openerp/admin/setup_bash
@@ -18,7 +18,12 @@ echo Starting odoo for customs $CUSTOMS
 echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git
+while true;
+do
+    rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git
+    sleep 1
+    echo 'error at rsync - retrying'
+done
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
 chmod a+x /opt/openerp/admin/*.sh
