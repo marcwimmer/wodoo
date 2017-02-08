@@ -1,6 +1,11 @@
 #!/bin/bash
 set -ex
 
+if [[ -z "$CUSTOMS" ]]; then
+    echo "CUSTOMS required!"
+    exit -1
+fi
+
 mkdir -p /opt/openerp
 rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
 
