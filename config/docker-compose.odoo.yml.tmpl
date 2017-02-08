@@ -6,7 +6,6 @@ volumes:
   mailstorage:
   opt_servers:
   opt_permanent:
-  cupsdata:
   cupsdatatoprint:
 
 services:
@@ -28,11 +27,11 @@ services:
     ports:
       - "${CUPS_PORT}:631"
     volumes:
-      - cupsdata:/opt/cups_etc 
       - cupsdatatoprint:/opt/toprint 
+      - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
     environment:
       CUPS_USER_ADMIN: odoo
-      CUPS_USER_PASSWORD: odoo!#!881tTQadasdashu28
+      CUPS_USER_PASSWORD: ${CUPS_PASSWORD}
       WATCHPATH: /opt/toprint
 
   odoo:
