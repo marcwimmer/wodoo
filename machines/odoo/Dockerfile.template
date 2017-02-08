@@ -100,7 +100,7 @@ ADD config/* /home/odoo/
 RUN chmod a+x /*.sh && \
 chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /usr/local/bin/* && \
-chown odoo:odoo /home/odoo -R
+chown odoo:odoo /home/odoo -R && \
 locale-gen en_US.UTF-8 && \
 update-locale && \
 export LC_ALL=en_US.UTF-8 && \
