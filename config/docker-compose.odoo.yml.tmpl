@@ -3,11 +3,9 @@ version: '2'
 volumes:
   postgresdata:
   filestorage:
-  sourcestorage:
   mailstorage:
   opt_servers:
   opt_permanent:
-  cupsdata:
   cupsdatatoprint:
 
 services:
@@ -29,11 +27,11 @@ services:
     ports:
       - "${CUPS_PORT}:631"
     volumes:
-      - cupsdata:/opt/cups_etc 
       - cupsdatatoprint:/opt/toprint 
+      - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+    env_file:
+      - ../customs.env
     environment:
-      CUPS_USER_ADMIN: odoo
-      CUPS_USER_PASSWORD: odoo!#!881tTQadasdashu28
       WATCHPATH: /opt/toprint
 
   odoo:
@@ -46,20 +44,22 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
       - DAC_READ_SEARCH
+    ports:
+      # debugging with /debug.sh
+      - "9000:9000"
     volumes:
-      - cupsdata:/opt/cups_etc 
       - cupsdatatoprint:/opt/toprint 
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
       - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
       - ../data/src/admin:/opt/src/admin:ro
-      - sourcestorage:/opt/openerp
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
+      - /opt/openerp
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint

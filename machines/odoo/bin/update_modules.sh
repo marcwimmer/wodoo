@@ -2,8 +2,7 @@
 MODULE=$1
 set -x
 source /env.sh
-/set_permissions.sh
-
+/sync_source.sh
 
 if [[ -n "$MODULE" ]]; then
     echo "updating just $MODULE"

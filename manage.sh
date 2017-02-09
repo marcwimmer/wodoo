@@ -314,19 +314,20 @@ purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
-    $dc kill
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         eval "$dc run ari /init.sh"
         eval "$dc run stasis /init.sh"
     fi
     echo "Run module update"
+    if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
+    fi
+    $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
     $dc run odoo /update_modules.sh $2
-    $dc kill odoo
+    $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis
     fi
-    $dc rm -f
     $dc up -d
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
