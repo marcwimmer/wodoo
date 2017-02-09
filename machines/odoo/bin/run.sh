@@ -4,10 +4,6 @@ set -x
 
 /sync_source.sh
 
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LANGUAGE=en_US.UTF-8 
-
 echo on version 6.1 start soffice
 if [[ "$ODOO_VERSION" == "6.1" ]]; then
     sudo -H -u odoo /usr/bin/soffice --nologo --nofirststartwizard --headless --norestore --invisible --accept="socket,host=localhostort=8100,tcpNoDelay=1;urp;" &
