@@ -3,11 +3,9 @@ version: '2'
 volumes:
   postgresdata:
   filestorage:
-  sourcestorage:
   mailstorage:
   opt_servers:
   opt_permanent:
-  cupsdata:
   cupsdatatoprint:
 
 services:
@@ -16,57 +14,29 @@ services:
     build: ../machines/sslproxy
     depends_on: 
         - odoo
-    restart: always
     ports:
         - "${SSL_PORT}:8068"
-
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.88
 
     volumes:
         - ../config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py
   
-  ovpn:
-    container_name: ${DCPREFIX}_ovpn
-    build: ../machines/openvpn/openvpn_server
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: ${REMOTE_INTERNAL}
-    ports:
-      - "${OVPN_PORT}:1194/TCP"
-      - "${OVPN_PORT}:1194/UDP"
-    volumes:
-      - ../config/ovpn:/root/input/confs:ro
-      - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
-      - ../data/ovpn/server:/root/server_out
-      - ../data/ovpn/client:/root/client_out
-      - ../config/ovpn/ccd:/tmp/ccd:ro
-    env_file:
-      - ../customs.env
-    cap_add:
-      - NET_ADMIN
-    command: /root/tools/run.sh
-    restart: on-failure
-
   cups:
     container_name: ${DCPREFIX}_cups
     build: ../machines/cups
     ports:
       - "${CUPS_PORT}:631"
     volumes:
-      - cupsdata:/opt/cups_etc 
       - cupsdatatoprint:/opt/toprint 
+      - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+    env_file:
+      - ../customs.env
     environment:
-      CUPS_USER_ADMIN: odoo
-      CUPS_USER_PASSWORD: odoo!#!881tTQadasdashu28
       WATCHPATH: /opt/toprint
 
   odoo:
     container_name: ${DCPREFIX}_odoo
     build: ../machines/odoo
-    restart: on-failure
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -74,21 +44,22 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
       - DAC_READ_SEARCH
-    networks:
-      ${DCPREFIX}_default:
-        ipv4_address: 4.4.4.80
+    ports:
+      # debugging with /debug.sh
+      - "9000:9000"
     volumes:
-      - cupsdata:/opt/cups_etc 
       - cupsdatatoprint:/opt/toprint 
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
-      - sourcestorage:/opt/openerp
+      - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
+      - ../data/src/admin:/opt/src/admin:ro
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
+      - /opt/openerp
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint
@@ -96,12 +67,30 @@ services:
       - ../customs.env
       - ../fixed.env
 
+  odoo_cronjobs:
+    container_name: ${DCPREFIX}_odoo_cronjobs
+    build: ../machines/odoo
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    volumes_from:
+      - odoo
+    environment:
+      IS_ODOO_CRONJOB: 1
+      ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+
+
   postgres:
     container_name: ${DCPREFIX}_postgres
     build: ../machines/postgres
-    restart: on-failure
-    networks:
-      - ${DCPREFIX}_default
     volumes:
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
@@ -115,11 +104,6 @@ services:
   nginx:
     container_name: ${DCPREFIX}_nginx
     image: nginx:stable
-    restart: on-failure
-    depends_on:
-      - odoo
-    networks:
-      - ${DCPREFIX}_default
     ports:
       - "${ODOO_PORT}:80"
     env_file:
@@ -131,8 +115,6 @@ services:
   mail:
     container_name: ${DCPREFIX}_mail
     build: ../machines/mail
-    networks:
-      - ${DCPREFIX}_default
     volumes:
       - mailstorage:/home/postmaster/Maildir
     ports:
@@ -144,18 +126,5 @@ services:
     build: ../machines/roundcube
     depends_on:
       - mail
-    networks:
-      - ${DCPREFIX}_default
     ports:
       - "${ROUNDCUBE_PORT}:80"
-
-networks:
-  ${DCPREFIX}_default:
-    driver: bridge
-    driver_opts:
-      com.docker.network.enable_ipv6: "false"
-    ipam:
-      driver: default
-      config:
-        - subnet: 4.4.4.0/24
-          gateway: 4.4.4.1

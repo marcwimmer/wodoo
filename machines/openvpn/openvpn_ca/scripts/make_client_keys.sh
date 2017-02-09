@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+/root/tools/init.sh
 
 if [[ -z "$1" ]]; then
     echo 'name required'
@@ -10,7 +11,7 @@ cd $KEYFOLDERROOT
 
 echo "Build Key"
 export EASY_RSA="`pwd`"
-export KEY_NAME=$1 
+export KEY_NAME=$1
 export OPENSSL="openssl"
 export PKCS11TOOL="pkcs11-tool"
 export GREP="grep"
@@ -23,9 +24,3 @@ export KEY_CN=$1  # to match CCD
 sed -i 's|KEY_ALTNAMES="$KEY_CN"|KEY_ALTNAMES="DNS:${KEY_CN}"|g' /usr/share/easy-rsa/pkitool
 
 ./build-key --batch $1
-
-echo "Please enter in your phones as openvpn url: "
-echo "http://$REMOTE:9991/snom.tar"
-echo ""
-echo "And set phone registrar and outbound-proxy to 10.28.0.2"
-echo ""

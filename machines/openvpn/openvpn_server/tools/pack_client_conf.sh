@@ -29,7 +29,6 @@ fi
 cp $CONF ./openvpn
 sed -i "s|__REMOTE__|${REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${REMOTE_PORT}|g" $FILENAME
-sed -i "s|__REMOTE_INTERNAL__|${REMOTE_INTERNAL}|g" $FILENAME
 sed -i "s|__CIPHER__|${CIPHER}|g" $FILENAME
 
 echo "<key>" >> $FILENAME

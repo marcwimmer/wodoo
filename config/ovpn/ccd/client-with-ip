@@ -1,0 +1,2 @@
+push "dhcp-option DNS 10.28.0.3"
+ifconfig-push __IP__ 255.255.0.0

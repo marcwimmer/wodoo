@@ -10,9 +10,10 @@ export $(cut -d= -f1 $DIR/customs.env)
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-for file in docker-compose.odoo docker-compose.asterisk
+for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
+    sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
 done
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
@@ -43,7 +44,8 @@ if [ -z "$1" ]; then
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "logall - shows log til now; use parameter to specify machine"
-    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client."
+    echo "make-CA - recreates CA caution!"
+    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
     echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
@@ -59,7 +61,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml"
+dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml"
 
 RUN_ASTERISK=0
 
@@ -312,33 +314,38 @@ purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
-    $dc kill
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         eval "$dc run ari /init.sh"
         eval "$dc run stasis /init.sh"
     fi
-    echo "Updating source code"
-    $dc run odoo /update_src.sh
     echo "Run module update"
+    if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
+    fi
+    $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
     $dc run odoo /update_modules.sh $2
-    $dc kill odoo
+    $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis
     fi
-    $dc rm -f
     $dc up -d
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
     $dc rm -f
    ;;
-quickpull)
-    # useful for updating just mako templates
-    $dc exec odoo /update_src.sh
-   ;;
+make-CA)
+    read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
+    export dc=$dc
+    $dc kill ovpn
+    $dc run ovpn_ca /root/tools/clean_keys.sh
+    $dc run ovpn_ca /root/tools/make_ca.sh
+    $dc run ovpn_ca /root/tools/make_server_keys.sh
+    $dc rm -f
+    ;;
 make-keys)
     export dc=$dc
-    bash $DIR/config/ovpn/pack.sh keys
+    bash $DIR/config/ovpn/pack.sh
+    $dc rm -f
     ;;
 *)
     echo "Invalid option $1"

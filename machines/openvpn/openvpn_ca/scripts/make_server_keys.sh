@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+/root/tools/init.sh
 
 cd $KEYFOLDERROOT
 export EASY_RSA="`pwd`"
