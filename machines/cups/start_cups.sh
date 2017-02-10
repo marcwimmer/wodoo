@@ -9,7 +9,7 @@ if [[ -d $CONF_ROOT/deb ]]; then
     done
 fi
 
-rsync /opt/cups_etc/ /etc/cups -ra
+rsync /opt/printer_setup/ /etc/cups -ra
 
 # samba printing auth
 PRINTAUTH=/etc/samba/printing.auth
