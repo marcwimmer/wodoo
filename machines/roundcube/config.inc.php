@@ -1,6 +1,6 @@
 <?php
 $config['db_dsnw'] = 'sqlite:////rc/roundcubemail.sqlite?mode=0640';
-$config['default_host'] = 'mail';
+$config['default_host'] = '__MAIL_SERVER__';
 
 // required to ignore SSL cert. verification
 // see: https://bbs.archlinux.org/viewtopic.php?id=187063
