@@ -18,9 +18,8 @@ pear install Auth_SASL Net_SMTP Net_IDNA2-0.1.1 Mail_mime Mail_mimeDecode && \
 mkdir -p /rc
 
 ADD config.inc.php /usr/share/nginx/www/config/
-RUN sed -i "s/__MAIL_SERVER__/$MAIL_SERVER/g" /usr/share/nginx/www/config/config.inc.php
 ADD default /etc/nginx/sites-enabled/default
 ADD launch.sh /root/
 
 VOLUME /rc
-CMD [ "bash", "/root/launch.sh" ]
+CMD bash /root/launch.sh 

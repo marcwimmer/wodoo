@@ -1,6 +1,7 @@
 #!/bin/bash
-
 set -eux
+
+sed -i "s/__MAIL_SERVER__/$MAIL_SERVER/g" /usr/share/nginx/www/config/config.inc.php && \
 
 # make sure the dirs are there
 
