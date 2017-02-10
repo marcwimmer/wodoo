@@ -23,7 +23,7 @@ services:
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
     volumes:
-      - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/connector:/opt/src
+      - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/connector:/opt/src:ro
       - ../data/ari/calls:/opt/permstore/calls
       - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
       - ../data/ari/record_clicked:/opt/permstore/record_clicked
@@ -46,7 +46,7 @@ services:
         - asterisk
         - asterisk_redis
       volumes:
-        - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src
+        - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
         - ../data/asterisk/reloader:/opt/reloader
         - asterisk_logs:/var/log/asterisk
   stasis_proxy:
