@@ -1,6 +1,0 @@
-StrictHostkeyChecking no
-UserKnownHostsFile /dev/null
-Host git.mt-software.de
-    Hostname git.mt-software.de
-    Port 50004
-    User marc
