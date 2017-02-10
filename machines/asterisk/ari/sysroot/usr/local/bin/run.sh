@@ -29,6 +29,7 @@ echo "Odoo arrived! connecting..."
 
 pgrep -f nginx || /usr/sbin/nginx
 
+set +x
 touch /tmp/starting
 /runprod.sh &
 while [[ -f /tmp/starting ]];
