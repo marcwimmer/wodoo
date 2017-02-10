@@ -52,6 +52,7 @@ if [ -z "$1" ]; then
     echo "restart - restarts docker-machine(s) - parameter name"
     echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
+    echo "runbash-with-ports <machine name> - like runbash but connects the ports; debugging ari/stasis and others"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo "stop - like docker-compose stop"
     echo "quickpull - fetch latest source, oeln - good for mako templates"
@@ -272,6 +273,13 @@ runbash)
         exit -1
     fi
     eval "$dc run $2 bash"
+    ;;
+runbash-with-ports)
+    if [[ -z "$2" ]]; then
+        echo "Please give machine name as second parameter e.g. postgres, odoo"
+        exit -1
+    fi
+    eval "$dc run --service-ports $2 bash"
     ;;
 rebuild)
     cd $DIR/machines/odoo
