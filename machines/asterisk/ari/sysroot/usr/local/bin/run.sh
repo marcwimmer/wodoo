@@ -27,26 +27,4 @@ while true; do
 done
 echo "Odoo arrived! connecting..."
 
-pgrep -f nginx || /usr/sbin/nginx
-
-set +x
-touch /tmp/starting
-/runprod.sh &
-while [[ -f /tmp/starting ]];
-do
-    sleep 1
-
-done
-
-
-set +x
-while true;
-do
-    pgrep -f ariconnector.py > /dev/null || {
-	[[ ! -f /tmp/debugging ]] && {
-	    echo 'Ari seems dead and no debugging'
-	    exit -1
-	}
-    }
-    sleep 1
-done
+/usr/local/bin/runprod.sh

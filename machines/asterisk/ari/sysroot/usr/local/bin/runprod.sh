@@ -1,5 +1,6 @@
 #!/bin/bash
 
+pgrep -f nginx || /usr/sbin/nginx
 echo "Starting ARI Connector...."
 pkill -9 -f ari || true
 cd /opt/src/asterisk_ari/connector

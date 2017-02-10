@@ -1,10 +1,6 @@
 #!/bin/bash
+pgrep -f nginx || /usr/sbin/nginx
 set -x
-touch /tmp/debugging
-
-# install marcvim
-
-pkill -9 -f ariconnector
 
 echo "Starting ARI Connector...."
 cd /opt/src/asterisk_ari/connector
