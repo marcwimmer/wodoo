@@ -10,7 +10,7 @@ export $(cut -d= -f1 $DIR/customs.env)
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk
+for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk docker-compose.mail
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
     sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
@@ -62,7 +62,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml"
+dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml -f config/docker-compose.mail.yml"
 
 RUN_ASTERISK=0
 
