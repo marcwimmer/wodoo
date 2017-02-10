@@ -22,5 +22,4 @@ RUN sed -i "s/__MAIL_SERVER__/$MAIL_SERVER/g" /usr/share/nginx/www/config/config
 ADD default /etc/nginx/sites-enabled/default
 ADD launch.sh /root/
 
-VOLUME /rc
 CMD [ "bash", "/root/launch.sh" ]

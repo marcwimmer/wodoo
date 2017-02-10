@@ -2,6 +2,7 @@
 version: '2'
 volumes:
   mailstorage:
+  mailsqlite:
 
 services:
 
@@ -11,6 +12,7 @@ services:
     build: ../machines/mail
     volumes:
       - mailstorage:/home/postmaster/Maildir
+      - mailsqlite:/rc
     ports:
       - "${SMTP_PORT}:25"
 
@@ -35,4 +37,5 @@ services:
     container_name: ${DCPREFIX}_mail_check_sent_mails
     build: ../machines/mail
     volumes:
-      - ../data/mail/odoo_sent_mails:/home/postmaster/Maildir
+      - ../data/mail/odoo_sent_mails/maildir:/home/postmaster/Maildir
+      - ../data/mail/odoo_sent_mails/sqlite:/rc
