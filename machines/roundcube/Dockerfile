@@ -21,5 +21,4 @@ ADD config.inc.php /usr/share/nginx/www/config/
 ADD default /etc/nginx/sites-enabled/default
 ADD launch.sh /root/
 
-VOLUME /rc
-CMD bash /root/launch.sh 
+CMD [ "bash", "/root/launch.sh" ]
