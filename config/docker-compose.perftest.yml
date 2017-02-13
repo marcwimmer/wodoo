@@ -28,7 +28,7 @@ services:
       - "${CUPS_PORT}:631"
     volumes:
       - cupsdatatoprint:/opt/toprint 
-      - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+      - ../data/src/customs/ho/printer_setup:/opt/printer_setup
     env_file:
       - ../customs.env
     environment:
@@ -52,7 +52,7 @@ services:
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
-      - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
+      - ../data/src/customs/ho:/opt/src/customs/ho:ro
       - ../data/src/admin:/opt/src/admin:ro
       - filestorage:/opt/oefiles
       - ../dumps:/opt/dumps
@@ -133,6 +133,8 @@ services:
   roundcube_check_sent_mails:
     build: ../machines/roundcube
     container_name: ${DCPREFIX}_roundcube_check_sent_mails
+    ports:
+      - "${ROUNDCUBE_CHECK_SENT_MAILS_PORT}:80"
     environment:
       MAIL_SERVER: mail_check_sent_mails
 
