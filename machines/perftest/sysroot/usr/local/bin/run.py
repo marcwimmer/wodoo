@@ -19,6 +19,7 @@ def getenv(name):
         raise Exception("Missing env: {}".format(name))
     return result
 
+
 host = "http://odoo:8072"
 username = "admin"
 pwd = getenv("PWD")
@@ -32,6 +33,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 
 def login(username, password):
+    logger.debug("Logging in: %s", username)
     socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (host))
     uid = socket_obj.login(db, username, password)
     return uid
