@@ -28,8 +28,6 @@ services:
   roundcube_check_sent_mails:
     container_name: ${DCPREFIX}_roundcube_check_sent_mails
     build: ../machines/roundcube
-    ports:
-      - "${ROUNDCUBE_CHECK_SENT_MAILS_PORT}:80"
     environment:
       MAIL_SERVER: mail_check_sent_mails
 
