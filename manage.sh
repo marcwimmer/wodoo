@@ -322,10 +322,6 @@ purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
-    if [[ "$RUN_ASTERISK" == "1" ]]; then
-        eval "$dc run ari /init.sh"
-        eval "$dc run stasis /init.sh"
-    fi
     echo "Run module update"
     if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
