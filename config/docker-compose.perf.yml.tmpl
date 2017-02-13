@@ -1,0 +1,153 @@
+# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+version: '2'
+volumes:
+  postgresdata:
+  filestorage:
+  mailstorage:
+  opt_servers:
+  opt_permanent:
+  cupsdatatoprint:
+
+services:
+  sslproxy:
+    container_name: ${DCPREFIX}_odoo_ssl_proxy
+    build: ../machines/sslproxy
+    depends_on: 
+        - odoo
+    ports:
+        - "${SSL_PORT}:8068"
+
+    volumes:
+        - ../config/sslproxy:/opt/conf
+    command: python /opt/src/proxy.py
+  
+  cups:
+    container_name: ${DCPREFIX}_cups
+    build: ../machines/cups
+    ports:
+      - "${CUPS_PORT}:631"
+    volumes:
+      - cupsdatatoprint:/opt/toprint 
+      - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+    env_file:
+      - ../customs.env
+    environment:
+      WATCHPATH: /opt/toprint
+
+  odoo:
+    container_name: ${DCPREFIX}_odoo
+    build: ../machines/odoo
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    ports:
+      # debugging with /debug.sh
+      - "9000:9000"
+    volumes:
+      - cupsdatatoprint:/opt/toprint 
+      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../support_data/odoo.git:/opt/odoo.git:ro
+      - /opt/md5
+      - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
+      - ../data/src/admin:/opt/src/admin:ro
+      - filestorage:/opt/oefiles
+      - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
+      - opt_permanent:/opt/permanent
+      - opt_servers:/opt/servers
+      - /opt/openerp
+    environment:
+      ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+
+  odoo_cronjobs:
+    container_name: ${DCPREFIX}_odoo_cronjobs
+    build: ../machines/odoo
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    volumes_from:
+      - odoo
+    environment:
+      IS_ODOO_CRONJOB: 1
+      ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+
+
+  postgres:
+    container_name: ${DCPREFIX}_postgres
+    build: ../machines/postgres
+    volumes:
+      - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 1
+      PGDATA: /var/lib/postgresql/data/pgdata
+    env_file:
+      ../customs.env
+
+  nginx:
+    container_name: ${DCPREFIX}_nginx
+    image: nginx:stable
+    ports:
+      - "${ODOO_PORT}:80"
+    env_file:
+      ../customs.env
+    volumes:
+      - ../machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
+    command: /bin/bash -c "echo 'setting up nginx conf'; cp /mysite.template /etc/nginx/conf.d/default.conf && sed -i "s/__HTTP_HOST__/$HTTP_HOST/g" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+
+  # public mail server can receive mails
+  mail:
+    container_name: ${DCPREFIX}_mail
+    build: ../machines/mail
+    volumes:
+      - mailstorage:/home/postmaster/Maildir
+    ports:
+      - "${SMTP_PORT}:25"
+
+  roundcube:
+    build: ../machines/roundcube
+    container_name: ${DCPREFIX}_roundcube
+    ports:
+      - "${ROUNDCUBE_PORT}:80"
+    environment:
+      MAIL_SERVER: mail
+
+  # internal mail server to check outgoing odoo mails
+  roundcube_check_sent_mails:
+    build: ../machines/roundcube
+    container_name: ${DCPREFIX}_roundcube_check_sent_mails
+    ports:
+      - "${ROUNDCUBE_CHECK_SENT_MAILS_PORT}:80"
+    environment:
+      MAIL_SERVER: mail_check_sent_mails
+
+  mail:
+    container_name: ${DCPREFIX}_mail
+    build: ../machines/mail
+    volumes:
+      - mailstorage:/home/postmaster/Maildir
+
+  perftest:
+    container_name: ${DCPREFIX}_perftest
+    build: ../machines/perftest
+    env_file: ../customs.env
+    environment:
+      DURATION_TO_OUTPUT: 2
+      SLEEP: 10
