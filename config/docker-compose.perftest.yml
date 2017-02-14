@@ -9,5 +9,6 @@ services:
     environment:
       DURATION_TO_OUTPUT: 2
       SLEEP: 10
-      USERNAME: admin
-      PASSWORD: 1
+      USERNAME: $PERFTEST_USER
+      PASSWORD: $PERFTEST_PASSWORD
+      LOGLEVEL: INFO
