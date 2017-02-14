@@ -16,8 +16,8 @@ fi
 
 mkdir -p /root/confs
 cp /root/input/confs/* /root/confs/ -R
-chmod a+x /root/confs/pack.sh
-/root/confs/pack.sh
+#chmod a+x /root/confs/pack.sh
+#/root/confs/pack.sh
 
 if [[ "$1" == "JUSTPACK" ]]; then
     echo "Just packing - leaving now"

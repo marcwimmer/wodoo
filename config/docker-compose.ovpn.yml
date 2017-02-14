@@ -55,7 +55,7 @@ services:
         - "${OVPN_PORT}:1194/TCP"
         - "${OVPN_PORT}:1194/UDP"
     volumes:
-        - ../config/ovpn:/root/confs:ro
+        - ../config/ovpn:/root/input/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
