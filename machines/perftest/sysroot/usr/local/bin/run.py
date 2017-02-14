@@ -50,7 +50,7 @@ def exe(*params):
     return socket_obj.execute(db, uid, pwd, *params)
 
 
-db = TinyDB("/opt/data.json")
+localdb = TinyDB("/opt/data.json")
 
 while True:
     try:
@@ -58,17 +58,15 @@ while True:
             if callable(d):
                 A = datetime.now()
                 logger.debug("Executing {}".format(name))
-                from pudb import set_trace
-                set_trace()
                 d(exe)
                 B = datetime.now()
                 duration = (B - A).total_seconds()
                 if duration > duration_for_output:
                     logger.warn("Duration: %s for %s", duration, name)
-                db.insert({'duration': duration, 'name': name, 'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
+                localdb.insert({'duration': duration, 'name': name, 'date': datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
                 q = Query()
-                records = db.search(q.name == name)
+                records = localdb.search(q.name == name)
                 avg = sum(x['avg'] for x in records) / len(records)
                 logger.info("%s: %ss (avg)", name, duration)
         time.sleep(long(getenv("SLEEP")))
