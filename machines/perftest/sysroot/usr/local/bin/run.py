@@ -36,6 +36,8 @@ def login(username, password):
     logger.debug("Logging in: %s", username)
     socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (host))
     uid = socket_obj.login(db, username, password)
+    if not uid:
+        raise Exception("Login failed for: %s" % username)
     return uid
 
 
@@ -54,8 +56,6 @@ while True:
         for name, d in tests.__dict__.iteritems():
             if callable(d):
                 A = datetime.now()
-                from pudb import set_trace
-                set_trace()
                 d(exe)
                 B = datetime.now()
                 duration = (B - A).total_seconds()
