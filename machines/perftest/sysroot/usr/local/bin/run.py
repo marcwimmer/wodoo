@@ -31,7 +31,7 @@ FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
-logger.setLevel(logging.DEBUG)
+logger.setLevel(getenv("LOGLEVEL"))
 
 def login(username, password):
     logger.debug("Logging in: %s", username)
