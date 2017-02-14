@@ -111,20 +111,3 @@ services:
     volumes:
       - ../machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
     command: /bin/bash -c "echo 'setting up nginx conf'; cp /mysite.template /etc/nginx/conf.d/default.conf && sed -i "s/__HTTP_HOST__/$HTTP_HOST/g" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
-
-  mail:
-    container_name: ${DCPREFIX}_mail
-    build: ../machines/mail
-    volumes:
-      - mailstorage:/home/postmaster/Maildir
-    ports:
-      - "${SMTP_PORT}:25"
-      # - "143:143"
-
-  roundcube:
-    container_name: ${DCPREFIX}_roundcube
-    build: ../machines/roundcube
-    depends_on:
-      - mail
-    ports:
-      - "${ROUNDCUBE_PORT}:80"

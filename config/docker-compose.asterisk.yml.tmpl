@@ -1,8 +1,6 @@
 # so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
 version: '2'
 volumes:
-  arisourcestorage:
-  stasissourcestorage:
   asterisk_logs:
 
 services:
@@ -25,7 +23,7 @@ services:
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
     volumes:
-      - arisourcestorage:/opt/src
+      - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/connector:/opt/src:ro
       - ../data/ari/calls:/opt/permstore/calls
       - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
       - ../data/ari/record_clicked:/opt/permstore/record_clicked
@@ -48,9 +46,21 @@ services:
         - asterisk
         - asterisk_redis
       volumes:
-        - stasissourcestorage:/opt/src
+        - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
         - ../data/asterisk/reloader:/opt/reloader
         - asterisk_logs:/var/log/asterisk
+  stasis_proxy:
+      build: ../machines/asterisk/flask_nginx_proxy
+      container_name: ${DCPREFIX}_stasis_proxy
+      environment:
+          HOST: stasis
+          PORT: 28121
+  ari_proxy:
+      build: ../machines/asterisk/flask_nginx_proxy
+      container_name: ${DCPREFIX}_ari_proxy
+      environment:
+          HOST: ari
+          PORT: 29926
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk

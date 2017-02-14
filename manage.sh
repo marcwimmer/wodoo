@@ -10,7 +10,7 @@ export $(cut -d= -f1 $DIR/customs.env)
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk
+for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk docker-compose.mail docker-compose.perftest
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
     sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
@@ -52,6 +52,7 @@ if [ -z "$1" ]; then
     echo "restart - restarts docker-machine(s) - parameter name"
     echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
+    echo "runbash-with-ports <machine name> - like runbash but connects the ports; debugging ari/stasis and others"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo "stop - like docker-compose stop"
     echo "quickpull - fetch latest source, oeln - good for mako templates"
@@ -61,7 +62,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml"
+dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml -f config/docker-compose.mail.yml -f config/docker-compose.perftest.yml"
 
 RUN_ASTERISK=0
 
@@ -273,6 +274,13 @@ runbash)
     fi
     eval "$dc run $2 bash"
     ;;
+runbash-with-ports)
+    if [[ -z "$2" ]]; then
+        echo "Please give machine name as second parameter e.g. postgres, odoo"
+        exit -1
+    fi
+    eval "$dc run --service-ports $2 bash"
+    ;;
 rebuild)
     cd $DIR/machines/odoo
     cd $DIR
@@ -314,10 +322,6 @@ purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
 update)
-    if [[ "$RUN_ASTERISK" == "1" ]]; then
-        eval "$dc run ari /init.sh"
-        eval "$dc run stasis /init.sh"
-    fi
     echo "Run module update"
     if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres

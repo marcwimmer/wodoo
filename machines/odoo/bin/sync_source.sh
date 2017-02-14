@@ -7,7 +7,8 @@ if [[ -z "$CUSTOMS" ]]; then
 fi
 
 mkdir -p /opt/openerp
-rsync /opt/src/admin/ /opt/openerp/admin -arP --delete --exclude=.git
+echo "rsyncing odoo source"
+time rsync /opt/src/admin/ /opt/openerp/admin -ar --delete --exclude=.git
 
 source /env.sh
 source /opt/openerp/admin/setup_bash
