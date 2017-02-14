@@ -58,6 +58,8 @@ while True:
             if callable(d):
                 A = datetime.now()
                 logger.debug("Executing {}".format(name))
+                from pudb import set_trace
+                set_trace()
                 d(exe)
                 B = datetime.now()
                 duration = (B - A).total_seconds()
