@@ -22,10 +22,8 @@ def getenv(name):
 
 host = "http://odoo:8072"
 username = "admin"
-pwd = getenv("PWD")
+pwd = getenv("PASSWORD")
 db = getenv("DBNAME")
-from pudb import set_trace
-set_trace()
 
 duration_for_output = long(getenv("DURATION_TO_OUTPUT"))
 
