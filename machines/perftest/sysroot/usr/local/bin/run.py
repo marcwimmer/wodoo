@@ -68,7 +68,7 @@ while True:
                 q = Query()
                 records = localdb.search(q.name == name)
                 avg = sum(x['duration'] for x in records) / len(records)
-                logger.info("%s: %ss (avg)", name, duration)
+                logger.info("%s: %ss (avg)", name, avg)
         time.sleep(long(getenv("SLEEP")))
     except:
         msg = traceback.format_exc()
