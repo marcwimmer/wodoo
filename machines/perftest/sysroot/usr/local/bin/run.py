@@ -31,6 +31,7 @@ FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
+logger.setLevel(logger.debug)
 
 def login(username, password):
     logger.debug("Logging in: %s", username)
@@ -56,6 +57,7 @@ while True:
         for name, d in tests.__dict__.iteritems():
             if callable(d):
                 A = datetime.now()
+                logger.debug("Executing {}".format(name))
                 d(exe)
                 B = datetime.now()
                 duration = (B - A).total_seconds()
