@@ -33,10 +33,12 @@ tar xzf server.tgz
 rm server.tgz
 cd /root/tools
 echo "Installation of Certificates finished"
-
-mkdir -p /dev/net
-mknod /dev/net/tun c 10 200  # also used for tap
-
+if [ ! -f /dev/net/tun ]; then
+    {
+    mkdir -p /dev/net
+    mknod /dev/net/tun c 10 200  # also used for tap
+    }
+fi;
 
 # replace vars in ccd
 mkdir -p /root/ccd
