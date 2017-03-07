@@ -30,7 +30,7 @@ mkdir -p /opt/openerp/customs
 chmod a+x /opt/openerp/admin/*.sh
 
 echo "Applying patches"
-/opt/openerp/admin/apply_patches.sh
+PATCH_DIR=/opt/openerp/active_customs/patches/$ODOO_VERSION SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh
 
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
