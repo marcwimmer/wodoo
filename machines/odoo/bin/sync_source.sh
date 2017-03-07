@@ -41,8 +41,4 @@ ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
 
 # use virtualenv installed packages for odoo
 
-echo "Executing autosetup..."
-/run_autosetup.sh $ODOO_PROD
-echo "Done autosetup"
-
 /set_permissions.sh
