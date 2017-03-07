@@ -12,3 +12,4 @@ restore
 vim
 customs.env.*
 docker-compose-custom.yml
+*.pem

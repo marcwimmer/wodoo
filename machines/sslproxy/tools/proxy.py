@@ -47,9 +47,11 @@ version = "1.0"
 # Changing the buffer_size and delay, you can improve the speed and bandwidth.
 # But when buffer get to high or delay go too down, you can broke things
 c_path = "/opt/conf/proxy.cfg"
-if os.path.exists("./debug"):
+is_debug=os.path.exists("./.debug")
+if os.path.exists("./.debug"):
     c_path = "{}.cfg".format(os.path.basename(__file__[:-3]))
-
+print("is_debug:    {}".format(is_debug))
+print("conf_path:   {}".format(c_path))
 conf = HTTPS_ConfigHandler(conf_path=c_path).get_config()
 
 buffer_size = 8192
@@ -58,6 +60,7 @@ forward_to = (
     conf["base_config"]["referrer_ip"],
     int(conf["base_config"]["referrer_port"])
 )
+
 # Logging
 logger = logging.getLogger("ssl_proxy")
 ch = logging.StreamHandler(sys.stdout)
@@ -112,7 +115,8 @@ class TheServer:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         self.server.bind((host, port))
-
+        logger.debug("Server_Socket:    {}".format(self.server))
+        logger.debug("Target_Socket:    {}".format(self.http))
         ssl_active = int(conf["ssl_config"]["ssl_active"])
         logger.debug("[Server] ssl_active: {}".format(ssl_active))
         if ssl_active == 1:
@@ -139,7 +143,7 @@ req:    {} ({})
                 ca_certs=cac,
                 ssl_version=ssl.PROTOCOL_TLSv1_2,
                 cert_reqs=cert_req)
-
+        logger.debug("PreListenSocket:  {}".format(self.server))
         self.server.listen(200)
 
     def main_loop(self):
@@ -164,6 +168,7 @@ req:    {} ({})
                     self.on_recv()
 
     def on_accept(self):
+        logger.debug("Forward_Config:   {}".format(forward_to))
         forward = Forward().start(forward_to[0], forward_to[1])
         try:
             clientsock, clientaddr = self.server.accept()
@@ -171,15 +176,16 @@ req:    {} ({})
 client_sock:    {}
 client_addr:    {}
 """.format(clientsock, clientaddr))
-            client_cert = clientsock.getpeercert()
-            logger.debug("subject 3 0 = {}".format(client_cert["subject"][3][0][0]))
-            out = ""
-            if client_cert["subject"][3][0][0] == "commonName":
-                out = "{} Connected".format(client_cert["subject"][3][0][1])
-            if client_cert["subject"][0][0][0] == "countryName":
-                out += " from {}".format(client_cert["subject"][0][0][1])
-            logger.debug(out)
-            logger.debug("PeerCert: {}".format(client_cert))
+            if (bool(int(conf["ssl_config"]["client_cert_required"]))):
+                client_cert = clientsock.getpeercert()
+                logger.debug("subject 3 0 = {}".format(client_cert["subject"][3][0][0]))
+                out = ""
+                if client_cert["subject"][3][0][0] == "commonName":
+                    out = "{} Connected".format(client_cert["subject"][3][0][1])
+                if client_cert["subject"][0][0][0] == "countryName":
+                    out += " from {}".format(client_cert["subject"][0][0][1])
+                logger.debug(out)
+                logger.debug("PeerCert: {}".format(client_cert))
             # logger.info(clientaddr, "has connected")
         except Exception as e:
             logger.warning(e)
