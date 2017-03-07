@@ -29,15 +29,15 @@ mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
 chmod a+x /opt/openerp/admin/*.sh
 
-echo "Applying patches"
-PATCH_DIR=/opt/openerp/active_customs/patches/$ODOO_VERSION SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh
+rm -Rf /opt/openerp/versions || true
+mkdir -p /opt/openerp/versions
+ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
 
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
 
-rm -Rf /opt/openerp/versions || true
-mkdir -p /opt/openerp/versions
-ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
+echo "Applying patches"
+PATCH_DIR=/opt/openerp/active_customs/patches/$ODOO_VERSION SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh
 
 # use virtualenv installed packages for odoo
 
