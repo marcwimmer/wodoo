@@ -336,6 +336,8 @@ update)
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
     $dc rm -f
+    $dc kill nginx
+    $dc kill up -d
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
