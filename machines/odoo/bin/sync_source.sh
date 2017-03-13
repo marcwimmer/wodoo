@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 if [[ -z "$CUSTOMS" ]]; then
     echo "CUSTOMS required!"
@@ -21,7 +21,7 @@ echo "Odoo version is $ODOO_VERSION"
 echo "Syncing odoo to executable dir"
 while true;
 do
-    rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git && break
+    time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git && break
     sleep 1
     echo 'error at rsync - retrying'
 done
@@ -29,20 +29,19 @@ mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
 chmod a+x /opt/openerp/admin/*.sh
 
-echo "Applying patches"
-/opt/openerp/admin/apply_patches.sh
-
-echo "oeln"
-/opt/openerp/admin/oeln $CUSTOMS
-
 rm -Rf /opt/openerp/versions || true
 mkdir -p /opt/openerp/versions
 ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
 
-# use virtualenv installed packages for odoo
+echo "oeln"
+/opt/openerp/admin/oeln $CUSTOMS
 
-echo "Executing autosetup..."
-/run_autosetup.sh $ODOO_PROD
-echo "Done autosetup"
+echo "Applying patches"
+PATCH_DIR=/opt/openerp/active_customs/patches/$ODOO_VERSION SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh || {
+    echo "Error at applying patches! Please check output and the odoo version"
+    exit -1
+}
+
+# use virtualenv installed packages for odoo
 
 /set_permissions.sh

@@ -2,7 +2,6 @@
 version: '2'
 volumes:
   postgresdata:
-  filestorage:
   mailstorage:
   opt_servers:
   opt_permanent:
@@ -54,7 +53,7 @@ services:
       - /opt/md5
       - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
       - ../data/src/admin:/opt/src/admin:ro
-      - filestorage:/opt/oefiles
+      - /opt/oefiles/:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - opt_permanent:/opt/permanent
