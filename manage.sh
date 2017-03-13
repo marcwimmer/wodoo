@@ -150,6 +150,7 @@ exec)
     $dc exec $2 $3 $3 $4
     ;;
 backup_db)
+    set -x
     if [[ -n "$2" ]]; then
         BACKUPDIR=$2
     else
@@ -157,7 +158,7 @@ backup_db)
     fi
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
-    LINKPATH=$BACKUPDIR/latest_dump
+    LINKPATH=$DIR/dumps/latest_dump
     $dc up -d postgres odoo
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
@@ -171,15 +172,13 @@ backup_files)
     else
         BACKUPDIR=$DIR/dumps
     fi
+    BACKUP_FILENAME=oefiles.$CUSTOMS.tar
+    BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
+
     # execute in running container via exec
     $dc exec odoo /backup_files.sh
-
-    if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
-        /usr/bin/rsync $DIR/dumps/$filename.gz $BACKUPDIR -P
-        /bin/rm $DIR/dumps/$filename.gz
-        /usr/bin/rsync $DIR/dumps/$filename_oefiles $BACKUPDIR -P
-        /bin/rm $DIR/dumps/$filename_oefiles
-    fi
+    [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
+    mv $DIR/dumps/oefiles.tar $BACKUP_FILEPATH
 
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
     ;;
