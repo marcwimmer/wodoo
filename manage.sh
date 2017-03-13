@@ -163,6 +163,7 @@ backup_db)
     mv $DIR/dumps/$DBNAME.gz $filepath
     /bin/rm $LINKPATH || true
     ln -s $filepath $LINKPATH
+    md5sum $filepath
     echo "Dumped to $filepath"
     ;;
 backup_files)
@@ -335,7 +336,7 @@ update)
     echo 'Removing unneeded containers'
     $dc rm -f
     $dc kill nginx
-    $dc kill up -d
+    $dc up -d
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
