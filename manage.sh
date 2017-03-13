@@ -150,7 +150,6 @@ exec)
     $dc exec $2 $3 $3 $4
     ;;
 backup_db)
-    set -x
     if [[ -n "$2" ]]; then
         BACKUPDIR=$2
     else
