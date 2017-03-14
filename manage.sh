@@ -159,7 +159,9 @@ backup_db)
     filepath=$BACKUPDIR/$filename
     LINKPATH=$DIR/dumps/latest_dump
     $dc up -d postgres odoo
-    $dc exec postgres /backup.sh
+    # by following command the call is crontab safe;
+    # there is a bug: https://github.com/docker/compose/issues/3352
+    docker exec -i $($dc ps -q postgres) /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
     /bin/rm $LINKPATH || true
     ln -s $filepath $LINKPATH
@@ -176,7 +178,9 @@ backup_files)
     BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
 
     # execute in running container via exec
-    $dc exec odoo /backup_files.sh
+    # by following command the call is crontab safe;
+    # there is a bug: https://github.com/docker/compose/issues/3352
+    docker exec -i $($dc ps -q odoo) /backup_files.sh
     [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
     mv $DIR/dumps/oefiles.tar $BACKUP_FILEPATH
 
