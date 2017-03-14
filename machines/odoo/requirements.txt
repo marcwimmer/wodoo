@@ -1,4 +1,5 @@
 unidecode
+hubarcode==1.0.0
 pillow==3.4.2
 Weasyprint==0.31
 pybarcode==0.7
