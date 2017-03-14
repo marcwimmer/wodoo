@@ -157,12 +157,13 @@ backup_db)
     fi
     filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
     filepath=$BACKUPDIR/$filename
-    LINKPATH=$BACKUPDIR/latest_dump
+    LINKPATH=$DIR/dumps/latest_dump
     $dc up -d postgres odoo
     $dc exec postgres /backup.sh
     mv $DIR/dumps/$DBNAME.gz $filepath
     /bin/rm $LINKPATH || true
     ln -s $filepath $LINKPATH
+    md5sum $filepath
     echo "Dumped to $filepath"
     ;;
 backup_files)
@@ -171,15 +172,13 @@ backup_files)
     else
         BACKUPDIR=$DIR/dumps
     fi
+    BACKUP_FILENAME=oefiles.$CUSTOMS.tar
+    BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
+
     # execute in running container via exec
     $dc exec odoo /backup_files.sh
-
-    if [[ "$BACKUPDIR" != "$DIR/dumps" ]]; then
-        /usr/bin/rsync $DIR/dumps/$filename.gz $BACKUPDIR -P
-        /bin/rm $DIR/dumps/$filename.gz
-        /usr/bin/rsync $DIR/dumps/$filename_oefiles $BACKUPDIR -P
-        /bin/rm $DIR/dumps/$filename_oefiles
-    fi
+    [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
+    mv $DIR/dumps/oefiles.tar $BACKUP_FILEPATH
 
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
     ;;
@@ -336,6 +335,8 @@ update)
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
     $dc rm -f
+    $dc kill nginx
+    $dc up -d
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
