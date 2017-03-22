@@ -303,11 +303,11 @@ stop)
     ;;
 logs)
     cd $DIR
-    eval "$dc logs --tail=1400 -f $2 $3"
+    eval "$dc logs --tail=1400 -f -t $2 $3"
     ;;
 logall)
     cd $DIR
-    eval "$dc logs -f $2 $3"
+    eval "$dc logs -f -t $2 $3"
     ;;
 rm)
     cd $DIR
