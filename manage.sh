@@ -301,6 +301,10 @@ stop)
     cd $DIR
     eval "$dc stop $2 $3 $4"
     ;;
+logsn)
+    cd $DIR
+    eval "$dc logs --tail=$2 -f -t $3 $4"
+    ;;
 logs)
     cd $DIR
     eval "$dc logs --tail=1400 -f -t $2 $3"
