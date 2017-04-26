@@ -6,6 +6,7 @@ import logging
 import sys
 import os
 import cups
+import shutil
 
 FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -31,7 +32,7 @@ while True:
                 logger.info(u"Printing {} to queue: {}".format(path, printer_queue))
                 try:
                     conn.printFile(unicode(printer_queue), unicode(path), unicode(id), {})
-                    os.rename(path, os.path.join(PRINTED, filename))
+                    shutil.move(path, os.path.join(PRINTED, filename))
                 except:
                     msg = traceback.format_exc()
                     logger.error(msg)
