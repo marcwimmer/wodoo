@@ -27,11 +27,13 @@ services:
       - "${CUPS_PORT}:631"
     volumes:
       - cupsdatatoprint:/opt/toprint 
+      - ../data/cups/printed:/opt/printed 
       - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
     env_file:
       - ../customs.env
     environment:
       WATCHPATH: /opt/toprint
+      PRINTED_PATH: /opt/printed
 
   odoo:
     container_name: ${DCPREFIX}_odoo

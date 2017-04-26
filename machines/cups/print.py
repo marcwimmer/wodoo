@@ -6,16 +6,18 @@ import logging
 import sys
 import os
 import cups
-import uuid
 
 FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 
-PATH=sys.argv[1]
+PATH = sys.argv[1]
+PRINTED = sys.argv[2]
 if not PATH:
-    raise Exception("Path require!")
+    raise Exception("Path required!")
+if not PRINTED:
+    raise Exception("Path Printed required!")
 
 while True:
     try:
@@ -29,7 +31,7 @@ while True:
                 logger.info(u"Printing {} to queue: {}".format(path, printer_queue))
                 try:
                     conn.printFile(unicode(printer_queue), unicode(path), unicode(id), {})
-                    os.unlink(path)
+                    os.rename(path, os.path.join(PRINTED, filename))
                 except:
                     msg = traceback.format_exc()
                     logger.error(msg)
@@ -37,4 +39,3 @@ while True:
         msg = traceback.format_exc()
         logger.error(msg)
     time.sleep(2)
-

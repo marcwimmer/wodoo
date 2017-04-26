@@ -26,6 +26,6 @@ fi
 rsync $CONF_ROOT/ppd/ /etc/cups/ppd/ -ar
 rsync $CONF_ROOT/printers.conf /etc/cups/
 
-sleep 10 && python /print.py $WATCHPATH &
+sleep 10 && python /print.py "$WATCHPATH" "$PRINTED_PATH"&
 
 exec /usr/sbin/cupsd -f
