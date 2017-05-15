@@ -21,7 +21,7 @@ echo "Odoo version is $ODOO_VERSION"
 echo "Syncing odoo to executable dir"
 while true;
 do
-    time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs -arP --delete --exclude=.git && break
+    time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs --info=progress2  -arP --delete --exclude=.git && break
     sleep 1
     echo 'error at rsync - retrying'
 done

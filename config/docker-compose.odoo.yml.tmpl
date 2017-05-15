@@ -88,7 +88,7 @@ services:
     command: /rootrun.sh
 
   odoo_update:
-    extends: odoo
+    extends: odoo_base
     container_name: ${DCPREFIX}_odoo_updater
     # called by manage.sh
     command: echo 'good by - it is ok!'
