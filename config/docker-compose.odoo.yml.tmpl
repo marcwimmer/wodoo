@@ -77,12 +77,14 @@ services:
     environment:
       DEBUG_PORT_ODOO: 9000
       DEBUG_PORT_ODOO_LONGPOLLING: 9001
+    command: /rootrun.sh
       
   odoo_cronjobs:
     extends: odoo_base
     container_name: ${DCPREFIX}_odoo_cronjobs
     environment:
       IS_ODOO_CRONJOB: 1
+    command: /rootrun.sh
 
   odoo_update:
     extends: odoo
