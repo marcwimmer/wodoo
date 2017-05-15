@@ -34,7 +34,7 @@ rm -Rf /opt/openerp/versions || true
 mkdir -p /opt/openerp/versions
 # must be rsync, so that patches apply
 #ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
-rsync /opt/openerp/active_customs/odoo/ /opt/openerp/versions/server/ -ar
+rsync /opt/openerp/active_customs/odoo/ /opt/openerp/versions/server/ -ar --delete -P
 
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
