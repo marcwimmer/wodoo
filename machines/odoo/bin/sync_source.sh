@@ -27,13 +27,14 @@ do
 done
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
+cd /opt/openerp/customs && ln -s /opt/openerp/active_customs $CUSTOMS
 chmod a+x /opt/openerp/admin/*.sh
 
 rm -Rf /opt/openerp/versions || true
 mkdir -p /opt/openerp/versions
 # must be rsync, so that patches apply
 #ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
-rsync /opt/openerp/active_customs/odoo/ /opt/openerp/versions/server/
+rsync /opt/openerp/active_customs/odoo/ /opt/openerp/versions/server/ -ar
 
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
