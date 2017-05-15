@@ -334,15 +334,16 @@ update)
     $dc up -d postgres
     fi
     $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
-    $dc run odoo /update_modules.sh $2
+    $dc run odoo_update $2
     $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then
         $dc kill ari stasis
     fi
+    $dc kill odoo
+    $dc rm -f
     $dc up -d
     python $DIR/bin/telegram_msg.py "Update done" &> /dev/null
     echo 'Removing unneeded containers'
-    $dc rm -f
     $dc kill nginx
     $dc up -d
    ;;

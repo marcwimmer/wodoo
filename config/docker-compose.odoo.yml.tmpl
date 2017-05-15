@@ -35,8 +35,8 @@ services:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
 
-  odoo:
-    container_name: ${DCPREFIX}_odoo
+  odoo_base:
+    container_name: ${DCPREFIX}_odoo_base
     build: ../machines/odoo
     security_opt:
       - apparmor:unconfined
@@ -49,13 +49,13 @@ services:
       # debugging with /debug.sh
       - "9000:9000"
     volumes:
-      - cupsdatatoprint:/opt/toprint 
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - /opt/md5
+      - /opt/oefiles/:/opt/oefiles
+      - cupsdatatoprint:/opt/toprint 
       - ../data/src/customs/${CUSTOMS}:/opt/src/customs/${CUSTOMS}:ro
       - ../data/src/admin:/opt/src/admin:ro
-      - /opt/oefiles/:/opt/oefiles
       - ../dumps:/opt/dumps
       - ../restore:/opt/restore
       - opt_permanent:/opt/permanent
@@ -70,26 +70,26 @@ services:
       - ../customs.env
       - ../fixed.env
 
+  odoo:
+    extends: odoo_base
+    container_name: ${DCPREFIX}_odoo
+    ports:
+      # debugging with /debug.sh
+      - "9000:9000"
+    environment:
+      DEBUG_PORT_ODOO: 9000
+      DEBUG_PORT_ODOO_LONGPOLLING: 9001
+      
   odoo_cronjobs:
+    extends: odoo_base
     container_name: ${DCPREFIX}_odoo_cronjobs
-    build: ../machines/odoo
-    security_opt:
-      - apparmor:unconfined
-      - seccomp:unconfined
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-      - DAC_READ_SEARCH
-    volumes_from:
-      - odoo
     environment:
       IS_ODOO_CRONJOB: 1
-      ODOO_PROD: 1
-      CUPS_TOPRINT: /opt/toprint
-    env_file:
-      - ../customs.env
-      - ../fixed.env
 
+  odoo_update:
+    extends: odoo
+    container_name: ${DCPREFIX}_odoo_updater
+    command: /update_modules.sh
 
   postgres:
     container_name: ${DCPREFIX}_postgres
