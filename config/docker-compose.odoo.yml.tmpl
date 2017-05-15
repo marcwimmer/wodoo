@@ -89,7 +89,8 @@ services:
   odoo_update:
     extends: odoo
     container_name: ${DCPREFIX}_odoo_updater
-    command: /update_modules.sh
+    # called by manage.sh
+    command: exit 0
 
   postgres:
     container_name: ${DCPREFIX}_postgres
