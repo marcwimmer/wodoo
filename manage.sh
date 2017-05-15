@@ -334,6 +334,8 @@ update)
     $dc up -d postgres
     fi
     $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
+    $dc kill odoo_update
+    $dc rm odoo_update
     $dc run odoo_update /update_modules.sh $2
     $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then
