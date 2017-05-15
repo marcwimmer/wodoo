@@ -31,7 +31,9 @@ chmod a+x /opt/openerp/admin/*.sh
 
 rm -Rf /opt/openerp/versions || true
 mkdir -p /opt/openerp/versions
-ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
+# must be rsync, so that patches apply
+#ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
+rsync /opt/openerp/active_customs/odoo/ /opt/openerp/versions/server/
 
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
