@@ -319,7 +319,7 @@ rm)
     ;;
 restart)
     cd $DIR
-    eval "$dc stop $2"
+    eval "$dc kill $2"
     eval "$dc up -d $2"
     ;;
 install-telegram-bot)
