@@ -62,8 +62,6 @@ services:
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint
-      DEBUG_PORT_ODOO: 9000
-      DEBUG_PORT_ODOO_LONGPOLLING: 9001
     env_file:
       - ../customs.env
       - ../fixed.env
@@ -91,7 +89,7 @@ services:
     extends: odoo_base
     container_name: ${DCPREFIX}_odoo_updater
     # called by manage.sh
-    command: echo 'good by - it is ok!'
+    command: echo 'good bye - it is ok!'
 
   postgres:
     container_name: ${DCPREFIX}_postgres
