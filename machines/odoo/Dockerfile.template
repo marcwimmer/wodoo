@@ -95,6 +95,7 @@ RUN \
 chmod a+x /install_python_packages.sh && \
 /bin/bash /install_python_packages.sh ${ODOO_VERSION}
 
+RUN apt-get install -y locales
 ADD bin/ /
 ADD config/* /home/odoo/
 RUN chmod a+x /*.sh && \
