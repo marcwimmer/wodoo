@@ -67,7 +67,8 @@ apt-get install -y --no-install-recommends \
             cups \
             libav-tools \
             libreoffice \
-            libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
+            libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
+            locales
 
 # https://github.com/odoo/odoo/issues/5177
 RUN curl -o /tmp/wkhtml.tar.xz http://download.gna.org/wkhtmltopdf/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
