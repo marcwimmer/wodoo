@@ -16,6 +16,7 @@ limit_request = 8192
 limit_time_cpu = 6000000
 limit_time_real = 12000000
 list_db = True
+log_level = debug
 max_cron_threads = 4
 smtp_password = False
 smtp_port = 25
