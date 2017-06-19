@@ -23,3 +23,5 @@ openpyxl==2.4.1
 validate_email==1.3
 werkzeug==0.9.4
 pymssql==2.1.3
+pyPdf==1.13
+PyPDF2==1.25.1
