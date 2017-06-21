@@ -42,7 +42,13 @@ def login(username, password):
     return uid
 
 
-uid = login(getenv("USERNAME"), pwd)
+while True:
+    try:
+        uid = login(getenv("USERNAME"), pwd)
+        break
+    except:
+        logger.warn("Login failed: either wrong username/password or odoo not available")
+        time.sleep(5)
 
 def exe(*params):
     global uid
