@@ -348,6 +348,7 @@ update)
     echo 'Removing unneeded containers'
     $dc kill nginx
     $dc up -d
+    df -h / # case: after update disk / was full
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
