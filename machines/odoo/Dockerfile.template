@@ -68,7 +68,8 @@ apt-get install -y --no-install-recommends \
             libav-tools \
             libreoffice \
             libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
-            locales
+            locales \
+            pdftk
 
 # https://github.com/odoo/odoo/issues/5177
 
