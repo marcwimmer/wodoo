@@ -72,10 +72,10 @@ apt-get install -y --no-install-recommends \
 
 # https://github.com/odoo/odoo/issues/5177
 
-RUN curl -o /tmp/wkhtml.tar.xz https://downloads.wkhtmltopdf.org/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
-tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1 && \
-ln -s /bin/wkhtmlto* /usr/bin/ && \
-update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
+#RUN curl -o /tmp/wkhtml.tar.xz https://downloads.wkhtmltopdf.org/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
+#tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1 && \
+#ln -s /bin/wkhtmlto* /usr/bin/ && \
+RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
 ADD sysroot/ /
 RUN \
