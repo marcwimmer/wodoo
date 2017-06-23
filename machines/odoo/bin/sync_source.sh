@@ -39,7 +39,7 @@ echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
 
 echo "Applying patches"
-CUSTOMS=$CUSTOMS VERSION=$VERSION CUSTOMS_DIR=/opt/openerp/active_customs SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh || {
+CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=/opt/openerp/active_customs SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh || {
     echo "Error at applying patches! Please check output and the odoo version"
     exit -1
 }
