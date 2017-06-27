@@ -2,8 +2,6 @@
 set -e
 set -x
 
-chmod a+w -R $LIBREOFFICE_SEND
-chmod a+w -R $LIBREOFFICE_RECEIVE
 
 /sync_source.sh
 
