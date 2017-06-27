@@ -37,7 +37,7 @@ services:
       PRINTED_PATH: /opt/printed
 
   libreoffice:
-    container_name: libreoffice
+    container_name: ${DCPREFIX}_libreoffice
     build: ../machines/libreoffice
     environment:
       INPUT: /tmp/lo/1

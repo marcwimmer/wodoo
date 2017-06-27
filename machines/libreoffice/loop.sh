@@ -2,6 +2,10 @@
 
 mkdir -p $INPUT
 mkdir -p $OUTPUT
+chown 1000:1000 $INPUT
+chown 1000:1000 $OUTPUT
+chmod a+rw $INPUT
+chmod a+rw $OUTPUT
 
 while true;
 do
