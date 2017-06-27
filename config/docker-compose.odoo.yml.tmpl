@@ -6,6 +6,7 @@ volumes:
   opt_servers:
   opt_permanent:
   cupsdatatoprint:
+  libreoffice_exchange:
 
 services:
   sslproxy:
@@ -35,6 +36,15 @@ services:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
 
+  libreoffice:
+    container_name: libreoffice
+    build: ../machines/libreoffice
+    environment:
+      INPUT: /tmp/lo/1
+      OUTPUT: /tmp/lo/2
+    volumes:
+      - libreoffice_exchange:/tmp/lo
+
   odoo_base:
     container_name: ${DCPREFIX}_odoo_base
     build: ../machines/odoo
@@ -59,9 +69,12 @@ services:
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
       - /opt/openerp
+      - libreoffice_exchange:/tmp/libreoffice
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint
+      LIBREOFFICE_SEND: /tmp/libreoffice/1
+      LIBREOFFICE_RECEIVE: /tmp/libreoffice/2
     env_file:
       - ../customs.env
       - ../fixed.env
