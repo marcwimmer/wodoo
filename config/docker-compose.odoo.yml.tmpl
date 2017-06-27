@@ -69,12 +69,12 @@ services:
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
       - /opt/openerp
-      - libreoffice_exchange:/tmp/libreoffice
+      - libreoffice_exchange:/opt/libreoffice
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint
-      LIBREOFFICE_SEND: /tmp/libreoffice/1
-      LIBREOFFICE_RECEIVE: /tmp/libreoffice/2
+      LIBREOFFICE_SEND: /opt/libreoffice/1
+      LIBREOFFICE_RECEIVE: /opt/libreoffice/2
     env_file:
       - ../customs.env
       - ../fixed.env
