@@ -235,7 +235,7 @@ restore)
 
     $dc run postgres /restore.sh
 
-    if [[ -n "$3" ]]; then
+    if [[ -n "$3" && "$3" != "-force" ]]; then
         echo 'Extracting files...'
         $dc run -e filename=$filename_oefiles odoo /restore_files.sh
     fi
