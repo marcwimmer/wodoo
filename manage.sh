@@ -2,6 +2,7 @@
 set -e
 set +x
 
+args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
@@ -50,7 +51,7 @@ if [ -z "$1" ]; then
     echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machine(s) - parameter name"
-    echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
+    echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "runbash-with-ports <machine name> - like runbash but connects the ports; debugging ari/stasis and others"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
@@ -201,7 +202,12 @@ restore)
     filename_oefiles=oefiles.tar
     VOLUMENAME=${PROJECT_NAME}_postgresdata
 
-    read -p "Deletes database! Continue? Press ctrl+c otherwise"
+    last_index=$(echo "$# - 1"|bc)
+    last_param=${args[$last_index]}
+
+    [[ $last_param != "-force" ]] && {
+        read -p "Deletes database! Continue? Press ctrl+c otherwise"
+    }
     if [[ ! -f $2 ]]; then
         echo "File $2 not found!"
         exit -1
