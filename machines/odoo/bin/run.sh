@@ -6,7 +6,7 @@ set -x
 /sync_source.sh
 
 echo "Executing autosetup..."
-/run_autosetup.sh $ODOO_PROD
+/run_autosetup.sh
 echo "Done autosetup"
 
 

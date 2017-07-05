@@ -4,8 +4,6 @@
 # You can do setup there, like deploying ssh keys and so on
 set -e
 
-ODOO_PROD="$1"
-
 if [[ "$RUN_AUTOSETUP" == "1" ]]; then
     cd /opt/openerp/active_customs
     if [[ ! -d autosetup ]]; then
@@ -15,6 +13,6 @@ if [[ "$RUN_AUTOSETUP" == "1" ]]; then
 
     for file in *.sh; do
         echo "executing $file"
-        eval "bash ./$file $ODOO_PROD"
+        eval "bash ./$file $ODOO_AUTOSETUP_PARAM"
     done
 fi
