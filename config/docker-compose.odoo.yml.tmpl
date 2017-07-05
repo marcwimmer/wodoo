@@ -76,6 +76,8 @@ services:
     environment:
       DEBUG_PORT_ODOO: 9000
       DEBUG_PORT_ODOO_LONGPOLLING: 9001
+      LANG: 'en_US.UTF-8'
+      LANGUAGE: 'en_US:en'
     command: /rootrun.sh
       
   odoo_cronjobs:
