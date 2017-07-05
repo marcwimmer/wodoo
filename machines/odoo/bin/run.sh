@@ -2,17 +2,13 @@
 set -e
 set -x
 
+
 /sync_source.sh
 
 echo "Executing autosetup..."
-/run_autosetup.sh $ODOO_PROD
+/run_autosetup.sh
 echo "Done autosetup"
 
-echo on version 6.1 start soffice
-if [[ "$ODOO_VERSION" == "6.1" ]]; then
-    sudo -H -u odoo /usr/bin/soffice --nologo --nofirststartwizard --headless --norestore --invisible --accept="socket,host=localhostort=8100,tcpNoDelay=1;urp;" &
-
-fi
 
 echo "Starting up odoo"
 if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then

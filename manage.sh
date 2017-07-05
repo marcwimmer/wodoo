@@ -2,6 +2,7 @@
 set -e
 set +x
 
+args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
@@ -50,7 +51,7 @@ if [ -z "$1" ]; then
     echo "rm - command"
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machine(s) - parameter name"
-    echo "restore <filepathdb> <filepath_tarfiles>- restores the given dump as odoo database"
+    echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "runbash-with-ports <machine name> - like runbash but connects the ports; debugging ari/stasis and others"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
@@ -201,7 +202,12 @@ restore)
     filename_oefiles=oefiles.tar
     VOLUMENAME=${PROJECT_NAME}_postgresdata
 
-    read -p "Deletes database! Continue? Press ctrl+c otherwise"
+    last_index=$(echo "$# - 1"|bc)
+    last_param=${args[$last_index]}
+
+    [[ $last_param != "-force" ]] && {
+        read -p "Deletes database! Continue? Press ctrl+c otherwise"
+    }
     if [[ ! -f $2 ]]; then
         echo "File $2 not found!"
         exit -1
@@ -229,7 +235,7 @@ restore)
 
     $dc run postgres /restore.sh
 
-    if [[ -n "$3" ]]; then
+    if [[ -n "$3" && "$3" != "-force" ]]; then
         echo 'Extracting files...'
         $dc run -e filename=$filename_oefiles odoo /restore_files.sh
     fi
@@ -336,6 +342,7 @@ update)
     $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
     $dc kill odoo_update
     $dc rm -f odoo_update
+    $dc up -d postgres && sleep 3
     $dc run odoo_update /update_modules.sh $2
     $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then

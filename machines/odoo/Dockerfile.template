@@ -71,11 +71,12 @@ apt-get install -y --no-install-recommends \
             locales \
             pdftk
 
-# https://github.com/odoo/odoo/issues/5177
+WORKDIR /tmp
+RUN curl -L -o /tmp/wkhtml.tar.xz https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
+tar xf /tmp/wkhtml.tar.xz  && \
+cp /tmp/wkhtmltox/bin/* /usr/bin/ 
 
-#RUN curl -o /tmp/wkhtml.tar.xz https://downloads.wkhtmltopdf.org/0.12/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
-#tar xf /tmp/wkhtml.tar.xz -C / --strip-components=1 && \
-#ln -s /bin/wkhtmlto* /usr/bin/ && \
+# https://github.com/odoo/odoo/issues/5177
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
 ADD sysroot/ /
@@ -110,4 +111,5 @@ update-locale && \
 echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
 echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
+
 CMD /rootrun.sh
