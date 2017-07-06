@@ -193,8 +193,12 @@ backup)
     else
         BACKUPDIR=$DIR/dumps
     fi
+
+
     $DIR/manage.sh backup_db $BACKUPDIR
-    $DIR/manage.sh backup_files $BACKUPDIR
+    echo "$*" |grep -q 'only-db' || {
+        $DIR/manage.sh backup_files $BACKUPDIR
+    }
 
     ;;
 
