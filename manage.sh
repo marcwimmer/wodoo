@@ -188,12 +188,11 @@ backup_files)
     echo "Backup files done to $BACKUPDIR/$filename_oefiles"
     ;;
 backup)
-    if [[ -n "$2" ]]; then
+    if [[ -n "$2" && "$2" != "only-db" ]]; then
         BACKUPDIR=$2
     else
         BACKUPDIR=$DIR/dumps
     fi
-
 
     $DIR/manage.sh backup_db $BACKUPDIR
     echo "$*" |grep -q 'only-db' || {
