@@ -9,6 +9,8 @@ volumes:
   libreoffice_exchange:
 
 services:
+  redis:
+    image: redis
   sslproxy:
     container_name: ${DCPREFIX}_odoo_ssl_proxy
     build: ../machines/sslproxy
