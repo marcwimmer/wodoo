@@ -4,7 +4,6 @@ set -x
 
 echo "Installing custom requirements from odoo"
 
-pip install -r /root/requirements.txt
 
 #7.0
 if [[ "$1" == "7.0" ]]; then
@@ -20,3 +19,4 @@ else
     pip install -r /root/requirements_$1.txt
 fi
 
+pip install -r /root/requirements.txt
