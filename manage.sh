@@ -339,6 +339,7 @@ purge-source)
     ;;
 update)
     echo "Run module update"
+    date +%s > /tmp/odoo-update-started
     if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
     fi
@@ -359,6 +360,7 @@ update)
     $dc kill nginx
     $dc up -d
     df -h / # case: after update disk / was full
+
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
