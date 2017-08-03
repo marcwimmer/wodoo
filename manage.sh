@@ -316,7 +316,13 @@ logsn)
     ;;
 logs)
     cd $DIR
-    eval "$dc logs --tail=1400 -f -t $2 $3"
+    lines="${@: -1}"
+    if [[ -n ${lines//[0-9]/} ]]; then
+        lines="5000"
+    else
+        echo "Showing last $lines lines"
+    fi
+    eval "$dc logs --tail=$lines -f -t $2 "
     ;;
 logall)
     cd $DIR
@@ -339,7 +345,7 @@ purge-source)
     ;;
 update)
     echo "Run module update"
-    date +%s > /tmp/odoo-update-started
+    date +%s > /var/opt/odoo-update-started
     if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
     fi
