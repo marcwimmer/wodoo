@@ -35,7 +35,7 @@ dns_lookup = False
 
 # Authentication method
 type = custom
-custom_handler = radicale_odoo.odoo_auth
+custom_handler = odoo_auth
 
 [rights]
 
@@ -53,7 +53,7 @@ custom_handler = radicale_odoo.odoo_auth
 # Value: multifilesystem
 #type = filesystem
 type = custom
-custom_handler = radicale_odoo.odoo_storage
+custom_handler = odoo_storage
 
 
 [odoo]

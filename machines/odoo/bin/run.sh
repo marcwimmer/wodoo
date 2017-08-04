@@ -4,6 +4,8 @@ set -x
 
 # sync source is done by extra machine
 
+/apply-env-to-config.sh
+
 echo "Executing autosetup..."
 /run_autosetup.sh
 echo "Done autosetup"

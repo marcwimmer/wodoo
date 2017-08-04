@@ -12,13 +12,7 @@ sed -i "s/__DB__/$DBNAME/g" /etc/radicale/config
 sed -i "s/__USER__/$RADICALE_USER/g" /etc/radicale/config
 sed -i "s/__PASSWORD__/$RADICALE_PASSWORD/g" /etc/radicale/config
 
-cd /opt
-LN_PYTHONLIBS=/usr/local/lib/python2.7/dist-packages/radicale_odoo
-rm radicale || true
-rm $LN_PYTHONLIBS || true
-ln -s /opt/openerp/active_customs/common/calendar_ics/RadicalePatched-1.1.1 radicale
-ln -s /opt/openerp/active_customs/common/calendar_ics/rc $LN_PYTHONLIBS 
-
-cd /opt/radicale
-export PYTHONPATH=. 
+cd $RADICALE_DIR/$RADICALE_VERSION
+export PYTHONPATH=.:$RADICALE_DIR/$VERSION/rc
+echo 'Starting Radicale ...'
 python radicale.py -C /etc/radicale/config
