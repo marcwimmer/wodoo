@@ -8,6 +8,8 @@ RUN_RADICALE=0
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+# set variables from customs env
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
@@ -18,13 +20,31 @@ mkdir -p $DIR/run/config
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
 ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose.*tmpl' | sed 's/\.yml\.tmpl//g') 
+FILTERED_CONFIG_FILES=""
 for file in $ALL_CONFIG_FILES 
 do
-    DEST_FILE=$DIR/run/$file.yml
-    cp config/$file.yml.tmpl $DEST_FILE
-    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
-    sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
+    # check if RUN_ASTERISK=1 is defined, and then add it to the defined machines; otherwise ignore
+
+    #docker-compose.odoo --> odoo
+    S="${file/docker-compose/''}"
+    S=(${S//-\./ })
+    S=${S[-1]}
+    S=${S/-/_} # substitute - with _ otherwise invalid env-variable
+    S="RUN_${S^^}"  #RUN_odoo ---> RUN_ODOO
+
+    ENV_VALUE=${!S}  # variable indirection; get environment variable
+
+    if [[ "$ENV_VALUE" == "" ]] || [[ "$ENV_VALUE" == "1" ]]; then
+
+        FILTERED_CONFIG_FILES+=$file
+        FILTERED_CONFIG_FILES+=','
+        DEST_FILE=$DIR/run/$file.yml
+        cp config/$file.yml.tmpl $DEST_FILE
+        sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
+        sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
+    fi
 done
+echo $FILTERED_CONFIG_FILES
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
 
@@ -73,16 +93,11 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-all_config_files="$(for f in $ALL_CONFIG_FILES; do echo "-f run/$f.yml"; done)"
+all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f.yml"; done)"
 all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
 
 dc="docker-compose -p $PROJECT_NAME $all_config_files"
 
-
-cat customs.env|grep -q 'RUN_ASTERISK=1' && {
-    RUN_ASTERISK=1
-    dc="$dc -f config/docker-compose.asterisk.yml"
-}
 
 CUSTOMSCONF=$DIR/docker-compose-custom.yml
 if [[ -f "$CUSTOMSCONF" || -L "$CUSTOMSCONF" ]]; then
