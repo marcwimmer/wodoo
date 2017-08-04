@@ -2,6 +2,10 @@
 set -e
 set +x
 
+# defaults
+RUN_ASTERISK=0
+RUN_RADICALE=0
+
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
@@ -12,11 +16,12 @@ export $(cut -d= -f1 $DIR/customs.env)
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-ALL_CONFIG_FILES=$(cd config; ls docker-compose.* |grep -v '.tmpl' | sed 's/\.yml//g') 
+ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose.*tmpl' | sed 's/\.yml\.tmpl//g') 
 for file in $ALL_CONFIG_FILES 
 do
-    sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
-    sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
+    cp config/$file.yml.tmpl config/$file.yml
+    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml
+    sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml
 done
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
@@ -65,9 +70,11 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml -f config/docker-compose.mail.yml -f config/docker-compose.perftest.yml"
+all_config_files="$(for f in $ALL_CONFIG_FILES; do echo "-f config/$f.yml"; done)"
+all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
 
-RUN_ASTERISK=0
+dc="docker-compose -p $PROJECT_NAME $all_config_files"
+
 
 cat customs.env|grep -q 'RUN_ASTERISK=1' && {
     RUN_ASTERISK=1
@@ -355,6 +362,12 @@ update)
     $dc kill odoo_update
     $dc rm -f odoo_update
     $dc up -d postgres && sleep 3
+
+    set -e
+    # sync source
+    $dc up source_code
+    set +e
+
     $dc run odoo_update /update_modules.sh $2
     $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then
