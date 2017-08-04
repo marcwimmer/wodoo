@@ -2,22 +2,49 @@
 set -e
 set +x
 
+# defaults
+RUN_ASTERISK=0
+RUN_RADICALE=0
+
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+# set variables from customs env
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
+mkdir -p $DIR/run/config
 
 # replace params in configuration file
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-ALL_CONFIG_FILES=$(cd config; ls docker-compose.* |grep -v '.tmpl' | sed 's/\.yml//g') 
+ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose.*tmpl' | sed 's/\.yml\.tmpl//g') 
+FILTERED_CONFIG_FILES=""
 for file in $ALL_CONFIG_FILES 
 do
-    sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
-    sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
+    # check if RUN_ASTERISK=1 is defined, and then add it to the defined machines; otherwise ignore
+
+    #docker-compose.odoo --> odoo
+    S="${file/docker-compose/''}"
+    S=(${S//-\./ })
+    S=${S[-1]}
+    S=${S/-/_} # substitute - with _ otherwise invalid env-variable
+    S="RUN_${S^^}"  #RUN_odoo ---> RUN_ODOO
+
+    ENV_VALUE=${!S}  # variable indirection; get environment variable
+
+    if [[ "$ENV_VALUE" == "" ]] || [[ "$ENV_VALUE" == "1" ]]; then
+
+        FILTERED_CONFIG_FILES+=$file
+        FILTERED_CONFIG_FILES+=','
+        DEST_FILE=$DIR/run/$file.yml
+        cp config/$file.yml.tmpl $DEST_FILE
+        sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
+        sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
+    fi
 done
+echo $FILTERED_CONFIG_FILES
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
 
@@ -60,19 +87,17 @@ if [ -z "$1" ]; then
     echo "stop - like docker-compose stop"
     echo "quickpull - fetch latest source, oeln - good for mako templates"
     echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
+    echo "update-source - sets the latest source code in the containers"
     echo "up - starts all machines equivalent to service <service> start "
     echo
     exit -1
 fi
 
-dc="docker-compose -p $PROJECT_NAME -f config/docker-compose.odoo.yml -f config/docker-compose.ovpn.yml -f config/docker-compose.mail.yml -f config/docker-compose.perftest.yml"
+all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f.yml"; done)"
+all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
 
-RUN_ASTERISK=0
+dc="docker-compose -p $PROJECT_NAME $all_config_files"
 
-cat customs.env|grep -q 'RUN_ASTERISK=1' && {
-    RUN_ASTERISK=1
-    dc="$dc -f config/docker-compose.asterisk.yml"
-}
 
 CUSTOMSCONF=$DIR/docker-compose-custom.yml
 if [[ -f "$CUSTOMSCONF" || -L "$CUSTOMSCONF" ]]; then
@@ -345,6 +370,9 @@ install-telegram-bot)
 purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
     ;;
+update-source)
+    $dc up source_code
+    ;;
 update)
     echo "Run module update"
     date +%s > /var/opt/odoo-update-started
@@ -355,6 +383,12 @@ update)
     $dc kill odoo_update
     $dc rm -f odoo_update
     $dc up -d postgres && sleep 3
+
+    set -e
+    # sync source
+    $dc up source_code
+    set +e
+
     $dc run odoo_update /update_modules.sh $2
     $dc kill odoo nginx
     if [[ "$RUN_ASTERISK" == "1" ]]; then

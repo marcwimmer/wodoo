@@ -19,12 +19,7 @@ echo Starting odoo for customs $CUSTOMS
 echo "Odoo version is $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-while true;
-do
-    time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs --info=progress2  -arP --delete --exclude=.git && break
-    sleep 1
-    echo 'error at rsync - retrying'
-done
+time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs --info=progress2  -arP --delete --exclude=.git
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
 cd /opt/openerp/customs && ln -s /opt/openerp/active_customs $CUSTOMS
