@@ -201,6 +201,15 @@ backup)
     }
 
     ;;
+reset-db)
+    [[ $last_param != "-force" ]] && {
+        read -p "Deletes database $DBNAME! Continue? Press ctrl+c otherwise"
+    }
+    $dc kill
+    $dc run postgres rm -Rf $PGDATA 
+    $dc up postgres
+
+    ;;
 
 restore)
     filename_oefiles=oefiles.tar
@@ -210,7 +219,7 @@ restore)
     last_param=${args[$last_index]}
 
     [[ $last_param != "-force" ]] && {
-        read -p "Deletes database! Continue? Press ctrl+c otherwise"
+        read -p "Deletes database $DBNAME! Continue? Press ctrl+c otherwise"
     }
     if [[ ! -f $2 ]]; then
         echo "File $2 not found!"
