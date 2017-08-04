@@ -65,6 +65,7 @@ if [ -z "$1" ]; then
     echo "stop - like docker-compose stop"
     echo "quickpull - fetch latest source, oeln - good for mako templates"
     echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
+    echo "update-source - sets the latest source code in the containers"
     echo "up - starts all machines equivalent to service <service> start "
     echo
     exit -1
@@ -351,6 +352,9 @@ install-telegram-bot)
     ;;
 purge-source)
     $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
+    ;;
+update-source)
+    $dc up source_code
     ;;
 update)
     echo "Run module update"
