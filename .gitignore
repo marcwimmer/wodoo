@@ -17,3 +17,5 @@ docker-compose-custom.yml
 heine
 cpb
 run
+*.pyc
+__pycache__

@@ -7,7 +7,7 @@ services:
     build: ../machines/postgres
     volumes:
       - ../dumps:/opt/dumps
-      - ../restore:/opt/restore
+      - ../run/restore:/opt/restore
       - postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 1
