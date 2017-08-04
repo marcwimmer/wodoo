@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+set -x
 
 # defaults
 RUN_ASTERISK=0
@@ -11,6 +11,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
+mkdir -p $DIR/run/config
 
 # replace params in configuration file
 # replace variables in docker-compose;
@@ -19,9 +20,10 @@ echo "ODOO VERSION from customs.env $ODOO_VERSION"
 ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose.*tmpl' | sed 's/\.yml\.tmpl//g') 
 for file in $ALL_CONFIG_FILES 
 do
-    cp config/$file.yml.tmpl config/$file.yml
-    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml
-    sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml
+    DEST_FILE=$DIR/run/$file.yml
+    cp config/$file.yml.tmpl $DEST_FILE
+    sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
+    sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
 done
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
@@ -71,7 +73,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-all_config_files="$(for f in $ALL_CONFIG_FILES; do echo "-f config/$f.yml"; done)"
+all_config_files="$(for f in $ALL_CONFIG_FILES; do echo "-f run/$f.yml"; done)"
 all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
 
 dc="docker-compose -p $PROJECT_NAME $all_config_files"
