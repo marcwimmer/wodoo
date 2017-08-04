@@ -52,8 +52,8 @@ if [ -z "$1" ]; then
     echo Management of odoo instance
     echo
     echo
-    echo First init:
-    echo './manage.sh fetch && ./manage.sh update && ./manage.sh setup-startup'
+    echo Reinit fresh db:
+    echo './manage.sh reset-db'
     echo
     echo Update:
     echo './manage.sh update [module]'
@@ -69,7 +69,6 @@ if [ -z "$1" ]; then
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
     echo "clean_supportdata - clears support data"
-    echo "fetch - fetches support data"
     echo "install-telegram-bot - installs required python libs"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
@@ -108,37 +107,12 @@ else
 fi
 
 
-function update_support_data {
-    SUPPORTDIR=$DIR/support_data
-    if [[ ! -d "$SUPPORTDIR" ]]; then
-        mkdir $SUPPORTDIR
-    fi
-    cd $SUPPORTDIR
-    echo "Syncing openerp.git..."
-    rsync git.mt-software.de:/git/openerp/ openerp.git -ar
-
-    echo "Checking for odoo.git..."
-    if [[ ! -d "odoo.git" ]]; then
-        echo "Cloning odoo.git..."
-        git clone https://github.com/odoo/odoo odoo.git
-    else
-        echo "Pulling odoo.git..."
-        cd odoo.git
-        git pull
-    fi
-}
-
-
 case $1 in
 clean_supportdata)
     echo "Deleting support data"
     if [[ -d $DIR/support_data ]]; then
         /bin/rm -Rf $DIR/support_data/*
     fi
-    ;;
-fetch)
-    echo "Updating support data"
-    update_support_data
     ;;
 setup-startup)
     PATH=$DIR
