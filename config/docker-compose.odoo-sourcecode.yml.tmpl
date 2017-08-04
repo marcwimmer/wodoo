@@ -1,0 +1,37 @@
+version: '2'
+volumes:
+
+  odoo_base:
+    container_name: ${DCPREFIX}_odoo_base
+    build: ../machines/odoo
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    volumes:
+      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../support_data/odoo.git:/opt/odoo.git:ro
+      - /opt/md5
+      #TODO insert customs here
+      - /opt/oefiles/:/opt/oefiles
+      - cupsdatatoprint:/opt/toprint 
+      - ../data/src/customs/ho:/opt/src/customs/ho:ro
+      - ../data/src/admin:/opt/src/admin:ro
+      - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
+      - opt_permanent:/opt/permanent
+      - opt_servers:/opt/servers
+      - /opt/openerp
+      - libreoffice_exchange:/opt/libreoffice
+    environment:
+      ODOO_PROD: 1
+      CUPS_TOPRINT: /opt/toprint
+      LIBREOFFICE_SEND: /opt/libreoffice/1
+      LIBREOFFICE_RECEIVE: /opt/libreoffice/2
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+    command: echo 'good by - it is ok!'
