@@ -1,14 +1,6 @@
 # -*- mode: conf -*-
 # vim:ft=cfg
 
-# Config file for Radicale - A simple calendar server
-#
-# Place it into /etc/radicale/config (global)
-# or ~/.config/radicale/config (user)
-#
-# The current values are the default ones
-
-
 [server]
 hosts = 0.0.0.0:5232
 daemon = False
@@ -68,8 +60,8 @@ custom_handler = radicale_odoo.odoo_storage
 server = nginx
 port = 80
 db = __DB__
-user = admin
-pwd = 1
+user = __USER__
+pwd = __PASSWORD
 
 
 [logging]
@@ -81,7 +73,7 @@ pwd = 1
 #config = /etc/radicale/logging
 
 # Set the default logging level to debug
-debug = True
+debug = False
 
 # Store all environment variables (including those set in the shell)
 #full_environment = False
