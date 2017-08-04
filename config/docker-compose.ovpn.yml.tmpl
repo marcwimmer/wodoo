@@ -20,7 +20,7 @@ services:
       volumes:
         - ../data/ovpn/client:/opt/certs:ro
       ports:
-        - "${NTP_PORT}:123/UDP"
+        - "${NTP_PORT}:123/udp"
 
   ovpn_ca:
     container_name: ${DCPREFIX}_ovpn_ca
@@ -52,8 +52,8 @@ services:
     container_name: ${DCPREFIX}_ovpn
     build: ../machines/openvpn/openvpn_server
     ports:
-        - "${OVPN_PORT}:1194/TCP"
-        - "${OVPN_PORT}:1194/UDP"
+        - "${OVPN_PORT}:1194/tcp"
+        - "${OVPN_PORT}:1194/udp"
     volumes:
         - ../config/ovpn:/root/input/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
