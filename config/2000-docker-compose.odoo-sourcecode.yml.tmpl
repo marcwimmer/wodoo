@@ -1,0 +1,20 @@
+version: '2'
+volumes:
+  odoosource:
+
+services:
+  source_code:
+    container_name: ${DCPREFIX}_source_code
+    build: ../machines/odoo
+    volumes:
+      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../support_data/odoo.git:/opt/odoo.git:ro
+      - ../data/src/customs/ho:/opt/src/customs/ho:ro
+      - ../data/src/admin:/opt/src/admin:ro
+      - odoosource:/opt/openerp
+    environment:
+      ODOO_PROD: 1
+    env_file:
+      - ../customs.env
+      - ../fixed.env
+    command: /sync_source.sh
