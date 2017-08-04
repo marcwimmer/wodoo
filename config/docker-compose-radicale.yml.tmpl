@@ -1,0 +1,14 @@
+version: "2.0"
+services:
+    radicale:
+       build: ./machines/radicale
+       ports:
+         - "5232:5232"
+       volumes:
+         - current_customs:/opt/current_customs
+         - ./data/src/customs:/opt/openerp/customs
+         #- ./data/src/modules/calendar_ics/RadicalePatched-1.1.1:/opt/radicale
+         #- ./data/src/modules/calendar_ics/rc:/usr/local/lib/python2.7/dist-packages/radicale_odoo
+       env_file:
+         - ../customs.env
+         - ../fixed.env
