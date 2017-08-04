@@ -7,11 +7,13 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
+
 # replace params in configuration file
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk docker-compose.mail docker-compose.perftest
+ALL_CONFIG_FILES=$(cd config; ls docker-compose.* |grep -v '.tmpl' | sed 's/\.yml//g') 
+for file in $ALL_CONFIG_FILES 
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
     sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
