@@ -79,6 +79,7 @@ if [ -z "$1" ]; then
     echo "rebuild - rebuilds docker-machines - data not deleted"
     echo "restart - restarts docker-machine(s) - parameter name"
     echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
+    echo "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
     echo "runbash-with-ports <machine name> - like runbash but connects the ports; debugging ari/stasis and others"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
@@ -204,9 +205,14 @@ reset-db)
     [[ $last_param != "-force" ]] && {
         read -p "Deletes database $DBNAME! Continue? Press ctrl+c otherwise"
     }
+    echo "Stopping all services and creating new database"
+    echo "After creation the database container is stopped. You have to start the system up then."
     $dc kill
-    $dc run postgres rm -Rf $PGDATA 
-    $dc up postgres
+    $dc run -e INIT=1 postgres /entrypoint2.sh
+    echo
+    echo 
+    echo
+    echo "Database initialized. You have to restart now."
 
     ;;
 
@@ -399,6 +405,46 @@ make-keys)
     export dc=$dc
     bash $DIR/config/ovpn/pack.sh
     $dc rm -f
+    ;;
+restore-dev-db)
+    #!/bin/bash
+
+    echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
+    DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+    cd $DIR
+    SQLFILE=machines/postgres/turndb2dev.sql
+    DB=$(basename $1)
+    DB=${DB%.*}
+    exit -1
+
+
+    if [[ -z "$1" ]]; then
+        echo "File missing! Please provide per parameter 1"
+        exit -1
+    fi
+
+    source .env
+    DB_HOST=$DB_HOST_EXT
+    echo "Using $DB_HOST, $DB_PORT"
+
+    export PGPASSWORD=$DB_PASSWORD
+    ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
+    PSQL="psql $ARGS"
+    DROPDB="dropdb $ARGS"
+    CREATEDB="createdb $ARGS"
+    PGRESTORE="pg_restore $ARGS"
+
+    echo "Databasename is $DB"
+    eval "$DROPDB $DB" || echo "Failed to drop $DB"
+    set -ex
+    eval "$CREATEDB $DB"
+    eval "$PGRESTORE -d $DB $1" || {
+        gunzip -c $1 | $PGRESTORE -d $DB
+    }
+
+    if [[ "$2" != "nodev" ]]; then
+        eval "$PSQL $DB" < $SQLFILE
+    fi
     ;;
 *)
     echo "Invalid option $1"
