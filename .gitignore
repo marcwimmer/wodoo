@@ -10,7 +10,6 @@ support_data
 config/docker-compose.yml
 restore
 vim
-customs.env.*
 docker-compose-custom.yml
 *.pem
 
