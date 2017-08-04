@@ -1,0 +1,17 @@
+version: '2'
+volumes:
+  postgresdata:
+services:
+  postgres:
+    container_name: ${DCPREFIX}_postgres
+    build: ../machines/postgres
+    volumes:
+      - ../dumps:/opt/dumps
+      - ../restore:/opt/restore
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 1
+      PGDATA: /var/lib/postgresql/data/pgdata
+    env_file:
+      ../customs.env
+
