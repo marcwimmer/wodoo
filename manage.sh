@@ -7,11 +7,13 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 source $DIR/customs.env
 export $(cut -d= -f1 $DIR/customs.env)
 
+
 # replace params in configuration file
 # replace variables in docker-compose;
 cd $DIR
 echo "ODOO VERSION from customs.env $ODOO_VERSION"
-for file in docker-compose.odoo docker-compose.ovpn docker-compose.asterisk docker-compose.mail docker-compose.perftest
+ALL_CONFIG_FILES=$(cd config; ls docker-compose.* |grep -v '.tmpl' | sed 's/\.yml//g') 
+for file in $ALL_CONFIG_FILES 
 do
     sed -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" config/$file.yml.tmpl > config/$file.yml
     sed -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" config/$file.yml.tmpl > config/$file.yml
@@ -316,7 +318,13 @@ logsn)
     ;;
 logs)
     cd $DIR
-    eval "$dc logs --tail=1400 -f -t $2 $3"
+    lines="${@: -1}"
+    if [[ -n ${lines//[0-9]/} ]]; then
+        lines="5000"
+    else
+        echo "Showing last $lines lines"
+    fi
+    eval "$dc logs --tail=$lines -f -t $2 "
     ;;
 logall)
     cd $DIR
@@ -339,6 +347,7 @@ purge-source)
     ;;
 update)
     echo "Run module update"
+    date +%s > /var/opt/odoo-update-started
     if [[ "$RUN_POSTGRES" == "1" ]]; then
     $dc up -d postgres
     fi
@@ -359,6 +368,7 @@ update)
     $dc kill nginx
     $dc up -d
     df -h / # case: after update disk / was full
+
    ;;
 make-CA)
     read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"

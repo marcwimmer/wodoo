@@ -1,0 +1,14 @@
+version: '2'
+volumes:
+  libreoffice_exchange:
+
+services:
+  libreoffice:
+    container_name: ${DCPREFIX}_libreoffice
+    build: ../machines/libreoffice
+    environment:
+      INPUT: /tmp/lo/1
+      OUTPUT: /tmp/lo/2
+    volumes:
+      - libreoffice_exchange:/tmp/lo
+
