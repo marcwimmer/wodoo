@@ -1,5 +1,9 @@
 #!/bin/bash
 set -x
+echo "setting ownership of $CUPS_TOPRINT to odoo"
+chown 1000:1000 /opt/toprint -R
+
+
 CONF_ROOT=/opt/printer_setup
 if [[ -d $CONF_ROOT/deb ]]; then
     cd $CONF_ROOT/deb

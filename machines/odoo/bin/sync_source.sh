@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 if [[ -z "$CUSTOMS" ]]; then
     echo "CUSTOMS required!"
@@ -8,21 +9,25 @@ fi
 
 mkdir -p /opt/openerp
 echo "rsyncing odoo source"
-time rsync /opt/src/admin/ /opt/openerp/admin -ar --delete --exclude=.git
+rsync /opt/src/admin/ /opt/openerp/admin/ -ar
 
 source /env.sh
 source /opt/openerp/admin/setup_bash
 
 # Setting up productive odoo
-echo Starting odoo for customs $CUSTOMS
-
-echo "Odoo version is $ODOO_VERSION"
+echo
+echo '------------------------------------------------------------'
+echo "Customs: $CUSTOMS"
+echo "Version: $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-time rsync /opt/openerp/customs/$CUSTOMS/ /opt/openerp/active_customs --info=progress2  -arP --delete --exclude=.git
+time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs/ --info=progress2  -arP --delete --exclude=.git
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
-cd /opt/openerp/customs && ln -s /opt/openerp/active_customs $CUSTOMS
+cd /opt/openerp/customs && {
+    rm * || true
+    ln -s /opt/openerp/active_customs $CUSTOMS
+}
 chmod a+x /opt/openerp/admin/*.sh
 
 rm -Rf /opt/openerp/versions || true

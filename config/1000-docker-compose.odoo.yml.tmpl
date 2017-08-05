@@ -18,18 +18,16 @@ services:
       - NET_ADMIN
       - DAC_READ_SEARCH
     volumes:
-      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../dumps:/opt/dumps
       - ../support_data/odoo.git:/opt/odoo.git:ro
-      - /opt/md5
-      #TODO insert customs here
+      - ../support_data/openerp.git:/opt/openerp.git:ro
+      - ../run/restore:/opt/restore
       - /opt/oefiles/:/opt/oefiles
       - cupsdatatoprint:/opt/toprint 
-      - ../dumps:/opt/dumps
-      - ../run/restore:/opt/restore
+      - libreoffice_exchange:/opt/libreoffice
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
       - odoosource:/opt/openerp
-      - libreoffice_exchange:/opt/libreoffice
     environment:
       ODOO_PROD: 1
       CUPS_TOPRINT: /opt/toprint
@@ -38,17 +36,12 @@ services:
     env_file:
       - ../customs.env
       - ../fixed.env
-    command: echo 'good by - it is ok!'
+    command: echo 'good bye - it is ok!'
 
   odoo:
     extends: odoo_base
     container_name: ${DCPREFIX}_odoo
-    ports:
-      # debugging with /debug.sh
-      - "9000:9000"
     environment:
-      DEBUG_PORT_ODOO: 9000
-      DEBUG_PORT_ODOO_LONGPOLLING: 9001
       LANG: 'en_US.UTF-8'
       LANGUAGE: 'en_US:en'
     command: /rootrun.sh
