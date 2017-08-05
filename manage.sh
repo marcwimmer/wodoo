@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+set -x
 
 # defaults
 RUN_ASTERISK=0
@@ -10,8 +10,14 @@ args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # set variables from customs env
-source $DIR/customs.env
-export $(cut -d= -f1 $DIR/customs.env)
+while read line; do
+    [[ "$line" == '#*' ]] && continue
+    [[ "$line" == '' ]] && continue
+	var="${line%=*}"
+	value="${line##*=}"
+	eval "$var=\"$value\""
+done <$DIR/customs.env
+export $(cut -d= -f1 $DIR/customs.env)  # export vars now in local variables
 
 mkdir -p $DIR/run/config
 
@@ -46,6 +52,14 @@ do
 done
 sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 sync
+
+function askcontinue() {
+    echo ""
+    echo ""
+    read -p "Continue? (Ctrl+C to break)" || {
+    exit -1
+    }
+}
 
 if [ -z "$1" ]; then
     echo Management of odoo instance
@@ -203,7 +217,8 @@ backup)
     ;;
 reset-db)
     [[ $last_param != "-force" ]] && {
-        read -p "Deletes database $DBNAME! Continue? Press ctrl+c otherwise"
+        echo "Deletes database $DBNAME!"
+        askcontinue
     }
     echo "Stopping all services and creating new database"
     echo "After creation the database container is stopped. You have to start the system up then."
@@ -281,11 +296,14 @@ debug)
         echo "Please give machine name as second parameter e.g. postgres, odoo"
         exit -1
     fi
+    echo "Current machine $2 is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then."
+    askcontinue
+    # shutdown current machine and start via run and port-mappings the replacement machine
     $dc kill $2
-    echo "${DCPREFIX}_${2}"
-    sed "s/TEMPLATE/${2}/g" $DIR/config/docker-compose.debug.tmpl.yml > $DIR/config/docker-compose.debug.yml
-    eval "$dc -f $DIR/config/docker-compose.debug.yml up -d $2"
-    docker exec -it "${DCPREFIX}_${2}" bash
+    cd $DIR
+
+    #execute self
+    $0 runbash-with-ports $2 /bin/bash
     ;;
 attach)
     if [[ -z "$2" ]]; then
