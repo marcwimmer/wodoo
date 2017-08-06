@@ -34,14 +34,12 @@ services:
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
       - ../customs.env
-      - ../fixed.env
 
   stasis:
       build: ../machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
       env_file:
         - ../customs.env
-        - ../fixed.env
       depends_on:
         - asterisk
         - asterisk_redis
