@@ -390,7 +390,12 @@ function do_command() {
         $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
         ;;
     update-source)
-        $dc up source_code
+        if [[ -z "$2" ]]; then
+            $dc up source_code
+        else
+            echo $2 > /tmp/last
+            $dc run source_code /sync_source.sh $2
+        fi
         ;;
     update)
         echo "Run module update"

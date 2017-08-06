@@ -2,9 +2,25 @@
 set -e
 set -x
 
+# optional parameter: the local complete filepath
+
 if [[ -z "$CUSTOMS" ]]; then
     echo "CUSTOMS required!"
     exit -1
+fi
+
+if [[ -n "$1" ]]; then
+    # sync just one file
+    local_path=$(
+python - << EOF
+path = "$1"
+customs = "$CUSTOMS"
+path = path.split("customs/{}".format(customs))[1]
+print path
+EOF
+)
+    time rsync /opt/src/customs/$CUSTOMS/$local_path /opt/openerp/active_customs/$local_path --info=progress2  -arP --delete --exclude=.git
+    exit 0
 fi
 
 mkdir -p /opt/openerp
