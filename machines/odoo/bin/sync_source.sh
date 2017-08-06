@@ -47,3 +47,6 @@ CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=/opt/openerp/active_customs S
 # use virtualenv installed packages for odoo
 
 /set_permissions.sh
+
+cd /opt/openerp/active_customs
+/opt/openerp/admin/remove_module_install_notifications.py
