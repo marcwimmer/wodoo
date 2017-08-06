@@ -4,7 +4,6 @@ if [ -z "$1" ]; then
     echo "Usage: import_i18n de_DE [filepath of po file optional]"
     exit -1
 fi
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 LANG=$1
 FILE=$2
