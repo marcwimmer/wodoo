@@ -493,10 +493,21 @@ function cleanup() {
     fi
 }
 
+function sanity_check() {
+    if [[ ("$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES") && $DB_HOST != 'postgres' ]]; then
+        echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
+        echo "Either configure DB_HOST to point to the docker container or turn it off by: "
+        echo 
+        echo "RUN_POSTGRES=0"
+        exit -1
+    fi
+}
+
 export_customs_env
 prepare_filesystem
 prepare_yml_files_from_template_files
 include_customs_conf_if_set
+sanity_check
 do_command "$@"
 cleanup
 
