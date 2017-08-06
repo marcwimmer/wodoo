@@ -6,6 +6,7 @@ set +x
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+ALL_PARAMS=${@:2} # all parameters without command
 
 function export_customs_env() {
     # set variables from customs env
@@ -41,9 +42,6 @@ function showhelp() {
     echo 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
     echo 'Minimal downtime - but there is a downtime, even for phones'
     echo 
-    echo "Quick Pull (just pulls source codes for e.g. mako"
-    echo './manage.sh quickupdate [module]'
-    echo
     echo "Please call manage.sh springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
@@ -87,7 +85,9 @@ function prepare_yml_files_from_template_files() {
     # replace params in configuration file
     # replace variables in docker-compose;
     cd $DIR
-    echo "ODOO VERSION from customs.env $ODOO_VERSION"
+    echo "CUSTOMS: $CUSTOMS"
+    echo "DB: $DBNAME"
+    echo "VERSION: $ODOO_VERSION"
     ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose.*tmpl' | sed 's/\.yml\.tmpl//g') 
     FILTERED_CONFIG_FILES=""
     for file in $ALL_CONFIG_FILES 
@@ -128,8 +128,6 @@ function include_customs_conf_if_set() {
     if [[ -f "$CUSTOMSCONF" || -L "$CUSTOMSCONF" ]]; then
         echo "Including $CUSTOMSCONF"
         dc="$dc -f $CUSTOMSCONF"
-    else
-        echo "Not including $CUSTOMSCONF"
     fi
 }
 
@@ -292,7 +290,8 @@ function do_command() {
         ;;
 
     springclean)
-        #!/bin/bash
+        docker system prune
+
         echo removing dead containers
         docker rm $(docker ps -a -q)
 
@@ -303,7 +302,7 @@ function do_command() {
         docker rmi $(docker images -q -f='dangling=true')
         ;;
     up)
-        $dc up ${@:2}
+        $dc up $ALL_PARAMS
         ;;
     debug)
         if [[ -z "$2" ]]; then
@@ -347,7 +346,7 @@ function do_command() {
         ;;
     build)
         cd $DIR
-        eval "$dc $@"
+        eval "$dc build $ALL_PARAMS"
         ;;
     kill)
         cd $DIR
@@ -377,7 +376,7 @@ function do_command() {
         ;;
     rm)
         cd $DIR
-        $dc $@
+        $dc $ALL_PARAMS
         ;;
     restart)
         cd $DIR
@@ -425,7 +424,18 @@ function do_command() {
 
        ;;
     make-CA)
-        read -p "Makes all VPN connections invalid! ctrl+c to stop NOW"
+        echo '!!!!!!!!!!!!!!!!!!'
+        echo '!!!!!!!!!!!!!!!!!!'
+        echo '!!!!!!!!!!!!!!!!!!'
+        echo
+        echo
+        echo "Extreme Caution!"
+        echo 
+        echo '!!!!!!!!!!!!!!!!!!'
+        echo '!!!!!!!!!!!!!!!!!!'
+        echo '!!!!!!!!!!!!!!!!!!'
+
+        askcontinue
         export dc=$dc
         $dc kill ovpn
         $dc run ovpn_ca /root/tools/clean_keys.sh
@@ -477,6 +487,13 @@ function do_command() {
         if [[ "$2" != "nodev" ]]; then
             eval "$PSQL $DB" < $SQLFILE
         fi
+        ;;
+    export-i18n)
+        $dc run odoo "bin/echo hi"
+        ;;
+    import-i18n)
+        set -x
+        $dc run odoo /import_i18n.sh $ALL_PARAMS
         ;;
     *)
         echo "Invalid option $1"
