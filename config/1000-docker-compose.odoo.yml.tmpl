@@ -58,3 +58,12 @@ services:
     container_name: ${DCPREFIX}_odoo_updater
     # called by manage.sh
     command: echo 'good bye - it is ok!'
+
+  odoo_lang_export:
+    extends: odoo_base
+    container_name: ${DCPREFIX}_odoo_lang_export
+    command: /bin/echo 'hi'
+    volumes:
+      - ../run/i18n:/opt/i18n
+    environment:
+      LANG_EXPORT_DIR: /opt/i18n

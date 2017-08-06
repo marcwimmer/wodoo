@@ -376,7 +376,7 @@ function do_command() {
         ;;
     rm)
         cd $DIR
-        $dc $ALL_PARAMS
+        $dc rm $ALL_PARAMS
         ;;
     restart)
         cd $DIR
@@ -489,10 +489,18 @@ function do_command() {
         fi
         ;;
     export-i18n)
-        $dc run odoo "bin/echo hi"
+        LANG=$2
+        MODULES=$3
+        if [[ -z "$MODULES" ]]; then
+            echo "Please define at least one module"
+            exit -1
+        fi
+        rm $DIR/run/i18n/* || true
+        chmod a+rw $DIR/run/i18n
+        $dc run odoo_lang_export /export_i18n.sh $LANG $MODULES
+        # file now is in $DIR/run/i18n/export.po
         ;;
     import-i18n)
-        set -x
         $dc run odoo /import_i18n.sh $ALL_PARAMS
         ;;
     *)
