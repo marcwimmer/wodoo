@@ -11,6 +11,7 @@ ALL_PARAMS=${@:2} # all parameters without command
 
 function default_confs() {
 	export ODOO_FILES=$DIR/data/odoo.files
+	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 }
 
 function export_customs_env() {
@@ -53,7 +54,8 @@ function showhelp() {
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
     echo "clean_supportdata - clears support data"
-    echo "install-telegram-bot - installs required python libs"
+    echo "install-telegram-bot - installs required python libs; execute as sudo"
+    echo "telegram-setup- helps creating a permanent chatid"
     echo "kill - kills running machines"
     echo "logs - show log output; use parameter to specify machine"
     echo "logall - shows log til now; use parameter to specify machine"
@@ -391,6 +393,25 @@ function do_command() {
     install-telegram-bot)
         pip install python-telegram-bot
         ;;
+	telegram-setup)
+		echo
+		echo 1. Create a new bot and get the Token
+		read -p "Now enter the token [$TELEGRAMBOTTOKEN]:" token
+		if [[ -z "$token" ]]; then
+			token=$TELEGRAMBOTTOKEN
+		fi
+		if [[ -z "$token" ]]; then
+
+			exit 0
+		fi
+		echo 2. Create a new public channel, add the bot as administrator and users
+		read -p "Now enter the channel name with @:" channelname
+		if [[ -z "$channelname" ]]; then
+			exit 0
+		fi
+        python $DIR/bin/telegram_msg.py "__setup__" $token $channelname
+		echo "Finished - chat id is stored; bot can send to channel all the time now."
+		;;
     purge-source)
         $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
         ;;
@@ -404,7 +425,9 @@ function do_command() {
         ;;
     update)
         echo "Run module update"
-        date +%s > /var/opt/odoo-update-started
+		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
+			date +%s > $ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE
+		fi
         if [[ "$RUN_POSTGRES" == "1" ]]; then
         $dc up -d postgres
         fi
@@ -415,7 +438,7 @@ function do_command() {
 
         set -e
         # sync source
-        $dc up source_code
+        $dc run source_code
         set +e
 
         $dc run odoo_update /update_modules.sh $2
