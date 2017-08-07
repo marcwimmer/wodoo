@@ -96,34 +96,34 @@ function prepare_yml_files_from_template_files() {
     echo "CUSTOMS: $CUSTOMS"
     echo "DB: $DBNAME"
     echo "VERSION: $ODOO_VERSION"
-    ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose.*tmpl' | sed 's/\.yml\.tmpl//g') 
+    ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose\.*') 
     FILTERED_CONFIG_FILES=""
     for file in $ALL_CONFIG_FILES 
     do
         # check if RUN_ASTERISK=1 is defined, and then add it to the defined machines; otherwise ignore
 
         #docker-compose.odoo --> odoo
-        S="${file/docker-compose/''}"
-        S=(${S//-\./ })
-        S=${S[-1]}
-        S=${S/-/_} # substitute - with _ otherwise invalid env-variable
-        S="RUN_${S^^}"  #RUN_odoo ---> RUN_ODOO
+		RUN_X=$(
+		python - <<-EOF
+		print "RUN_" + "$file".replace("docker-compose.", "").split("-")[1].replace('.yml', '').replace("-", "_").upper()
+		EOF
+		)
 
-        ENV_VALUE=${!S}  # variable indirection; get environment variable
+        ENV_VALUE=${!RUN_X}  # variable indirection; get environment variable
 
         if [[ "$ENV_VALUE" == "" ]] || [[ "$ENV_VALUE" == "1" ]]; then
 
             FILTERED_CONFIG_FILES+=$file
             FILTERED_CONFIG_FILES+=','
-            DEST_FILE=$DIR/run/$file.yml
-            cp config/$file.yml.tmpl $DEST_FILE
+            DEST_FILE=$DIR/run/$file
+            cp config/$file $DEST_FILE
             sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
             sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
         fi
     done
     sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 
-    all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f.yml"; done)"
+    all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f"; done)"
     all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
     dc="docker-compose -p $PROJECT_NAME $all_config_files"
 }
@@ -313,7 +313,6 @@ function do_command() {
         $dc up $ALL_PARAMS
         ;;
     debug)
-		pwd
         if [[ -z "$2" ]]; then
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
@@ -611,6 +610,7 @@ function set_db_ownership() {
 	fi
 }
 
+set -x
 default_confs
 export_customs_env
 prepare_filesystem
