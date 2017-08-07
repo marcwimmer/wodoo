@@ -7,13 +7,9 @@ services:
     container_name: ${DCPREFIX}_source_code
     build: ../machines/odoo
     volumes:
-      - ../data/src/admin:/opt/src/admin:ro
-      - ../data/src/customs:/opt/src/customs:ro
       - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../support_data/odoo.git:/opt/odoo.git:ro
       - odoosource:/opt/openerp
-    environment:
-      ODOO_PROD: 1
     env_file:
       - ../customs.env
     command: /sync_source.sh
