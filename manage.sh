@@ -8,6 +8,11 @@ args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 ALL_PARAMS=${@:2} # all parameters without command
 
+
+function default_confs() {
+	export ODOO_FILES=$DIR/data/odoo.files
+}
+
 function export_customs_env() {
     # set variables from customs env
     while read line; do
@@ -531,8 +536,15 @@ function sanity_check() {
         echo "RUN_POSTGRES=0"
         exit -1
     fi
+
+	if [[ -d $ODOO_FILES ]]; then
+		if [[ "$(stat -c "%u" $ODOO_FILES)" != "1000" ]]; then
+			chown 1000 $ODOO_FILES
+		fi
+	fi
 }
 
+default_confs
 export_customs_env
 prepare_filesystem
 prepare_yml_files_from_template_files
