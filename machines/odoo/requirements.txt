@@ -1,3 +1,4 @@
+configobj==5.0.6
 unidecode==0.4.20
 requests==2.6.0
 qrcode==5.3

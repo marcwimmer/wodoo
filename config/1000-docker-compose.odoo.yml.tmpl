@@ -28,8 +28,10 @@ services:
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
       - odoosource:/opt/openerp
+      - ../data/src/admin:/opt/src/admin:ro
+      - ../data/src/customs:/opt/src/customs:ro
     environment:
-      ODOO_PROD: 1
+      DOCKER_MACHINE: 1
       CUPS_TOPRINT: /opt/toprint
       LIBREOFFICE_SEND: /opt/libreoffice/1
       LIBREOFFICE_RECEIVE: /opt/libreoffice/2
@@ -43,7 +45,13 @@ services:
     environment:
       LANG: 'en_US.UTF-8'
       LANGUAGE: 'en_US:en'
+      DEBUGGER_WATCH: /tmp/odoo_debug.txt
+      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
+    volumes:
+      - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
     command: /rootrun.sh
+	ports:
+        - "8072:8072"
       
   odoo_cronjobs:
     extends: odoo_base

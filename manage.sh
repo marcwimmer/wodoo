@@ -40,6 +40,7 @@ function showhelp() {
     echo Management of odoo instance
     echo
     echo
+	echo ./manage.sh sanity-check
     echo Reinit fresh db:
     echo './manage.sh reset-db'
     echo
@@ -312,6 +313,7 @@ function do_command() {
         $dc up $ALL_PARAMS
         ;;
     debug)
+		pwd
         if [[ -z "$2" ]]; then
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
@@ -536,6 +538,9 @@ function do_command() {
     import-i18n)
         $dc run odoo /import_i18n.sh $ALL_PARAMS
         ;;
+	sanity_check)
+		sanity_check
+		;;
     *)
         echo "Invalid option $1"
         exit -1
@@ -565,6 +570,45 @@ function sanity_check() {
 			chown 1000 $ODOO_FILES
 		fi
 	fi
+
+	# make sure the odoo_debug.txt exists; otherwise directory is created
+	if [[ ! -f "$DIR/run/odoo_debug.txt" ]]; then
+		touch $DIR/run/odoo_debug.txt
+	fi
+
+	if [[ -z "ODOO_MODULE_UPDATE_DELETE_QWEB" ]]; then
+		echo "Please define ODOO_MODULE_UPDATE_DELETE_QWEB"
+		echo "Whenever modules are updated, then the qweb views are deleted."
+		echo
+		echo "Typical use for development environment."
+		echo
+		exit -1
+	fi
+
+	if [[ -z "ODOO_MODULE_UPDATE_RUN_TESTS" ]]; then
+		echo "Please define wether to run tests on module updates"
+		echo
+		exit -1
+	fi
+
+	if [[ -z "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
+		echo "Please define ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO"
+		echo In development environments it is safe to set ownership, so
+		echo that accidently accessing the db fails
+		echo
+		exit -1
+	fi
+}
+
+function set_db_ownership() {
+	# in development environments it is safe to set ownership, so
+	# that accidently accessing the db fails
+	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
+		$(
+		cd $ODOO_HOME/data/src/admin/module_tools
+		python -c"from module_tools import set_ownership_exclusive; set_ownership_exclusive()"
+		)
+	fi
 }
 
 default_confs
@@ -573,6 +617,7 @@ prepare_filesystem
 prepare_yml_files_from_template_files
 include_customs_conf_if_set
 sanity_check
+set_db_ownership
 do_command "$@"
 cleanup
 

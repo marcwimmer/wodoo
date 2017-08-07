@@ -1,6 +1,6 @@
-.. openerp productive runtime environment
+.. openerp suite
 
-odoo productinve
+odoo suite
 ==================================
 
 Vorwort
@@ -15,7 +15,9 @@ Minimal:
 Optional:
     * Asterisk Server
     * Asterisk ARI Connector
-    * vim mit plugins
+    * Radicale Server
+    * Mail Server
+    * ...
 
 Verwendung
 ==========
@@ -23,8 +25,8 @@ Verwendung
 Basis Verzeichnis erstellen, z.B. in Home:
 
     cd ~
-    git clone git.mt-software.de:/git/openerp/docker/prod odoo_docker
-    cd odoo_docker
+    git clone git.mt-software.de:/git/openerp/docker/prod odoo
+    cd odoo
 
 Customs.env.template umkopieren und anpassen:
 
