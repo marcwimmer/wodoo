@@ -52,6 +52,7 @@ function remove_postgres_connections() {
 
 function do_restore_db_in_docker_container () {
 	# remove the postgres volume and reinit
+	echo "Restoring dump within docker container postgres"
 	dump_file=$1
 	$dc kill
 	$dc rm -f || true
@@ -63,15 +64,14 @@ function do_restore_db_in_docker_container () {
 
 	/bin/mkdir -p $DIR/restore
 	/bin/rm $DIR/restore/* || true
-	/usr/bin/rsync $2 $DIR/restore/$DBNAME.gz -P
-	if [[ -n "$3" && -f "$3" ]]; then
-		/usr/bin/rsync $3 $DIR/restore/$filename_oefiles -P
-	fi
+	/usr/bin/rsync $1 $DIR/restore/$DBNAME.gz -P
 	$dc kill
 	$dc run postgres /restore.sh
 }
 
 function do_restore_db_on_external_postgres () {
+	echo "Restoring dump on $DB_HOST"
+	dump_file=$1
 	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
 	export PGPASSWORD=$DB_PWD
 	ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
@@ -141,7 +141,6 @@ function showhelp() {
     echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
     echo "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
-    echo "runbash-with-ports <machine name> - like runbash but connects the ports; debugging ari/stasis and others"
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
     echo "stop - like docker-compose stop"
     echo "quickpull - fetch latest source, oeln - good for mako templates"
@@ -168,6 +167,7 @@ function prepare_yml_files_from_template_files() {
     echo "CUSTOMS: $CUSTOMS"
     echo "DB: $DBNAME"
     echo "VERSION: $ODOO_VERSION"
+    echo "FILES: $ODOO_FILES"
     ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose\.*') 
     FILTERED_CONFIG_FILES=""
     for file in $ALL_CONFIG_FILES 
@@ -191,6 +191,7 @@ function prepare_yml_files_from_template_files() {
             cp config/$file $DEST_FILE
             sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
             sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
+            sed -i -e "s|\${ODOO_FILES}|$ODOO_FILES|" -e "s|\${ODOO_FILES}|$ODOO_FILES|" $DEST_FILE
         fi
     done
     sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
@@ -290,7 +291,7 @@ function do_command() {
         # there is a bug: https://github.com/docker/compose/issues/3352
         docker exec -i $($dc ps -q odoo) /backup_files.sh
         [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
-        mv $DIR/dumps/oefiles.tar $BACKUP_FILEPATH
+        mv $DIR/dumps/odoofiles.tar $BACKUP_FILEPATH
 
         echo "Backup files done to $BACKUPDIR/$filename_oefiles"
         ;;
@@ -303,7 +304,7 @@ function do_command() {
 
         $DIR/manage.sh backup_db $BACKUPDIR
         echo "$*" |grep -q 'only-db' || {
-            $DIR/manage.sh backup_files $BACKUPDIR
+            $0 backup_files $BACKUPDIR
         }
 
         ;;
@@ -323,7 +324,7 @@ function do_command() {
         ;;
 
     restore)
-        filename_oefiles=oefiles.tar
+        filename_oefiles=odoofiles.tar
 
         last_index=$(echo "$# - 1"|bc)
         last_param=${args[$last_index]}
@@ -358,10 +359,10 @@ function do_command() {
 
         if [[ -n "$tarfiles" ]]; then
             echo 'Extracting files...'
-            $dc run odoo /restore_files.sh $tarfiles
+			do_restore_files $tarfiles
         fi
 
-        echo 'Restart systems by $0 restart'
+        echo "Restart systems by $0 restart"
         ;;
     restore-dev)
 		if [[ "$ALLOW_RESTORE_DEV" ]]; then
@@ -406,6 +407,7 @@ function do_command() {
         docker rmi $(docker images -q -f='dangling=true')
         ;;
     up)
+		set_db_ownership
         $dc up $ALL_PARAMS
         ;;
     debug)
@@ -415,6 +417,7 @@ function do_command() {
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
+		set_db_ownership
         echo "Current machine $2 is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then."
         askcontinue
         # shutdown current machine and start via run and port-mappings the replacement machine
@@ -438,18 +441,12 @@ function do_command() {
         docker exec -it "${DCPREFIX}_${2}" bash
         ;;
     runbash)
+		set_db_ownership
         if [[ -z "$2" ]]; then
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
         eval "$dc run $2 bash"
-        ;;
-    runbash-with-ports)
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-        eval "$dc run --service-ports $2 bash"
         ;;
     rebuild)
         cd $DIR/machines/odoo
@@ -615,7 +612,7 @@ function cleanup() {
 }
 
 function sanity_check() {
-    if [[ ("$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES") && $DB_HOST != 'postgres' ]]; then
+    if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
         echo "Either configure DB_HOST to point to the docker container or turn it off by: "
         echo 
@@ -662,10 +659,8 @@ function set_db_ownership() {
 	# in development environments it is safe to set ownership, so
 	# that accidently accessing the db fails
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
-		$(
-		cd $ODOO_HOME/data/src/admin/module_tools
-		python -c"from module_tools import set_ownership_exclusive; set_ownership_exclusive()"
-		)
+		$dc up -d postgres
+		$dc run odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
 	fi
 }
 
@@ -675,7 +670,6 @@ prepare_filesystem
 prepare_yml_files_from_template_files
 include_customs_conf_if_set
 sanity_check
-set_db_ownership
 do_command "$@"
 cleanup
 

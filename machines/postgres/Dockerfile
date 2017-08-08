@@ -1,7 +1,7 @@
 FROM postgres:9.5
 RUN mkdir -p  /docker-entrypoint-initdb.d
 
-RUN apt-get update && apt-get install -y procps pigz
+RUN apt-get update && apt-get install -y procps pigz sudo
 
 ADD backup.sh /backup.sh
 ADD restore.sh /restore.sh
