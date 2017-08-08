@@ -13,6 +13,7 @@ function default_confs() {
 	export ODOO_FILES=$DIR/data/odoo.files
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
+	export DB_PORT=5432
 }
 
 function export_customs_env() {
@@ -28,13 +29,79 @@ function export_customs_env() {
     export $(cut -d= -f1 $DIR/customs.env)  # export vars now in local variables
 }
 
+function restore_check() {
+	dumpname=$(basename $2)
+	if [[ ! "${dumpname%.gz}" == "$DBNAME" ]]; then
+		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
+		exit -1
+	fi
+
+}
+
+function remove_postgres_connections() {
+	echo "Removing all current connections"
+	SQL=$(cat <<-EOF
+		SELECT pg_terminate_backend(pg_stat_activity.pid)
+		FROM pg_stat_activity 
+		WHERE pg_stat_activity.datname = '$DBNAME' 
+		AND pid <> pg_backend_pid(); 
+		EOF
+		)
+	echo "$SQL" | $0 psql
+}
+
+function do_restore_db_in_docker_container () {
+	# remove the postgres volume and reinit
+	dump_file=$1
+	$dc kill
+	$dc rm -f || true
+	if [[ "$RUN_POSTGRES" == 1 ]]; then
+		askcontinue "Removing docker volume postgres-data (irreversible)"
+	fi
+	VOLUMENAME=${PROJECT_NAME}_postgresdata
+	docker volume ls |grep -q $VOLUMENAME && docker volume rm $VOLUMENAME 
+
+	/bin/mkdir -p $DIR/restore
+	/bin/rm $DIR/restore/* || true
+	/usr/bin/rsync $2 $DIR/restore/$DBNAME.gz -P
+	if [[ -n "$3" && -f "$3" ]]; then
+		/usr/bin/rsync $3 $DIR/restore/$filename_oefiles -P
+	fi
+	$dc kill
+	$dc run postgres /restore.sh
+}
+
+function do_restore_db_on_external_postgres () {
+	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
+	export PGPASSWORD=$DB_PWD
+	ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
+	PSQL="psql $ARGS"
+	DROPDB="dropdb $ARGS"
+	CREATEDB="createdb $ARGS"
+	PGRESTORE="pg_restore $ARGS"
+
+	remove_postgres_connections
+	eval "$DROPDB $DBNAME" || echo "Failed to drop $DBNAME"
+	eval "$CREATEDB $DBNAME"
+	eval "$PGRESTORE -d $DBNAME $1" || {
+		gunzip -c $1 | $PGRESTORE -d $DB
+	}
+}
+
+function do_restore_files () {
+	# remove the postgres volume and reinit
+	tararchive_full_path=$1
+	/usr/bin/rsync $tararchive_full_path $DIR/restore/$filename_oefiles -P
+	$dc run odoo /bin/restore_files.sh $(basename tararchive_full_path)
+}
 
 function askcontinue() {
+	echo $1
 	if [[ "$ASK_CONTINUE" == "0" ]]; then
-		echo "Ask continue disabled, continueing..."
+		if [[ -z "$1" ]]; then
+			echo "Ask continue disabled, continueing..."
+		fi
 	else
-		echo ""
-		echo ""
 		read -p "Continue? (Ctrl+C to break)" || {
 			exit -1
 		}
@@ -242,8 +309,7 @@ function do_command() {
         ;;
     reset-db)
         [[ $last_param != "-force" ]] && {
-            echo "Deletes database $DBNAME!"
-            askcontinue
+            askcontinue "Deletes database $DBNAME!"
         }
         echo "Stopping all services and creating new database"
         echo "After creation the database container is stopped. You have to start the system up then."
@@ -258,13 +324,14 @@ function do_command() {
 
     restore)
         filename_oefiles=oefiles.tar
-        VOLUMENAME=${PROJECT_NAME}_postgresdata
 
         last_index=$(echo "$# - 1"|bc)
         last_param=${args[$last_index]}
 
+		restore_check $@
+
         [[ $last_param != "-force" ]] && {
-            read -p "Deletes database $DBNAME! Continue? Press ctrl+c otherwise"
+			askcontinue "Deletes database $DBNAME!"
         }
         if [[ ! -f $2 ]]; then
             echo "File $2 not found!"
@@ -275,32 +342,56 @@ function do_command() {
             exit -1
         fi
 
-        # remove the postgres volume and reinit
-        eval "$dc kill" || true
-        $dc rm -f || true
-        echo "Removing docker volume postgres-data (irreversible)"
-        docker volume ls |grep -q $VOLUMENAME && docker volume rm ${PROJECT_NAME}_postgresdata
+		dumpfile=$2
+		tarfiles=$3
+		
+		if [[ "$tarfiles" == "-force" ]]; then
+			tarfiles=""
+		fi
 
-        /bin/mkdir -p $DIR/restore
-        #/bin/rm $DIR/restore/* || true
-        /usr/bin/rsync $2 $DIR/restore/$DBNAME.gz -P
-        if [[ -n "$3" && -f "$3" ]]; then
-            /usr/bin/rsync $3 $DIR/restore/$filename_oefiles -P
-        fi
+		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			do_restore_db_in_docker_container $dumpfile
+		else
+			askcontinue "Trying to restore database on remote database. Please make sure, that the user $DB_USER has enough privileges for that."
+			do_restore_db_on_external_postgres $dumpfile
+		fi
 
-        echo "Shutting down containers"
-        eval "$dc kill"
-
-        $dc run postgres /restore.sh
-
-        if [[ -n "$3" && "$3" != "-force" ]]; then
+        if [[ -n "$tarfiles" ]]; then
             echo 'Extracting files...'
-            $dc run -e filename=$filename_oefiles odoo /restore_files.sh
+            $dc run odoo /restore_files.sh $tarfiles
         fi
 
-        echo ''
-        echo 'Restart systems by ./manage restart'
+        echo 'Restart systems by $0 restart'
         ;;
+    restore-dev)
+		if [[ "$ALLOW_RESTORE_DEV" ]]; then
+			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
+			exit -1
+		fi
+        echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
+		$0 $@ || exit $?
+
+        SQLFILE=machines/postgres/turndb2dev.sql
+		$0 psql < $SQLFILE
+
+        ;;
+	psql)
+		# execute psql query
+
+		sql=$(
+		while read line
+		do
+			echo "$line"
+		done < "${2:-/dev/stdin}"
+		)
+
+		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			$dc run postgres psql $2
+		else
+			export PGPASSWORD=$DB_PWD
+			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME
+		fi 
+		;;
 
     springclean)
         docker system prune
@@ -489,46 +580,6 @@ function do_command() {
         export dc=$dc
         bash $DIR/config/ovpn/pack.sh
         $dc rm -f
-        ;;
-    restore-dev-db)
-        #!/bin/bash
-
-		set -x
-        echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-        SQLFILE=machines/postgres/turndb2dev.sql
-        DB=$(basename $1)
-        DxB=${DB%.*}
-		exit -1
-
-        if [[ -z "$1" ]]; then
-            echo "File missing! Please provide per parameter 1"
-            exit -1
-        fi
-
-		if [[ "$RUN_POSTGRES" != "1" ]]; then
-			echo "not implemented yet"
-			exit -1
-		else
-			echo "Using $DB_HOST, $DB_PORT"
-			export PGPASSWORD=$DB_PASSWORD
-			ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
-			PSQL="psql $ARGS"
-			DROPDB="dropdb $ARGS"
-			CREATEDB="createdb $ARGS"
-			PGRESTORE="pg_restore $ARGS"
-
-			echo "Databasename is $DB"
-			eval "$DROPDB $DB" || echo "Failed to drop $DB"
-			set -ex
-			eval "$CREATEDB $DB"
-			eval "$PGRESTORE -d $DB $1" || {
-				gunzip -c $1 | $PGRESTORE -d $DB
-			}
-
-			if [[ "$2" != "nodev" ]]; then
-				eval "$PSQL $DB" < $SQLFILE
-			fi
-		fi
         ;;
     export-i18n)
         LANG=$2
