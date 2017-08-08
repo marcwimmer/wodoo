@@ -29,11 +29,15 @@ function export_customs_env() {
 
 
 function askcontinue() {
-    echo ""
-    echo ""
-    read -p "Continue? (Ctrl+C to break)" || {
-    exit -1
-    }
+	if [[ "$ASK_CONTINUE" == "0" ]]; then
+		echo "Ask continue disabled, continueing..."
+	else
+		echo ""
+		echo ""
+		read -p "Continue? (Ctrl+C to break)" || {
+			exit -1
+		}
+	fi
 }
 
 function showhelp() {
@@ -313,6 +317,8 @@ function do_command() {
         $dc up $ALL_PARAMS
         ;;
     debug)
+		# puts endless loop into container command and then attaches to it;
+		# by this, name resolution to the container still works
         if [[ -z "$2" ]]; then
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
@@ -322,9 +328,15 @@ function do_command() {
         # shutdown current machine and start via run and port-mappings the replacement machine
         $dc kill $2
         cd $DIR
+		DEBUGGING_COMPOSER=$DIR/run/debugging.yml
+		cp $DIR/config/debugging/template.yml $DEBUGGING_COMPOSER
+		sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${NAME}/$2/" $DEBUGGING_COMPOSER
+		dc="$dc -f $DEBUGGING_COMPOSER"  # command now has while loop
 
         #execute self
-        $0 runbash-with-ports $2 /bin/bash
+		$dc up -d $2
+		$0 attach $2 && {break}
+
         ;;
     attach)
         if [[ -z "$2" ]]; then
@@ -610,7 +622,6 @@ function set_db_ownership() {
 	fi
 }
 
-set -x
 default_confs
 export_customs_env
 prepare_filesystem
