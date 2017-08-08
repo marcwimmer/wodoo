@@ -1,6 +1,6 @@
 #!/bin/bash
 MODULE=$1
-set -x
+set +x
 source /env.sh
 /sync_source.sh
 

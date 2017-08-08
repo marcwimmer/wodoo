@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set +x
 echo "setting ownership of $CUPS_TOPRINT to odoo"
 chown 1000:1000 /opt/toprint -R
 

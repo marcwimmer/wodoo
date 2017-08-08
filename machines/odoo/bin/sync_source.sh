@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+set +x
 
 # optional parameter: the local complete filepath
 
@@ -37,7 +37,7 @@ echo "Customs: $CUSTOMS"
 echo "Version: $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs/ --info=progress2  -arP --delete --exclude=.git
+time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs/ --info=progress2  -ar --delete --exclude=.git
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
 cd /opt/openerp/customs && {

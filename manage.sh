@@ -12,6 +12,7 @@ ALL_PARAMS=${@:2} # all parameters without command
 function default_confs() {
 	export ODOO_FILES=$DIR/data/odoo.files
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
+	export RUN_POSTGRES=1
 }
 
 function export_customs_env() {
@@ -335,7 +336,7 @@ function do_command() {
 
         #execute self
 		$dc up -d $2
-		$0 attach $2 && {break}
+		$0 attach $2 
 
         ;;
     attach)
@@ -429,12 +430,7 @@ function do_command() {
         $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
         ;;
     update-source)
-        if [[ -z "$2" ]]; then
-            $dc up source_code
-        else
-            echo $2 > /tmp/last
-            $dc run source_code /sync_source.sh $2
-        fi
+		$dc run source_code /sync_source.sh $2
         ;;
     update)
         echo "Run module update"
@@ -497,42 +493,42 @@ function do_command() {
     restore-dev-db)
         #!/bin/bash
 
+		set -x
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-        DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-        cd $DIR
         SQLFILE=machines/postgres/turndb2dev.sql
         DB=$(basename $1)
-        DB=${DB%.*}
-        exit -1
-
+        DxB=${DB%.*}
+		exit -1
 
         if [[ -z "$1" ]]; then
             echo "File missing! Please provide per parameter 1"
             exit -1
         fi
 
-        source .env
-        DB_HOST=$DB_HOST_EXT
-        echo "Using $DB_HOST, $DB_PORT"
+		if [[ "$RUN_POSTGRES" != "1" ]]; then
+			echo "not implemented yet"
+			exit -1
+		else
+			echo "Using $DB_HOST, $DB_PORT"
+			export PGPASSWORD=$DB_PASSWORD
+			ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
+			PSQL="psql $ARGS"
+			DROPDB="dropdb $ARGS"
+			CREATEDB="createdb $ARGS"
+			PGRESTORE="pg_restore $ARGS"
 
-        export PGPASSWORD=$DB_PASSWORD
-        ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
-        PSQL="psql $ARGS"
-        DROPDB="dropdb $ARGS"
-        CREATEDB="createdb $ARGS"
-        PGRESTORE="pg_restore $ARGS"
+			echo "Databasename is $DB"
+			eval "$DROPDB $DB" || echo "Failed to drop $DB"
+			set -ex
+			eval "$CREATEDB $DB"
+			eval "$PGRESTORE -d $DB $1" || {
+				gunzip -c $1 | $PGRESTORE -d $DB
+			}
 
-        echo "Databasename is $DB"
-        eval "$DROPDB $DB" || echo "Failed to drop $DB"
-        set -ex
-        eval "$CREATEDB $DB"
-        eval "$PGRESTORE -d $DB $1" || {
-            gunzip -c $1 | $PGRESTORE -d $DB
-        }
-
-        if [[ "$2" != "nodev" ]]; then
-            eval "$PSQL $DB" < $SQLFILE
-        fi
+			if [[ "$2" != "nodev" ]]; then
+				eval "$PSQL $DB" < $SQLFILE
+			fi
+		fi
         ;;
     export-i18n)
         LANG=$2

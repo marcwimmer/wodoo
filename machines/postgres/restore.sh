@@ -1,6 +1,6 @@
 #!/bin/bash
-set -x
 set -e
+set +x
 
 echo "Restoring database $DBNAME"
 /docker-entrypoint.sh postgres &
