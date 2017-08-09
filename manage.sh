@@ -9,7 +9,7 @@
 #
 
 set -e
-set -x
+set +x
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -94,7 +94,8 @@ function do_restore_db_on_external_postgres () {
 	pipe=$(mktemp -u)
 	mkfifo "$pipe"
 	gunzip -c $1 > $pipe &
-	$PGRESTORE $DB < $pipe
+	echo "Restoring Database $DBNAME"
+	$PGRESTORE -d $DBNAME < $pipe
 }
 
 function do_restore_files () {
@@ -728,8 +729,10 @@ function set_db_ownership() {
 	# in development environments it is safe to set ownership, so
 	# that accidently accessing the db fails
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
-		$dc up -d postgres
-		$dcrun odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			$dc up -d postgres
+			$dcrun odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+		fi
 	fi
 }
 
