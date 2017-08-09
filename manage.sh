@@ -9,7 +9,7 @@
 #
 
 set -e
-set -x
+set +x
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -34,6 +34,13 @@ function export_customs_env() {
         eval "$var=\"$value\""
     done <$DIR/customs.env
     export $(cut -d= -f1 $DIR/customs.env)  # export vars now in local variables
+
+	if [[ "$RUN_POSTGRES" == "1" ]]; then
+		DB_HOST=postgres
+		DB_PORT=5432
+		DB_USER=odoo
+		DB_PWD=odoo
+	fi
 }
 
 function restore_check() {
@@ -72,9 +79,9 @@ function do_restore_db_in_docker_container () {
 	LOCAL_DEST_NAME=$DIR/run/restore/$DBNAME.gz
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
-	/bin/ln $1 $LOCAL_DEST_NAME
+	/bin/ln $dump_file $LOCAL_DEST_NAME
 	$0 reset-db
-	$dcrun postgres /restore.sh
+	$dcrun postgres /restore.sh $(basename $LOCAL_DEST_NAME)
 }
 
 function do_restore_db_on_external_postgres () {
@@ -113,7 +120,7 @@ function do_restore_files () {
 function askcontinue() {
 	echo $1
 	force=0
-	echo "$*" |grep -q '-force' && {
+	echo "$*" |grep -q '[-]force' && {
 		force=1
 	}
 	if [[ "$force" == "0" && "$ASK_CONTINUE" == "0" ]]; then
@@ -350,9 +357,9 @@ function do_command() {
 		$0 backup-files $ALL_PARAMS
         ;;
     reset-db)
-        [[ $last_param != "-force" ]] && {
+		echo "$*" |grep -q '[-]force' || {
             askcontinue "Deletes database $DBNAME!"
-        }
+		}
 		if [[ "$RUN_POSTGRES" != "1" ]]; then
 			echo "Postgres container is disabled; cannot reset external database"
 			exit -1
@@ -381,7 +388,7 @@ function do_command() {
 		restore_check $@
 		dumpfile=$2
 
-		echo "$*" |grep -q '-force' || {
+		echo "$*" |grep -q '[-]force' || {
 			askcontinue "Deletes database $DBNAME!"
 		}
 
@@ -411,7 +418,7 @@ function do_command() {
 
 		$0 restore-db $dumpfile
 		
-		if [[ "$tarfiles" == "-force" ]]; then
+		if [[ "$tarfiles" == "[-]force" ]]; then
 			tarfiles=""
 		fi
 

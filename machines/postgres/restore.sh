@@ -2,7 +2,7 @@
 set -e
 set +x
 
-RESTOREFILE=/opt/restore/$DBNAME.gz
+RESTOREFILE=/opt/restore/$1
 
 if [ "$(id -u)" = '0' ]; then
 
@@ -17,7 +17,7 @@ else
 	tmppipe=$(mktemp -u)
 	mkfifo "$tmppipe"
 	gunzip -c  $RESTOREFILE > $tmppipe &
-	psql $DBNAME < $tmppipe
+	pg_restore -d $DBNAME < $tmppipe
 
 	echo "Restoring snapshot done!"
 	pg_ctl -w stop
