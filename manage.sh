@@ -599,7 +599,7 @@ function do_command() {
 			date +%s > $ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE
 		fi
         if [[ "$RUN_POSTGRES" == "1" ]]; then
-        $dc up -d postgres
+			$dc up -d postgres
         fi
         $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
         $dc kill odoo_update

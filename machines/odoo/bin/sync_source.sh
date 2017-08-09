@@ -2,6 +2,8 @@
 set -e
 set +x
 
+ACTIVE_CUSTOMS=/opt/openerp/active_customs
+
 # optional parameter: the local complete filepath
 
 if [[ -z "$CUSTOMS" ]]; then
@@ -19,7 +21,7 @@ path = path.split("customs/{}".format(customs))[1]
 print path
 EOF
 )
-    time rsync /opt/src/customs/$CUSTOMS/$local_path /opt/openerp/active_customs/$local_path --info=progress2  -arP --delete --exclude=.git
+    time rsync /opt/src/customs/$CUSTOMS/$local_path $ACTIVE_CUSTOMS/$local_path --info=progress2  -arP --delete --exclude=.git
     exit 0
 fi
 
@@ -37,32 +39,35 @@ echo "Customs: $CUSTOMS"
 echo "Version: $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
-time rsync /opt/src/customs/$CUSTOMS/ /opt/openerp/active_customs/ --info=progress2  -ar --delete --exclude=.git
+time rsync /opt/src/customs/$CUSTOMS/ $ACTIVE_CUSTOMS/ --info=progress2  -ar --delete --exclude=.git
 mkdir -p /opt/openerp/versions
 mkdir -p /opt/openerp/customs
 cd /opt/openerp/customs && {
     rm * || true
-    ln -s /opt/openerp/active_customs $CUSTOMS
+    ln -s $ACTIVE_CUSTOMS $CUSTOMS
 }
 chmod a+x /opt/openerp/admin/*.sh
 
 rm -Rf /opt/openerp/versions || true
 mkdir -p /opt/openerp/versions
 # must be rsync, so that patches apply
-ln -s /opt/openerp/active_customs/odoo /opt/openerp/versions/server
+ln -s $ACTIVE_CUSTOMS/odoo /opt/openerp/versions/server
 
 echo "oeln"
 /opt/openerp/admin/oeln $CUSTOMS
 
 echo "Applying patches"
-CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=/opt/openerp/active_customs SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh || {
+CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh || {
     echo "Error at applying patches! Please check output and the odoo version"
     exit -1
 }
 
-# use virtualenv installed packages for odoo
-
 /set_permissions.sh
 
-cd /opt/openerp/active_customs
-/opt/openerp/admin/remove_module_install_notifications.py
+set -x
+cd /opt/openerp/admin/module_tools
+$(python <<-EOF
+import module_tools
+module_tools.remove_module_install_notifications("$ACTIVE_CUSTOMS")
+EOF
+)
