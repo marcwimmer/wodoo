@@ -1,6 +1,6 @@
 #!/bin/bash
 MODULE=$1
-set -x
+set +x
 set -e
 
 source /env.sh
