@@ -1,6 +1,12 @@
 #!/bin/bash
 # Basic Rules:
 # - if a command would stop production run, then ask to continue is done before
+#
+# Important Githubs:
+#   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
+#   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
+#
+
 set -e
 set +x
 
@@ -30,6 +36,7 @@ function export_customs_env() {
 }
 
 function restore_check() {
+	set -x
 	dumpname=$(basename $2)
 	if [[ ! "${dumpname%.gz}" == "$DBNAME" ]]; then
 		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
@@ -52,6 +59,7 @@ function remove_postgres_connections() {
 
 function do_restore_db_in_docker_container () {
 	# remove the postgres volume and reinit
+
 	echo "Restoring dump within docker container postgres"
 	dump_file=$1
 	$dc kill
@@ -61,12 +69,14 @@ function do_restore_db_in_docker_container () {
 	fi
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q $VOLUMENAME && docker volume rm $VOLUMENAME 
+	LOCAL_DEST_NAME=$DIR/restore/$DBNAME.gz
+	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
 	/bin/mkdir -p $DIR/restore
-	/bin/rm $DIR/restore/* || true
-	/usr/bin/rsync $1 $DIR/restore/$DBNAME.gz -P
-	$dc kill
-	$dc run postgres /restore.sh
+	/bin/ln $1 $LOCAL_DEST_NAME
+	$0 reset-db
+	$dc up -d postgres
+	$dcrun postgres /restore.sh
 }
 
 function do_restore_db_on_external_postgres () {
@@ -91,8 +101,12 @@ function do_restore_db_on_external_postgres () {
 function do_restore_files () {
 	# remove the postgres volume and reinit
 	tararchive_full_path=$1
-	/usr/bin/rsync $tararchive_full_path $DIR/restore/$filename_oefiles -P
-	$dc run odoo /bin/restore_files.sh $(basename tararchive_full_path)
+	filename_oefiles=odoofiles.tar
+	LOCAL_DEST_NAME=$DIR/restore/$filename_oefiles
+	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
+
+	/bin/ln $tararchive_full_path $LOCAL_DEST_NAME
+	$dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
 }
 
 function askcontinue() {
@@ -123,29 +137,57 @@ function showhelp() {
     echo 
     echo "Please call manage.sh springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
     echo "attach <machine> - attaches to running machine"
+	echo ""
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
+	echo ""
+    echo "backup-db <backup-dir>"
+	echo ""
+    echo "backup-files <backup-dir>"
+	echo ""
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
+	echo ""
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
+	echo ""
     echo "clean_supportdata - clears support data"
+	echo ""
     echo "install-telegram-bot - installs required python libs; execute as sudo"
+	echo ""
     echo "telegram-setup- helps creating a permanent chatid"
+	echo ""
     echo "kill - kills running machines"
+	echo ""
     echo "logs - show log output; use parameter to specify machine"
+	echo ""
     echo "logall - shows log til now; use parameter to specify machine"
+	echo ""
     echo "make-CA - recreates CA caution!"
+	echo ""
     echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
+	echo ""
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
+	echo ""
     echo "rm - command"
+	echo ""
     echo "rebuild - rebuilds docker-machines - data not deleted"
+	echo ""
     echo "restart - restarts docker-machine(s) - parameter name"
+	echo ""
     echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
+	echo ""
     echo "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
+	echo ""
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
+	echo ""
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
+	echo ""
     echo "stop - like docker-compose stop"
+	echo ""
     echo "quickpull - fetch latest source, oeln - good for mako templates"
+	echo ""
     echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
+	echo ""
     echo "update-source - sets the latest source code in the containers"
+	echo ""
     echo "up - starts all machines equivalent to service <service> start "
     echo
 }
@@ -198,7 +240,9 @@ function prepare_yml_files_from_template_files() {
 
     all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f"; done)"
     all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
-    dc="docker-compose -p $PROJECT_NAME $all_config_files"
+    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $all_config_files"
+    dcrun="$dc run -T"
+    dcexec="$dc exec -T"
 }
 
 
@@ -269,7 +313,6 @@ function do_command() {
         LINKPATH=$DIR/dumps/latest_dump
         $dc up -d postgres odoo
         # by following command the call is crontab safe;
-        # there is a bug: https://github.com/docker/compose/issues/3352
         docker exec -i $($dc ps -q postgres) /backup.sh
         mv $DIR/dumps/$DBNAME.gz $filepath
         /bin/rm $LINKPATH || true
@@ -277,7 +320,7 @@ function do_command() {
         md5sum $filepath
         echo "Dumped to $filepath"
         ;;
-    backup_files)
+    backup-files)
         if [[ -n "$2" ]]; then
             BACKUPDIR=$2
         else
@@ -286,36 +329,38 @@ function do_command() {
         BACKUP_FILENAME=oefiles.$CUSTOMS.tar
         BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
 
-        # execute in running container via exec
-        # by following command the call is crontab safe;
-        # there is a bug: https://github.com/docker/compose/issues/3352
-        docker exec -i $($dc ps -q odoo) /backup_files.sh
+		$dcrun odoo /backup_files.sh
         [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
         mv $DIR/dumps/odoofiles.tar $BACKUP_FILEPATH
 
         echo "Backup files done to $BACKUPDIR/$filename_oefiles"
         ;;
-    backup)
-        if [[ -n "$2" && "$2" != "only-db" ]]; then
+    backup-db)
+        if [[ -n "$2" ]]; then
             BACKUPDIR=$2
         else
             BACKUPDIR=$DIR/dumps
         fi
 
         $DIR/manage.sh backup_db $BACKUPDIR
-        echo "$*" |grep -q 'only-db' || {
-            $0 backup_files $BACKUPDIR
-        }
+		;;
+    backup)
+		$0 backup-db $ALL_PARAMS
+		$0 backup-files $ALL_PARAMS
 
         ;;
     reset-db)
         [[ $last_param != "-force" ]] && {
             askcontinue "Deletes database $DBNAME!"
         }
+		if [[ "$RUN_POSTGRES" != "1" ]]; then
+			echo "Postgres container is disabled; cannot reset external database"
+			exit -1
+		fi
         echo "Stopping all services and creating new database"
         echo "After creation the database container is stopped. You have to start the system up then."
         $dc kill
-        $dc run -e INIT=1 postgres /entrypoint2.sh
+        $dcrun -e INIT=1 postgres /entrypoint2.sh
         echo
         echo 
         echo
@@ -324,16 +369,13 @@ function do_command() {
         ;;
 
     restore)
-        filename_oefiles=odoofiles.tar
-
-        last_index=$(echo "$# - 1"|bc)
-        last_param=${args[$last_index]}
 
 		restore_check $@
 
-        [[ $last_param != "-force" ]] && {
+		echo "$*" |grep -q '-force' || {
 			askcontinue "Deletes database $DBNAME!"
-        }
+		}
+
         if [[ ! -f $2 ]]; then
             echo "File $2 not found!"
             exit -1
@@ -361,6 +403,7 @@ function do_command() {
             echo 'Extracting files...'
 			do_restore_files $tarfiles
         fi
+		set_db_ownership
 
         echo "Restart systems by $0 restart"
         ;;
@@ -370,7 +413,10 @@ function do_command() {
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		$0 $@ || exit $?
+		set -x
+		restore_check $@
+		$0 ${@:1} || exit $? # keep restore and params
+		exit -1
 
         SQLFILE=machines/postgres/turndb2dev.sql
 		$0 psql < $SQLFILE
@@ -387,7 +433,7 @@ function do_command() {
 		)
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc run postgres psql $2
+			$dcrun postgres psql $2
 		else
 			export PGPASSWORD=$DB_PWD
 			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME
@@ -438,7 +484,7 @@ function do_command() {
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
-        docker exec -it "${DCPREFIX}_${2}" bash
+        $dc exec $2 bash
         ;;
     runbash)
 		set_db_ownership
@@ -446,7 +492,7 @@ function do_command() {
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
-        eval "$dc run $2 bash"
+        $dc run $2 bash
         ;;
     rebuild)
         cd $DIR/machines/odoo
@@ -515,10 +561,10 @@ function do_command() {
 		echo "Finished - chat id is stored; bot can send to channel all the time now."
 		;;
     purge-source)
-        $dc run odoo rm -Rf /opt/openerp/customs/$CUSTOMS
+        $dcrun odoo rm -Rf /opt/openerp/customs/$CUSTOMS
         ;;
     update-source)
-		$dc run source_code /sync_source.sh $2
+		$dcrun source_code /sync_source.sh $2
         ;;
     update)
         echo "Run module update"
@@ -535,10 +581,10 @@ function do_command() {
 
         set -e
         # sync source
-        $dc run source_code
+        $dcrun source_code
         set +e
 
-        $dc run odoo_update /update_modules.sh $2
+        $dcrun odoo_update /update_modules.sh $2
         $dc kill odoo nginx
         if [[ "$RUN_ASTERISK" == "1" ]]; then
             $dc kill ari stasis
@@ -568,9 +614,9 @@ function do_command() {
         askcontinue
         export dc=$dc
         $dc kill ovpn
-        $dc run ovpn_ca /root/tools/clean_keys.sh
-        $dc run ovpn_ca /root/tools/make_ca.sh
-        $dc run ovpn_ca /root/tools/make_server_keys.sh
+        $dcrun ovpn_ca /root/tools/clean_keys.sh
+        $dcrun ovpn_ca /root/tools/make_ca.sh
+        $dcrun ovpn_ca /root/tools/make_server_keys.sh
         $dc rm -f
         ;;
     make-keys)
@@ -587,11 +633,11 @@ function do_command() {
         fi
         rm $DIR/run/i18n/* || true
         chmod a+rw $DIR/run/i18n
-        $dc run odoo_lang_export /export_i18n.sh $LANG $MODULES
+        $dcrun odoo_lang_export /export_i18n.sh $LANG $MODULES
         # file now is in $DIR/run/i18n/export.po
         ;;
     import-i18n)
-        $dc run odoo /import_i18n.sh $ALL_PARAMS
+        $dcrun odoo /import_i18n.sh $ALL_PARAMS
         ;;
 	sanity_check)
 		sanity_check
@@ -622,7 +668,10 @@ function sanity_check() {
 
 	if [[ -d $ODOO_FILES ]]; then
 		if [[ "$(stat -c "%u" $ODOO_FILES)" != "1000" ]]; then
-			chown 1000 $ODOO_FILES
+			echo "Changing ownership of $ODOO_FILES to 1000"
+			chown 1000 $ODOO_FILES || {
+				sudo !!
+			}
 		fi
 	fi
 
@@ -660,7 +709,7 @@ function set_db_ownership() {
 	# that accidently accessing the db fails
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		$dc up -d postgres
-		$dc run odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+		$dcrun odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
 	fi
 }
 
