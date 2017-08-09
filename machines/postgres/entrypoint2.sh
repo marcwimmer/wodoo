@@ -31,6 +31,8 @@ if [[ "$INIT" == "1" ]]; then
 		exec gosu postgres "$BASH_SOURCE" "$@"  #restart self (like they do in entry point)
 	else
 		psql template1 -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PWD' superuser;" 
+		psql template1 -c "CREATE DATABASE $DBNAME;"
+		psql template1 -c "ALTER DATABASE $DBNAME OWNER TO $DB_USER"
 		pg_ctl -D "$PGDATA" -m fast -w stop
 	fi
 

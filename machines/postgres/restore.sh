@@ -2,19 +2,23 @@
 set -e
 set +x
 
-echo "Restoring database $DBNAME"
+RESTOREFILE=/opt/restore/$DBNAME.gz
 
-echo "try postgres-format or custom gzipped format"
-gunzip -c /opt/restore/$DBNAME.gz | sudo -u postgres -E psql $DBNAME
+if [ "$(id -u)" = '0' ]; then
 
-echo "Restoring snapshot done!"
-pkill -f postgres
-echo "waiting for postgres to stop"
-while true; do
-    if [[ -n "$(pgrep postgres)" ]]; then
-        sleep 1
-        echo "waiting for postgres to stop another second"
-    else
-        break
-    fi
-done
+	exec gosu postgres "$BASH_SOURCE" "$@" #restart self (like they do in entry point)
+
+else
+	echo "Restoring database $DBNAME"
+
+	echo "try postgres-format or custom gzipped format"
+	pg_ctl -w start
+
+	tmppipe=$(mktemp -u)
+	mkfifo "$tmppipe"
+	gunzip -c  $RESTOREFILE > $tmppipe &
+	psql $DBNAME < $tmppipe
+
+	echo "Restoring snapshot done!"
+	pg_ctl -w stop
+fi

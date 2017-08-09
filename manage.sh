@@ -1,6 +1,7 @@
 #!/bin/bash
 # Basic Rules:
 # - if a command would stop production run, then ask to continue is done before
+# - if in set -e environment and piping commands like cat ... |psql .. then use: cat ... || exit -1 | psql ...
 #
 # Important Githubs:
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
@@ -36,7 +37,6 @@ function export_customs_env() {
 }
 
 function restore_check() {
-	set -x
 	dumpname=$(basename $2)
 	if [[ ! "${dumpname%.gz}" == "$DBNAME" ]]; then
 		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
@@ -69,13 +69,11 @@ function do_restore_db_in_docker_container () {
 	fi
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q $VOLUMENAME && docker volume rm $VOLUMENAME 
-	LOCAL_DEST_NAME=$DIR/restore/$DBNAME.gz
+	LOCAL_DEST_NAME=$DIR/run/restore/$DBNAME.gz
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
-	/bin/mkdir -p $DIR/restore
 	/bin/ln $1 $LOCAL_DEST_NAME
 	$0 reset-db
-	$dc up -d postgres
 	$dcrun postgres /restore.sh
 }
 
@@ -93,16 +91,17 @@ function do_restore_db_on_external_postgres () {
 	remove_postgres_connections
 	eval "$DROPDB $DBNAME" || echo "Failed to drop $DBNAME"
 	eval "$CREATEDB $DBNAME"
-	eval "$PGRESTORE -d $DBNAME $1" || {
-		gunzip -c $1 | $PGRESTORE -d $DB
-	}
+	pipe=$(mktemp -u)
+	mkfifo "$pipe"
+	gunzip -c $1 > $pipe &
+	$PGRESTORE $DB < $pipe
 }
 
 function do_restore_files () {
 	# remove the postgres volume and reinit
 	tararchive_full_path=$1
 	filename_oefiles=odoofiles.tar
-	LOCAL_DEST_NAME=$DIR/restore/$filename_oefiles
+	LOCAL_DEST_NAME=$DIR/run/restore/$filename_oefiles
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
 	/bin/ln $tararchive_full_path $LOCAL_DEST_NAME
@@ -111,7 +110,11 @@ function do_restore_files () {
 
 function askcontinue() {
 	echo $1
-	if [[ "$ASK_CONTINUE" == "0" ]]; then
+	force=0
+	echo "$*" |grep -q '-force' && {
+		force=1
+	}
+	if [[ "$force" == "0" && "$ASK_CONTINUE" == "0" ]]; then
 		if [[ -z "$1" ]]; then
 			echo "Ask continue disabled, continueing..."
 		fi
@@ -413,7 +416,6 @@ function do_command() {
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		set -x
 		restore_check $@
 		$0 ${@:1} || exit $? # keep restore and params
 		exit -1
@@ -597,6 +599,9 @@ function do_command() {
         $dc kill nginx
         $dc up -d
         df -h / # case: after update disk / was full
+		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
+			echo '0' > $ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE
+		fi
 
        ;;
     make-CA)
@@ -611,7 +616,7 @@ function do_command() {
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
 
-        askcontinue
+        askcontinue -force
         export dc=$dc
         $dc kill ovpn
         $dcrun ovpn_ca /root/tools/clean_keys.sh
@@ -657,6 +662,18 @@ function cleanup() {
     fi
 }
 
+function try_to_set_owner() {
+	OWNER=$1
+	dir=$2
+	if [[ "$(stat -c "%u" "$dir")" != "$OWNER" ]]; then
+		echo "Trying to set correct permissions on restore directory"
+		cmd="chown $OWNER $dir"
+		$cmd || {
+			sudo $cmd
+		}
+	fi
+}
+
 function sanity_check() {
     if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
@@ -666,13 +683,16 @@ function sanity_check() {
         exit -1
     fi
 
-	if [[ -d $ODOO_FILES ]]; then
-		if [[ "$(stat -c "%u" $ODOO_FILES)" != "1000" ]]; then
-			echo "Changing ownership of $ODOO_FILES to 1000"
-			chown 1000 $ODOO_FILES || {
-				sudo !!
-			}
+    if [[ "$RUN_POSTGRES" == "1"  ]]; then
+		RESTORE_DIR="$DIR/run/restore"
+		if [[ -d "$RESTORE_DIR" ]]; then
+			try_to_set_owner "1000" "$RESTORE_DIR"
 		fi
+	fi
+
+	if [[ -d $ODOO_FILES ]]; then
+		# checking directory permissions of session files and filestorage
+		try_to_set_owner "1000" "$ODOO_FILES"
 	fi
 
 	# make sure the odoo_debug.txt exists; otherwise directory is created
