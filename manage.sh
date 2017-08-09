@@ -1,7 +1,7 @@
 #!/bin/bash
 # Basic Rules:
 # - if a command would stop production run, then ask to continue is done before
-# - if in set -e environment and piping commands like cat ... |psql .. then use: cat ... || exit -1 | psql ...
+# - if in set -e environment and piping commands like cat ... |psql .. then use: pipe=$(mktemp -u); mkfifo $pipe; do.. > $pipe &; do < $pipe
 #
 # Important Githubs:
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
@@ -9,7 +9,7 @@
 #
 
 set -e
-set +x
+set -x
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -38,7 +38,7 @@ function export_customs_env() {
 
 function restore_check() {
 	dumpname=$(basename $2)
-	if [[ ! "${dumpname%.gz}" == "$DBNAME" ]]; then
+	if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
 		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
 		exit -1
 	fi
@@ -100,12 +100,13 @@ function do_restore_db_on_external_postgres () {
 
 function do_restore_files () {
 	# remove the postgres volume and reinit
+	set -x
 	tararchive_full_path=$1
-	filename_oefiles=odoofiles.tar
-	LOCAL_DEST_NAME=$DIR/run/restore/$filename_oefiles
+	LOCAL_DEST_NAME=$DIR/run/restore/odoofiles.tar
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
 	/bin/ln $tararchive_full_path $LOCAL_DEST_NAME
+	exit -1
 	$dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
 }
 
@@ -306,7 +307,7 @@ function do_command() {
     exec)
         $dc exec $2 $3 $3 $4
         ;;
-    backup_db)
+    backup-db)
         if [[ -n "$2" ]]; then
             BACKUPDIR=$2
         else
@@ -315,10 +316,14 @@ function do_command() {
         filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
         filepath=$BACKUPDIR/$filename
         LINKPATH=$DIR/dumps/latest_dump
-        $dc up -d postgres odoo
-        # by following command the call is crontab safe;
-        docker exec -i $($dc ps -q postgres) /backup.sh
-        mv $DIR/dumps/$DBNAME.gz $filepath
+		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			$dc up -d postgres odoo
+			# by following command the call is crontab safe;
+			docker exec -i $($dc ps -q postgres) /backup.sh
+			mv $DIR/dumps/$DBNAME.gz $filepath
+		else
+			pg_dump -Z0 -Fc $DBNAME | pigz --rsyncable > $filepath
+		fi
         /bin/rm $LINKPATH || true
         ln -s $filepath $LINKPATH
         md5sum $filepath
@@ -330,28 +335,19 @@ function do_command() {
         else
             BACKUPDIR=$DIR/dumps
         fi
-        BACKUP_FILENAME=oefiles.$CUSTOMS.tar
+        BACKUP_FILENAME=$CUSTOMS.files.tar.gz
         BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
 
 		$dcrun odoo /backup_files.sh
         [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
         mv $DIR/dumps/odoofiles.tar $BACKUP_FILEPATH
 
-        echo "Backup files done to $BACKUPDIR/$filename_oefiles"
+        echo "Backup files done to $BACKUP_FILEPATH"
         ;;
-    backup-db)
-        if [[ -n "$2" ]]; then
-            BACKUPDIR=$2
-        else
-            BACKUPDIR=$DIR/dumps
-        fi
 
-        $DIR/manage.sh backup_db $BACKUPDIR
-		;;
     backup)
 		$0 backup-db $ALL_PARAMS
 		$0 backup-files $ALL_PARAMS
-
         ;;
     reset-db)
         [[ $last_param != "-force" ]] && {
@@ -372,13 +368,34 @@ function do_command() {
 
         ;;
 
-    restore)
+	restore-files)
+        if [[ -z "$2" ]]; then
+			echo "Please provide the tar file-name."
+			exit -1
+        fi
+		echo 'Extracting files...'
+		do_restore_files $2
+		;;
 
+	restore-db)
 		restore_check $@
+		dumpfile=$2
 
 		echo "$*" |grep -q '-force' || {
 			askcontinue "Deletes database $DBNAME!"
 		}
+
+		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			do_restore_db_in_docker_container $dumpfile
+		else
+			askcontinue "Trying to restore database on remote database. Please make sure, that the user $DB_USER has enough privileges for that."
+			do_restore_db_on_external_postgres $dumpfile
+		fi
+		set_db_ownership
+
+		;;
+
+    restore)
 
         if [[ ! -f $2 ]]; then
             echo "File $2 not found!"
@@ -391,23 +408,16 @@ function do_command() {
 
 		dumpfile=$2
 		tarfiles=$3
+
+		$0 restore-db $dumpfile
 		
 		if [[ "$tarfiles" == "-force" ]]; then
 			tarfiles=""
 		fi
 
-		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			do_restore_db_in_docker_container $dumpfile
-		else
-			askcontinue "Trying to restore database on remote database. Please make sure, that the user $DB_USER has enough privileges for that."
-			do_restore_db_on_external_postgres $dumpfile
-		fi
-
         if [[ -n "$tarfiles" ]]; then
-            echo 'Extracting files...'
-			do_restore_files $tarfiles
+			$0 restore-files $tarfiles
         fi
-		set_db_ownership
 
         echo "Restart systems by $0 restart"
         ;;
