@@ -14,6 +14,7 @@ set +x
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 ALL_PARAMS=${@:2} # all parameters without command
+export odoo_manager_started_once=1
 
 
 
@@ -219,10 +220,13 @@ function prepare_yml_files_from_template_files() {
     # replace params in configuration file
     # replace variables in docker-compose;
     cd $DIR
-    echo "CUSTOMS: $CUSTOMS"
-    echo "DB: $DBNAME"
-    echo "VERSION: $ODOO_VERSION"
-    echo "FILES: $ODOO_FILES"
+
+	if [[ "$odoo_manager_started_once" != "1" ]]; then
+		echo "CUSTOMS: $CUSTOMS"
+		echo "DB: $DBNAME"
+		echo "VERSION: $ODOO_VERSION"
+		echo "FILES: $ODOO_FILES"
+	fi
     ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose\.*') 
     FILTERED_CONFIG_FILES=""
     for file in $ALL_CONFIG_FILES 
@@ -779,6 +783,7 @@ function main() {
 	prepare_yml_files_from_template_files
 	include_customs_conf_if_set
 	sanity_check
+	export odoo_manager_started_once=1
 	do_command "$@"
 	cleanup
 
