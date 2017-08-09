@@ -17,6 +17,7 @@ else
 	tmppipe=$(mktemp -u)
 	mkfifo "$tmppipe"
 	gunzip -c  $RESTOREFILE > $tmppipe &
+	echo "Restoring..."
 	pg_restore -d $DBNAME < $tmppipe
 
 	echo "Restoring snapshot done!"

@@ -1,0 +1,3 @@
+To impersonate postgres:
+
+  exec gosu postgres bash

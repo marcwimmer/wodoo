@@ -16,6 +16,7 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 ALL_PARAMS=${@:2} # all parameters without command
 
 
+
 function default_confs() {
 	export ODOO_FILES=$DIR/data/odoo.files
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
@@ -504,6 +505,7 @@ function do_command() {
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
+		display_machine_tips $2
         $dc exec $2 bash
         ;;
     runbash)
@@ -512,6 +514,7 @@ function do_command() {
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
+		display_machine_tips $2
         $dc run $2 bash
         ;;
     rebuild)
@@ -753,12 +756,34 @@ function set_db_ownership() {
 	fi
 }
 
-default_confs
-export_customs_env
-prepare_filesystem
-prepare_yml_files_from_template_files
-include_customs_conf_if_set
-sanity_check
-do_command "$@"
-cleanup
+function display_machine_tips() {
+
+	tipfile=$DIR/machines/$1/tips.txt
+	if [[ -f "$tipfile" ]]; then
+		echo 
+		echo Please notice:
+		echo ---------------
+		echo
+		cat $tipfile
+		echo 
+		echo
+		sleep 1
+	fi
+
+}
+
+function main() {
+	default_confs
+	export_customs_env
+	prepare_filesystem
+	prepare_yml_files_from_template_files
+	include_customs_conf_if_set
+	sanity_check
+	do_command "$@"
+	cleanup
+
+}
+main $@
+
+
 
