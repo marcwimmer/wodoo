@@ -760,14 +760,21 @@ function sanity_check() {
 }
 
 function set_db_ownership() {
+	set -x
 	# in development environments it is safe to set ownership, so
 	# that accidently accessing the db fails
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
 			$dcrun odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+		else
+			bash <<-EOF
+			cd $ODOO_HOME/data/src/admin/module_tools
+			python -c"from module_tools import set_ownership_exclusive; set_ownership_exclusive()"
+			EOF
 		fi
 	fi
+	set +x
 }
 
 function display_machine_tips() {

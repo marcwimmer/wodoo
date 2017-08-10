@@ -1,4 +1,5 @@
 #!/bin/bash
+set +x
 
 echo "Starting debugger"
 echo "Watching File $DEBUGGER_WATCH"
@@ -17,23 +18,30 @@ while true; do
 
 	new_mod=$(stat -c %y $DEBUGGER_WATCH)
 
-	if [[ "$new_mod" != "$last_mod" ]]; then
+	if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
 
 		# example content
 		# debug
 		# unit_test:account_module1
 
 		action=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[1]}')
-		echo $action
+
+		if [[ -z "$action" ]]; then
+			action='debug'
+		fi
 
 		if [[ "$action" == 'debug' ]]; then
-			/debug.sh
+			reset
+			/debug.sh &
 
 		elif [[ "$action" == 'update_module' ]]; then
 			module=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
-			/update_modules.sh $module
+			/update_modules.sh $module && {
+				/debug.sh -quick &
+			}
 
 		elif [[ "$action" == 'unit_test' ]]; then
+			reset
 			last_unit_test=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
 			/unit_test.sh $last_unit_test
 
