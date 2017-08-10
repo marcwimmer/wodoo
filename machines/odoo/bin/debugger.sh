@@ -3,6 +3,7 @@ set +x
 
 echo "Starting debugger"
 echo "Watching File $DEBUGGER_WATCH"
+WATCHER=/tmp/watcher.sh  # needed so that due to set_trace debugging is possible from within this script
 
 last_mod=''
 last_unit_test=''
@@ -13,6 +14,31 @@ function kill() {
 }
 # empty file
 >| $DEBUGGER_WATCH
+
+cat > $WATCHER <<"EOF"
+#!/bin/bash
+# This bash scripts kills the odoo process, so that the 
+# while is continued 
+last_mod=""
+while true; do
+
+	new_mod=$(stat -c %y $DEBUGGER_WATCH)
+
+	if [[ "$new_mod" != "$last_mod" ]]; then
+
+		pkill -9 -f /opt/openerp
+		last_mod=$new_mod
+	fi
+
+	sleep 0.5
+
+done
+EOF
+
+# start watcher
+pkill -9 -f $WATCHER
+chmod a+x $WATCHER
+$WATCHER &
 
 while true; do
 
@@ -32,12 +58,12 @@ while true; do
 
 		if [[ "$action" == 'debug' ]]; then
 			reset
-			/debug.sh &
+			/debug.sh
 
 		elif [[ "$action" == 'update_module' ]]; then
 			module=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
 			/update_modules.sh $module && {
-				/debug.sh -quick &
+				/debug.sh -quick
 			}
 
 		elif [[ "$action" == 'unit_test' ]]; then
@@ -57,3 +83,5 @@ while true; do
 	sleep 0.5
 
 done
+
+pkill -9 -f $WATCHER

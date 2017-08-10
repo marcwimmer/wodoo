@@ -9,4 +9,5 @@ echo "$*" |grep -q '[-]quick' || {
 	echo "Done autosetup"
 }
 
+sudo pkill -9 -f /opt/openerp
 sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -c /home/odoo/config_debug --pidfile=$DEBUGGER_ODOO_PID
