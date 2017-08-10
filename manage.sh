@@ -198,6 +198,8 @@ function showhelp() {
 	echo ""
     echo "quickpull - fetch latest source, oeln - good for mako templates"
 	echo ""
+	echo "turn-into-dev - applies scripts to make the database a dev database"
+	echo ""
     echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
 	echo ""
     echo "update-source - sets the latest source code in the containers"
@@ -433,20 +435,28 @@ function do_command() {
 
         echo "Restart systems by $0 restart"
         ;;
-    restore-dev)
+    restore-dev-db)
+		set -x
 		if [[ "$ALLOW_RESTORE_DEV" ]]; then
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
 		restore_check $@
-		$0 ${@:1} || exit $? # keep restore and params
-		exit -1
-
-        SQLFILE=machines/postgres/turndb2dev.sql
-		$0 psql < $SQLFILE
+		$0 restore-db $ALL_PARAMS
+		$0 turn-into-dev $ALL_PARAMS
 
         ;;
+	turn-into-dev)
+		if [[ "$DEVMODE" != "1" ]]; then
+			echo "When applying this sql scripts, the database is not usable anymore for production environments. "
+			echo "Please set DEVMODE=1 to allow this"
+			exit -1
+		fi
+        SQLFILE=machines/postgres/turndb2dev.sql
+		$0 psql < $SQLFILE
+		
+		;;
 	psql)
 		# execute psql query
 
