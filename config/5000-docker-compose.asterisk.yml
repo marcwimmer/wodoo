@@ -1,0 +1,83 @@
+# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+version: '2'
+volumes:
+  asterisk_logs:
+
+services:
+  asterisk_redis:
+      build: ../machines/asterisk/redis
+      container_name: ${DCPREFIX}_asterisk_redis
+  ari:
+    container_name: ${DCPREFIX}_ari
+    build: ../machines/asterisk/ari
+    depends_on:
+      - asterisk_redis
+    environment:
+      ODOO_USER: $ASTERISK_ODOO_USER
+      ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD
+      ODOO_DB: $DBNAME
+      ODOO_PORT: 8072
+      ODOO_HOST: odoo
+      USERNAME_ASTERISK: asterisk
+      PASSWORD_ASTERISK: asterisk
+      HOST_ASTERISK: asterisk
+      PORT_ASTERISK: 8088
+    volumes:
+      - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/connector:/opt/src:ro
+      - ../data/ari/calls:/opt/permstore/calls
+      - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
+      - ../data/ari/record_clicked:/opt/permstore/record_clicked
+      - ../data/asterisk/moh_custom:/opt/asterisk/moh_custom
+      - ../data/asterisk/recordings:/opt/asterisk/recording
+      - ../data/asterisk/reloader:/opt/asterisk/reloader
+      - ../data/asterisk/sounds:/opt/asterisk/sounds
+      - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
+    env_file:
+      - ../customs.env
+
+  stasis:
+      build: ../machines/asterisk/stasis
+      container_name: ${DCPREFIX}_stasis
+      env_file:
+        - ../customs.env
+      depends_on:
+        - asterisk
+        - asterisk_redis
+      volumes:
+        - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
+        - ../data/asterisk/reloader:/opt/reloader
+        - asterisk_logs:/var/log/asterisk
+  stasis_proxy:
+      build: ../machines/asterisk/flask_nginx_proxy
+      container_name: ${DCPREFIX}_stasis_proxy
+      environment:
+          HOST: stasis
+          PORT: 28121
+  ari_proxy:
+      build: ../machines/asterisk/flask_nginx_proxy
+      container_name: ${DCPREFIX}_ari_proxy
+      environment:
+          HOST: ari
+          PORT: 29926
+
+  asterisk:
+    container_name: ${DCPREFIX}_asterisk
+    depends_on:
+      - ovpn
+    build: ../machines/asterisk/asterisk
+    expose:
+      - 8088
+    environment:
+      CUSTOMS: ${CUSTOMS}
+    volumes:
+      - ../machines/asterisk/asterisk/etc/asterisk:/etc/asterisk:ro
+      - ../data/ovpn/client:/opt/certs:ro
+      - ../data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
+      - ../data/asterisk/recordings:/var/spool/asterisk/recording
+      - ../data/asterisk/reloader:/opt/reloader
+      - ../data/asterisk/sounds:/var/lib/asterisk/sounds:ro
+      - asterisk_logs:/var/log/asterisk
+    env_file:
+      ../customs.env
+    cap_add:
+        - NET_ADMIN
