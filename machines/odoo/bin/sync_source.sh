@@ -64,7 +64,6 @@ CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/o
 
 /set_permissions.sh
 
-set -x
 cd /opt/openerp/admin/module_tools
 $(python <<-EOF
 import module_tools

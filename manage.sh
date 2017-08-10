@@ -109,7 +109,6 @@ function do_restore_db_on_external_postgres () {
 
 function do_restore_files () {
 	# remove the postgres volume and reinit
-	set -x
 	tararchive_full_path=$1
 	LOCAL_DEST_NAME=$DIR/run/restore/odoofiles.tar
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
@@ -436,7 +435,6 @@ function do_command() {
         echo "Restart systems by $0 restart"
         ;;
     restore-dev-db)
-		set -x
 		if [[ "$ALLOW_RESTORE_DEV" ]]; then
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
 			exit -1
@@ -760,7 +758,6 @@ function sanity_check() {
 }
 
 function set_db_ownership() {
-	set -x
 	# in development environments it is safe to set ownership, so
 	# that accidently accessing the db fails
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
