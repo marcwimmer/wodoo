@@ -9,7 +9,7 @@
 #
 
 set -e
-set +x
+set -x
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
@@ -228,7 +228,8 @@ function prepare_yml_files_from_template_files() {
 		echo "VERSION: $ODOO_VERSION"
 		echo "FILES: $ODOO_FILES"
 	fi
-    ALL_CONFIG_FILES=$(cd config; ls |grep '.*docker-compose\.*') 
+	set -x
+    ALL_CONFIG_FILES=$(cd config; find . -name '*-docker-compose*.yml' |paste -d' ' -s  | sed 's/\.\///g') 
     FILTERED_CONFIG_FILES=""
     for file in $ALL_CONFIG_FILES 
     do
