@@ -170,8 +170,6 @@ function showhelp() {
 	echo ""
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
 	echo ""
-    echo "clean_supportdata - clears support data"
-	echo ""
     echo "install-telegram-bot - installs required python libs; execute as sudo"
 	echo ""
     echo "telegram-setup- helps creating a permanent chatid"
@@ -225,6 +223,29 @@ function prepare_filesystem() {
     mkdir -p $DIR/run/config
 }
 
+function replace_all_envs_in_file() {
+	if [[ ! -f "$1" ]]; then
+		echo "File not found: $1"
+		exit -1
+	fi
+	export FILENAME=$1
+	$(python <<-"EOF"
+	import os
+	import re
+	filepath = os.environ['FILENAME']
+	with open(filepath, 'r') as f:
+	    content = f.read()
+	all_params = re.findall(r'\$\{[^\}]*?\}', content)
+	for param in all_params:
+	    name = param
+	    name = name.replace("${", "")
+	    name = name.replace("}", "")
+	    content = content.replace(param, os.environ[name])
+	with open(filepath, 'w') as f:
+	    f.write(content)
+	EOF
+	)
+}
 
 function prepare_yml_files_from_template_files() {
     # replace params in configuration file
@@ -241,8 +262,9 @@ function prepare_yml_files_from_template_files() {
 	# python: find all configuration files from machines folder; extract sort 
 	# by manage-sort flag and put file into run directory
 	# only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
+	#
+	# - also replace all environment variables
 	find $DIR/run -name *docker-compose*.yml -delete
-	set -x
 	ALL_CONFIG_FILES=$(cd $DIR; find machines -name 'docker-compose.yml')
 	ALL_CONFIG_FILES=$(python <<-EOF
 	import os
@@ -265,16 +287,20 @@ function prepare_yml_files_from_template_files() {
 	    print x.replace("run/", "")
 	EOF
 	)
-    for file in $ALL_CONFIG_FILES 
-    do
-		cd $DIR/run
-		sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
-		sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $file
-		sed -i -e "s|\${ODOO_FILES}|$ODOO_FILES|" -e "s|\${ODOO_FILES}|$ODOO_FILES|" $file
-		cd $DIR
+	cd $DIR
+    for file in $ALL_CONFIG_FILES; do
+		replace_all_envs_in_file run/$file
     done
-    sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 
+	# if there is a Dockerfile.template then copy to Dockerfile and replace all variables
+	for f in $(find machines -name 'Dockerfile.template'); do
+		echo $f
+		dockerfile=$(echo "$f" | sed 's/\.template//g')
+		cp $f $dockerfile
+		replace_all_envs_in_file $dockerfile
+	done
+
+	# translate config files for docker compose with appendix -f
     ALL_CONFIG_FILES="$(for f in ${ALL_CONFIG_FILES}; do echo "-f run/$f" | tr '\n' ' '; done)"
 
 	# append custom docker composes
@@ -295,12 +321,6 @@ function prepare_yml_files_from_template_files() {
 
 function do_command() {
     case $1 in
-    clean_supportdata)
-        echo "Deleting support data"
-        if [[ -d $DIR/support_data ]]; then
-            /bin/rm -Rf $DIR/support_data/*
-        fi
-        ;;
     setup-startup)
         PATH=$DIR
 
