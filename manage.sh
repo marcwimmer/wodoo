@@ -9,7 +9,7 @@
 #
 
 set -e
-set +x
+[[ "$VERBOSE" == "1" ]] && set -x
 
 args=("$@")
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )

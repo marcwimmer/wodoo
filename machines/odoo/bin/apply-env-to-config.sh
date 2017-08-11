@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ "$VERBOSE" == "1" ]] && set -x
 
 if [[ -z "$DB_HOST" || -z "$DB_USER" ]]; then
     echo "Please define all DB Env Variables!"

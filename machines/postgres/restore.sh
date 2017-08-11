@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+[[ "$VERBOSE" == "1" ]] && set -x
 
 RESTOREFILE=/opt/restore/$1
 

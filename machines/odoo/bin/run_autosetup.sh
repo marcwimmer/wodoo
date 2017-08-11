@@ -3,6 +3,7 @@
 # *.sh files; makes them executable and executes them
 # You can do setup there, like deploying ssh keys and so on
 set -e
+[[ "$VERBOSE" == "1" ]] && set -x
 
 if [[ "$RUN_AUTOSETUP" == "1" ]]; then
     cd /opt/openerp/active_customs

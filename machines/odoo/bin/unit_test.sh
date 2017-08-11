@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ "$VERBOSE" == "1" ]] && set -x
 if [[ -z "$1" ]]; then
     echo "Missing test-file"
     exit -1

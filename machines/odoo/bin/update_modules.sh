@@ -1,6 +1,6 @@
 #!/bin/bash
-set +x
 set -e
+[[ "$VERBOSE" == "1" ]] && set -x
 MODULE=$1
 
 source /env.sh

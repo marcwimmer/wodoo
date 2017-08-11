@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set +x
+[[ "$VERBOSE" == "1" ]] && set -x
 
 ACTIVE_CUSTOMS=/opt/openerp/active_customs
 

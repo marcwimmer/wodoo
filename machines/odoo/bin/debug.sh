@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ "$VERBOSE" == "1" ]] && set -x
 
 echo "$*" |grep -q '[-]quick' || {
 	/sync_source.sh
