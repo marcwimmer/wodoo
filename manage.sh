@@ -124,7 +124,6 @@ function do_restore_files () {
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
 	/bin/ln $tararchive_full_path $LOCAL_DEST_NAME
-	exit -1
 	$dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
 }
 
@@ -238,6 +237,8 @@ function prepare_yml_files_from_template_files() {
 		echo "VERSION: $ODOO_VERSION"
 		echo "FILES: $ODOO_FILES"
 	fi
+
+	# include machines defined in settings:ADDITIONAL_DOCKER_COMPOSE
 	set -x
     ALL_CONFIG_FILES=$(cd config; find . -name '*-docker-compose*.yml' |paste -d' ' -s  | sed 's/\.\///g') 
     FILTERED_CONFIG_FILES=""
@@ -248,7 +249,7 @@ function prepare_yml_files_from_template_files() {
         #docker-compose.odoo --> odoo
 		RUN_X=$(
 		python - <<-EOF
-		print "RUN_" + "$file".replace("docker-compose.", "").split("-")[1].replace('.yml', '').replace("-", "_").upper()
+		print "RUN_" + "$file".replace("docker-compose.", "").split("-")[-1].replace('.yml', '').replace("-", "_").upper()
 		EOF
 		)
 
@@ -269,20 +270,20 @@ function prepare_yml_files_from_template_files() {
 
     all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f"; done)"
     all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
+
+	# append custom docker composes
+	if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
+		cp $ADDITIONAL_DOCKER_COMPOSE $DIR/run
+		for file in $ADDITIONAL_DOCKER_COMPOSE; do
+			all_config_files+=" -f "
+			all_config_files+=$file
+		done
+	fi
+	echo $all_config_files
+
     dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $all_config_files"
     dcrun="$dc run -T"
     dcexec="$dc exec -T"
-}
-
-
-
-function include_customs_conf_if_set() {
-    # odoo customs can provide custom docker machines
-    CUSTOMSCONF=$DIR/docker-compose-custom.yml
-    if [[ -f "$CUSTOMSCONF" || -L "$CUSTOMSCONF" ]]; then
-        echo "Including $CUSTOMSCONF"
-        dc="$dc -f $CUSTOMSCONF"
-    fi
 }
 
 
@@ -806,7 +807,6 @@ function main() {
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
-	include_customs_conf_if_set
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "$@"
