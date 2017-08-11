@@ -43,6 +43,16 @@ function export_customs_env() {
 		DB_USER=odoo
 		DB_PWD=odoo
 	fi
+
+	# get odoo version
+	export ODOO_VERSION=$(
+	cd $ODOO_HOME/data/src/admin/module_tools
+	python <<-EOF
+	import odoo_config
+	v = odoo_config.get_version_from_customs("$CUSTOMS")
+	print v
+	EOF
+	)
 }
 
 function restore_check() {
