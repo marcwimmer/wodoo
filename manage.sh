@@ -268,6 +268,7 @@ function prepare_yml_files_from_template_files() {
     done
     sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 
+	FILTERED_CONFIG_FILES=$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "$f"; done | sort -b -f -n)
     all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f"; done)"
     all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
 
