@@ -39,7 +39,7 @@ services:
       LANG: 'en_US.UTF-8'
       LANGUAGE: 'en_US:en'
     env_file:
-      - ../customs.env
+      - ../settings
     command: echo 'good bye - it is ok!'
 
   source_code:
@@ -49,7 +49,7 @@ services:
     volumes:
       - odoosource:/opt/openerp
     env_file:
-      - ../customs.env
+      - ../settings
     command: echo 'good bye' # not starting with manage.sh up -d
 
   odoo:

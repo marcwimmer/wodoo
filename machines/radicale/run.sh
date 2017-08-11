@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ "$RUN_RADICALE" != "1" ]]; then
-    echo 'Radicale is turned off by customs.env'
+    echo 'Radicale is turned off by settings'
     exit 0
 fi
 

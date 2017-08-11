@@ -3,7 +3,7 @@ set -e
 set -x
 
 if [[ "$RUN_ASTERISK" == "0" ]]; then
-    echo "asterisk is turned off by customs.env - good bye! :)"
+    echo "asterisk is turned off by settings - good bye! :)"
     exit 0
 fi
 

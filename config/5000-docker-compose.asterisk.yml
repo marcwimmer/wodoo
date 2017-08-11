@@ -33,13 +33,13 @@ services:
       - ../data/asterisk/sounds:/opt/asterisk/sounds
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
-      - ../customs.env
+      - ../settings
 
   stasis:
       build: ../machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
       env_file:
-        - ../customs.env
+        - ../settings
       depends_on:
         - asterisk
         - asterisk_redis
@@ -78,6 +78,6 @@ services:
       - ../data/asterisk/sounds:/var/lib/asterisk/sounds:ro
       - asterisk_logs:/var/log/asterisk
     env_file:
-      ../customs.env
+      ../settings
     cap_add:
         - NET_ADMIN

@@ -25,8 +25,8 @@ function default_confs() {
 	export DB_PORT=5432
 }
 
-function export_customs_env() {
-    # set variables from customs env
+function export_settings() {
+    # set variables from settings
     while read line; do
         # reads KEY1=A GmbH and makes export KEY1="A GmbH" basically
         [[ "$line" == '#*' ]] && continue
@@ -34,8 +34,8 @@ function export_customs_env() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
-    done <$DIR/customs.env
-    export $(cut -d= -f1 $DIR/customs.env)  # export vars now in local variables
+    done <$DIR/settings
+    export $(cut -d= -f1 $DIR/settings)  # export vars now in local variables
 
 	if [[ "$RUN_POSTGRES" == "1" ]]; then
 		DB_HOST=postgres
@@ -803,7 +803,7 @@ function display_machine_tips() {
 
 function main() {
 	default_confs
-	export_customs_env
+	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
 	include_customs_conf_if_set

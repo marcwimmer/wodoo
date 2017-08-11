@@ -5,7 +5,7 @@ services:
   perftest:
     container_name: ${DCPREFIX}_perftest
     build: ../machines/perftest
-    env_file: ../customs.env
+    env_file: ../settings
     environment:
       DURATION_TO_OUTPUT: 2
       SLEEP: 10

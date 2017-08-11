@@ -13,7 +13,7 @@ services:
       - ../data/cups/printed:/opt/printed 
       - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
     env_file:
-      - ../customs.env
+      - ../settings
     environment:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
