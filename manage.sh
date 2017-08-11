@@ -238,51 +238,56 @@ function prepare_yml_files_from_template_files() {
 		echo "FILES: $ODOO_FILES"
 	fi
 
-	# include machines defined in settings:ADDITIONAL_DOCKER_COMPOSE
+	# python: find all configuration files from machines folder; extract sort 
+	# by manage-sort flag and put file into run directory
+	# only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
+	find $DIR/run -name *docker-compose*.yml -delete
 	set -x
-    ALL_CONFIG_FILES=$(cd config; find . -name '*-docker-compose*.yml' |paste -d' ' -s  | sed 's/\.\///g') 
-    FILTERED_CONFIG_FILES=""
+	ALL_CONFIG_FILES=$(cd $DIR; find machines -name 'docker-compose.yml')
+	ALL_CONFIG_FILES=$(python <<-EOF
+	import os
+	import shutil
+	import re
+	paths = """$ALL_CONFIG_FILES""".split("\n")
+	dest_files = []
+	for path in paths:
+	    with open(path, 'r') as f:
+	        content = f.read()
+			# dont matter if written manage-order: or manage-order 
+	        order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
+	    folder_name = os.path.basename(os.path.dirname(path))
+	    if os.getenv("RUN_{}".format(folder_name.upper()), "1") == "0":
+	        continue
+	    dest_file = 'run/{}-docker-compose.{}.yml'.format(order, folder_name)
+	    shutil.copy(path, dest_file)
+	    dest_files.append(dest_file)
+	for x in sorted(dest_files):
+	    print x.replace("run/", "")
+	EOF
+	)
     for file in $ALL_CONFIG_FILES 
     do
-        # check if RUN_ASTERISK=1 is defined, and then add it to the defined machines; otherwise ignore
-
-        #docker-compose.odoo --> odoo
-		RUN_X=$(
-		python - <<-EOF
-		print "RUN_" + "$file".replace("docker-compose.", "").split("-")[-1].replace('.yml', '').replace("-", "_").upper()
-		EOF
-		)
-
-        ENV_VALUE=${!RUN_X}  # variable indirection; get environment variable
-
-        if [[ "$ENV_VALUE" == "" ]] || [[ "$ENV_VALUE" == "1" ]]; then
-
-            FILTERED_CONFIG_FILES+=$file
-            FILTERED_CONFIG_FILES+=','
-            DEST_FILE=$DIR/run/$file
-            cp config/$file $DEST_FILE
-            sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
-            sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
-            sed -i -e "s|\${ODOO_FILES}|$ODOO_FILES|" -e "s|\${ODOO_FILES}|$ODOO_FILES|" $DEST_FILE
-        fi
+		cd $DIR/run
+		sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $file
+		sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $file
+		sed -i -e "s|\${ODOO_FILES}|$ODOO_FILES|" -e "s|\${ODOO_FILES}|$ODOO_FILES|" $file
+		cd $DIR
     done
     sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 
-	FILTERED_CONFIG_FILES=$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "$f"; done | sort -b -f -n)
-    all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f"; done)"
-    all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
+    ALL_CONFIG_FILES="$(for f in ${ALL_CONFIG_FILES}; do echo "-f run/$f" | tr '\n' ' '; done)"
 
 	# append custom docker composes
 	if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
 		cp $ADDITIONAL_DOCKER_COMPOSE $DIR/run
 		for file in $ADDITIONAL_DOCKER_COMPOSE; do
-			all_config_files+=" -f "
-			all_config_files+=$file
+			ALL_CONFIG_FILES+=" -f "
+			ALL_CONFIG_FILES+=$file
 		done
 	fi
-	echo $all_config_files
+	echo $ALL_CONFIG_FILES
 
-    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $all_config_files"
+    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $ALL_CONFIG_FILES"
     dcrun="$dc run -T"
     dcexec="$dc exec -T"
 }

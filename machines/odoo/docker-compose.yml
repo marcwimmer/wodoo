@@ -1,4 +1,4 @@
-# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+# manage-order 1000
 version: '2'
 volumes:
   opt_servers:
