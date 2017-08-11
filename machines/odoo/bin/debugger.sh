@@ -60,6 +60,10 @@ while true; do
 			reset
 			/debug.sh
 
+		elif [[ "$action" == 'quick_restart' ]]; then
+			reset
+			/debug.sh -quick
+
 		elif [[ "$action" == 'update_module' ]]; then
 			module=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
 			/update_modules.sh $module && {
