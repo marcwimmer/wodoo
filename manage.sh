@@ -8,15 +8,15 @@
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
 
-set -e
-[[ "$VERBOSE" == "1" ]] && set -x
+function startup() {
+	set -e
+	[[ "$VERBOSE" == "1" ]] && set -x
 
-args=("$@")
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-ALL_PARAMS=${@:2} # all parameters without command
-export odoo_manager_started_once=1
-
-
+	args=("$@")
+	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+	ALL_PARAMS=${@:2} # all parameters without command
+	export odoo_manager_started_once=1
+}
 
 function default_confs() {
 	export ODOO_FILES=$DIR/data/odoo.files
@@ -291,14 +291,6 @@ function prepare_yml_files_from_template_files() {
     for file in $ALL_CONFIG_FILES; do
 		replace_all_envs_in_file run/$file
     done
-
-	# if there is a Dockerfile.template then copy to Dockerfile and replace all variables
-	for f in $(find machines -name 'Dockerfile.template'); do
-		echo $f
-		dockerfile=$(echo "$f" | sed 's/\.template//g')
-		cp $f $dockerfile
-		replace_all_envs_in_file $dockerfile
-	done
 
 	# translate config files for docker compose with appendix -f
     ALL_CONFIG_FILES="$(for f in ${ALL_CONFIG_FILES}; do echo "-f run/$f" | tr '\n' ' '; done)"
@@ -731,6 +723,11 @@ function cleanup() {
     if [[ -f config/docker-compose.yml ]]; then
         /bin/rm config/docker-compose.yml || true
     fi
+
+	cd $DIR
+	if [[ ! -z "$ALTERNATE_DOCKERFILE_NAME" ]]; then
+		find machines -name "$ALTERNATE_DOCKERFILE_NAME" -delete
+	fi
 }
 
 function try_to_set_owner() {
@@ -828,11 +825,52 @@ function display_machine_tips() {
 
 }
 
+function replace_params_in_dockerfiles() {
+	# replaces params in Dockerfile, that docker usually does not
+	set -x
+	ALTERNATE_DOCKERFILE_NAME='.Dockerfile'
+	cd $DIR
+	for file in $(find machines -name "Dockerfile")
+	do
+		cd $DIR
+		cd $(dirname $file)
+		cp Dockerfile $ALTERNATE_DOCKERFILE_NAME
+		replace_all_envs_in_file $ALTERNATE_DOCKERFILE_NAME
+
+	done
+
+	set -x
+	cd $DIR/run
+	for file in $(ls *.yml)
+	do
+		echo $file
+		python <<-EOF
+		from yaml import load, dump
+		with open("$file", 'r') as f:
+		    yml = load(f.read())
+
+		services = yml.get('services', {})
+		for item in services.values():
+		    if item.get('build', False) and isinstance(item['build'], (str, unicode)):
+		        item['build'] = {
+				    'context': item['build'],
+		            'dockerfile': "$ALTERNATE_DOCKERFILE_NAME",
+		        }
+		with open("$file", "w") as f:
+		    f.write(dump(yml))
+		EOF
+	done
+
+	cd $DIR
+}
+
 function main() {
+	startup
 	default_confs
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
+	replace_params_in_dockerfiles
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "$@"
