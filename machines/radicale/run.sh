@@ -13,6 +13,8 @@ cp /etc/radicale/config.template /etc/radicale/config
 sed -i "s/__DB__/$DBNAME/g" /etc/radicale/config
 sed -i "s/__USER__/$RADICALE_USER/g" /etc/radicale/config
 sed -i "s/__PASSWORD__/$RADICALE_PASSWORD/g" /etc/radicale/config
+sed -i "s/__ODOO_HOST__/$RADICALE_ODOO_HOST/g" /etc/radicale/config
+sed -i "s/__ODOO_PORT__/$RADICALE_ODOO_PORT/g" /etc/radicale/config
 
 cd $RADICALE_DIR/$RADICALE_VERSION
 export PYTHONPATH=.:$RADICALE_DIR/$ODOO_VERSION/RadicaleCustomizations
