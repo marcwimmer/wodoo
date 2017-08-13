@@ -20,15 +20,13 @@ services:
       - DAC_READ_SEARCH
     volumes:
       - ../dumps:/opt/dumps
-      - ../support_data/odoo.git:/opt/odoo.git:ro
-      - ../support_data/openerp.git:/opt/openerp.git:ro
       - ../run/restore:/opt/restore
       - ${ODOO_FILES}/:/opt/files
       - cupsdatatoprint:/opt/toprint 
       - libreoffice_exchange:/opt/libreoffice
       - opt_permanent:/opt/permanent
       - opt_servers:/opt/servers
-      - odoosource:/opt/openerp
+      - odoosource:/opt/odoo
       - ../data/src/admin:/opt/src/admin:ro
       - ../data/src/customs:/opt/src/customs:ro
     environment:
@@ -47,7 +45,7 @@ services:
     container_name: ${DCPREFIX}_source_code
     build: ../machines/odoo
     volumes:
-      - odoosource:/opt/openerp
+      - odoosource:/opt/odoo
     env_file:
       - ../settings
     command: echo 'good bye' # not starting with manage.sh up -d

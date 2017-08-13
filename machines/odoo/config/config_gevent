@@ -1,5 +1,5 @@
 [options]
-addons_path=/opt/openerp/versions/server/openerp/addons,/opt/openerp/versions/server/addons
+addons_path=/opt/odoo/server/openerp/addons,/opt/odoo/server/addons
 admin_passwd = admin
 auto_reload = False
 csv_internal_sep = ,

@@ -26,7 +26,7 @@ while true; do
 
 	if [[ "$new_mod" != "$last_mod" ]]; then
 
-		pkill -9 -f /opt/openerp
+		pkill -9 -f /opt/odoo
 		last_mod=$new_mod
 	fi
 

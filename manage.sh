@@ -625,9 +625,6 @@ function do_command() {
         python $DIR/bin/telegram_msg.py "__setup__" $token $channelname
 		echo "Finished - chat id is stored; bot can send to channel all the time now."
 		;;
-    purge-source)
-        $dcrun odoo rm -Rf /opt/openerp/customs/$CUSTOMS
-        ;;
     update-source)
 		$dcrun source_code /sync_source.sh $2
         ;;
@@ -724,10 +721,6 @@ function cleanup() {
         /bin/rm config/docker-compose.yml || true
     fi
 
-	cd $DIR
-	if [[ ! -z "$ALTERNATE_DOCKERFILE_NAME" ]]; then
-		find machines -name "$ALTERNATE_DOCKERFILE_NAME" -delete
-	fi
 }
 
 function try_to_set_owner() {
@@ -798,7 +791,7 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
-			$dcrun odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+			$dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
 		else
 			bash <<-EOF
 			cd $ODOO_HOME/data/src/admin/module_tools
@@ -825,52 +818,12 @@ function display_machine_tips() {
 
 }
 
-function replace_params_in_dockerfiles() {
-	# replaces params in Dockerfile, that docker usually does not
-	set -x
-	ALTERNATE_DOCKERFILE_NAME='.Dockerfile'
-	cd $DIR
-	for file in $(find machines -name "Dockerfile")
-	do
-		cd $DIR
-		cd $(dirname $file)
-		cp Dockerfile $ALTERNATE_DOCKERFILE_NAME
-		replace_all_envs_in_file $ALTERNATE_DOCKERFILE_NAME
-
-	done
-
-	set -x
-	cd $DIR/run
-	for file in $(ls *.yml)
-	do
-		echo $file
-		python <<-EOF
-		from yaml import load, dump
-		with open("$file", 'r') as f:
-		    yml = load(f.read())
-
-		services = yml.get('services', {})
-		for item in services.values():
-		    if item.get('build', False) and isinstance(item['build'], (str, unicode)):
-		        item['build'] = {
-				    'context': item['build'],
-		            'dockerfile': "$ALTERNATE_DOCKERFILE_NAME",
-		        }
-		with open("$file", "w") as f:
-		    f.write(dump(yml))
-		EOF
-	done
-
-	cd $DIR
-}
-
 function main() {
 	startup
 	default_confs
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
-	replace_params_in_dockerfiles
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "$@"

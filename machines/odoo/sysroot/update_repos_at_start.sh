@@ -1,6 +1,6 @@
 #!/bin/bash
 echo updating openerp admin scripts
-cd /opt/openerp/admin && git pull &
+cd /opt/odoo/admin && git pull &
 
 echo updating openerp ultisnips
 cd /home/odoo/.vim/UltiSnips && git pull &

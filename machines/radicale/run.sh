@@ -13,6 +13,9 @@ sed -i "s/__USER__/$RADICALE_USER/g" /etc/radicale/config
 sed -i "s/__PASSWORD__/$RADICALE_PASSWORD/g" /etc/radicale/config
 
 cd $RADICALE_DIR/$RADICALE_VERSION
-export PYTHONPATH=.:$RADICALE_DIR/$ODOO_VERSION/rc
+export PYTHONPATH=.:$RADICALE_DIR/$ODOO_VERSION/RadicaleCustomizations
 echo 'Starting Radicale ...'
 python radicale.py -C /etc/radicale/config
+
+
+

@@ -14,4 +14,4 @@ if [ -z "$LANG" ]; then
     exit -1
 fi
 /apply-env-to-config.sh
-sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -c /home/odoo/config_openerp --log-level=warn --stop-after-init -d $DBNAME -l $LANG --i18n-import=$FILE --i18n-overwrite
+sudo -E -H -u odoo /opt/odoo/server/openerp-server -c /home/odoo/config_openerp --log-level=warn --stop-after-init -d $DBNAME -l $LANG --i18n-import=$FILE --i18n-overwrite
