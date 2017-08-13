@@ -265,28 +265,8 @@ function prepare_yml_files_from_template_files() {
 	#
 	# - also replace all environment variables
 	find $DIR/run -name *docker-compose*.yml -delete
-	ALL_CONFIG_FILES=$(cd $DIR; find machines -name 'docker-compose.yml')
-	ALL_CONFIG_FILES=$(python <<-EOF
-	import os
-	import shutil
-	import re
-	paths = """$ALL_CONFIG_FILES""".split("\n")
-	dest_files = []
-	for path in paths:
-	    with open(path, 'r') as f:
-	        content = f.read()
-			# dont matter if written manage-order: or manage-order 
-	        order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
-	    folder_name = os.path.basename(os.path.dirname(path))
-	    if os.getenv("RUN_{}".format(folder_name.upper()), "1") == "0":
-	        continue
-	    dest_file = 'run/{}-docker-compose.{}.yml'.format(order, folder_name)
-	    shutil.copy(path, dest_file)
-	    dest_files.append(dest_file)
-	for x in sorted(dest_files):
-	    print x.replace("run/", "")
-	EOF
-	)
+	ALL_CONFIG_FILES=$(cd $DIR; find machines -name 'docker-compose*.yml')
+	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES python $DIR/bin/prepare_dockercompose_files.py)
 	cd $DIR
     for file in $ALL_CONFIG_FILES; do
 		replace_all_envs_in_file run/$file

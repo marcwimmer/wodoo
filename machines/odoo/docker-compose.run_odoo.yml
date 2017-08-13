@@ -1,0 +1,22 @@
+# manage-order 1000
+version: '2'
+services:
+  odoo:
+    depends_on:
+        postgres:
+            condition: service_healthy
+      
+  odoo_cronjobs:
+    depends_on:
+        postgres:
+            condition: service_healthy
+
+  odoo_update:
+    depends_on:
+        postgres:
+            condition: service_healthy
+
+  odoo_lang_export:
+    depends_on:
+        postgres:
+            condition: service_healthy
