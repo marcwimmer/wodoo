@@ -1,5 +1,5 @@
 #manage-order: 5000
-version: '2'
+version: '2.1'
 volumes:
   asterisk_logs:
 
@@ -53,8 +53,8 @@ services:
       environment:
           HOST: stasis
           PORT: 28121
-    depends_on:
-        asterisk:
+      depends_on:
+          asterisk:
             condition: service_healthy
   ari_proxy:
       build: ../machines/asterisk/flask_nginx_proxy

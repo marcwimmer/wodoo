@@ -54,7 +54,7 @@ ln -s $ACTIVE_CUSTOMS/odoo /opt/odoo/server
 /opt/odoo/admin/link_modules $CUSTOMS
 
 echo "Applying patches"
-CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/opt/odoo/server /bin/bash /opt/odoo/admin/apply_patches.sh || {
+CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/opt/odoo/server /bin/bash /opt/odoo/admin/apply_patches.sh || {
     echo "Error at applying patches! Please check output and the odoo version"
     exit -1
 }

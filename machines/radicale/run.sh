@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+[[ "$VERBOSE" == "1" ]] && set -x
 
 if [[ "$RUN_RADICALE" != "1" ]]; then
     echo 'Radicale is turned off by settings'

@@ -12,3 +12,6 @@ services:
        environment:
          RADICALE_DIR: /opt/odoo/active_customs/common/calendar_ics
          RADICALE_VERSION: RadicalePatched-1.1.1
+    odoo:
+        depends_on:
+            - radicale
