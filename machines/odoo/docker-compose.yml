@@ -32,6 +32,7 @@ services:
       DOCKER_MACHINE: 1
       LANG: 'en_US.UTF-8'
       LANGUAGE: 'en_US:en'
+      ODOO_VERSION: ${ODOO_VERSION}
     env_file:
       - ../settings
     command: echo 'odoo_base - good bye - it is ok!'
