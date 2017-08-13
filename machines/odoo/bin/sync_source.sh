@@ -62,8 +62,8 @@ CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/opt/odoo/server /bin/bash /opt/odoo/admi
 /set_permissions.sh
 
 cd /opt/odoo/admin/module_tools
-$(python <<-EOF
-import module_tools
-module_tools.remove_module_install_notifications("$ACTIVE_CUSTOMS")
+python <<-EOF
+	import module_tools
+	module_tools.remove_module_install_notifications("$ACTIVE_CUSTOMS")
 EOF
-)
+
