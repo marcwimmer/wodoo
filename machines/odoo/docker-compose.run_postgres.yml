@@ -8,15 +8,15 @@ services:
       
   odoo_cronjobs:
     depends_on:
-        - postgres:
+        postgres:
             condition: service_healthy
 
   odoo_update:
     depends_on:
-        - postgres:
+        postgres:
             condition: service_healthy
 
   odoo_lang_export:
     depends_on:
-        - postgres:
+        postgres:
             condition: service_healthy

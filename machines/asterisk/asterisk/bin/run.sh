@@ -11,6 +11,7 @@ mkdir /dev/net
 mknod /dev/net/tun c 10 200  # also used for tap
 
 openvpn /opt/certs/asterisk.conf &
+
 while true;
 do
     ifconfig | grep -q tap0 && break

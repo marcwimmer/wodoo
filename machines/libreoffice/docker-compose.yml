@@ -12,4 +12,11 @@ services:
       OUTPUT: /tmp/lo/2
     volumes:
       - libreoffice_exchange:/tmp/lo
-
+  odoo_base:
+    volumes:
+      - libreoffice_exchange:/opt/libreoffice
+    environment:
+      LIBREOFFICE_SEND: /opt/libreoffice/1
+      LIBREOFFICE_RECEIVE: /opt/libreoffice/2
+    depends_on:
+        - libreoffice

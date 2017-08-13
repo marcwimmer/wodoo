@@ -53,6 +53,9 @@ services:
       environment:
           HOST: stasis
           PORT: 28121
+    depends_on:
+        asterisk:
+            condition: service_healthy
   ari_proxy:
       build: ../machines/asterisk/flask_nginx_proxy
       container_name: ${DCPREFIX}_ari_proxy
@@ -63,7 +66,8 @@ services:
   asterisk:
     container_name: ${DCPREFIX}_asterisk
     depends_on:
-      - ovpn
+        ovpn:
+            condition: service_healthy
     build: ../machines/asterisk/asterisk
     expose:
       - 8088
@@ -81,3 +85,9 @@ services:
       ../settings
     cap_add:
         - NET_ADMIN
+    healthcheck:
+        test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
+        interval: 15s
+        timeout: 5s
+        retries: 2
+

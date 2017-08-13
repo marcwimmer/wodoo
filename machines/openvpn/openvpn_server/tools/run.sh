@@ -53,6 +53,7 @@ echo "showing available ciphers"
 echo "Starting ovpn Server"
 /usr/sbin/openvpn /root/ovpn/server.conf &
 PID_SERVER=$!
+echo $PID_SERVER > /run/pid
 /usr/sbin/openvpn /root/client_out/server-as-client.conf &
 PID_SERVERASCLIENT=$!
 /root/tools/scan_clients.sh &

@@ -65,7 +65,7 @@ do
         echo "openvpn client down - tearing down"
         break
     }
-    sleep 2
+    sleep 1
 done
 
 

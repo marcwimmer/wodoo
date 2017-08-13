@@ -10,7 +10,7 @@ chmod a+rw $OUTPUT
 while true;
 do
     ls $INPUT
-    for f in $(ls $INPUT/*); do
+    for f in $(ls $INPUT/); do
         echo $f
         /usr/bin/soffice --headless --convert-to pdf --outdir $OUTPUT $f
         rm $f

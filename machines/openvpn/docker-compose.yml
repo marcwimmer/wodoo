@@ -67,11 +67,11 @@ services:
     cap_add:
         - NET_ADMIN
     command: /root/tools/run.sh
-    #healthcheck:
-        #test: ["CMD", "curl", "-f", "http://localhost"]
-        #interval: 1m30s
-        #timeout: 10s
-        #retries: 3
+    healthcheck:
+        test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
+        interval: 15s
+        timeout: 5s
+        retries: 2
 
   ovpn_web:
     container_name: ${DCPREFIX}_odoo_ovpn_web

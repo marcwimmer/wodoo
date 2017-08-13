@@ -18,4 +18,9 @@ services:
     environment:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
+  odoo_base:
+    volumes:
+      - cupsdatatoprint:/opt/toprint 
+    environment:
+      CUPS_TOPRINT: /opt/toprint
 
