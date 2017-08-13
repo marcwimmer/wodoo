@@ -1,6 +1,6 @@
 # manage-order: 5000
 # so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
-version: '2'
+version: '2.1'
 
 services:
   perftest:

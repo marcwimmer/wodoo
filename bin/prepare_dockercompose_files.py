@@ -12,13 +12,13 @@ for path in paths:
         if 'run_' in filename:
             run = re.findall(r'run_[^\.]*', filename)
             if run:
-                if os.getenv(run.upper, "1") == "1":
+                if os.getenv(run[0].upper(), "1") == "1":
                     return True
             return False
         else:
             return True
 
-    if not use_file:
+    if not use_file():
         continue
 
     with open(path, 'r') as f:

@@ -1,5 +1,5 @@
 #manage-order: 5000
-version: '2'
+version: '2.1'
 services:
   sslproxy:
     container_name: ${DCPREFIX}_odoo_ssl_proxy
