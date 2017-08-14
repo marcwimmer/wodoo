@@ -9,10 +9,8 @@
 #
 
 function startup() {
-	set -e
-	[[ "$VERBOSE" == "1" ]] && set -x
-
 	args=("$@")
+	echo $args
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	ALL_PARAMS=${@:2} # all parameters without command
 	export odoo_manager_started_once=1
@@ -53,6 +51,8 @@ function export_settings() {
 	print v
 	EOF
 	)
+
+	[[ "$VERBOSE" == "1" ]] && set -x
 }
 
 function restore_check() {
@@ -799,7 +799,7 @@ function display_machine_tips() {
 }
 
 function main() {
-	startup
+	startup $@
 	default_confs
 	export_settings
 	prepare_filesystem
