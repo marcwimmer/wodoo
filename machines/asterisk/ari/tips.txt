@@ -1,0 +1,8 @@
+Debug with:
+
+  debug.sh
+
+
+Normal start with:
+
+  run.sh

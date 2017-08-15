@@ -784,7 +784,7 @@ function set_db_ownership() {
 
 function display_machine_tips() {
 
-	tipfile=$DIR/machines/$1/tips.txt
+	tipfile=$(find $DIR/machines | grep $1/tips.txt)
 	if [[ -f "$tipfile" ]]; then
 		echo 
 		echo Please notice:
