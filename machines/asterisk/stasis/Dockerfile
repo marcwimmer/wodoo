@@ -1,12 +1,16 @@
 FROM ubuntu:16.04
-RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev git vim cmake sox htop
+RUN apt-get update && apt-get install -y python2.7 python-pip libpython2.7-dev cmake sox htop nginx
 ADD sysroot/ /
 
 RUN \
 pip install --upgrade pip && \
-pip install -r  /root/requirements.txt && \
+pip install -r  /root/requirements.txt 
+
+ADD nginx.conf /etc/nginx/site-available/nginx.conf
+
+RUN \
 echo "TERM=xterm" >> /etc/environment && \
 chmod a+x /usr/local/bin/*.sh && \
-echo "You can call $(ls /usr/local/bin)" >> /root/.bashrc
+chmod a+x /usr/local/bin/run
 
-CMD ["/usr/local/bin/run.sh"]
+CMD ["/usr/local/bin/run"]

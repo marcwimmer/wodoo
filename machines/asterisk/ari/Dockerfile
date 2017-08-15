@@ -9,6 +9,7 @@ pip install -r  /root/requirements.txt
 RUN \
 echo "cd /opt/odoo/active_customs/common/asterisk_ari" >> /root/.bashrc && \
 echo "TERM=xterm" >> /etc/environment && \
-chmod a+x /usr/local/bin/*.sh 
+chmod a+x /usr/local/bin/*.sh && \
+chmod a+x /usr/local/bin/run
 
-CMD ["/usr/local/bin/run.sh"]
+CMD ["/usr/local/bin/entry-point.sh"]

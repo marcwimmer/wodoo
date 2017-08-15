@@ -24,6 +24,8 @@ services:
       PASSWORD_ASTERISK: asterisk
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
+      PROXY_PORT_IN: 29926
+      PROXY_PORT_OUT: 80
     volumes:
       - odoosource:/opt/odoo
       - ../data/ari/calls:/opt/permstore/calls
@@ -40,6 +42,9 @@ services:
   stasis:
       build: ../machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
+      environment:
+        PROXY_PORT_IN: 28121
+        PROXY_PORT_OUT: 80
       env_file:
         - ../settings
       depends_on:
@@ -49,23 +54,6 @@ services:
         - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
         - ../data/asterisk/reloader:/opt/reloader
         - asterisk_logs:/var/log/asterisk
-  stasis_proxy:
-      build: ../machines/asterisk/flask_nginx_proxy
-      container_name: ${DCPREFIX}_stasis_proxy
-      environment:
-          HOST: stasis
-          PORT: 28121
-      depends_on:
-          asterisk:
-            condition: service_healthy
-  ari_proxy:
-      build: ../machines/asterisk/flask_nginx_proxy
-      container_name: ${DCPREFIX}_ari_proxy
-      environment:
-          HOST: ari
-          PORT: 29926
-      ports:
-          - "9412:80"
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
