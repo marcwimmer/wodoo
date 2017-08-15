@@ -7,7 +7,7 @@ if [[ "$RUN_ASTERISK" == "0" ]]; then
     exit 0
 fi
 
-cd /opt/src
+cd /opt/odoo/active_customs/common/asterisk_ari
 
 echo "Waiting for asterisk to arrive at port $PORT_ASTERISK"
 while true; do

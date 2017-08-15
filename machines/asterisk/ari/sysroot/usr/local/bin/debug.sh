@@ -3,7 +3,7 @@ pgrep -f nginx || /usr/sbin/nginx
 set -x
 
 echo "Starting ARI Connector...."
-cd /opt/src/asterisk_ari/connector
+cd /opt/odoo/active_customs/common/asterisk_ari/connector
 
 python ariconnector.py \
     --debug \

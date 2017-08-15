@@ -12,7 +12,7 @@ RUN echo "Adding MP3 support" && \
 apt-get install -y build-essential wget aptitude gdb strace && \
 ./contrib/scripts/install_prereq install && \
 ./contrib/scripts/install_prereq install-unpackaged && \
-./configure && \
+./configure
 
 ADD menuselect.makeopts menuselect.makeopts
 RUN make -j8 && make install
@@ -22,7 +22,7 @@ ADD bin/ /
 
 RUN \
 pip install pip --upgrade && \
-pip install -r /root/requirements.txt \
+pip install -r /root/requirements.txt && \
 chmod a+x /*.sh
 
 #  init jobs

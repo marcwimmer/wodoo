@@ -12,6 +12,8 @@ services:
     build: ../machines/asterisk/ari
     depends_on:
       - asterisk_redis
+    ports:
+        - "29926:29926"
     environment:
       ODOO_USER: $ASTERISK_ODOO_USER
       ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD
@@ -23,7 +25,7 @@ services:
       HOST_ASTERISK: asterisk
       PORT_ASTERISK: 8088
     volumes:
-      - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/connector:/opt/src:ro
+      - odoosource:/opt/odoo
       - ../data/ari/calls:/opt/permstore/calls
       - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
       - ../data/ari/record_clicked:/opt/permstore/record_clicked
@@ -62,6 +64,8 @@ services:
       environment:
           HOST: ari
           PORT: 29926
+      ports:
+          - "9412:80"
 
   asterisk:
     container_name: ${DCPREFIX}_asterisk
