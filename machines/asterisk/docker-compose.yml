@@ -13,7 +13,8 @@ services:
     depends_on:
       - asterisk_redis
     ports:
-        - "29926:29926"
+      - "8812:80"
+      - "29926:29926"
     environment:
       ODOO_USER: $ASTERISK_ODOO_USER
       ODOO_PASSWORD: $ASTERISK_ODOO_PASSWORD

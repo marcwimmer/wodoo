@@ -4,9 +4,7 @@ ADD sysroot/ /
 
 RUN \
 pip install --upgrade pip && \
-pip install -r  /root/requirements.txt 
-
-ADD nginx.conf /etc/nginx/site-available/nginx.conf
+pip install -r /root/requirements.txt 
 
 RUN \
 echo "TERM=xterm" >> /etc/environment && \

@@ -12,4 +12,5 @@ echo "TERM=xterm" >> /etc/environment && \
 chmod a+x /usr/local/bin/*.sh && \
 chmod a+x /usr/local/bin/run
 
+
 CMD ["/usr/local/bin/entry-point.sh"]

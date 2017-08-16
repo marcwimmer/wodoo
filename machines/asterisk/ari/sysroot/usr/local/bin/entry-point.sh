@@ -27,4 +27,4 @@ while true; do
 done
 echo "Odoo arrived! connecting..."
 
-/usr/local/bin/runprod.sh
+/usr/local/bin/run
