@@ -15,9 +15,9 @@ DOLLAR='$'
 tee $SUBDOMAIN_DIR/${DNSNAME}_${SUBDOMAIN/\//}.subdomain <<EOF
 location $1 {
 
-	set $DOLLAR${SUBDOMAIN/\//}_${DNSNAME} $DNSNAME;
+	set $DOLLAR${DNSNAME}_${SUBDOMAIN/\//} $DNSNAME;
 	resolver 127.0.0.11;
-	proxy_pass http://$DOLLAR${SUBDOMAIN/\//}_${DNSNAME}:$PORT;
+	proxy_pass http://$DOLLAR${DNSNAME}_${SUBDOMAIN/\//}:$PORT;
 }
 
 EOF
