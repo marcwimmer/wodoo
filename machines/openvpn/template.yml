@@ -31,6 +31,7 @@ services:
     container_name: ${DCPREFIX}_ovpn_${OVPN_DOMAIN}_manage
     volumes:
         - ${OVPN_CONFIG_FILE}:/root/ovpn.config
+        - ../machines/openvpn/config_templates:/root/config_templates
         - ../data/ovpn/${OVPN_DOMAIN}/CA/keys:/root/openvpn-ca/keys
         - ../data/ovpn/${OVPN_DOMAIN}/CA:/root/transfer
         - ../data/ovpn/${OVPN_DOMAIN}/server:/root/server_out
@@ -40,6 +41,9 @@ services:
     environment:
         CONFIG_FILEPATH: /root/ovpn.config
         PATH_CCD: /root/ccd
+        PATH_CONFIG_TEMPLATES: /root/config_templates
+        KEYFOLDER_ROOT: /root/openvpn-ca
+        KEYFOLDER: /root/openvpn-ca/keys
 
   ${OVPN_DOMAIN}_ovpn_server:
     <<: *ovpn_minimal

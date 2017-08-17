@@ -3,16 +3,18 @@
 set -e
 [[ "$VERBOSE" ]] && set -x
 
-just_pack.sh
-
-
-echo "Found server config! Continue..."
-cp server.tgz /root/ovpn/
-cd /root/ovpn
+PWD=$(pwd)
+echo "Extracting server config..."
+TMP=$(mktemp -u)
+mkdir -p $TMP
+cp server.tgz $TMP
+cd $TMP
 tar xzf server.tgz
 rm server.tgz
-cd /root/tools
-echo "Installation of Certificates finished"
+cd $PWD
+
+echo "Extracting done."
+echo "Creating tunnel device"
 if [ ! -f /dev/net/tun ]; then
     {
     mkdir -p /dev/net
@@ -20,15 +22,6 @@ if [ ! -f /dev/net/tun ]; then
     }
 fi;
 
-# replace vars in ccd
-mkdir -p /root/ccd
-cp /tmp/ccd/* /root/ccd/
-find /root/ccd -type f -exec sed -i "s/__CLIENT_NET__/$CLIENT_NET/g" {} \;
-find /root/ccd -type f -exec sed -i "s/__CLIENT_NETMASK__/$CLIENT_NETMASK__/g" {} \;
-
-
-echo "showing available ciphers"
-/usr/sbin/openvpn --show-ciphers
 
 echo "Starting ovpn Server"
 /usr/sbin/openvpn /root/ovpn/server.conf &

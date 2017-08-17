@@ -193,6 +193,8 @@ function showhelp() {
 	echo ""
     echo "make-CA - recreates CA caution! for asterisk domain e.g. provide parameter "asterisk""
 	echo ""
+    echo "show-openvpn-ciphers - lists the available ciphers"
+	echo ""
     echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
 	echo ""
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
@@ -661,6 +663,10 @@ function do_command() {
 		fi
 
        ;;
+
+    show-openvpn-ciphers)
+	   dcrun ovpn_minimal /usr/sbin/openvpn --show-ciphers
+	   ;;
 
     make-phone-CA)
 		$0 make-CA asterisk

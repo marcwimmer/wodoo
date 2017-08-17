@@ -1,17 +1,18 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
+check_has_ca.sh
 
-if [[ -z "$REMOTE" ]]; then
-    echo "Please set env \$REMOTE and \$REMOTE_PORT"
+if [[ -z "$OVPN_REMOTE" || -z "$OVPN_REMOTE_PORT" ]]; then
+    echo "Please set env \$OVPN_REMOTE and \$OVPN_REMOTE_PORT"
     exit -1
 fi
 
-cd /root/openvpn-ca
+cd $KEYFOLDER_ROOT
 
 if [[ -z "$1" || -z "$2" || -z "$3" || -z "$4" ]] 
 then
-    echo "Usage: pack_client_conf.sh keyname configuration-filename tar|notar <finalname>"
+    echo "Usage: pack_client_conf.sh keyname configuration-filename <finalname> -tar"
     exit -1;
 fi
 
@@ -27,8 +28,8 @@ then
 fi
 #mkdir openvpn  
 cp $CONF ./openvpn
-sed -i "s|__REMOTE__|${REMOTE}|g" $FILENAME
-sed -i "s|__REMOTE_PORT__|${REMOTE_PORT}|g" $FILENAME
+sed -i "s|__REMOTE__|${OVPN_REMOTE}|g" $FILENAME
+sed -i "s|__REMOTE_PORT__|${OVPN_REMOTE_PORT}|g" $FILENAME
 sed -i "s|__CIPHER__|${CIPHER}|g" $FILENAME
 
 echo "<key>" >> $FILENAME
@@ -44,13 +45,13 @@ echo "<tls-auth>" >> $FILENAME
 cat $TLS_KEY  >> $FILENAME
 echo "</tls-auth>">>$FILENAME
 
-if [[ "$4" == "tar" ]]; then
+echo "$*" |grep -q '[-]tar' && {
     cd openvpn
     tar -cf ../$4 *
     cd ..
     mv $4 /root/client_out/
-else
+} || {
     mv $FILENAME /root/client_out/$4
-fi
+}
 
 rm -rf openvpn 

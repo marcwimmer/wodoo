@@ -1,21 +1,23 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
+check_has_ca.sh
 cd $KEYFOLDERROOT
-mkdir server_export
-cp $KEYFOLDER/server.crt ./server_export/
-cp $KEYFOLDER/server.key ./server_export/server.key
-cp $KEYFOLDER/ca.crt ./server_export/ 
-cp $KEYFOLDER/ta.key ./server_export/ta.key
-cp $KEYFOLDER/dh$KEY_SIZE.pem ./server_export/dh$KEY_SIZE.pem
-FILENAME=./server_export/server.conf
-cp /root/confs/server.conf $FILENAME
+TMP=$(mktemp -u)
+mkdir -p $TMP
+cp $KEYFOLDER/server.crt $TMP
+cp $KEYFOLDER/server.key $TMP/server.key
+cp $KEYFOLDER/ca.crt $TMP/ 
+cp $KEYFOLDER/ta.key $TMP/ta.key
+cp $KEYFOLDER/dh$KEY_SIZE.pem $TMP/dh$KEY_SIZE.pem
+FILENAME=$TMP/server.conf
+cp $PATH_CONFIG_TEMPLATES/server.conf $FILENAME
 
-sed -i "s|__CIPHER__|${CIPHER}|g" $FILENAME
+sed -i "s|__CIPHER__|${OVPN_CIPHER}|g" $FILENAME
 
-cd server_export
+cd $TMP
 tar -czf ../server.tgz ./*
 cd ..
 mv server.tgz /root/server_out/
-rm -rf ./server_export 
+rm -rf $TMP
 

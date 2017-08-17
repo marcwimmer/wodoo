@@ -6,7 +6,6 @@ MAINTAINER daniel.petermeier@conpower.de
 RUN apt-get update && apt-get upgrade -y && apt-get install -y openvpn easy-rsa python3 rsync
 ADD bin/* /usr/local/bin/
 RUN \
-make-cadir /root/openvpn-ca-tmpl && \
 chmod a+x /usr/local/bin/*.sh && \
 ln -s /usr/bin/python3 /usr/local/bin/python
 CMD echo "Please connect to this virtual machine and execute /root/transfer/init.sh"

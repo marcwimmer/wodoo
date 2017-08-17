@@ -2,6 +2,7 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 init.sh
+check_has_ca.sh
 
 if [[ -z "$1" ]]; then
     echo 'name required'
@@ -11,7 +12,7 @@ fi
 cd $KEYFOLDERROOT
 
 echo "Build Key"
-export EASY_RSA="`pwd`"
+export EASY_RSA=$KEYFOLDER_ROOT
 export KEY_NAME=$1
 export OPENSSL="openssl"
 export PKCS11TOOL="pkcs11-tool"
