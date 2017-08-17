@@ -28,7 +28,9 @@ echo "Please find your ca-cert/key at ./ca.tgz"
 echo "finished."
 
 
-
-
+make_server_keys.sh
+make_default_keys.sh
+pack_server_conf.sh
+pack_client_conf.sh
 
 

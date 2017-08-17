@@ -1,4 +1,14 @@
 #!/usr/bin/python
+#
+# After the docker-compose files are prepared and lie in
+# /run/docker-compose.xxxx.yml, this script generates an instance of the
+# openvpn services for each openvpn domain. Domains are for example asterisk.
+#
+# The resulting files also lie in /run/9999-....
+#
+# Each domain has is own subnet and ip addresses.
+#
+
 import os
 import sys
 import json
@@ -15,13 +25,14 @@ with open(filepath_config, 'r') as f:
 domain = config['domain']
 dest_docker_file = 'run/9999-docker-compose.ovpn.{}.yml'.format(domain)
 
-shutil.copy(os.path.join(root_path, 'machines/openvpn/docker-compose.yml.tmpl'), os.path.join(root_path, dest_docker_file))
+shutil.copy(os.path.join(root_path, 'machines/openvpn/template.yml'), os.path.join(root_path, dest_docker_file))
 
 # set parameters in docker compose template
 
 with open(os.path.join(root_path, dest_docker_file), 'r') as f:
     content = f.read()
 content = content.replace("${OVPN_DOMAIN}", domain)
+content = content.replace("${OVPN_CONFIG_FILE}", os.path.realpath(filepath_config).strip())
 content = os.path.expandvars(content)
 with open(os.path.join(root_path, dest_docker_file), 'w') as f:
     f.write(content)
@@ -37,7 +48,7 @@ with open(os.path.join(root_path, 'machines/openvpn/nginx.subdomain.tmpl'), 'r')
         subdomain = splitted[0]
         machine = splitted[1]
         port = splitted[2]
-        out = subprocess.check_output([
+        subprocess.check_call([
             os.path.join(root_path, 'machines/nginx/add_nginx_subdomain.sh'),
             subdomain,
             machine,
@@ -45,8 +56,6 @@ with open(os.path.join(root_path, 'machines/openvpn/nginx.subdomain.tmpl'), 'r')
             os.path.join(root_path, 'run/nginx_subdomains'),
             'ovpn.{domain}.subdomain'.format(domain=domain)
         ])
-        print '--------------------------------'
-        print out
 
 with open(results, 'w') as f:
     f.write(dest_docker_file)

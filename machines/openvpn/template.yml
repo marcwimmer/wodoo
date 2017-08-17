@@ -30,11 +30,16 @@ services:
     <<: *ovpn_minimal
     container_name: ${DCPREFIX}_ovpn_${OVPN_DOMAIN}_manage
     volumes:
-        - ../config/ovpn/:/root/input_confs:ro
-        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
-        - ../data/ovpn/CA:/root/transfer
-        - ../data/ovpn/server:/root/server_out
-        - ../data/ovpn/client:/root/client_out
+        - ${OVPN_CONFIG_FILE}:/root/ovpn.config
+        - ../data/ovpn/${OVPN_DOMAIN}/CA/keys:/root/openvpn-ca/keys
+        - ../data/ovpn/${OVPN_DOMAIN}/CA:/root/transfer
+        - ../data/ovpn/${OVPN_DOMAIN}/server:/root/server_out
+        - ../data/ovpn/${OVPN_DOMAIN}/client:/root/client_out
+        - ../data/ovpn/${OVPN_DOMAIN}/ccd:/root/ccd
+
+    environment:
+        CONFIG_FILEPATH: /root/ovpn.config
+        PATH_CCD: /root/ccd
 
   ${OVPN_DOMAIN}_ovpn_server:
     <<: *ovpn_minimal
@@ -60,6 +65,5 @@ services:
     #ports:to reach this /ovpn_confs
     #    - "${OVPNWEB_PORT}:8080"
     volumes:
-        - ../data/ovpn/client:/root/transfer:ro
-        - ../config/ovpn:/root/config:ro
+        - ../data/ovpn/${OVPN_DOMAIN}/client:/root/transfer:ro
     command: python3 /root/tools/monjerri.py

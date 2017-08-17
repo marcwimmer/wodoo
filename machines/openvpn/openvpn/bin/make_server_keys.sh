@@ -17,3 +17,6 @@ touch ${KEYFOLDER}/index.txt
 [[ -f keys/serial ]] || echo 1000 > keys/serial
 
 ./build-key-server --batch server
+
+cd /usr/local/bin
+python process_config.py

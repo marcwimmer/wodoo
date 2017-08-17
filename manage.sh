@@ -8,6 +8,14 @@
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
 
+function dcrun() {
+	eval "$dc run -T $@"
+}
+
+function dcexec() {
+	$dc exec -T $@
+}
+
 function startup() {
 	args=("$@")
 	echo $args
@@ -93,7 +101,7 @@ function do_restore_db_in_docker_container () {
 
 	/bin/ln $dump_file $LOCAL_DEST_NAME
 	$0 reset-db
-	$dcrun postgres /restore.sh $(basename $LOCAL_DEST_NAME)
+	dcrun postgres /restore.sh $(basename $LOCAL_DEST_NAME)
 }
 
 function do_restore_db_on_external_postgres () {
@@ -124,7 +132,7 @@ function do_restore_files () {
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
 	/bin/ln $tararchive_full_path $LOCAL_DEST_NAME
-	$dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
+	dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
 }
 
 function askcontinue() {
@@ -150,6 +158,7 @@ function showhelp() {
     echo Management of odoo instance
     echo
     echo
+	echo ./manage.sh install-deps
 	echo ./manage.sh sanity-check
     echo Reinit fresh db:
     echo './manage.sh reset-db'
@@ -182,7 +191,7 @@ function showhelp() {
 	echo ""
     echo "logall - shows log til now; use parameter to specify machine"
 	echo ""
-    echo "make-CA - recreates CA caution!"
+    echo "make-CA - recreates CA caution! for asterisk domain e.g. provide parameter "asterisk""
 	echo ""
     echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
 	echo ""
@@ -288,13 +297,19 @@ function prepare_yml_files_from_template_files() {
 	echo $ALL_CONFIG_FILES
 
     dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $ALL_CONFIG_FILES"
-    dcrun="$dc run -T"
-    dcexec="$dc exec -T"
 }
 
 
 function do_command() {
     case $1 in
+		install-deps)
+			apt install python-psycopg2
+			apt install python-pip
+			pip install pip --upgrade
+			pip install lxml
+			pip install configobj
+			pip install unidecode
+		;;
     setup-startup)
         PATH=$DIR
 
@@ -363,7 +378,7 @@ function do_command() {
         BACKUP_FILENAME=$CUSTOMS.files.tar.gz
         BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
 
-		$dcrun odoo /backup_files.sh
+		dcrun odoo /backup_files.sh
         [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
         mv $DIR/dumps/odoofiles.tar $BACKUP_FILEPATH
 
@@ -385,7 +400,7 @@ function do_command() {
         echo "Stopping all services and creating new database"
         echo "After creation the database container is stopped. You have to start the system up then."
         $dc kill
-        $dcrun -e INIT=1 postgres /entrypoint2.sh
+        dcrun -e INIT=1 postgres /entrypoint2.sh
         echo
         echo 
         echo
@@ -478,7 +493,7 @@ function do_command() {
 		)
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dcrun postgres psql $2
+			dcrun postgres psql $2
 		else
 			export PGPASSWORD=$DB_PWD
 			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME
@@ -608,7 +623,7 @@ function do_command() {
 		echo "Finished - chat id is stored; bot can send to channel all the time now."
 		;;
     update-source)
-		$dcrun source_code /sync_source.sh $2
+		dcrun source_code /sync_source.sh $2
         ;;
     update)
         echo "Run module update"
@@ -625,10 +640,10 @@ function do_command() {
 
         set -e
         # sync source
-        $dcrun source_code
+        dcrun source_code
         set +e
 
-        $dcrun odoo_update /update_modules.sh $2
+        dcrun odoo_update /update_modules.sh $2
         $dc kill odoo nginx
         if [[ "$RUN_ASTERISK" == "1" ]]; then
             $dc kill ari stasis
@@ -652,15 +667,19 @@ function do_command() {
 		;;
 	setup-ovpn-domain)
 		domain=$2
-		if [[ -z "$domain" ]]; then
-			echo "OVPN Domain missing"
-		fi
 
 		cd $DIR/machines/openvpn
 		docker_compose_file="$DIR/run/9999-docker-compose.ovpn.$domain.yml"
 
 		cp docker-compose.yml $docker_compose_file
 
+		;;
+	force-ovpn-domain)
+		domain=$2
+		if [[ -z "$domain" ]]; then
+			echo "OVPN Domain missing"
+			exit -1
+		fi
 		;;
     make-CA)
         echo '!!!!!!!!!!!!!!!!!!'
@@ -674,16 +693,13 @@ function do_command() {
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
 		domain=$2
-		$0 setup-ovpn-domain $domain
+		$0 force-ovpn-domain $domain
 
         askcontinue -force
         export dc=$dc
-        $dc kill ovpn_manage
-        $dcrun ovpn_manage clean_keys.sh
-        $dcrun ovpn_manage make_ca.sh
-        $dcrun ovpn_manage make_server_keys.sh
-        $dc rm -f
-		$0 make-keys
+        $dc kill ${domain}_ovpn_manage
+        dcrun ${domain}_ovpn_manage clean_keys.sh
+        dcrun ${domain}_ovpn_manage make_ca.sh
         ;;
     #make-keys)
         #export dc=$dc
@@ -699,11 +715,11 @@ function do_command() {
         fi
         rm $DIR/run/i18n/* || true
         chmod a+rw $DIR/run/i18n
-        $dcrun odoo_lang_export /export_i18n.sh $LANG $MODULES
+        dcrun odoo_lang_export /export_i18n.sh $LANG $MODULES
         # file now is in $DIR/run/i18n/export.po
         ;;
     import-i18n)
-        $dcrun odoo /import_i18n.sh $ALL_PARAMS
+        dcrun odoo /import_i18n.sh $ALL_PARAMS
         ;;
 	sanity_check)
 		sanity_check
@@ -792,7 +808,7 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
-			$dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+			dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
 		else
 			bash <<-EOF
 			cd $ODOO_HOME/data/src/admin/module_tools
@@ -827,8 +843,9 @@ function update_openvpn_domains() {
 
 	for file in $(find $DIR/machines -name 'ovpn-domain.conf'); do
 		results=$(mktemp -u)
-		docker_compose_file=$(python $DIR/machines/openvpn/bin/prepare_domain_for_manage.py "$results" "$file" "$DIR")
+		python $DIR/machines/openvpn/bin/prepare_domain_for_manage.py "$results" "$file" "$DIR"
 		dc="$dc -f $(cat $results)"
+		rm $results
 	done
 
 }
