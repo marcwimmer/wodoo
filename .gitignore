@@ -19,3 +19,4 @@ run
 *.pyc
 __pycache__
 settings
+.Dockerfile
