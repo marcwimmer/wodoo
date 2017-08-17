@@ -834,8 +834,8 @@ function update_openvpn_domains() {
 
 function setup_nginx_subdomains() {
 
+	SUBDOMAIN_DIR=$DIR/run/nginx_subdomains
 	mkdir -p $SUBDOMAIN_DIR
-	SUBDOMAIN_DIR=$DIR/run/nginx_subomains
 	rm $SUBDOMAIN_DIR/*.subdomain
 	for file in $(find $DIR/machines -name 'nginx.subdomain'); do
 		cat $file | while read line

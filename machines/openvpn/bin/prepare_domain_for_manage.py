@@ -26,9 +26,7 @@ with open(os.path.join(root_path, dest_docker_file), 'w') as f:
 with open(os.path.join(root_path, 'machines/openvpn/nginx.subdomain.tmpl'), 'r') as f:
     subdomain = f.read()
     subdomain = subdomain.replace("${DOMAIN}", domain)
-with open(os.path.join(root_path, 'run/nginx_subdomains/ovpn.{domain}.subdomain'), 'r') as f:
+with open(os.path.join(root_path, 'run/nginx_subdomains/ovpn.{domain}.subdomain'.format(domain=domain)), 'w') as f:
     f.write(subdomain)
-
-
 
 print dest_docker_file
