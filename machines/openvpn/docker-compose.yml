@@ -1,6 +1,6 @@
 # manage-order: 5000
 # so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
-version: '2.1'
+version: '3.3'
 volumes:
   arisourcestorage:
   stasissourcestorage:
@@ -23,46 +23,39 @@ services:
       ports:
         - "${NTP_PORT}:123/udp"
 
-  ovpn_minimal:
+  ovpn_minimal: &ovpn_minimal
       #container_name: ${DCPREFIX}_ovpn_minimal
     build: ../machines/openvpn/openvpn
     env_file:
       - ../settings
-    command: /root/tools/run.sh
-    environment:
-        DELETE_CRITICAL_FILES: 1
+    command: echo 'exiting'
 
   ovpn_full:
-    extends: ovpn_minimal
+    <<: *ovpn_minimal
     container_name: ${DCPREFIX}_ovpn_ca
-    build: ../machines/openvpn/openvpn
     volumes:
         - ../config/ovpn/:/root/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
         - ../data/ovpn/CA:/root/transfer
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
+
+  ovpn_server:
+    <<: *ovpn_minimal
+    container_name: ${DCPREFIX}_ovpn
+    cap_add:
+        - NET_ADMIN
+    ports:
+        - "${OVPN_PORT}:1194/tcp"
+        - "${OVPN_PORT}:1194/udp"
     env_file:
       - ../settings
-    command: echo 'exiting'
-
-  #ovpn_server:
-    #extends: ovpn_minimal
-    #container_name: ${DCPREFIX}_ovpn
-    #build: ../machines/openvpn/openvpn_server
-    #cap_add:
-        #- NET_ADMIN
-    #ports:
-        #- "${OVPN_PORT}:1194/tcp"
-        #- "${OVPN_PORT}:1194/udp"
-    #env_file:
-      #- ../settings
-    #command: /usr/local/bin/runserver.sh
-    #healthcheck:
-        #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
-        #interval: 15s
-        #timeout: 5s
-        #retries: 2
+    command: /usr/local/bin/runserver.sh
+    healthcheck:
+        test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
+        interval: 15s
+        timeout: 5s
+        retries: 2
 
   ovpn_clientprovisioner:
     container_name: ${DCPREFIX}_ovpn_clientprovisioner
