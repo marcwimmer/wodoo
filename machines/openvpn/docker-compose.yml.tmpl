@@ -28,7 +28,7 @@ services:
 
   ${OVPN_DOMAIN}_ovpn_manage:
     <<: *ovpn_minimal
-    container_name: ${DCPREFIX}_ovpn_manage
+    container_name: ${DCPREFIX}_ovpn_${OVPN_DOMAIN}_manage
     volumes:
         - ../config/ovpn/:/root/input_confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
@@ -38,7 +38,7 @@ services:
 
   ${OVPN_DOMAIN}_ovpn_server:
     <<: *ovpn_minimal
-    container_name: ${DCPREFIX}_ovpn
+    container_name: ${DCPREFIX}_ovpn_server
     cap_add:
         - NET_ADMIN
     ports:
@@ -46,7 +46,7 @@ services:
         - "${OVPN_PORT}:1194/udp"
     env_file:
       - ../settings
-    command: /usr/local/bin/runserver.sh
+    command: /usr/local/bin/run_ovpn_server.sh
     #healthcheck:
         #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
         #interval: 15s

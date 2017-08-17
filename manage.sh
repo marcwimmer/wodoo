@@ -808,7 +808,7 @@ function display_machine_tips() {
 	tipfile=$(find $DIR/machines | grep $1/tips.txt)
 	if [[ -f "$tipfile" ]]; then
 		echo 
-		echo Please notice:
+		echo Please note:
 		echo ---------------
 		echo
 		cat $tipfile
@@ -826,8 +826,9 @@ function update_openvpn_domains() {
 	# attaches the docker-compose to $dc then
 
 	for file in $(find $DIR/machines -name 'ovpn-domain.conf'); do
-		docker_compose_file=$(python $DIR/machines/openvpn/bin/prepare_domain_for_manage.py "$file" "$DIR")
-		dc="$dc -f $docker_compose_file"
+		results=$(mktemp -u)
+		docker_compose_file=$(python $DIR/machines/openvpn/bin/prepare_domain_for_manage.py "$results" "$file" "$DIR")
+		dc="$dc -f $(cat $results)"
 	done
 
 }

@@ -28,6 +28,8 @@ services:
       - odoosource:/opt/odoo
       - ../data/src/admin:/opt/src/admin:ro
       - ../data/src/customs:/opt/src/customs:ro
+      - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
+      - ../run/i18n:/opt/i18n
     environment:
       DOCKER_MACHINE: 1
       LANG: 'en_US.UTF-8'
@@ -40,8 +42,6 @@ services:
   source_code:
     <<: *odoo_base
     container_name: ${DCPREFIX}_source_code
-    volumes:
-      - odoosource:/opt/odoo
     env_file:
       - ../settings
     command: echo 'good bye' # not starting with manage.sh up -d
@@ -52,8 +52,6 @@ services:
     environment:
       DEBUGGER_WATCH: /tmp/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
-    volumes:
-      - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
     command: /rootrun.sh
     ports:
        - "8072:8072"
@@ -75,7 +73,5 @@ services:
     <<: *odoo_base
     container_name: ${DCPREFIX}_odoo_lang_export
     command: /bin/echo 'hi'
-    volumes:
-      - ../run/i18n:/opt/i18n
     environment:
       LANG_EXPORT_DIR: /opt/i18n
