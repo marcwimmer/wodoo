@@ -7,7 +7,7 @@ import os
 # Author: Daniel Petermeier
 #
 # Monjerri is a HTTP Server based on cherrypy,
-# to provision SNOM Phones with VPN configurations and 
+# to provision SNOM Phones with VPN configurations and
 # configurations.
 
 # Published under IDC License.
@@ -48,15 +48,15 @@ class Provisioner(object):
         except KeyError:
             return self.default
         if user["password"] == p and user["archivenr"] == x:
-            
+
             path = os.path.join(self.file_path, user["fts"])
-            
+
             if os.path.exists(path):
                 return serve_file(path, "application/x-gtar", "attachment")
             else:
                 print("File Path not valid! {}".format(path))
         else:
-            print("Params not valid! p={} ({}),  x={} ({})".format(p,user["password"],x,user["archivenr"]))             
+            print("Params not valid! p={} ({}),  x={} ({})".format(p, user["password"], x, user["archivenr"]))
         return self.default
 
 
@@ -67,15 +67,14 @@ if __name__ == '__main__':
         headers['X-Frame-Options'] = 'DENY'
         headers['X-XSS-Protection'] = '1; mode=block'
 
-
     conf = {
         "global":
-            {
-		"server.socket_host":"0.0.0.0",
+        {
+                "server.socket_host": "0.0.0.0",
                 "server.socket_port": 8080,
                 "tools.staticdir.on": True,
                 "tools.staticdir.dir": "/root/transfer",
-            },
+        },
         "/": {
             "tools.sessions.on": True,
             "tools.sessions.secure": True,

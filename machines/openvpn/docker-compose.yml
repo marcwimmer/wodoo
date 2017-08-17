@@ -23,9 +23,19 @@ services:
       ports:
         - "${NTP_PORT}:123/udp"
 
-  ovpn_ca:
+  ovpn_minimal:
+      #container_name: ${DCPREFIX}_ovpn_minimal
+    build: ../machines/openvpn/openvpn
+    env_file:
+      - ../settings
+    command: /root/tools/run.sh
+    environment:
+        DELETE_CRITICAL_FILES: 1
+
+  ovpn_full:
+    extends: ovpn_minimal
     container_name: ${DCPREFIX}_ovpn_ca
-    build: ../machines/openvpn/openvpn_ca
+    build: ../machines/openvpn/openvpn
     volumes:
         - ../config/ovpn/:/root/confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
@@ -36,48 +46,30 @@ services:
       - ../settings
     command: echo 'exiting'
 
-  ovpn_makekeys:
-    container_name: ${DCPREFIX}_ovpn_makekeys
-    build: ../machines/openvpn/openvpn_server
-    volumes:
-        - ../config/ovpn:/root/input/confs:ro
-        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
-        - ../data/ovpn/server:/root/server_out
-        - ../data/ovpn/client:/root/client_out
-        - ../config/ovpn/ccd:/root/ccd
-    env_file:
-      - ../settings
-    command: echo 'exiting'
+  #ovpn_server:
+    #extends: ovpn_minimal
+    #container_name: ${DCPREFIX}_ovpn
+    #build: ../machines/openvpn/openvpn_server
+    #cap_add:
+        #- NET_ADMIN
+    #ports:
+        #- "${OVPN_PORT}:1194/tcp"
+        #- "${OVPN_PORT}:1194/udp"
+    #env_file:
+      #- ../settings
+    #command: /usr/local/bin/runserver.sh
+    #healthcheck:
+        #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
+        #interval: 15s
+        #timeout: 5s
+        #retries: 2
 
-  ovpn:
-    container_name: ${DCPREFIX}_ovpn
-    build: ../machines/openvpn/openvpn_server
-    ports:
-        - "${OVPN_PORT}:1194/tcp"
-        - "${OVPN_PORT}:1194/udp"
-    volumes:
-        - ../config/ovpn:/root/input/confs:ro
-        - ../data/ovpn/CA/keys:/root/openvpn-ca/keys:ro
-        - ../data/ovpn/server:/root/server_out
-        - ../data/ovpn/client:/root/client_out
-        - ../config/ovpn/ccd:/tmp/ccd:ro
-
-    env_file:
-      - ../settings
-    cap_add:
-        - NET_ADMIN
-    command: /root/tools/run.sh
-    healthcheck:
-        test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
-        interval: 15s
-        timeout: 5s
-        retries: 2
-
-  ovpn_web:
-    container_name: ${DCPREFIX}_odoo_ovpn_web
+  ovpn_clientprovisioner:
+    container_name: ${DCPREFIX}_ovpn_clientprovisioner
     build: ../machines/openvpn/openvpn_web
-    ports:
-        - "${OVPNWEB_PORT}:8080"
+    # using nginx subdomain 
+    #ports:to reach this /ovpn_confs
+    #    - "${OVPNWEB_PORT}:8080"
     volumes:
         - ../data/ovpn/client:/root/transfer:ro
         - ../config/ovpn:/root/config:ro
