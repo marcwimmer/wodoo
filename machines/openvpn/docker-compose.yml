@@ -8,14 +8,14 @@ volumes:
 
 services:
   dns:
-      build: ../machines/openvpn/openvpn_dns
+      build: ../machines/openvpn/dns
       cap_add:
         - NET_ADMIN
       volumes:
         - ../data/ovpn/client:/opt/certs:ro
 
   ntp:
-      build: ../machines/openvpn/openvpn_ntp
+      build: ../machines/openvpn/ntp
       cap_add:
         - NET_ADMIN
       volumes:
@@ -24,17 +24,17 @@ services:
         - "${NTP_PORT}:123/udp"
 
   ovpn_minimal: &ovpn_minimal
-      #container_name: ${DCPREFIX}_ovpn_minimal
+    #container_name: ${DCPREFIX}_ovpn_minimal
     build: ../machines/openvpn/openvpn
     env_file:
       - ../settings
     command: echo 'exiting'
 
-  ovpn_full:
+  ovpn_manage:
     <<: *ovpn_minimal
-    container_name: ${DCPREFIX}_ovpn_ca
+    container_name: ${DCPREFIX}_ovpn_manage
     volumes:
-        - ../config/ovpn/:/root/confs:ro
+        - ../config/ovpn/:/root/input_confs:ro
         - ../data/ovpn/CA/keys:/root/openvpn-ca/keys
         - ../data/ovpn/CA:/root/transfer
         - ../data/ovpn/server:/root/server_out
@@ -59,7 +59,7 @@ services:
 
   ovpn_clientprovisioner:
     container_name: ${DCPREFIX}_ovpn_clientprovisioner
-    build: ../machines/openvpn/openvpn_web
+    build: ../machines/openvpn/config_provisioner
     # using nginx subdomain 
     #ports:to reach this /ovpn_confs
     #    - "${OVPNWEB_PORT}:8080"

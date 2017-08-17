@@ -2,7 +2,6 @@
 
 set -e
 [[ "$VERBOSE" ]] && set -x
-set -x
 
 just_pack.sh
 

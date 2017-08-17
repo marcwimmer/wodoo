@@ -660,10 +660,10 @@ function do_command() {
 
         askcontinue -force
         export dc=$dc
-        $dc kill ovpn_full
-        $dcrun ovpn_full clean_keys.sh
-        $dcrun ovpn_full make_ca.sh
-        $dcrun ovpn_full make_server_keys.sh
+        $dc kill ovpn_manage
+        $dcrun ovpn_manage clean_keys.sh
+        $dcrun ovpn_manage make_ca.sh
+        $dcrun ovpn_manage make_server_keys.sh
         $dc rm -f
 		$0 make-keys
         ;;
