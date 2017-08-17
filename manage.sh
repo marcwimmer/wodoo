@@ -128,7 +128,9 @@ function do_restore_files () {
 }
 
 function askcontinue() {
-	echo $1
+	if [[ "$1" != "-force" ]]; then
+		echo $1
+	fi
 	force=0
 	echo "$*" |grep -q '[-]force' && {
 		force=1
@@ -663,6 +665,7 @@ function do_command() {
         $dcrun ovpn_ca /root/tools/make_ca.sh
         $dcrun ovpn_ca /root/tools/make_server_keys.sh
         $dc rm -f
+		$0 make-keys
         ;;
     make-keys)
         export dc=$dc

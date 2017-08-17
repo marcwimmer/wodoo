@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+[[ "$VERBOSE" == "1" ]] && set -x
 cd $KEYFOLDERROOT
 mkdir server_export
 cp $KEYFOLDER/server.crt ./server_export/

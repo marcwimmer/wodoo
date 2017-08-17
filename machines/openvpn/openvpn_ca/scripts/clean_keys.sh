@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ "$VERBOSE" == "1" ]] && set -x
 cd $KEYFOLDER
 [[ -d keys ]] && {
     cd keys
