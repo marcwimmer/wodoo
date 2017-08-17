@@ -836,7 +836,7 @@ function setup_nginx_subdomains() {
 
 	SUBDOMAIN_DIR=$DIR/run/nginx_subdomains
 	mkdir -p $SUBDOMAIN_DIR
-	rm $SUBDOMAIN_DIR/*.subdomain
+	rm $SUBDOMAIN_DIR/*.subdomain || true
 	for file in $(find $DIR/machines -name 'nginx.subdomain'); do
 		cat $file | while read line
 		do
