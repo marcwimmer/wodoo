@@ -47,11 +47,11 @@ services:
     env_file:
       - ../settings
     command: /usr/local/bin/runserver.sh
-    healthcheck:
-        test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
-        interval: 15s
-        timeout: 5s
-        retries: 2
+    #healthcheck:
+        #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
+        #interval: 15s
+        #timeout: 5s
+        #retries: 2
 
   ${OVPN_DOMAIN}_ovpn_clientprovisioner:
     container_name: ${DCPREFIX}_ovpn_clientprovisioner

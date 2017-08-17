@@ -1,5 +1,5 @@
 # manage-order 1001
-version: '2.1'
+version: '3.3'
 services:
   odoo:
     depends_on:

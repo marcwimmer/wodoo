@@ -12,7 +12,7 @@ with open(filepath_config, 'r') as f:
 domain = config['domain']
 dest_docker_file = 'run/9999-docker-compose.ovpn.{}.yml'.format(domain)
 
-shutil.copy(os.path.join(root_path, 'machines/openvpn/docker-compose.yml'), os.path.join(root_path, dest_docker_file))
+shutil.copy(os.path.join(root_path, 'machines/openvpn/docker-compose.yml.tmpl'), os.path.join(root_path, dest_docker_file))
 
 # set parameters in docker compose template
 

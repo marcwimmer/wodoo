@@ -832,14 +832,37 @@ function update_openvpn_domains() {
 
 }
 
+function setup_nginx_subdomains() {
+
+	mkdir -p $SUBDOMAIN_DIR
+	SUBDOMAIN_DIR=$DIR/run/nginx_subomains
+	rm $SUBDOMAIN_DIR/*.subdomain
+	for file in $(find $DIR/machines -name 'nginx.subdomain'); do
+		cat $file | while read line
+		do
+			SUBDOMAIN=$(echo $line | awk '{print $1}')
+			MACHINE=$(echo $line | awk '{print $2}')
+			PORT=$(echo $line | awk '{print $3}')
+
+			if [[ -z "$PORT" || -z "$MACHINE" ]]; then
+				echo "Invalid nginx subdomain: $file"
+				exit -1
+			fi
+
+			$DIR/machines/nginx/add_nginx_subdomain.sh "$SUBDOMAIN" "$MACHINE" "$PORT" "$SUBDOMAIN_DIR"
+		done
+
+	done
+}
+
 function main() {
 	startup $@
 	default_confs
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
+	setup_nginx_subdomains
 	update_openvpn_domains
-	exit -1
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "$@"
