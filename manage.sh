@@ -669,7 +669,7 @@ function do_command() {
         ;;
     make-keys)
         export dc=$dc
-        bash $DIR/config/ovpn/pack.sh
+        bash $DIR/machines/openvpn/bin/pack.sh
         $dc rm -f
         ;;
     export-i18n)

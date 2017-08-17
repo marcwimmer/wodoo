@@ -1,29 +1,10 @@
 #!/bin/bash
 
 set -e
+[[ "$VERBOSE" ]] && set -x
 set -x
 
-cd /root/server_out
-if [ ! -f /root/openvpn-ca/keys/ca.crt ]; then
-    echo "Missing CA - please create CA and keys"
-    exit -1
-fi
-
-if [ ! -d /root/ovpn ]
-then
-    mkdir /root/ovpn
-fi
-
-mkdir -p /root/confs
-cp /root/input/confs/* /root/confs/ -R
-#chmod a+x /root/confs/pack.sh
-#/root/confs/pack.sh
-
-if [[ "$1" == "JUSTPACK" ]]; then
-    echo "Just packing - leaving now"
-    exit 0 
-fi
-
+just_pack.sh
 
 
 echo "Found server config! Continue..."

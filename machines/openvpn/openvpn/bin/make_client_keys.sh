@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
-/root/tools/init.sh
+init.sh
 
 if [[ -z "$1" ]]; then
     echo 'name required'

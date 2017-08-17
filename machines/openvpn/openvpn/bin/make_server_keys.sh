@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
-/root/tools/init.sh
+init.sh
 
 cd $KEYFOLDERROOT
 export EASY_RSA="`pwd`"

@@ -9,4 +9,5 @@ RUN \
 mkdir -p /root/tools && \
 make-cadir /root/openvpn-ca-tmpl && \
 chmod a+x /usr/local/bin/*.sh
+ENTRYPOINT /bin/bash
 CMD echo "Please connect to this virtual machine and execute /root/transfer/init.sh"
