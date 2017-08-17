@@ -20,3 +20,18 @@ def setup_ccd(name, dns=None, fixed_ip=None):
 for internal_host, internal_host_ip in config.get("internal_hosts", {}).items():
     # TODO check if ip is in range
     setup_ccd(internal_host, fixed_ip=internal_host_ip)
+
+def update_server_conf():
+    filepath = os.getenv('OVPN_SERVER_CONF', "")
+    if filepath:
+        with open(filepath, 'r') as f:
+            content = f.read()
+        content = content.replace("__IP_POOL_START__", config['ip_pool']['start'])
+        content = content.replace("__IP_POOL_END", config['ip_pool']['end'])
+        content = content.replace("__IP_POOL_NETMASK", config['ip_pool']['netmask'])
+        with open(filepath, 'w') as f:
+            f.write(content)
+
+
+if __name__ == '__main__':
+    update_server_conf()

@@ -2,7 +2,7 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 check_has_ca.sh
-cd $KEYFOLDERROOT
+cd $KEYFOLDER_ROOT
 TMP=$(mktemp -u)
 mkdir -p $TMP
 cp $KEYFOLDER/server.crt $TMP
@@ -14,6 +14,12 @@ FILENAME=$TMP/server.conf
 cp $PATH_CONFIG_TEMPLATES/server.conf $FILENAME
 
 sed -i "s|__CIPHER__|${OVPN_CIPHER}|g" $FILENAME
+$(
+cd /usr/local/bin
+export OVPN_SERVER_CONF=$FILENAME
+python process_config.py
+)
+
 
 cd $TMP
 tar -czf ../server.tgz ./*
