@@ -1,20 +1,16 @@
 # manage-order: 5000
-# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+# Manage.sh uses this file as a template for domain based openvpns.
 version: '3.3'
-volumes:
-  arisourcestorage:
-  stasissourcestorage:
-  asterisk_logs:
 
 services:
-  dns:
+  ${OVPN_DOMAIN}_ovpn_dns:
       build: ../machines/openvpn/dns
       cap_add:
         - NET_ADMIN
       volumes:
         - ../data/ovpn/client:/opt/certs:ro
 
-  ntp:
+  ${OVPN_DOMAIN}_ovpn_ntp:
       build: ../machines/openvpn/ntp
       cap_add:
         - NET_ADMIN
@@ -30,7 +26,7 @@ services:
       - ../settings
     command: echo 'exiting'
 
-  ovpn_manage:
+  ${OVPN_DOMAIN}_ovpn_manage:
     <<: *ovpn_minimal
     container_name: ${DCPREFIX}_ovpn_manage
     volumes:
@@ -40,7 +36,7 @@ services:
         - ../data/ovpn/server:/root/server_out
         - ../data/ovpn/client:/root/client_out
 
-  ovpn_server:
+  ${OVPN_DOMAIN}_ovpn_server:
     <<: *ovpn_minimal
     container_name: ${DCPREFIX}_ovpn
     cap_add:
@@ -57,7 +53,7 @@ services:
         timeout: 5s
         retries: 2
 
-  ovpn_clientprovisioner:
+  ${OVPN_DOMAIN}_ovpn_clientprovisioner:
     container_name: ${DCPREFIX}_ovpn_clientprovisioner
     build: ../machines/openvpn/config_provisioner
     # using nginx subdomain 

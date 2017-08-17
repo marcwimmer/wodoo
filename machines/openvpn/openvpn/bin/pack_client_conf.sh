@@ -44,7 +44,7 @@ echo "<tls-auth>" >> $FILENAME
 cat $TLS_KEY  >> $FILENAME
 echo "</tls-auth>">>$FILENAME
 
-if [[ "$3" == "tar" ]]; then
+if [[ "$4" == "tar" ]]; then
     cd openvpn
     tar -cf ../$4 *
     cd ..

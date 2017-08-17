@@ -646,6 +646,22 @@ function do_command() {
 		fi
 
        ;;
+
+    make-phone-CA)
+		$0 make-CA asterisk
+		;;
+	setup-ovpn-domain)
+		domain=$2
+		if [[ -z "$domain" ]]; then
+			echo "OVPN Domain missing"
+		fi
+
+		cd $DIR/machines/openvpn
+		docker_compose_file="$DIR/run/9999-docker-compose.ovpn.$domain.yml"
+
+		cp docker-compose.yml $docker_compose_file
+
+		;;
     make-CA)
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
@@ -657,6 +673,8 @@ function do_command() {
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
+		domain=$2
+		$0 setup-ovpn-domain $domain
 
         askcontinue -force
         export dc=$dc
@@ -667,11 +685,11 @@ function do_command() {
         $dc rm -f
 		$0 make-keys
         ;;
-    make-keys)
-        export dc=$dc
-        bash $DIR/machines/openvpn/bin/pack.sh
-        $dc rm -f
-        ;;
+    #make-keys)
+        #export dc=$dc
+        #bash $DIR/machines/openvpn/bin/pack.sh
+        #$dc rm -f
+        #;;
     export-i18n)
         LANG=$2
         MODULES=$3
@@ -801,12 +819,27 @@ function display_machine_tips() {
 
 }
 
+function update_openvpn_domains() {
+
+	# searches for config files of openvpn and then copies the 
+	# template openvpn docker compose to run; 
+	# attaches the docker-compose to $dc then
+
+	for file in $(find $DIR/machines -name 'ovpn-domain.conf'); do
+		docker_compose_file=$(python $DIR/machines/openvpn/bin/prepare_domain_for_manage.py "$file" "$DIR")
+		dc="$dc -f $docker_compose_file"
+	done
+
+}
+
 function main() {
 	startup $@
 	default_confs
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
+	update_openvpn_domains
+	exit -1
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "$@"
