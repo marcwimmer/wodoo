@@ -113,5 +113,5 @@ echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
 echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
 
-WORKDIR /opt/openerp
+WORKDIR /opt/odoo
 CMD /rootrun.sh

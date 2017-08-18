@@ -30,13 +30,9 @@ services:
       - ../data/src/customs:/opt/src/customs:ro
       - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
       - ../run/i18n:/opt/i18n
-    environment:
-      DOCKER_MACHINE: 1
-      LANG: 'en_US.UTF-8'
-      LANGUAGE: 'en_US:en'
-      ODOO_VERSION: ${ODOO_VERSION}
     env_file:
       - ../settings
+      - ../machines/odoo/docker-env
     command: echo 'odoo_base - good bye - it is ok!'
 
   source_code:

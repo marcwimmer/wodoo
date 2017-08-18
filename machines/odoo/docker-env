@@ -1,0 +1,4 @@
+DOCKER_MACHINE=1
+LANG=en_US.UTF-8
+LANGUAGE=en_US:en
+ODOO_HOME=/opt/odoo
