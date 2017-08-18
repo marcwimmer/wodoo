@@ -8,6 +8,7 @@ ADD web.py-0.38.tar.gz /root
 RUN \
 cd /root/web.py-0.38 && \
 python setup.py install
+RUN pip install iptools==0.6.1
 ADD bin/* /usr/local/bin/
 RUN \
 chmod a+x /usr/local/bin/*.sh && \

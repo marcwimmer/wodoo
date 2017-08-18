@@ -34,10 +34,6 @@ CLIENT_KEY=$KEY_DIR/$KEYNAME.key
 CLIENT_CERT=$KEY_DIR/$KEYNAME.crt
 CA_CERT=$KEY_DIR/ca.crt
 TLS_KEY=$KEY_DIR/ta.key
-if [[ ! -d ./openvpn ]]
-then
-	mkdir openvpn
-fi
 
 #mkdir openvpn  
 cp $CONF $TMP

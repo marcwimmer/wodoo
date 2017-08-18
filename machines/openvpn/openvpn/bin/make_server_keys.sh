@@ -13,7 +13,7 @@ export KEY_NAME="server-${VPN_DOMAIN}"
 prepare_ca_tools.sh
 touch ${KEY_DIR}/index.txt
 
-[[ -f $KEY_DIR/serial ]] || echo 1000 > $KEY_DIR/serial
+[[ -f $KEY_DIR/serial ]] || echo $OVPN_SERIAL_START > $KEY_DIR/serial
 
 cd $EASY_RSA
 ./build-key-server --batch server

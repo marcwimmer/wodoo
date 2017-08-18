@@ -41,6 +41,8 @@ services:
         VPN_DOMAIN: ${OVPN_DOMAIN}
         OVPN_INTERNAL_REMOTE: ${OVPN_DOMAIN}_ovpn_server
         OVPN_INTERNAL_REMOTE_PORT: 1194
+        OVPN_SERIAL_START: 10000
+        CONFIG_TEMPLATE_INTERNAL_REMOTE: internalremote.conf
 
   ${OVPN_DOMAIN}_ovpn_manage: &ovpn_manage_${OVPN_DOMAIN}
     <<: *ovpn_minimal_${OVPN_DOMAIN}
