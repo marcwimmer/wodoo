@@ -89,7 +89,7 @@ services:
 
   ${OVPN_DOMAIN}_ovpn_clientprovisioner:
     container_name: ${DCPREFIX}_ovpn_clientprovisioner
-    build: ../machines/openvpn/config_provisioner
+    build: ../machines/openvpn/vpnconfs_provisioner
     # using nginx subdomain 
     #ports:to reach this /ovpn_confs
     #    - "${OVPNWEB_PORT}:8080"
