@@ -38,8 +38,6 @@ services:
   source_code:
     <<: *odoo_base
     container_name: ${DCPREFIX}_source_code
-    env_file:
-      - ../settings
     command: echo 'good bye' # not starting with manage.sh up -d
 
   odoo:
