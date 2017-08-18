@@ -1,32 +1,31 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
-export EASY_RSA=$KEYFOLDER_ROOT
-export OPENSSL="openssl"
-export PKCS11TOOL="pkcs11-tool"
-export GREP="grep"
 
-export KEY_NAME="odoo-VPN"
 export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
-export KEY_DIR="$EASY_RSA/keys"
+export KEY_NAME="CA-$VPN_DOMAIN"
 
+if [ -f $KEY_DIR/ca.crt ]; then
+	echo "Please clean existing CA before. (Using clean_all.sh)"
+	exit -1
+fi
 
-make-cadir /root/openvpn-ca-tmpl && \
-rsync /root/openvpn-ca-tmpl/ /root/openvpn-ca/ -arL
-cd "$KEYFOLDER_ROOT"
+prepare_ca_tools.sh
+cd "$EASY_RSA"
 ./build-ca  --batch --sign
 ./build-dh  --batch --sign
-openvpn --genkey --secret $KEYFOLDER/ta.key 
-rm -Rf /root/transfer/ca || true
-mkdir -p /root/transfer/ca/{pub,prv}
-cp keys/ca.key /root/transfer/ca/prv
-cp keys/ca.crt /root/transfer/ca/pub 
-tar -czf /root/transfer/ca.tgz /root/transfer/ca
-rm -rf /root/transfer/ca 
+sync # otherwise the ca.key file is not written
+openvpn --genkey --secret $KEY_DIR/ta.key 
+TMP=$(mktemp -u)
+mkdir -p $TMP
+mkdir -p $TMP/ca/{pub,prv}
+cp $KEY_DIR/ca.key $TMP/ca/prv
+cp $KEY_DIR/ca.crt $TMP/ca/pub 
+tar -czf /root/CA/ca.tgz $TMP/ca
+rm -Rf $TMP
 
 echo "Please find your ca-cert/key at ./ca.tgz"
 echo "finished."
-
 
 make_server_keys.sh
 make_default_keys.sh

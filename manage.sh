@@ -704,7 +704,18 @@ function do_command() {
         askcontinue -force
         export dc=$dc
         $dc kill ${domain}_ovpn_manage
-        dcrun ${domain}_ovpn_manage clean_keys.sh
+		# backup old data before
+
+		$(
+		set -e
+		cd $DIR/data/ovpn
+		if [[ -d $domain ]]; then
+			tar cfz $domain-$(date +%Y%m%d-%H%M%S).tar.gz $domain
+			rm -Rf $domain
+		fi
+		
+		)
+
         dcrun ${domain}_ovpn_manage make_ca.sh
         ;;
     #make-keys)

@@ -3,9 +3,9 @@
 ###
 FROM ubuntu:16.04
 MAINTAINER daniel.petermeier@conpower.de
-RUN apt-get update && apt-get upgrade -y && apt-get install -y openvpn easy-rsa python3 rsync
+RUN apt-get update && apt-get upgrade -y && apt-get install -y openvpn easy-rsa python2.7 rsync python-pip
 ADD bin/* /usr/local/bin/
 RUN \
 chmod a+x /usr/local/bin/*.sh && \
-ln -s /usr/bin/python3 /usr/local/bin/python
-CMD echo "Please connect to this virtual machine and execute /root/transfer/init.sh"
+chmod a+x /usr/local/bin/*.py
+CMD echo "no entrypoint - good bye!"

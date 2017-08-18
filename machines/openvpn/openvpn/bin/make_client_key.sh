@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
-init.sh
 check_has_ca.sh
 
 if [[ -z "$1" ]]; then
@@ -9,17 +8,19 @@ if [[ -z "$1" ]]; then
     exit -1
 fi
 
-cd $KEYFOLDERROOT
+if [[ $(find $KEY_DIR -name $1.key) ]]; then
+	echo "Client key $1 already created - aborting."
+	exit -1
+fi
+
+prepare_ca_tools.sh
+cd $EASY_RSA
 
 echo "Build Key"
-export EASY_RSA=$KEYFOLDER_ROOT
-export KEY_NAME=$1
-export OPENSSL="openssl"
-export PKCS11TOOL="pkcs11-tool"
-export GREP="grep"
 export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
-export KEY_DIR="$EASY_RSA/keys"
 export KEY_CN=$1  # to match CCD
+export KEY_NAME="client-${VPN_DOMAIN}-$1"
+prepare_ca_tools.sh
 
 #BUG IN UBUNTU 14.04 and 16.04 PKITOOL:
 #http://stackoverflow.com/questions/24255205/error-loading-extension-section-usr-cert/26078472#26078472

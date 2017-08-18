@@ -2,14 +2,13 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 check_has_ca.sh
-cd $KEYFOLDER_ROOT
 TMP=$(mktemp -u)
 mkdir -p $TMP
-cp $KEYFOLDER/server.crt $TMP
-cp $KEYFOLDER/server.key $TMP/server.key
-cp $KEYFOLDER/ca.crt $TMP/ 
-cp $KEYFOLDER/ta.key $TMP/ta.key
-cp $KEYFOLDER/dh$KEY_SIZE.pem $TMP/dh$KEY_SIZE.pem
+cp $KEY_DIR/server.crt $TMP
+cp $KEY_DIR/server.key $TMP/server.key
+cp $KEY_DIR/ca.crt $TMP/ 
+cp $KEY_DIR/ta.key $TMP/ta.key
+cp $KEY_DIR/dh$KEY_SIZE.pem $TMP/dh$KEY_SIZE.pem
 FILENAME=$TMP/server.conf
 cp $PATH_CONFIG_TEMPLATES/server.conf $FILENAME
 

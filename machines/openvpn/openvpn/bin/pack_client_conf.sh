@@ -8,29 +8,39 @@ if [[ -z "$OVPN_REMOTE" || -z "$OVPN_REMOTE_PORT" ]]; then
     exit -1
 fi
 
-cd $KEYFOLDER_ROOT
+cd $EASY_RSA
 
-if [[ -z "$1" || -z "$2" || -z "$3" || -z "$4" ]] 
+if [[ -z "$1" || -z "$2" || -z "$3" ]] 
 then
     echo "Usage: pack_client_conf.sh keyname configuration-filename <finalname> -tar"
     exit -1;
 fi
 
-CONF="/root/confs/$2"
-FILENAME="./openvpn/$(basename $CONF)"
-CLIENT_KEY=$KEYFOLDER/$1.key
-CLIENT_CERT=$KEYFOLDER/$1.crt
-CA_CERT=$KEYFOLDER/ca.crt
-TLS_KEY=$KEYFOLDER/ta.key
+if [[ -z "$OVPN_REMOTE" || -z "$OVPN_REMOTE_PORT" || -z "$OVPN_CIPHER" ]]; then
+	echo "Missing OVPN_REMOTE, OVPN_PORT or OVPN_CIPHER"
+	exit -1
+fi
+
+make_client_key.sh $1
+
+TMP=$(mktemp -u)
+mkdir -p $TMP
+CONF="$PATH_CONFIG_TEMPLATES/$2"
+FILENAME="$TMP/$(basename $CONF)"
+CLIENT_KEY=$KEY_DIR/$1.key
+CLIENT_CERT=$KEY_DIR/$1.crt
+CA_CERT=$KEY_DIR/ca.crt
+TLS_KEY=$KEY_DIR/ta.key
 if [[ ! -d ./openvpn ]]
 then
 	mkdir openvpn
 fi
+
 #mkdir openvpn  
-cp $CONF ./openvpn
+cp $CONF $TMP
 sed -i "s|__REMOTE__|${OVPN_REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${OVPN_REMOTE_PORT}|g" $FILENAME
-sed -i "s|__CIPHER__|${CIPHER}|g" $FILENAME
+sed -i "s|__CIPHER__|${OVPN_CIPHER}|g" $FILENAME
 
 echo "<key>" >> $FILENAME
 cat $CLIENT_KEY >> $FILENAME
@@ -46,7 +56,7 @@ cat $TLS_KEY  >> $FILENAME
 echo "</tls-auth>">>$FILENAME
 
 echo "$*" |grep -q '[-]tar' && {
-    cd openvpn
+    cd $TMP
     tar -cf ../$4 *
     cd ..
     mv $4 /root/client_out/
@@ -54,4 +64,4 @@ echo "$*" |grep -q '[-]tar' && {
     mv $FILENAME /root/client_out/$4
 }
 
-rm -rf openvpn 
+rm -Rf $TMP
