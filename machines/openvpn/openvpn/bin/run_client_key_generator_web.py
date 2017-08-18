@@ -24,6 +24,11 @@ class keygenerator:
             conf_filename += '.tar'
 
         assert '/' not in conf_filename
+        subprocess.check_output([
+            '/usr/local/bin/make_client_key.sh',
+            data.client_name,
+            '-silent',
+        ])
 
         subprocess.check_output([
             '/usr/local/bin/pack_client_conf.sh',
@@ -37,4 +42,5 @@ class keygenerator:
 
 
 if __name__ == "__main__":
+    print "Starting ovpn key generator"
     app.run()

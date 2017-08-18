@@ -9,8 +9,10 @@ if [[ -z "$1" ]]; then
 fi
 
 if [[ $(find $KEY_DIR -name $1.key) ]]; then
-	echo "Client key $1 already created - aborting."
-	exit -1
+	echo "$*" |grep -q '[-]silent' || {
+		echo "Client key $1 already created - aborting."
+		exit -1
+	}
 fi
 
 prepare_ca_tools.sh
