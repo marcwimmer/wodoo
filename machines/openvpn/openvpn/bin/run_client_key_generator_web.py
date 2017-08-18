@@ -26,6 +26,9 @@ class setup_ccd:
             dns=None,
         )
 
+        if not data['client_name']:
+            raise Exception("missing name!")
+
         if data['offset_ip'] not in ['-1', -1]:
             fixed_ip = process_config.get_next_ip(long(data['offset_ip']))
         else:
