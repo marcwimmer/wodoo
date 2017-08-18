@@ -2,6 +2,7 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 check_has_ca.sh
+prepare_ca_tools.sh
 TMP=$(mktemp -u)
 mkdir -p $TMP
 cp $KEY_DIR/server.crt $TMP

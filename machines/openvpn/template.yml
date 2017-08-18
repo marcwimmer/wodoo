@@ -39,6 +39,8 @@ services:
         OPENSSL: openssl
         PKCS11TOOL: pkcs11-tool
         VPN_DOMAIN: ${OVPN_DOMAIN}
+        OVPN_INTERNAL_REMOTE: ${OVPN_DOMAIN}_ovpn_server
+        OVPN_INTERNAL_REMOTE_PORT: 1194
 
   ${OVPN_DOMAIN}_ovpn_manage: &ovpn_manage_${OVPN_DOMAIN}
     <<: *ovpn_minimal_${OVPN_DOMAIN}
