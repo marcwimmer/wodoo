@@ -6,7 +6,7 @@ if [[ -z "$DB_HOST" || -z "$DB_USER" ]]; then
     exit -1
 fi
 
-declare -a FILES=("config_openerp" "config_gevent" "config_debug")
+declare -a FILES=("config_openerp" "config_gevent" "config_debug" "config_shell")
 for f in ${FILES[@]};
 do
     f=/home/odoo/$f
