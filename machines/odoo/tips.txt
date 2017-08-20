@@ -17,3 +17,7 @@ How to use:
   * emulate cronjobs:
 
       * /run_cronjobs.sh
+
+  * open shell:
+
+      * /shell.sh
