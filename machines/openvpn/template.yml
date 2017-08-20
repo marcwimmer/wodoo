@@ -3,21 +3,6 @@
 version: '3.3'
 
 services:
-  ${OVPN_DOMAIN}_ovpn_dns:
-      build: ../machines/openvpn/dns
-      cap_add:
-        - NET_ADMIN
-      volumes:
-        - ../data/ovpn/client:/opt/certs:ro
-
-  ${OVPN_DOMAIN}_ovpn_ntp:
-      build: ../machines/openvpn/ntp
-      cap_add:
-        - NET_ADMIN
-      volumes:
-        - ../data/ovpn/client:/opt/certs:ro
-      ports:
-        - "${NTP_PORT}:123/udp"
 
   ${OVPN_DOMAIN}_ovpn_minimal: &ovpn_minimal_${OVPN_DOMAIN}
     #container_name: ${DCPREFIX}_ovpn_minimal
@@ -38,10 +23,10 @@ services:
         GREP: grep
         OPENSSL: openssl
         PKCS11TOOL: pkcs11-tool
-        VPN_DOMAIN: ${OVPN_DOMAIN}
+        OVPN_DOMAIN: ${OVPN_DOMAIN}
         OVPN_INTERNAL_REMOTE: ${OVPN_DOMAIN}_ovpn_server
         OVPN_INTERNAL_REMOTE_PORT: 1194
-        OVPN_SERIAL_START: 10000
+        OVPN_SERIAL_START: 1000
         CONFIG_TEMPLATE_INTERNAL_REMOTE: internalremote.conf
 
   ${OVPN_DOMAIN}_ovpn_manage: &ovpn_manage_${OVPN_DOMAIN}
@@ -80,19 +65,15 @@ services:
         - "${OVPN_PORT}:1194/udp"
     env_file:
       - ../settings
-    command: /usr/local/bin/run_ovpn_server.sh
+    command: [
+        '/usr/local/bin/make_server_keys.sh',
+        '/usr/local/bin/pack_server_conf.sh',
+        '/usr/local/bin/make_default_keys.sh',
+        # '/usr/local/bin/run_ovpn_server.sh'
+    ]
     #healthcheck:
         #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
         #interval: 15s
         #timeout: 5s
         #retries: 2
 
-  ${OVPN_DOMAIN}_ovpn_clientprovisioner:
-    container_name: ${DCPREFIX}_ovpn_clientprovisioner
-    build: ../machines/openvpn/vpnconfs_provisioner
-    # using nginx subdomain 
-    #ports:to reach this /ovpn_confs
-    #    - "${OVPNWEB_PORT}:8080"
-    volumes:
-        - ../data/ovpn/${OVPN_DOMAIN}/client:/root/transfer:ro
-    command: python3 /root/tools/monjerri.py

@@ -44,7 +44,10 @@ def make_default_client_confs():
         # get ovpn config for internal remote
         CONFIG_TEMPLATE_INTERNAL_REMOTE = os.environ['CONFIG_TEMPLATE_INTERNAL_REMOTE']
 
-        dest_conf_name = "{ovpn_domain}_{internal_hostname}".format(os.environ['OVPN_DOMAIN'], internal_host)
+        dest_conf_name = "{ovpn_domain}_{internal_hostname}".format(
+            ovpn_domain=os.environ['OVPN_DOMAIN'],
+            internal_hostname=internal_host
+        )
 
         subprocess.check_output([
             '/usr/local/bin/make_client_key.sh',

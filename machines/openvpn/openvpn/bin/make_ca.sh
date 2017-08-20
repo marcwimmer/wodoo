@@ -2,15 +2,15 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 
-export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
-export KEY_NAME="CA-$VPN_DOMAIN"
-
 if [ -f $KEY_DIR/ca.crt ]; then
 	echo "Please clean existing CA before. (Using clean_all.sh)"
 	exit -1
 fi
 
 prepare_ca_tools.sh
+export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
+export KEY_NAME="CA-$OVPN_DOMAIN"
+
 cd "$EASY_RSA"
 ./build-ca  --batch --sign
 ./build-dh  --batch --sign

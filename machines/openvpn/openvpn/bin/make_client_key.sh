@@ -21,7 +21,7 @@ cd $EASY_RSA
 echo "Build Key"
 export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
 export KEY_CN=$1  # to match CCD
-export KEY_NAME="client-${VPN_DOMAIN}-$1"
+export KEY_NAME="client-${OVPN_DOMAIN}-$1"
 prepare_ca_tools.sh
 
 #BUG IN UBUNTU 14.04 and 16.04 PKITOOL:

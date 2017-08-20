@@ -190,12 +190,16 @@ function showhelp() {
     echo "logs - show log output; use parameter to specify machine"
 	echo ""
     echo "logall - shows log til now; use parameter to specify machine"
+
+	echo ""
+	echo "---------------------------------------------------------------"
+	echo "OVPN"
 	echo ""
     echo "make-CA - recreates CA caution! for asterisk domain e.g. provide parameter "asterisk""
-	echo ""
+    echo "make-phone-CA - recreates CA caution!"
     echo "show-openvpn-ciphers - lists the available ciphers"
 	echo ""
-    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
+	echo "---------------------------------------------------------------"
 	echo ""
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
 	echo ""
@@ -699,6 +703,7 @@ function do_command() {
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
 		domain=$2
+		set -e
 		$0 force-ovpn-domain $domain
 
         askcontinue -force
@@ -708,14 +713,15 @@ function do_command() {
 
 		$(
 		set -e
-		cd $DIR/data/ovpn
+		mkdir -p $DIR/data/ovpn_backup
+		cd $DIR/data/ovpn_backup
 		if [[ -d $domain ]]; then
-			tar cfz $domain-$(date +%Y%m%d-%H%M%S).tar.gz $domain
-			rm -Rf $domain
+			tar cfz $domain-$(date +%Y%m%d-%H%M%S).tar.gz $DIR/data/ovpn/$domain
 		fi
 		
 		)
 
+        dcrun ${domain}_ovpn_manage clean_all.sh
         dcrun ${domain}_ovpn_manage make_ca.sh
         ;;
     #make-keys)
