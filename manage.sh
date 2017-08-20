@@ -198,6 +198,7 @@ function showhelp() {
     echo "make-CA - recreates CA caution! for asterisk domain e.g. provide parameter "asterisk""
     echo "make-phone-CA - recreates CA caution!"
     echo "show-openvpn-ciphers - lists the available ciphers"
+    echo "enter-VPN <domain> - starts machine and you have some tools like nmap"
 	echo ""
 	echo "---------------------------------------------------------------"
 	echo ""
@@ -672,6 +673,12 @@ function do_command() {
 	   dcrun ovpn_minimal /usr/sbin/openvpn --show-ciphers
 	   ;;
 
+	enter-VPN)
+		domain=$2
+		machine_name="${domain}_ovpn_server_client"
+		$0 up -d $machine_name
+		$0 runbash $machine_name
+		;;
     make-phone-CA)
 		$0 make-CA asterisk
 		;;
@@ -723,6 +730,9 @@ function do_command() {
 
         dcrun ${domain}_ovpn_manage clean_all.sh
         dcrun ${domain}_ovpn_manage make_ca.sh
+        dcrun ${domain}_ovpn_manage make_server_keys.sh
+        dcrun ${domain}_ovpn_manage make_default_keys.sh
+        dcrun ${domain}_ovpn_manage pack_server_conf.sh
         ;;
     #make-keys)
         #export dc=$dc

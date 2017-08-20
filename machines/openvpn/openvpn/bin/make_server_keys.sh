@@ -17,6 +17,3 @@ touch ${KEY_DIR}/index.txt
 
 cd $EASY_RSA
 ./build-key-server --batch server
-
-cd /usr/local/bin
-python process_config.py

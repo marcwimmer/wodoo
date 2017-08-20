@@ -10,15 +10,14 @@ from datetime import datetime
 
 urls = (
     '/', 'index',
-    '/generate', 'keygenerator',
-    '/repack', 'keygenerator',
+    '/pack', 'keygenerator',
     '/setup_ccd', 'setup_ccd'
 )
 app = web.application(urls, globals())
 
 class index:
     def GET(self):
-        return """Please use /generate?client_name=...&conf_template=...&conf_filename=...&tar=0/1 to generate client certificates"""
+        return """Please use /pack?client_name=...&conf_template=...&conf_filename=...&tar=0/1 to pack client certificates"""
 
 class setup_ccd:
     def GET(self):
@@ -56,11 +55,11 @@ class keygenerator:
 
         tar = data.tar == '1'
 
-        if web.ctx['path'] == '/generate':
-            subprocess.check_output([
-                '/usr/local/bin/make_client_key.sh',
-                data.client_name,
-            ])
+        subprocess.check_output([
+            '/usr/local/bin/make_client_key.sh',
+            data.client_name,
+            '-abort-on-existing',
+        ])
 
         subprocess.check_output([
             '/usr/local/bin/pack_client_conf.sh',

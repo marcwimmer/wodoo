@@ -52,7 +52,7 @@ def make_default_client_confs():
         subprocess.check_output([
             '/usr/local/bin/make_client_key.sh',
             internal_host,
-            '-silent',
+            '-abort-on-existing',
         ])
         subprocess.check_output([
             '/usr/local/bin/pack_client_conf.sh',

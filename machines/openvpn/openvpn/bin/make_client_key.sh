@@ -9,6 +9,9 @@ if [[ -z "$1" ]]; then
 fi
 
 if [[ $(find $KEY_DIR -name $1.key) ]]; then
+	echo "$*" |grep -q '[-]abort-on-existing' && {
+		exit 0
+	}
 	echo "$*" |grep -q '[-]silent' || {
 		echo "Client key $1 already created - aborting."
 		exit -1

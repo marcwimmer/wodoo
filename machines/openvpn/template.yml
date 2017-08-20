@@ -47,13 +47,6 @@ services:
     <<: *ovpn_manage_${OVPN_DOMAIN}
     container_name: ${DCPREFIX}_ovpn_client_key_generator
     command: python /usr/local/bin/run_client_key_generator_web.py 80
-    ports:
-        - "12500:80/tcp"
-    #healthcheck:
-        #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
-        #interval: 15s
-        #timeout: 5s
-        #retries: 2
 
   ${OVPN_DOMAIN}_ovpn_server:
     <<: *ovpn_minimal_${OVPN_DOMAIN}
@@ -61,16 +54,33 @@ services:
     cap_add:
         - NET_ADMIN
     ports:
-        - "${OVPN_PORT}:1194/tcp"
-        - "${OVPN_PORT}:1194/udp"
-    env_file:
-      - ../settings
+        - "${OVPN_PORT_${OVPN_DOMAIN}}:1194/tcp"
+        - "${OVPN_PORT_${OVPN_DOMAIN}}:1194/udp"
     command: [
         '/usr/local/bin/make_server_keys.sh',
         '/usr/local/bin/pack_server_conf.sh',
         '/usr/local/bin/make_default_keys.sh',
         # '/usr/local/bin/run_ovpn_server.sh'
     ]
+    volumes:
+        - ../data/ovpn/${OVPN_DOMAIN}/CA:/root/CA
+        - ../data/ovpn/${OVPN_DOMAIN}/server:/root/server_out
+        - ../data/ovpn/${OVPN_DOMAIN}/client:/root/client_out
+        - ../data/ovpn/${OVPN_DOMAIN}/ccd:/root/ccd
+    #healthcheck:
+        #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
+        #interval: 15s
+        #timeout: 5s
+        #retries: 2
+
+  ${OVPN_DOMAIN}_ovpn_server_client:
+    <<: *ovpn_minimal_${OVPN_DOMAIN}
+    container_name: ${DCPREFIX}_ovpn_serverclient
+    cap_add:
+        - NET_ADMIN
+    command: ["echo 'attach here with manage.sh enter-VPN <domain> to debug the openvpn network"]
+    volumes:
+        - ../data/ovpn/${OVPN_DOMAIN}/client:/root/client_out
     #healthcheck:
         #test: ["CMD-SHELL", "/root/tools/healthcheck.sh"]
         #interval: 15s
