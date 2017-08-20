@@ -19,4 +19,4 @@ fi;
 
 
 echo "Starting ovpn Server-Client"
-/usr/sbin/openvpn $CLIENT_OUT/ovpn_server.conf
+/usr/sbin/openvpn $CLIENT_OUT/${OVPN_DOMAIN}_ovpn_server

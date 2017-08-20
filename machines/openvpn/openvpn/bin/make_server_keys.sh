@@ -1,16 +1,16 @@
 #!/bin/bash
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
-check_has_ca.sh
 
 if [[ $(find $KEY_DIR -name server.key) ]]; then
 	echo "Server key already created - aborting"
 	exit -1
 fi
 
+prepare_ca_tools.sh
+check_has_ca.sh
 export KEY_CONFIG=`$EASY_RSA/whichopensslcnf $EASY_RSA`
 export KEY_NAME="server-${OVPN_DOMAIN}"
-prepare_ca_tools.sh
 touch ${KEY_DIR}/index.txt
 
 [[ -f $KEY_DIR/serial ]] || echo $OVPN_SERIAL_START > $KEY_DIR/serial

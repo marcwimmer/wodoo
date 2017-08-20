@@ -31,8 +31,8 @@ def update_server_conf():
         with open(filepath, 'r') as f:
             content = f.read()
         content = content.replace("__IP_POOL_START__", config['ip_pool']['start'])
-        content = content.replace("__IP_POOL_END", config['ip_pool']['end'])
-        content = content.replace("__IP_POOL_NETMASK", config['ip_pool']['netmask'])
+        content = content.replace("__IP_POOL_END__", config['ip_pool']['end'])
+        content = content.replace("__IP_POOL_NETMASK__", config['ip_pool']['netmask'])
         with open(filepath, 'w') as f:
             f.write(content)
 
