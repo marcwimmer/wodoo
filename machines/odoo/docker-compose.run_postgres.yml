@@ -1,22 +1,22 @@
 # manage-order 1001
 version: '3.3'
-services:
-  odoo:
-    depends_on:
-        postgres:
-            condition: service_healthy
+#services:
+  #odoo:
+    #depends_on:
+        #postgres:
+            #condition: service_healthy
       
-  odoo_cronjobs:
-    depends_on:
-        postgres:
-            condition: service_healthy
+  #odoo_cronjobs:
+    #depends_on:
+        #postgres:
+            #condition: service_healthy
 
-  odoo_update:
-    depends_on:
-        postgres:
-            condition: service_healthy
+  #odoo_update:
+    #depends_on:
+        #postgres:
+            #condition: service_healthy
 
-  odoo_lang_export:
-    depends_on:
-        postgres:
-            condition: service_healthy
+  #odoo_lang_export:
+    #depends_on:
+        #postgres:
+            #condition: service_healthy
