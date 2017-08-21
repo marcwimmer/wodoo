@@ -29,6 +29,7 @@ function default_confs() {
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
 	export DB_PORT=5432
+	export ODOO_HOME=/opt/odoo
 }
 
 function export_settings() {
