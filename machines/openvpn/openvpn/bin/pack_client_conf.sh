@@ -36,7 +36,7 @@ CA_CERT=$KEY_DIR/ca.crt
 TLS_KEY=$KEY_DIR/ta.key
 
 #mkdir openvpn  
-cp $CONF $TMP
+cp $CONF $FILENAME
 sed -i "s|__REMOTE__|${OVPN_REMOTE}|g" $FILENAME
 sed -i "s|__REMOTE_PORT__|${OVPN_REMOTE_PORT}|g" $FILENAME
 sed -i "s|__INTERNAL_REMOTE__|${OVPN_INTERNAL_REMOTE}|g" $FILENAME
@@ -58,11 +58,13 @@ echo "</tls-auth>">>$FILENAME
 
 echo "$*" |grep -q '[-]tar' && {
     cd $TMP
-    tar -cf ../$FINALNAME *
-    cd ..
-    mv $FINALNAME /root/client_out/
+	# rename configuration to vpn.cnf as SNOM phones want it
+	mv $FILENAME vpn.cnf
+	chown root:root vpn.cnf
+	chmod 700 vpn.cnf
+    tar cvpf $CLIENT_OUT/$FINALNAME vpn.cnf
 } || {
-    mv $FILENAME /root/client_out/$FINALNAME
+    mv $FILENAME $CLIENT_OUT/$FINALNAME
 }
 
 rm -Rf $TMP
