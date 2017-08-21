@@ -79,7 +79,7 @@ services:
     container_name: ${DCPREFIX}_ovpn_serverclient
     cap_add:
         - NET_ADMIN
-    command: ["echo 'attach here with manage.sh enter-VPN <domain> to debug the openvpn network"]
+    command: echo 'attach here with manage.sh enter-VPN <domain> to debug the openvpn network'
     volumes:
         - ../data/ovpn/${OVPN_DOMAIN}/client:/root/client_out
     #healthcheck:
