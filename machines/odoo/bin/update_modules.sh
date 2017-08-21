@@ -1,6 +1,6 @@
 #!/bin/bash
-set +x
 set -e
+[[ "$VERBOSE" == "1" ]] && set -x
 MODULE=$1
 
 source /env.sh
@@ -10,10 +10,10 @@ source /env.sh
 function get_modules() {
 	mode=$1 #to_install, to_update
 	if [[ -z "$MODULE" ]]; then
-		cd /opt/openerp/admin/module_tools
+		cd /opt/odoo/admin/module_tools
 		echo "$(python <<-EOF
 		import module_tools
-		module_tools.get_customs_modules("/opt/openerp/active_customs", "$mode")
+		module_tools.get_customs_modules("/opt/odoo/active_customs", "$mode")
 		EOF
 		)"
 	else
@@ -25,7 +25,7 @@ function delete_qweb() {
     # for odoo delete all qweb views and take the new ones;
 	local __module__=$(get_modules $1)
 	$(
-	cd /opt/openerp/admin/module_tools
+	cd /opt/odoo/admin/module_tools
 	python -c"import module_tools; module_tools.delete_qweb('$__module__')"
 	)
 }
@@ -46,7 +46,7 @@ function update() {
 			OPERATOR="-i"
 		fi
 		echo "$__module__"
-		time sudo -H -u odoo /opt/openerp/versions/server/openerp-server \
+		time sudo -H -u odoo /opt/odoo/server/openerp-server \
 			-c /home/odoo/config_openerp \
 			-d $DBNAME \
 			$OPERATOR $__module__ \

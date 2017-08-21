@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
-set -x 
+
+[[ "$VERBOSE" == "1" ]] && set -x
 
 echo "Installing custom requirements from odoo"
-
 
 #7.0
 if [[ "$1" == "7.0" ]]; then

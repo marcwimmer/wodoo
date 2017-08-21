@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ "$VERBOSE" == "1" ]] && set -x
 
 echo "$*" |grep -q '[-]quick' || {
 	/sync_source.sh
@@ -9,5 +10,5 @@ echo "$*" |grep -q '[-]quick' || {
 	echo "Done autosetup"
 }
 
-sudo pkill -9 -f /opt/openerp
-sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server -d $DBNAME -c /home/odoo/config_debug --pidfile=$DEBUGGER_ODOO_PID
+sudo pkill -9 -f /opt/odoo
+sudo -E -H -u odoo /opt/odoo/server/openerp-server -d $DBNAME -c /home/odoo/config_debug --pidfile=$DEBUGGER_ODOO_PID

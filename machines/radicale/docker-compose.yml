@@ -1,0 +1,17 @@
+#manage-order: 5000
+version: "2.1"
+services:
+    radicale:
+       build: ../machines/radicale
+       ports:
+         - "5232:5232"
+       volumes:
+         - odoosource:/opt/odoo
+       env_file:
+         - ../settings
+       environment:
+         RADICALE_DIR: /opt/odoo/active_customs/common/calendar_ics
+         RADICALE_VERSION: RadicalePatched-1.1.1
+    odoo:
+        depends_on:
+            - radicale

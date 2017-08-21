@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
-set -x
-whoami
+[[ "$VERBOSE" == "1" ]] && set -x
 
 DESTFILE=/opt/dumps/$DBNAME.gz
 

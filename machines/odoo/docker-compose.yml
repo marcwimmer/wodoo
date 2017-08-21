@@ -1,0 +1,71 @@
+# manage-order 1000
+version: '3.3'
+volumes:
+  opt_servers:
+  opt_permanent:
+  odoosource:
+
+services:
+  odoo_base: &odoo_base
+    container_name: ${DCPREFIX}_odoo_base
+    build:
+        context: ../machines/odoo
+        args:
+          ODOO_VERSION: ${ODOO_VERSION}
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    volumes:
+      - ../dumps:/opt/dumps
+      - ../run/restore:/opt/restore
+      - ${ODOO_FILES}/:/opt/files
+      - opt_permanent:/opt/permanent
+      - opt_servers:/opt/servers
+      - odoosource:/opt/odoo
+      - ../data/src/admin:/opt/src/admin:ro
+      - ../data/src/customs:/opt/src/customs:ro
+      - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
+      - ../run/i18n:/opt/i18n
+    env_file:
+      - ../settings
+      - ../machines/odoo/docker-env
+    command: echo 'odoo_base - good bye - it is ok!'
+
+  source_code:
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_source_code
+    command: echo 'good bye' # not starting with manage.sh up -d
+
+  odoo:
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_odoo
+    environment:
+      DEBUGGER_WATCH: /tmp/odoo_debug.txt
+      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
+    command: /rootrun.sh
+    ports:
+       - "8072:8072"
+      
+  odoo_cronjobs:
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_odoo_cronjobs
+    environment:
+      IS_ODOO_CRONJOB: 1
+    command: /rootrun.sh
+
+  odoo_update:
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_odoo_updater
+    # called by manage.sh
+    command: echo 'good bye - it is ok!'
+
+  odoo_lang_export:
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_odoo_lang_export
+    command: /bin/echo 'hi'
+    environment:
+      LANG_EXPORT_DIR: /opt/i18n

@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ "$VERBOSE" == "1" ]] && set -x
 if [[ -z "$1" ]]; then
     echo "Missing test-file"
     exit -1
@@ -12,7 +13,7 @@ echo "Executing autosetup..."
 echo "Done autosetup"
 
 
-sudo -E -H -u odoo /opt/openerp/versions/server/openerp-server \
+sudo -E -H -u odoo /opt/odoo/server/openerp-server \
     -d $DBNAME \
     -c /home/odoo/config_debug \
     --pidfile=$DEBUGGER_ODOO_PID \

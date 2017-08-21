@@ -26,7 +26,7 @@ while true; do
 
 	if [[ "$new_mod" != "$last_mod" ]]; then
 
-		pkill -9 -f /opt/openerp
+		pkill -9 -f /opt/odoo
 		last_mod=$new_mod
 	fi
 
@@ -59,6 +59,10 @@ while true; do
 		if [[ "$action" == 'debug' ]]; then
 			reset
 			/debug.sh
+
+		elif [[ "$action" == 'quick_restart' ]]; then
+			reset
+			/debug.sh -quick
 
 		elif [[ "$action" == 'update_module' ]]; then
 			module=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')

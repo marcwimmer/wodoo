@@ -28,23 +28,25 @@ Basis Verzeichnis erstellen, z.B. in Home:
     git clone git.mt-software.de:/git/openerp/docker/prod odoo
     cd odoo
 
-Customs.env.template umkopieren und anpassen:
+Settings anpassen:
 
-    cp customs.env.template customs.env
-    vi customs.env
+    cp ./settings.template/settings settings
+    vi settings
 
 Dann die Umgebung initialisieren
 
-    ./manage.sh init
+    ./manage.sh build
 
 Anschliessend Maschinen hochfahren:
 
-    ./manage.sh upall
+    ./manage.sh up -d
 
 Einrichten eines automatischen Start-Skripts
 ============================================
 
+  ./manage.sh setup-startup
+
 Initial Dump einspielen
 ============================================
 
-    TODO 
+  ./manage.sh restore DUMP.gz FILES.tar

@@ -8,15 +8,21 @@
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
 
-set -e
-set +x
+function dcrun() {
+	eval "$dc run -T $@"
+}
 
-args=("$@")
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-ALL_PARAMS=${@:2} # all parameters without command
-export odoo_manager_started_once=1
+function dcexec() {
+	$dc exec -T $@
+}
 
-
+function startup() {
+	args=("$@")
+	echo $args
+	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+	ALL_PARAMS=${@:2} # all parameters without command
+	export odoo_manager_started_once=1
+}
 
 function default_confs() {
 	export ODOO_FILES=$DIR/data/odoo.files
@@ -26,8 +32,8 @@ function default_confs() {
 	export ODOO_HOME=/opt/odoo
 }
 
-function export_customs_env() {
-    # set variables from customs env
+function export_settings() {
+    # set variables from settings
     while read line; do
         # reads KEY1=A GmbH and makes export KEY1="A GmbH" basically
         [[ "$line" == '#*' ]] && continue
@@ -35,8 +41,8 @@ function export_customs_env() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
-    done <$DIR/customs.env
-    export $(cut -d= -f1 $DIR/customs.env)  # export vars now in local variables
+    done <$DIR/settings
+    export $(cut -d= -f1 $DIR/settings)  # export vars now in local variables
 
 	if [[ "$RUN_POSTGRES" == "1" ]]; then
 		DB_HOST=postgres
@@ -44,6 +50,18 @@ function export_customs_env() {
 		DB_USER=odoo
 		DB_PWD=odoo
 	fi
+
+	# get odoo version
+	export ODOO_VERSION=$(
+	cd $ODOO_HOME/data/src/admin/module_tools
+	python <<-EOF
+	import odoo_config
+	v = odoo_config.get_version_from_customs("$CUSTOMS")
+	print v
+	EOF
+	)
+
+	[[ "$VERBOSE" == "1" ]] && set -x
 }
 
 function restore_check() {
@@ -84,7 +102,7 @@ function do_restore_db_in_docker_container () {
 
 	/bin/ln $dump_file $LOCAL_DEST_NAME
 	$0 reset-db
-	$dcrun postgres /restore.sh $(basename $LOCAL_DEST_NAME)
+	dcrun postgres /restore.sh $(basename $LOCAL_DEST_NAME)
 }
 
 function do_restore_db_on_external_postgres () {
@@ -115,12 +133,13 @@ function do_restore_files () {
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm $LOCAL_DEST_NAME
 
 	/bin/ln $tararchive_full_path $LOCAL_DEST_NAME
-	exit -1
-	$dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
+	dcrun odoo /bin/restore_files.sh $(basename $LOCAL_DEST_NAME)
 }
 
 function askcontinue() {
-	echo $1
+	if [[ "$1" != "-force" ]]; then
+		echo $1
+	fi
 	force=0
 	echo "$*" |grep -q '[-]force' && {
 		force=1
@@ -140,6 +159,7 @@ function showhelp() {
     echo Management of odoo instance
     echo
     echo
+	echo ./manage.sh install-deps
 	echo ./manage.sh sanity-check
     echo Reinit fresh db:
     echo './manage.sh reset-db'
@@ -162,8 +182,6 @@ function showhelp() {
 	echo ""
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./manage.sh build asterisk --no-cache"
 	echo ""
-    echo "clean_supportdata - clears support data"
-	echo ""
     echo "install-telegram-bot - installs required python libs; execute as sudo"
 	echo ""
     echo "telegram-setup- helps creating a permanent chatid"
@@ -173,10 +191,17 @@ function showhelp() {
     echo "logs - show log output; use parameter to specify machine"
 	echo ""
     echo "logall - shows log til now; use parameter to specify machine"
+
 	echo ""
-    echo "make-CA - recreates CA caution!"
+	echo "---------------------------------------------------------------"
+	echo "OVPN"
 	echo ""
-    echo "make-keys - creates VPN Keys for CA, Server, Asterisk and Client. If key exists, it is not overwritten"
+    echo "make-CA - recreates CA caution! for asterisk domain e.g. provide parameter "asterisk""
+    echo "make-phone-CA - recreates CA caution!"
+    echo "show-openvpn-ciphers - lists the available ciphers"
+    echo "enter-VPN <domain> - starts machine and you have some tools like nmap"
+	echo ""
+	echo "---------------------------------------------------------------"
 	echo ""
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
 	echo ""
@@ -217,6 +242,29 @@ function prepare_filesystem() {
     mkdir -p $DIR/run/config
 }
 
+function replace_all_envs_in_file() {
+	if [[ ! -f "$1" ]]; then
+		echo "File not found: $1"
+		exit -1
+	fi
+	export FILENAME=$1
+	$(python <<-"EOF"
+	import os
+	import re
+	filepath = os.environ['FILENAME']
+	with open(filepath, 'r') as f:
+	    content = f.read()
+	all_params = re.findall(r'\$\{[^\}]*?\}', content)
+	for param in all_params:
+	    name = param
+	    name = name.replace("${", "")
+	    name = name.replace("}", "")
+	    content = content.replace(param, os.environ[name])
+	with open(filepath, 'w') as f:
+	    f.write(content)
+	EOF
+	)
+}
 
 function prepare_yml_files_from_template_files() {
     # replace params in configuration file
@@ -229,62 +277,47 @@ function prepare_yml_files_from_template_files() {
 		echo "VERSION: $ODOO_VERSION"
 		echo "FILES: $ODOO_FILES"
 	fi
-	set -x
-    ALL_CONFIG_FILES=$(cd config; find . -name '*-docker-compose*.yml' |paste -d' ' -s  | sed 's/\.\///g') 
-    FILTERED_CONFIG_FILES=""
-    for file in $ALL_CONFIG_FILES 
-    do
-        # check if RUN_ASTERISK=1 is defined, and then add it to the defined machines; otherwise ignore
 
-        #docker-compose.odoo --> odoo
-		RUN_X=$(
-		python - <<-EOF
-		print "RUN_" + "$file".replace("docker-compose.", "").split("-")[1].replace('.yml', '').replace("-", "_").upper()
-		EOF
-		)
-
-        ENV_VALUE=${!RUN_X}  # variable indirection; get environment variable
-
-        if [[ "$ENV_VALUE" == "" ]] || [[ "$ENV_VALUE" == "1" ]]; then
-
-            FILTERED_CONFIG_FILES+=$file
-            FILTERED_CONFIG_FILES+=','
-            DEST_FILE=$DIR/run/$file
-            cp config/$file $DEST_FILE
-            sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" $DEST_FILE
-            sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${CUSTOMS}/$CUSTOMS/" $DEST_FILE
-            sed -i -e "s|\${ODOO_FILES}|$ODOO_FILES|" -e "s|\${ODOO_FILES}|$ODOO_FILES|" $DEST_FILE
-        fi
+	# python: find all configuration files from machines folder; extract sort 
+	# by manage-sort flag and put file into run directory
+	# only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
+	#
+	# - also replace all environment variables
+	find $DIR/run -name *docker-compose*.yml -delete
+	ALL_CONFIG_FILES=$(cd $DIR; find machines -name 'docker-compose*.yml')
+	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES python $DIR/bin/prepare_dockercompose_files.py)
+	cd $DIR
+    for file in $ALL_CONFIG_FILES; do
+		replace_all_envs_in_file run/$file
     done
-    sed -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" -e "s/\${ODOO_VERSION}/$ODOO_VERSION/" machines/odoo/Dockerfile.template > machines/odoo/Dockerfile
 
-    all_config_files="$(for f in ${FILTERED_CONFIG_FILES//,/ }; do echo "-f run/$f"; done)"
-    all_config_files=$(echo "$all_config_files"|tr '\n' ' ')
-    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $all_config_files"
-    dcrun="$dc run -T"
-    dcexec="$dc exec -T"
-}
+	# translate config files for docker compose with appendix -f
+    ALL_CONFIG_FILES="$(for f in ${ALL_CONFIG_FILES}; do echo "-f run/$f" | tr '\n' ' '; done)"
 
+	# append custom docker composes
+	if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
+		cp $ADDITIONAL_DOCKER_COMPOSE $DIR/run
+		for file in $ADDITIONAL_DOCKER_COMPOSE; do
+			ALL_CONFIG_FILES+=" -f "
+			ALL_CONFIG_FILES+=$file
+		done
+	fi
+	echo $ALL_CONFIG_FILES
 
-
-function include_customs_conf_if_set() {
-    # odoo customs can provide custom docker machines
-    CUSTOMSCONF=$DIR/docker-compose-custom.yml
-    if [[ -f "$CUSTOMSCONF" || -L "$CUSTOMSCONF" ]]; then
-        echo "Including $CUSTOMSCONF"
-        dc="$dc -f $CUSTOMSCONF"
-    fi
+    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $ALL_CONFIG_FILES"
 }
 
 
 function do_command() {
     case $1 in
-    clean_supportdata)
-        echo "Deleting support data"
-        if [[ -d $DIR/support_data ]]; then
-            /bin/rm -Rf $DIR/support_data/*
-        fi
-        ;;
+		install-deps)
+			apt install python-psycopg2
+			apt install python-pip
+			pip install pip --upgrade
+			pip install lxml
+			pip install configobj
+			pip install unidecode
+		;;
     setup-startup)
         PATH=$DIR
 
@@ -353,7 +386,7 @@ function do_command() {
         BACKUP_FILENAME=$CUSTOMS.files.tar.gz
         BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
 
-		$dcrun odoo /backup_files.sh
+		dcrun odoo /backup_files.sh
         [[ -f $BACKUP_FILEPATH ]] && rm -Rf $BACKUP_FILEPATH
         mv $DIR/dumps/odoofiles.tar $BACKUP_FILEPATH
 
@@ -375,7 +408,7 @@ function do_command() {
         echo "Stopping all services and creating new database"
         echo "After creation the database container is stopped. You have to start the system up then."
         $dc kill
-        $dcrun -e INIT=1 postgres /entrypoint2.sh
+        dcrun -e INIT=1 postgres /entrypoint2.sh
         echo
         echo 
         echo
@@ -468,7 +501,7 @@ function do_command() {
 		)
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dcrun postgres psql $2
+			dcrun postgres psql $2
 		else
 			export PGPASSWORD=$DB_PWD
 			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME
@@ -597,11 +630,8 @@ function do_command() {
         python $DIR/bin/telegram_msg.py "__setup__" $token $channelname
 		echo "Finished - chat id is stored; bot can send to channel all the time now."
 		;;
-    purge-source)
-        $dcrun odoo rm -Rf /opt/openerp/customs/$CUSTOMS
-        ;;
     update-source)
-		$dcrun source_code /sync_source.sh $2
+		dcrun source_code /sync_source.sh $2
         ;;
     update)
         echo "Run module update"
@@ -618,10 +648,10 @@ function do_command() {
 
         set -e
         # sync source
-        $dcrun source_code
+        dcrun source_code
         set +e
 
-        $dcrun odoo_update /update_modules.sh $2
+        dcrun odoo_update /update_modules.sh $2
         $dc kill odoo nginx
         if [[ "$RUN_ASTERISK" == "1" ]]; then
             $dc kill ari stasis
@@ -639,6 +669,36 @@ function do_command() {
 		fi
 
        ;;
+
+    show-openvpn-ciphers)
+	   dcrun ovpn_minimal /usr/sbin/openvpn --show-ciphers
+	   ;;
+
+	enter-VPN)
+		domain=$2
+		machine_name="${domain}_ovpn_server_client"
+		$0 up -d $machine_name
+		$0 runbash $machine_name
+		;;
+    make-phone-CA)
+		$0 make-CA asterisk
+		;;
+	setup-ovpn-domain)
+		domain=$2
+
+		cd $DIR/machines/openvpn
+		docker_compose_file="$DIR/run/9999-docker-compose.ovpn.$domain.yml"
+
+		cp docker-compose.yml $docker_compose_file
+
+		;;
+	force-ovpn-domain)
+		domain=$2
+		if [[ -z "$domain" ]]; then
+			echo "OVPN Domain missing"
+			exit -1
+		fi
+		;;
     make-CA)
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
@@ -650,20 +710,36 @@ function do_command() {
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
         echo '!!!!!!!!!!!!!!!!!!'
+		domain=$2
+		set -e
+		$0 force-ovpn-domain $domain
 
         askcontinue -force
         export dc=$dc
-        $dc kill ovpn
-        $dcrun ovpn_ca /root/tools/clean_keys.sh
-        $dcrun ovpn_ca /root/tools/make_ca.sh
-        $dcrun ovpn_ca /root/tools/make_server_keys.sh
-        $dc rm -f
+        $dc kill ${domain}_ovpn_manage
+		# backup old data before
+
+		$(
+		set -e
+		mkdir -p $DIR/data/ovpn_backup
+		cd $DIR/data/ovpn_backup
+		if [[ -d $domain ]]; then
+			tar cfz $domain-$(date +%Y%m%d-%H%M%S).tar.gz $DIR/data/ovpn/$domain
+		fi
+		
+		)
+
+        dcrun ${domain}_ovpn_manage clean_all.sh
+        dcrun ${domain}_ovpn_manage make_ca.sh
+        dcrun ${domain}_ovpn_manage make_server_keys.sh
+        dcrun ${domain}_ovpn_manage make_default_keys.sh
+        dcrun ${domain}_ovpn_manage pack_server_conf.sh
         ;;
-    make-keys)
-        export dc=$dc
-        bash $DIR/config/ovpn/pack.sh
-        $dc rm -f
-        ;;
+    #make-keys)
+        #export dc=$dc
+        #bash $DIR/machines/openvpn/bin/pack.sh
+        #$dc rm -f
+        #;;
     export-i18n)
         LANG=$2
         MODULES=$3
@@ -673,11 +749,11 @@ function do_command() {
         fi
         rm $DIR/run/i18n/* || true
         chmod a+rw $DIR/run/i18n
-        $dcrun odoo_lang_export /export_i18n.sh $LANG $MODULES
+        dcrun odoo_lang_export /export_i18n.sh $LANG $MODULES
         # file now is in $DIR/run/i18n/export.po
         ;;
     import-i18n)
-        $dcrun odoo /import_i18n.sh $ALL_PARAMS
+        dcrun odoo /import_i18n.sh $ALL_PARAMS
         ;;
 	sanity_check)
 		sanity_check
@@ -695,6 +771,7 @@ function cleanup() {
     if [[ -f config/docker-compose.yml ]]; then
         /bin/rm config/docker-compose.yml || true
     fi
+
 }
 
 function try_to_set_owner() {
@@ -765,7 +842,7 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
-			$dcrun odoo bash -c "cd /opt/openerp/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+			dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
 		else
 			bash <<-EOF
 			cd $ODOO_HOME/data/src/admin/module_tools
@@ -778,10 +855,10 @@ function set_db_ownership() {
 
 function display_machine_tips() {
 
-	tipfile=$DIR/machines/$1/tips.txt
+	tipfile=$(find $DIR/machines | grep $1/tips.txt)
 	if [[ -f "$tipfile" ]]; then
 		echo 
-		echo Please notice:
+		echo Please note:
 		echo ---------------
 		echo
 		cat $tipfile
@@ -792,12 +869,52 @@ function display_machine_tips() {
 
 }
 
+function update_openvpn_domains() {
+
+	# searches for config files of openvpn and then copies the 
+	# template openvpn docker compose to run; 
+	# attaches the docker-compose to $dc then
+
+	for file in $(find $DIR/machines -name 'ovpn-domain.conf'); do
+		results=$(mktemp -u)
+		python $DIR/machines/openvpn/bin/prepare_domain_for_manage.py "$results" "$file" "$DIR"
+		dc="$dc -f $(cat $results)"
+		rm $results
+	done
+
+}
+
+function setup_nginx_subdomains() {
+
+	SUBDOMAIN_DIR=$DIR/run/nginx_subdomains
+	mkdir -p $SUBDOMAIN_DIR
+	rm $SUBDOMAIN_DIR/*.subdomain || true
+	for file in $(find $DIR/machines -name 'nginx.subdomain'); do
+		cat $file | while read line
+		do
+			SUBDOMAIN=$(echo $line | awk '{print $1}')
+			MACHINE=$(echo $line | awk '{print $2}')
+			PORT=$(echo $line | awk '{print $3}')
+
+			if [[ -z "$PORT" || -z "$MACHINE" ]]; then
+				echo "Invalid nginx subdomain: $file"
+				exit -1
+			fi
+
+			$DIR/machines/nginx/add_nginx_subdomain.sh "$SUBDOMAIN" "$MACHINE" "$PORT" "$SUBDOMAIN_DIR"
+		done
+
+	done
+}
+
 function main() {
+	startup $@
 	default_confs
-	export_customs_env
+	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
-	include_customs_conf_if_set
+	setup_nginx_subdomains
+	update_openvpn_domains
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "$@"

@@ -1,0 +1,15 @@
+# manage-order: 5000
+# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
+version: '2.1'
+
+services:
+  perftest:
+    container_name: ${DCPREFIX}_perftest
+    build: ../machines/perftest
+    env_file: ../settings
+    environment:
+      DURATION_TO_OUTPUT: 2
+      SLEEP: 10
+      USERNAME: $PERFTEST_USER
+      PASSWORD: $PERFTEST_PASSWORD
+      LOGLEVEL: INFO

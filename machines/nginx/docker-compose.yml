@@ -1,0 +1,14 @@
+#manage-order: 5000
+version: '3.3'
+services:
+  nginx:
+    container_name: ${DCPREFIX}_nginx
+    image: nginx:stable
+    ports:
+      - "${ODOO_PORT}:80"
+    env_file:
+      ../settings
+    volumes:
+      - ../machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
+      - ../run/nginx_subdomains:/etc/nginx/subdomains
+    command: /bin/bash -c "echo 'setting up nginx conf'; cp /mysite.template /etc/nginx/conf.d/default.conf && sed -i "s/__HTTP_HOST__/$HTTP_HOST/g" /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"

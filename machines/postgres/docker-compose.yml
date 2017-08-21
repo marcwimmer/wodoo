@@ -1,0 +1,23 @@
+# manage-order: 500
+version: '2.1'
+volumes:
+  postgresdata:
+services:
+  postgres:
+    container_name: ${DCPREFIX}_postgres
+    build: ../machines/postgres
+    volumes:
+      - ../dumps:/opt/dumps
+      - ../run/restore:/opt/restore
+      - postgresdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: 1
+      PGDATA: /var/lib/postgresql/data/pgdata
+    env_file:
+      ../settings
+
+    healthcheck:
+        test: ["CMD-SHELL", "pg_isready"]
+        interval: 30s
+        timeout: 30s
+        retries: 3

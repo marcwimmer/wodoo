@@ -1,0 +1,26 @@
+#manage-order: 5000
+version: '2.1'
+volumes:
+  cupsdatatoprint:
+
+services:
+  cups:
+    container_name: ${DCPREFIX}_cups
+    build: ../machines/cups
+    ports:
+      - "${CUPS_PORT}:631"
+    volumes:
+      - cupsdatatoprint:/opt/toprint 
+      - ../data/cups/printed:/opt/printed 
+      - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+    env_file:
+      - ../settings
+    environment:
+      WATCHPATH: /opt/toprint
+      PRINTED_PATH: /opt/printed
+  odoo_base:
+    volumes:
+      - cupsdatatoprint:/opt/toprint 
+    environment:
+      CUPS_TOPRINT: /opt/toprint
+

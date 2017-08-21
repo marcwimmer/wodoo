@@ -1,2 +1,0 @@
-- git submodule checkout 5 mal probieren; ging auf conpower erp beim ersten mal nicht, dann schon 
-- use postgres 9.5 instead of 9.4

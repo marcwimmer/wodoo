@@ -57,11 +57,11 @@ custom_handler = odoo_storage
 
 
 [odoo]
-server = nginx
-port = 80
+server = __ODOO_HOST__
+port = __ODOO_PORT__
 db = __DB__
 user = __USER__
-pwd = __PASSWORD
+pwd = __PASSWORD__
 
 
 [logging]

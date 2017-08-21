@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
-set +x
+[[ "$VERBOSE" == "1" ]] && set -x
 
-ACTIVE_CUSTOMS=/opt/openerp/active_customs
+ACTIVE_CUSTOMS=/opt/odoo/active_customs
 
 # optional parameter: the local complete filepath
 
@@ -25,12 +25,12 @@ EOF
     exit 0
 fi
 
-mkdir -p /opt/openerp
+mkdir -p /opt/odoo
 echo "rsyncing odoo source"
-rsync /opt/src/admin/ /opt/openerp/admin/ -ar
+rsync /opt/src/admin/ /opt/odoo/admin/ -ar
 
 source /env.sh
-source /opt/openerp/admin/setup_bash
+source /opt/odoo/admin/setup_bash
 
 # Setting up productive odoo
 echo
@@ -40,33 +40,30 @@ echo "Version: $ODOO_VERSION"
 
 echo "Syncing odoo to executable dir"
 time rsync /opt/src/customs/$CUSTOMS/ $ACTIVE_CUSTOMS/ --info=progress2  -ar --delete --exclude=.git
-mkdir -p /opt/openerp/versions
-mkdir -p /opt/openerp/customs
-cd /opt/openerp/customs && {
+mkdir -p /opt/odoo/customs
+cd /opt/odoo/customs && {
     rm * || true
     ln -s $ACTIVE_CUSTOMS $CUSTOMS
 }
-chmod a+x /opt/openerp/admin/*.sh
+chmod a+x /opt/odoo/admin/*.sh
 
-rm -Rf /opt/openerp/versions || true
-mkdir -p /opt/openerp/versions
+rm -Rf /opt/odoo/server || true
 # must be rsync, so that patches apply
-ln -s $ACTIVE_CUSTOMS/odoo /opt/openerp/versions/server
+ln -s $ACTIVE_CUSTOMS/odoo /opt/odoo/server
 
-echo "oeln"
-/opt/openerp/admin/oeln $CUSTOMS
+/opt/odoo/admin/link_modules $CUSTOMS
 
 echo "Applying patches"
-CUSTOMS=$CUSTOMS VERSION=$ODOO_VERSION CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/opt/openerp/versions/server /bin/bash /opt/openerp/admin/apply_patches.sh || {
+CUSTOMS_DIR=$ACTIVE_CUSTOMS SERVER_DIR=/opt/odoo/server /bin/bash /opt/odoo/admin/apply_patches.sh || {
     echo "Error at applying patches! Please check output and the odoo version"
     exit -1
 }
 
 /set_permissions.sh
 
-cd /opt/openerp/admin/module_tools
-$(python <<-EOF
-import module_tools
-module_tools.remove_module_install_notifications("$ACTIVE_CUSTOMS")
+cd /opt/odoo/admin/module_tools
+python <<-EOF
+	import module_tools
+	module_tools.remove_module_install_notifications("$ACTIVE_CUSTOMS")
 EOF
-)
+
