@@ -232,6 +232,8 @@ function showhelp() {
     echo "update-source - sets the latest source code in the containers"
 	echo ""
     echo "up - starts all machines equivalent to service <service> start "
+	echo ""
+	echo "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
     echo
 }
 
@@ -760,6 +762,10 @@ function do_command() {
     import-i18n)
         dcrun odoo /import_i18n.sh $ALL_PARAMS
         ;;
+	remove-web-assets)
+		askcontinue
+		dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
+		;;
 	sanity_check)
 		sanity_check
 		;;
