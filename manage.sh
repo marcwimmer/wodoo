@@ -9,11 +9,11 @@
 #
 
 function dcrun() {
-	eval "$dc run -T $@"
+	$dc run -T "$@"
 }
 
 function dcexec() {
-	$dc exec -T $@
+	$dc exec -T "$@"
 }
 
 function startup() {
@@ -444,6 +444,9 @@ function do_command() {
 		set_db_ownership
 
 		;;
+	set_db_ownership)
+		set_db_ownership
+		;;
 
     restore)
 
@@ -844,7 +847,7 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
-			dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c\"from module_tools import set_ownership_exclusive; set_ownership_exclusive()\""
+			dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; ls; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
 		else
 			bash <<-EOF
 			cd $ODOO_HOME/data/src/admin/module_tools
