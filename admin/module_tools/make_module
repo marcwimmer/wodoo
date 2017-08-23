@@ -1,0 +1,45 @@
+#!/bin/bash
+set -e
+set -x
+
+abspath() {                                               
+    cd "$1"
+    printf "%s\n" "$(pwd)"
+    cd "$OLDPWD"
+}
+
+CUSTOMS=$1
+VERSION=$2
+
+if [[ -z "$CUSTOMS" ]]; then
+    echo "Missing Customs"
+    exit -1
+fi
+if [[ -z "$VERSION" ]]; then
+    echo "Missing Version"
+    exit -1
+fi
+
+# folgendes ist Runde 2 - achtung
+echo "Copying a template project into local folder $(pwd)"
+name=$(basename "$PWD")
+parent_full_path="$(abspath "$PWD/..")"
+parent_name="$(basename "$parent_full_path")"
+
+
+# if parent directory has the same version, then do not make an extra subdirectory of the version
+if [ "$parent_name" != "$VERSION" ]; then
+
+    if [ ! -d "$VERSION" ]; then
+        mkdir $VERSION
+    fi
+    cd $VERSION
+    if [ ! -d "$name" ]; then
+        mkdir $name
+    fi
+    cd $name
+
+fi
+
+rsync $ODOO_HOME/data/src/admin/module_template/$VERSION/ . -ar
+find . -type f -exec sed -i "s/__module_name__/$name/g" {} \;

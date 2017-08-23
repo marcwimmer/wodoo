@@ -1,0 +1,6 @@
+#!/bin/bash
+result=$(rgrep sett_trace --include='*.py' |grep -v "#.*set_trace")
+if [[ -z "$result" ]]; then
+    exit -1
+fi
+echo $result

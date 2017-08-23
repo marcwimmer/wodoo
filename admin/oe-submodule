@@ -1,0 +1,7 @@
+#!/bin/bash -e
+if [[ ! -d common || ! -d .git ]]; then
+    echo "Directory common not found - are you in root?"
+    exit 1
+fi
+
+git submodule add -b master --force git.mt-software.de:/git/openerp/modules/$1 common/$1

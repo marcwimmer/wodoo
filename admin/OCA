@@ -1,0 +1,29 @@
+#!/bin/bash
+set -x
+set -e
+
+echo adding OCA module $1
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+if [[ ! -d common ]]; then
+    echo "Please go to customs root (missing common-directory)"
+    exit -1
+fi
+
+if [[ ! -d .git ]]; then
+    echo "Must have .git directory to avoid clone in parent directory"
+    exit -1
+fi
+
+VERSION=$(cat .version)
+
+git submodule add https://github.com/OCA/$1.git OCA/$1
+git submodule init
+git submodule update OCA/$1
+cd OCA/$1
+git checkout -f $VERSION
+
+cd ..
+cd ..
+
+echo "    branch = $VERSION" >> .gitmodules

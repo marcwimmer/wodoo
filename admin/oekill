@@ -1,0 +1,6 @@
+#!/bin/bash
+pkill -9 -f openerp-server
+pkill -9 -f openerp-gevent
+pkill -9 -f odoo.py
+#pkill -9 -f openerp-server
+#pkill -9 -f odoo

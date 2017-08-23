@@ -1,0 +1,18 @@
+#!/bin/bash
+currentdir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
+rootdir=$currentdir/../
+path=%PATH%:/usr/bin
+
+echo $rootdir
+gits=`find $rootdir | grep .git/config`
+
+for g in $gits; 
+do
+	g=${g//\.git\/config/}
+
+	cd $g
+	branch=`git branch|grep \*`
+	echo "$branch" "in" "$g"
+
+done
+

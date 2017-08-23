@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+set -x
+
+if [[ -z "$1" ]]; then
+    echo "Which version (e.g. 9.0)?"
+    read VERSION
+else
+    VERSION=$1
+fi
+
+echo "Creating customs for version $VERSION"
+
+git init
+mkdir common
+echo $VERSION > .version
+echo 'odoo.git' > .odoorepo
+echo '.openerpcomplete.txt' > .gitignore
+git submodule add $ODOO_HOME/odoo.git odoo --branch 9.0
+echo "    branch=$VERSION" >> .gitmodules
+$ODOO_HOME/admin/git-sub-set-branch
