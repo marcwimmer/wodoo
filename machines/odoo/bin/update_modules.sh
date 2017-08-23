@@ -3,6 +3,10 @@ set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 MODULE=$1
 
+if [[ "$MODULE" == "all" ]]; then
+	MODULE=""
+fi
+
 source /env.sh
 /apply-env-to-config.sh
 /sync_source.sh
@@ -28,6 +32,18 @@ function delete_qweb() {
 	cd /opt/odoo/admin/module_tools
 	python -c"import module_tools; module_tools.delete_qweb('$__module__')"
 	)
+}
+
+function is_module_installed() {
+	if [[ -z "$MODULE" ]]; then
+		echo '0'
+	else
+		installed=$(
+		cd /opt/odoo/admin/module_tools
+		python -c"import module_tools; print '1' if module_tools.is_module_installed('$MODULE') else '0'"
+		)
+		echo $installed
+	fi
 }
 
 function update() {
@@ -61,5 +77,8 @@ function update() {
 if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
 	delete_qweb 'to_update'
 fi
-update 'to_install'
+
+if [[ "$(is_module_installed)" != "1" && -n "$MODULE" ]]; then
+	update 'to_install'
+fi
 update 'to_update'
