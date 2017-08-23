@@ -13,7 +13,7 @@ def active_customs():
     return "/opt/openerp/active_customs"
 
 def admin_dir():
-    return os.path.join(odoo_root(), 'data', 'src', 'admin')
+    return os.path.join(odoo_root(), 'admin')
 
 def customs_dir():
     c = current_customs()

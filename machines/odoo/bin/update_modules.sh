@@ -64,7 +64,13 @@ function update() {
 		OPERATOR="-u"
 		if [[ "$1" == "to_install" ]]; then
 			OPERATOR="-i"
-		fi
+			time sudo -H -u odoo /opt/odoo/server/openerp-server \
+				-c /home/odoo/config_openerp \
+				-d $DBNAME \
+				-u update_module_list \
+				--stop-after-init \
+				--log-level=error 
+			fi
 		echo "$__module__"
 		time sudo -H -u odoo /opt/odoo/server/openerp-server \
 			-c /home/odoo/config_openerp \

@@ -41,5 +41,5 @@ if [ "$parent_name" != "$VERSION" ]; then
 
 fi
 
-rsync $ODOO_HOME/data/src/admin/module_template/$VERSION/ . -ar
+rsync $ODOO_HOME/admin/module_template/$VERSION/ . -ar
 find . -type f -exec sed -i "s/__module_name__/$name/g" {} \;

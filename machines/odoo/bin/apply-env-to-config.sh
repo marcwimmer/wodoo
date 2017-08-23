@@ -15,5 +15,4 @@ do
     sed -i "s|__DB_MAXCONN__|$DB_MAXCONN|g" $f
     sed -i "s|__DB_PORT__|$DB_PORT|g" $f
     sed -i "s|__DB_HOST__|$DB_HOST|g" $f
-    cat $f
 done
