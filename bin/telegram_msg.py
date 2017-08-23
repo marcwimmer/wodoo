@@ -5,7 +5,7 @@ import sys
 import os
 import inspect
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
-sys.path.append(os.path.join(dir, '../data/src/admin/module_tools'))
+sys.path.append(os.path.join(dir, '../admin/module_tools'))
 import odoo_config
 conf = odoo_config.get_env()
 

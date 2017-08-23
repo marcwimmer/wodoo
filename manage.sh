@@ -55,7 +55,7 @@ function export_settings() {
 
 	# get odoo version
 	export ODOO_VERSION=$(
-	cd $ODOO_HOME/data/src/admin/module_tools
+	cd $ODOO_HOME/admin/module_tools
 	python <<-EOF
 	import odoo_config
 	v = odoo_config.get_version_from_customs("$CUSTOMS")
@@ -855,7 +855,7 @@ function set_db_ownership() {
 			dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; ls; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
 		else
 			bash <<-EOF
-			cd $ODOO_HOME/data/src/admin/module_tools
+			cd $ODOO_HOME/admin/module_tools
 			python -c"from module_tools import set_ownership_exclusive; set_ownership_exclusive()"
 			EOF
 		fi
