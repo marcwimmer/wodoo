@@ -26,7 +26,7 @@ while true; do
 
 	if [[ "$new_mod" != "$last_mod" ]]; then
 
-		pkill -9 -f /opt/odoo
+		pkill -9 -f /opt/odoo > /dev/null 2>&1
 		last_mod=$new_mod
 	fi
 
