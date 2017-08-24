@@ -69,7 +69,9 @@ def current_version():
 def current_db():
     return get_env().get('DBNAME', '')
 
-def get_path_customs_root(customs):
+def get_path_customs_root(customs=None):
+    if not customs:
+        customs = current_customs()
     return os.path.join(odoo_root(), 'data/src/customs/{}'.format(customs))
 
 def get_version_from_customs(customs):
@@ -117,8 +119,6 @@ def get_conn(db=None, host=None):
     return conn, cr
 
 def translate_path_into_machine_path(path):
-    from pudb import set_trace
-    set_trace()
     path = os.path.realpath(path)
     path = os.path.join(active_customs(), translate_path_relative_to_customs_root(path))
     return path

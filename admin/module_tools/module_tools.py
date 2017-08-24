@@ -289,13 +289,6 @@ def update_module(filepath):
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         f.write('update_module:{}'.format(module))
 
-# def update_module_list_in_odoo():
-    # from pudb import set_trace
-    # set_trace()
-    # socket_obj = xmlrpclib.ServerProxy('http://localhost:{}/xmlrpc/object'.format(PORT))
-    # id = socket_obj.execute(DB(), 1, '1', "base.module.update", "create", [])
-    # socket_obj.execute(DB(), 1, '1', "base.module.update", "update_module", [id])
-
 def restart(quick):
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         if quick:
@@ -349,6 +342,8 @@ def remove_module_install_notifications(path):
 
 
 def run_test_file(path):
+    with open("/tmp/a", 'w') as f:
+        f.write(path)
     if path:
         path = translate_path_into_machine_path(path)
 
