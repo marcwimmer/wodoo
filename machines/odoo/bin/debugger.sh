@@ -1,5 +1,6 @@
 #!/bin/bash
 set +x
+$ADMIN_DIR/link_modules
 
 echo "Starting debugger"
 echo "Watching File $DEBUGGER_WATCH"
@@ -40,6 +41,7 @@ EOF
 pkill -9 -f $WATCHER
 chmod a+x $WATCHER
 $WATCHER &
+
 
 while true; do
 

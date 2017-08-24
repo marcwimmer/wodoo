@@ -10,10 +10,9 @@ if [[ -z "$2" ]]; then
     exit -1
 fi
 /apply-env-to-config.sh
-
-echo "Executing autosetup..."
+/patch_odoo.sh
+$ADMIN_DIR/link_modules
 /run_autosetup.sh
-echo "Done autosetup"
 
 module=$2
 sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-server \
