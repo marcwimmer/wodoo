@@ -1,0 +1,6 @@
+version: '2'
+services:
+  sphinxbuilder:
+    container_name: odoo_prod_sphinxbuilder
+    build: .
+    command: /run.sh
