@@ -24,7 +24,8 @@ if [[ -d "$SERVER_DIR" ]]; then
     echo ""
 
     cd $SERVER_DIR
-    for f in $(find $CUSTOMS_DIR -name '*.patch' |grep "\/$ODOO_VERSION\/"); do
+	find $CUSTOMS_DIR -name '*.patch' |grep "\/$ODOO_VERSION\/" | while read f
+	do
         echo 
         echo 
         echo "Applying patch $f"
