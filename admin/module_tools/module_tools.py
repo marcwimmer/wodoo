@@ -342,8 +342,6 @@ def remove_module_install_notifications(path):
 
 
 def run_test_file(path):
-    with open("/tmp/a", 'w') as f:
-        f.write(path)
     if path:
         path = translate_path_into_machine_path(path)
 
@@ -351,7 +349,7 @@ def run_test_file(path):
         if not path:
             f.write('last_unit_test')
         else:
-            f.write('unit_test:{}'.format(path))
+            f.write('unit_test:{}:{}'.format(path, get_module_of_file(path)))
 
 def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()

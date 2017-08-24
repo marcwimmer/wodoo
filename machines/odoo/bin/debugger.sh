@@ -7,6 +7,7 @@ WATCHER=/tmp/watcher.sh  # needed so that due to set_trace debugging is possible
 
 last_mod=''
 last_unit_test=''
+last_unit_test_module=''
 
 function kill() {
 	PID=$(cat $DEBUGGER_ODOO_PID)
@@ -73,7 +74,8 @@ while true; do
 		elif [[ "$action" == 'unit_test' ]]; then
 			reset
 			last_unit_test=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
-			/unit_test.sh $last_unit_test
+			last_unit_test_module=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[3]}')
+			/unit_test.sh $last_unit_test $last_unit_test_module
 
 		elif [[ "$action" == 'last_unit_test' ]]; then
 			if [[ -n "$last_unit_test" ]]; then

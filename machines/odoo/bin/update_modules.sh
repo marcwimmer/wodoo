@@ -56,21 +56,18 @@ function update() {
 	else
 		TESTS=''
 	fi
+	if [[ -z "$1" ]]; then
+		echo "Required to_install or to_update"
+	fi
 	echo
-	echo "Updating modules $MODULE..."
+	echo "$1 modules $MODULE..."
 	echo
 	local __module__=$(get_modules $1)
 	if [[ -n "$__module__" ]]; then
 		OPERATOR="-u"
 		if [[ "$1" == "to_install" ]]; then
 			OPERATOR="-i"
-			time sudo -H -u odoo /opt/odoo/server/openerp-server \
-				-c /home/odoo/config_openerp \
-				-d $DBNAME \
-				-u update_module_list \
-				--stop-after-init \
-				--log-level=error 
-			fi
+	    fi
 		echo "$__module__"
 		time sudo -H -u odoo /opt/odoo/server/openerp-server \
 			-c /home/odoo/config_openerp \
@@ -83,6 +80,18 @@ function update() {
 		echo "$1 $__module__ done"
 	fi
 }
+
+function update_module_list() {
+	time sudo -H -u odoo /opt/odoo/server/openerp-server \
+		-c /home/odoo/config_openerp \
+		-d $DBNAME \
+		-u update_module_list \
+		--stop-after-init \
+		--log-level=error 
+}
+
+# could be, that a new version is triggered
+update_module_list 
 
 if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
 	delete_qweb 'to_update'

@@ -47,3 +47,18 @@ Reporting
 
 Wizards with Criteria
 -----------------------
+
+
+Migration
+========================
+
+
+Versioning the __openerp__.py / __manifest__.py
+-----------------------------------------------
+
+
+        <moduledir>
+        -- README.txt                      # not processed
+            |-- 9.0.1.1                             # processed only on a 9.0 server
+            |   |-- pre-delete_table_z.py
+            |   -- foo.py                              # not processed
