@@ -29,6 +29,7 @@ function default_confs() {
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
 	export DB_PORT=5432
+	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
@@ -668,12 +669,10 @@ function do_command() {
         $dc rm -f odoo_update
         $dc up -d postgres && sleep 3
 
-        set -e
-        # sync source
-        dcrun source_code
-        set +e
-
-        dcrun odoo_update /update_modules.sh $2
+        dcrun odoo_update /update_modules.sh $2 || {
+			echo "Module Update failed"
+			exit -1
+		}
         $dc kill odoo nginx
         if [[ "$RUN_ASTERISK" == "1" ]]; then
             $dc kill ari stasis

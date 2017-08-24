@@ -11,7 +11,6 @@ if [[ "$MODULE" == "all" ]]; then
 	MODULE=""
 fi
 
-source /env.sh
 /apply-env-to-config.sh
 /patch_odoo.sh
 $ADMIN_DIR/link_modules
