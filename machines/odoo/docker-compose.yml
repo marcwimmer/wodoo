@@ -49,6 +49,17 @@ services:
     command: /rootrun.sh
     ports:
        - "8072:8072"
+
+  odoo_debug:
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_odoo_debug
+    environment:
+      DEBUGGER_WATCH: /tmp/odoo_debug.txt
+      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
+    command: /rootrun.sh
+    ports:
+       # alphaphrase of debug
+       - "33284:8072"
       
   odoo_cronjobs:
     <<: *odoo_base
