@@ -1,9 +1,5 @@
 # manage-order 1000
 version: '3.3'
-volumes:
-  opt_servers:
-  opt_permanent:
-  odoosource:
 
 services:
   odoo_base: &odoo_base
@@ -23,22 +19,13 @@ services:
       - ../dumps:/opt/dumps
       - ../run/restore:/opt/restore
       - ${ODOO_FILES}/:/opt/files
-      - opt_permanent:/opt/permanent
-      - opt_servers:/opt/servers
-      - odoosource:/opt/odoo
-      - ../admin:/opt/src/admin:ro
-      - ../data/src/customs:/opt/src/customs:ro
+      - ../admin:/opt/odoo/admin
+      - ../data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
       - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
-      - ../run/i18n:/opt/i18n
     env_file:
       - ../settings
       - ../machines/odoo/docker-env
     command: echo 'odoo_base - good bye - it is ok!'
-
-  source_code:
-    <<: *odoo_base
-    container_name: ${DCPREFIX}_source_code
-    command: echo 'good bye' # not starting with manage.sh up -d
 
   odoo:
     <<: *odoo_base
@@ -74,9 +61,3 @@ services:
     # called by manage.sh
     command: echo 'good bye - it is ok!'
 
-  odoo_lang_export:
-    <<: *odoo_base
-    container_name: ${DCPREFIX}_odoo_lang_export
-    command: /bin/echo 'hi'
-    environment:
-      LANG_EXPORT_DIR: /opt/i18n

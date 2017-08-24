@@ -9,7 +9,6 @@ if [[ -z "$2" ]]; then
     echo "Missing module name"
     exit -1
 fi
-/sync_source.sh
 /apply-env-to-config.sh
 
 echo "Executing autosetup..."
@@ -17,9 +16,9 @@ echo "Executing autosetup..."
 echo "Done autosetup"
 
 module=$2
-sudo -E -H -u odoo /opt/odoo/server/openerp-server \
+sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-server \
     -d $DBNAME \
-    -c /home/odoo/config_unittest \
+    -c $CONFIG_DIR/config_unittest \
 	-u $module
     --pidfile=$DEBUGGER_ODOO_PID \
     --stop-after-init \

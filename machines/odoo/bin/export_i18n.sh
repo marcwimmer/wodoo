@@ -11,7 +11,21 @@ LANG=$1
 MODULES=$2
 
 /apply-env-to-config.sh
+$ADMIN_DIR/link_modules
 
-sudo -E -H -u odoo /opt/odoo/server/openerp-server -c /home/odoo/config_openerp --log-level=warn --stop-after-init -d $DBNAME -l $LANG --i18n-export=/tmp/export.po --modules=$MODULES
+export_dir=${ADDONS_CUSTOMS}/${MODULES}
+if [[ -z "$(find $export_dir 2>/dev/null)" ]]; then
+	echo "Symlink not found: $export_dir"
+fi
 
-cp /tmp/export.po $LANG_EXPORT_DIR/export.po
+if [[ ! -d "$export_dir/i18n" ]]; then
+	mkdir -p "$export_dir/i18n"
+fi
+
+TMP="$(mktemp -u)"
+mkdir -p $TMP
+chown $ODOO_USER $TMP
+TMP=${TMP}/$LANG.po
+sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-server -c $CONFIG_DIR/config_openerp --log-level=warn --stop-after-init -d $DBNAME -l $LANG --i18n-export=$TMP --modules=$MODULES
+
+cp $TMP $export_dir/i18n/$LANG.po 

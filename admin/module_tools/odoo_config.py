@@ -8,6 +8,18 @@ from myconfigparser import MyConfigParser
 from consts import VERSIONS
 import psycopg2
 
+def get_odoo_addons_paths():
+    folders = subprocess.check_output(
+        "find " + unicode(os.path.join(
+            customs_dir(), "odoo"
+        )) + "/ -name addons -type d| grep -v .git", shell=True)
+    addons_paths = [
+        x
+        for x
+        in folders.split("\n")
+        if 'test' not in x and x.endswith("/addons") and 'odoo/odoo' not in x
+    ]
+    return addons_paths
 
 def active_customs():
     return "/opt/openerp/active_customs"
@@ -17,7 +29,7 @@ def admin_dir():
 
 def customs_dir():
     c = current_customs()
-    return os.path.join(odoo_root(), 'data', 'src', 'customs', c)
+    return os.getenv("ACTIVE_CUSTOMS", os.path.join(odoo_root(), 'data', 'src', 'customs', c))
 
 def run_dir():
     "returns ~/odoo/run"
@@ -31,9 +43,6 @@ def odoo_root():
     result = os.getenv('ODOO_HOME', False)
     if not result:
         raise Exception("ODOO_HOME is not defined (usually ~/odoo)")
-    # print 'using ODOO_HOME: {}'.format(result)
-    if not os.path.isfile(os.path.join(result, 'settings')):
-        raise Exception("No settings found in: {}".format(result))
     result = os.path.realpath(result)
     return result
 
@@ -58,7 +67,7 @@ def get_env():
     return conf
 
 def current_customs():
-    result = get_env().get('CUSTOMS', '')
+    result = os.getenv("CUSTOMS", get_env().get('CUSTOMS', ''))
     if not result:
         raise Exception("No Customs found. Please define customs=")
     return result

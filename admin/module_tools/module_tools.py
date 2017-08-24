@@ -34,6 +34,11 @@ import threading
 ODOO_DEBUG_FILE = 'odoo_debug.txt'
 
 def apply_po_file(pofile_path):
+    """
+    pofile_path - pathin in the machine
+    """
+    from pudb import set_trace
+    set_trace()
     LANG = os.path.basename(pofile_path).split(".po")[0]
     module = get_module_of_file(pofile_path)
     langs = get_all_langs()
@@ -385,6 +390,9 @@ def set_ownership_exclusive(host=None):
         conn.close()
 
 def syncsource(path, do_async=False):
+    if path.endswith('.po'):
+        machine_path = translate_path_into_machine_path(path)
+        apply_po_file(machine_path)
     execute_managesh('update-source', path, do_async=do_async)
 
 def switch_customs_and_db(customs, db):

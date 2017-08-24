@@ -14,7 +14,7 @@ if [[ -z "$SERVER_DIR" ]]; then
     echo "Server Directory required!"
     exit -1
 fi
-if [[ -z "$CUSTOMS_DIR" ]]; then
+if [[ -z "$ACTIVE_CUSTOMS" ]]; then
     echo "Customs Directory required!"
     exit -1
 fi
@@ -24,7 +24,7 @@ if [[ -d "$SERVER_DIR" ]]; then
     echo ""
 
     cd $SERVER_DIR
-	find $CUSTOMS_DIR -name '*.patch' |grep "\/$ODOO_VERSION\/" | while read f
+	find $ACTIVE_CUSTOMS -name '*.patch' |grep "\/$ODOO_VERSION\/" | while read f
 	do
         echo 
         echo 

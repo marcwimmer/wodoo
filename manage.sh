@@ -229,11 +229,11 @@ function showhelp() {
 	echo ""
     echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
 	echo ""
-    echo "update-source - sets the latest source code in the containers"
-	echo ""
     echo "up - starts all machines equivalent to service <service> start "
 	echo ""
 	echo "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
+	echo ""
+	echo "fix-permissions - sets user 1000 for odoo and odoo_files"
     echo
 }
 
@@ -473,6 +473,8 @@ function do_command() {
 			$0 restore-files $tarfiles
         fi
 
+		$0 fix-permissions
+
         echo "Restart systems by $0 restart"
         ;;
     restore-dev-db)
@@ -636,9 +638,23 @@ function do_command() {
         python $DIR/bin/telegram_msg.py "__setup__" $token $channelname
 		echo "Finished - chat id is stored; bot can send to channel all the time now."
 		;;
-    update-source)
-		dcrun source_code /sync_source.sh $2
-        ;;
+	fix-permissions)
+		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
+			chown 1000 -R "$ODOO_FILES"
+		fi
+		CUSTOMS_DIR=$(
+		cd $ODOO_HOME/admin/module_tools && \
+		python <<-EOF
+		import odoo_config
+		v = odoo_config.customs_dir()
+		print v
+		EOF
+		)
+		if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
+			chown 1000 -R "$CUSTOMS_DIR"
+		fi
+
+		;;
     update)
         echo "Run module update"
 		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
@@ -753,9 +769,7 @@ function do_command() {
             echo "Please define at least one module"
             exit -1
         fi
-        rm $DIR/run/i18n/* || true
-        chmod a+rw $DIR/run/i18n
-        dcrun odoo_lang_export /export_i18n.sh $LANG $MODULES
+        dcrun odoo /export_i18n.sh $LANG $MODULES
         # file now is in $DIR/run/i18n/export.po
         ;;
     import-i18n)

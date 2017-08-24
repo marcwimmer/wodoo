@@ -13,7 +13,9 @@ fi
 
 source /env.sh
 /apply-env-to-config.sh
-/sync_source.sh
+/patch_odoo.sh
+$ADMIN_DIR/link_modules
+
 
 function get_modules() {
 	mode=$1 #to_install, to_update
@@ -69,8 +71,8 @@ function update() {
 			OPERATOR="-i"
 	    fi
 		echo "$__module__"
-		time sudo -H -u odoo /opt/odoo/server/openerp-server \
-			-c /home/odoo/config_openerp \
+		time sudo -H -u $ODOO_USER $SERVER_DIR/openerp-server \
+			-c $CONFIG_DIR/config_openerp \
 			-d $DBNAME \
 			$OPERATOR $__module__ \
 			--stop-after-init \
@@ -82,8 +84,8 @@ function update() {
 }
 
 function update_module_list() {
-	time sudo -H -u odoo /opt/odoo/server/openerp-server \
-		-c /home/odoo/config_openerp \
+	time sudo -H -u $ODOO_USER $SERVER_DIR/openerp-server \
+		-c $CONFIG_DIR/config_openerp \
 		-d $DBNAME \
 		-u update_module_list \
 		--stop-after-init \

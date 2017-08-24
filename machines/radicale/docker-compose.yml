@@ -6,7 +6,7 @@ services:
        ports:
          - "5232:5232"
        volumes:
-         - odoosource:/opt/odoo
+         - ../data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
        env_file:
          - ../settings
        environment:

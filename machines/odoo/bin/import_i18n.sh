@@ -6,12 +6,26 @@ if [ -z "$1" ]; then
     echo "Usage: import_i18n de_DE [filepath of po file optional]"
     exit -1
 fi
+/apply-env-to-config.sh
+$ADMIN_DIR/link_modules
 
 LANG=$1
-FILE=$2
 if [ -z "$LANG" ]; then
     echo "Language Code Missing!"
     exit -1
 fi
-/apply-env-to-config.sh
-sudo -E -H -u odoo /opt/odoo/server/openerp-server -c /home/odoo/config_openerp --log-level=warn --stop-after-init -d $DBNAME -l $LANG --i18n-import=$FILE --i18n-overwrite
+
+path=${ADDONS_CUSTOMS}/${2}/i18n/$LANG.po
+
+if [[ -f "$path" ]]; then
+
+	sudo -E -H -u $ODOO_USER \
+		$SERVER_DIR/openerp-server \
+		-c $CONFIG_DIR/config_openerp \
+		--log-level=warn \
+		--stop-after-init \
+		-d $DBNAME \
+		-l $LANG \
+		--i18n-import=$path \
+		--i18n-overwrite
+fi
