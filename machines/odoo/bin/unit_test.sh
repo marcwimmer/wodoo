@@ -8,6 +8,8 @@ fi
 reset
 /apply-env-to-config.sh
 
+cd $ADMIN_DIR/module_tools
+module=$(python -c "import module_tools; print module_tools.get_module_of_file('$1')")
 path=$ADDONS_CUSTOMS/$module/tests/$(basename $1)
 
 sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-server \
