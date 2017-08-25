@@ -26,7 +26,10 @@ def admin_dir():
 
 def customs_dir():
     c = current_customs()
-    return os.getenv("ACTIVE_CUSTOMS", os.path.join(odoo_root(), 'data', 'src', 'customs', c))
+    if os.getenv("DOCKER_MACHINE", "0") == "1":
+        return os.environ['ACTIVE_CUSTOMS']
+    else:
+        return os.path.join(odoo_root(), 'data', 'src', 'customs', c)
 
 def run_dir():
     "returns ~/odoo/run"
@@ -126,7 +129,7 @@ def get_conn(db=None, host=None):
 
 def translate_path_into_machine_path(path):
     path = os.path.realpath(path)
-    path = os.path.join(customs_dir(), translate_path_relative_to_customs_root(path))
+    path = os.path.join("/opt/odoo/active_customs", translate_path_relative_to_customs_root(path))
     return path
 
 def translate_path_relative_to_customs_root(path):
