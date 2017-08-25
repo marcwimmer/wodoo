@@ -5,10 +5,6 @@ if [[ -z "$1" ]]; then
     exit -1
 fi
 
-if [[ -z "$2" ]]; then
-    echo "Missing module name"
-    exit -1
-fi
 /apply-env-to-config.sh
 
 cd $ADMIN_DIR/module_tools

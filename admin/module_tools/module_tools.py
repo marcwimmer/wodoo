@@ -4,7 +4,6 @@ import codecs
 import shutil
 from Queue import Queue
 from unidecode import unidecode
-from odoo_config import active_customs
 from odoo_config import admin_dir
 from odoo_config import get_env
 from odoo_config import odoo_root
@@ -178,7 +177,6 @@ def get_module_of_file(filepath, return_path=False):
         return os.path.basename(p)
     else:
         return os.path.basename(p), p
-
 
 def get_path_to_current_odoo_module(current_file):
     """

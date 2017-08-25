@@ -17,7 +17,7 @@ In Addition to code-snippets, complete workflows are explained here. Examples:
 Domains
 ===================
 
-    * x2Many - empty 
+    * x2Many - empty
       ::
         [(field, '!=', [])]
 
@@ -49,13 +49,53 @@ Wizards with Criteria
 -----------------------
 
 
+
+
+
+
+Web
+===========================
+
+
+
+Client Actions
+------------------------------
+
+
+ir.actions.client
+~~~~~~~~~~~~~~~~~~~~
+
+    * History Back
+      ::
+        {'type': 'ir.actions.client', 'tag': 'history_back'}
+
+
+
+Dialogs
+-------------------------
+
+
+How to display widget in Dialog
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Migration
 ========================
 
 
-Versioning the __openerp__.py / __manifest__.py
------------------------------------------------
-
+Structure::
 
         <moduledir>
         -- README.txt                      # not processed

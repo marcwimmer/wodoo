@@ -21,9 +21,6 @@ def get_odoo_addons_paths():
     ]
     return addons_paths
 
-def active_customs():
-    return "/opt/openerp/active_customs"
-
 def admin_dir():
     return os.path.join(odoo_root(), 'admin')
 
@@ -129,7 +126,7 @@ def get_conn(db=None, host=None):
 
 def translate_path_into_machine_path(path):
     path = os.path.realpath(path)
-    path = os.path.join(active_customs(), translate_path_relative_to_customs_root(path))
+    path = os.path.join(customs_dir(), translate_path_relative_to_customs_root(path))
     return path
 
 def translate_path_relative_to_customs_root(path):
