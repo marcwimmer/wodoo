@@ -14,9 +14,6 @@ ADD install.sh /install.sh
 RUN chmod a+x /install.sh
 RUN /install.sh
 
-ADD testmail.sh /test.sh
-RUN chmod a+x /test.sh
-
 # Start-mailserver script
 ADD run /run.sh
 RUN chmod a+x /run.sh
