@@ -5,6 +5,7 @@ if [[ -z "$1" ]]; then
     exit -1
 fi
 
+reset
 /apply-env-to-config.sh
 
 cd $ADMIN_DIR/module_tools
