@@ -10,17 +10,17 @@ if [[ -z "$2" ]]; then
     exit -1
 fi
 /apply-env-to-config.sh
-/patch_odoo.sh
-$ADMIN_DIR/link_modules
-/run_autosetup.sh
 
-module=$2
+cd $ADMIN_DIR/module_tools
+module=$(python -c "import module_tools; print module_tools.get_module_of_file('$1')")
+path=$ADDONS_CUSTOMS/$module/tests/$(basename $1)
+
 sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-server \
     -d $DBNAME \
     -c $CONFIG_DIR/config_unittest \
-	-u $module
+	-u $module \
     --pidfile=$DEBUGGER_ODOO_PID \
     --stop-after-init \
-    --test-file=$1 \
+    --test-file=$path \
     --test-report-directory=/tmp \
     --log-level=debug
