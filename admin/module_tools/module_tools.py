@@ -144,7 +144,10 @@ def get_customs_modules(customs_path, mode):
 
 def get_module_of_file(filepath, return_path=False):
 
-    p = os.path.dirname(filepath)
+    if os.path.isdir(filepath):
+        p = filepath
+    else:
+        p = os.path.dirname(filepath)
 
     def is_possible_module_dir(x):
         basename = os.path.basename(x)
@@ -302,6 +305,7 @@ def restart(quick):
             f.write('restart')
 
 def remove_webassets():
+    print "Removing web assets for {}".format(current_customs())
     conn, cr = get_conn()
     try:
         cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")

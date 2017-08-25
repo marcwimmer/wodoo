@@ -12,9 +12,9 @@ if [[ "$dirty" != 'clean' ]]; then
 		echo "Variable ALLOW_DIRTY_ODOO is set."
 		exit 0
 	else
-		echo "Set ALLOW_DIRTY_ODOO=1 to allow this."
-		echo "Now aborting patching with error now"
-		exit -1
+		cd $SERVER_DIR
+		git checkout -f
+		git clean -xdff
 	fi
 fi
 

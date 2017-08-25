@@ -12,6 +12,7 @@ from module_tools.consts import MANIFESTS
 from module_tools.odoo_config import current_customs
 from module_tools.odoo_config import customs_dir
 from module_tools.odoo_config import current_version
+from module_tools.module_tools import get_module_of_file
 
 LN_DIR = os.environ['ADDONS_CUSTOMS']
 counter = 0
@@ -28,7 +29,6 @@ def search_dir_for_modules(base_dir):
     ommitted_directories_full_path = []
 
     def link_module(complete_module_dir):
-
         # prüfen, obs nicht zu den verbotenen pfaden gehört:
         abs_root = os.path.abspath(base_dir)
         dir = os.path.abspath(complete_module_dir)
@@ -37,7 +37,12 @@ def search_dir_for_modules(base_dir):
                 return
             dir = os.path.abspath(os.path.join(dir, ".."))
 
-        target = os.path.join(LN_DIR, os.path.basename(complete_module_dir))
+        try:
+            module_name = get_module_of_file(complete_module_dir)
+        except:
+            return
+
+        target = os.path.join(LN_DIR, module_name)
 
         if os.path.exists(target):
             if os.path.realpath(target) != complete_module_dir:
