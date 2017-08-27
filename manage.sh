@@ -421,6 +421,7 @@ function do_command() {
         ;;
 
 	restore-files)
+		set -e
         if [[ -z "$2" ]]; then
 			echo "Please provide the tar file-name."
 			exit -1
@@ -430,6 +431,7 @@ function do_command() {
 		;;
 
 	restore-db)
+		set -e
 		restore_check $@
 		dumpfile=$2
 
