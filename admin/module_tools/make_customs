@@ -2,20 +2,21 @@
 set -e
 set -x
 
-if [[ -z "$1" ]]; then
-    echo "Which version (e.g. 9.0)?"
-    read VERSION
-else
-    VERSION=$1
+if [[ -z "$2" ]]; then
+	echo "Please provide name and version."
+	exit -1
 fi
+VERSION=$2
+CUSTOMS=$1
 
-echo "Creating customs for version $VERSION"
+cd $ODOO_HOME/customs
+[[ -d "$CUSTOMS" ]] && {
+	echo "Customs $CUSTOMS already exists."
+	exit -1
+}
 
-git init
-mkdir common
-echo $VERSION > .version
-echo 'odoo.git' > .odoorepo
-echo '.openerpcomplete.txt' > .gitignore
-git submodule add $ODOO_HOME/odoo.git odoo --branch 9.0
-echo "    branch=$VERSION" >> .gitmodules
-$ODOO_HOME/admin/git-sub-set-branch
+cd $ODOO_HOME/customs
+mkdir -p $CUSTOMS
+rsync $ODOO_HOME/admin/customs_template/$VERSION/ $CUSTOMS/ -ar
+cd $CUSTOMS
+git init .

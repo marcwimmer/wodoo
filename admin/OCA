@@ -15,7 +15,10 @@ if [[ ! -d .git ]]; then
     exit -1
 fi
 
-VERSION=$(cat .version)
+if [[ -z "$VERSION" ]]; then
+	echo "Version required"
+	exit -1
+fi
 
 git submodule add https://github.com/OCA/$1.git OCA/$1
 git submodule init

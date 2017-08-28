@@ -99,6 +99,13 @@ if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
 fi
 
 if [[ "$(is_module_installed)" != "1" && -n "$MODULE" ]]; then
-	update 'to_install'
+	ALL_MODULE=MODULE
+
+	for i in $(echo $MODULE | sed "s/,/ /g"); do
+		MODULE=$i
+		update 'to_install'
+	done
+	MODULE=$ALL_MODULE
+	
 fi
 update 'to_update'

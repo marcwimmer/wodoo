@@ -243,19 +243,6 @@ def is_module_installed(module):
         conn.close()
 
 
-def make_customs(customs, version):
-    path_customs = os.path.join(odoo_root(), 'data/src/customs', customs)
-    if os.path.isdir(path_customs):
-        raise Exception("Directory {} already exists!".format(path_customs))
-
-    os.mkdir(path_customs)
-
-    FNULL = open(os.devnull, 'w')
-    cmd = "cd '{}'; {}/module_tools/make_customs {}".format(path_customs, admin_dir(), version)
-    subprocess.check_call([cmd], shell=True, stdout=FNULL, stderr=subprocess.STDOUT)
-    db = customs
-    switch_customs_and_db(customs=customs, db=db)
-
 def make_module(parent_path, module_name):
     """
     Creates a new odoo module based on a provided template.
@@ -284,10 +271,8 @@ def make_module(parent_path, module_name):
             with open(install_file, 'r') as f:
                 content = f.read().split("\n")
                 content += [module_name]
-                content0 = content[0]
                 content = [x for x in sorted(content[1:], key=lambda line: line.replace("#", "")) if x]
             with open(install_file, 'w') as f:
-                f.write(content0 + "\n")
                 f.write("\n".join(content))
 
 def update_module(filepath):

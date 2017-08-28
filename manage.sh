@@ -65,6 +65,10 @@ function export_settings() {
 	)
 
 	[[ "$VERBOSE" == "1" ]] && set -x
+
+	if [[ -z "$DBNAME" && -n "$CUSTOMS" ]]; then
+		DBNAME=$CUSTOMS
+	fi
 }
 
 function restore_check() {
@@ -235,6 +239,8 @@ function showhelp() {
 	echo "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
 	echo ""
 	echo "fix-permissions - sets user 1000 for odoo and odoo_files"
+	echo ""
+	echo "make-customs"
     echo
 }
 
@@ -782,6 +788,34 @@ function do_command() {
 		;;
 	sanity_check)
 		sanity_check
+		;;
+	make-customs)
+		set -e
+		askcontinue
+		$0 kill
+		CUSTOMS=$2
+		VERSION=$3
+		$ODOO_HOME/admin/module_tools/make_customs $2 $3
+
+		$(
+cd $ODOO_HOME/admin/module_tools
+python <<- END
+import odoo_config
+env = odoo_config.get_env()
+env['CUSTOMS'] = "$2"
+env.write()
+		END
+		)
+
+		cd $ODOO_HOME/customs/$2
+		git submodule add https://github.com/odoo/odoo odoo
+		cd odoo
+		git checkout $VERSION
+		$ODOO_HOME/admin/OCA-all
+		$ODOO_HOME/admin/oe-submodule tools,web_modulesroduct_modules,calendar_ics
+		$ODOO_HOME/$0 up -d
+		chromium-browser http://localhost
+
 		;;
     *)
         echo "Invalid option $1"

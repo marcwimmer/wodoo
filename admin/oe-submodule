@@ -1,7 +1,18 @@
-#!/bin/bash -e
-if [[ ! -d common || ! -d .git ]]; then
+#!/bin/bash
+set -e
+set -x
+
+if [[ ! -d common ]]; then
     echo "Directory common not found - are you in root?"
     exit 1
 fi
 
-git submodule add -b master --force git.mt-software.de:/git/openerp/modules/$1 common/$1
+if [[ ! -d ".git" ]]; then
+	git init .
+fi
+
+for i in $(echo $1 | sed "s/,/ /g");
+do
+	git submodule add -b master --force git.mt-software.de:/git/openerp/modules/$i common/$i
+done
+
