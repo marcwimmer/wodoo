@@ -20,7 +20,7 @@ def getenv(name):
     return result
 
 
-host = "http://odoo:8072"
+host = "http://nginx"
 username = "admin"
 pwd = getenv("PASSWORD")
 db = getenv("DBNAME")

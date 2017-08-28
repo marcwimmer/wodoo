@@ -909,26 +909,29 @@ function update_openvpn_domains() {
 
 }
 
-function setup_nginx_subdomains() {
+function setup_nginx_paths() {
+	set -e
 
-	SUBDOMAIN_DIR=$DIR/run/nginx_subdomains
-	mkdir -p $SUBDOMAIN_DIR
-	rm $SUBDOMAIN_DIR/*.subdomain || true
-	for file in $(find $DIR/machines -name 'nginx.subdomain'); do
-		cat $file | while read line
-		do
-			SUBDOMAIN=$(echo $line | awk '{print $1}')
-			MACHINE=$(echo $line | awk '{print $2}')
-			PORT=$(echo $line | awk '{print $3}')
+	URLPATH_DIR=$DIR/run/nginx_paths
+	[[ -d "$URLPATH_DIR" ]] && rm -Rf $URLPATH_DIR
+	mkdir -p $URLPATH_DIR
+	AWK=$(which awk)
+
+	find $DIR/machines -name 'nginx.urlpath' | while read f; do
+
+		cat $f | while read line; do
+			URLPATH=$(echo $line | $AWK '{print $1}')
+			MACHINE=$(echo $line | $AWK '{print $2}')
+			PORT=$(echo $line | $AWK '{print $3}')
 
 			if [[ -z "$PORT" || -z "$MACHINE" ]]; then
-				echo "Invalid nginx subdomain: $file"
+				echo "Invalid nginx urlpath: $f"
 				exit -1
 			fi
 
-			$DIR/machines/nginx/add_nginx_subdomain.sh "$SUBDOMAIN" "$MACHINE" "$PORT" "$SUBDOMAIN_DIR"
+			echo '------------------------------------------'
+			$DIR/machines/nginx/add_nginx_path.sh "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
 		done
-
 	done
 }
 
@@ -938,7 +941,7 @@ function main() {
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
-	setup_nginx_subdomains
+	setup_nginx_paths
 	update_openvpn_domains
 	sanity_check
 	export odoo_manager_started_once=1

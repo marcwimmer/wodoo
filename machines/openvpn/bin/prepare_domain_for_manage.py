@@ -37,24 +37,24 @@ content = os.path.expandvars(content)
 with open(os.path.join(root_path, dest_docker_file), 'w') as f:
     f.write(content)
 
-with open(os.path.join(root_path, 'machines/openvpn/nginx.subdomain.tmpl'), 'r') as f:
-    subdomain = f.read()
-    subdomain = subdomain.replace("${DOMAIN}", domain)
+with open(os.path.join(root_path, 'machines/openvpn/nginx.path.tmpl'), 'r') as f:
+    path = f.read()
+    path = path.replace("${DOMAIN}", domain)
 
-    for line in subdomain.split("\n"):
+    for line in path.split("\n"):
         if not line:
             continue
         splitted = line.split(" ")
-        subdomain = splitted[0]
+        path = splitted[0]
         machine = splitted[1]
         port = splitted[2]
         subprocess.check_call([
-            os.path.join(root_path, 'machines/nginx/add_nginx_subdomain.sh'),
-            subdomain,
+            os.path.join(root_path, 'machines/nginx/add_nginx_path.sh'),
+            path,
             machine,
             port,
-            os.path.join(root_path, 'run/nginx_subdomains'),
-            'ovpn.{domain}.subdomain'.format(domain=domain)
+            os.path.join(root_path, 'run/nginx_paths'),
+            'ovpn.{domain}.path'.format(domain=domain)
         ])
 
 with open(results, 'w') as f:
