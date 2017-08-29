@@ -73,7 +73,12 @@ def current_customs():
     return result
 
 def current_version():
-    return float(get_env().get('ODOO_VERSION', ''))
+
+    version_file = os.path.join(customs_dir(), '.version')
+    if not os.path.isfile(version_file):
+        raise Exception("Missing: {}".format(version_file))
+    with open(version_file, 'r') as f:
+        return float(f.read())
 
 def current_db():
     return get_env().get('DBNAME', '')
