@@ -66,9 +66,6 @@ function export_settings() {
 
 	[[ "$VERBOSE" == "1" ]] && set -x
 
-	if [[ -z "$DBNAME" && -n "$CUSTOMS" ]]; then
-		DBNAME=$CUSTOMS
-	fi
 }
 
 function restore_check() {
@@ -803,6 +800,7 @@ python <<- END
 import odoo_config
 env = odoo_config.get_env()
 env['CUSTOMS'] = "$2"
+env['DBNAME'] = "$2"
 env.write()
 		END
 		)
