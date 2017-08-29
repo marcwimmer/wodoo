@@ -33,6 +33,11 @@ function default_confs() {
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
+
+
+
+
+
 }
 
 function export_settings() {
@@ -62,6 +67,17 @@ function export_settings() {
 	v = odoo_config.get_version_from_customs("$CUSTOMS")
 	print v
 	EOF
+	)
+
+	# set odoo version in settings file for machines
+	$(
+cd $ODOO_HOME/admin/module_tools
+python <<- END
+import odoo_config
+env = odoo_config.get_env()
+env['ODOO_VERSION'] = "$ODOO_VERSION"
+env.write()
+	END
 	)
 
 	[[ "$VERBOSE" == "1" ]] && set -x
