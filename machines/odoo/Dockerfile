@@ -96,9 +96,8 @@ ADD requirements_70.txt /root/requirements_70.txt
 
 #install pip packages depending on version
 ADD install_python_packages.sh /install_python_packages.sh
-RUN \
-chmod a+x /install_python_packages.sh && \
-/bin/bash /install_python_packages.sh ${ODOO_VERSION}
+RUN chmod a+x /install_python_packages.sh
+RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION}
 
 RUN apt-get install -y locales
 ADD bin/ /
