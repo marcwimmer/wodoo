@@ -1,4 +1,5 @@
 #!/bin/bash
+#set -u # treat unset variables as error
 # Basic Rules:
 # - if a command would stop production run, then ask to continue is done before
 # - if in set -e environment and piping commands like cat ... |psql .. then use: pipe=$(mktemp -u); mkfifo $pipe; do.. > $pipe &; do < $pipe
@@ -16,8 +17,6 @@ function dcexec() {
 }
 
 function startup() {
-	args=("$@")
-	echo $args
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	ALL_PARAMS=${@:2} # all parameters without command
 	export odoo_manager_started_once=1
@@ -31,6 +30,7 @@ function default_confs() {
 	export RUN_POSTGRES=1
 	export DB_PORT=5432
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
+	export ADDITIONAL_DOCKER_COMPOSE=""
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
@@ -57,8 +57,8 @@ function export_settings() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
-    done <$DIR/settings
-    export $(cut -d= -f1 $DIR/settings)  # export vars now in local variables
+    done <"$DIR/settings"
+    export $(cut -d= -f1 "$DIR/settings")  # export vars now in local variables
 
 	if [[ "$RUN_POSTGRES" == "1" ]]; then
 		DB_HOST=postgres
@@ -68,7 +68,7 @@ function export_settings() {
 	fi
 
 	# get odoo version
-	export ODOO_VERSION=$(
+	ODOO_VERSION=$(
 	cd $ODOO_HOME/admin/module_tools
 	python <<-EOF
 	import odoo_config
@@ -76,9 +76,9 @@ function export_settings() {
 	print v
 	EOF
 	)
+	export ODOO_VERSION=$ODOO_VERSION
 
 	# set odoo version in settings file for machines
-	$(
 cd $ODOO_HOME/admin/module_tools
 python <<- END
 import odoo_config
@@ -86,7 +86,6 @@ env = odoo_config.get_env()
 env['ODOO_VERSION'] = "$ODOO_VERSION"
 env.write()
 	END
-	)
 
 	if [[ "$FORCE_UNVERBOSE" == "1" ]]; then
 		VERBOSE=0
@@ -97,7 +96,7 @@ env.write()
 }
 
 function restore_check() {
-	dumpname=$(basename $2)
+	dumpname=$(basename "$2")
 	if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
 		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
 		exit -1
@@ -107,11 +106,11 @@ function restore_check() {
 
 function exists_db() {
 	sql="select 'database_exists' from pg_database where datname='$DBNAME'"
-	[[ -n "$(FORCE_UNVERBOSE=1 echo $sql| $0 psql template1 | grep 'database_exists')" ]] && {
+	if [[ -n "$(FORCE_UNVERBOSE=1 echo $sql| $0 psql template1 | grep 'database_exists')" ]]; then
 		echo 'database exists'
-	} || {
+	else
 		echo 'database does not exist'
-	}
+	fi
 }
 
 function remove_postgres_connections() {
@@ -157,7 +156,6 @@ function do_restore_db_on_external_postgres () {
 	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
 	export PGPASSWORD=$DB_PWD
 	ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
-	PSQL="psql $ARGS"
 	DROPDB="dropdb $ARGS"
 	CREATEDB="createdb $ARGS"
 	PGRESTORE="pg_restore $ARGS"
@@ -548,11 +546,11 @@ function do_command() {
 	psql)
 		# gets sql query from pipe
 		# check if there is a pipe argument
-		[[ ! -t 0 ]] && {  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
+		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
 			sql=$(cat /dev/stdin)
-		} || {
+		else
 			sql=""
-		}
+		fi	
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			dcexec postgres bash -c "/bin/echo \"$sql\" | gosu postgres psql $ALL_PARAMS"
@@ -1003,15 +1001,17 @@ function setup_nginx_paths() {
 				exit -1
 			fi
 
-			$DIR/machines/nginx/add_nginx_path.sh "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
+			"$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
 		done
 	done
 }
 
 function main() {
-	startup $@
-	default_confs
+	args=$@
+	startup "${args[@]}"
+	default_confs "${args[@]}"
 	export_settings
+	set -u
 	prepare_filesystem
 	prepare_yml_files_from_template_files
 	setup_nginx_paths
