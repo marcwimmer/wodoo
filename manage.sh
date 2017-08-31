@@ -950,8 +950,10 @@ function set_db_ownership() {
 }
 
 function display_machine_tips() {
-
-	tipfile=$(find "$DIR/machines" | grep "$1/tips.txt")
+	cd "$DIR"
+	tipfile=$(find "machines" -name 'tips.txt' | grep -P "\/$1\/" | while read -r file; do
+		echo "$DIR/$file"
+	done)
 	if [[ -f "$tipfile" ]]; then
 		echo 
 		echo Please note:
@@ -960,9 +962,7 @@ function display_machine_tips() {
 		cat "$tipfile"
 		echo 
 		echo
-		sleep 1
 	fi
-
 }
 
 function update_openvpn_domains() {
