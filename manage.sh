@@ -363,7 +363,7 @@ function prepare_yml_files_from_template_files() {
 function do_command() {
     case $1 in
 		install-deps)
-			apt install -y python-psycopg2 python-pip pigz
+			apt install -y python-psycopg2 python-pip pigz shellcheck
 			pip install pip --upgrade
 			pip install lxml
 			pip install configobj
