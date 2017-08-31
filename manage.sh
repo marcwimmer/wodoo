@@ -22,10 +22,6 @@ function startup() {
 	ALL_PARAMS=${@:2} # all parameters without command
 	export odoo_manager_started_once=1
 
-	FORCE=0
-	echo "$*" |grep -q '[-]force' && {
-		FORCE=1
-	}
 }
 
 function default_confs() {
@@ -37,10 +33,17 @@ function default_confs() {
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
+	FORCE=0
+	echo "$*" |grep -q '[-]force' && {
+		FORCE=1
+	}
 
-
-
-
+	if [[ -z "$FORCE_UNVERBOSE" ]]; then
+		FORCE_UNVERBOSE=0
+	fi
+	echo "$*" |grep -q '[-]unverbose' && {
+		FORCE_UNVERBOSE=1
+	}
 
 }
 
@@ -84,6 +87,10 @@ env.write()
 	END
 	)
 
+	if [[ "$FORCE_UNVERBOSE" == "1" ]]; then
+		VERBOSE=0
+	fi
+
 	[[ "$VERBOSE" == "1" ]] && set -x
 
 }
@@ -97,12 +104,21 @@ function restore_check() {
 
 }
 
+function exists_db() {
+	sql="select 'database_exists' from pg_database where datname='$DBNAME'"
+	[[ -n "$(FORCE_UNVERBOSE=1 echo $sql| $0 psql template1 | grep 'database_exists')" ]] && {
+		echo 'database exists'
+	} || {
+		echo 'database does not exist'
+	}
+}
+
 function remove_postgres_connections() {
 	echo "Removing all current connections"
 
-	sudo -u postgres psql -lqt | awk -F '|' '{print $1}'
-	echo ""$0 psql <<-EOF
-	EOF
+	[[ "$(exists_db)" == "database does not exist" ]] || {
+		return 
+	}
 
 	SQL=$(cat <<-EOF
 		SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -842,6 +858,9 @@ env.write()
 		chromium-browser http://localhost
 
 		;;
+	test)
+		echo 'test'
+		;;
     *)
         echo "Invalid option $1"
         exit -1
@@ -988,7 +1007,6 @@ function setup_nginx_paths() {
 				exit -1
 			fi
 
-			echo '------------------------------------------'
 			$DIR/machines/nginx/add_nginx_path.sh "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
 		done
 	done
