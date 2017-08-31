@@ -36,8 +36,6 @@ def apply_po_file(pofile_path):
     """
     pofile_path - pathin in the machine
     """
-    from pudb import set_trace
-    set_trace()
     LANG = os.path.basename(pofile_path).split(".po")[0]
     module = get_module_of_file(pofile_path)
     langs = get_all_langs()
@@ -341,7 +339,12 @@ def run_test_file(path):
         if not path:
             f.write('last_unit_test')
         else:
-            f.write('unit_test:{}:{}'.format(path, get_module_of_file(path)))
+            module = get_module_of_file(path)
+            # transform customs/cpb/common/followup/9.0/followup/tests/test_followup.py
+            # to customs/cpb/common/followup/9.0/followup/tests/__init__.pyc so that
+            # unit test runner is tricked to run the file
+            test_file = os.path.join(os.path.dirname(path), "__init__.py")
+            f.write('unit_test:{}:{}'.format(path, module))
 
 def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()
