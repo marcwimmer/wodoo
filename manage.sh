@@ -7,7 +7,6 @@
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
-
 function dcrun() {
 	$dc run -T "$@"
 }
@@ -24,7 +23,7 @@ function startup() {
 	export odoo_manager_started_once=1
 
 	FORCE=0
-	echo "$*" |grep -q '-force' && {
+	echo "$*" |grep -q '[-]force' && {
 		FORCE=1
 	}
 }
@@ -100,6 +99,11 @@ function restore_check() {
 
 function remove_postgres_connections() {
 	echo "Removing all current connections"
+
+	sudo -u postgres psql -lqt | awk -F '|' '{print $1}'
+	echo ""$0 psql <<-EOF
+	EOF
+
 	SQL=$(cat <<-EOF
 		SELECT pg_terminate_backend(pg_stat_activity.pid)
 		FROM pg_stat_activity 
@@ -529,20 +533,19 @@ function do_command() {
 		
 		;;
 	psql)
-		# execute psql query
-
-		sql=$(
-		while read line
-		do
-			echo "$line"
-		done < "${2:-/dev/stdin}"
-		)
+		# gets sql query from pipe
+		# check if there is a pipe argument
+		[[ ! -t 0 ]] && {  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
+			sql=$(cat /dev/stdin)
+		} || {
+			sql=""
+		}
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			dcrun postgres psql $2
+			dcexec postgres bash -c "/bin/echo \"$sql\" | gosu postgres psql $ALL_PARAMS"
 		else
 			export PGPASSWORD=$DB_PWD
-			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME
+			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME $ALL_PARAMS
 		fi 
 		;;
 
