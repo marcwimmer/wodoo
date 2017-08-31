@@ -644,7 +644,6 @@ function do_command() {
     logs)
         cd "$DIR"
         lines="${ARGS[-1]}"
-		exit -1
         if [[ -n ${lines//[0-9]/} ]]; then
             lines="5000"
         else
