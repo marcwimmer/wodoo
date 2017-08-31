@@ -24,12 +24,13 @@ function startup() {
 	export odoo_manager_started_once=1
 
 	FORCE=0
-	echo "$*" |grep -q '-force' && {
+	echo "$*" |grep -q '[-]force' && {
 		FORCE=1
 	}
 }
 
 function default_confs() {
+	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
@@ -142,7 +143,7 @@ function do_restore_db_on_external_postgres () {
 	PGRESTORE="pg_restore $ARGS"
 
 	remove_postgres_connections
-	eval "$DROPDB $DBNAME" || echo "Failed to drop $DBNAME"
+	eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
 	eval "$CREATEDB $DBNAME"
 	pipe=$(mktemp -u)
 	mkfifo "$pipe"
@@ -169,13 +170,9 @@ function askcontinue() {
 	echo "$*" |grep -q '[-]force' && {
 		force=1
 	}
-	if [[ "$FORCE" == "1" ]]; then
-		force=1
-	fi
-	if [[ "$force" == "0" && "$ASK_CONTINUE" == "0" ]]; then
-		if [[ -z "$1" ]]; then
-			echo "Ask continue disabled, continueing..."
-		fi
+	if [[ "$force" == "1" || "$FORCE" == "1" || "$FORCE_CONTINUE" == "1" ]]; then
+		# display prompt
+		echo "Ask continue disabled, continuing..."
 	else
 		read -p "Continue? (Ctrl+C to break)" || {
 			exit -1
@@ -931,7 +928,6 @@ function set_db_ownership() {
 			EOF
 		fi
 	fi
-	set +x
 }
 
 function display_machine_tips() {
