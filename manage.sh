@@ -8,6 +8,7 @@
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
+ARGS=( "$@" )
 function dcrun() {
 	$dc run -T "$@"
 }
@@ -18,7 +19,7 @@ function dcexec() {
 
 function startup() {
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-	ALL_PARAMS=${@:2} # all parameters without command
+	ALL_PARAMS=${ARGS[@]:2} # all parameters without command
 	export odoo_manager_started_once=1
 
 }
@@ -35,14 +36,14 @@ function default_confs() {
 		export ODOO_HOME=/opt/odoo
 	fi
 	FORCE=0
-	echo "$*" |grep -q '[-]force' && {
+	echo "${ARGS[*]}" |grep -q '[-]force' && {
 		FORCE=1
 	}
 
 	if [[ -z "$FORCE_UNVERBOSE" ]]; then
 		FORCE_UNVERBOSE=0
 	fi
-	echo "$*" |grep -q '[-]unverbose' && {
+	echo "${ARGS[*]}" |grep -q '[-]unverbose' && {
 		FORCE_UNVERBOSE=1
 	}
 
@@ -116,18 +117,16 @@ function exists_db() {
 function remove_postgres_connections() {
 	echo "Removing all current connections"
 
-	[[ "$(exists_db)" == "database does not exist" ]] || {
-		return 
-	}
-
-	SQL=$(cat <<-EOF
-		SELECT pg_terminate_backend(pg_stat_activity.pid)
-		FROM pg_stat_activity 
-		WHERE pg_stat_activity.datname = '$DBNAME' 
-		AND pid <> pg_backend_pid(); 
-		EOF
-		)
-	echo "$SQL" | $0 psql
+	if [[ "$(exists_db)" != "database does not exist" ]]; then
+		SQL=$(cat <<-EOF
+			SELECT pg_terminate_backend(pg_stat_activity.pid)
+			FROM pg_stat_activity 
+			WHERE pg_stat_activity.datname = '$DBNAME' 
+			AND pid <> pg_backend_pid(); 
+			EOF
+			)
+		echo "$SQL" | $0 psql
+	fi
 }
 
 function do_restore_db_in_docker_container () {
@@ -182,7 +181,7 @@ function do_restore_files () {
 
 function askcontinue() {
 	if [[ "$1" != "-force" ]]; then
-		echo $1
+		echo "$1"
 	fi
 	force=0
 	echo "$*" |grep -q '[-]force' && {
@@ -1007,9 +1006,8 @@ function setup_nginx_paths() {
 }
 
 function main() {
-	args=$@
-	startup "${args[@]}"
-	default_confs "${args[@]}"
+	startup 
+	default_confs
 	export_settings
 	set -u
 	prepare_filesystem
