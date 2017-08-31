@@ -22,6 +22,11 @@ function startup() {
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	ALL_PARAMS=${@:2} # all parameters without command
 	export odoo_manager_started_once=1
+
+	FORCE=0
+	echo "$*" |grep -q '-force' && {
+		FORCE=1
+	}
 }
 
 function default_confs() {
@@ -164,6 +169,9 @@ function askcontinue() {
 	echo "$*" |grep -q '[-]force' && {
 		force=1
 	}
+	if [[ "$FORCE" == "1" ]]; then
+		force=1
+	fi
 	if [[ "$force" == "0" && "$ASK_CONTINUE" == "0" ]]; then
 		if [[ -z "$1" ]]; then
 			echo "Ask continue disabled, continueing..."
