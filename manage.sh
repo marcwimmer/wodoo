@@ -1,4 +1,5 @@
 #!/bin/bash
+#set -u # treat unset variables as error
 # Basic Rules:
 # - if a command would stop production run, then ask to continue is done before
 # - if in set -e environment and piping commands like cat ... |psql .. then use: pipe=$(mktemp -u); mkfifo $pipe; do.. > $pipe &; do < $pipe
@@ -7,6 +8,7 @@
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
+ARGS=( "$@" )
 function dcrun() {
 	$dc run -T "$@"
 }
@@ -16,32 +18,32 @@ function dcexec() {
 }
 
 function startup() {
-	args=("$@")
-	echo $args
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-	ALL_PARAMS=${@:2} # all parameters without command
+	ALL_PARAMS=${ARGS[@]:2} # all parameters without command
 	export odoo_manager_started_once=1
 
 }
 
 function default_confs() {
+	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
 	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
 	export DB_PORT=5432
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
+	export ADDITIONAL_DOCKER_COMPOSE=""
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
 	FORCE=0
-	echo "$*" |grep -q '[-]force' && {
+	echo "${ARGS[*]}" |grep -q '[-]force' && {
 		FORCE=1
 	}
 
 	if [[ -z "$FORCE_UNVERBOSE" ]]; then
 		FORCE_UNVERBOSE=0
 	fi
-	echo "$*" |grep -q '[-]unverbose' && {
+	echo "${ARGS[*]}" |grep -q '[-]unverbose' && {
 		FORCE_UNVERBOSE=1
 	}
 
@@ -56,8 +58,8 @@ function export_settings() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
-    done <$DIR/settings
-    export $(cut -d= -f1 $DIR/settings)  # export vars now in local variables
+    done <"$DIR/settings"
+    export $(cut -d= -f1 "$DIR/settings")  # export vars now in local variables
 
 	if [[ "$RUN_POSTGRES" == "1" ]]; then
 		DB_HOST=postgres
@@ -67,7 +69,7 @@ function export_settings() {
 	fi
 
 	# get odoo version
-	export ODOO_VERSION=$(
+	ODOO_VERSION=$(
 	cd $ODOO_HOME/admin/module_tools
 	python <<-EOF
 	import odoo_config
@@ -75,9 +77,9 @@ function export_settings() {
 	print v
 	EOF
 	)
+	export ODOO_VERSION=$ODOO_VERSION
 
 	# set odoo version in settings file for machines
-	$(
 cd $ODOO_HOME/admin/module_tools
 python <<- END
 import odoo_config
@@ -85,7 +87,6 @@ env = odoo_config.get_env()
 env['ODOO_VERSION'] = "$ODOO_VERSION"
 env.write()
 	END
-	)
 
 	if [[ "$FORCE_UNVERBOSE" == "1" ]]; then
 		VERBOSE=0
@@ -96,7 +97,7 @@ env.write()
 }
 
 function restore_check() {
-	dumpname=$(basename $2)
+	dumpname=$(basename "$2")
 	if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
 		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
 		exit -1
@@ -106,28 +107,26 @@ function restore_check() {
 
 function exists_db() {
 	sql="select 'database_exists' from pg_database where datname='$DBNAME'"
-	[[ -n "$(FORCE_UNVERBOSE=1 echo $sql| $0 psql template1 | grep 'database_exists')" ]] && {
+	if [[ -n "$(FORCE_UNVERBOSE=1 echo $sql| $0 psql template1 | grep 'database_exists')" ]]; then
 		echo 'database exists'
-	} || {
+	else
 		echo 'database does not exist'
-	}
+	fi
 }
 
 function remove_postgres_connections() {
 	echo "Removing all current connections"
 
-	[[ "$(exists_db)" == "database does not exist" ]] || {
-		return 
-	}
-
-	SQL=$(cat <<-EOF
-		SELECT pg_terminate_backend(pg_stat_activity.pid)
-		FROM pg_stat_activity 
-		WHERE pg_stat_activity.datname = '$DBNAME' 
-		AND pid <> pg_backend_pid(); 
-		EOF
-		)
-	echo "$SQL" | $0 psql
+	if [[ "$(exists_db)" != "database does not exist" ]]; then
+		SQL=$(cat <<-EOF
+			SELECT pg_terminate_backend(pg_stat_activity.pid)
+			FROM pg_stat_activity 
+			WHERE pg_stat_activity.datname = '$DBNAME' 
+			AND pid <> pg_backend_pid(); 
+			EOF
+			)
+		echo "$SQL" | $0 psql
+	fi
 }
 
 function do_restore_db_in_docker_container () {
@@ -156,13 +155,12 @@ function do_restore_db_on_external_postgres () {
 	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
 	export PGPASSWORD=$DB_PWD
 	ARGS="-h $DB_HOST -p $DB_PORT -U $DB_USER"
-	PSQL="psql $ARGS"
 	DROPDB="dropdb $ARGS"
 	CREATEDB="createdb $ARGS"
 	PGRESTORE="pg_restore $ARGS"
 
 	remove_postgres_connections
-	eval "$DROPDB $DBNAME" || echo "Failed to drop $DBNAME"
+	eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
 	eval "$CREATEDB $DBNAME"
 	pipe=$(mktemp -u)
 	mkfifo "$pipe"
@@ -183,19 +181,15 @@ function do_restore_files () {
 
 function askcontinue() {
 	if [[ "$1" != "-force" ]]; then
-		echo $1
+		echo "$1"
 	fi
 	force=0
 	echo "$*" |grep -q '[-]force' && {
 		force=1
 	}
-	if [[ "$FORCE" == "1" ]]; then
-		force=1
-	fi
-	if [[ "$force" == "0" && "$ASK_CONTINUE" == "0" ]]; then
-		if [[ -z "$1" ]]; then
-			echo "Ask continue disabled, continueing..."
-		fi
+	if [[ "$force" == "1" || "$FORCE" == "1" || "$FORCE_CONTINUE" == "1" ]]; then
+		# display prompt
+		echo "Ask continue disabled, continuing..."
 	else
 		read -p "Continue? (Ctrl+C to break)" || {
 			exit -1
@@ -551,11 +545,11 @@ function do_command() {
 	psql)
 		# gets sql query from pipe
 		# check if there is a pipe argument
-		[[ ! -t 0 ]] && {  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
+		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
 			sql=$(cat /dev/stdin)
-		} || {
+		else
 			sql=""
-		}
+		fi	
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			dcexec postgres bash -c "/bin/echo \"$sql\" | gosu postgres psql $ALL_PARAMS"
@@ -953,7 +947,6 @@ function set_db_ownership() {
 			EOF
 		fi
 	fi
-	set +x
 }
 
 function display_machine_tips() {
@@ -1007,15 +1000,16 @@ function setup_nginx_paths() {
 				exit -1
 			fi
 
-			$DIR/machines/nginx/add_nginx_path.sh "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
+			"$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
 		done
 	done
 }
 
 function main() {
-	startup $@
+	startup 
 	default_confs
 	export_settings
+	set -u
 	prepare_filesystem
 	prepare_yml_files_from_template_files
 	setup_nginx_paths
