@@ -7,7 +7,6 @@
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
-
 function dcrun() {
 	$dc run -T "$@"
 }
@@ -23,10 +22,6 @@ function startup() {
 	ALL_PARAMS=${@:2} # all parameters without command
 	export odoo_manager_started_once=1
 
-	FORCE=0
-	echo "$*" |grep -q '[-]force' && {
-		FORCE=1
-	}
 }
 
 function default_confs() {
@@ -39,10 +34,17 @@ function default_confs() {
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
+	FORCE=0
+	echo "$*" |grep -q '[-]force' && {
+		FORCE=1
+	}
 
-
-
-
+	if [[ -z "$FORCE_UNVERBOSE" ]]; then
+		FORCE_UNVERBOSE=0
+	fi
+	echo "$*" |grep -q '[-]unverbose' && {
+		FORCE_UNVERBOSE=1
+	}
 
 }
 
@@ -86,6 +88,10 @@ env.write()
 	END
 	)
 
+	if [[ "$FORCE_UNVERBOSE" == "1" ]]; then
+		VERBOSE=0
+	fi
+
 	[[ "$VERBOSE" == "1" ]] && set -x
 
 }
@@ -99,8 +105,22 @@ function restore_check() {
 
 }
 
+function exists_db() {
+	sql="select 'database_exists' from pg_database where datname='$DBNAME'"
+	[[ -n "$(FORCE_UNVERBOSE=1 echo $sql| $0 psql template1 | grep 'database_exists')" ]] && {
+		echo 'database exists'
+	} || {
+		echo 'database does not exist'
+	}
+}
+
 function remove_postgres_connections() {
 	echo "Removing all current connections"
+
+	[[ "$(exists_db)" == "database does not exist" ]] || {
+		return 
+	}
+
 	SQL=$(cat <<-EOF
 		SELECT pg_terminate_backend(pg_stat_activity.pid)
 		FROM pg_stat_activity 
@@ -526,20 +546,19 @@ function do_command() {
 		
 		;;
 	psql)
-		# execute psql query
-
-		sql=$(
-		while read line
-		do
-			echo "$line"
-		done < "${2:-/dev/stdin}"
-		)
+		# gets sql query from pipe
+		# check if there is a pipe argument
+		[[ ! -t 0 ]] && {  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
+			sql=$(cat /dev/stdin)
+		} || {
+			sql=""
+		}
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			dcrun postgres psql $2
+			dcexec postgres bash -c "/bin/echo \"$sql\" | gosu postgres psql $ALL_PARAMS"
 		else
 			export PGPASSWORD=$DB_PWD
-			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME
+			echo "$sql" | psql -h $DB_HOST -p $DB_PORT -U $DB_USER -w $DBNAME $ALL_PARAMS
 		fi 
 		;;
 
@@ -836,6 +855,9 @@ env.write()
 		chromium-browser http://localhost
 
 		;;
+	test)
+		echo 'test'
+		;;
     *)
         echo "Invalid option $1"
         exit -1
@@ -981,7 +1003,6 @@ function setup_nginx_paths() {
 				exit -1
 			fi
 
-			echo '------------------------------------------'
 			$DIR/machines/nginx/add_nginx_path.sh "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
 		done
 	done

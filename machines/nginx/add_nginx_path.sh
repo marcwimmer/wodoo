@@ -18,7 +18,7 @@ else
 fi
 
 DOLLAR='$'
-tee $OUTPUT_FILENAME.path  <<EOF
+tee $OUTPUT_FILENAME.path >/dev/null  <<EOF
 location $1 {
 
 	set $DOLLAR${DNSNAME}_${URLPATH/\//} $DNSNAME;
