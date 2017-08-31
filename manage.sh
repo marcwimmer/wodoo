@@ -20,7 +20,6 @@ function dcexec() {
 function startup() {
 	local ARGS=("$@")
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-	set -x
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export odoo_manager_started_once=1
 
