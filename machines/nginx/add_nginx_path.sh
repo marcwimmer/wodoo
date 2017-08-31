@@ -18,9 +18,18 @@ else
 fi
 
 DOLLAR='$'
-tee $OUTPUT_FILENAME.path >/dev/null  <<EOF
-location $1 {
+set -x
 
+if [[ "$1" == "/" ]]; then
+	LOCATION="$1" # e.g. /
+else
+	LOCATION=" = $1"  # e.g. = /cal
+fi
+
+
+tee $OUTPUT_FILENAME.path >/dev/null  <<EOF
+location $LOCATION
+{
 	set $DOLLAR${DNSNAME}_${URLPATH/\//} $DNSNAME;
 	resolver 127.0.0.11;
 	proxy_pass http://$DOLLAR${DNSNAME}_${URLPATH/\//}:$PORT;

@@ -993,7 +993,6 @@ function setup_nginx_paths() {
 	mkdir -p "$URLPATH_DIR"
 
 	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
-
 		while read -r line; do
 			URLPATH=$(echo "$line" | awk '{print $1}')
 			MACHINE=$(echo "$line" | awk '{print $2}')
