@@ -986,13 +986,14 @@ function awk() {
 }
 
 function setup_nginx_paths() {
-	set -e
-
 	URLPATH_DIR=$DIR/run/nginx_paths
 	[[ -d "$URLPATH_DIR" ]] && rm -Rf "$URLPATH_DIR"
 	mkdir -p "$URLPATH_DIR"
 
 	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
+		content=$(
+			envsubst < "$f"
+		)
 		while read -r line; do
 			URLPATH=$(echo "$line" | awk '{print $1}')
 			MACHINE=$(echo "$line" | awk '{print $2}')
@@ -1004,7 +1005,7 @@ function setup_nginx_paths() {
 			fi
 
 			"$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
-		done < "$f"
+		done <<< "$content"
 	done
 }
 
