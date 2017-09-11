@@ -34,6 +34,7 @@ function default_confs() {
 	export DB_PORT=5432
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
 	export ADDITIONAL_DOCKER_COMPOSE=""
+	export RUN_ODOODEV=0
 	if [[ -z "$ODOO_HOME" ]]; then
 		export ODOO_HOME=/opt/odoo
 	fi
