@@ -231,13 +231,15 @@ class ModuleDocumentation(Interface):
         self.h2("Fields")
         for classname, clazz in odoo_modules[self.module.name].clazzes.items():
             records = []
-            order = ['Model', 'Field', 'Type', 'Comodel']
+            order = ['Model', 'Field', 'Type', 'Comodel', 'Compute', 'Relate', 'Selection']
             for field in clazz.fields:
                 records.append(OrderedDict(sorted({
                     'Model': clazz.name,
                     'Field': field.name,
                     'Type': field.ttype,
                     'Comodel': field.params.get('comodel_name', "n/a"),
+                    'Relate': field.params.get('relate', "n/a"),
+                    'Selection': str(field.params.get('selection', "n/a")),
                 }.items(), key=lambda x: order.index(x[0]))))
             self.tabulate(records)
 
@@ -439,15 +441,28 @@ class OdooParser(ast.NodeVisitor):
         ttype = node.func.attr
         params = {}
 
-        def get_param_value(value):
-            if isinstance(value, ast.List):
+        def get_param_value(value, name=None):
+            if name == 'store':
+                if isinstance(value, ast.Dict):
+                    return True
+                elif isinstance(value, ast.Name):
+                    return value.id
+                else:
+                    raise Exception("unhandled")
+
+            elif isinstance(value, (ast.List, ast.Tuple)):
                 value2 = []
                 for v in value.elts:
-                    if isinstance(v, ast.Tuple):
-                        value2.append((v.elts[0].s, v.elts[1].s))
-                    else:
-                        raise Exception("unhandled")
+                    v = get_param_value(v, name)
+                    value2.append(v)
                 value = value2
+            elif isinstance(value, ast.Dict):
+                d = {}
+                for i, key in enumerate(value.keys):
+                    v = value.values[i]
+                    v = get_param_value(v)
+                    d[key] = v
+                value = d
             elif isinstance(value, ast.Str):
                 value = value.s
             elif isinstance(value, ast.Num):
@@ -455,18 +470,14 @@ class OdooParser(ast.NodeVisitor):
             elif isinstance(value, ast.Name):
                 value = value.id
             elif isinstance(value, ast.Lambda):
-                from pudb import set_trace
-                set_trace()
+                value = get_source_code(value.lineno, value.col_offset)
+            elif isinstance(value, ast.ListComp):
                 value = get_source_code(value.lineno, value.col_offset)
             else:
+                from pudb import set_trace
+                set_trace()
                 raise Exception("Unhandled: {}".format(value.__class__))
             return value
-
-        for keyword in node.keywords:
-            params[keyword.arg] = get_param_value(keyword.value)
-            del keyword
-
-        params = {}
 
         for idx, arg in enumerate(node.args):
             if ttype.lower() == 'many2many':
@@ -503,26 +514,36 @@ class OdooParser(ast.NodeVisitor):
 
             elif ttype.lower() == 'function':
                 if idx == 0:
-                    params['compute'] = arg.id
+                    params['compute'] = get_param_value(arg)
                 else:
                     raise Exception("unhandled")
 
             elif ttype.lower() == 'selection':
                 if idx == 0:
                     params['selection'] = get_param_value(arg)
+                elif idx == 1:
+                    params['string'] = get_param_value(arg)
                 else:
                     raise Exception("unhandled")
+
+            elif ttype.lower() == 'related':
+                params.setdefault('relate', "")
+                params['relate'] += '.' + get_param_value(arg)
+                if params['relate'].startswith('.'):
+                    params['relate'] = params['relate'][1:]
 
             else:
                 if idx == 0:
                     params['string'] = get_param_value(arg)
                 else:
+                    from pudb import set_trace
+                    set_trace()
                     raise Exception("unhandled")
 
         for keyword in node.keywords:
             if keyword.arg in params:
                 raise Exception("Already in dict: {}".format(keyword.arg))
-            params[keyword.arg] = get_param_value(keyword.value)
+            params[keyword.arg] = get_param_value(keyword.value, keyword.arg)
 
         if hasattr(node.func, 'id'):
             ttype = node.func.id
