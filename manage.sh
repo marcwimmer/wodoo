@@ -216,6 +216,9 @@ function showhelp() {
     echo 'Minimal downtime - but there is a downtime, even for phones'
     echo 
     echo "Please call manage.sh springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
+	echo ""
+	echo "abort-upgrade"
+	echo ""
     echo "attach <machine> - attaches to running machine"
 	echo ""
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
@@ -359,12 +362,21 @@ function prepare_yml_files_from_template_files() {
 
 function do_command() {
     case $1 in
-		install-deps)
-			apt install -y python-psycopg2 python-pip pigz shellcheck
-			pip install pip --upgrade
-			pip install lxml
-			pip install configobj
-			pip install unidecode
+	abort-upgrade)
+		SQL=$(cat <<-EOF
+			UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
+			UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
+			EOF
+			)
+		echo "$SQL" | $MANAGE psql
+
+		;;
+	install-deps)
+		apt install -y python-psycopg2 python-pip pigz shellcheck
+		pip install pip --upgrade
+		pip install lxml
+		pip install configobj
+		pip install unidecode
 		;;
     setup-startup)
         PATH=$DIR
