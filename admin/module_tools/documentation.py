@@ -1,3 +1,6 @@
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 import ast
 import pydot
 import os
@@ -70,9 +73,23 @@ class Interface(object):
             assert backlinks in ['entry', 'top', 'none']
             self.append(self.indent(':backlinks: {}'.format(backlinks)))
 
-    def tabulate(self, records):
+    def tabulate(self, records, headers='keys'):
+        records2 = []
+
+        def safe(v):
+            if isinstance(v, str):
+                v = unicode(v, errors='ignore')
+            return v
+
+        for record in records:
+            r2 = {}
+            if isinstance(record, type({})):
+                for k, v in record.items():
+                    r2 = safe(v)
+            records2.append(r2)
+
         self.text += '\n'
-        self.text += tabulate.tabulate(records, headers='keys', tablefmt='grid', numalign='right')
+        self.text += tabulate.tabulate(records2, headers=headers, tablefmt='grid', numalign='right')
         self.text += '\n'
 
     def make_text(self):
@@ -194,6 +211,7 @@ class ModuleDocumentation(Interface):
         self.h1("Module: {}".format(self.module.name))
 
         self.append_graph_dependency()
+        self.append_git_info()
         self.append_readme()
         self.append_description()
         self.append_tables()
@@ -233,15 +251,15 @@ class ModuleDocumentation(Interface):
             records = []
             order = ['Model', 'Field', 'Type', 'Comodel', 'Compute', 'Relate', 'Selection']
             for field in clazz.fields:
-                records.append(OrderedDict(sorted({
+                records.append({
                     'Model': clazz.name,
                     'Field': field.name,
                     'Type': field.ttype,
                     'Comodel': field.params.get('comodel_name', "n/a"),
                     'Relate': field.params.get('relate', "n/a"),
                     'Selection': str(field.params.get('selection', "n/a")),
-                }.items(), key=lambda x: order.index(x[0]))))
-            self.tabulate(records)
+                })
+            self.tabulate(records, headers=order)
 
     def append_field_helptexts(self):
         self.h2("Field Helptexts")
@@ -251,17 +269,23 @@ class ModuleDocumentation(Interface):
             for field in clazz.fields:
                 if not field.params.get('help', False):
                     continue
-                records.append(OrderedDict(sorted({
+                records.append({
                     'Model': clazz.name,
                     'Field': field.name,
                     'Help': self.remove_breaks(field.params.get('help')),
-                }.items(), key=lambda x: order.index(x[0]))))
-            self.tabulate(records)
+                })
+            self.tabulate(records, headers=order)
 
     def append_graph_dependency(self):
         filename = self.module.get_graphviz()
         self.h2("Module Dependency Diagram")
         self.image_paragraph(filename, WIDTH_MOD_DEPENDENCY)
+
+    def append_git_info(self):
+        info = self.module.get_git_information()
+        self.h2("Repository Information")
+        self.append("  * Started: {}".format(info['started']))
+        self.append("  * Last Modification: {}".format(info['last-modified']))
 
     def append_description(self):
         if self.module.manifest.get('description', False):
@@ -326,6 +350,17 @@ class OdooModule(object):
         if self.name in odoo_modules:
             raise Exception("module {} already exists")
         odoo_modules[self.name] = self
+
+    def get_git_information(self):
+
+        output = subprocess.check_output(['/usr/bin/git', 'log', '--date=short', '--pretty=format:\"%ad\"', self.manifest_path], cwd=os.path.dirname(self.manifest_path)).split("\n")
+        started = output[-1].strip()
+        last_modified = output[0].strip()
+
+        return {
+            'started': started,
+            'last-modified': last_modified,
+        }
 
     def get_graphviz(self, filename=None):
         if not filename:
