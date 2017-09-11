@@ -379,6 +379,10 @@ function do_command() {
 		pip install lxml
 		pip install configobj
 		pip install unidecode
+		pip install pip install requests[security]
+		pip install graphviz
+		pip install jsonpickle
+		pip install rst2pdf
 		;;
     setup-startup)
         PATH=$DIR
