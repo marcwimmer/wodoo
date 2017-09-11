@@ -842,8 +842,8 @@ def parse_all_modules(filter_modules=None):
 
 if __name__ == '__main__':
     #parse_all_modules(filter_modules='crm_newsletter')
-    parse_all_modules(filter_modules='account_fiscal_year')
-    #parse_all_modules()
+    #parse_all_modules(filter_modules='account_fiscal_year')
+    parse_all_modules()
     filename = tempfile.mktemp(suffix='.clazzes')
     # with open('/tmp/clazzes.txt', 'w') as f:
     #    f.write(json.dumps(json.loads(jsonpickle.encode(odoo_classes, unpicklable=True)), sort_keys=True, indent=4, separators=(',', ': ')))
@@ -862,5 +862,5 @@ if __name__ == '__main__':
         pdf_path
     ))
 
-    subprocess.check_call(['/usr/bin/evince', pdf_path])
+    #subprocess.check_call(['/usr/bin/evince', pdf_path])
     print filename
