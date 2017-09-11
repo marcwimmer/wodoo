@@ -12,6 +12,7 @@ import jsonpickle
 import json
 import subprocess
 import tabulate
+from lxml import etree
 from collections import OrderedDict
 from consts import MANIFESTS
 from odoo_config import customs_dir
@@ -34,6 +35,16 @@ def get_source_code(lineno, col_offset):
         content = f.read().split("\n")
 
         return content[lineno - 1][col_offset:]
+
+def lxml_get_node_text(node):
+    if not node:
+        return ""
+    if node and isinstance(node[0], (str, unicode)):
+        return node[0]
+    res = node[0].text
+    if not res:
+        pass
+    return res
 
 class Interface(object):
     def __init__(self, heading_offset=0):
@@ -82,11 +93,15 @@ class Interface(object):
             return v
 
         for record in records:
-            r2 = {}
+            d = []
             if isinstance(record, type({})):
-                for k, v in record.items():
-                    r2 = safe(v)
-            records2.append(r2)
+                for h in headers:
+                    try:
+                        v = record[h]
+                    except:
+                        v = record[h.lower()]
+                    d.append(safe(v))
+            records2.append(d)
 
         self.text += '\n'
         self.text += tabulate.tabulate(records2, headers=headers, tablefmt='grid', numalign='right')
@@ -117,6 +132,37 @@ class Interface(object):
 
     def h4(self, text):
         self._heading(text, self.heading_offset + 3)
+
+    def remove_heading(self, text, char):
+        """
+        removes heading
+        :param char: the heading character
+        """
+        lines = text.split("\n")
+        lines2 = []
+        ignore_lines = set()
+        for i, line in enumerate(lines):
+            if 4 * char in line:
+                if i + 2 < len(lines) and 4 * char in lines[i + 2]:
+                    # found
+                    # #########
+                    # title
+                    # ########
+                    ignore_lines.add(i)
+                    ignore_lines.add(i + 1)
+                    ignore_lines.add(i + 2)
+                else:
+                    # found
+                    #
+                    # title
+                    # ########
+                    ignore_lines.add(i)
+                    ignore_lines.add(i - 1)
+
+            if not i in ignore_lines:
+                lines2.append(line)
+
+        return '\n'.join(lines2)
 
     def remove_empty_headings(self, text):
         lines = text.split("\n")
@@ -166,7 +212,6 @@ class Interface(object):
         text = self.remove_breaks(text)
         char = self.heading_levels[level - 1]
         self.append("\n\n")
-        self.append(len(text) * char)
         self.append(text)
         self.append(len(text) * char)
 
@@ -214,19 +259,34 @@ class ModuleDocumentation(Interface):
         self.append_git_info()
         self.append_readme()
         self.append_description()
+        self.append_configuration_settings()
         self.append_tables()
         self.append_fields()
         self.append_field_helptexts()
+        self.append_defs()
+        self.append_views()
+
+    def append_configuration_settings(self):
+        configurations = self.module.get_configurations()
+        if configurations:
+            self.h2("Configuration Settings")
+            self.tabulate(configurations, headers=['Name', 'Value'])
+
+    def append_views(self):
+        views = self.module.get_views()
+        if views:
+            self.h2("Views")
+            self.tabulate(views, headers=['Model', 'Type', 'Inherit From'])
 
     def append_tables(self):
-        dot = pydot.Dot(graph_type='digraph')
+        dot = pydot.Dot(graph_type='digraph', ratio='compress', size="8.3,11.7!", margin=0)
         dot.set_node_defaults(shape='box')
         dot.set_edge_defaults(color='blue', arrowhead='vee', weight='0', labelangle='90')
 
         filename = tempfile.mktemp(suffix='.png')
 
         self.h2("Table Hierarchy")
-        for classname, clazz in odoo_modules[self.module.name].clazzes.items():
+        for classname, clazz in sorted(odoo_modules[self.module.name].clazzes.items(), key=lambda x: x):
 
             clazznode = pydot.Node(classname, fillcolor='grey', style='filled')
 
@@ -245,6 +305,20 @@ class ModuleDocumentation(Interface):
             dot.write_png(filename)
             self.image_paragraph(filename, WIDTH_MOD_CLASS_HIERARCHY)
 
+    def append_defs(self):
+        self.h2("Methods")
+        for classname, clazz in sorted(odoo_modules[self.module.name].clazzes.items(), key=lambda x: x):
+            records = []
+            order = ['Model', 'Def']
+            for d in clazz.defs:
+                records.append({
+                    'Model': clazz.name,
+                    'Def': d.name,
+                })
+            if records:
+                self.h3(classname)
+                self.tabulate(records, headers=order[1:])
+
     def append_fields(self):
         self.h2("Fields")
         for classname, clazz in odoo_modules[self.module.name].clazzes.items():
@@ -256,10 +330,13 @@ class ModuleDocumentation(Interface):
                     'Field': field.name,
                     'Type': field.ttype,
                     'Comodel': field.params.get('comodel_name', "n/a"),
+                    'Compute': field.params.get('compute', "n/a"),
                     'Relate': field.params.get('relate', "n/a"),
                     'Selection': str(field.params.get('selection', "n/a")),
                 })
-            self.tabulate(records, headers=order)
+            if records:
+                self.h3(classname)
+                self.tabulate(records, headers=order[1:])
 
     def append_field_helptexts(self):
         self.h2("Field Helptexts")
@@ -274,12 +351,14 @@ class ModuleDocumentation(Interface):
                     'Field': field.name,
                     'Help': self.remove_breaks(field.params.get('help')),
                 })
-            self.tabulate(records, headers=order)
+            if records:
+                self.h3(classname)
+                self.tabulate(records, headers=order)
 
     def append_graph_dependency(self):
         filename = self.module.get_graphviz()
         self.h2("Module Dependency Diagram")
-        self.image_paragraph(filename, WIDTH_MOD_DEPENDENCY)
+        self.image_paragraph(filename)
 
     def append_git_info(self):
         info = self.module.get_git_information()
@@ -298,7 +377,7 @@ class ModuleDocumentation(Interface):
             with open(readme_path, 'r') as f:
                 content = f.read()
 
-                # remove modulename  with heading
+                # remove modulename with heading
                 lines, lines2 = content.split("\n"), []
                 for line in lines:
                     if self.module.name == line:
@@ -306,6 +385,20 @@ class ModuleDocumentation(Interface):
                     lines2.append(line)
                 content = '\n'.join(lines2)
                 content = self.remove_empty_headings(content) # could be empty, because module name was removed
+
+                # remove any first level heading and whats in between;
+                # heading like
+                #
+                # ===============
+                # title
+                # ===============
+                #
+                # as a higher level than:
+                #
+                # title
+                # ==============
+                content = self.remove_heading(content, "=")
+
 
                 readme_level = self.get_heading_level(content)
 
@@ -351,6 +444,40 @@ class OdooModule(object):
             raise Exception("module {} already exists")
         odoo_modules[self.name] = self
 
+    def get_configurations(self):
+        result = []
+        for root, dirs, files in os.walk(os.path.dirname(self.manifest_path)):
+            for file in files:
+                if file.endswith('.xml'):
+                    with open(os.path.join(root, file), 'r') as f:
+                        doc = etree.XML(f.read())
+                        for config_node in doc.xpath("//record[@model='ir.config_parameter']"):
+                            result.append({
+                                'name': config_node.xpath("field[@name='key']")[0].text,
+                                'value': config_node.xpath("field[@name='value']")[0].text,
+                            })
+        return result
+
+    def get_views(self):
+        result = []
+        for root, dirs, files in os.walk(os.path.dirname(self.manifest_path)):
+            for file in files:
+                if file.endswith('.xml'):
+                    with open(os.path.join(root, file), 'r') as f:
+                        doc = etree.XML(f.read())
+                        for node in doc.xpath("//record[@model='ir.ui.view']"):
+                            model = lxml_get_node_text(node.xpath("field[@name='model']"))
+                            arch = lxml_get_node_text(node.xpath("field[@name='arch']")).strip().split('\n')[0]
+                            type = arch.split(" ")[0][1:] # <form string=.... --> form  # TODO view type
+                            inherit_id = lxml_get_node_text(node.xpath("field[@name='inherit_id']/@ref"))
+
+                            result.append({
+                                'type': type,
+                                'model': model,
+                                'inherit from': inherit_id,
+                            })
+        return result
+
     def get_git_information(self):
 
         output = subprocess.check_output(['/usr/bin/git', 'log', '--date=short', '--pretty=format:\"%ad\"', self.manifest_path], cwd=os.path.dirname(self.manifest_path)).split("\n")
@@ -365,7 +492,7 @@ class OdooModule(object):
     def get_graphviz(self, filename=None):
         if not filename:
             filename = tempfile.mktemp(suffix='.png')
-        dot = pydot.Dot(graph_type='digraph')
+        dot = pydot.Dot(graph_type='digraph', ratio='compress', size="8.3,11.7!", margin=0)
         dot.set_node_defaults(shape='box')
         dot.set_edge_defaults(color='blue', arrowhead='vee', weight='0', labelangle='90')
 
@@ -681,7 +808,7 @@ class OdooParser(ast.NodeVisitor):
         self.current_class_name = None
         return super(OdooParser, self).visit(tree)
 
-def parse_all_modules():
+def parse_all_modules(filter_modules=None):
     # parse odoo classes and modules
     all_manifests = list(get_all_manifests())
     all_deps = get_all_module_dependency_tree()
@@ -691,6 +818,9 @@ def parse_all_modules():
         in all_manifests
         if is_module_listed_in_install_file_or_in_dependency_tree(get_module_of_file(x), all_manifests=all_manifests, all_module_dependency_tree=all_deps)
     ]
+
+    if filter_modules:
+        filtered_manifests = [x for x in filtered_manifests if filter_modules in x]
 
     parser = OdooParser(odoo_modules)
     global global_filepath
@@ -711,7 +841,9 @@ def parse_all_modules():
 
 
 if __name__ == '__main__':
-    parse_all_modules()
+    #parse_all_modules(filter_modules='crm_newsletter')
+    parse_all_modules(filter_modules='account_fiscal_year')
+    #parse_all_modules()
     filename = tempfile.mktemp(suffix='.clazzes')
     # with open('/tmp/clazzes.txt', 'w') as f:
     #    f.write(json.dumps(json.loads(jsonpickle.encode(odoo_classes, unpicklable=True)), sort_keys=True, indent=4, separators=(',', ': ')))
