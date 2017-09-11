@@ -13,6 +13,7 @@ from module_tools.odoo_config import current_customs
 from module_tools.odoo_config import customs_dir
 from module_tools.odoo_config import current_version
 from module_tools.module_tools import get_module_of_file
+from module_tools.module_tools import is_module_dir_in_version
 
 LN_DIR = os.environ['ADDONS_CUSTOMS']
 counter = 0
@@ -76,47 +77,6 @@ def search_dir_for_modules(base_dir):
         except:
             print 'Fehlgeschlagen symbolischer Link %s - %s' % (complete_module_dir, target)
             raise
-
-    def is_module_dir_in_version(module_dir):
-        result = {'ok': False, "paths": []}
-        info_file = os.path.join(module_dir, ".ln")
-        if os.path.exists(info_file):
-            with open(info_file, 'r') as f:
-                content = f.read()
-            try:
-                info = eval(content)
-            except:
-                print "error at file: %s" % info_file
-                raise
-            if isinstance(info, (float, long, int)):
-                min_ver = info
-                max_ver = info
-                info = {'minimum_version': min_ver, 'maximum_version': max_ver}
-            else:
-                min_ver = info.get("minimum_version", 1.0)
-                max_ver = info.get("maximum_version", 1000.0)
-            if min_ver > max_ver:
-                raise Exception("Invalid version: {}".format(module_dir))
-            if float(version) >= float(min_ver) and float(version) <= float(max_ver):
-                result['ok'] = True
-
-            for m in MANIFESTS:
-                if os.path.exists(os.path.join(module_dir, m)):
-                    result['paths'].append(module_dir)
-            if info.get('paths') and result['ok']:
-                # used for OCA paths for example
-                for path in info['paths']:
-                    path = os.path.abspath(os.path.join(module_dir, path))
-                    result['paths'].append(path)
-        elif "/OCA/" in module_dir:
-            relpath = module_dir.split(u"/OCA/")[1].split("/")
-            if len(relpath) == 2:
-                return {
-                    'ok': True,
-                    'paths': [module_dir],
-                }
-
-        return result
 
     def visit(arg, dirname, names):
         in_version = is_module_dir_in_version(dirname)

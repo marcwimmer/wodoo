@@ -24,12 +24,19 @@ def get_odoo_addons_paths():
 def admin_dir():
     return os.path.join(odoo_root(), 'admin')
 
-def customs_dir():
-    c = current_customs()
+def customs_dir(customs=None):
+    c = customs or current_customs()
     if os.getenv("DOCKER_MACHINE", "0") == "1":
         return os.environ['ACTIVE_CUSTOMS']
     else:
         return os.path.join(odoo_root(), 'data', 'src', 'customs', c)
+
+def get_version_from_customs(customs=None):
+    with open(os.path.join(customs_dir(customs), '.version')) as f:
+        return eval(f.read())
+
+def install_file():
+    return os.path.join(customs_dir(), 'install')
 
 def run_dir():
     "returns ~/odoo/run"
@@ -82,15 +89,6 @@ def current_version():
 
 def current_db():
     return get_env().get('DBNAME', '')
-
-def get_path_customs_root(customs=None):
-    if not customs:
-        customs = current_customs()
-    return os.path.join(odoo_root(), 'data/src/customs/{}'.format(customs))
-
-def get_version_from_customs(customs):
-    with open(os.path.join(get_path_customs_root(customs), '.version')) as f:
-        return eval(f.read())
 
 def execute_managesh(*args, **kwargs):
     args = ['./manage.sh'] + list(args)

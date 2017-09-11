@@ -636,5 +636,5 @@ def try_to_get_context(line_content, lines_before, filename):
     return result
 
 
-# if __name__ == '__main__':
-    # update_cache('/home/marc/odoo/data/src/customs/heine/modules/heine_website/__openerp__.py')
+if __name__ == '__main__':
+    update_cache('/home/marc/odoo/data/src/customs/heine/modules/heine_website/__openerp__.py')
