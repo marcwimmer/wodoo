@@ -137,7 +137,7 @@ function do_restore_db_in_docker_container () {
 	# remove the postgres volume and reinit
 
 	echo "Restoring dump within docker container postgres"
-	dump_file=$1
+	dump_file=$(readlink -f "$1")
 	$dc kill
 	$dc rm -f || true
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
@@ -148,6 +148,7 @@ function do_restore_db_in_docker_container () {
 	LOCAL_DEST_NAME=$DIR/run/restore/$DBNAME.gz
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm "$LOCAL_DEST_NAME"
 
+	mkdir -p "$(dirname "$LOCAL_DEST_NAME")"
 	/bin/ln "$dump_file" "$LOCAL_DEST_NAME"
 	$MANAGE reset-db
 	dcrun postgres /restore.sh "$(basename "$LOCAL_DEST_NAME")"
@@ -179,6 +180,7 @@ function do_restore_files () {
 	LOCAL_DEST_NAME=$DIR/run/restore/odoofiles.tar
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm "$LOCAL_DEST_NAME"
 
+	mkdir -p "$(dirname "$LOCAL_DEST_NAME")"
 	/bin/ln "$tararchive_full_path" "$LOCAL_DEST_NAME"
 	dcrun odoo /bin/restore_files.sh "$(basename "$LOCAL_DEST_NAME")"
 }
@@ -488,8 +490,8 @@ function do_command() {
 
 	restore-db)
 		set -e
-		restore_check "$1"
-		dumpfile=$2
+		dumpfile="$2"
+		restore_check "$dumpfile"
 
 		echo "$*" |grep -q '[-]force' || {
 			askcontinue "Deletes database $DBNAME!"
@@ -542,7 +544,6 @@ function do_command() {
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		restore_check "$1"
 		$MANAGE restore-db "${ALL_PARAMS[@]}"
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
 
