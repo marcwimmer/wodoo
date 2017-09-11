@@ -24,6 +24,13 @@ WIDTH_MOD_DEPENDENCY = "5cm"
 WIDTH_MOD_CLASS_HIERARCHY = "5cm"
 
 odoo_modules = {}
+global_filepath = ""
+
+def get_source_code(lineno, col_offset):
+    with open(global_filepath, 'r') as f:
+        content = f.read().split("\n")
+
+        return content[lineno - 1][col_offset:]
 
 class Interface(object):
     def __init__(self, heading_offset=0):
@@ -431,11 +438,33 @@ class OdooParser(ast.NodeVisitor):
     def interprete_field_node(self, node):
         ttype = node.func.attr
         params = {}
-        for keyword in node.keywords:
-            if isinstance(keyword.value, ast.Str):
-                params[keyword.arg] = keyword.value.s
+
+        def get_param_value(value):
+            if isinstance(value, ast.List):
+                value2 = []
+                for v in value.elts:
+                    if isinstance(v, ast.Tuple):
+                        value2.append((v.elts[0].s, v.elts[1].s))
+                    else:
+                        raise Exception("unhandled")
+                value = value2
+            elif isinstance(value, ast.Str):
+                value = value.s
+            elif isinstance(value, ast.Num):
+                value = value.n
+            elif isinstance(value, ast.Name):
+                value = value.id
+            elif isinstance(value, ast.Lambda):
+                from pudb import set_trace
+                set_trace()
+                value = get_source_code(value.lineno, value.col_offset)
             else:
-                raise Exception("Unhandled: {}".format(keyword.value.__class__))
+                raise Exception("Unhandled: {}".format(value.__class__))
+            return value
+
+        for keyword in node.keywords:
+            params[keyword.arg] = get_param_value(keyword.value)
+            del keyword
 
         params = {}
 
@@ -472,19 +501,28 @@ class OdooParser(ast.NodeVisitor):
                 else:
                     raise Exception("unhandled")
 
+            elif ttype.lower() == 'function':
+                if idx == 0:
+                    params['compute'] = arg.id
+                else:
+                    raise Exception("unhandled")
+
+            elif ttype.lower() == 'selection':
+                if idx == 0:
+                    params['selection'] = get_param_value(arg)
+                else:
+                    raise Exception("unhandled")
+
             else:
                 if idx == 0:
-                    params['string'] = arg.s
+                    params['string'] = get_param_value(arg)
                 else:
                     raise Exception("unhandled")
 
         for keyword in node.keywords:
-            if isinstance(keyword.value, ast.Str):
-                if keyword.arg in params:
-                    raise Exception("Already in dict: {}".format(keyword.arg))
-                params[keyword.arg] = keyword.value.s
-            else:
-                raise Exception("Unhandled: {}".format(keyword.value.__class__))
+            if keyword.arg in params:
+                raise Exception("Already in dict: {}".format(keyword.arg))
+            params[keyword.arg] = get_param_value(keyword.value)
 
         if hasattr(node.func, 'id'):
             ttype = node.func.id
@@ -599,6 +637,7 @@ def parse_all_modules():
     ]
 
     parser = OdooParser(odoo_modules)
+    global global_filepath
     for manifest in filtered_manifests:
         parser.set_module(OdooModule(manifest))
         if not parser.module:
@@ -606,6 +645,7 @@ def parse_all_modules():
         for root, dirs, files in os.walk(os.path.dirname(manifest)):
             for file in files:
                 filepath = os.path.join(root, file)
+                global_filepath = filepath
                 if filepath.endswith(".py") and file not in MANIFESTS:
                     with open(filepath, 'r') as f:
                         tree = ast.parse(f.read())
