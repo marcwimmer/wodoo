@@ -137,7 +137,7 @@ function do_restore_db_in_docker_container () {
 	# remove the postgres volume and reinit
 
 	echo "Restoring dump within docker container postgres"
-	dump_file=$1
+	dump_file=$(readlink -f "$1")
 	$dc kill
 	$dc rm -f || true
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
@@ -148,6 +148,7 @@ function do_restore_db_in_docker_container () {
 	LOCAL_DEST_NAME=$DIR/run/restore/$DBNAME.gz
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm "$LOCAL_DEST_NAME"
 
+	mkdir -p "$(dirname "$LOCAL_DEST_NAME")"
 	/bin/ln "$dump_file" "$LOCAL_DEST_NAME"
 	$MANAGE reset-db
 	dcrun postgres /restore.sh "$(basename "$LOCAL_DEST_NAME")"
@@ -179,6 +180,7 @@ function do_restore_files () {
 	LOCAL_DEST_NAME=$DIR/run/restore/odoofiles.tar
 	[[ -f "$LOCAL_DEST_NAME" ]] && rm "$LOCAL_DEST_NAME"
 
+	mkdir -p "$(dirname "$LOCAL_DEST_NAME")"
 	/bin/ln "$tararchive_full_path" "$LOCAL_DEST_NAME"
 	dcrun odoo /bin/restore_files.sh "$(basename "$LOCAL_DEST_NAME")"
 }
@@ -216,6 +218,9 @@ function showhelp() {
     echo 'Minimal downtime - but there is a downtime, even for phones'
     echo 
     echo "Please call manage.sh springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
+	echo ""
+	echo "abort-upgrade"
+	echo ""
     echo "attach <machine> - attaches to running machine"
 	echo ""
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
@@ -359,12 +364,25 @@ function prepare_yml_files_from_template_files() {
 
 function do_command() {
     case $1 in
-		install-deps)
-			apt install -y python-psycopg2 python-pip pigz shellcheck
-			pip install pip --upgrade
-			pip install lxml
-			pip install configobj
-			pip install unidecode
+	abort-upgrade)
+		SQL=$(cat <<-EOF
+			UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
+			UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
+			EOF
+			)
+		echo "$SQL" | $MANAGE psql
+
+		;;
+	install-deps)
+		apt install -y python-psycopg2 python-pip pigz shellcheck
+		pip install pip --upgrade
+		pip install lxml
+		pip install configobj
+		pip install unidecode
+		pip install pip install requests[security]
+		pip install graphviz
+		pip install jsonpickle
+		pip install rst2pdf
 		;;
     setup-startup)
         PATH=$DIR
@@ -476,8 +494,8 @@ function do_command() {
 
 	restore-db)
 		set -e
-		restore_check "$1"
-		dumpfile=$2
+		dumpfile="$2"
+		restore_check "$dumpfile"
 
 		echo "$*" |grep -q '[-]force' || {
 			askcontinue "Deletes database $DBNAME!"
@@ -530,7 +548,6 @@ function do_command() {
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		restore_check "$1"
 		$MANAGE restore-db "${ALL_PARAMS[@]}"
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
 
@@ -987,13 +1004,14 @@ function awk() {
 }
 
 function setup_nginx_paths() {
-	set -e
-
 	URLPATH_DIR=$DIR/run/nginx_paths
 	[[ -d "$URLPATH_DIR" ]] && rm -Rf "$URLPATH_DIR"
 	mkdir -p "$URLPATH_DIR"
 
 	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
+		content=$(
+			envsubst < "$f"
+		)
 		while read -r line; do
 			URLPATH=$(echo "$line" | awk '{print $1}')
 			MACHINE=$(echo "$line" | awk '{print $2}')
@@ -1005,7 +1023,7 @@ function setup_nginx_paths() {
 			fi
 
 			"$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR"
-		done < "$f"
+		done <<< "$content"
 	done
 }
 

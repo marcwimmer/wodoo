@@ -18,7 +18,6 @@ else
 fi
 
 DOLLAR='$'
-set -x
 
 if [[ "$1" == "/" ]]; then
 	LOCATION="$1" # e.g. /
@@ -26,8 +25,7 @@ else
 	LOCATION=" = $1"  # e.g. = /cal
 fi
 
-
-tee $OUTPUT_FILENAME.path >/dev/null  <<EOF
+tee "$OUTPUT_FILENAME.path" >/dev/null  <<EOF
 location $LOCATION
 {
 	set $DOLLAR${DNSNAME}_${URLPATH/\//} $DNSNAME;

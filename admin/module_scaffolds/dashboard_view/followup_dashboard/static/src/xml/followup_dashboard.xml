@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+
+	<div t-name="followup.dashboard" class='followup-dashboard'>
+		DASHBOARD ICH BIN
+
+	</div>
+
+</templates>
