@@ -892,12 +892,13 @@ function cleanup() {
 function try_to_set_owner() {
 	OWNER=$1
 	dir=$2
-	if [[ "$(stat -c "%u" "$dir")" != "$OWNER" ]]; then
+	if [[ -d "$dir" && "$(stat -c "%u" "$dir")" != "$OWNER" ]]; then
+		ls -lhtra /opt/odoo/run
 		echo "Trying to set correct permissions on restore directory"
-		cmd=("chown $OWNER $dir")
-		"${cmd[@]}" || {
-			sudo "${cmd[@]}"
-		}
+		chown "$OWNER" "$dir"
+		if [[ "$?" != 0 ]]; then
+			sudo chown "$OWNER" "$dir"
+		fi
 	fi
 }
 

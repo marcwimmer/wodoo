@@ -5,7 +5,7 @@ set -e
 # sync source is done by extra machine
 
 /apply-env-to-config.sh
-$ADMIN_DIR/link_modules
+"$ADMIN_DIR"/link_modules
 
 echo "Executing autosetup..."
 /run_autosetup.sh
@@ -19,10 +19,16 @@ cd /opt/odoo/active_customs
 }
 
 echo "Starting up odoo"
-if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
+if [[ "$ENDLESS_LOOP" == "1" ]]; then
+	while true;
+	do
+		sleep 100
+	done
+
+elif [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
     echo 'Starting odoo cronjobs'
-    sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-server -c $CONFIG_DIR/config_openerp -d $DBNAME --log-level=$LOGLEVEL
+    sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/openerp-server" -c "$CONFIG_DIR/config_openerp" -d "$DBNAME" --log-level="$LOGLEVEL"
 else
     echo 'Starting odoo gevent'
-    sudo -E -H -u $ODOO_USER $SERVER_DIR/openerp-gevent -c $CONFIG_DIR/config_gevent  -d $DBNAME --log-level=$LOGLEVEL
+    sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/openerp-gevent" -c "$CONFIG_DIR/config_gevent"  -d "$DBNAME" --log-level="$LOGLEVEL"
 fi

@@ -1,3 +1,4 @@
+# TODO copy static dir relative to /tmp on rendering; some modules include graphics from static
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -279,29 +280,33 @@ class ModuleDocumentation(Interface):
             self.tabulate(views, headers=['Model', 'Type', 'Inherit From'])
 
     def append_tables(self):
-        dot = pydot.Dot(graph_type='digraph', ratio='compress', size="8.3,11.7!", margin=0)
-        dot.set_node_defaults(shape='box')
-        dot.set_edge_defaults(color='blue', arrowhead='vee', weight='0', labelangle='90')
-
-        filename = tempfile.mktemp(suffix='.png')
+        if not odoo_modules[self.module.name].clazzes:
+            return
 
         self.h2("Table Hierarchy")
         for classname, clazz in sorted(odoo_modules[self.module.name].clazzes.items(), key=lambda x: x):
+            dot = pydot.Dot(graph_type='digraph', ratio='compress', size="8.3,11.7!", margin=0)
+            dot.set_node_defaults(shape='box')
+            dot.set_edge_defaults(color='blue', arrowhead='vee', weight='0', labelangle='90')
 
             clazznode = pydot.Node(classname, fillcolor='grey', style='filled')
+
+            if not clazz.inherit and not clazz.inherits:
+                clazz.inherit = ['Model']  # TODO more precise like TransientModel or not
 
             for inherit in clazz.inherit:
                 if inherit != classname:
                     inherit_node = pydot.Node(inherit)
-                    dot.add_edge(pydot.Edge(inherit_node, clazznode))
+                    dot.add_edge(pydot.Edge(clazznode, inherit_node))
                 del inherit
 
             for inherit_field, inherit_from in clazz.inherits.items():
                 inherit_node = pydot.Node(inherit_from)
-                dot.add_edge(pydot.Edge(inherit_node, clazznode, label=inherit_field))
+                dot.add_edge(pydot.Edge(clazznode, inherit_node, label=inherit_field))
                 del inherit_field
                 del inherit_from
 
+            filename = tempfile.mktemp(suffix='.png')
             dot.write_png(filename)
             self.image_paragraph(filename, WIDTH_MOD_CLASS_HIERARCHY)
 
@@ -635,6 +640,8 @@ class OdooParser(ast.NodeVisitor):
                 value = get_source_code(value.lineno, value.col_offset)
             elif isinstance(value, ast.ListComp):
                 value = get_source_code(value.lineno, value.col_offset)
+            elif isinstance(value, ast.Attribute):
+                value = value.attr
             else:
                 from pudb import set_trace
                 set_trace()
@@ -843,7 +850,8 @@ def parse_all_modules(filter_modules=None):
 if __name__ == '__main__':
     #parse_all_modules(filter_modules='crm_newsletter')
     #parse_all_modules(filter_modules='account_fiscal_year')
-    parse_all_modules()
+    parse_all_modules(filter_modules='heine_capa2')
+    #parse_all_modules()
     filename = tempfile.mktemp(suffix='.clazzes')
     # with open('/tmp/clazzes.txt', 'w') as f:
     #    f.write(json.dumps(json.loads(jsonpickle.encode(odoo_classes, unpicklable=True)), sort_keys=True, indent=4, separators=(',', ': ')))
@@ -862,5 +870,5 @@ if __name__ == '__main__':
         pdf_path
     ))
 
-    #subprocess.check_call(['/usr/bin/evince', pdf_path])
+    subprocess.check_call(['/usr/bin/evince', pdf_path])
     print filename

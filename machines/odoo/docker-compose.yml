@@ -41,6 +41,7 @@ services:
     <<: *odoo_base
     container_name: ${DCPREFIX}_odoo_debug
     environment:
+      DEBUGGER: 1
       DEBUGGER_WATCH: /tmp/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
     command: /rootrun.sh
