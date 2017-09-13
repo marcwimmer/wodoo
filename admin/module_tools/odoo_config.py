@@ -139,8 +139,11 @@ def translate_path_relative_to_customs_root(path):
     path = os.path.realpath(path)
     if path and path.startswith(odoo_root()):
         path = path[len(odoo_root()):]
-    path = [x for x in path.split("/") if x]
 
+    if 'data/src/customs' in path:
+        path = 'data/src/customs' + path.split('src/customs', 2)[-1]
+
+    path = [x for x in path.split("/") if x]
     if path[0] == 'data':
         if path[1] == 'src':
             path = path[2:]

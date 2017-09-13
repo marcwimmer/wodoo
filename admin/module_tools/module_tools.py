@@ -475,8 +475,7 @@ def run_test_file(path):
             # transform customs/cpb/common/followup/9.0/followup/tests/test_followup.py
             # to customs/cpb/common/followup/9.0/followup/tests/__init__.pyc so that
             # unit test runner is tricked to run the file
-            machine_path = translate_path_into_machine_path(path)
-            test_file = os.path.join(os.path.dirname(machine_path), "__init__.py")
+            # test_file = os.path.join(os.path.dirname(machine_path), "__init__.py")
             f.write('unit_test:{}:{}'.format(path, module))
 
 def search_qweb(template_name, root_path=None):
