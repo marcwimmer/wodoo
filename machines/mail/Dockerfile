@@ -5,7 +5,7 @@ MAINTAINER Marc Wimmer
 RUN apt-get update --fix-missing
 RUN apt-get -y upgrade
 # procmail sets up mailbox directories; postconf |grep mailbox_command
-RUN DEBIAN_FRONTEND=noninteractive apt-get -y install vim postfix dovecot-core dovecot-imapd telnet supervisor postfix-pcre procmail mailutils
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install vim postfix dovecot-core dovecot-imapd telnet postfix-pcre procmail mailutils
 RUN apt-get autoclean && rm -rf /var/lib/apt/lists/*
 
 ADD etc/ etc/

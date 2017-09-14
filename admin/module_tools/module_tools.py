@@ -467,9 +467,6 @@ def remove_module_install_notifications(path):
 
 
 def run_test_file(path):
-    if path:
-        path = translate_path_into_machine_path(path)
-
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         if not path:
             f.write('last_unit_test')
@@ -478,7 +475,8 @@ def run_test_file(path):
             # transform customs/cpb/common/followup/9.0/followup/tests/test_followup.py
             # to customs/cpb/common/followup/9.0/followup/tests/__init__.pyc so that
             # unit test runner is tricked to run the file
-            test_file = os.path.join(os.path.dirname(path), "__init__.py")
+            machine_path = translate_path_into_machine_path(path)
+            test_file = os.path.join(os.path.dirname(machine_path), "__init__.py")
             f.write('unit_test:{}:{}'.format(path, module))
 
 def search_qweb(template_name, root_path=None):
