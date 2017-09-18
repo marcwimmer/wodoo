@@ -26,6 +26,7 @@ function startup() {
 }
 
 function default_confs() {
+	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	local ARGS=("$@")
 	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
@@ -35,9 +36,7 @@ function default_confs() {
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
 	export ADDITIONAL_DOCKER_COMPOSE=""
 	export RUN_ODOODEV=0
-	if [[ -z "$ODOO_HOME" ]]; then
-		export ODOO_HOME=/opt/odoo
-	fi
+	export ODOO_HOME=$DIR
 	FORCE=0
 	echo "${ARGS[*]}" |grep -q '[-]force' && {
 		FORCE=1
@@ -571,6 +570,7 @@ function do_command() {
 		fi	
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			$dc up -d postgres odoo
 			cmd=$("/bin/echo \"$query\" | gosu postgres psql ${ALL_PARAMS[*]}")
 			dcexec postgres bash -c "${cmd[0]}"
 		else
