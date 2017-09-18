@@ -91,7 +91,7 @@ def current_db():
     return get_env().get('DBNAME', '')
 
 def execute_managesh(*args, **kwargs):
-    args = ['./manage.sh'] + list(args)
+    args = ['./odoo'] + list(args)
     proc = subprocess.Popen(args, cwd=odoo_root(), bufsize=1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     if not kwargs.get('do_async', False):
         output = ''

@@ -129,7 +129,7 @@ def get_all_manifests():
 def get_customs_modules(customs_path=None, mode=None):
     """
 
-    Called by manage.sh update
+    Called by odoo update
 
     Fills contents of install file into installed modules-module.
     Increases Version on need.
@@ -471,12 +471,15 @@ def run_test_file(path):
         if not path:
             f.write('last_unit_test')
         else:
+            machine_path = translate_path_into_machine_path(path)
+            if os.getenv("DOCKER_MACHINE", "0") == "1":
+                path = machine_path
             module = get_module_of_file(path)
             # transform customs/cpb/common/followup/9.0/followup/tests/test_followup.py
             # to customs/cpb/common/followup/9.0/followup/tests/__init__.pyc so that
             # unit test runner is tricked to run the file
             # test_file = os.path.join(os.path.dirname(machine_path), "__init__.py")
-            f.write('unit_test:{}:{}'.format(path, module))
+            f.write('unit_test:{}:{}'.format(machine_path, module))
 
 def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()

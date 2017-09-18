@@ -1,4 +1,4 @@
 #!/bin/bash
-../manage.sh kill odoo
-../manage.sh kill nginx
-../manage.sh up -d
+../odoo kill odoo
+../odoo kill nginx
+../odoo up -d
