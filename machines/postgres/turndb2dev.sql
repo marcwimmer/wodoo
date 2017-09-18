@@ -8,19 +8,15 @@ delete from ir_config_parameter where key='webkit_path';
 
 select id into temp delete_attachments from ir_attachment where name ilike '%web%asset%';
 
---IF EXISTS (SELECT relname FROM pg_class WHERE relname='ir_attachment_version') 
- --   THEN
-  --  BEGIN
-    delete from ir_attachment_version where attachment_id in (select id from delete_attachments);
-   -- END
-
+delete from ir_attachment_access_rights where attachment_id in (select id from delete_attachments);
+alter table ir_attachment_access_rights drop constraint ir_attachment_access_rights_attachment_id_fkey;
+alter table project_task drop constraint project_task_displayed_image_id_fkey;
+delete from ir_attachment_version where attachment_id in (select id from delete_attachments);
 delete from ir_attachment where id in (select id from delete_attachments);
 
+alter table ir_attachment_access_rights add constraint ir_attachment_access_rights_attachment_id_fkey foreign key(attachment_id) references ir_attachment(id);
+alter table project_task add constraint project_task_displayed_image_id_fkey foreign key(displayed_image_id) references ir_attachment(id);
 
---IF EXISTS (SELECT relname FROM pg_class WHERE relname='asterisk_sipaccount') 
---THEN
---BEGIN
-    update asterisk_sipaccount set enabled = false;
---END
+update asterisk_sipaccount set enabled = false;
 
 update fetchmail_server set server='mail', "user"='postmaster', password='postmaster', type='imap';
