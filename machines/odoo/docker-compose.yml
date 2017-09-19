@@ -16,8 +16,7 @@ services:
       - NET_ADMIN
       - DAC_READ_SEARCH
     volumes:
-      - ../dumps:/opt/dumps
-      - ../run/restore:/opt/restore
+      - ${DUMPS_PATH}:/opt/dumps
       - ${ODOO_FILES}/:/opt/files
       - ../admin:/opt/odoo/admin
       - ../data/src/customs/${CUSTOMS}:/opt/odoo/active_customs

@@ -72,7 +72,7 @@ function export_settings() {
 
 	# get odoo version
 	ODOO_VERSION=$(
-	cd $ODOO_HOME/admin/module_tools
+	cd "$ODOO_HOME/admin/module_tools"
 	python <<-EOF
 	import odoo_config
 	v = odoo_config.get_version_from_customs("$CUSTOMS")
@@ -82,7 +82,7 @@ function export_settings() {
 	export ODOO_VERSION=$ODOO_VERSION
 
 	# set odoo version in settings file for machines
-cd $ODOO_HOME/admin/module_tools
+cd "$ODOO_HOME/admin/module_tools"
 python <<- END
 import odoo_config
 env = odoo_config.get_env()
@@ -144,6 +144,17 @@ function do_restore_db_in_docker_container () {
 
 	echo "Restoring dump within docker container postgres"
 	dump_file=$(readlink -f "$1")
+
+    if [[ ! -f "$dump_file" ]]; then
+        echo "File $dump_file not found!"
+        exit -1
+    fi
+
+    if [[ "$(dirname "$dump_file")" != "$DUMPS_PATH" ]]; then
+        echo "The database to restore must lie in dumps path $DUMPS_PATH"
+        exit -1
+    fi
+
 	$dc kill
 	$dc rm -f || true
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
@@ -151,13 +162,8 @@ function do_restore_db_in_docker_container () {
 	fi
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
-	LOCAL_DEST_NAME=$DIR/run/restore/$DBNAME.gz
-	[[ -f "$LOCAL_DEST_NAME" ]] && rm "$LOCAL_DEST_NAME"
-
-	mkdir -p "$(dirname "$LOCAL_DEST_NAME")"
-	/bin/ln "$dump_file" "$LOCAL_DEST_NAME"
 	$MANAGE reset-db
-	dcrun postgres /restore.sh "$(basename "$LOCAL_DEST_NAME")"
+    dcrun postgres /restore.sh "$(basename "$dump_file")"
 }
 
 function do_restore_db_on_external_postgres () {
@@ -183,12 +189,13 @@ function do_restore_db_on_external_postgres () {
 function do_restore_files () {
 	# remove the postgres volume and reinit
 	tararchive_full_path=$1
-	LOCAL_DEST_NAME=$DIR/run/restore/odoofiles.tar
-	[[ -f "$LOCAL_DEST_NAME" ]] && rm "$LOCAL_DEST_NAME"
 
-	mkdir -p "$(dirname "$LOCAL_DEST_NAME")"
-	/bin/ln "$tararchive_full_path" "$LOCAL_DEST_NAME"
-	dcrun odoo /bin/restore_files.sh "$(basename "$LOCAL_DEST_NAME")"
+    if [[ "$(dirname "$tararchive_full_path")" != "$DUMPS_PATH" ]]; then
+        echo "The file to restore must lie in dumps path $DUMPS_PATH"
+        exit -1
+    fi
+
+	dcrun odoo /bin/restore_files.sh "$(basename "$tararchive_full_path")"
 }
 
 function askcontinue() {
@@ -302,7 +309,7 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR/run/config"
+    mkdir -p "$DIR/run/{config,sqlscripts}"
 }
 
 function replace_all_envs_in_file() {
@@ -585,6 +592,7 @@ function do_command() {
 	psql)
 		# gets sql query from pipe
 		# check if there is a pipe argument
+        set -x
 		local query=""
 		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
 			query="$(cat /dev/stdin)"
@@ -592,8 +600,11 @@ function do_command() {
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
-			cmd=$("/bin/echo \"$query\" | gosu postgres psql ${ALL_PARAMS[*]}")
-			dcexec postgres bash -c "${cmd[0]}"
+            SQLFILE="$DIR/run/sqlscripts/script.sql"
+            echo "$query" | tee "$SQLFILE"
+
+            dcexec postgres gosu postgres psql "${ALL_PARAMS[*]}" -U "$DB_USER" -d "$DBNAME" -f "/opt/sqlscripts/$(basename "$SQLFILE")"
+            rm "$SQLFILE"
 		else
 			export PGPASSWORD=$DB_PWD
 			echo "$query" | psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -w "$DBNAME" "${ALL_PARAMS[@]}"
@@ -730,7 +741,7 @@ function do_command() {
 			chown 1000 -R "$ODOO_FILES"
 		fi
 		CUSTOMS_DIR=$(
-		cd $ODOO_HOME/admin/module_tools && \
+		cd "$ODOO_HOME/admin/module_tools" && \
 		python <<-EOF
 		import odoo_config
 		v = odoo_config.customs_dir()
@@ -869,9 +880,9 @@ function do_command() {
 		$MANAGE kill
 		CUSTOMS=$2
 		VERSION=$3
-		$ODOO_HOME/admin/module_tools/make_customs "$2" "$3"
+		"$ODOO_HOME/admin/module_tools/make_customs" "$2" "$3"
 
-cd $ODOO_HOME/admin/module_tools
+cd "$ODOO_HOME/admin/module_tools"
 python <<- END
 import odoo_config
 env = odoo_config.get_env()
@@ -884,8 +895,8 @@ env.write()
 		git submodule add https://github.com/odoo/odoo odoo
 		cd odoo
 		git checkout "$VERSION"
-		$ODOO_HOME/admin/OCA-all
-		$ODOO_HOME/admin/oe-submodule tools,web_modulesroduct_modules,calendar_ics
+		"$ODOO_HOME/admin/OCA-all"
+		"$ODOO_HOME/admin/oe-submodule tools,web_modulesroduct_modules,calendar_ics"
 		"$ODOO_HOME/$MANAGE" up -d
 		chromium-browser http://localhost
 
@@ -924,6 +935,11 @@ function try_to_set_owner() {
 }
 
 function sanity_check() {
+    if [[ -z "$DUMPS_PATH" ]]; then
+        echo "Please setup dumps-path in settings!"
+        exit -1
+    fi
+
     if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
         echo "Either configure DB_HOST to point to the docker container or turn it off by: "
