@@ -8,7 +8,8 @@ services:
     build: ../machines/postgres
     volumes:
       - ../dumps:/opt/dumps
-      - ../run/restore:/opt/restore
+        #- ../run/restore:/opt/restore
+      - ${DUMPS_PATH}:/opt/restore
       - postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 1

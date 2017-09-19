@@ -3,4 +3,4 @@
 set -e
 
 /set_permissions.sh
-tar vxfz /opt/restore/$1 -C /
+tar vxfz "/opt/dumps/$1" -C /
