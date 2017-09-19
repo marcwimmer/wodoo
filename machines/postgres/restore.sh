@@ -2,7 +2,7 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 
-RESTOREFILE=/opt/restore/$1
+RESTOREFILE=/opt/dumps/$1
 
 if [ "$(id -u)" = '0' ]; then
 
@@ -16,9 +16,9 @@ else
 
 	tmppipe=$(mktemp -u)
 	mkfifo "$tmppipe"
-	gunzip -c  $RESTOREFILE > $tmppipe &
+	gunzip -c  "$RESTOREFILE" > "$tmppipe" &
 	echo "Restoring..."
-	pg_restore -d $DBNAME < $tmppipe
+	pg_restore -d "$DBNAME" < "$tmppipe"
 
 	echo "Restoring snapshot done!"
 	pg_ctl -w stop

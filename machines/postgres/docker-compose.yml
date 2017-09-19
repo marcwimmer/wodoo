@@ -7,9 +7,8 @@ services:
     container_name: ${DCPREFIX}_postgres
     build: ../machines/postgres
     volumes:
-      - ../dumps:/opt/dumps
-        #- ../run/restore:/opt/restore
-      - ${DUMPS_PATH}:/opt/restore
+      - ${DUMPS_PATH}:/opt/dumps
+      - ../run/sqlscripts:/opt/sqlscripts
       - postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 1
