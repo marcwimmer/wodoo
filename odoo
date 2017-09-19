@@ -100,6 +100,13 @@ env.write()
 
 function restore_check() {
 	dumpname="$(basename "$1")"
+	local force=0
+
+	# asterisk as one word, @ as separate words
+	echo "${ALL_PARAMS[*]}" |grep -P -q '[-]force' && {
+		force=1
+	}
+
 	if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
 		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
 		exit -1
@@ -285,6 +292,8 @@ function showhelp() {
 	echo ""
 	echo "make-customs"
     echo
+	echo ""
+	echo "lsyncd - displays the command to execute lsyncd"
 }
 
 if [ -z "$1" ]; then
@@ -442,6 +451,18 @@ function do_command() {
         md5sum "$filepath"
         echo "Dumped to $filepath"
         ;;
+	lsyncd)
+		echo 
+		echo 
+		echo Use for syncing remote machine:
+		echo
+		echo
+		echo
+		echo "        lsyncd -delay 1 -rsyncssh $ODOO_HOME $LSYNC_REMOTE_HOST $LSYNC_REMOTE_PATH --nodaemon"
+		echo
+		echo
+		echo
+		;;
     backup-files)
         if [[ -n "$2" ]]; then
             BACKUPDIR=$2
