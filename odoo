@@ -579,9 +579,11 @@ function do_command() {
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
-            echo "$query" | tee "$DIR/run/sqlscripts/script.sql"
+            SQLFILE="$DIR/run/sqlscripts/script.sql"
+            echo "$query" | tee "$SQLFILE"
 
-			dcexec postgres gosu postgres psql "${ALL_PARAMS[*]}" -U "$DB_USER" -d "$DBNAME" -f /opt/sqlscripts/script.sql
+            dcexec postgres gosu postgres psql "${ALL_PARAMS[*]}" -U "$DB_USER" -d "$DBNAME" -f "/opt/sqlscripts/$(basename "$SQLFILE")"
+            rm "$SQLFILE"
 		else
 			export PGPASSWORD=$DB_PWD
 			echo "$query" | psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -w "$DBNAME" "${ALL_PARAMS[@]}"
