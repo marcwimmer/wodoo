@@ -395,18 +395,13 @@ def make_module(parent_path, module_name):
     ], cwd=complete_path)
 
     # enter in install file
-    count = 0
-    p = os.path.dirname(os.path.realpath(complete_path))
-    while count < 30:
-        count += 1
-        p = os.path.dirname(p)
-        if os.path.isfile(install_file()):
-            with open(install_file(), 'r') as f:
-                content = f.read().split("\n")
-                content += [module_name]
-                content = [x for x in sorted(content[1:], key=lambda line: line.replace("#", "")) if x]
-            with open(install_file(), 'w') as f:
-                f.write("\n".join(content))
+    if os.path.isfile(install_file()):
+        with open(install_file(), 'r') as f:
+            content = f.read().split("\n")
+            content += [module_name]
+            content = [x for x in sorted(content[1:], key=lambda line: line.replace("#", "")) if x]
+        with open(install_file(), 'w') as f:
+            f.write("\n".join(content))
 
 def update_module(filepath):
     module = get_module_of_file(filepath)
