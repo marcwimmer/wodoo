@@ -48,6 +48,10 @@ function default_confs() {
 	echo "${ARGS[*]}" |grep -q '[-]unverbose' && {
 		FORCE_UNVERBOSE=1
 	}
+    if [[ -z "$DUMPS_PATH" ]]; then
+		export DUMPS_PATH=$ODOO_HOME/dumps
+    fi
+
 
 }
 
@@ -935,11 +939,6 @@ function try_to_set_owner() {
 }
 
 function sanity_check() {
-    if [[ -z "$DUMPS_PATH" ]]; then
-        echo "Please setup dumps-path in settings!"
-        exit -1
-    fi
-
     if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
         echo "Either configure DB_HOST to point to the docker container or turn it off by: "
