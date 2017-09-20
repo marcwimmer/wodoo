@@ -4,8 +4,8 @@ settings {
 	maxDelays = 1,
 } 
 sync {default.rsyncssh,
-	source = "/home/marc/odoo",
-	host = "wc",
+	source = ".",
+	host = "odoodev",
 	targetdir = "/opt/odoo",
 	exclude = { "dumps", ".git", "settings" },
 	rsync = {
