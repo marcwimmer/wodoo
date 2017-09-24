@@ -313,7 +313,7 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR/run/{config,sqlscripts}"
+    mkdir -p "$DIR"/run/{config,sqlscripts}
 }
 
 function replace_all_envs_in_file() {
@@ -469,7 +469,7 @@ function do_command() {
 		echo
 		echo
 		echo
-		echo "        lsyncd -delay 1 -rsyncssh $ODOO_HOME $LSYNC_REMOTE_HOST $LSYNC_REMOTE_PATH --nodaemon"
+		echo "        lsyncd -nodaemon config/lsyncd/$(ls $DIR/config/lsyncd/|tr '\n' ' or ')"
 		echo
 		echo
 		echo
