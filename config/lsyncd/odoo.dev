@@ -12,3 +12,12 @@ sync {default.rsyncssh,
 		compress = true,
 	},
 }
+sync {default.rsyncssh,
+	source = "./run/debug",
+	host = "nuc",
+	targetdir = "/opt/odoo/run/debug",
+	exclude = {  },
+	rsync = {
+		compress = true,
+	},
+}
