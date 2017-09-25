@@ -54,7 +54,7 @@ with open(os.path.join(root_path, 'machines/openvpn/nginx.path.tmpl'), 'r') as f
             machine,
             port,
             os.path.join(root_path, 'run/nginx_paths'),
-            'ovpn.{domain}.path'.format(domain=domain)
+            'ovpn.{domain}'.format(domain=domain)
         ])
 
 with open(results, 'w') as f:
