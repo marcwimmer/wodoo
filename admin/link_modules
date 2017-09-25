@@ -22,7 +22,8 @@ print "Linking all modules into: \n{}".format(LN_DIR)
 
 if os.path.isdir(LN_DIR):
     shutil.rmtree(LN_DIR, ignore_errors=True)
-os.makedirs(LN_DIR)
+if not os.path.exists(LN_DIR):
+    os.makedirs(LN_DIR)
 os.system("chown $ODOO_USER:$ODOO_USER \"{}\"".format(LN_DIR))
 
 def search_dir_for_modules(base_dir):

@@ -1,0 +1,17 @@
+
+{   'application': False,
+    'author': 'Marc Wimmer (marc@itewimmer.de)',
+    'auto_install': True,
+    'category': 'Odoo Docker Environment',
+    'css': [],
+    'data': [],
+    'demo_xml': [],
+    'depends': ['base'],
+    'description': '',
+    'installable': True,
+    'js': [],
+    'name': 'container_admin',
+    'qweb': [],
+    'test': [],
+    'version': '1.0',
+    'web': False}

@@ -1,0 +1,26 @@
+[options]
+addons_path=/opt/src/odoo/addons
+admin_passwd = JJASD21adsm2n124DSASDzxzn$!##''';asdasdADS":2149!4@*ADS
+data_dir = /opt/files
+db_host = localhost
+db_maxconn = 100
+db_name = False
+db_password = odoo
+db_port = 5432
+db_template = template0
+db_user = odoo
+email_from = False
+limit_memory_hard = 8053063680
+limit_memory_soft = 6710886400
+limit_request = 8192
+limit_time_cpu = 6000000
+limit_time_real = 12000000
+list_db = True
+max_cron_threads = 4
+smtp_password = False
+smtp_port = 25
+smtp_server = localhost
+workers = 1
+xmlrpc = 8069
+xmlrpcs = False
+netrpc = False

@@ -1,0 +1,26 @@
+# manage-order 1000
+version: '3.3'
+
+services:
+  admin:
+    container_name: ${DCPREFIX}_admin
+    build: ../machines/admin
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+    volumes:
+      - ../machines/admin/src:/opt/src
+    environment:
+        DBNAME: admin
+        LOGLEVEL: info
+        #env_file:
+        #- ../settings
+        #- ../machines/odoo/docker-env
+    env_file:
+      - ../settings
+    command: /run.sh
+    ports:
+       - "4488:8069"

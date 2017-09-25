@@ -8,7 +8,6 @@
 #   * https://github.com/docker/compose/issues/2293  -> /usr/local/bin/docker-compose needed
 #   * there is a bug: https://github.com/docker/compose/issues/3352  --> using -T
 #
-
 function dcrun() {
 	$dc run -T "$@"
 }
@@ -313,7 +312,7 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR"/run/{config,sqlscripts,debug}
+    mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
 }
 
 function replace_all_envs_in_file() {
@@ -1064,6 +1063,30 @@ function setup_nginx_paths() {
 	done
 }
 
+function setup_odoo_instances() {
+	nginx_configs_dir=$DIR/run/nginx_confs
+	rm "$nginx_configs_dir"/odoo_instance_* 1>/dev/null 2>&1 || true
+
+    while read -r line; do
+		name="$(echo "$line"| awk '{print $1}')"
+		subdomain_path="$(echo "$line"| awk '{print $2}')"
+
+		config_path="$nginx_configs_dir/odoo_instance_${name}.conf"
+		cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
+		sed -i "s|__HTTP_HOST__|$subdomain_path|g" "$config_path"
+
+		# copy docker compose odoo container snippet into
+		# main odoo 
+		snippet="$DIR/machines/odoo/docker-compose.odoo-instance.snippet"
+
+		# CAUTION: using built docker compose file of odoo; 
+		odoo_compose_file=$(find "$DIR"/run -name '*-docker-compose.odoo.yml' |head -n1)
+		sed "s|__NAME__|$name|g" "$snippet" >> "$odoo_compose_file"
+
+	done <"$DIR/run/odoo_instances"
+	
+}
+
 function main() {
 	local ARGS=("$@")
 	echo "${ARGS[@]}"
@@ -1074,6 +1097,7 @@ function main() {
 	prepare_yml_files_from_template_files
 	setup_nginx_paths
 	update_openvpn_domains
+	setup_odoo_instances
 	sanity_check
 	export odoo_manager_started_once=1
 	do_command "${ARGS[@]}"
