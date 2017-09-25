@@ -20,7 +20,7 @@ services:
       - ${ODOO_FILES}/:/opt/files
       - ../admin:/opt/odoo/admin
       - ../data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
-      - ../run/odoo_debug.txt:/tmp/odoo_debug.txt
+      - ../run/debug:/tmp/debug
     env_file:
       - ../settings
       - ../machines/odoo/docker-env
@@ -30,7 +30,7 @@ services:
     <<: *odoo_base
     container_name: ${DCPREFIX}_odoo
     environment:
-      DEBUGGER_WATCH: /tmp/odoo_debug.txt
+      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
     command: /rootrun.sh
     ports:
@@ -41,7 +41,7 @@ services:
     container_name: ${DCPREFIX}_odoo_debug
     environment:
       ENDLESS_LOOP: 1
-      DEBUGGER_WATCH: /tmp/odoo_debug.txt
+      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
     command: /rootrun.sh
     ports:

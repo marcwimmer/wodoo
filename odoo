@@ -313,7 +313,7 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR"/run/{config,sqlscripts}
+    mkdir -p "$DIR"/run/{config,sqlscripts,debug}
 }
 
 function replace_all_envs_in_file() {

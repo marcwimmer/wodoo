@@ -5,9 +5,18 @@ settings {
 } 
 sync {default.rsyncssh,
 	source = ".",
-	host = "odoodev",
+	host = "nuc",
 	targetdir = "/opt/odoo",
 	exclude = { "dumps", ".git", "settings", "run" },
+	rsync = {
+		compress = true,
+	},
+}
+sync {default.rsyncssh,
+	source = "./run/debug",
+	host = "nuc",
+	targetdir = "/opt/odoo/run/debug",
+	exclude = {  },
 	rsync = {
 		compress = true,
 	},

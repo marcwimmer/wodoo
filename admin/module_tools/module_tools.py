@@ -32,7 +32,7 @@ import sys
 import threading
 
 
-ODOO_DEBUG_FILE = 'odoo_debug.txt'
+ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
 
 def apply_po_file(pofile_path):
     """

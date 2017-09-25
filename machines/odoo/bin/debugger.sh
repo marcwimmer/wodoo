@@ -44,7 +44,7 @@ $WATCHER &
 
 while true; do
 
-	new_mod=$(stat -c %y $DEBUGGER_WATCH)
+	new_mod=$(stat -c %y "$DEBUGGER_WATCH")
 
 	if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
 
@@ -52,7 +52,7 @@ while true; do
 		# debug
 		# unit_test:account_module1
 
-		action=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[1]}')
+		action=$(cat "$DEBUGGER_WATCH" | awk '{split($0, a, ":"); print a[1]}')
 
 		if [[ -z "$action" ]]; then
 			action='debug'
@@ -67,19 +67,19 @@ while true; do
 			/debug.sh -quick
 
 		elif [[ "$action" == 'update_module' ]]; then
-			module=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
-			/update_modules.sh $module && {
+			module=$(cat "$DEBUGGER_WATCH" | awk '{split($0, a, ":"); print a[2]}')
+			/update_modules.sh "$module" && {
 				/debug.sh -quick
 			}
 
 		elif [[ "$action" == 'unit_test' ]]; then
 			reset
-			last_unit_test=$(cat $DEBUGGER_WATCH | awk '{split($0, a, ":"); print a[2]}')
-			/unit_test.sh $last_unit_test
+			last_unit_test=$(cat "$DEBUGGER_WATCH" | awk '{split($0, a, ":"); print a[2]}')
+			/unit_test.sh "$last_unit_test"
 
 		elif [[ "$action" == 'last_unit_test' ]]; then
 			if [[ -n "$last_unit_test" ]]; then
-				/unit_test.sh $last_unit_test
+				/unit_test.sh "$last_unit_test"
 			fi
 
 		fi
