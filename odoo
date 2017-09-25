@@ -993,13 +993,8 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
-			dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; ls; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
-		else
-			bash <<-EOF
-			cd $ODOO_HOME/admin/module_tools
-			python -c"from module_tools import set_ownership_exclusive; set_ownership_exclusive()"
-			EOF
 		fi
+		dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
 	fi
 }
 
