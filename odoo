@@ -1049,6 +1049,7 @@ function setup_nginx_paths() {
 	URLPATH_DIR=$DIR/run/nginx_paths
 	[[ -d "$URLPATH_DIR" ]] && rm -Rf "$URLPATH_DIR"
 	mkdir -p "$URLPATH_DIR"
+	chmod a+rwx "$URLPATH_DIR"
 
 	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
 		content=$(
