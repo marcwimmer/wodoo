@@ -51,6 +51,17 @@ function default_confs() {
 		export DUMPS_PATH=$ODOO_HOME/dumps
     fi
 
+	# configure volatile settings in settings.customs
+	filepath_customs="$DIR/settings.customs"
+	if [[ -f "$filepath_customs" ]]; then
+		filepath_settings="$DIR/settings"
+		tempfile="$(mktemp -u)"
+		( grep -v "CUSTOMS=" | grep -v "DBNAME=" > "$tempfile" ) < "$filepath_settings"
+		cat "$filepath_customs" >> "$tempfile"
+		cp "$tempfile" "$filepath_settings"
+
+	fi
+
 
 }
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 import time
-import configobj
 import subprocess
 from os.path import expanduser
 from myconfigparser import MyConfigParser
