@@ -1,6 +1,6 @@
 #!/bin/bash
 set +x
-$ADMIN_DIR/link_modules
+"$ADMIN_DIR/link_modules"
 
 echo "Starting debugger"
 echo "Watching File $DEBUGGER_WATCH"
@@ -10,11 +10,17 @@ last_mod=''
 last_unit_test=''
 
 function kill() {
-	PID=$(cat $DEBUGGER_ODOO_PID)
-	kill $PID
+	PID=$(cat "$DEBUGGER_ODOO_PID")
+	kill "$PID"
 }
 # empty file
->| $DEBUGGER_WATCH
+>| "$DEBUGGER_WATCH"
+
+
+function odoo_kill() {
+	pkill -9 -f /opt/odoo > /dev/null 2>&1
+}
+
 
 cat > $WATCHER <<"EOF"
 #!/bin/bash
@@ -26,8 +32,26 @@ while true; do
 	new_mod=$(stat -c %y $DEBUGGER_WATCH)
 
 	if [[ "$new_mod" != "$last_mod" ]]; then
+		action=$(awk '{split($0, a, ":"); print a[1]}' < "$DEBUGGER_WATCH")
 
-		pkill -9 -f /opt/odoo > /dev/null 2>&1
+
+		# actions that no restart require
+
+		if [[ "$action" == 'update_view_in_db' ]]; then
+			params=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
+			filepath=$(echo "$params" | awk '{split($0, a, "|"); print a[1]}')
+			lineno=$(echo "$params" | awk '{split($0, a, "|"); print a[2]}')
+
+			cd /opt/odoo/admin/module_tools || exit -1
+			python<<-EOF
+			import module_tools
+			module_tools.update_view_in_db("$filepath", $lineno)
+			EOF
+		else
+			odoo_kill
+			reset
+		fi
+
 		last_mod=$new_mod
 	fi
 
@@ -47,7 +71,6 @@ while true; do
 	new_mod=$(stat -c %y "$DEBUGGER_WATCH")
 
 	if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
-		set -x
 
 		# example content
 		# debug
@@ -67,16 +90,6 @@ while true; do
 			reset
 			/debug.sh -quick
 
-		elif [[ "$action" == 'update_view_in_db' ]]; then
-			params=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-			filepath=$(echo "$params" | awk '{split($0, a, "|"); print a[1]}')
-			lineno=$(echo "$params" | awk '{split($0, a, "|"); print a[2]}')
-
-			cd /opt/odoo/admin/module_tools || exit -1
-			python<<-EOF
-			import module_tools
-			module_tools.update_view_in_db("$filepath", $lineno)
-			EOF
 
 		elif [[ "$action" == 'update_module' ]]; then
 			module=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
@@ -96,7 +109,6 @@ while true; do
 
 		fi
 		last_mod=$new_mod
-		set +x
 	fi
 
 	sleep 0.5
