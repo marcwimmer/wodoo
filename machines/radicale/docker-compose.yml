@@ -2,6 +2,7 @@
 version: "3.3"
 services:
     radicale:
+       container_name: ${DCPREFIX}_radicale
        build: ../machines/radicale
        ports:
          - "5232:5232"
