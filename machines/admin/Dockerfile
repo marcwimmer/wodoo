@@ -66,10 +66,21 @@ apt-get install -y --no-install-recommends \
             pdftk \
 			gosu \
 			wget \
-			postgresql
+			postgresql \
+			gettext-base \
+			python-pip \
+			locales \
+			python-setuptools
+
+
+# install docker cli
+RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-17.03.2-ce.tgz -o /tmp/docker.tgz
+RUN mkdir -p /opt/docker
+WORKDIR /opt/docker
+RUN tar xfz /tmp/docker.tgz
+WORKDIR /
 
 #install pip packages depending on version
-RUN apt install -y python-pip
 RUN pip install pip --upgrade
 ADD bin/install_python_packages.sh /install_python_packages.sh
 RUN chmod a+x /install_python_packages.sh
@@ -87,7 +98,6 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
-RUN apt-get install -y locales
 ADD bin/ /
 ADD config/* /opt
 RUN chmod a+x /*.sh && \

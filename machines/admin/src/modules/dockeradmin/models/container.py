@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 from utils import get_containers
+from utils import restart_container
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
 class Container(models.Model):
@@ -11,8 +13,8 @@ class Container(models.Model):
 
     @api.one
     def restart(self):
-        from pudb import set_trace
-        set_trace()
+        restart_container(self.name)
+        return True
 
     @api.model
     def update_docker(self):

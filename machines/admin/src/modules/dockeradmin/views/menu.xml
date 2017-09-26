@@ -9,5 +9,19 @@
       <field name="code">action=model.update_docker()</field>
     </record>
     <menuitem id="menu_containers" parent="menu_root" name="Containers" action="act_update_containers_server"/>
+    <record model="ir.actions.server" id="act_update_instances">
+      <field name="name">update_instances</field>
+      <field name="type">ir.actions.server</field>
+      <field name="model_id" ref="model_docker_odoo_instance"/>
+      <field name="code">action=model.update_instances()</field>
+    </record>
+    <menuitem id="menu_instances" parent="menu_root" name="Instances" action="act_update_instances"/>
+    <record model="ir.actions.server" id="act_modules">
+      <field name="name">update_modules</field>
+      <field name="type">ir.actions.server</field>
+      <field name="model_id" ref="model_git_module"/>
+      <field name="code">action=model.update_mods()</field>
+    </record>
+    <menuitem id="menu_modules" parent="menu_root" name="Modules" action="act_modules"/>
   </data>
 </odoo>

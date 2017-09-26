@@ -14,14 +14,18 @@ services:
     volumes:
       - ../machines/admin/src:/opt/src
       - /var/run/docker.sock:/var/run/docker.sock
+      - $ODOO_HOME:$ODOO_HOME
     environment:
         DBNAME: admin
         LOGLEVEL: info
+        INSTANCES_FILE: $ODOO_HOME/run/odoo_instances
+        ODOO_HOME: $ODOO_HOME
         #env_file:
         #- ../settings
         #- ../machines/odoo/docker-env
     env_file:
       - ../settings
+      - ../settings.customs
     command: /run.sh
     ports:
        - "4488:8069"
