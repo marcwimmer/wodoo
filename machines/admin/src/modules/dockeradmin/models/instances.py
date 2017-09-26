@@ -10,7 +10,16 @@ class Instance(models.Model):
     _name = 'docker.odoo.instance'
 
     name = fields.Char("Name")
-    hostname = fields.Char("Subdomain")
+    hostname = fields.Char("Hostname", help="shipping.yourcompany.com")
+    state = fields.Selection([('running', 'Running'), ('stopped', 'Stopped')], string='State', compute="_get_state")
+
+    @api.one
+    def _get_state(self):
+        dcprefix = os.environ['DCPREFIX']
+        self.env['docker.container'].update_docker()
+        containers = self.env['docker.container'].search([])
+        container_name = '{}_{}'.format(dcprefix, self.name)
+        self.state = 'running' if containers.search_count([('name', '=', container_name)]) else 'stopped'
 
     @api.multi
     def start(self):

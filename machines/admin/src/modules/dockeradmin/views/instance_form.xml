@@ -6,7 +6,11 @@
       <field name="model">docker.odoo.instance</field>
       <field name="arch" type="xml">
         <form string="" version="7.0">
-          <header/>
+          <header>
+            <button name="start" string="Start" type="object" icon="fa-start" attrs="{'invisible': [('state', '=', 'running')]}"/>
+            <button name="stop" string="Stop" type="object" icon="fa-stop" attrs="{'invisible': [('state', '=', 'stopped')]}"/>
+			<field name="state" widget="statusbar" attrs="{'readonly': True}" />
+          </header>
           <sheet>
             <div class="oe_title">
               <h1>

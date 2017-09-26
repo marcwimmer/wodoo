@@ -21,7 +21,7 @@ class Container(models.Model):
         self.search([]).unlink()
         for container in get_containers():
             self.create({
-                'name': u'; '.join(container['Names']),
+                'name': u'; '.join(container['Names'].replace('/', '')),
                 'status': container['Status'],
                 'public_port': ', '.join([str(x['PublicPort']) for x in container.get('Ports') if x.get('PublicPort')]),
                 'all_attrs': str(container),
@@ -29,6 +29,7 @@ class Container(models.Model):
 
         return {
             'view_type': 'form',
+            'name': 'Running Containers Overview',
             'res_model': self._name,
             'view_id': False,
             'views': [(False, 'tree'), (False, 'form')],

@@ -28,6 +28,8 @@ fi
 gosu postgres ${POSTGRESBIN}/initdb -D "$DATADIR" --auth-host=trust --auth-local=trust
 sync
 sleep 2
+pkill -9 -f initdb || true
+find /var/run/postgresql -name .s.PGSQL.5432.lock -delete || true
 mkdir -p /var/run/postgresql/9.5-main.pg_stat_tmp
 chown postgres:postgres /var/run/postgresql -R
 sed -i 's/host.*all.*all.*127.*/host all all 127.0.0.1\/32 trust/g' "$PGCONF/pg_hba.conf"

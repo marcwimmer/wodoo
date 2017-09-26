@@ -20,6 +20,7 @@ services:
         LOGLEVEL: info
         INSTANCES_FILE: $ODOO_HOME/run/odoo_instances
         ODOO_HOME: $ODOO_HOME
+        DCPREFIX: $DCPREFIX
         #env_file:
         #- ../settings
         #- ../machines/odoo/docker-env
