@@ -11,5 +11,17 @@ def restart_container(name):
     """
     :param name: e.g. odoo, asterisk
     """
-    subprocess.check_call(['odoo', 'kill', name], cwd=os.environ['ODOO_HOME'])
-    subprocess.check_call(['odoo', 'up', '-d', name], cwd=os.environ['ODOO_HOME'])
+    stop_container(name)
+    start_container(name)
+
+def start_container(name):
+    """
+    :param name: e.g. odoo, asterisk
+    """
+    subprocess.check_call([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'up', '-d', name], cwd=os.environ['ODOO_HOME'])
+
+def stop_container(name):
+    """
+    :param name: e.g. odoo, asterisk
+    """
+    subprocess.check_call([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'kill', name], cwd=os.environ['ODOO_HOME'])

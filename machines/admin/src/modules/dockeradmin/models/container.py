@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 from utils import get_containers
 from utils import restart_container
 from openerp import _, api, fields, models, SUPERUSER_ID
@@ -13,7 +14,8 @@ class Container(models.Model):
 
     @api.one
     def restart(self):
-        restart_container(self.name)
+        dcprefix = os.environ['DCPREFIX']
+        restart_container(self.name[len(dcprefix)])   # ho_odoo --> odoo
         return True
 
     @api.model
@@ -21,7 +23,7 @@ class Container(models.Model):
         self.search([]).unlink()
         for container in get_containers():
             self.create({
-                'name': u'; '.join(container['Names'].replace('/', '')),
+                'name': u'; '.join(container['Names']).replace('/', ''),
                 'status': container['Status'],
                 'public_port': ', '.join([str(x['PublicPort']) for x in container.get('Ports') if x.get('PublicPort')]),
                 'all_attrs': str(container),
