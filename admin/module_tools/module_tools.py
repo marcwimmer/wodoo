@@ -616,10 +616,15 @@ def update_module_file(current_file):
     pp.pprint(mod)
     file.close()
 
+def update_view_in_db_in_debug_file(filepath, lineno):
+    filepath = translate_path_into_machine_path(filepath)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('update_view_in_db:{}|{}'.format(filepath, lineno))
 
-def update_view_in_db(filepath, lineno, xml):
+def update_view_in_db(filepath, lineno):
     module = get_module_of_file(filepath)
-    xml = xml.split("\n")
+    with open(filepath, 'r') as f:
+        xml = f.read().split("\n")
 
     line = lineno
     xmlid = ""
