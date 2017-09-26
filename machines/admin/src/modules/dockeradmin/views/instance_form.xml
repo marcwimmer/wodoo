@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_docker_odoo_instance_form" model="ir.ui.view">
+      <field name="name">docker.odoo.instance form</field>
+      <field name="model">docker.odoo.instance</field>
+      <field name="arch" type="xml">
+        <form string="" version="7.0">
+          <header/>
+          <sheet>
+            <div class="oe_title">
+              <h1>
+                <field name="name" colspan="4" class="oe_inline"/>
+              </h1>
+            </div>
+            <group string="" col="4">
+              <field name="hostname"/>
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
+  </data>
+</odoo>
