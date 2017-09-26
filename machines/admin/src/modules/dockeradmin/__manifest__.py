@@ -1,10 +1,9 @@
-
 {   'application': False,
     'author': 'Marc Wimmer (marc@itewimmer.de)',
     'auto_install': True,
     'category': 'Odoo Docker Environment',
     'css': [],
-    'data': [],
+    'data': ['views/container_tree.xml', 'views/menu.xml'],
     'demo_xml': [],
     'depends': ['base'],
     'description': '',

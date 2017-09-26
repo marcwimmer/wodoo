@@ -31,5 +31,7 @@ gosu postgres ${POSTGRESBIN}/psql template1 < /tmp/init.sql
 mkdir /opt/files
 chown odoo:odoo /opt/files -R
 
+chmod a+rw /var/run/docker.sock
+
 echo 'Starting odoo gevent'
 gosu odoo "/opt/src/odoo/odoo-bin" -c "/opt/config_openerp"  -d "$DBNAME" --log-level="$LOGLEVEL"

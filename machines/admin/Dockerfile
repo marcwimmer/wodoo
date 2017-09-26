@@ -84,6 +84,9 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
+ADD requirements.txt /tmp
+RUN pip install -r /tmp/requirements.txt
+
 RUN apt-get install -y locales
 ADD bin/ /
 ADD config/* /opt
