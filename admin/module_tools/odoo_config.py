@@ -63,6 +63,13 @@ def _read_file(path, default=None):
     except:
         return default
 
+def get_path_settings_customs():
+    """
+    Path to settings.customs where customs and dbname is defined.
+    """
+    root = odoo_root()
+    return os.path.join(root, 'settings.customs')
+
 def get_env():
     # on docker machine self use environment variables; otherwise read from config file
     if os.getenv("DOCKER_MACHINE", "") == "1":
@@ -70,6 +77,11 @@ def get_env():
     else:
         root = odoo_root()
         conf = MyConfigParser(os.path.join(root, 'settings'))
+
+        conf_customs = MyConfigParser(get_path_settings_customs())
+
+        conf["CUSTOMS"] = conf_customs['CUSTOMS']
+        conf["DBNAME"] = conf_customs['DBNAME']
     return conf
 
 def current_customs():

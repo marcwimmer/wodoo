@@ -39,6 +39,7 @@ services:
       - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
       - ../settings
+      - ../settings.customs
 
   stasis:
       build: ../machines/asterisk/stasis
@@ -48,6 +49,7 @@ services:
         PROXY_PORT_OUT: 80
       env_file:
         - ../settings
+        - ../settings.customs
       depends_on:
         - asterisk
         - asterisk_redis
@@ -76,6 +78,7 @@ services:
       - asterisk_logs:/var/log/asterisk
     env_file:
       ../settings
+      ../settings.customs
     cap_add:
         - NET_ADMIN
     healthcheck:

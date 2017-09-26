@@ -23,6 +23,7 @@ services:
       - ../run/debug:/tmp/debug
     env_file:
       - ../settings
+      - ../settings.customs
       - ../machines/odoo/docker-env
     command: echo 'odoo_base - good bye - it is ok!'
 

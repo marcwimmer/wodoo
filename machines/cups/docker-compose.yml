@@ -15,6 +15,7 @@ services:
       - ../data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
     env_file:
       - ../settings
+      - ../settings.customs
     environment:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
