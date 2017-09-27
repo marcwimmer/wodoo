@@ -69,6 +69,8 @@ class Instance(models.Model):
 
     @api.model
     def set_content(self, content):
+        if not content.endswith("\n"):
+            content += '\n'
         path = os.environ['INSTANCES_FILE']
         with open(path, 'w') as f:
             f.write(content)

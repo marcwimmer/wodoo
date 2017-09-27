@@ -11,11 +11,18 @@ DNSNAME=$2
 PORT=$3
 URLPATH_DIR=$4
 OUTPUT_FILENAME=$5
-if [[ -z "$OUTPUT_FILENAME" ]]; then
-	OUTPUT_FILENAME=$URLPATH_DIR/${DNSNAME}_${URLPATH/\//}
-else
-	OUTPUT_FILENAME="$URLPATH_DIR/$OUTPUT_FILENAME"
+DOMAIN=$6  # default; otherwise name from odoo_instances
+
+if [[ -z "$DOMAIN" ]]; then
+	DOMAIN=default
 fi
+if [[ -z "$OUTPUT_FILENAME" ]]; then
+	OUTPUT_FILENAME=$URLPATH_DIR/$DOMAIN/${DNSNAME}_${URLPATH/\//}
+else
+	OUTPUT_FILENAME="$URLPATH_DIR/$DOMAIN/$OUTPUT_FILENAME"
+fi
+
+mkdir -p "$(dirname "$OUTPUT_FILENAME")"
 
 DOLLAR='$'
 
