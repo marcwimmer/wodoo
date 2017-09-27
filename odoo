@@ -110,6 +110,7 @@ env.write()
 
 	[[ "$VERBOSE" == "1" ]] && set -x
 
+	return 0
 }
 
 function restore_check() {
@@ -126,6 +127,7 @@ function restore_check() {
 		exit -1
 	fi
 
+	return 0
 }
 
 function exists_db() {
@@ -136,6 +138,8 @@ function exists_db() {
 	else
 		echo 'database does not exist'
 	fi
+
+	return 0
 }
 
 function remove_postgres_connections() {
@@ -151,6 +155,8 @@ function remove_postgres_connections() {
 			)
 		echo "$SQL" | $MANAGE psql
 	fi
+
+	return 0
 }
 
 function do_restore_db_in_docker_container () {
@@ -198,6 +204,8 @@ function do_restore_db_on_external_postgres () {
 	gunzip -c "$1" > "$pipe" &
 	echo "Restoring Database $DBNAME"
 	$PGRESTORE -d "$DBNAME" < "$pipe"
+
+	return 0
 }
 
 function do_restore_files () {
@@ -210,6 +218,7 @@ function do_restore_files () {
     fi
 
 	dcrun odoo /bin/restore_files.sh "$(basename "$tararchive_full_path")"
+	return 0
 }
 
 function askcontinue() {
@@ -228,6 +237,7 @@ function askcontinue() {
 			exit -1
 		}
 	fi
+	return 0
 }
 
 function showhelp() {
@@ -324,6 +334,7 @@ fi
 
 function prepare_filesystem() {
     mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
+	return 0
 }
 
 function replace_all_envs_in_file() {
@@ -347,6 +358,8 @@ function replace_all_envs_in_file() {
 	with open(filepath, 'w') as f:
 	    f.write(content)
 	EOF
+
+	return 0
 }
 
 function prepare_yml_files_from_template_files() {
@@ -367,8 +380,10 @@ function prepare_yml_files_from_template_files() {
 	#
 	# - also replace all environment variables
 	find "$DIR/run" -name '*docker-compose*.yml' -delete
+	set -x
 	ALL_CONFIG_FILES=$(cd "$DIR"; find machines -name 'docker-compose*.yml')
 	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES python "$DIR/bin/prepare_dockercompose_files.py")
+	exit 0
 	cd "$DIR"
     for file in $ALL_CONFIG_FILES; do
 		replace_all_envs_in_file "run/$file"
@@ -388,6 +403,7 @@ function prepare_yml_files_from_template_files() {
 	echo $ALL_CONFIG_FILES
 
     dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $ALL_CONFIG_FILES"
+	return 0
 }
 
 
@@ -437,7 +453,6 @@ function do_command() {
             /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" "$file"
             /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
 
-            set +e
             /bin/systemctl disable "$servicename"
             /bin/rm "/etc/systemd/system/$servicename"
             /bin/rm "lib/systemd/system/$servicename"
@@ -916,8 +931,7 @@ env.write()
 
 		;;
 	test)
-		echo 'test'
-		exists_db
+		echo 'reached the command area'
 		;;
     *)
         echo "Invalid option $1"
@@ -1023,6 +1037,8 @@ function display_machine_tips() {
 		echo 
 		echo
 	fi
+
+	return 0
 }
 
 function update_openvpn_domains() {
@@ -1038,16 +1054,19 @@ function update_openvpn_domains() {
 		rm "$results"
 	done
 
+	return 0
+
 }
 
 function awk() {
 	AWK=$(which awk)
 	command "${AWK:-awk}" "$@";
+	return 0
 }
 
 function setup_odoo_instances() {
+	nginx_configs_dir=$DIR/run/nginx_confs
 	if [[ -f "$DIR/run/odoo_instances" ]]; then
-		nginx_configs_dir=$DIR/run/nginx_confs
 		rm "$nginx_configs_dir"/odoo_instance_* 1>/dev/null 2>&1 || true
 
 		while read -r line; do
@@ -1071,14 +1090,19 @@ function setup_odoo_instances() {
 
 		done <"$DIR/run/odoo_instances"
 	fi
+	chmod a+rwx "$nginx_configs_dir"
+	chmod a+rw "$nginx_configs_dir" -R
+	return 0
 	
 }
 
 function setup_nginx_paths() {
-	URLPATH_DIR=$DIR/run/nginx_paths
-	[[ -d "$URLPATH_DIR" ]] && rm -Rf "$URLPATH_DIR"
-	mkdir -p "$URLPATH_DIR"
-	chmod a+rwx "$URLPATH_DIR"
+	URLPATH_DIR="$DIR/run/nginx_paths"
+	if [[ -d "$URLPATH_DIR" ]]; then
+		rm -Rf "${URLPATH_DIR:?}/*"
+	else
+		mkdir -p "$URLPATH_DIR"
+	fi
 
 	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
 		content=$(
@@ -1108,9 +1132,13 @@ function setup_nginx_paths() {
 			fi
 		done <<< "$content"
 	done
+	chmod a+rwx "$URLPATH_DIR"
+	chmod a+rw "$URLPATH_DIR" -R
+	return 0
 }
 
 function main() {
+	set -e
 	local ARGS=("$@")
 	echo "${ARGS[@]}"
 	startup "${ARGS[@]}"
@@ -1123,6 +1151,7 @@ function main() {
 	setup_nginx_paths
 	sanity_check
 	export odoo_manager_started_once=1
+
 	do_command "${ARGS[@]}"
 	cleanup
 }
