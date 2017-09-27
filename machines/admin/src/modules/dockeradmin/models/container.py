@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import os
+import time
 from utils import get_containers
 from utils import restart_container
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
 class Container(models.Model):
     _name = 'docker.container'
+    _order = 'name'
 
     name = fields.Char("Name")
     status = fields.Char("Status")
@@ -14,33 +16,11 @@ class Container(models.Model):
 
     @api.one
     def restart(self):
-        dcprefix = os.environ['DCPREFIX']
-        restart_container(self.name[len(dcprefix)])   # ho_odoo --> odoo
-        return True
+        restart_container(self.name)
+        return self.refresh_action()
 
     @api.model
-    def update_docker(self):
-        self.search([]).unlink()
-
-        minimum_containers = os.getenv("MINIMUM_CONTAINERS", "").split(',')
-
-        for container in get_containers():
-            odoo_container = self.create({
-                'name': u'; '.join(container['Names']).replace('/', ''),
-                'status': container['Status'],
-                'public_port': ', '.join([str(x['PublicPort']) for x in container.get('Ports') if x.get('PublicPort')]),
-                'all_attrs': str(container),
-            })
-            if odoo_container.name in minimum_containers:
-                minimum_containers.remove(odoo_container.name)
-
-        # list most important containers, too
-        for container in minimum_containers:
-            odoo_container = self.create({
-                'name': container,
-                'status': "Down",
-            })
-
+    def refresh_action(self):
         return {
             'view_type': 'form',
             'name': 'Running Containers Overview',
@@ -55,3 +35,28 @@ class Container(models.Model):
             },
             'target': 'current',
         }
+
+    @api.model
+    def update_docker(self):
+        self.search([]).unlink()
+
+        minimum_containers = os.getenv("MINIMUM_CONTAINERS", "").split(',')
+
+        for container in get_containers():
+            odoo_container = self.create({
+                'name': u'; '.join(container['Names']).replace('/', '').replace("{}_".format(os.environ['DCPREFIX']), ""),
+                'status': container['Status'],
+                'public_port': ', '.join([str(x['PublicPort']) for x in container.get('Ports') if x.get('PublicPort')]),
+                'all_attrs': str(container),
+            })
+            if odoo_container.name in minimum_containers:
+                minimum_containers.remove(odoo_container.name)
+
+        # list most important containers, too
+        for container in minimum_containers:
+            odoo_container = self.create({
+                'name': container,
+                'status': "Down",
+            })
+
+        return self.refresh_action()
