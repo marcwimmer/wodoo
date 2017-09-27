@@ -21,12 +21,24 @@ class Container(models.Model):
     @api.model
     def update_docker(self):
         self.search([]).unlink()
+
+        minimum_containers = os.getenv("MINIMUM_CONTAINERS", "").split(',')
+
         for container in get_containers():
-            self.create({
+            odoo_container = self.create({
                 'name': u'; '.join(container['Names']).replace('/', ''),
                 'status': container['Status'],
                 'public_port': ', '.join([str(x['PublicPort']) for x in container.get('Ports') if x.get('PublicPort')]),
                 'all_attrs': str(container),
+            })
+            if odoo_container.name in minimum_containers:
+                minimum_containers.remove(odoo_container.name)
+
+        # list most important containers, too
+        for container in minimum_containers:
+            odoo_container = self.create({
+                'name': container,
+                'status': "Down",
             })
 
         return {

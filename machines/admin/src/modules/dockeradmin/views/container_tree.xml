@@ -8,6 +8,7 @@
           <field name="name"/>
           <field name="status"/>
           <field name="public_port"/>
+		  <button name="restart" string="Restart" icon='fa-recycle' type="object" />
         </tree>
       </field>
     </record>

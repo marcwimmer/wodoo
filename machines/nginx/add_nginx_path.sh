@@ -36,7 +36,9 @@ tee "$OUTPUT_FILENAME.path" >/dev/null  <<EOF
 location $LOCATION
 {
 	set $DOLLAR${DNSNAME}_${URLPATH/\//} $DNSNAME;
-	resolver 127.0.0.11;
+	#resolver 127.0.0.11;
+	#https://serverfault.com/questions/240476/how-to-force-nginx-to-resolve-dns-of-a-dynamic-hostname-everytime-when-doing-p
+	resolver 127.0.0.11 valid=15s;
 	proxy_pass http://$DOLLAR${DNSNAME}_${URLPATH/\//}:$PORT;
 }
 

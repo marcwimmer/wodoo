@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
 import git
+import subprocess
+from utils import get_submodules
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
 
 
 class MainModule(models.Model):
     _name = 'git.module'
+    _order = 'sequence'
 
     name = fields.Char(string="Name")
     parent_id = fields.Many2one('git.module', string="Parent")
@@ -14,22 +17,27 @@ class MainModule(models.Model):
     branch_ids = fields.One2many('git.branch', 'module_id', string="Branches")
     main = fields.Boolean("Main App", default=False)
     module_ids = fields.One2many('git.module', 'parent_id', string="Sub-Modules")
+    sequence = fields.Integer(default=10)
+
+    @api.model
+    def get_root_path(self):
+        return os.path.join(os.environ["ODOO_HOME"], 'data', 'src', 'customs', os.environ['CUSTOMS'])
 
     @api.model
     def update_mods(self):
-        repo = git.Repo(os.path.join(os.environ["ODOO_HOME"], 'data', 'src', 'customs', os.environ['CUSTOMS']))
-
         main = self.create({
             'name': os.environ['CUSTOMS'],
             'main': True,
+            'sequence': 1,
         })
-        main.fetch_branches_and_submodules(repo)
+        main.fetch_branches_and_submodules(self.get_root_path())
 
         return {
             'view_type': 'form',
             'res_model': self._name,
             'res_id': main.id,
             'view_id': False,
+            'view_mode': 'form',
             'type': 'ir.actions.act_window',
             'flags': {'form': {
                 'action_buttons': True,
@@ -38,14 +46,16 @@ class MainModule(models.Model):
         }
 
     @api.one
-    def fetch_branches_and_submodules(self, repo):
-        for submodule in repo.submodules:
+    def fetch_branches_and_submodules(self, path):
+        print path
+        for submodule in get_submodules(path):
             odoo_submodule = self.env['git.module'].create({
-                'name': submodule.name,
+                'name': submodule['name'],
                 'parent_id': self.id
             })
-            odoo_submodule.fetch_branches_and_submodules()
+            odoo_submodule.fetch_branches_and_submodules(os.path.join(path, submodule['name']))
 
+        repo = git.Repo(path)
         for branch in repo.branches:
             self.env['git.branch'].create({
                 'name': branch.name,

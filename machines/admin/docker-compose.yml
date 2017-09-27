@@ -21,12 +21,13 @@ services:
         INSTANCES_FILE: $ODOO_HOME/run/odoo_instances
         ODOO_HOME: $ODOO_HOME
         DCPREFIX: $DCPREFIX
+        MINIMUM_CONTAINERS: nginx,redis
         #env_file:
         #- ../settings
         #- ../machines/odoo/docker-env
     env_file:
       - ../settings
       - ../settings.customs
-    command: /run.sh
+    command: /rootrun.sh
     ports:
        - "4488:8069"
