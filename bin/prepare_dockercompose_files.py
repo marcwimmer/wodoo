@@ -5,6 +5,7 @@ import re
 paths = os.environ['ALL_CONFIG_FILES'].split("\n")
 dest_files = []
 
+
 for path in paths:
     filename = os.path.basename(path)
 
@@ -28,8 +29,15 @@ for path in paths:
     folder_name = os.path.basename(os.path.dirname(path))
     if os.getenv("RUN_{}".format(folder_name.upper()), "1") == "0":
         continue
-    dest_file = 'run/{}-docker-compose.{}.yml'.format(order, folder_name)
+
+    appendix = ""
+    abc = "abcdefghijklmnopqrstuvwxyz"
+    while os.path.exists('run/{}{}-docker-compose.{}.yml'.format(order, appendix, folder_name)):
+        appendix = abc[0]
+        abc = abc[1:]
+    dest_file = 'run/{}{}-docker-compose.{}.yml'.format(order, appendix, folder_name)
     shutil.copy(path, dest_file)
     dest_files.append(dest_file)
+
 for x in sorted(dest_files):
     print x.replace("run/", "")
