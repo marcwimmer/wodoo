@@ -33,7 +33,12 @@ def get_submodules(path):
             continue
         line = line.strip()
         line = line.split(" ")
+        branch = get_branch(os.path.join(path, line[1]))
         yield {
             'name': line[1],
             'revision': line[0],
+            'branch': branch,
         }
+
+def get_branch(path):
+    return subprocess.check_output(['/usr/bin/git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=path).strip()

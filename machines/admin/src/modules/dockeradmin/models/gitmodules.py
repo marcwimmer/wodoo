@@ -2,6 +2,7 @@
 import os
 import git
 import subprocess
+from utils import get_branch
 from utils import get_submodules
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
@@ -30,7 +31,7 @@ class MainModule(models.Model):
             'main': True,
             'sequence': 1,
         })
-        main.fetch_branches_and_submodules(self.get_root_path())
+        main.fetch_branches_and_submodules(self.get_root_path(), )
 
         return {
             'view_type': 'form',
@@ -51,7 +52,7 @@ class MainModule(models.Model):
         for submodule in get_submodules(path):
             odoo_submodule = self.env['git.module'].create({
                 'name': submodule['name'],
-                'parent_id': self.id
+                'parent_id': self.id,
             })
             odoo_submodule.fetch_branches_and_submodules(os.path.join(path, submodule['name']))
 
@@ -61,6 +62,9 @@ class MainModule(models.Model):
                 'name': branch.name,
                 'module_id': self.id,
             })
+
+        current_branch = get_branch(path)
+        self.branch_id = self.branch_ids.filtered(lambda b: b.name == current_branch)
 
 class Branch(models.Model):
     _name = 'git.branch'
