@@ -380,10 +380,8 @@ function prepare_yml_files_from_template_files() {
 	#
 	# - also replace all environment variables
 	find "$DIR/run" -name '*docker-compose*.yml' -delete
-	set -x
 	ALL_CONFIG_FILES=$(cd "$DIR"; find machines -name 'docker-compose*.yml')
 	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES python "$DIR/bin/prepare_dockercompose_files.py")
-	exit 0
 	cd "$DIR"
     for file in $ALL_CONFIG_FILES; do
 		replace_all_envs_in_file "run/$file"

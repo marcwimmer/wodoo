@@ -17,11 +17,11 @@
     </record>
     <menuitem id="menu_instances" parent="menu_root" name="Instances" action="act_update_instances"/>
     <record model="ir.actions.server" id="act_modules">
-      <field name="name">update_modules</field>
+      <field name="name">update_branches</field>
       <field name="type">ir.actions.server</field>
-      <field name="model_id" ref="model_git_module"/>
-      <field name="code">action=model.update_mods()</field>
+      <field name="model_id" ref="model_git_branch"/>
+      <field name="code">action=model.update_branches()</field>
     </record>
-    <menuitem id="menu_modules" parent="menu_root" name="Modules" action="act_modules"/>
+    <menuitem id="menu_modules" parent="menu_root" name="Branches" action="act_modules"/>
   </data>
 </odoo>

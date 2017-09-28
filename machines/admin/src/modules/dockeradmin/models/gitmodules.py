@@ -57,6 +57,7 @@ class MainModule(models.Model):
             odoo_submodule.fetch_branches_and_submodules(os.path.join(path, submodule['name']))
 
         repo = git.Repo(path)
+        # TODO check if branch already merged
         for branch in repo.branches:
             self.env['git.branch'].create({
                 'name': branch.name,
@@ -71,3 +72,18 @@ class Branch(models.Model):
 
     name = fields.Char(string="Branch")
     module_id = fields.Many2one('git.module', string="Module")
+
+    @api.model
+    def update_branches(self):
+        self.env['git.module'].update_mods()
+        return {
+            'view_mode': 'form',
+            'view_type': 'tree,form',
+            'res_model': self._name,
+            'view_id': False,
+            'type': 'ir.actions.act_window',
+            'flags': {'form': {
+                'action_buttons': True,
+            }},
+            'target': 'current',
+        }

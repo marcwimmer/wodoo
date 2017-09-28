@@ -2,3 +2,4 @@ docker
 pudb
 docker-compose
 gitpython
+watchdog

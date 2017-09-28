@@ -1,0 +1,28 @@
+#!/usr/bin/python
+"""
+Manages versioning of submodules.
+
+"""
+import sys
+
+if len(sys.argv) <= 1:
+    print "How to use:"
+    print ""
+    print "odoo-git new-ticket <ticketname>"
+    print
+    print "odoo-git master :current ticket is used"
+    print ""
+    print "odoo-git deploy <ticketname>"
+    print ""
+    print ""
+    sys.exit(-1)
+
+action = sys.argv[1]
+
+if action not in ['new-ticket', 'deploy', 'master']:
+    print "Invalid verb!"
+    sys.exit(-1)
+
+if action in ['new-ticket', 'deploy'] and len(sys.argv) < 3:
+    print "Please provide ticket name!"
+    sys.exit(-1)
