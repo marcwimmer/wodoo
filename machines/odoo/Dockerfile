@@ -77,7 +77,6 @@ RUN curl -L -o /tmp/wkhtml.tar.xz https://github.com/wkhtmltopdf/wkhtmltopdf/rel
 tar xf /tmp/wkhtml.tar.xz  && \
 cp /tmp/wkhtmltox/bin/* /usr/bin/ 
 
-# https://github.com/odoo/odoo/issues/5177
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
 ADD sysroot/ /
