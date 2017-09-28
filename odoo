@@ -897,6 +897,12 @@ function do_command() {
 	remove-web-assets)
 		askcontinue
 		dcrun odoo bash -c "cd /opt/odoo/admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
+		echo
+		echo
+		echo "Please login as admin, so that assets are recreated."
+		echo
+		echo
+		echo
 		;;
 	sanity_check)
 		sanity_check
