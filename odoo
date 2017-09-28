@@ -1144,9 +1144,9 @@ function main() {
 	export_settings
 	prepare_filesystem
 	prepare_yml_files_from_template_files
-	update_openvpn_domains
 	setup_odoo_instances
 	setup_nginx_paths
+	update_openvpn_domains 
 	sanity_check
 	export odoo_manager_started_once=1
 
