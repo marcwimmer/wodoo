@@ -153,7 +153,7 @@ function remove_postgres_connections() {
 			AND pid <> pg_backend_pid(); 
 			EOF
 			)
-		echo "$SQL" | $MANAGE psql
+		echo "$SQL" | $MANAGE psql template1
 	fi
 
 	return 0
@@ -413,7 +413,7 @@ function do_command() {
 			UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
 			EOF
 			)
-		echo "$SQL" | $MANAGE psql
+		echo "$SQL" | $MANAGE psql "$DBNAME"
 
 		;;
 	install-deps)
@@ -613,7 +613,7 @@ function do_command() {
 			exit -1
 		fi
         SQLFILE=machines/postgres/turndb2dev.sql
-		$MANAGE psql < $SQLFILE
+		$MANAGE psql "$DBNAME" < $SQLFILE
 		
 		;;
 	psql)
