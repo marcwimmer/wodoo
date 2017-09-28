@@ -26,6 +26,11 @@ cat > $WATCHER <<"EOF"
 #!/bin/bash
 # This bash scripts kills the odoo process, so that the 
 # while is continued 
+
+function odoo_kill() {
+	pkill -9 -f /opt/odoo > /dev/null 2>&1
+}
+
 last_mod=""
 while true; do
 
@@ -49,13 +54,12 @@ while true; do
 			EOF
 		else
 			odoo_kill
-			reset
 		fi
 
 		last_mod=$new_mod
 	fi
 
-	sleep 0.5
+	sleep 0.2
 
 done
 EOF
@@ -71,6 +75,7 @@ while true; do
 	new_mod=$(stat -c %y "$DEBUGGER_WATCH")
 
 	if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
+		sleep 2
 
 		# example content
 		# debug
@@ -111,7 +116,7 @@ while true; do
 		last_mod=$new_mod
 	fi
 
-	sleep 0.5
+	sleep 0.2
 
 done
 
