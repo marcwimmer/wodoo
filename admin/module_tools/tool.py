@@ -34,9 +34,7 @@ if len(sys.argv) <= 1:
     print ""
     print "Usage:"
     print ""
-    print "tool.py js       -  new javascript"
-    print "tool.py less     -  new less"
-    print "tool.py webxml   -  new webxml"
+    print "tool.py static filename.js"
     print ""
     print ""
     print ""
@@ -52,10 +50,12 @@ def update_assets(module, assets_path, rel_path):
 
     xpath = doc.xpath("//xpath")[0]
 
+    rel_path = os.path.join(module, rel_path)
+
     if rel_path.endswith('.js'):
         if not xpath.xpath("script[@src='{}']".format(rel_path)):
             etree.SubElement(xpath, "script", {'type': 'text/javascript', 'src': rel_path})
-    elif rel_path.endswith('.css') or assets_path.endswith('.less'):
+    elif rel_path.endswith('.css') or rel_path.endswith('.less'):
         if not xpath.xpath("link[@href='{}']".format(rel_path)):
             etree.SubElement(xpath, "link", {'rel': 'stylesheet', 'href': rel_path})
     else:
