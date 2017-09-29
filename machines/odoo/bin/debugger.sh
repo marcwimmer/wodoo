@@ -75,7 +75,7 @@ while true; do
 	new_mod=$(stat -c %y "$DEBUGGER_WATCH")
 
 	if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
-		sleep 2
+		sleep 1
 
 		# example content
 		# debug
