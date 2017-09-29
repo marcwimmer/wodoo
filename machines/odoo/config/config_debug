@@ -17,6 +17,7 @@ limit_time_cpu = 6000000
 limit_time_real = 12000000
 list_db = True
 log_level = error
+log_handler = :ERROR,openerp:ERROR,werkzeug:ERROR
 max_cron_threads = 0
 smtp_password = False
 smtp_port = 25
