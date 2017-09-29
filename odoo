@@ -1144,20 +1144,27 @@ function setup_nginx_paths() {
 function main() {
 	set -e
 	local ARGS=("$@")
-	echo "${ARGS[@]}"
 	startup "${ARGS[@]}"
-	default_confs "${ARGS[@]}"
-	export_settings
-	prepare_filesystem
-	prepare_yml_files_from_template_files
-	setup_odoo_instances
-	setup_nginx_paths
-	update_openvpn_domains 
-	sanity_check
-	export odoo_manager_started_once=1
 
-	do_command "${ARGS[@]}"
-	cleanup
+	if [[ "${ARGS[0]}" == "tool" ]]; then
+
+		python "$DIR/admin/module_tools/tool.py" "${ALL_PARAMS[@]}"
+
+	else
+
+		default_confs "${ARGS[@]}"
+		export_settings
+		prepare_filesystem
+		prepare_yml_files_from_template_files
+		setup_odoo_instances
+		setup_nginx_paths
+		update_openvpn_domains 
+		sanity_check
+		export odoo_manager_started_once=1
+
+		do_command "${ARGS[@]}"
+		cleanup
+	fi
 }
 
 
