@@ -1,7 +1,7 @@
 #!/bin/bash
 set +x
 "$ADMIN_DIR/link_modules"
-
+LOCKFILE=$(mktemp -u)
 echo "Starting debugger"
 echo "Watching File $DEBUGGER_WATCH"
 WATCHER=/tmp/watcher.sh  # needed so that due to set_trace debugging is possible from within this script
@@ -26,6 +26,8 @@ cat > $WATCHER <<"EOF"
 #!/bin/bash
 # This bash scripts kills the odoo process, so that the 
 # while is continued 
+
+LOCKFILE=$1
 
 function odoo_kill() {
 	pkill -9 -f /opt/odoo > /dev/null 2>&1
@@ -53,70 +55,81 @@ while true; do
 			module_tools.update_view_in_db("$filepath", $lineno)
 			EOF
 		else
+			(
+			flock -x 200
+
 			odoo_kill
+
+			) 200>$LOCKFILE
 		fi
 
 		last_mod=$new_mod
 	fi
 
-	sleep 0.2
+
+	sleep 0.1
 
 done
 EOF
 
 # start watcher
 pkill -9 -f $WATCHER
-chmod a+x $WATCHER
-$WATCHER &
+/bin/bash $WATCHER "$LOCKFILE" &
 
 
 while true; do
 
-	new_mod=$(stat -c %y "$DEBUGGER_WATCH")
 
-	if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
-		sleep 1
+		new_mod=$(stat -c %y "$DEBUGGER_WATCH")
 
-		# example content
-		# debug
-		# unit_test:account_module1
+		if [[ "$new_mod" != "$last_mod" || -z "$last_mod" ]]; then
+			sleep 0.2
+			(
 
-		action=$(awk '{split($0, a, ":"); print a[1]}' < "$DEBUGGER_WATCH")
+				flock -x 200
+			) 200> $LOCKFILE
 
-		if [[ -z "$action" ]]; then
-			action='debug'
-		fi
+			# example content
+			# debug
+			# unit_test:account_module1
 
-		if [[ "$action" == 'debug' ]]; then
-			reset
-			/debug.sh
+			action=$(awk '{split($0, a, ":"); print a[1]}' < "$DEBUGGER_WATCH")
+			odoo_kill
 
-		elif [[ "$action" == 'quick_restart' ]]; then
-			reset
-			/debug.sh -quick
-
-
-		elif [[ "$action" == 'update_module' ]]; then
-			module=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-			/update_modules.sh "$module" && {
-				/debug.sh -quick
-			}
-
-		elif [[ "$action" == 'unit_test' ]]; then
-			reset
-			last_unit_test=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-			/unit_test.sh "$last_unit_test"
-
-		elif [[ "$action" == 'last_unit_test' ]]; then
-			if [[ -n "$last_unit_test" ]]; then
-				/unit_test.sh "$last_unit_test"
+			if [[ -z "$action" ]]; then
+				action='debug'
 			fi
 
-		fi
-		last_mod=$new_mod
-	fi
+			if [[ "$action" == 'debug' ]]; then
+				reset
+				/debug.sh
 
-	sleep 0.2
+			elif [[ "$action" == 'quick_restart' ]]; then
+				reset
+				/debug.sh -quick
+
+
+			elif [[ "$action" == 'update_module' ]]; then
+				module=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
+				/update_modules.sh "$module" && {
+					/debug.sh -quick
+				}
+
+			elif [[ "$action" == 'unit_test' ]]; then
+				reset
+				last_unit_test=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
+				/unit_test.sh "$last_unit_test"
+
+			elif [[ "$action" == 'last_unit_test' ]]; then
+				if [[ -n "$last_unit_test" ]]; then
+					/unit_test.sh "$last_unit_test"
+				fi
+
+			fi
+			last_mod=$new_mod
+		fi
+
+		sleep 0.2
 
 done
 
