@@ -27,7 +27,7 @@ services:
       - ../machines/odoo/docker-env
     command: echo 'odoo_base - good bye - it is ok!'
 
-  odoo:
+  odoo: &odoo
     <<: *odoo_base
     container_name: ${DCPREFIX}_odoo
     environment:

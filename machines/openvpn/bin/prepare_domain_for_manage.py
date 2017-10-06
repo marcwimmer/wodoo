@@ -15,27 +15,33 @@ import json
 import shutil
 import subprocess
 import tempfile
-results = sys.argv[1]
+import yaml
+docker_compose_file = sys.argv[1]
 filepath_config = sys.argv[2]
 root_path = sys.argv[3]
+
+template_file = os.path.join(root_path, 'machines/openvpn/template.yml')
 
 with open(filepath_config, 'r') as f:
     config = json.loads(f.read())
 
 domain = config['domain']
-dest_docker_file = 'run/9999-docker-compose.ovpn.{}.yml'.format(domain)
+with open(docker_compose_file, 'r') as f:
+    docker_config = yaml.load(f.read())
 
-shutil.copy(os.path.join(root_path, 'machines/openvpn/template.yml'), os.path.join(root_path, dest_docker_file))
+with open(template_file, 'r') as f:
+    ovpn_services = f.read()
 
-# set parameters in docker compose template
+ovpn_services = ovpn_services.replace("${OVPN_DOMAIN}", domain)
+ovpn_services = ovpn_services.replace("${OVPN_CONFIG_FILE}", os.path.realpath(filepath_config).strip())
+ovpn_services = os.path.expandvars(ovpn_services)
+ovpn_services = yaml.load(ovpn_services)
 
-with open(os.path.join(root_path, dest_docker_file), 'r') as f:
-    content = f.read()
-content = content.replace("${OVPN_DOMAIN}", domain)
-content = content.replace("${OVPN_CONFIG_FILE}", os.path.realpath(filepath_config).strip())
-content = os.path.expandvars(content)
-with open(os.path.join(root_path, dest_docker_file), 'w') as f:
-    f.write(content)
+for service in ovpn_services['services']:
+    docker_config['services'][service] = ovpn_services['services'][service]
+
+with open(docker_compose_file, 'w') as f:
+    f.write(yaml.dump(docker_config, default_flow_style=False))
 
 with open(os.path.join(root_path, 'machines/openvpn/nginx.path.tmpl'), 'r') as f:
     path = f.read()
@@ -57,6 +63,3 @@ with open(os.path.join(root_path, 'machines/openvpn/nginx.path.tmpl'), 'r') as f
             'ovpn.{domain}'.format(domain=domain),
             'default',
         ])
-
-with open(results, 'w') as f:
-    f.write(dest_docker_file)

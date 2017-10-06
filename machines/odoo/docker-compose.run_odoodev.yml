@@ -3,3 +3,6 @@ version: '3.3'
 services:
   odoo:
     command: bash -c 'echo "entering endless loop"; while true; do sleep 1; done'
+    ports:
+       - "8072:8072"
+       - "8069:8069"
