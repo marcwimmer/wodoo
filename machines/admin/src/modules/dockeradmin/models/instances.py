@@ -89,6 +89,8 @@ class Instance(models.Model):
 
     @api.model
     def update_instances(self):
+        from pudb import set_trace
+        set_trace()
         self.search([]).with_context(NO_UPDATE=1).unlink()
 
         for line in self.get_content().split("\n"):

@@ -42,3 +42,12 @@ def get_submodules(path):
 
 def get_branch(path):
     return subprocess.check_output(['/usr/bin/git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=path).strip()
+
+def is_branch_merged(path, which_branch, to_branch):
+    out = subprocess.check_output(['/usr/bin/git', 'branch', '--merged', to_branch], cwd=path).strip()
+    out = [x for x in out if out.strip() == which_branch]
+
+    return bool(out)
+
+def new_branch(path, branch_name):
+    subprocess.check_call(['odoo-git', 'new-ticket'], cwd=path).strip()

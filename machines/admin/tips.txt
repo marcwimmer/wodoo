@@ -1,3 +1,5 @@
 How to use:
 
 run /run.sh for debugging
+
+run /run.sh dropdb for reset and start debugging

@@ -23,5 +23,12 @@
       <field name="code">action=model.update_branches()</field>
     </record>
     <menuitem id="menu_modules" parent="menu_root" name="Branches" action="act_modules"/>
+    <record model="ir.actions.act_window" id="act_new_branch_window">
+      <field name="name">New Branch</field>
+      <field name="res_model">branch.new</field>
+      <field name="view_mode">form</field>
+      <field name="view_type">form</field>
+    </record>
+    <menuitem parent="menu_root" id="menu_new_branch" action="act_new_branch_window"/>
   </data>
 </odoo>
