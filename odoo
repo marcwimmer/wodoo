@@ -21,7 +21,22 @@ function startup() {
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export odoo_manager_started_once=1
+	docker_compose_file="$DIR/run/docker-compose.yml"
+	PYTHONPATH=".:$DIR/admin/module_tools"
 
+}
+
+function get_CUSTOMS_DIR() {
+	local CUSTOMS_DIR
+	CUSTOMS_DIR=$(
+	cd "$ODOO_HOME/admin/module_tools" && \
+	python <<-EOF
+	import odoo_config
+	v = odoo_config.customs_dir()
+	print v
+	EOF
+	)
+	echo "$CUSTOMS_DIR"
 }
 
 function default_confs() {
@@ -337,31 +352,6 @@ function prepare_filesystem() {
 	return 0
 }
 
-function replace_all_envs_in_file() {
-	if [[ ! -f "$1" ]]; then
-		echo "File not found: $1"
-		exit -1
-	fi
-	export FILENAME=$1
-	python <<-"EOF"
-	import os
-	import re
-	filepath = os.environ['FILENAME']
-	with open(filepath, 'r') as f:
-	    content = f.read()
-	all_params = re.findall(r'\$\{[^\}]*?\}', content)
-	for param in all_params:
-	    name = param
-	    name = name.replace("${", "")
-	    name = name.replace("}", "")
-	    content = content.replace(param, os.environ[name])
-	with open(filepath, 'w') as f:
-	    f.write(content)
-	EOF
-
-	return 0
-}
-
 function prepare_yml_files_from_template_files() {
     # replace params in configuration file
     # replace variables in docker-compose;
@@ -373,6 +363,7 @@ function prepare_yml_files_from_template_files() {
 		echo "VERSION: $ODOO_VERSION"
 		echo "FILES: $ODOO_FILES"
 	fi
+	CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 
 	# python: find all configuration files from machines folder; extract sort 
 	# by manage-sort flag and put file into run directory
@@ -380,27 +371,21 @@ function prepare_yml_files_from_template_files() {
 	#
 	# - also replace all environment variables
 	find "$DIR/run" -name '*docker-compose*.yml' -delete
-	ALL_CONFIG_FILES=$(cd "$DIR"; find machines -name 'docker-compose*.yml')
-	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES python "$DIR/bin/prepare_dockercompose_files.py")
-	cd "$DIR"
-    for file in $ALL_CONFIG_FILES; do
-		replace_all_envs_in_file "run/$file"
-    done
-
-	# translate config files for docker compose with appendix -f
-    ALL_CONFIG_FILES="$(for f in ${ALL_CONFIG_FILES}; do echo "-f run/$f" | tr '\n' ' '; done)"
+	ALL_CONFIG_FILES=$(cd "$DIR"; find machines "$CUSTOMS_DIR/machines" -name 'docker-compose*.yml')
+	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES PYTHONPATH="$PYTHONPATH" python "$DIR/bin/prepare_dockercompose_files.py" "$docker_compose_file")
 
 	# append custom docker composes
-	if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
-		cp $ADDITIONAL_DOCKER_COMPOSE "$DIR/run"
-		for file in $ADDITIONAL_DOCKER_COMPOSE; do
-			ALL_CONFIG_FILES+=" -f "
-			ALL_CONFIG_FILES+=$file
-		done
-	fi
-	echo $ALL_CONFIG_FILES
+	# TODO append file contents to docker compose file
+	#if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
+		#cp $ADDITIONAL_DOCKER_COMPOSE "$DIR/run"
+		#for file in $ADDITIONAL_DOCKER_COMPOSE; do
+			#ALL_CONFIG_FILES+=" -f "
+			#ALL_CONFIG_FILES+=$file
+		#done
+	#fi
+	#echo $ALL_CONFIG_FILES
 
-    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME $ALL_CONFIG_FILES"
+    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME -f $docker_compose_file"
 	return 0
 }
 
@@ -422,7 +407,7 @@ function do_command() {
 		pip install lxml
 		pip install configobj
 		pip install unidecode
-		pip install pip install requests[security]
+		pip install requests[security]
 		pip install graphviz
 		pip install jsonpickle
 		pip install rst2pdf
@@ -767,14 +752,7 @@ function do_command() {
 		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
 			chown 1000 -R "$ODOO_FILES"
 		fi
-		CUSTOMS_DIR=$(
-		cd "$ODOO_HOME/admin/module_tools" && \
-		python <<-EOF
-		import odoo_config
-		v = odoo_config.customs_dir()
-		print v
-		EOF
-		)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 		if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
 			chown 1000 -R "$CUSTOMS_DIR"
 		fi
@@ -832,6 +810,7 @@ function do_command() {
 		domain=$2
 
 		cd "$DIR/machines/openvpn"
+		local docker_compose_file
 		docker_compose_file="$DIR/run/9999-docker-compose.ovpn.$domain.yml"
 
 		cp docker-compose.yml "$docker_compose_file"
@@ -1052,10 +1031,7 @@ function update_openvpn_domains() {
 	# attaches the docker-compose to $dc then
 
 	find "$DIR/machines" -name 'ovpn-domain.conf' | while read -r file; do
-		results="$(mktemp -u)"
-		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "$results" "$file" "$DIR"
-		dc="$dc -f $(cat "$results")"
-		rm "$results"
+		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "$docker_compose_file" "$file" "$DIR"
 	done
 
 	return 0
@@ -1083,14 +1059,20 @@ function setup_odoo_instances() {
 			# treat the name of the instance as domain; is used in setup_nginx_paths, too
 			sed -i "s|__PATH_DIR__|$name|g" "$config_path"
 
-			# copy docker compose odoo container snippet into
-			# main odoo 
-			snippet="$DIR/machines/odoo/docker-compose.odoo-instance.snippet"
-
-			# CAUTION: using built docker compose file of odoo; 
-			odoo_compose_file=$(find "$DIR"/run -name '1000-docker-compose.odoo.yml' |head -n1)
-
-			sed "s|__NAME__|$name|g" "$snippet" | envsubst >> "$odoo_compose_file"
+			# adapt the one yml file and duplicate the odoo service there;
+			# removing any ports
+			python <<EOF
+import yaml
+from copy import deepcopy
+with open("$docker_compose_file") as f:
+	j = yaml.load(f.read())
+odoo = deepcopy(j['services']['odoo'])
+if 'ports' in odoo:
+	del odoo['ports']
+j['services']['odoo_{}'.format("$name")] = odoo
+with open("$docker_compose_file", 'w') as f:
+	f.write(yaml.dump(j, default_flow_style=False))
+EOF
 
 		done <"$DIR/run/odoo_instances"
 	fi
