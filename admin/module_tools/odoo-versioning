@@ -4,6 +4,9 @@ Manages versioning of submodules.
 
 """
 import sys
+import subprocess
+from module_tools import module_tools
+from module_tools import odoo_config
 
 if len(sys.argv) <= 1:
     print "How to use:"
@@ -26,3 +29,19 @@ if action not in ['new-ticket', 'deploy', 'master']:
 if action in ['new-ticket', 'deploy'] and len(sys.argv) < 3:
     print "Please provide ticket name!"
     sys.exit(-1)
+
+
+path = odoo_config.customs_dir()
+
+if action == 'new-ticket':
+    branch = sys.argv[2]
+    try:
+        subprocess.check_call(['/usr/bin/git', 'stash'], cwd=path).strip()
+    except: pass
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=path)
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch], cwd=path)
+    print ""
+    print ""
+    print "Switch to new branch: {}".format(branch)
+    print ""
+    print ""
