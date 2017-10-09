@@ -23,12 +23,15 @@ def get_odoo_addons_paths():
 def admin_dir():
     return os.path.join(odoo_root(), 'admin')
 
+def customs_root():
+    if os.getenv("DOCKER_MACHINE", "0") == "1":
+        return os.path.dirname(os.environ['ACTIVE_CUSTOMS'])
+    else:
+        return os.path.join(odoo_root(), 'data', 'src', 'customs')
+
 def customs_dir(customs=None):
     c = customs or current_customs()
-    if os.getenv("DOCKER_MACHINE", "0") == "1":
-        return os.environ['ACTIVE_CUSTOMS']
-    else:
-        return os.path.join(odoo_root(), 'data', 'src', 'customs', c)
+    return os.path.join(customs_root(), c)
 
 def get_version_from_customs(customs=None):
     with open(os.path.join(customs_dir(customs), '.version')) as f:
@@ -63,13 +66,6 @@ def _read_file(path, default=None):
     except:
         return default
 
-def get_path_settings_customs():
-    """
-    Path to settings.customs where customs and dbname is defined.
-    """
-    root = odoo_root()
-    return os.path.join(root, 'settings.customs')
-
 def get_env():
     # on docker machine self use environment variables; otherwise read from config file
     if os.getenv("DOCKER_MACHINE", "") == "1":
@@ -78,10 +74,6 @@ def get_env():
         root = odoo_root()
         conf = MyConfigParser(os.path.join(root, 'settings'))
 
-        conf_customs = MyConfigParser(get_path_settings_customs())
-
-        conf["CUSTOMS"] = conf_customs['CUSTOMS']
-        conf["DBNAME"] = conf_customs['DBNAME']
     return conf
 
 def current_customs():
@@ -108,7 +100,7 @@ def execute_managesh(*args, **kwargs):
         output = ''
         while True:
             line = proc.stdout.readline()
-            line = line.decode()
+            line = line.decode(errors='ignore')
             if line == '':
                 break
             output += line
@@ -164,3 +156,13 @@ def translate_path_relative_to_customs_root(path):
         path = path[1:]
     path = os.path.join(*path)
     return path
+
+def set_customs(customs, dbname=None):
+    dbname = dbname or customs
+    with open(os.path.join(odoo_root(), 'settings.customs'), 'w') as f:
+        f.write("CUSTOMS={}".format(customs))
+        f.write("\n")
+        f.write("DBNAME={}".format(dbname))
+        f.write("\n")
+
+    execute_managesh("prepare")

@@ -20,7 +20,10 @@ from consts import MANIFESTS
 cache_models = {}
 cache_xml_ids = {}
 modified_filename = ""
-VERSION = current_version()
+try:
+    VERSION = current_version()
+except:
+    VERSION = None
 
 def ignore_file(full_path):
     if "/." in full_path:
@@ -634,7 +637,3 @@ def try_to_get_context(line_content, lines_before, filename):
                 break
 
     return result
-
-
-if __name__ == '__main__':
-    update_cache('/home/marc/odoo/data/src/customs/heine/modules/heine_website/__openerp__.py')

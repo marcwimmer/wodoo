@@ -79,6 +79,15 @@ for path in set(paths):
             j = load(source.read())
             # TODO complain version - override version
             j['version'] = '3.3'
+
+            # set settings environment and the override settings after that
+            if 'services' in j:
+                for service in j['services']:
+                    service = j['services'][service]
+                    if 'env_file' in service:
+                        if not [x for x in service['env_file'] if x == '../settings.override']:
+                            service['env_file'].append('../settings.override')
+
             dest.write(dump(j, default_flow_style=False))
             dest.write("\n")
     replace_all_envs_in_file(temp_path)

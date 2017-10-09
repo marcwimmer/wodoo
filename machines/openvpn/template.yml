@@ -9,7 +9,6 @@ services:
     build: ../machines/openvpn/openvpn
     env_file:
       - ../settings
-      - ../settings.customs
     command: echo 'exiting'
     environment:
         CONFIG_FILEPATH: /root/ovpn.config

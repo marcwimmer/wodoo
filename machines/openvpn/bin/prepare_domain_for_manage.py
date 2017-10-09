@@ -37,8 +37,9 @@ ovpn_services = ovpn_services.replace("${OVPN_CONFIG_FILE}", os.path.realpath(fi
 ovpn_services = os.path.expandvars(ovpn_services)
 ovpn_services = yaml.load(ovpn_services)
 
-for service in ovpn_services['services']:
-    docker_config['services'][service] = ovpn_services['services'][service]
+if 'services' in ovpn_services:
+    for service in ovpn_services['services']:
+        docker_config['services'][service] = ovpn_services['services'][service]
 
 with open(docker_compose_file, 'w') as f:
     f.write(yaml.dump(docker_config, default_flow_style=False))

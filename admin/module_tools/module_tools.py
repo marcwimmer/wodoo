@@ -17,7 +17,7 @@ from odoo_config import current_db
 from odoo_config import customs_dir
 from odoo_config import install_file
 from odoo_config import translate_path_into_machine_path
-from odoo_config import get_path_settings_customs
+from odoo_config import conf_override
 from myconfigparser import MyConfigParser
 import traceback
 import odoo_parser
@@ -530,12 +530,11 @@ def switch_customs_and_db(customs, db):
     if hasattr(conf, 'write'):
         conf.write()
 
-    config = MyConfigParser(get_path_settings_customs())
+    config = conf_override()
     config['CUSTOMS'] = customs
     config['DBNAME'] = db
     if hasattr(conf, 'write'):
         config.write()
-    execute_managesh('update-source')
     execute_managesh('up', '-d', do_async=True)
 
 def update_module_file(current_file):

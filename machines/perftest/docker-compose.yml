@@ -8,7 +8,6 @@ services:
     build: ../machines/perftest
     env_file:
         - ../settings
-        - ../settings.customs
     environment:
       DURATION_TO_OUTPUT: 2
       SLEEP: 10

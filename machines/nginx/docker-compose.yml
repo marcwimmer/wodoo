@@ -8,7 +8,6 @@ services:
       - "${ODOO_PORT}:80"
     env_file:
         - ../settings
-        - ../settings.customs
     volumes:
       - ../machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
       - ../run/nginx_paths:/etc/nginx/paths

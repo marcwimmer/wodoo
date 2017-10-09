@@ -17,6 +17,9 @@ class MyConfigParser:
         self.debug = debug
         self._open()
 
+    def keys(self):
+        return self.quoteOptions.keys()
+
     def _open(self):
         try:
             with open(self.fileName, 'r') as file:
