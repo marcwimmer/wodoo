@@ -382,11 +382,12 @@ function prepare_yml_files_from_template_files() {
 	#
 	# - also replace all environment variables
 	find "$DIR/run" -name '*docker-compose*.yml' -delete
-	all_dirs="machines"
+        declare -a all_dirs
+	all_dirs[0]="machines"
 	if [[ -d "$CUSTOMS_DIR/machines" ]]; then
-		all_dirs="$all_dirs $CUSTOMS_DIR/machines"
+		all_dirs[1]="$CUSTOMS_DIR/machines"
 	fi
-	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[*]}" -name 'docker-compose*.yml')
+	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name 'docker-compose*.yml')
 	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES PYTHONPATH="$PYTHONPATH" python "$DIR/bin/prepare_dockercompose_files.py" "$docker_compose_file")
 
 	# append custom docker composes
@@ -419,6 +420,7 @@ function do_command() {
 	install-deps)
 		apt install -y python-psycopg2 python-pip pigz shellcheck
 		pip install pip --upgrade
+                pip install hiyapyco
 		pip install lxml
 		pip install configobj
 		pip install unidecode
