@@ -5,10 +5,21 @@ Manages versioning of submodules.
 """
 import sys
 import subprocess
-from module_tools import module_tools
-from module_tools import odoo_config
+import module_tools
+import odoo_config
+import shutil
+import os
+import tempfile
+from myconfigparser import MyConfigParser
 
-if len(sys.argv) <= 1:
+if len(sys.argv) >= 2:
+    action = sys.argv[1]
+else:
+    action = None
+
+customs_dir = odoo_config.customs_dir()
+
+def display_help():
     print "How to use:"
     print ""
     print "odoo-git new-ticket <ticketname>"
@@ -20,28 +31,68 @@ if len(sys.argv) <= 1:
     print ""
     sys.exit(-1)
 
-action = sys.argv[1]
-
-if action not in ['new-ticket', 'deploy', 'master']:
-    print "Invalid verb!"
-    sys.exit(-1)
-
-if action in ['new-ticket', 'deploy'] and len(sys.argv) < 3:
-    print "Please provide ticket name!"
-    sys.exit(-1)
-
-
-path = odoo_config.customs_dir()
-
-if action == 'new-ticket':
+def action_new_ticket():
+    if action in ['new-ticket', 'deploy'] and len(sys.argv) < 3:
+        print "Please provide ticket name!"
+        sys.exit(-1)
     branch = sys.argv[2]
     try:
-        subprocess.check_call(['/usr/bin/git', 'stash'], cwd=path).strip()
+        subprocess.check_call(['/usr/bin/git', 'stash'], cwd=customs_dir).strip()
     except: pass
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=path)
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch], cwd=path)
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir)
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch], cwd=customs_dir)
     print ""
     print ""
     print "Switch to new branch: {}".format(branch)
     print ""
     print ""
+
+def unit_tests():
+    # make new customs
+    customs = 'vunittest'
+
+    customs_dir = os.path.join(odoo_config.customs_root(), customs)
+    assert '/' + customs in customs_dir, customs_dir
+    submodule1 = 'submodules_a'
+    def make_demo_customs(path):
+        if os.path.exists(customs_dir):
+            shutil.rmtree(customs_dir)
+        os.makedirs(customs_dir)
+        os.chdir(customs_dir)
+        os.system("git init .")
+
+        with open(os.path.join(customs_dir, '.version'), 'w') as f:
+            f.write("9.0")
+        with open(os.path.join(customs_dir, '.odoo.ast'), 'w') as f:
+            f.write("")
+
+        # make submodule
+        path_submodule1 = tempfile.mkdtemp()
+        os.chdir(path_submodule1)
+        os.system("git init .")
+        os.system("mkdir -p 7.0/module1; mkdir 7.0/module2")
+        os.system("mkdir -p 9.0/module1; mkdir 9.0/module2")
+        for v in ['7.0', '9.0']:
+            for mod in ['module1', 'module2']:
+                with open('{v}/{mod}/__openerp__.py'.format(**locals()), 'w') as f:
+                    f.write("{'version': '1.0'}")
+        os.system('git add .; git commit -am ....')
+
+    make_demo_customs(customs_dir)
+    odoo_config.set_customs(customs)
+    # make demo customs
+
+actions = {
+    'new-ticket': action_new_ticket,
+    'unit-test': unit_tests,
+    'unit-tests': unit_tests,
+    'help': display_help,
+}
+
+
+if action not in actions:
+    print "Invalid verb: {}".format(action)
+    display_help()
+    sys.exit(-1)
+else:
+    actions[action]()
