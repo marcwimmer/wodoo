@@ -159,10 +159,9 @@ def translate_path_relative_to_customs_root(path):
 
 def set_customs(customs, dbname=None):
     dbname = dbname or customs
-    with open(os.path.join(odoo_root(), 'settings.customs'), 'w') as f:
-        f.write("CUSTOMS={}".format(customs))
-        f.write("\n")
-        f.write("DBNAME={}".format(dbname))
-        f.write("\n")
-
+    root = odoo_root()
+    conf = MyConfigParser(os.path.join(root, 'settings'))
+    conf['CUSTOMS'] = customs
+    conf['DBNAME'] = dbname
+    conf.write()
     execute_managesh("prepare")
