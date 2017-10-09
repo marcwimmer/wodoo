@@ -3,3 +3,4 @@ pudb
 docker-compose
 gitpython
 watchdog
+hiyapyco
