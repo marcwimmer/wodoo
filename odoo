@@ -1162,6 +1162,7 @@ function main() {
 		sanity_check
 		export odoo_manager_started_once=1
 
+		cd "$DIR"
 		do_command "${ARGS[@]}"
 		cleanup
 	fi
