@@ -420,7 +420,6 @@ function do_command() {
 	install-deps)
 		apt install -y python-psycopg2 python-pip pigz shellcheck
 		pip install pip --upgrade
-                pip install hiyapyco
 		pip install lxml
 		pip install configobj
 		pip install unidecode
