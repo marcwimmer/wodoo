@@ -136,6 +136,7 @@ env.write()
 
 	[[ "$VERBOSE" == "1" ]] && set -x
 
+    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME -f $docker_compose_file"
 	return 0
 }
 
@@ -401,7 +402,6 @@ function prepare_yml_files_from_template_files() {
 	#fi
 	#echo $ALL_CONFIG_FILES
 
-    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME -f $docker_compose_file"
 	return 0
 }
 
@@ -872,11 +872,6 @@ function do_command() {
         dcrun "${domain}_ovpn_manage" make_default_keys.sh
         dcrun "${domain}_ovpn_manage" pack_server_conf.sh
         ;;
-    #make-keys)
-        #export dc=$dc
-        #bash $DIR/machines/openvpn/bin/pack.sh
-        #$dc rm -f
-        #;;
     export-i18n)
         LANG=$2
         MODULES=$3
@@ -1153,11 +1148,18 @@ function main() {
 
 		default_confs "${ARGS[@]}"
 		export_settings
-		prepare_filesystem
-		prepare_yml_files_from_template_files
-		setup_odoo_instances
-		setup_nginx_paths
-		update_openvpn_domains 
+		case $1 in
+			up|test)
+				prepare_filesystem
+				prepare_yml_files_from_template_files
+				setup_odoo_instances
+				setup_nginx_paths
+				update_openvpn_domains 
+				;;
+
+			*)
+			;;
+		esac
 		sanity_check
 		export odoo_manager_started_once=1
 
