@@ -17,6 +17,10 @@ class MyConfigParser:
         self.debug = debug
         self._open()
 
+    def apply(self, other):
+        for k in other.keys():
+            self[k] = other[k]
+
     def keys(self):
         return self.quoteOptions.keys()
 

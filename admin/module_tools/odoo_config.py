@@ -77,6 +77,9 @@ def get_env():
     else:
         root = odoo_root()
         conf = MyConfigParser(os.path.join(root, 'settings'))
+        if os.path.exists(os.path.join(root, 'settings.override')):
+            conf2 = MyConfigParser(os.path.join(root, 'settings.override'))
+            conf.apply(conf2)
 
     return conf
 

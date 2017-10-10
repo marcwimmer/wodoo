@@ -6,7 +6,6 @@ import sys
 import tempfile
 from yaml import load, dump
 from datetime import datetime
-import hiyapyco
 import subprocess
 import inspect
 odoo_home = os.environ['ODOO_HOME']
@@ -97,7 +96,33 @@ for path in set(paths):
     temp_files.add(os.path.basename(temp_path))
     del temp_path
 
+def post_process_complete_yaml_config(yml):
+    """
+    This is after calling docker-compose config, which returns the
+    complete configuration.
 
+    Aim is to take the volumes defined in odoo_base and append them
+    to all odoo containers.
+    """
+
+    with open(os.path.join(odoo_home, 'machines/odoo/docker-compose.yml')) as f:
+        odoodc = load(f.read())
+
+    for odoomachine in odoodc['services']:
+        if odoomachine == 'odoo_base':
+            continue
+        machine = yml['services'][odoomachine]
+
+        for k in ['volumes']:
+            machine[k] = []
+            for x in yml['services']['odoo_base'][k]:
+                machine[k].append(x)
+    yml['services'].pop('odoo_base')
+
+    return yml
+
+
+# call docker compose config to get the complete config
 files = sorted(temp_files, key=lambda x: float(x.split("/")[-1].replace("-", ".")))
 cmdline = []
 cmdline.append("/usr/local/bin/docker-compose")
@@ -115,6 +140,11 @@ try:
 except:
     raise
 else:
+
+    # post-process config config
+    conf = post_process_complete_yaml_config(load(conf))
+    conf = dump(conf, default_flow_style=False)
+
     with open(dest_file, 'w') as f:
         f.write(conf)
 finally:
