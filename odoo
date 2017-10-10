@@ -1148,7 +1148,7 @@ function main() {
 		default_confs "${ARGS[@]}"
 		export_settings
 		case $1 in
-			up|test)
+			up|test|build)
 				prepare_filesystem
 				prepare_yml_files_from_template_files
 				setup_odoo_instances
