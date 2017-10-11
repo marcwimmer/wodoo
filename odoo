@@ -786,19 +786,19 @@ function do_command() {
         $dc rm -f odoo_update
         $dc up -d postgres && sleep 3
 
-        dcrun odoo_update /update_modules.sh "$2" || {
-			echo "Module Update failed"
-			exit -1
-		}
+        dcrun odoo_update /update_modules.sh "$2" || true
+		$MANAGE show-install-state || exit 34
+
         $dc kill odoo nginx
         if [[ "$RUN_ASTERISK" == "1" ]]; then
             $dc kill ari stasis
         fi
-        $dc kill odoo
+        $dc kill
         $dc rm -f
         $dc up -d
         python "$DIR/bin/telegram_msg.py" "Update done" &> /dev/null
         echo 'Removing unneeded containers'
+		sleep 10
         $dc kill nginx
         $dc up -d
         df -h / # case: after update disk / was full
@@ -807,6 +807,22 @@ function do_command() {
 		fi
 
        ;;
+
+	show-install-state)
+		SQL=$(cat <<-EOF
+			SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');
+			EOF
+			)
+		echo "Displaying dangling modules:"
+		echo "$SQL" | $MANAGE psql "$DBNAME"
+
+		has_dangling=$(echo "$SQL" | $MANAGE psql "$DBNAME" | grep "(0 rows)")
+		if [[ -z "$has_dangling" ]]; then
+			echo "Dangling modules detected - please fix installation problems and retry!"
+			exit -32
+		fi
+
+		;;
 
     show-openvpn-ciphers)
 	   dcrun ovpn_minimal /usr/sbin/openvpn --show-ciphers
