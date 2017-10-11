@@ -42,6 +42,7 @@ function get_CUSTOMS_DIR() {
 
 function default_confs() {
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+	MANAGE="$DIR/odoo"
 	local ARGS=("$@")
 	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
@@ -77,7 +78,6 @@ function default_confs() {
 		cp "$tempfile" "$filepath_settings"
 
 	fi
-
 
 }
 
@@ -620,7 +620,6 @@ function do_command() {
 	psql)
 		# gets sql query from pipe
 		# check if there is a pipe argument
-        set -x
 		local query=""
 		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
 			query="$(cat /dev/stdin)"
@@ -1134,6 +1133,25 @@ function setup_nginx_paths() {
 	return 0
 }
 
+
+function remember_customs_and_cry_if_changed() {
+	# if customs changed, then restart is required
+	if [[ "$odoo_manager_started_once" == "1" ]]; then
+		return 0
+	fi
+
+	current_customs=$(cd "$DIR"; dcexec odoo env | grep "^CUSTOMS=" || echo "")
+	current_customs=${current_customs/CUSTOMS=/}
+
+	if [[ -n "$current_customs" && "$current_customs" != "$CUSTOMS" ]]; then
+		echo "Customs changed - you need to restart and/or rebuild!"
+		sleep 3
+		"$MANAGE" kill
+	fi
+
+	return 0
+}
+
 function main() {
 	set -e
 	local ARGS=("$@")
@@ -1145,8 +1163,10 @@ function main() {
 
 	else
 
+		export odoo_manager_started_once=1
 		default_confs "${ARGS[@]}"
 		export_settings
+		remember_customs_and_cry_if_changed
 		case $1 in
 			up|test|build)
 				prepare_filesystem
@@ -1160,7 +1180,6 @@ function main() {
 			;;
 		esac
 		sanity_check
-		export odoo_manager_started_once=1
 
 		cd "$DIR"
 		do_command "${ARGS[@]}"
@@ -1170,7 +1189,6 @@ function main() {
 
 
 ARGS=("$@")
-MANAGE="$0"
 main "${ARGS[@]}"
 
 
