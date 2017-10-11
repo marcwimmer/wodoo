@@ -1,0 +1,6 @@
+.odoo.ast
+.DS_Store
+*.pyc
+*.swp
+run
+__pycache__
