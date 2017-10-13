@@ -18,6 +18,7 @@ from odoo_config import customs_dir
 from odoo_config import install_file
 from odoo_config import translate_path_into_machine_path
 from odoo_config import set_customs
+from odoo_config import translate_path_relative_to_customs_root
 from myconfigparser import MyConfigParser
 import traceback
 import odoo_parser
@@ -133,11 +134,12 @@ def get_customs_modules(customs_path=None, mode=None):
 
     Called by odoo update
 
-    Fills contents of install file into installed modules-module.
-    Increases Version on need.
+    - fetches to be installed modules from install-file
+    - selects all installed, to_be_installed, to_upgrade modules from db and checks wether
+      they are from "us" or OCA
+      (often those modules are forgotten to be updated)
 
-
-    param customs_path: e.g. /opt/odoo/active_customs
+    :param customs_path: e.g. /opt/odoo/active_customs
 
     """
     customs_path = customs_path or customs_dir()
@@ -147,12 +149,30 @@ def get_customs_modules(customs_path=None, mode=None):
     if os.path.isfile(path_modules):
         with open(path_modules, 'r') as f:
             content = f.read().split('\n')
-            modules = [x for x in content[1:] if not x.startswith("#") and x]
+            modules_from_file = [x for x in content[1:] if not x.startswith("#") and x]
+        modules = sorted(list(set(get_all_installed_modules() + modules_from_file)))
 
-            if mode == 'to_install':
-                modules = [x for x in modules if not is_module_installed(x)]
-            print ','.join(modules)
-            return modules
+        installed_modules = set(list(get_all_installed_modules()))
+        all_non_odoo = list(get_all_non_odoo_modules())
+
+        modules = [x for x in all_non_odoo if x in installed_modules]
+        modules += modules_from_file
+        modules = list(set(modules))
+
+        if mode == 'to_install':
+            modules = [x for x in modules if not is_module_installed(x)]
+        print ','.join(modules)
+
+        return modules
+
+def get_all_non_odoo_modules():
+    """
+    Returns module names of all modules, that are from customs or OCA.
+    """
+    for manifest in get_all_manifests():
+        relpath = translate_path_relative_to_customs_root(manifest)
+        if any(relpath.startswith(x) for x in ['common/', 'modules/', 'OCA/']):
+            yield get_module_of_file(manifest)
 
 def get_all_module_dependency_tree(all_manifests=None):
     """
@@ -339,6 +359,27 @@ def is_module_dir_in_version(module_dir):
 
     return result
 
+def get_all_installed_modules():
+    conn, cr = get_conn()
+    try:
+        cr.execute("select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');")
+        return [x[0] for x in cr.fetchall()]
+    finally:
+        cr.close()
+        conn.close()
+
+def get_module_state(module):
+    conn, cr = get_conn()
+    try:
+        cr.execute("select name, state from ir_module_module where name = %s", (module,))
+        state = cr.fetchone()
+        if not state:
+            return False
+        return state[1]
+    finally:
+        cr.close()
+        conn.close()
+
 def is_module_installed(module):
     conn, cr = get_conn()
     try:
@@ -346,7 +387,7 @@ def is_module_installed(module):
         state = cr.fetchone()
         if not state:
             return False
-        return state[1] in ['installed', 'to_upgrade']
+        return state[1] in ['installed', 'to upgrade']
     finally:
         cr.close()
         conn.close()
@@ -702,3 +743,9 @@ def update_view_in_db(filepath, lineno):
             finally:
                 cr.close()
                 conn.close()
+
+
+if __name__ == '__main__':
+    mod = get_module_of_file("/home/marc/odoo/data/src/customs/cpb/common/tools/module_tools/__openerp__.py")
+    for x in get_all_non_odoo_modules():
+        print x

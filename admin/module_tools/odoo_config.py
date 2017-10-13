@@ -146,22 +146,19 @@ def translate_path_into_machine_path(path):
     return path
 
 def translate_path_relative_to_customs_root(path):
+    """
+    The customs must contain a significant file named
+    .customsroot to indicate the root of the customs
+    """
     path = os.path.realpath(path)
-    if path and path.startswith(odoo_root()):
-        path = path[len(odoo_root()):]
-
-    if 'data/src/customs' in path:
-        path = 'data/src/customs' + path.split('src/customs', 2)[-1]
-
-    path = [x for x in path.split("/") if x]
-    if path[0] == 'data':
-        if path[1] == 'src':
-            path = path[2:]
-    if path[0] == 'customs':
-        path = path[1:]
-    if path[0] == current_customs():
-        path = path[1:]
-    path = os.path.join(*path)
+    parent = path
+    while parent != '/':
+        if os.path.exists(os.path.join(parent, '.customsroot')):
+            break
+        parent = os.path.dirname(parent)
+    if parent == '/':
+        raise Exception("no .customsroot found!")
+    path = path[len(parent) + 1:]
     return path
 
 def set_customs(customs, dbname=None):
