@@ -1,5 +1,6 @@
 # install the apport exception handler if available
 import sys
+reload(sys)
 sys.setdefaultencoding("utf-8")
 
 try:
