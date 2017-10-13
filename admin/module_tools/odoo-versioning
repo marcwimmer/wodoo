@@ -11,6 +11,8 @@ import shutil
 import os
 import tempfile
 from myconfigparser import MyConfigParser
+import inspect
+current_file = os.path.abspath(inspect.getfile(inspect.currentframe())) # script directory
 
 if len(sys.argv) >= 2:
     action = sys.argv[1]
@@ -36,6 +38,7 @@ def action_new_ticket():
         print "Please provide ticket name!"
         sys.exit(-1)
     branch = sys.argv[2]
+    raise Exception("check if dirty")
     try:
         subprocess.check_call(['/usr/bin/git', 'stash'], cwd=customs_dir).strip()
     except: pass
@@ -53,13 +56,22 @@ def unit_tests():
 
     customs_dir = os.path.join(odoo_config.customs_root(), customs)
     assert '/' + customs in customs_dir, customs_dir
-    submodule1 = 'submodules_a'
+
+    def make_module(parent_path, modulename):
+        os.chdir(parent_path)
+        for v in ['7.0', '9.0']:
+            subprocess.check_call('mkdir -p "{modulename}/{v}"'.format(**locals()), cwd=parent_path, shell=True)
+            with open('{modulename}/{v}/__openerp__.py'.format(**locals()), 'w') as f:
+                f.write("{'version': '1.0'}")
+
     def make_demo_customs(path):
         if os.path.exists(customs_dir):
             shutil.rmtree(customs_dir)
         os.makedirs(customs_dir)
         os.chdir(customs_dir)
         os.system("git init .")
+        os.system('mkdir -p common')
+        os.system('mkdir -p modules')
 
         with open(os.path.join(customs_dir, '.version'), 'w') as f:
             f.write("9.0")
@@ -67,20 +79,31 @@ def unit_tests():
             f.write("")
 
         # make submodule
-        path_submodule1 = tempfile.mkdtemp()
-        os.chdir(path_submodule1)
-        os.system("git init .")
-        os.system("mkdir -p 7.0/module1; mkdir 7.0/module2")
-        os.system("mkdir -p 9.0/module1; mkdir 9.0/module2")
-        for v in ['7.0', '9.0']:
-            for mod in ['module1', 'module2']:
-                with open('{v}/{mod}/__openerp__.py'.format(**locals()), 'w') as f:
-                    f.write("{'version': '1.0'}")
-        os.system('git add .; git commit -am ....')
+        path_modules1 = tempfile.mkdtemp()
+        os.chdir(path_modules1)
+        make_module(path_modules1, 'submodule1_1')
+        make_module(path_modules1, 'submodule1_2')
+        make_module(path_modules1, 'submodule1_3')
+        make_module(os.path.join(customs_dir, 'modules'), 'module1')
+        subprocess.check_call("git init .", cwd=path_modules1, shell=True)
+        subprocess.check_call("git add .; git commit -am .", cwd=path_modules1, shell=True)
+
+        # clone submodules into common
+        os.chdir(customs_dir)
+        subprocess.check_call('git clone "{}" common/submodule1'.format(path_modules1), cwd=customs_dir, shell=True)
+
+    def v(*params):
+        cmd = [current_file] + list(params)
+        subprocess.check_call(cmd, cwd=customs_dir)
 
     make_demo_customs(customs_dir)
     odoo_config.set_customs(customs)
     # make demo customs
+
+    print 'Start working on a new ticket - customers ticket number is ticket#1'
+    v('new-ticket', 'ticket#1')
+    v('new-ticket', 'ticket#2')
+
 
 actions = {
     'new-ticket': action_new_ticket,

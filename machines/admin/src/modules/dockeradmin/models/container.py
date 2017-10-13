@@ -2,6 +2,8 @@
 import os
 import time
 from utils import get_containers
+from utils import start_container
+from utils import stop_container
 from utils import restart_container
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
@@ -13,6 +15,16 @@ class Container(models.Model):
     status = fields.Char("Status")
     all_attrs = fields.Text("Attrs")
     public_port = fields.Text("Public Ports")
+
+    @api.one
+    def start(self):
+        start_container(self.name)
+        return self.refresh_action()
+
+    @api.one
+    def stop(self):
+        stop_container(self.name)
+        return self.refresh_action()
 
     @api.one
     def restart(self):

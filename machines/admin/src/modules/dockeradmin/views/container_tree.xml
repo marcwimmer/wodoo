@@ -8,6 +8,8 @@
           <field name="name"/>
           <field name="status"/>
           <field name="public_port"/>
+          <button name="start" string="Start" type="object" icon='fa-start'/>
+          <button name="stop" string="Stop" type="object" icon='fa-stop'/>
 		  <button name="restart" string="Restart" icon='fa-recycle' type="object" />
         </tree>
       </field>

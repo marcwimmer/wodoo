@@ -7,6 +7,8 @@
       <field name="arch" type="xml">
         <form string="" version="7.0">
           <header>
+            <button name="start" string="Start" type="object"/>
+            <button name="stop" string="Stop" type="object"/>
             <button name="restart" string="Restart" type="object"/>
           </header>
           <sheet>
