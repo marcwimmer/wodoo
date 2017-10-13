@@ -110,7 +110,7 @@ if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
 fi
 
 if [[ "$(is_module_installed "$MODULE")" != "1" && -n "$MODULE" ]]; then
-	ALL_MODULE=MODULE
+	ALL_MODULE=$MODULE
 
 	for i in ${MODULE//,/ }; do
 		MODULE=$i
