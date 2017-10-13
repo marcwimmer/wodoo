@@ -348,6 +348,8 @@ function showhelp() {
 	echo ""
 	echo "fix-permissions - sets user 1000 for odoo and odoo_files"
 	echo ""
+	echo "show-install-state "
+	echo ""
 	echo "make-customs"
     echo
 	echo ""
@@ -689,6 +691,10 @@ function do_command() {
 		display_machine_tips "$2"
         $dc exec "$2" bash
         ;;
+    run)
+		set_db_ownership
+        $dc run "${ALL_PARAMS[@]}"
+		;;
     runbash)
 		set_db_ownership
         if [[ -z "$2" ]]; then
@@ -774,6 +780,9 @@ function do_command() {
 
 		;;
     update)
+
+		$MANAGE abort-upgrade
+
         echo "Run module update"
 		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
 			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
@@ -781,9 +790,10 @@ function do_command() {
         if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
         fi
+		# running duplicate updates is really a problem;
         $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
         $dc kill odoo_update
-        $dc rm -f odoo_update
+        $dc rm -f
         $dc up -d postgres && sleep 3
 
         dcrun odoo_update /update_modules.sh "$2" || true
