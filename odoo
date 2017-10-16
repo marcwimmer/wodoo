@@ -80,7 +80,7 @@ function default_confs() {
 	fi
 
 	if [[ -z "$DEFAULT_USER" ]]; then
-		DEFAULT_USER="#1000"
+		DEFAULT_USER="1000"
 	fi
 }
 
@@ -366,7 +366,7 @@ fi
 
 function prepare_filesystem() {
     mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
-	chown 1000:1000 -R "$DIR"/run
+	sudo -E chown $DEFAULT_USER:$DEFAULT_USER -R "$DIR"/run
 	return 0
 }
 
@@ -395,7 +395,7 @@ function prepare_yml_files_from_template_files() {
 		all_dirs[1]="$CUSTOMS_DIR/machines"
 	fi
 	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name 'docker-compose*.yml')
-	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES PYTHONPATH="$PYTHONPATH" sudo -E -u "$DEFAULT_USER" python "$DIR/bin/prepare_dockercompose_files.py" "$docker_compose_file")
+	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES PYTHONPATH="$PYTHONPATH" sudo -E -u "#$DEFAULT_USER" python "$DIR/bin/prepare_dockercompose_files.py" "$docker_compose_file")
 
 	# append custom docker composes
 	# TODO append file contents to docker compose file
@@ -1092,9 +1092,9 @@ function reset_nginx_configs() {
 
 	paths_dir="$DIR/run/nginx_paths"
 	if [[ -d "$paths_dir" ]]; then
-		sudo -E -u "$DEFAULT_USER" find "${paths_dir:?}"/* -maxdepth 1 -type d -print0 | sudo -E -u "$DEFAULT_USER" xargs -0 rm -Rf {} \;
+		sudo -E -u "#$DEFAULT_USER" find "${paths_dir:?}"/* -maxdepth 1 -type d -print0 | sudo -E -u "#$DEFAULT_USER" xargs -0 rm -Rf {} \;
 	else
-		sudo -E -u "$DEFAULT_USER" mkdir -p "$paths_dir"
+		sudo -E -u "#$DEFAULT_USER" mkdir -p "$paths_dir"
 	fi
 }
 
@@ -1112,14 +1112,14 @@ function setup_odoo_instances() {
 			name="$(echo "$line"| awk '{print $1}')"
 			subdomain_path="$(echo "$line"| awk '{print $2}')"
 			config_path="$nginx_configs_dir/odoo_instance_${name}.conf"
-			sudo -u "$DEFAULT_USER" cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
+			sudo -u "#$DEFAULT_USER" cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
 			sed -i "s|__HTTP_HOST__|$subdomain_path|g" "$config_path"
 			# treat the name of the instance as domain; is used in setup_nginx_paths, too
 			sed -i "s|__PATH_DIR__|$name|g" "$config_path"
 
 			# adapt the one yml file and duplicate the odoo service there;
 			# removing any ports
-			sudo -E -u "$DEFAULT_USER" python <<EOF
+			sudo -E -u "#$DEFAULT_USER" python <<EOF
 import yaml, os
 from copy import deepcopy
 with open("$docker_compose_file") as f:
