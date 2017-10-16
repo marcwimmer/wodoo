@@ -1,6 +1,6 @@
 {   'application': False,
     'author': 'Marc Wimmer (marc@itewimmer.de)',
-    'auto_install': False,
+    'auto_install': True,
     'category': 'Odoo Docker Environment',
     'css': [],
     'data': [   'views/branch_tree.xml',

@@ -15,24 +15,34 @@ class Instance(models.Model):
     name = fields.Char("Name")
     hostname = fields.Char("Hostname", help="shipping.yourcompany.com")
     state = fields.Selection([('running', 'Running'), ('stopped', 'Stopped')], string='State', compute="_get_state", store=False)
+    technical_name = fields.Char(compute="_get_technical_name", help="Name of docker container for ./odoo up xxx")
+
+    @api.constrains('hostname')
+    def check_hostname(self):
+        if self.hostname:
+            if '/' in self.hostname:
+                raise ValidationError("Hostname may not contain '/'")
+
+    @api.one
+    def _get_technical_name(self):
+        self.technical_name = "odoo_{}".format(self.name)
 
     @api.one
     def _get_state(self):
         self.env['docker.container'].update_docker()
         containers = self.env['docker.container'].search([])
-        self.state = 'running' if containers.search_count([('name', '=', self.name)]) else 'stopped'
+        self.state = 'running' if containers.search_count([('name', '=', self.technical_name)]) else 'stopped'
 
     @api.multi
     def start(self):
         self.ensure_one()
-        start_container(self.name)
-        start_container(self.name)
+        start_container(self.technical_name)
         time.sleep(3)
 
     @api.multi
     def stop(self):
         self.ensure_one()
-        stop_container(self.name)
+        stop_container(self.technical_name)
         time.sleep(3)
         self._get_state()
 
@@ -89,8 +99,6 @@ class Instance(models.Model):
 
     @api.model
     def update_instances(self):
-        from pudb import set_trace
-        set_trace()
         self.search([]).with_context(NO_UPDATE=1).unlink()
 
         for line in self.get_content().split("\n"):

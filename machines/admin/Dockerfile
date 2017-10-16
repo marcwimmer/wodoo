@@ -98,6 +98,13 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
+ADD ssh/ /home/odoo/.ssh/
+RUN \
+chown odoo:odoo /home/odoo/.ssh -R && \
+chmod a-rwx -R /home/odoo/.ssh && \
+chmod u+rw -R /home/odoo/.ssh && \
+chmod u+x /home/odoo/.ssh
+
 ADD bin/ /
 ADD config/* /opt
 RUN chmod a+x /*.sh && \

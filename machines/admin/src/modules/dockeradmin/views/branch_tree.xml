@@ -7,9 +7,9 @@
         <tree default_order="" string="">
           <field name="name"/>
           <field name="merged_master"/>
-		  <button name="merge_master" string="Merge Master" type="object" />
+		  <button name="merge_master" string="Merge Master" type="object" attrs="{'invisible': [('merged_master', '=', True)]}"/>
           <field name="merged_deploy"/>
-		  <button name="merge_deploy" string="Merge Deploy" type="object" />
+		  <button name="merge_deploy" string="Merge Deploy" type="object" attrs="{'invisible': [('merged_master', '=', True), ('name', '!=', 'master')]}"/>
         </tree>
       </field>
     </record>

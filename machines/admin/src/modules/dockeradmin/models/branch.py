@@ -2,11 +2,18 @@
 import os
 import git
 import subprocess
+import logging
+import traceback
 from utils import get_branch
 from utils import get_submodules
+from utils import force_switch_branch
 from utils import is_branch_merged
+from utils import git_pull
+from utils import merge
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
+
+logger = logging.getLogger(__name__)
 
 
 class Branch(models.Model):
@@ -30,11 +37,21 @@ class Branch(models.Model):
 
     @api.multi
     def merge(self, to_branch):
+        self.ensure_one()
+        path = self.get_root_path()
+        try:
+            merge(path, self.name, to_branch)
+        except:
+            msg = traceback.format_exc()
+            logging.error(msg)
+            raise UserError("Automatic merge failed - please contact software-developer for merging.")
         return True
 
     @api.model
     def update_branches(self):
         path = self.get_root_path()
+        force_switch_branch(path, 'deploy')
+        git_pull(path)
         repo = git.Repo(path)
         self.search([]).unlink()
         for branch in repo.branches:
