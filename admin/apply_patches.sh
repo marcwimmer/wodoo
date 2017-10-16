@@ -1,6 +1,8 @@
 #!/bin/bash
-set -e
 [[ "$VERBOSE" == "1" ]] && set -x
+
+statfile=$(mktemp -u)
+echo 'good' > "$statfile"
 
 if [[ -z "$ODOO_VERSION" ]]; then
     echo "Version required!"
@@ -20,23 +22,51 @@ if [[ -z "$ACTIVE_CUSTOMS" ]]; then
 fi
 
 if [[ -d "$SERVER_DIR" ]]; then
-    echo "\n\n\nApplying patches: Customs $CUSTOMS Version $ODOO_VERSION in $SERVER_DIR"
+    echo ""
+    echo ""
+    echo "Applying patches: Customs $CUSTOMS Version $ODOO_VERSION in $SERVER_DIR"
+    echo ""
+    echo ""
     echo ""
 
-    cd $SERVER_DIR
-	find $ACTIVE_CUSTOMS -name '*.patch' |grep "\/$ODOO_VERSION\/" | while read f
+    cd "$SERVER_DIR" || exit -1
+	find "$ACTIVE_CUSTOMS" -name '*.patch' |grep "\/$ODOO_VERSION\/" | while read -r f
 	do
         echo 
         echo 
         echo "Applying patch $f"
         echo "Working directory: $(pwd)"
-        git apply "$f" || {
-            echo "\n\n\n\nError at $f\n\n\n"
-            exit -1
-        }
+		set +e
+        git apply "$f"
+		if [[ "$?" != "0" ]]; then
+			echo 'error' > "$statfile"
+			if [[ "$ALLOW_DIRTY_ODOO" != "1" ]]; then
+				echo
+				echo
+				echo "Error at $f"
+				echo
+				echo
+				exit -1
+			fi
+		fi
+		set -e
     done
 
-    echo "\n\n\nPatches successfully applied!"
+	echo
+	echo
+	echo
+	errors=$(cat "$statfile")
+	if [[ "$errors" == "good" ]]; then
+		echo "Patches successfully applied!"
+	else
+		if [[ "$ALLOW_DIRTY_ODOO" == "1" ]]; then
+			echo "Not all patches could be applied - but seems ok, since ALLOW_DIRTY_ODOO is set!"
+		else
+			echo "Error at applying patches."
+		fi
+	fi
+	echo
+	echo
     sleep 1
 else
     echo "Server-Directory $SERVER_DIR not found - no patches applied."

@@ -10,7 +10,8 @@ if [[ "$dirty" != 'clean' ]]; then
 	if [[ "$ALLOW_DIRTY_ODOO" == "1" ]]; then
 		echo "No patches applied - odoo is dirty - you probably try something in odoo source"
 		echo "Variable ALLOW_DIRTY_ODOO is set."
-		exit 0
+		echo 
+		echo "I am going to try to apply existing patches"
 	else
 		cd $SERVER_DIR
 		git checkout -f
@@ -19,8 +20,10 @@ if [[ "$dirty" != 'clean' ]]; then
 fi
 
 /opt/odoo/admin/apply_patches.sh || {
-    echo "Error at applying patches! Please check output and the odoo version"
-    exit -1
+	if [[ "$ALLOW_DIRTY_ODOO" != "1" ]]; then
+		echo "Error at applying patches! Please check output and the odoo version"
+		exit -1
+	fi
 }
 
 

@@ -1,5 +1,6 @@
 #!/bin/bash
 set +x
+/patch_odoo.sh
 "$ADMIN_DIR/link_modules"
 LOCKFILE=$(mktemp -u)
 echo "Starting debugger"
