@@ -1,0 +1,6 @@
+Host git.mt-software.de
+	Hostname git.mt-software.de
+	Port 50004
+	User odoo_per_admin_console
+	IdentityFile /home/odoo/.ssh/odoo_per_admin_console
+	StrictHostKeyChecking false
