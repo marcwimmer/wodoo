@@ -19,6 +19,7 @@ function dcexec() {
 
 function startup() {
 	local ARGS=("$@")
+	DEFAULT_USER="#1000"
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export odoo_manager_started_once=1
@@ -363,6 +364,7 @@ fi
 
 function prepare_filesystem() {
     mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
+	chown 1000:1000 -R "$DIR"/run
 	return 0
 }
 
@@ -391,7 +393,7 @@ function prepare_yml_files_from_template_files() {
 		all_dirs[1]="$CUSTOMS_DIR/machines"
 	fi
 	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name 'docker-compose*.yml')
-	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES PYTHONPATH="$PYTHONPATH" python "$DIR/bin/prepare_dockercompose_files.py" "$docker_compose_file")
+	ALL_CONFIG_FILES=$(ALL_CONFIG_FILES=$ALL_CONFIG_FILES PYTHONPATH="$PYTHONPATH" sudo -E -u "$DEFAULT_USER" python "$DIR/bin/prepare_dockercompose_files.py" "$docker_compose_file")
 
 	# append custom docker composes
 	# TODO append file contents to docker compose file
@@ -1079,7 +1081,27 @@ function awk() {
 	return 0
 }
 
+function reset_nginx_configs() {
+	local nginx_configs_dir
+	local paths_dir
+
+	nginx_configs_dir=$DIR/run/nginx_confs
+	find "${nginx_configs_dir:?}"/* -maxdepth 1 -print0 | xargs -0 rm -Rf {} \;
+
+	paths_dir="$DIR/run/nginx_paths"
+	if [[ -d "$paths_dir" ]]; then
+		sudo -E -u "$DEFAULT_USER" find "${paths_dir:?}"/* -maxdepth 1 -type d -print0 | sudo -E -u "$DEFAULT_USER" xargs -0 rm -Rf {} \;
+	else
+		sudo -E -u "$DEFAULT_USER" mkdir -p "$paths_dir"
+	fi
+}
+
 function setup_odoo_instances() {
+	local nginx_configs_dir
+	local name
+	local subdomain_path
+	local config_path
+
 	nginx_configs_dir=$DIR/run/nginx_confs
 	if [[ -f "$DIR/run/odoo_instances" ]]; then
 		rm "$nginx_configs_dir"/odoo_instance_* 1>/dev/null 2>&1 || true
@@ -1087,16 +1109,15 @@ function setup_odoo_instances() {
 		while read -r line; do
 			name="$(echo "$line"| awk '{print $1}')"
 			subdomain_path="$(echo "$line"| awk '{print $2}')"
-
 			config_path="$nginx_configs_dir/odoo_instance_${name}.conf"
-			cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
+			sudo -u "$DEFAULT_USER" cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
 			sed -i "s|__HTTP_HOST__|$subdomain_path|g" "$config_path"
 			# treat the name of the instance as domain; is used in setup_nginx_paths, too
 			sed -i "s|__PATH_DIR__|$name|g" "$config_path"
 
 			# adapt the one yml file and duplicate the odoo service there;
 			# removing any ports
-			python <<EOF
+			sudo -E -u "$DEFAULT_USER" python <<EOF
 import yaml, os
 from copy import deepcopy
 with open("$docker_compose_file") as f:
@@ -1112,25 +1133,22 @@ EOF
 
 		done <"$DIR/run/odoo_instances"
 	fi
-	chmod a+rwx "$nginx_configs_dir"
-	chmod a+rw "$nginx_configs_dir" -R
 	return 0
 	
 }
 
 function setup_nginx_paths() {
 	URLPATH_DIR="$DIR/run/nginx_paths"
-	if [[ -d "$URLPATH_DIR" ]]; then
-		rm -Rf "${URLPATH_DIR:?}/*"
-	else
-		mkdir -p "$URLPATH_DIR"
-	fi
 
 	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
 		content=$(
 			envsubst < "$f"
 		)
 		while read -r line; do
+			local URLPATH
+			local MACHINE
+			local PORT
+
 			URLPATH=$(echo "$line" | awk '{print $1}')
 			MACHINE=$(echo "$line" | awk '{print $2}')
 			PORT=$(echo "$line" | awk '{print $3}')
@@ -1143,19 +1161,17 @@ function setup_nginx_paths() {
 			"$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR" 
 
 			# set subdomains also for other odoo instances
-			if [[ -f "$DIR/run/odoo_instances" ]]; then
+			if [[ -f "$DIR/run/odoo_instances" && "$MACHINE" == "odoo" ]]; then
 				while read -r line; do
 					name="$(echo "$line"| awk '{print $1}')"
-					domain=$name
-					container_name=$name  # e.g. odoo
-				    "$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$container_name" "$PORT" "$URLPATH_DIR" "" "$domain"
+					hostname="$(echo "$line"| awk '{print $2}')"
+					container_name="odoo_$name"  # e.g. odoo
+				    "$DIR/machines/nginx/add_nginx_path.sh" "/" "$container_name" "$PORT" "$URLPATH_DIR" "" "$hostname"
 
 				done <"$DIR/run/odoo_instances"
 			fi
 		done <<< "$content"
 	done
-	chmod a+rwx "$URLPATH_DIR"
-	chmod a+rw "$URLPATH_DIR" -R
 	return 0
 }
 
@@ -1197,6 +1213,7 @@ function main() {
 			up|test|build)
 				prepare_filesystem
 				prepare_yml_files_from_template_files
+				reset_nginx_configs
 				setup_odoo_instances
 				setup_nginx_paths
 				update_openvpn_domains 
