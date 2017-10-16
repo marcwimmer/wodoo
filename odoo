@@ -19,7 +19,6 @@ function dcexec() {
 
 function startup() {
 	local ARGS=("$@")
-	DEFAULT_USER="#1000"
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export odoo_manager_started_once=1
@@ -80,6 +79,9 @@ function default_confs() {
 
 	fi
 
+	if [[ -z "$DEFAULT_USER" ]]; then
+		DEFAULT_USER="#1000"
+	fi
 }
 
 function file2env() {
