@@ -952,6 +952,14 @@ function do_command() {
 	test)
 		echo 'reached the command area'
 		;;
+	progress)
+		SQL=$(cat <<-EOF
+			select state, count(*) from ir_module_module group by state;
+			EOF
+			)
+		echo "$SQL" | $MANAGE psql "$DBNAME"
+
+		;;
 	prepare)
 		echo "All configurations prepared."
 		;;
