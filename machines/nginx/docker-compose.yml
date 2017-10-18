@@ -13,5 +13,4 @@ services:
       - ../run/nginx_paths:/etc/nginx/paths
       - ../run/nginx_confs:/etc/nginx/conf.d
       - ../machines/nginx/bin:/opt/bin
-      - ../machines/nginx/default_server.conf:/etc/nginx/conf.d/default_server.conf
     command: /bin/bash /opt/bin/run.sh
