@@ -84,7 +84,7 @@ for path in set(paths):
                 if 'services' in j:
                     for service in j['services']:
                         service = j['services'][service]
-                        if 'env_file' in service:
+                        if service and 'env_file' in service:
                             if isinstance(service['env_file'], (str, unicode)):
                                 service['env_file'] = [service['env_file']]
                             if not [x for x in service['env_file'] if x == '../settings.override']:
