@@ -427,6 +427,7 @@ function do_command() {
 		apt install -y python-psycopg2 python-pip pigz shellcheck
 		pip install pip --upgrade
 		pip install lxml
+		pip install pyyaml
 		pip install configobj
 		pip install unidecode
 		pip install requests[security]
