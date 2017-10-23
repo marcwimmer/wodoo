@@ -93,7 +93,8 @@ useradd -ms /bin/bash odoo
 ADD sysroot/ /
 RUN \
 chown odoo:odoo /home/odoo -R && \
-rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
+rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1 && \
+adduser odoo sudo
 
 ADD requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt

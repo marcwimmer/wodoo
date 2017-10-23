@@ -19,7 +19,7 @@ services:
         DBNAME: admin
         LOGLEVEL: info
         INSTANCES_FILE: $ODOO_HOME/run/odoo_instances
-        ODOO_HOME: $ODOO_HOME
+        ODOO_HOME: /opt/odoo
         DCPREFIX: $DCPREFIX
         MINIMUM_CONTAINERS: nginx,redis
     env_file:
