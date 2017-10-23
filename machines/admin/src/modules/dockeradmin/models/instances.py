@@ -121,8 +121,7 @@ class Instance(models.Model):
             'view_type': 'form',
             'res_model': self._name,
             'view_id': False,
-            #'views': [(False, 'tree'), (False, 'form')],
-            'views': [(False, 'tree')],
+            'views': [(False, 'tree'), (False, 'form')],
             'type': 'ir.actions.act_window',
             'flags': {'form': {
                 'action_buttons': True,
