@@ -29,6 +29,7 @@ class Instance(models.Model):
 
     @api.one
     def _get_state(self):
+        self.state = 'running'
         self.env['docker.container'].update_docker()
         containers = self.env['docker.container'].search([])
         self.state = 'running' if containers.search_count([('name', '=', self.technical_name)]) else 'stopped'
@@ -49,19 +50,23 @@ class Instance(models.Model):
     @api.model
     def create(self, vals):
         result = super(Instance, self).create(vals)
-        self.update_contents()
+        if self.env.context.get("INSTANCE_UPDATE", False):
+            self.update_contents()
         return result
 
     @api.multi
     def write(self, vals):
         super(Instance, self).write(vals)
-        self.update_contents()
+
+        if self.env.context.get("INSTANCE_UPDATE", False):
+            self.update_contents()
         return True
 
     @api.multi
     def unlink(self):
         super(Instance, self).unlink()
-        self.update_contents()
+        if self.env.context.get("INSTANCE_UPDATE", False):
+            self.update_contents()
         return True
 
     @api.model
@@ -86,8 +91,6 @@ class Instance(models.Model):
 
     @api.model
     def update_contents(self):
-        if self.env.context.get("NO_UPDATE", False):
-            return True
         content = []
         for rec in self.search([]):
             content.append("{} {}".format(
@@ -99,14 +102,16 @@ class Instance(models.Model):
 
     @api.model
     def update_instances(self):
-        self.search([]).with_context(NO_UPDATE=1).unlink()
+        self.search([]).unlink()
+
+        instances = self.env['docker.odoo.instance']
 
         for line in self.get_content().split("\n"):
             if not line:
                 continue
             name, hostname = line.split(" ")
 
-            self.create({
+            instances |= self.create({
                 'name': name,
                 'hostname': hostname
             })
@@ -116,12 +121,17 @@ class Instance(models.Model):
             'view_type': 'form',
             'res_model': self._name,
             'view_id': False,
-            'views': [(False, 'tree'), (False, 'form')],
+            #'views': [(False, 'tree'), (False, 'form')],
+            'views': [(False, 'tree')],
             'type': 'ir.actions.act_window',
             'flags': {'form': {
                 'action_buttons': True,
             }},
             'options': {
             },
+            'domain': [('id', 'in', instances.ids)],
             'target': 'current',
+            'context': {
+                'INSTANCE_UPDATE': True,
+            }
         }

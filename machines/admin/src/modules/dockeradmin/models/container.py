@@ -15,6 +15,7 @@ class Container(models.Model):
     status = fields.Char("Status")
     all_attrs = fields.Text("Attrs")
     public_port = fields.Text("Public Ports")
+    active = fields.Boolean(default=True)
 
     @api.one
     def start(self):
@@ -50,7 +51,9 @@ class Container(models.Model):
 
     @api.model
     def update_docker(self):
-        self.search([]).unlink()
+        self.search([]).write({
+            'active': False
+        })
 
         minimum_containers = os.getenv("MINIMUM_CONTAINERS", "").split(',')
 
