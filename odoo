@@ -994,6 +994,12 @@ function try_to_set_owner() {
 }
 
 function sanity_check() {
+
+	grep -q "DEFAULT_USER=" < "$ODOO_HOME"/settings || {
+		echo "Please define DEFAULT_USER=1000 at least in settings."
+		exit -1
+	}
+
     if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
         echo "Either configure DB_HOST to point to the docker container or turn it off by: "
