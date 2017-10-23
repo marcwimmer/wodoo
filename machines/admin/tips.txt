@@ -3,3 +3,7 @@ How to use:
 run /run.sh for debugging
 
 run /run.sh dropdb for reset and start debugging
+
+PLEASE WAIT TILL ADMIN INTERFACES STARTET UP: 
+  * call htop
+  * watch until python odoo is away

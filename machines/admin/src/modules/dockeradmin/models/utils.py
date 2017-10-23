@@ -23,7 +23,15 @@ def start_container(name):
     """
     :param name: e.g. odoo, asterisk
     """
-    subprocess.check_call([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'up', '-d', name], cwd=os.environ['ODOO_HOME'])
+    try:
+        proc = subprocess.Popen([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'up', '-d', name], cwd=os.environ['ODOO_HOME'])
+        std, err = proc.communicate()
+        if err:
+            raise Exception(std + "\n=================================\n" + err)
+    except:
+        msg = traceback.format_exc()
+        raise Exception(msg)
+
 
 def stop_container(name):
     """
