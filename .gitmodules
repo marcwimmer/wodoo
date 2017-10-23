@@ -1,0 +1,5 @@
+[submodule "machines/admin/src/odoo"]
+	path = machines/admin/src/odoo
+	url = https://github.com/odoo/odoo
+        branch = 10.0
+
