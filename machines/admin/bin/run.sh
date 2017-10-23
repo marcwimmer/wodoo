@@ -1,9 +1,7 @@
 #!/bin/bash
 
-dev=""
-
 if [[ "$ADMINDEBUG" == "1" ]]; then
-	dev="--dev=all, pudb, reload, qweb, werkzeug, xmlall"
+	dev="--dev='all, pudb, reload, qweb, werkzeug, xmlall'"
 fi
 
 if [[ "$1" == "dropdb" ]]; then
