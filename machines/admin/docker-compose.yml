@@ -14,7 +14,7 @@ services:
     volumes:
       - ../machines/admin/src:/opt/src
       - /var/run/docker.sock:/var/run/docker.sock
-      - $ODOO_HOME:$ODOO_HOME
+      - $ODOO_HOME:/opt/odoo
     environment:
         DBNAME: admin
         LOGLEVEL: info
