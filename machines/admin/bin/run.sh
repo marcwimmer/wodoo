@@ -12,8 +12,14 @@ if [[ "$1" == "dropdb" ]]; then
 	EOF
 fi
 
-gosu odoo "/opt/src/odoo/odoo-bin" \
-	-c "/opt/config_openerp"  \
-	-d "$DBNAME" \
-	--log-level="$LOGLEVEL" \
-	"$dev"
+declare -a cmd
+cmd+=(gosu odoo)
+cmd+=("/opt/src/odoo/odoo-bin")
+cmd+=("-c" "/opt/config_openerp")
+cmd+=("-d" "$DBNAME")
+cmd+=("--log-level"  "$LOGLEVEL")
+if [[ -n "$dev" ]]; then
+	cmd+=("$dev")
+fi
+
+eval "${cmd[@]}"
