@@ -5,7 +5,7 @@ services:
   odoo_base: &odoo_base
     container_name: ${DCPREFIX}_odoo_base
     build:
-        context: ../machines/odoo
+        context: $HOST_ODOO_HOME/machines/odoo
         args:
           ODOO_VERSION: ${ODOO_VERSION}
     security_opt:
@@ -18,12 +18,12 @@ services:
     volumes:
       - ${DUMPS_PATH}:/opt/dumps
       - ${ODOO_FILES}/:/opt/files
-      - ../admin:/opt/odoo/admin
-      - ../data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
-      - ../run/debug:/tmp/debug
+      - ${HOST_ODOO_HOME}/admin:/opt/odoo/admin
+      - ${HOST_ODOO_HOME}/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
+      - ${HOST_ODOO_HOME}/run/debug:/tmp/debug
     env_file:
-      - ../settings
-      - ../machines/odoo/docker-env
+      - $HOST_ODOO_HOME/settings
+      - $HOST_ODOO_HOME/machines/odoo/docker-env
     command: echo 'odoo_base - good bye - it is ok!'
 
   odoo: &odoo

@@ -5,16 +5,16 @@ volumes:
 services:
   postgres:
     container_name: ${DCPREFIX}_postgres
-    build: ../machines/postgres
+    build: $HOST_ODOO_HOME/machines/postgres
     volumes:
       - ${DUMPS_PATH}:/opt/dumps
-      - ../run/sqlscripts:/opt/sqlscripts
+      - $HOST_ODOO_HOME/run/sqlscripts:/opt/sqlscripts
       - postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 1
       PGDATA: /var/lib/postgresql/data/pgdata
     env_file:
-      - ../settings
+      - $HOST_ODOO_HOME/settings
 
     healthcheck:
         test: ["CMD-SHELL", "pg_isready"]

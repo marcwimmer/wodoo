@@ -10,17 +10,17 @@ services:
   # public mail server can receive mails
   mail:
     container_name: ${DCPREFIX}_mail
-    build: ../machines/mail
+    build: $HOST_ODOO_HOME/machines/mail
     volumes:
       - mailstorage:/home/postmaster/Maildir
       - mailsqlite:/rc
-      - ../machines/mail/bin:/opt/bin
+      - $HOST_ODOO_HOME/machines/mail/bin:/opt/bin
     ports:
       - "${SMTP_PORT}:25"
 
   roundcube:
     container_name: ${DCPREFIX}_roundcube
-    build: ../machines/roundcube
+    build: $HOST_ODOO_HOME/machines/roundcube
     ports:
       - "${ROUNDCUBE_PORT}:80"
     environment:
@@ -29,13 +29,13 @@ services:
   # internal mail server to check outgoing odoo mails
   roundcube_check_sent_mails:
     container_name: ${DCPREFIX}_roundcube_check_sent_mails
-    build: ../machines/roundcube
+    build: $HOST_ODOO_HOME/machines/roundcube
     environment:
       MAIL_SERVER: mail_check_sent_mails
 
   mail_check_sent_mails:
     container_name: ${DCPREFIX}_mail_check_sent_mails
-    build: ../machines/mail
+    build: $HOST_ODOO_HOME/machines/mail
     volumes:
-      - ../data/mail/odoo_sent_mails/maildir:/home/postmaster/Maildir
-      - ../data/mail/odoo_sent_mails/sqlite:/rc
+      - $HOST_ODOO_HOME/data/mail/odoo_sent_mails/maildir:/home/postmaster/Maildir
+      - $HOST_ODOO_HOME/data/mail/odoo_sent_mails/sqlite:/rc

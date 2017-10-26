@@ -4,7 +4,7 @@ version: '3.3'
 services:
   admin:
     container_name: ${DCPREFIX}_admin
-    build: ../machines/admin
+    build: $HOST_ODOO_HOME/machines/admin
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -12,9 +12,9 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
     volumes:
-      - ../machines/admin/src:/opt/src
+      - $HOST_ODOO_HOME/machines/admin/src:/opt/src
       - /var/run/docker.sock:/var/run/docker.sock
-      - $ODOO_HOME:/opt/odoo
+      - $HOST_ODOO_HOME:/opt/odoo
     environment:
         DBNAME: admin
         LOGLEVEL: info
@@ -23,7 +23,7 @@ services:
         DCPREFIX: $DCPREFIX
         MINIMUM_CONTAINERS: nginx,redis
     env_file:
-      - ../settings
+      - $HOST_ODOO_HOME/settings
     command: /rootrun.sh
     ports:
        - "4488:8069"

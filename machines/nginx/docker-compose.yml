@@ -7,10 +7,10 @@ services:
     ports:
       - "${ODOO_PORT}:80"
     env_file:
-        - ../settings
+        - $HOST_ODOO_HOME/settings
     volumes:
-      - ../machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
-      - ../run/nginx_paths:/etc/nginx/paths
-      - ../run/nginx_confs:/etc/nginx/conf.d
-      - ../machines/nginx/bin:/opt/bin
+      - $HOST_ODOO_HOME/machines/nginx/nginx_${ODOO_VERSION}.conf:/mysite.template
+      - $HOST_ODOO_HOME/run/nginx_paths:/etc/nginx/paths
+      - $HOST_ODOO_HOME/run/nginx_confs:/etc/nginx/conf.d
+      - $HOST_ODOO_HOME/machines/nginx/bin:/opt/bin
     command: /bin/bash /opt/bin/run.sh

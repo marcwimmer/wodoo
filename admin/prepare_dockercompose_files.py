@@ -9,10 +9,10 @@ from datetime import datetime
 import subprocess
 import inspect
 odoo_home = os.environ['ODOO_HOME']
-
-paths = os.environ['ALL_CONFIG_FILES'].split("\n")
+host_odoo_home = os.environ['HOST_ODOO_HOME']
 
 dest_file = sys.argv[1]
+paths = sys.argv[2].split("\n")
 
 temp_files = set()
 tempdir = tempfile.mkdtemp()
@@ -32,7 +32,8 @@ def replace_all_envs_in_file(filepath):
         name = param
         name = name.replace("${", "")
         name = name.replace("}", "")
-        content = content.replace(param, os.environ[name])
+        if name in os.environ:
+            content = content.replace(param, os.environ[name])
     with open(filepath, 'w') as f:
         f.write(content)
 
@@ -130,14 +131,19 @@ for file in files:
     cmdline.append('-f')
     cmdline.append(os.path.join(os.path.basename(tempdir), file))
 cmdline.append('config')
+
+# annotation: per symlink all subfiles/folders are linked to a path,
+# that matches the host system path
 shutil.move(tempdir, odoo_home)
+
 try:
-    proc = subprocess.Popen(cmdline, cwd=odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmdline, cwd=host_odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     conf, err = proc.communicate()
     if err:
         print err
         raise Exception(err)
 except:
+    print cmdline
     raise
 else:
 
@@ -148,5 +154,6 @@ else:
     with open(dest_file, 'w') as f:
         f.write(conf)
 finally:
-    shutil.move(os.path.join(odoo_home, os.path.basename(tempdir)), tempdir)
-    shutil.rmtree(tempdir)
+    if host_odoo_home != odoo_home:
+        shutil.move(os.path.join(host_odoo_home, os.path.basename(tempdir)), tempdir)
+        shutil.rmtree(tempdir)

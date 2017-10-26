@@ -4,4 +4,4 @@ version: '3.3'
 services:
   tools:
     container_name: ${DCPREFIX}_tools
-    build: ../machines/tools
+    build: $HOST_ODOO_HOME/machines/tools

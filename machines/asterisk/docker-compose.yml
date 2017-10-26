@@ -5,11 +5,11 @@ volumes:
 
 services:
   asterisk_redis:
-      build: ../machines/asterisk/redis
+      build: $HOST_ODOO_HOME/machines/asterisk/redis
       container_name: ${DCPREFIX}_asterisk_redis
   ari:
     container_name: ${DCPREFIX}_ari
-    build: ../machines/asterisk/ari
+    build: $HOST_ODOO_HOME/machines/asterisk/ari
     depends_on:
       - asterisk_redis
     ports:
@@ -29,31 +29,31 @@ services:
       PROXY_PORT_OUT: 80
     volumes:
       - odoosource:/opt/odoo
-      - ../data/ari/calls:/opt/permstore/calls
-      - ../data/ari/uploaded_calls:/opt/permstore/uploaded_calls
-      - ../data/ari/record_clicked:/opt/permstore/record_clicked
-      - ../data/asterisk/moh_custom:/opt/asterisk/moh_custom
-      - ../data/asterisk/recordings:/opt/asterisk/recording
-      - ../data/asterisk/reloader:/opt/asterisk/reloader
-      - ../data/asterisk/sounds:/opt/asterisk/sounds
-      - ../machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
+      - $HOST_ODOO_HOME/data/ari/calls:/opt/permstore/calls
+      - $HOST_ODOO_HOME/data/ari/uploaded_calls:/opt/permstore/uploaded_calls
+      - $HOST_ODOO_HOME/data/ari/record_clicked:/opt/permstore/record_clicked
+      - $HOST_ODOO_HOME/data/asterisk/moh_custom:/opt/asterisk/moh_custom
+      - $HOST_ODOO_HOME/data/asterisk/recordings:/opt/asterisk/recording
+      - $HOST_ODOO_HOME/data/asterisk/reloader:/opt/asterisk/reloader
+      - $HOST_ODOO_HOME/data/asterisk/sounds:/opt/asterisk/sounds
+      - $HOST_ODOO_HOME/machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
-      - ../settings
+      - $HOST_ODOO_HOME/settings
 
   stasis:
-      build: ../machines/asterisk/stasis
+      build: $HOST_ODOO_HOME/machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
       environment:
         PROXY_PORT_IN: 28121
         PROXY_PORT_OUT: 80
       env_file:
-        - ../settings
+        - $HOST_ODOO_HOME/settings
       depends_on:
         - asterisk
         - asterisk_redis
       volumes:
-        - ../data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
-        - ../data/asterisk/reloader:/opt/reloader
+        - $HOST_ODOO_HOME/data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
+        - $HOST_ODOO_HOME/data/asterisk/reloader:/opt/reloader
         - asterisk_logs:/var/log/asterisk
 
   asterisk:
@@ -61,21 +61,21 @@ services:
     depends_on:
         ovpn:
             condition: service_healthy
-    build: ../machines/asterisk/asterisk
+    build: $HOST_ODOO_HOME/machines/asterisk/asterisk
     expose:
       - 8088
     environment:
       CUSTOMS: ${CUSTOMS}
     volumes:
-      - ../machines/asterisk/asterisk/etc/asterisk:/etc/asterisk:ro
-      - ../data/ovpn/client:/opt/certs:ro
-      - ../data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
-      - ../data/asterisk/recordings:/var/spool/asterisk/recording
-      - ../data/asterisk/reloader:/opt/reloader
-      - ../data/asterisk/sounds:/var/lib/asterisk/sounds:ro
+      - $HOST_ODOO_HOME/machines/asterisk/asterisk/etc/asterisk:/etc/asterisk:ro
+      - $HOST_ODOO_HOME/data/ovpn/client:/opt/certs:ro
+      - $HOST_ODOO_HOME/data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
+      - $HOST_ODOO_HOME/data/asterisk/recordings:/var/spool/asterisk/recording
+      - $HOST_ODOO_HOME/data/asterisk/reloader:/opt/reloader
+      - $HOST_ODOO_HOME/data/asterisk/sounds:/var/lib/asterisk/sounds:ro
       - asterisk_logs:/var/log/asterisk
     env_file:
-      ../settings
+      $HOST_ODOO_HOME/settings
     cap_add:
         - NET_ADMIN
     healthcheck:

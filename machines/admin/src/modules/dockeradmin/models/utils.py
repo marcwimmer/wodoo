@@ -67,11 +67,8 @@ def new_branch(path, branch_name):
     subprocess.check_call(['odoo-git', 'new-ticket'], cwd=path)
 
 def force_switch_branch(path, branch_name):
-    try:
-        subprocess.check_call(['/usr/bin/git', 'checkout', branch_name, '-f'], cwd=path)
-    except:
-        # ignore error could not switch
-        pass
+    raise Exception(path)
+    subprocess.check_call(['/usr/bin/git', 'checkout', branch_name, '-f'], cwd=path)
     os.system('sync')
     subprocess.check_call(['/usr/bin/git', 'clean', '-xdff'], cwd=path)
 

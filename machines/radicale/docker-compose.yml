@@ -3,13 +3,13 @@ version: "3.3"
 services:
     radicale:
        container_name: ${DCPREFIX}_radicale
-       build: ../machines/radicale
+       build: $HOST_ODOO_HOME/machines/radicale
        ports:
          - "5232:5232"
        volumes:
-         - ../data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
+         - $HOST_ODOO_HOME/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
        env_file:
-         - ../settings
+         - $HOST_ODOO_HOME/settings
        environment:
          RADICALE_DIR: /opt/odoo/active_customs/common/calendar_ics
          RADICALE_VERSION: RadicalePatched-1.1.1
