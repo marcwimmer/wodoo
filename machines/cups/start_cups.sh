@@ -1,7 +1,7 @@
 #!/bin/bash
 set +x
 echo "setting ownership of $CUPS_TOPRINT to odoo"
-chown 1000:1000 /opt/toprint -R
+chown "$DEFAULT_USER":"$DEFAULT_USER" /opt/toprint -R
 
 
 CONF_ROOT=/opt/printer_setup
@@ -9,7 +9,7 @@ if [[ -d $CONF_ROOT/deb ]]; then
     cd $CONF_ROOT/deb
     for debfile in $(ls $CONF_ROOT/deb) ; do
         # dell packages crashes passwords in cups? why?....
-        dpkg -i $debfile
+        dpkg -i "$debfile"
     done
 fi
 
@@ -23,8 +23,8 @@ echo "domain = $CUPS_DOMAIN" >> $PRINTAUTH
 cp /etc/samba/printing.auth /etc/cups
 
 set -e
-if [ $(grep -ci $CUPS_USER_ADMIN /etc/shadow) -eq 0 ]; then
-    useradd $CUPS_USER_ADMIN --system -G root,lpadmin --no-create-home --password $(mkpasswd $CUPS_USER_PASSWORD)
+if [ "$(grep -ci "$CUPS_USER_ADMIN" /etc/shadow)" -eq 0 ]; then
+    useradd "$CUPS_USER_ADMIN" --system -G root,lpadmin --no-create-home --password "$(mkpasswd "$CUPS_USER_PASSWORD")"
 fi
 
 rsync $CONF_ROOT/ppd/ /etc/cups/ppd/ -ar
