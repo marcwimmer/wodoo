@@ -1,42 +1,83 @@
 #!/bin/bash
-
-set -e
-set +x
 ARGS=("$@")
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-export DIR="$DIR"
+function startup() {
+	set -e
+	set +x
+	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+	export DIR="$DIR"
+}
 
-cd "$DIR/config/simplebash" || exit -1
-docker-compose rm -f 1>/dev/null 2>&1
-set +x
+function show_help() {
+	if [[ "$1" == '--help' ]]; then
+		echo "If you experience problems, try to call"
+		echo ""
+		echo "$DIR/odoo --fix"
+		echo ""
+		echo "- docker-container admin bash is updated by that"
+		exit 0
+	fi
+}
 
-extra_volumes=()
+function fix() {
+	if [[ "$1" == '--fix' ]]; then
+		cd "$DIR/config/simplebash"
+		./rebuild.sh
 
-if [[ -n "$2" ]]; then
-	if [[ "$1" == "backup" || "$1" == "backup-db" || "$2" == "backup-files" ]]; then
-		extra_volumes=("-v $2:$2")
-	elif [[ "$1" == "restore" || "$1" == "restore-files" || "$2" == "restore-db" ]]; then
-		if [[ -f "$2" ]]; then
-			dir=$(dirname "$2")
-			extra_volumes+=("-v $dir:$dir")
-		fi
-		if [[ -f "$3" ]]; then
-			dir=$(dirname "$3")
-			extra_volumes+=("-v $dir:$dir")
+		cd "$DIR/config/telegrambot"
+		docker-compose build
+		exit 0
+	fi
+}
+
+function remove_old_bash() {
+	cd "$DIR/config/simplebash" || exit -1
+	docker-compose rm -f 1>/dev/null 2>&1
+}
+
+
+function collect_extra_volumes() {
+	extra_volumes=()
+
+	if [[ -n "$2" ]]; then
+		if [[ "$1" == "backup" || "$1" == "backup-db" || "$2" == "backup-files" ]]; then
+			extra_volumes=("-v $2:$2")
+		elif [[ "$1" == "restore" || "$1" == "restore-files" || "$2" == "restore-db" ]]; then
+			if [[ -f "$2" ]]; then
+				dir=$(dirname "$2")
+				extra_volumes+=("-v $dir:$dir")
+			fi
+			if [[ -f "$3" ]]; then
+				dir=$(dirname "$3")
+				extra_volumes+=("-v $dir:$dir")
+			fi
 		fi
 	fi
-fi
+}
 
-command=(docker-compose run)
+function build_command() {
+	command=(docker-compose run)
 
-command+=(--name "odoo_bash_$(uuidgen)")
-command+=(-e HOST_ODOO_HOME="$DIR")
-command+=(-e ODOO_HOME="$DIR")
-if [[ -n "${extra_volumes[*]}" ]]; then
-	command+=( "${extra_volumes[@]}" )
-fi
-command+=(simplebash)
-command+=("$DIR/admin/odoo-admin" "${ARGS[@]}")
+	command+=(--name "odoo_bash_$(uuidgen)")
+	command+=(-e HOST_ODOO_HOME="$DIR")
+	command+=(-e ODOO_HOME="$DIR")
+	if [[ -n "${extra_volumes[*]}" ]]; then
+		command+=( "${extra_volumes[@]}" )
+	fi
+	command+=(simplebash)
+	command+=("$DIR/admin/odoo-admin" "${ARGS[@]}")
 
-eval "${command[@]}"
+	echo "${command[@]}"
+}
+
+function run_command() {
+	eval "${command[@]}"
+}
+
+startup
+show_help "${ARGS[@]}"
+fix "${ARGS[@]}"
+remove_old_bash
+collect_extra_volumes "${ARGS[@]}"
+build_command
+run_command
