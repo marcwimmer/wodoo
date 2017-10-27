@@ -119,7 +119,7 @@ def post_process_complete_yaml_config(yml):
             for x in yml['services']['odoo_base'][k]:
                 machine[k].append(x)
         for k in ['environment']:
-            machine[k] = {}
+            machine.setdefault(k, {})
             for x, v in yml['services']['odoo_base'][k].items():
                 machine[k][x] = v
     yml['services'].pop('odoo_base')
