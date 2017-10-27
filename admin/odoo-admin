@@ -497,7 +497,7 @@ function do_command() {
 		echo
 		echo
 		for line in $(cd "$DIR"; find "./config/lsyncd/" -not -path '*/\.*' -not -path '*/' -maxdepth 1|tr '\n' ' or '); do
-			echo "while true; do $line; done "
+			echo "while true; do  lsyncd -nodaemon $line; done "
 		done
 		echo
 		echo
