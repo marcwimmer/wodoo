@@ -16,6 +16,4 @@ ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
-ADD prepare_host_odoo_home.py /prepare_host_odoo_home.py
-RUN chmod a+x /prepare_host_odoo_home.py
 WORKDIR /opt/odoo
