@@ -751,12 +751,14 @@ function do_command() {
         eval "$dc up -d $2"
         ;;
 	telegram-setup)
+		export DIR="$DIR"
 		cd "$DIR"/config/telegrambot
 		docker-compose run telegrambot /setup.sh
 		;;
 	telegram-send)
+		export DIR="$DIR"
 		cd "$DIR"/config/telegrambot
-		docker-compose run telegrambot send.py "$2"
+		docker-compose run telegrambot /send.py "$2"
 		;;
 	fix-permissions)
 		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then

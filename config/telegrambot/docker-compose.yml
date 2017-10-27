@@ -1,9 +1,9 @@
 version: "3.3"
 
 services:
-  telegram:
+  telegrambot:
     build: .
     volumes:
         - $DIR:/opt/odoo
     environment:
-      VALUE1: 123
+      ODOO_HOME: /opt/odoo

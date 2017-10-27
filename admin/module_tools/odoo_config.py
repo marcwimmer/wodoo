@@ -5,7 +5,10 @@ import subprocess
 from os.path import expanduser
 from myconfigparser import MyConfigParser
 from consts import VERSIONS
-import psycopg2
+try:
+    import psycopg2
+except:
+    pass
 
 def get_odoo_addons_paths():
     folders = subprocess.check_output(
