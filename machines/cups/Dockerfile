@@ -26,6 +26,9 @@ RUN chmod a+x /usr/lib/cups/backend/smbc
 
 EXPOSE 631
 
+ADD backup_printers.sh /backup_printers.sh
+RUN chmod a+x /backup_printers.sh
+
 ADD start_cups.sh /root/start_cups.sh
 RUN chmod +x /root/start_cups.sh
 CMD ["/root/start_cups.sh"]
