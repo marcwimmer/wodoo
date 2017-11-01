@@ -58,6 +58,7 @@ function default_confs() {
 	export ADDITIONAL_DOCKER_COMPOSE=""
 	export RUN_ODOODEV=0
 	export ODOO_HOME=$DIR
+	export TELEGRAM_ENABLED=1
 	FORCE=0
 	echo "${ARGS[*]}" |grep -q '[-]force' && {
 		FORCE=1
@@ -72,17 +73,6 @@ function default_confs() {
     if [[ -z "$DUMPS_PATH" ]]; then
 		export DUMPS_PATH=$ODOO_HOME/dumps
     fi
-
-	# configure volatile settings in settings.customs
-	filepath_customs="$DIR/settings.customs"
-	if [[ -f "$filepath_customs" ]]; then
-		filepath_settings="$DIR/settings"
-		tempfile="$(mktemp -u)"
-		( grep -v "CUSTOMS=" | grep -v "DBNAME=" > "$tempfile" ) < "$filepath_settings"
-		cat "$filepath_customs" >> "$tempfile"
-		cp "$tempfile" "$filepath_settings"
-
-	fi
 
 	if [[ -z "$DEFAULT_USER" ]]; then
 		DEFAULT_USER="1000"
@@ -751,14 +741,18 @@ function do_command() {
         eval "$dc up -d $2"
         ;;
 	telegram-setup)
-		export DIR="$DIR"
-		cd "$DIR"/config/telegrambot
-		docker-compose run telegrambot /setup.sh
+		if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
+			export DIR="$DIR"
+			cd "$DIR"/config/telegrambot
+			docker-compose run telegrambot /setup.sh
+		fi
 		;;
 	telegram-send)
-		export DIR="$DIR"
-		cd "$DIR"/config/telegrambot
-		docker-compose run telegrambot /send.py "$2"
+		if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
+			export DIR="$DIR"
+			cd "$DIR"/config/telegrambot
+			docker-compose run telegrambot /send.py "$2"
+		fi
 		;;
 	fix-permissions)
 		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
