@@ -19,6 +19,7 @@ LN_DIR = os.environ['ADDONS_CUSTOMS']
 counter = 0
 version = current_version()
 print "Linking all modules into: \n{}".format(LN_DIR)
+all_valid_module_paths = []
 
 if os.path.isdir(LN_DIR):
     shutil.rmtree(LN_DIR, ignore_errors=True)
@@ -28,15 +29,11 @@ os.system("chown $ODOO_USER:$ODOO_USER \"{}\"".format(LN_DIR))
 
 def search_dir_for_modules(base_dir):
 
-    ommitted_directories_full_path = []
-
     def link_module(complete_module_dir):
         # prüfen, obs nicht zu den verbotenen pfaden gehört:
         abs_root = os.path.abspath(base_dir)
         dir = os.path.abspath(complete_module_dir)
         while dir != abs_root:
-            if dir in ommitted_directories_full_path:
-                return
             dir = os.path.abspath(os.path.join(dir, ".."))
 
         try:
@@ -51,8 +48,8 @@ def search_dir_for_modules(base_dir):
                 # let override OCA modules
                 if "/OCA/" in os.path.realpath(target):
                     os.unlink(target)
-                elif "/OCA" in complete_module_dir:
-                    return
+                elif "/OCA/" in complete_module_dir:
+                    os.unlink(target)
                 else:
                     raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
 
@@ -88,12 +85,20 @@ def search_dir_for_modules(base_dir):
             for path in in_version['paths']:
                 if ".git" in path:
                     continue
-                link_module(path)
+                all_valid_module_paths.append(path)
         except:
             print "Fehler in %s" % dirname
             raise
 
     os.path.walk(base_dir, visit, False)
+
+    def sort_paths(x):
+        if '/OCA/' in x:
+            return "0000_" + x
+        return "1000_" + x
+
+    for path in sorted(all_valid_module_paths, key=sort_paths):
+        link_module(path)
 
 
 search_dir_for_modules(customs_dir())
