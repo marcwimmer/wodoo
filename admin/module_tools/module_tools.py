@@ -558,7 +558,6 @@ def syncsource(path, do_async=False):
     if path.endswith('.po'):
         machine_path = translate_path_into_machine_path(path)
         apply_po_file(machine_path)
-    execute_managesh('update-source', path, do_async=do_async)
 
 def switch_customs_and_db(customs, db):
     if not db:
