@@ -5,7 +5,7 @@ settings {
 } 
 sync {default.rsyncssh,
 	source = ".",
-	host = "marc@nuc",
+	host = "nuc",
 	targetdir = "/opt/odoo",
 	exclude = { "dumps", "settings", "run", ".git" },
 	rsync = {
