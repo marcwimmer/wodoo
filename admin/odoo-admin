@@ -478,6 +478,7 @@ function do_command() {
         ln -s "$filepath" "$LINKPATH"
         md5sum "$filepath"
         echo "Dumped to $filepath"
+		$MANAGE telegram-send "Database Backup $DBNAME done to $filepath"
         ;;
 	lsyncd)
 		echo 
@@ -558,6 +559,7 @@ function do_command() {
 			do_restore_db_on_external_postgres "$dumpfile"
 		fi
 		set_db_ownership
+		$MANAGE telegram-send "Database Restore $DBNAME done."
 
 		;;
 	set_db_ownership)
