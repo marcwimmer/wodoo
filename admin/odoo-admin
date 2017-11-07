@@ -294,6 +294,8 @@ function showhelp() {
 	echo ""
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
 	echo ""
+    echo "dev - starts developing in the odoo container"
+	echo ""
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
 	echo ""
     echo "telegram-setup- helps creating a permanent chatid"
@@ -740,8 +742,18 @@ function do_command() {
     restart)
         cd "$DIR"
         eval "$dc kill $2"
+        eval "$dc rm -f $2"
         eval "$dc up -d $2"
         ;;
+
+	dev)
+		$MANAGE kill
+		$MANAGE rm -f
+		$MANAGE build
+		$MANAGE up -d
+		$MANAGE attach odoo
+		;;
+
 	telegram-setup)
 		if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
 			export DIR="$DIR"
