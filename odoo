@@ -6,6 +6,12 @@ function startup() {
 	set +x
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	export DIR="$DIR"
+
+	# create empty file, so that simple bash runs
+	settings_override_file="$DIR/settings.override"
+	if [[ ! -f "$settings_override_file" ]]; then
+		touch "$settings_override_file"
+	fi
 }
 
 function show_help() {
