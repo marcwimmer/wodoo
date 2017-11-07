@@ -3,7 +3,10 @@ set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 
 echo "Applying patches"
-cd $SERVER_DIR
+cd "$SERVER_DIR" || exit -1
+
+/make_local_odoo_git_repo.sh
+
 dirty=$(git diff --quiet --exit-code && echo 'clean' || echo '')
 if [[ "$dirty" != 'clean' ]]; then 
 	echo "odoo directory is not clean - cannot reset to apply patches"
@@ -13,7 +16,7 @@ if [[ "$dirty" != 'clean' ]]; then
 		echo 
 		echo "I am going to try to apply existing patches"
 	else
-		cd $SERVER_DIR
+		cd "$SERVER_DIR"
 		git checkout -f
 		git clean -xdff
 	fi
