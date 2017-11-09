@@ -1,7 +1,0 @@
-#!/bin/bash
-for dir in $(git-sub-list-unpushed|grep $(pwd))
-do
-    echo \"pushing $dir\"
-    cd $dir
-    git push
-done

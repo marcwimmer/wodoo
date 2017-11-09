@@ -11,8 +11,8 @@ if [[ ! -d ".git" ]]; then
 	git init .
 fi
 
-for i in $(echo $1 | sed "s/,/ /g");
+for i in ${1//,/ };
 do
-	git submodule add -b master --force git.mt-software.de:/git/openerp/modules/$i common/$i
+	git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
 done
 

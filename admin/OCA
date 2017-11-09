@@ -2,7 +2,6 @@
 set -x
 set -e
 
-echo adding OCA module $1
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 if [[ ! -d common ]]; then
@@ -20,13 +19,11 @@ if [[ -z "$VERSION" ]]; then
 	exit -1
 fi
 
-git submodule add https://github.com/OCA/$1.git OCA/$1
-git submodule init
-git submodule update OCA/$1
-cd OCA/$1
-git checkout -f $VERSION
+echo "Adding OCA module $1 as subtree"
+git subtree -q add --prefix="OCA/$1" --squash "https://github.com/OCA/$1.git" "$VERSION"
+cd "OCA/$1" || exit -1
+cd ../.. || exit -1
 
-cd ..
-cd ..
-
-echo "    branch = $VERSION" >> .gitmodules
+echo ""
+echo "Added OCA Module $1 as subtree"
+echo ""

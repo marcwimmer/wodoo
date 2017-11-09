@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+set -x
+
+if [[ ! -d common ]]; then
+    echo "Directory common not found - are you in root?"
+    exit 1
+fi
+
+if [[ ! -d ".git" ]]; then
+	echo "No local git repo - where are you?"
+	exit -1
+fi
+
+if [[ -z "$1" ]]; then
+	echo "Please provide the submodule in common-directory."
+	exit -1
+fi
+
+git subtree push --prefix="common/$1" git.mt-software.de:"/git/openerp/modules/$1" master
+
