@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ ! -f "$SERVER_DIR/.git" || ! -d "$SERVER_DIR/.git" ]]; then
+if [[ ! -f "$SERVER_DIR/.git" && ! -d "$SERVER_DIR/.git" ]]; then
 	echo "Odoo has no own git repository - creating local git repo in odoo"
 	cd "$SERVER_DIR" || exit -1
 	git init .
