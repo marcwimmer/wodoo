@@ -36,5 +36,10 @@ else:
     TOKEN = conf['TELEGRAMBOTTOKEN']
     bot = telegram.Bot(TOKEN)
     updates = bot.getUpdates()
-    chat_id = conf['TELEGRAM_CHAT_ID']
-    bot.sendMessage(chat_id=chat_id, text=prefixed(message))
+    try:
+        conf['TELEGRAM_CHAT_ID']
+    except:
+        print "Please configure TELEGRAM_CHAT_ID by running the setup. Cannot send telegram messages now."
+    else:
+        chat_id = conf['TELEGRAM_CHAT_ID']
+        bot.sendMessage(chat_id=chat_id, text=prefixed(message))
