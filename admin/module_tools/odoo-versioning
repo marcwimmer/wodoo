@@ -10,6 +10,8 @@ import odoo_config
 import shutil
 import os
 import tempfile
+from git import Repo
+from git import Actor
 from myconfigparser import MyConfigParser
 import inspect
 current_file = os.path.abspath(inspect.getfile(inspect.currentframe())) # script directory
@@ -49,6 +51,113 @@ def action_new_ticket():
     print "Switch to new branch: {}".format(branch)
     print ""
     print ""
+
+def unit_tests_git():
+    r = {
+    }
+
+    def reset_repo():
+        global repo
+
+        path = tempfile.mkdtemp(suffix='')
+
+        path_repo = os.path.join(path, 'repo1')
+        print path_repo
+        os.mkdir(path_repo)
+
+        repo = Repo.init(path_repo, bare=False)
+        print repo.is_dirty()
+        file1 = os.path.join(path_repo, 'file1.txt')
+        with open(file1, 'w') as f:
+            f.write("1")
+        r['repo'] = repo
+        r['file1'] = file1
+        r['author'] = Actor("User1", "user1@home.de")
+
+        r['path_subrepo'] = os.path.join(path, 'subrepo')
+        r['subrepo'] = Repo.init(r['path_subrepo'])
+        file1 = os.path.join(r['path_subrepo'], 'subfile1.txt')
+        with open(file1, 'w') as f:
+            f.write("sub 1")
+
+    def case1():
+        "commit a file"
+        global repo
+        reset_repo()
+        repo = r['repo']
+        file1 = r['file1']
+        assert len(repo.untracked_files) == 1
+        changed_files = [item.a_path for item in repo.index.diff(None)]
+        #staged_files = [item.a_path for item in repo.index.diff("HEAD")]
+        repo.index.add([os.path.basename(file1)])
+        repo.index.commit("msg1", author=r['author'], committer=r['author'])
+        #repo.git.add(update=True) # no new files
+
+        with open(file1, 'w') as f:
+            f.write("2")
+        changed_files = [item.a_path for item in repo.index.diff(None)]
+        repo.index.add(changed_files)
+        repo.index.commit("msg2", author=r['author'], committer=r['author'])
+
+        file2 = os.path.join(repo.working_dir, 'file2.txt')
+        with open(file2, 'w') as f:
+            f.write("3")
+        assert len(repo.untracked_files) == 1
+        repo.index.add(repo.untracked_files)
+        repo.index.commit("msg3", author=r['author'], committer=r['author'])
+
+        os.unlink(file2)
+
+        # caution: commit updates and deletes by directory
+        # TODO extract following code
+        for diff in repo.index.diff(None):
+            if not diff.b_mode and not diff.b_blob:
+                # deleted
+                repo.index.remove(items=[diff.a_path])
+            else:
+                repo.index.add(items=[diff.a_path])
+        repo.index.commit("deleted", author=r['author'], committer=r['author'])
+
+    def case_empty_commit():
+        global repo
+        reset_repo()
+        repo = r['repo']
+        file1 = r['file1']
+        repo.index.add([os.path.basename(file1)])
+        repo.index.commit("msg1", author=r['author'], committer=r['author'])
+
+        # now empty commit
+        repo.index.commit("msg empty")
+
+    def case_submodule():
+        global repo
+        reset_repo()
+        repo = r['repo']
+        file1 = r['file1']
+        assert len(repo.untracked_files) == 1
+        changed_files = [item.a_path for item in repo.index.diff(None)]
+        #staged_files = [item.a_path for item in repo.index.diff("HEAD")]
+        repo.index.add([os.path.basename(file1)])
+        repo.index.commit("msg1", author=r['author'], committer=r['author'])
+
+        #clone submodule
+        from pudb import set_trace
+        set_trace()
+        subrepo_dir = 'subrepo'
+        repo.clone_from(r['path_subrepo'], os.path.join(repo.working_dir, subrepo_dir))
+
+        repo.index.commit("subrepo added")
+        from pudb import set_trace
+        set_trace()
+
+
+    #case1()
+    #case_empty_commit()
+    case_submodule()
+
+    from pudb import set_trace
+    set_trace()
+
 
 def unit_tests():
     # make new customs
@@ -109,6 +218,7 @@ actions = {
     'new-ticket': action_new_ticket,
     'unit-test': unit_tests,
     'unit-tests': unit_tests,
+    'unit-tests-git': unit_tests_git,
     'help': display_help,
 }
 
