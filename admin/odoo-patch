@@ -10,7 +10,7 @@ fi
 
 CUSTOMSDIR="$(cd "$ODOO_HOME/admin/module_tools"; python -c "from odoo_config import customs_dir; print customs_dir()")"
 COMMIT_FILE="$CUSTOMSDIR/odoo.commit"
-ODOO_GIT="$ODOO_HOME/odoo.git"
+ODOO_GIT="$ODOO_HOME/repos/odoo"
 ODOO_LOCAL_DIR=odoo
 ODOO_LOCAL="$CUSTOMSDIR/$ODOO_LOCAL_DIR"
 IGNORE_FILE="$CUSTOMSDIR/.gitignore"
