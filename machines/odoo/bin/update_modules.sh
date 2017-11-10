@@ -12,8 +12,6 @@ if [[ "$MODULE" == "all" ]]; then
 fi
 
 /apply-env-to-config.sh
-/patch_odoo.sh
-"$ADMIN_DIR/link_modules"
 
 
 function get_modules() {

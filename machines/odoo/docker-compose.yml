@@ -20,6 +20,7 @@ services:
       - ${ODOO_FILES}/:/opt/files
       - ${HOST_ODOO_HOME}/admin:/opt/odoo/admin
       - ${HOST_ODOO_HOME}/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
+      - ${HOST_ODOO_HOME}/data/src/customs/${CUSTOMS}/links:/opt/odoo/addons_customs
       - ${HOST_ODOO_HOME}/run/debug:/tmp/debug
     env_file:
       - $HOST_ODOO_HOME/settings

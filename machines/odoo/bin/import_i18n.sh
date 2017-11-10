@@ -7,7 +7,6 @@ if [ -z "$1" ]; then
     exit -1
 fi
 /apply-env-to-config.sh
-$ADMIN_DIR/link_modules
 
 LANG=$1
 if [ -z "$LANG" ]; then
@@ -19,13 +18,13 @@ path=${ADDONS_CUSTOMS}/${2}/i18n/$LANG.po
 
 if [[ -f "$path" ]]; then
 
-	sudo -E -H -u $ODOO_USER \
-		$SERVER_DIR/openerp-server \
-		-c $CONFIG_DIR/config_openerp \
+	sudo -E -H -u "$ODOO_USER" \
+		"$SERVER_DIR/odoo" \
+		-c "$CONFIG_DIR/config_openerp" \
 		--log-level=warn \
 		--stop-after-init \
-		-d $DBNAME \
-		-l $LANG \
-		--i18n-import=$path \
+		-d "$DBNAME" \
+		-l "$LANG" \
+		--i18n-import="$path" \
 		--i18n-overwrite
 fi

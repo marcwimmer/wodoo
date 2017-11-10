@@ -5,7 +5,6 @@ set -e
 # sync source is done by extra machine
 
 /apply-env-to-config.sh
-"$ADMIN_DIR"/link_modules
 
 echo "Executing autosetup..."
 /run_autosetup.sh

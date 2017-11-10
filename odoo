@@ -1,9 +1,9 @@
 #!/bin/bash
-ARGS=("$@")
+set +x
+ARGS=( "$@" )
 
 function startup() {
 	set -e
-	set +x
 	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 	export DIR="$DIR"
 
@@ -71,13 +71,12 @@ function build_command() {
 		command+=( "${extra_volumes[@]}" )
 	fi
 	command+=(simplebash)
-	command+=("$DIR/admin/odoo-admin" "${ARGS[@]}")
-
-	echo "${command[@]}"
+	command+=("$DIR/admin/odoo-admin")
+	command+=( "${ARGS[@]}" )
 }
 
 function run_command() {
-	eval "${command[@]}"
+	eval "${command[@]@Q}"
 }
 
 startup

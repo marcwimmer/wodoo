@@ -1,7 +1,5 @@
 #!/bin/bash
 set +x
-/patch_odoo.sh || exit 15
-"$ADMIN_DIR/link_modules" || exit 16
 LOCKFILE=$(mktemp -u)
 echo "Starting debugger"
 echo "Watching File $DEBUGGER_WATCH"

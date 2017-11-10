@@ -1,6 +1,5 @@
 #!/bin/bash
-set -x
-#python /prepare_host_odoo_home.py
+set +x
 
 echo "$DB_HOST:$DB_PORT:$DBNAME:$DB_USER:$DB_PWD" > ~/.pgpass
 echo "$DB_HOST:$DB_PORT:template1:$DB_USER:$DB_PWD" >> ~/.pgpass

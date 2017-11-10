@@ -27,7 +27,7 @@ function startup() {
 	DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
 	ODOO_HOME=$DIR
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
-	export odoo_manager_started_once=1
+	export ODOO_MANAGER_STARTED_ONCE=1
 	docker_compose_file="$ODOO_HOME/run/docker-compose.yml"
 	return 0
 
@@ -298,6 +298,8 @@ function showhelp() {
 	echo ""
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
 	echo ""
+	echo "link - links all modules into ./links"
+	echo ""
     echo "telegram-setup- helps creating a permanent chatid"
 	echo ""
     echo "kill - kills running machines"
@@ -373,7 +375,7 @@ function prepare_yml_files_from_template_files() {
     # replace variables in docker-compose;
     cd "$DIR"
 
-	if [[ "$odoo_manager_started_once" != "1" ]]; then
+	if [[ "$ODOO_MANAGER_STARTED_ONCE" != "1" ]]; then
 		echo "CUSTOMS: $CUSTOMS"
 		echo "DB: $DBNAME"
 		echo "VERSION: $ODOO_VERSION"
@@ -939,7 +941,7 @@ function do_command() {
 		cd odoo
 		git checkout "$VERSION"
 		"$ODOO_HOME/admin/OCA-all"
-		"$ODOO_HOME/admin/oe-submodule tools,web_modulesroduct_modules,calendar_ics"
+		"$ODOO_HOME/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
 		"$ODOO_HOME/$MANAGE" up -d
 		chromium-browser http://localhost
 
@@ -966,6 +968,16 @@ function do_command() {
 		;;
 	prepare)
 		echo "All configurations prepared."
+		;;
+	link)
+		python "$ODOO_HOME/admin/link_modules"
+	
+		;;
+
+	patch)
+		cmd=("$ODOO_HOME/admin/odoo-patch")
+		cmd+=("${ALL_PARAMS[@]}")
+		eval "${cmd[@]@Q}"
 		;;
     *)
         echo "Invalid option $1"
@@ -1204,7 +1216,7 @@ function setup_nginx_paths() {
 
 function remember_customs_and_cry_if_changed() {
 	# if customs changed, then restart is required
-	if [[ "$odoo_manager_started_once" == "1" ]]; then
+	if [[ "$ODOO_MANAGER_STARTED_ONCE" == "1" ]]; then
 		return 0
 	fi
 
@@ -1226,11 +1238,10 @@ function main() {
 	startup "${ARGS[@]}"
 	if [[ "${ARGS[0]}" == "tool" ]]; then
 
-		python "$DIR/admin/module_tools/tool.py" "${ALL_PARAMS[@]}"
+		python "$DIR/admin/module_tools/tool.py" "${ALL_PARAMS[@]@Q}"
 
 	else
 
-		export odoo_manager_started_once=1
 		default_confs "${ARGS[@]}"
 		export_settings
 		remember_customs_and_cry_if_changed
