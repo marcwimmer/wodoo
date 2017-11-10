@@ -1,8 +1,4 @@
 [submodule "machines/admin/src/odoo"]
 	path = machines/admin/src/odoo
 	url = https://github.com/odoo/odoo
-        branch = 10.0
-
-[submodule "odoo.git"]
-	path = odoo.git
-	url = https://github.com/odoo/odoo
+	branch = 10.0
