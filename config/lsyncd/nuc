@@ -7,7 +7,7 @@ sync {default.rsyncssh,
 	source = ".",
 	host = "nuc",
 	targetdir = "/opt/odoo",
-	exclude = { "dumps", "settings", "run", ".git" },
+	exclude = { "dumps", "settings", "run" },
 	rsync = {
 		compress = true,
 	},
