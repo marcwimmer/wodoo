@@ -2,11 +2,12 @@ FROM ubuntu:16.04
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
-# Install latest git
 RUN apt-get update --fix-missing && \
-apt-get -y install python-software-properties software-properties-common && \
-DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:git-core/ppa && \
-apt-get install -y --no-install-recommends \
+apt-get install \
+	-y \
+	--no-install-recommends \
+			python-software-properties \
+			software-properties-common \
 			man \
             cmake \
             ctags \

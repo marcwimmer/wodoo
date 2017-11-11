@@ -49,6 +49,7 @@ function is_module_installed() {
 }
 
 function update() {
+	set -x #UNDO
 	if [[ "$ODOO_MODULE_UPDATE_RUN_TESTS" ]]; then
 		TESTS='--test-enable'
 	else
@@ -78,6 +79,7 @@ function update() {
 
 		echo "$1 $__module__ done"
 	fi
+	exit -1 #UNDO
 }
 
 function update_module_list() {
@@ -100,8 +102,23 @@ function update_module_list() {
 		--log-level=error 
 }
 
+function check_for_dangling_modules() {
+	DANGLING="$(
+	cd /opt/odoo/admin/module_tools
+	python <<-EOF
+	import module_tools
+	dangling = module_tools.dangling_modules()
+	print dangling
+	EOF
+	)"
+}
+
 # could be, that a new version is triggered
-update_module_list
+check_for_dangling_modules
+
+if [[ "$DANGLING" == "0" ]]; then
+        update_module_list
+fi
 
 if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
 	delete_qweb 'to_update'

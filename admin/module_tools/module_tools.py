@@ -359,6 +359,15 @@ def is_module_dir_in_version(module_dir):
 
     return result
 
+def dangling_modules():
+    conn, cr = get_conn()
+    try:
+        cr.execute("select name from ir_module_module where state in ('to install', 'to upgrade', 'to remove');")
+        return cr.fetchone()[0]
+    finally:
+        cr.close()
+        conn.close()
+
 def get_all_installed_modules():
     conn, cr = get_conn()
     try:
