@@ -4,8 +4,6 @@ MAINTAINER marc@itewimmer.de
 
 # Install latest git
 RUN apt-get update --fix-missing && \
-apt-get -y install python-software-properties software-properties-common && \
-DEBIAN_FRONTEND=noninteractive add-apt-repository ppa:git-core/ppa && \
 apt-get install -y --no-install-recommends \
 			man \
             cmake \
