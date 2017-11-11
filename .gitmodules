@@ -2,3 +2,6 @@
 	path = machines/admin/src/odoo
 	url = https://github.com/odoo/odoo
 	branch = 10.0
+[submodule "repos/odoo"]
+	path = repos/odoo
+	url = https://github.com/odoo/odoo
