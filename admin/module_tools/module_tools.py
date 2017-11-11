@@ -161,9 +161,9 @@ def get_customs_modules(customs_path=None, mode=None):
 
         if mode == 'to_install':
             modules = [x for x in modules if not is_module_installed(x)]
-        print ','.join(modules)
 
         return modules
+    return []
 
 def get_all_non_odoo_modules():
     """
@@ -358,6 +358,18 @@ def is_module_dir_in_version(module_dir):
             }
 
     return result
+
+def get_uninstalled_modules_where_otheres_depend_on():
+    sql = """
+select d.name from ir_module_module_dependency d inner join ir_module_module m on m.id = d.module_id  inner join ir_module_module mprior on mprior.name = d.name where m.state in ('installed', 'to install', 'to upgrade') and mprior.state = 'uninstalled';
+    """
+    conn, cr = get_conn()
+    try:
+        cr.execute(sql)
+        return [x[0] for x in cr.fetchall()]
+    finally:
+        cr.close()
+        conn.close()
 
 def dangling_modules():
     conn, cr = get_conn()
