@@ -362,7 +362,7 @@ def is_module_dir_in_version(module_dir):
 def dangling_modules():
     conn, cr = get_conn()
     try:
-        cr.execute("select name from ir_module_module where state in ('to install', 'to upgrade', 'to remove');")
+        cr.execute("select count(*) from ir_module_module where state in ('to install', 'to upgrade', 'to remove');")
         return cr.fetchone()[0]
     finally:
         cr.close()
