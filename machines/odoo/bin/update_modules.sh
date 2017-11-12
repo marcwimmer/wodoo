@@ -1,20 +1,4 @@
 #!/bin/bash
-set -e
-set +x
-[[ "$VERBOSE" == "1" ]] && set -x
-MODULE=$1
-
-echo "--------------------------------------------------------------------------"
-echo "Updating Module $MODULE"
-echo "--------------------------------------------------------------------------"
-
-if [[ "$MODULE" == "all" ]]; then
-	MODULE=""
-fi
-
-/apply-env-to-config.sh
-
-
 function get_modules() {
 	local mode
 	mode="$1" #to_install, to_update
@@ -56,8 +40,7 @@ function is_module_installed() {
 		python -c"import module_tools; print '1' if module_tools.is_module_installed('$1') else '0'"
 		)
 		echo "$installed"
-	fi
-}
+	fi }
 
 function update() {
 	local __mode__
@@ -118,25 +101,61 @@ function check_for_dangling_modules() {
 	)"
 }
 
-# could be, that a new version is triggered
-check_for_dangling_modules
+function main() {
+	set -e
+	set +x
+	[[ "$VERBOSE" == "1" ]] && set -x
+	MODULE=$1
 
-if [[ "$DANGLING" == "0" ]]; then
-        update_module_list
-fi
+	echo "--------------------------------------------------------------------------"
+	echo "Updating Module $MODULE"
+	echo "--------------------------------------------------------------------------"
 
-if [[ "$MODULE" == "all" || -z "$MODULE" ]]; then
-	MODULE=$(get_modules "to_update")
-fi
-
-for module in ${MODULE//,/ }; do
-	if [[ "$(is_module_installed "$module")" != "1" && -n "$MODULE" && "$MODULE" != "all" ]]; then
-		echo "installing $module"
-		update 'i' "$module"
+	if [[ "$MODULE" == "all" ]]; then
+		MODULE=""
 	fi
-done
 
-if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
-	delete_qweb "$MODULE"
-fi
-update 'u' "$MODULE"
+	/apply-env-to-config.sh
+
+	summary=()
+	# could be, that a new version is triggered
+	check_for_dangling_modules
+
+	if [[ "$DANGLING" == "0" ]]; then
+		update_module_list
+	fi
+
+	if [[ -z "$MODULE" ]]; then
+		MODULE=$(get_modules "to_update")
+	fi
+
+	for module in ${MODULE//,/ }; do
+		if [[ "$(is_module_installed "$module")" != "1" && -n "$MODULE" ]]; then
+			echo "installing $module"
+			update 'i' "$module"
+			summary+=( "INSTALL $module" )
+		fi
+	done
+
+	if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
+		delete_qweb "$MODULE"
+	fi
+	update 'u' "$MODULE"
+
+	echo
+	echo
+	echo "--------------------------------------------------------------------------------"
+	echo "Summary of update module"
+	echo "--------------------------------------------------------------------------------"
+	echo
+	for i in "${summary[@]}"; do
+		echo "$i"
+	done
+	echo "UPDATE ${MODULE:0:30}..."
+	echo
+	echo
+	echo
+}
+
+
+main "$1"
