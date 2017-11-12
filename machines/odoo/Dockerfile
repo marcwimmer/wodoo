@@ -72,7 +72,9 @@ apt-get install \
             libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
             locales \
             pdftk \
-			python-wand libmagickwand-dev 
+			python-wand libmagickwand-dev python-magic
+
+RUN apt install -y python-pip && pip install pip --upgrade
 
 WORKDIR /tmp
 RUN curl -L -o /tmp/wkhtml.tar.xz https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
@@ -84,11 +86,8 @@ useradd -ms /bin/bash odoo
 ADD sysroot/ /
 RUN \
 chown odoo:odoo /home/odoo -R && \
-apt-get install -y python-pip && \
-pip install --upgrade pip && \
 pip install requests[security] && \
 pip install glob2 && \
-pip install gitpython && \
 pip install pudb && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
