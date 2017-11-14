@@ -15,6 +15,7 @@ services:
       - $HOST_ODOO_HOME/machines/admin/src:/opt/src
       - /var/run/docker.sock:/var/run/docker.sock
       - $HOST_ODOO_HOME:/opt/odoo
+      - $HOST_ODOO_HOME/machines/odoo/bin/update_modules.sh:/update_modules.sh
     environment:
         DBNAME: admin
         LOGLEVEL: info
@@ -22,6 +23,8 @@ services:
         ODOO_HOME: /opt/odoo
         DCPREFIX: $DCPREFIX
         MINIMUM_CONTAINERS: nginx,redis
+        DEPLOY_BRANCH: deploy
+        MASTER_BRANCH: master
     env_file:
       - $HOST_ODOO_HOME/settings
     command: /rootrun.sh

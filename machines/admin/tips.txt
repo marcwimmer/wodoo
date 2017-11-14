@@ -1,8 +1,19 @@
 How to use:
 
-run /run.sh for debugging
+Configuration:
 
-run /run.sh dropdb for reset and start debugging
+  * RUN_ADMINDEV=1 for debugging in settings
+  * ADMIN_PASSWORD=.... - password for user admin
+  * ADMIN_BRANCHES_REGEX: provide ; separated list of regexes for branch names:
+      e.g.  OV-.*;odoo-.*
+	
+	By this evil branches are kept away.
+
+Then:
+
+	run /run.sh for updating the container_admin module and start debugging
+
+	run /run.sh dropdb for reset and start debugging
 
 PLEASE WAIT TILL ADMIN INTERFACES STARTET UP: 
   * call htop

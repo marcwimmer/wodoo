@@ -1,17 +1,3 @@
 <?xml version="1.0"?>
 <odoo>
-  <data noupdate="0">
-    <record id="view_git_branch_tree" model="ir.ui.view">
-      <field name="model">git.branch</field>
-      <field name="arch" type="xml">
-        <tree default_order="" string="">
-          <field name="name"/>
-          <field name="merged_master"/>
-		  <button name="merge_master" string="Merge Master" type="object" attrs="{'invisible': [('merged_master', '=', True)]}"/>
-          <field name="merged_deploy"/>
-		  <button name="merge_deploy" string="Merge Deploy" type="object" attrs="{'invisible': [('merged_master', '=', True), ('name', '!=', 'master')]}"/>
-        </tree>
-      </field>
-    </record>
-  </data>
 </odoo>
