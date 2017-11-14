@@ -20,4 +20,9 @@ if [[ -n "$dev" ]]; then
 	cmd+=("$dev")
 fi
 
+cmdupdate=("${cmd[@]}")
+cmdupdate+=("-u container_admin")
+cmdupdate+=("--stop-after-init")
+eval "${cmdupdate[@]}"
+
 eval "${cmd[@]}"

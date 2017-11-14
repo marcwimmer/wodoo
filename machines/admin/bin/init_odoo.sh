@@ -4,6 +4,10 @@ set -x
 [[ "$VERBOSE" == "1" ]] && set +x
 
 # sync source is done by extra machine
+if [[ -z "$ADMIN_PASSWORD" ]]; then
+	echo "Please set Variale ADMIN_PASSWORD"
+	exit 20
+fi
 
 POSTGRESBIN=/usr/lib/postgresql/9.5/bin/
 PGCONF=/etc/postgresql/9.5/main
@@ -58,3 +62,9 @@ chmod a+rw /var/run/docker.sock
 
 echo 'Starting odoo gevent'
 gosu odoo "/opt/src/odoo/odoo-bin" --stop-after-init -c "/opt/config_openerp"  -d "$DBNAME" --log-level="$LOGLEVEL"
+
+echo 'Setting password'
+gosu postgres psql -h 127.0.0.1 admin <<- EOF
+update res_users set password = '$ADMIN_PASSWORD';
+EOF
+

@@ -17,20 +17,11 @@
     </record>
     <menuitem id="menu_instances" parent="menu_root" name="Instances" action="act_update_instances"/>
     <record model="ir.actions.server" id="act_modules">
-      <field name="name">update_branches</field>
+      <field name="name">start_commander</field>
       <field name="type">ir.actions.server</field>
-      <field name="model_id" ref="model_git_branch"/>
-      <field name="code">action=model.update_branches()</field>
+      <field name="model_id" ref="model_version_commander"/>
+      <field name="code">action=model.start_commander()</field>
     </record>
-    <menuitem id="menu_modules" parent="menu_root" name="Branches" action="act_modules"/>
-	<!--
-    <record model="ir.actions.act_window" id="act_new_branch_window">
-      <field name="name">New Branch</field>
-      <field name="res_model">branch.new</field>
-      <field name="view_mode">form</field>
-      <field name="view_type">form</field>
-    </record>
-    <menuitem parent="menu_root" id="menu_new_branch" action="act_new_branch_window"/>
-	-->
+    <menuitem id="menu_modules" parent="menu_root" name="Releases" action="act_modules"/>
   </data>
 </odoo>

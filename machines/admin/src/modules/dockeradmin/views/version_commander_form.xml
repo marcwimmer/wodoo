@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_version_commander_form" model="ir.ui.view">
+      <field name="name">version.commander form</field>
+      <field name="model">version.commander</field>
+      <field name="arch" type="xml">
+        <form string="" version="7.0">
+          <header>
+            <button name="update_actions" string="Determine Actions" type="object"/>
+            <button name="git_fetch" string="Git Fetch" type="object"/>
+            <button name="git_pull" string="Git Pull" type="object"/>
+            <button name="git_push" string="Git Push" type="object"/>
+            <button name="update_branches" string="Update Branches" type="object"/>
+			<button name="checkout_deploy" string="Checkout Deploy" type="object" />
+			<button name="checkout_master" string="Checkout Master" type="object" />
+          </header>
+          <sheet>
+            <group string="State" col="2">
+              <field name="is_clean"/>
+              <field name="git_state" nolabel="1"/>
+            </group>
+            <notebook>
+              <page string="Required Actions">
+                <field name="action_ids">
+                  <tree>
+                    <field name="type"/>
+                    <field name="argument"/>
+                    <button name="do_restore" string="Restore" type="object" attrs="{'invisible': [('type', '!=', 'modified')]}"/>
+                    <button name="do_checkin" string="Check In" type="object" attrs="{'invisible': [('type', 'not in', ['untracked_file', 'modified'])]}"/>
+                    <button name="do_delete" string="Delete" type="object" attrs="{'invisible': [('type', 'not in', ['untracked_file'])]}"/>
+                  </tree>
+                </field>
+              </page>
+              <page string="Unmerged Branches">
+                <group string="" col="4">
+                  <field name="unmerged_branch_ids" nolabel="1">
+                    <tree default_order="sequence">
+                      <field name="sequence" invisible="1"/>
+                      <field name="name"/>
+                      <field name="merged_master"/>
+                      <button name="merge_master" string="Merge Master" type="object" attrs="{'invisible': [('merged_master', '=', True)]}"/>
+                      <field name="merged_deploy"/>
+                      <button name="merge_deploy" string="Merge Deploy" type="object" attrs="{'invisible': [('merged_deploy', '=', True), ('name', '!=', 'master')]}"/>
+                    </tree>
+                  </field>
+                </group>
+              </page>
+              <page string="All Branches">
+                <group string="" col="4">
+                  <field name="all_branch_ids" nolabel="1">
+                    <tree default_order="sequence">
+                      <field name="sequence" invisible="1"/>
+                      <field name="name"/>
+                      <field name="merged_master"/>
+                      <button name="merge_master" string="Merge Master" type="object" attrs="{'invisible': [('merged_master', '=', True)]}"/>
+                      <field name="merged_deploy"/>
+                      <button name="merge_deploy" string="Merge Deploy" type="object" attrs="{'invisible': [('merged_deploy', '=', True), ('name', '!=', 'master')]}"/>
+                    </tree>
+                  </field>
+                </group>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+  </data>
+</odoo>
