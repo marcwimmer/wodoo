@@ -22,7 +22,7 @@ if not dest_file:
 
 with open(dest_file, 'w') as f:
     f.write("#Composed {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    f.write("version: '3.3'\n")
+    f.write("version: '{}'\n".format(os.environ['ODOO_COMPOSE_VERSION']))
 
 def replace_all_envs_in_file(filepath):
     with open(filepath, 'r') as f:

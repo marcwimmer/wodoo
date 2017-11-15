@@ -1,0 +1,7 @@
+Asterisk Server
+==============================
+
+To export sample default config:
+----------------------------------
+
+./odoo run asterisk /opt/bin/export_config.sh

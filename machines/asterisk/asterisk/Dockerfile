@@ -1,31 +1,65 @@
-FROM ubuntu:14.04
-ARG ASTERISK_VERSION
-# if in customizations is an asterisk directory, then enable asterisk, otherwise not
-RUN apt-get update && apt-get install -y build-essential linux-headers-generic subversion git openvpn
+FROM ubuntu:16.04
+ENV ASTERISK_VERSION=14.7.2
+ENV DEBIAN_FRONTEND noninteractive
+ARG ASTERISK_COUNTRY_ITU
+RUN sed -i "s/# deb http/deb http/g" /etc/apt/sources.list \
+&&  sed -i "s/# deb-src http/deb-src http/g" /etc/apt/sources.list \
+&&  echo "APT::Install-Recommends "false";" > /etc/apt/apt.conf \
+&&  echo "APT::Install-Suggests "false";" >> /etc/apt/apt.conf 
 
-RUN apt-get update && apt-get install -y build-essential linux-headers-generic libxml2-dev libncurses5-dev libreadline-dev libreadline6-dev libiksemel-dev libvorbis-dev libssl-dev libspeex-dev libspeexdsp-dev mpg123 libmpg123-0 sox openssl wget subversion openssh-server unzip python-pip
+RUN apt update && \
+	apt --yes autoremove && \
+	apt install -y \
+	build-essential \
+	wget \
+	libssl-dev \
+	libncurses5-dev \
+	libnewt-dev \
+	libxml2-dev \
+	libsqlite3-dev \
+	uuid-dev \
+	git \
+	subversion \
+	openssl \
+	pkg-config \
+	libjansson-dev \
+	rsync && \
+	apt clean all
 
-RUN git clone --depth 1 --branch 13.12.1 http://gerrit.asterisk.org/asterisk /tmp/asterisk
-WORKDIR /tmp/asterisk
-RUN echo "Adding MP3 support" && \
-./contrib/scripts/get_mp3_source.sh && \
-apt-get install -y build-essential wget aptitude gdb strace && \
-./contrib/scripts/install_prereq install && \
-./contrib/scripts/install_prereq install-unpackaged && \
-./configure
 
-ADD menuselect.makeopts menuselect.makeopts
-RUN make -j8 && make install
+RUN mkdir -p /tmp/install
+WORKDIR /tmp/install
+RUN wget "http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-$ASTERISK_VERSION.tar.gz" -O asterisk.tar.gz
 
-ADD requirements.txt /root/requirements.txt
-ADD bin/ /
+RUN tar -zxvf asterisk.tar.gz
+RUN mv asterisk-* asterisk
+WORKDIR /tmp/install/asterisk
+RUN git clone git://github.com/asterisk/pjproject pjproject
+WORKDIR /tmp/install/asterisk/pjproject
+RUN ./configure --prefix=/usr --enable-shared --disable-sound --disable-resample --disable-video --disable-opencore-amr CFLAGS='-O2 -DNDEBUG' && \
+make dep && \
+make && \
+make install
 
-RUN \
-pip install pip --upgrade && \
-pip install -r /root/requirements.txt && \
-chmod a+x /*.sh
+WORKDIR /tmp/install/asterisk
+RUN contrib/scripts/get_mp3_source.sh
+RUN if [ -z "$ASTERISK_COUNTRY_ITU" ]; then echo "Please configure ASTERISK_COUNTRY_ITU."; exit 20; fi
 
-#  init jobs
-RUN make config 
+RUN (echo 'yes'; echo "$ASTERISK_COUNTRY_ITU") | contrib/scripts/install_prereq install
+RUN contrib/scripts/install_prereq install-unpackaged
+RUN ./configure --with-crypto --with-srtp && \
+make config && \
+make menuselect && \
+make NOISY_BUILD=yes && \
+make install && \
+make install-logrotate && \
+make config && \
+make samples
 
-CMD ["/run.sh"]
+RUN apt install -y net-tools openvpn vim
+
+ADD bin /opt/bin
+RUN chmod a+x /opt/bin/*
+
+CMD /opt/bin/run.sh
+

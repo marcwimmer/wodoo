@@ -7,8 +7,12 @@ if [[ "$RUN_ASTERISK" == "0" ]]; then
 fi
 
 #connect to openvpn server
-mkdir /dev/net
-mknod /dev/net/tun c 10 200  # also used for tap
+if [[ ! -d /dev/net ]]; then
+	mkdir /dev/net
+fi
+if [[ -f /dev/net/tun ]]; then
+	mknod /dev/net/tun c 10 200  # also used for tap
+fi
 
 openvpn /opt/certs/asterisk.conf &
 

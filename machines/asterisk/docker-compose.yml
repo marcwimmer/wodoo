@@ -28,7 +28,7 @@ services:
       PROXY_PORT_IN: 29926
       PROXY_PORT_OUT: 80
     volumes:
-      - odoosource:/opt/odoo
+      - ${HOST_ODOO_HOME}/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
       - $HOST_ODOO_HOME/data/ari/calls:/opt/permstore/calls
       - $HOST_ODOO_HOME/data/ari/uploaded_calls:/opt/permstore/uploaded_calls
       - $HOST_ODOO_HOME/data/ari/record_clicked:/opt/permstore/record_clicked
@@ -39,6 +39,7 @@ services:
       - $HOST_ODOO_HOME/machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
       - $HOST_ODOO_HOME/settings
+      - $HOST_ODOO_HOME/settings.override
 
   stasis:
       build: $HOST_ODOO_HOME/machines/asterisk/stasis
@@ -59,15 +60,15 @@ services:
   asterisk:
     container_name: ${DCPREFIX}_asterisk
     depends_on:
-        ovpn:
-            condition: service_healthy
-    build: $HOST_ODOO_HOME/machines/asterisk/asterisk
-    expose:
-      - 8088
+        - asterisk_ovpn_server
+    build:
+        context: $HOST_ODOO_HOME/machines/asterisk/asterisk
+        args:
+            - ASTERISK_COUNTRY_ITU=${ASTERISK_COUNTRY_ITU}
     environment:
-      CUSTOMS: ${CUSTOMS}
+      TRIGGER: /opt/reloader/reload
     volumes:
-      - $HOST_ODOO_HOME/machines/asterisk/asterisk/etc/asterisk:/etc/asterisk:ro
+      - $HOST_ODOO_HOME/run/asterisk/etc:/etc/asterisk:ro
       - $HOST_ODOO_HOME/data/ovpn/client:/opt/certs:ro
       - $HOST_ODOO_HOME/data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
       - $HOST_ODOO_HOME/data/asterisk/recordings:/var/spool/asterisk/recording
@@ -75,7 +76,8 @@ services:
       - $HOST_ODOO_HOME/data/asterisk/sounds:/var/lib/asterisk/sounds:ro
       - asterisk_logs:/var/log/asterisk
     env_file:
-      $HOST_ODOO_HOME/settings
+        - $HOST_ODOO_HOME/settings
+        - $HOST_ODOO_HOME/settings.override
     cap_add:
         - NET_ADMIN
     healthcheck:
@@ -83,4 +85,3 @@ services:
         interval: 15s
         timeout: 5s
         retries: 2
-
