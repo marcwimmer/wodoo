@@ -28,9 +28,10 @@ function startup() {
 	ODOO_HOME=$DIR
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export ODOO_MANAGER_STARTED_ONCE=1
+	export ODOO_COMPOSE_VERSION="3.3"
+	export ODOO_COMPOSE_OPENVPN_DOMAINS_DIR="$DIR/run/openvpn_domains"
 	docker_compose_file="$ODOO_HOME/run/docker-compose.yml"
 	return 0
-
 }
 
 function get_CUSTOMS_DIR() {
@@ -388,25 +389,24 @@ function prepare_yml_files_from_template_files() {
 	# only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
 	#
 	# - also replace all environment variables
-	find "$DIR/run" -name '*docker-compose*.yml' -delete
-        declare -a all_dirs
+	PATTERN='docker-compose*.yml'
+	rm "$DIR/run/$PATTERN" > /dev/null 2>&1 || true
+
+	declare -a all_dirs
 	all_dirs[0]="machines"
 	if [[ -d "$CUSTOMS_DIR/machines" ]]; then
 		all_dirs[1]="$CUSTOMS_DIR/machines"
 	fi
-	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name 'docker-compose*.yml')
-	python ./admin/prepare_dockercompose_files.py ./run/docker-compose.yml "$ALL_CONFIG_FILES"
+	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
 
-	# append custom docker composes
-	# TODO append file contents to docker compose file
-	#if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
-		#cp $ADDITIONAL_DOCKER_COMPOSE "$DIR/run"
-		#for file in $ADDITIONAL_DOCKER_COMPOSE; do
-			#ALL_CONFIG_FILES+=" -f "
-			#ALL_CONFIG_FILES+=$file
-		#done
-	#fi
-	#echo $ALL_CONFIG_FILES
+	# append openvpnconfig from domain preparation of vpn domains 
+	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES"; find "$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR" -type f -name "$PATTERN")
+
+
+	# Make all config files to absolutepath
+	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES" | while read -r f; do readlink -e "$f"; done)
+
+	python ./admin/prepare_dockercompose_files.py ./run/docker-compose.yml "$ALL_CONFIG_FILES"
 
 	return 0
 }
@@ -837,29 +837,27 @@ function do_command() {
 		;;
 
     show-openvpn-ciphers)
-	   dcrun ovpn_minimal /usr/sbin/openvpn --show-ciphers
+	   dcrun default_ovpn_minimal /usr/sbin/openvpn --show-ciphers
 	   ;;
 
 	enter-VPN)
-		domain=$2
-		machine_name="${domain}_ovpn_server_client"
-		$MANAGE up -d "$machine_name"
-		$MANAGE runbash "$machine_name"
+		echo "Starting a machine, so you have access to the VPN Network"
+		echo "You can scan for live hosts and check if the network is up."
+		echo
+		echo "Samples: "
+		echo "------------"
+		echo "ifconfig"
+		echo "nmap -sP 192.168.2.1/24"
+		echo
+		domain="$2"
+		$MANAGE up -d "${domain}_ovpn_server"
+		$MANAGE run "${domain}_ovpn_server_client" run_ovpn_server_as_client.sh 
 		;;
     make-phone-CA)
 		$MANAGE make-CA asterisk
 		;;
-	setup-ovpn-domain)
-		domain=$2
-
-		cd "$DIR/machines/openvpn"
-		local f
-		f="$DIR/run/9999-docker-compose.ovpn.$domain.yml"
-
-		cp docker-compose.yml "$f"
-
-		;;
 	force-ovpn-domain)
+		# checks for parameter "$domain"
 		domain=$2
 		if [[ -z "$domain" ]]; then
 			echo "OVPN Domain missing"
@@ -1104,8 +1102,14 @@ function update_openvpn_domains() {
 	# template openvpn docker compose to run; 
 	# attaches the docker-compose to $dc then
 
+	[[ -d "${ODOO_COMPOSE_OPENVPN_DOMAINS_DIR:?}" ]] && rm -Rf "$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR"
+
 	find "$DIR/machines" -name 'ovpn-domain.conf' | while read -r file; do
-		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "$docker_compose_file" "${file}" "$DIR"
+		local parent
+		parent="$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR/$(basename "$(dirname "$file")")"
+		mkdir -p "$parent"
+		OPENVPN_CONFIG_FILE="$parent/docker-compose.run_openvpn.yml"
+		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "${file}" "$DIR" "$OPENVPN_CONFIG_FILE"
 	done
 
 	return 0
@@ -1254,11 +1258,11 @@ function main() {
 				set -e
 				remove_temp_directories
 				prepare_filesystem
+				update_openvpn_domains 
 				prepare_yml_files_from_template_files
 				reset_nginx_configs
 				setup_odoo_instances
 				setup_nginx_paths
-				update_openvpn_domains 
 				;;
 
 			*)

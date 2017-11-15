@@ -16,9 +16,10 @@ import shutil
 import subprocess
 import tempfile
 import yaml
-docker_compose_file = sys.argv[1]
-filepath_config = sys.argv[2]
-root_path = sys.argv[3]
+filepath_config = sys.argv[1]
+root_path = sys.argv[2]
+out_file = sys.argv[3]
+
 
 template_file = os.path.join(root_path, 'machines/openvpn/template.yml')
 
@@ -26,8 +27,12 @@ with open(filepath_config, 'r') as f:
     config = json.loads(f.read())
 
 domain = config['domain']
-with open(docker_compose_file, 'r') as f:
-    docker_config = yaml.load(f.read())
+docker_config = {
+    'version': os.environ['ODOO_COMPOSE_VERSION'],
+    'services': {},
+}
+
+docker_compose_file = out_file
 
 with open(template_file, 'r') as f:
     ovpn_services = f.read()
