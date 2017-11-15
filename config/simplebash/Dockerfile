@@ -18,4 +18,7 @@ ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
+RUN \
+git config --global user.email admin && \
+git config --global user.name admin
 WORKDIR /opt/odoo

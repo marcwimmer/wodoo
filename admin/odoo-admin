@@ -946,6 +946,9 @@ function do_command() {
 		chromium-browser http://localhost
 
 		;;
+	OCA)
+		"$ODOO_HOME/admin/OCA" "${ALL_PARAMS[@]}"
+		;;
 	compose)
 		echo "Built the docker-compose file."
 		;;
