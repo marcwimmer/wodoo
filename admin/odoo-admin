@@ -472,7 +472,9 @@ function do_command() {
         LINKPATH=$DIR/dumps/latest_dump
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
-			$MANAGE exec postgres /backup.sh
+			# by following command the call is crontab safe;
+			#docker exec -i "$($dc ps -q postgres)" /backup.sh
+			$MANAGE exec -T postgres /backup.sh
 			mv "$DIR/dumps/$DBNAME.gz" "$filepath"
 		else
 			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
