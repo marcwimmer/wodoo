@@ -12,7 +12,8 @@ RUN apt update && apt install -y \
 	uuid-runtime \
 	git \
 	rsync \ 
-	curl
+	curl \
+	netcat
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt

@@ -1,10 +1,10 @@
 #!/bin/bash
-set +x
+set -x
 ARGS=( "$@" )
 
 function startup() {
 	set -e
-	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+	DIR=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
 	export DIR="$DIR"
 
 	# create empty file, so that simple bash runs
@@ -31,14 +31,14 @@ function fix() {
 		./rebuild.sh
 
 		cd "$DIR/config/telegrambot"
-		docker-compose build
+		/usr/local/bin/docker-compose build
 		exit 0
 	fi
 }
 
 function remove_old_bash() {
 	cd "$DIR/config/simplebash" || exit -1
-	docker-compose rm -f 1>/dev/null 2>&1
+	/usr/local/bin/docker-compose rm -f 1>/dev/null 2>&1
 }
 
 
@@ -62,9 +62,10 @@ function collect_extra_volumes() {
 }
 
 function build_command() {
-	command=(docker-compose run)
-
-	command+=(--name "odoo_bash_$(uuidgen)")
+	# using absolute path, to work in crontab
+	command=(/usr/local/bin/docker-compose)
+	command+=(run)
+	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
 	command+=(-e HOST_ODOO_HOME="$DIR")
 	command+=(-e ODOO_HOME="$DIR")
 	if [[ -n "${extra_volumes[*]}" ]]; then
