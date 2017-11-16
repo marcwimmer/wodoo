@@ -473,7 +473,8 @@ function do_command() {
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
 			# by following command the call is crontab safe;
-			docker exec -i "$($dc ps -q postgres)" /backup.sh
+			$MANAGE wait_for_container_postgres
+			dcexec postgres /backup.sh
 			mv "$DIR/dumps/$DBNAME.gz" "$filepath"
 		else
 			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
@@ -628,6 +629,7 @@ function do_command() {
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
+			$MANAGE wait_for_container_postgres
             SQLFILE="$DIR/run/sqlscripts/script.sql"
             echo "$query" | tee "$SQLFILE"
 
@@ -788,29 +790,23 @@ function do_command() {
 		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
 			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
 		fi
+		# running duplicate updates is really a problem;
+        $dc kill 
+        $dc rm -f
+        $dc create --force-recreate
         if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
+			$MANAGE wait_for_container_postgres
         fi
-		# running duplicate updates is really a problem;
-        $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
-        $dc kill odoo_update
-        $dc rm -f
-        $dc up -d postgres && sleep 3
 
         dcrun odoo_update /update_modules.sh "$2" || true
 		$MANAGE show-install-state || exit 34
 
-        $dc kill odoo nginx
-        if [[ "$RUN_ASTERISK" == "1" ]]; then
-            $dc kill ari stasis
-        fi
-        $dc kill
-        $dc rm -f
         $dc up -d
-        echo 'Removing unneeded containers'
-		sleep 10
-        $dc kill nginx
         $dc up -d
+        $dc up -d
+        $dc restart nginx
+
         df -h / # case: after update disk / was full
 		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
 			echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
@@ -979,6 +975,12 @@ function do_command() {
 		cmd=("$ODOO_HOME/admin/odoo-patch")
 		cmd+=("${ALL_PARAMS[@]}")
 		eval "${cmd[@]@Q}"
+		;;
+	wait_for_port)
+		while ! nc -q 1 "$2" "$3" </dev/null; do sleep 0.1; done
+		;;
+	wait_for_container_postgres)
+		$MANAGE wait_for_port postgres 5432
 		;;
     *)
         echo "Invalid option $1"

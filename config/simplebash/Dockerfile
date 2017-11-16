@@ -11,7 +11,9 @@ RUN apt update && apt install -y \
 	postgresql-client \
 	uuid-runtime \
 	git \
-	rsync
+	rsync \ 
+	curl \
+	netcat
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt
