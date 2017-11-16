@@ -977,7 +977,21 @@ function do_command() {
 		eval "${cmd[@]@Q}"
 		;;
 	wait_for_port)
-		while ! nc -q 1 "$2" "$3" </dev/null; do sleep 0.1; done
+		started=$(date +"%s")
+		while ! nc -q 1 "$2" "$3" </dev/null; do 
+			sleep 1;
+			now=$(date +"%s")
+			(( elapsed = ("$now" - "$started") % 5))
+			if [[ "$elapsed" == "0" ]]; then
+				echo "Waiting for $2 on port $3..."
+			fi
+
+			if [[ "$elapsed" -gt 20 ]]; then
+				echo "Waiting too long for $2 on port $3. Exiting with error-code."
+				exit 20
+			fi
+			
+		done
 		;;
 	wait_for_container_postgres)
 		$MANAGE wait_for_port postgres 5432
