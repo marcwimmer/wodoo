@@ -480,8 +480,10 @@ function do_command() {
 		else
 			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
 		fi
-        /bin/rm "$LINKPATH" || true
-        ln -s "$filepath" "$LINKPATH"
+		if [[ "$NO_BACKUP_SYMBOLIC_LINK_DUMP" != "1" ]]; then
+			/bin/rm "$LINKPATH"
+			ln -s "$filepath" "$LINKPATH" > /dev/null 2>&1
+		fi
         md5sum "$filepath"
         echo "Dumped to $filepath"
 		$MANAGE telegram-send "Database Backup $DBNAME done to $filepath"
