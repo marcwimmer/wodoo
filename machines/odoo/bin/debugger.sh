@@ -8,10 +8,6 @@ WATCHER=/tmp/watcher.sh  # needed so that due to set_trace debugging is possible
 last_mod=''
 last_unit_test=''
 
-function kill() {
-	PID=$(cat "$DEBUGGER_ODOO_PID")
-	kill "$PID"
-}
 # empty file
 >| "$DEBUGGER_WATCH"
 
@@ -74,6 +70,10 @@ EOF
 # start watcher
 pkill -9 -f $WATCHER
 /bin/bash $WATCHER "$LOCKFILE" &
+proc_id_watcher=$!
+self=$$
+
+trap "kill -9 $proc_id_watcher; kill -9 $self" SIGINT
 
 
 while true; do
@@ -131,5 +131,3 @@ while true; do
 		sleep 0.2
 
 done
-
-pkill -9 -f $WATCHER
