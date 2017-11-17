@@ -1004,10 +1004,24 @@ function do_command() {
 		cmd+=("dirty")
 		eval "${cmd[@]@Q}"
 		;;
-	src)
+	fix-src-rights)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+		chown "$DEFAULT_USER:$DEFAULT_USER" -R "$CUSTOMS_DIR"
+		;;
+	new-ticket)
 		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
-		cmd+=("${ALL_PARAMS[@]}")
+		cmd+=("new-ticket")
+		cmd+=("$2")
 		eval "${cmd[@]@Q}"
+		$MANAGE fix-src-rights
+		;;
+	merge)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("merge")
+		cmd+=("$2")
+		eval "${cmd[@]@Q}"
+		# fix source rights
+		$MANAGE fix-src-rights
 		;;
     *)
         echo "Invalid option $1"

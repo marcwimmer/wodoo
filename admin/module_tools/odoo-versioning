@@ -14,6 +14,7 @@ from module_tools import manifest2dict
 from odoo_config import translate_path_relative_to_customs_root
 import odoo_config
 import shutil
+import datetime
 import os
 import time
 import tempfile
@@ -37,26 +38,55 @@ def display_help():
     print "$0 unit-test"
     print "$0 help"
     print "$0 dirty - displays dirty files and modules"
+    print "$0 merge master/deploy - to merge ticket to master or deploy branch"
     print ""
     print ""
     sys.exit(-1)
 
+def check_dirty(repo):
+    dirty = bool(repo.is_dirty() or repo.untracked_files)
+
+    if dirty:
+        print "Please clean-up before - it is dirty here:"
+        os.chdir(customs_dir)
+        os.system("git status")
+        sys.exit(13)
+
+def domerge():
+    branch = sys.argv[2]
+
+    if branch not in ['master', 'deploy']:
+        print "Please say wether master or deploy"
+        sys.exit(1)
+    repo = Repo(customs_dir)
+    check_dirty(repo)
+
+    active_branch = repo.active_branch.name
+    if active_branch == 'master':
+        print "Cant merge master on deploy - use the sub branches to merge on deploy"
+        sys.exit(84)
+
+    SQUASH = '--squash'
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch], cwd=customs_dir)
+    subprocess.check_call(['/usr/bin/git', 'merge', SQUASH, active_branch], cwd=customs_dir)
+    subprocess.check_call(['/usr/bin/git', 'commit', '-am', 'merged {} into {}'.format(active_branch, branch)], cwd=customs_dir)
+
 def action_new_ticket():
+    repo = Repo(customs_dir)
+    check_dirty(repo)
     if action in ['new-ticket'] and len(sys.argv) < 3:
         print "Please provide ticket name!"
         sys.exit(-1)
+
+    repo = Repo(customs_dir)
+
     branch = sys.argv[2]
-    raise Exception("check if dirty")
-    try:
-        subprocess.check_call(['/usr/bin/git', 'stash'], cwd=customs_dir).strip()
-    except: pass
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir)
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch], cwd=customs_dir)
-    print ""
-    print ""
-    print "Switch to new branch: {}".format(branch)
-    print ""
-    print ""
+    if [x for x in repo.branches if x.name == branch]:
+        print "Branch already exists, switching to it"
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch], cwd=customs_dir)
+    else:
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch], cwd=customs_dir)
 
 def dirty(doprint=True, interactive=True):
     repo = Repo(customs_dir)
@@ -112,6 +142,21 @@ def dirty(doprint=True, interactive=True):
         module_files = [x for x in changed_files if x.startswith(module_path)]
         return module_files
 
+    def insert_changelog(readme_path, changelog):
+        """
+        Inserts into readme_path the change log
+        """
+        with open(readme_path) as f:
+            content = f.read().split("\n")
+
+        content += "\n"
+        content += datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC") + "\n"
+        content += "========================================"
+        content += changelog
+
+        with open(readme_path, 'w') as f:
+            f.write('\n'.join(content))
+
     def do_interactive_commit(changed_files, manifest_path):
         for x in changed_files:
             repo.git.add(x)
@@ -141,24 +186,28 @@ def dirty(doprint=True, interactive=True):
         type = user.upper()
 
         lines = []
-        print "Please describe, what was done. Afterwards hit Ctrl+D: (Ctrl+C to abort)\n\n"
+        print "Please describe, what was done. To finish type 'done' and hit return: (Ctrl+C to abort)\n\n"
         while True:
             try:
                 text = raw_input("")
             except:
                 EOFError
                 break
+            if text == 'done':
+                break
             lines.append(text)
         text = '\n'.join(lines)
 
-        format_msg = "{}\n\n{}".format(
+        format_msg = "{}@{}\n\n{}".format(
             'BUGFIX' if type == 'B' else 'FEATURE',
+            get_module_of_file(os.path.join(customs_dir, manifest_path)) if manifest_path else "",
             text
         )
 
         # on module update increment the version:
         if manifest_path:
             d = manifest2dict(os.path.join(customs_dir, manifest_path))
+            module_name, module_path = get_module_of_file(os.path.join(customs_dir, manifest_path), return_path=True)
 
             v = d['version']
             v = v.split('.')
@@ -173,10 +222,19 @@ def dirty(doprint=True, interactive=True):
             v = '.'.join(str(x) for x in v)
             d['version'] = v
             write_manifest(os.path.join(customs_dir, manifest_path), d)
+
+            README_PATH = os.path.join(module_path, 'README.rst')
+            if os.path.isfile(README_PATH):
+                insert_changelog(README_PATH, format_msg)
+                repo.git.add(README_PATH)
+
             repo.git.add(manifest_path)
 
         author = Actor(os.environ['USER'], os.environ['USER'])
         repo.index.commit(format_msg, author=author, committer=author)
+
+        print "Successfully commited: \n\n".format(format_msg)
+        time.sleep(1)
 
         if '/common/' in manifest_path:
             while True:
@@ -360,6 +418,7 @@ def unit_tests():
     v('new-ticket', 'ticket#1')
     v('new-ticket', 'ticket#2')
 
+
 actions = {
     'new-ticket': action_new_ticket,
     'unit-test': unit_tests,
@@ -367,6 +426,7 @@ actions = {
     'unit-tests-git': unit_tests_git,
     'help': display_help,
     'dirty': dirty,
+    'merge': domerge,
 }
 
 
