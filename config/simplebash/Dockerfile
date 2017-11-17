@@ -13,7 +13,8 @@ RUN apt update && apt install -y \
 	git \
 	rsync \ 
 	curl \
-	netcat
+	netcat \
+	git-cola
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt

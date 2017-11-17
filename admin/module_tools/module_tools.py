@@ -165,14 +165,17 @@ def get_customs_modules(customs_path=None, mode=None):
         return modules
     return []
 
-def get_all_non_odoo_modules():
+def get_all_non_odoo_modules(return_relative_manifest_paths=False):
     """
     Returns module names of all modules, that are from customs or OCA.
     """
     for manifest in get_all_manifests():
         relpath = translate_path_relative_to_customs_root(manifest)
         if any(relpath.startswith(x) for x in ['common/', 'modules/', 'OCA/']):
-            yield get_module_of_file(manifest)
+            if not return_relative_manifest_paths:
+                yield get_module_of_file(manifest)
+            else:
+                yield relpath
 
 def get_all_module_dependency_tree(all_manifests=None):
     """
@@ -222,7 +225,9 @@ def get_module_flat_dependency_tree(manifest_path, all_manifests=None):
     x(deptree)
     return sorted(list(result))
 
-def get_module_of_file(filepath, return_path=False):
+
+
+def get_module_of_file(filepath, return_path=False, return_manifest=False):
 
     if os.path.isdir(filepath):
         p = filepath
@@ -254,11 +259,19 @@ def get_module_of_file(filepath, return_path=False):
             break
         p = os.path.dirname(os.path.realpath(p))
 
+    if return_manifest:
+        manifest = None
+        for m in MANIFESTS:
+            if os.path.isfile(os.path.join(p, m)):
+                manifest = m
+        if not manifest:
+            raise Exception('error')
+        return os.path.basename(p), p, os.path.join(p, manifest)
+
+    if return_path:
+        return os.path.basename(p), p
     if not return_path:
         return os.path.basename(p)
-    else:
-        return os.path.basename(p), p
-
 
 def manifest2dict(manifest_path):
     with open(manifest_path, 'r') as f:
@@ -295,7 +308,9 @@ def get_relative_path_to_odoo_module(filepath):
     path_to_module = get_path_to_current_odoo_module(filepath)
     for m in MANIFESTS:
         path_to_module = path_to_module.replace("/{}".format(m), "")
-    filepath = filepath.replace(path_to_module, "")
+    filepath = filepath[len(path_to_module):]
+    if filepath.startswith("/"):
+        filepath = filepath[1:]
     return filepath
 
 def goto_inherited_view(filepath, line, current_buffer):
@@ -670,10 +685,12 @@ def update_module_file(current_file):
     if "application" not in mod:
         mod["application"] = False
 
-    file = open(file_path, "wb")
-    pp = pprint.PrettyPrinter(indent=4, stream=file)
-    pp.pprint(mod)
-    file.close()
+    write_manifest(file_path, mod)
+
+def write_manifest(manifest_path, data):
+    with open(manifest_path, "wb") as file:
+        pp = pprint.PrettyPrinter(indent=4, stream=file)
+        pp.pprint(data)
 
 def update_view_in_db_in_debug_file(filepath, lineno):
     filepath = translate_path_into_machine_path(filepath)

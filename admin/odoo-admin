@@ -356,6 +356,9 @@ function showhelp() {
 	echo ""
 	echo "make-customs"
     echo
+	echo "patch - run without arguments for help"
+	echo ""
+	echo "version - run without arguments for help"
 	echo ""
 	echo "lsyncd - displays the command to execute lsyncd"
 }
@@ -994,6 +997,17 @@ function do_command() {
 		;;
 	wait_for_container_postgres)
 		$MANAGE wait_for_port postgres 5432
+		;;
+
+	dirty)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("dirty")
+		eval "${cmd[@]@Q}"
+		;;
+	src)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("${ALL_PARAMS[@]}")
+		eval "${cmd[@]@Q}"
 		;;
     *)
         echo "Invalid option $1"

@@ -6,9 +6,16 @@ Manages versioning of submodules.
 import sys
 import subprocess
 import module_tools
+from module_tools import get_all_non_odoo_modules
+from module_tools import get_module_of_file
+from module_tools import get_relative_path_to_odoo_module
+from module_tools import write_manifest
+from module_tools import manifest2dict
+from odoo_config import translate_path_relative_to_customs_root
 import odoo_config
 import shutil
 import os
+import time
 import tempfile
 from git import Repo
 from git import Actor
@@ -26,17 +33,16 @@ customs_dir = odoo_config.customs_dir()
 def display_help():
     print "How to use:"
     print ""
-    print "odoo-git new-ticket <ticketname>"
-    print
-    print "odoo-git master :current ticket is used"
-    print ""
-    print "odoo-git deploy <ticketname>"
+    print "$0 new-ticket <ticketname>"
+    print "$0 unit-test"
+    print "$0 help"
+    print "$0 dirty - displays dirty files and modules"
     print ""
     print ""
     sys.exit(-1)
 
 def action_new_ticket():
-    if action in ['new-ticket', 'deploy'] and len(sys.argv) < 3:
+    if action in ['new-ticket'] and len(sys.argv) < 3:
         print "Please provide ticket name!"
         sys.exit(-1)
     branch = sys.argv[2]
@@ -51,6 +57,156 @@ def action_new_ticket():
     print "Switch to new branch: {}".format(branch)
     print ""
     print ""
+
+def dirty(doprint=True, interactive=True):
+    repo = Repo(customs_dir)
+    bool(repo.is_dirty() or repo.untracked_files)
+
+    def get_changed_files():
+        return [item.a_path for item in repo.index.diff(None)] + repo.untracked_files
+
+    def get_staged_files():
+        return [x.a_path for x in repo.index.diff("HEAD")]
+
+    def unstage():
+        for file in get_staged_files():
+            repo.git.reset(file)
+
+    unstage()
+    changed_files = get_changed_files()
+
+    affected_modules = []
+    for mod in sorted(get_all_non_odoo_modules(return_relative_manifest_paths=True)):
+        module_path = os.path.dirname(mod)
+
+        files = [x for x in changed_files if x.startswith(module_path)]
+        if files:
+            affected_modules.append(module_path)
+            [changed_files.remove(x) for x in files]
+
+    if doprint:
+        if affected_modules:
+            print ""
+            print "Modules:"
+            print "----------------------------------"
+            for mod in affected_modules:
+                print "module {}\t[{}]".format(get_module_of_file(mod), mod)
+
+        if changed_files:
+            print ""
+            print "Other:"
+            for file in changed_files:
+                print file
+
+    def rungitcola(path):
+        os.chdir(customs_dir)
+        os.system('git-cola >/dev/null 2>&1 &')
+        time.sleep(1.0)
+        os.system('/usr/bin/killall -9 git-cola; /usr/bin/pkill -9 -f git-cola')
+        os.system('git-cola >/dev/null 2>&1')
+
+    def get_modified_files_of_module(manifest_path):
+        changed_files = get_changed_files()
+        module_path = os.path.dirname(manifest_path)
+
+        module_files = [x for x in changed_files if x.startswith(module_path)]
+        return module_files
+
+    def do_interactive_commit(changed_files, manifest_path):
+        for x in changed_files:
+            repo.git.add(x)
+        print "Changed files detected, i put them on stage; please select/deselect for stage"
+        print "Just close git-cola - DO NOT COMMIT YET"
+        time.sleep(1)
+        rungitcola(customs_dir)
+        files = get_staged_files()
+        if not files:
+            user = raw_input("No files staged - try again? Otherwise abort. [y]/[N]")
+            if user.lower() == 'n':
+                sys.exit(0)
+                return
+        print ""
+        print "On Stage:"
+        for file in files:
+            print "\t{}".format(file)
+
+        while True:
+            user = raw_input("[B]ugfix, [F]eature, [C]ancel?")
+            if not user or user.lower() in ['c', 'b', 'f']:
+                break
+
+        if user.lower() == 'c':
+            sys.exit(0)
+
+        type = user.upper()
+
+        lines = []
+        print "Please describe, what was done. Afterwards hit Ctrl+D: (Ctrl+C to abort)\n\n"
+        while True:
+            try:
+                text = raw_input("")
+            except:
+                EOFError
+                break
+            lines.append(text)
+        text = '\n'.join(lines)
+
+        format_msg = "{}\n\n{}".format(
+            'BUGFIX' if type == 'B' else 'FEATURE',
+            text
+        )
+
+        # on module update increment the version:
+        if manifest_path:
+            d = manifest2dict(os.path.join(customs_dir, manifest_path))
+
+            v = d['version']
+            v = v.split('.')
+            if len(v) == 2:
+                v.append('0')
+            if type == 'B':
+                v[-1] = long(v[-1]) + 1
+            elif type == 'F':
+                v[-2] = long(v[-2]) + 1
+            else:
+                raise Exception("Not implemented: {}".format(type))
+            v = '.'.join(str(x) for x in v)
+            d['version'] = v
+            write_manifest(os.path.join(customs_dir, manifest_path), d)
+            repo.git.add(manifest_path)
+
+        author = Actor(os.environ['USER'], os.environ['USER'])
+        repo.index.commit(format_msg, author=author, committer=author)
+
+        if '/common/' in manifest_path:
+            while True:
+                user = input("Try to push subtree? [Y/n]") or 'y'
+                if user.lower() in 'yn':
+                    break
+            if user == 'y':
+                # TODO
+                pass
+
+        new_changed_files = [x for x in get_changed_files() if x in changed_files]
+        return new_changed_files
+
+    if interactive and (changed_files or affected_modules):
+        print ""
+        user_commit = raw_input("Going to commit? [Y/n] ")
+        if user_commit.lower() == 'n':
+            sys.exit(0)
+
+        while changed_files:
+            changed_files = do_interactive_commit(changed_files, manifest_path=None)
+
+        for module in affected_modules:
+            changed_files = get_modified_files_of_module(module)
+            if not changed_files:
+                continue
+            while changed_files:
+                module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir, changed_files[0]), return_manifest=True)
+                manifest_path = translate_path_relative_to_customs_root(manifest_path)
+                changed_files = do_interactive_commit(changed_files, manifest_path=manifest_path)
 
 def unit_tests_git():
     r = {
@@ -141,23 +297,14 @@ def unit_tests_git():
         repo.index.commit("msg1", author=r['author'], committer=r['author'])
 
         #clone submodule
-        from pudb import set_trace
-        set_trace()
         subrepo_dir = 'subrepo'
         repo.clone_from(r['path_subrepo'], os.path.join(repo.working_dir, subrepo_dir))
 
         repo.index.commit("subrepo added")
-        from pudb import set_trace
-        set_trace()
-
 
     #case1()
     #case_empty_commit()
     case_submodule()
-
-    from pudb import set_trace
-    set_trace()
-
 
 def unit_tests():
     # make new customs
@@ -213,13 +360,13 @@ def unit_tests():
     v('new-ticket', 'ticket#1')
     v('new-ticket', 'ticket#2')
 
-
 actions = {
     'new-ticket': action_new_ticket,
     'unit-test': unit_tests,
     'unit-tests': unit_tests,
     'unit-tests-git': unit_tests_git,
     'help': display_help,
+    'dirty': dirty,
 }
 
 
