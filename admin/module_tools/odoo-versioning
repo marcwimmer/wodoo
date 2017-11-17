@@ -102,7 +102,7 @@ def dirty(doprint=True, interactive=True):
         os.chdir(customs_dir)
         os.system('git-cola >/dev/null 2>&1 &')
         time.sleep(1.0)
-        os.system('/usr/bin/killall -9 git-cola; /usr/bin/pkill -9 -f git-cola')
+        os.system('/usr/bin/pkill -9 -f git-cola')
         os.system('git-cola >/dev/null 2>&1')
 
     def get_modified_files_of_module(manifest_path):
