@@ -180,6 +180,8 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
 
     # get commit messages
     commit_shas = []
+    from pudb import set_trace
+    set_trace()
     for commit in repo.iter_commits(rev=repo.active_branch.name):
 
         def is_empty(msg):
@@ -189,37 +191,42 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             )
             return EMPTY in lines or not lines
 
-        if commit.message.startswith("##{ticket}##".format(ticket=branch_basename)) and not is_empty(commit.message):
-            # remove "* " for current branch
-            branches = [x.split(" ", 1)[-1] for x in subprocess.check_output(['/usr/bin/git', 'branch', '--contains', commit.hexsha], cwd=customs_dir).split("\n")]
-            if original_branch not in branches:
-                continue
+        # remove "* " for current branch
+        branches = [
+            x.split(" ", 1)[-1].strip()
+            for x
+            in subprocess.check_output(['/usr/bin/git', 'branch', '--contains', commit.hexsha], cwd=customs_dir).split("\n")
+            if x
+        ]
+        if original_branch not in branches:
+            continue
 
-            # if it is the stamped __ticket__ merged into __dest-branch__ - then stop here
-            from pudb import set_trace
-            set_trace()
-            if '|{}| merged into __{}__'.format(
-                    branch_basename,
-                    branch_dest
-            ) in commit.message:
-                from pudb import set_trace
-                set_trace()
-                break
-            commit_shas.append(commit.hexsha)
-            cm = commit.message.split("\n")
-            cm = filter(lambda l: not l.startswith("|"), cm) # filter out ##ticket-1321##
-            msg.append('\n'.join(cm))
-            msg.append("")
+        if any(x in branches for x in ['deploy', 'master', branch_dest]):
+            break
+
+        if '|{}| merged into |{}|'.format(
+                branch_basename,
+                branch_dest
+        ) in commit.message:
+            break
+
+        # if it is the stamped __ticket__ merged into __dest-branch__ - then stop here
+        commit_shas.append(commit.hexsha)
+        cm = commit.message.split("\n")
+        cm = filter(lambda l: not l.startswith("|"), cm) # filter out ##ticket-1321##
+        msg.append('\n'.join(cm))
+        msg.append("")
 
     changeset = get_affected_modules_of_commits(repo, commit_shas)
 
     for module, changes in changeset.items():
         module_msg = msg
 
-        module_msg += 2 * ['']
-        module_msg += sorted(changes['changed_files'])
-        module_msg += 2 * ['']
-        module_msg += changes['changed_contents']
+        if not auto_squash_commit_message:
+            module_msg += 2 * ['']
+            module_msg += sorted(changes['changed_files'])
+            module_msg += 2 * ['']
+            module_msg += changes['changed_contents']
 
         module_msg = '\n'.join(module_msg)
         module_msg = '\n'.join([('#\t' if not auto_squash_commit_message else '') + x for x in module_msg.split("\n")])
@@ -300,7 +307,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
                 sys.exit(42)
 
             subprocess.check_call(['/usr/bin/git', 'checkout', original_branch], cwd=customs_dir)
-            subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into __{branch_dest}__".format(
+            subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into |{branch_dest}|".format(
                 ticket=branch_basename,
                 branch_dest=branch_dest,
             )], cwd=customs_dir)
