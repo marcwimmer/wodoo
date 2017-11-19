@@ -14,7 +14,9 @@ RUN apt update && apt install -y \
 	rsync \ 
 	curl \
 	netcat \
-	git-cola
+	git-cola \
+	tig \
+	vim
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt
@@ -26,6 +28,8 @@ WORKDIR /opt
 RUN tar xfz /tmp/docker.tgz
 RUN rsync /opt/docker/ /usr/local/bin/ -arP
 WORKDIR /
+
+ADD pudb.cfg /root/.config/pudb/pudb.cfg
 
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh

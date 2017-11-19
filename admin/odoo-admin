@@ -10,7 +10,6 @@
 #
 # TODO use shift instead of ARGS, ALL_PARAMS - is more bash style
 # TODO replace all bash commands to be called within dockerbash
-set +x
 
 function dcrun() {
 	$dc run -T -e ODOO_HOME=/opt/odoo "$@"
@@ -21,9 +20,9 @@ function dcexec() {
 }
 
 function startup() {
+	set +x
 	local ARGS=("$@")
-	# TODO set dir to odoo_home and test
-	local $DIR
+	local $DIR >/dev/null
 	DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
 	ODOO_HOME=$DIR
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
@@ -48,7 +47,7 @@ function get_CUSTOMS_DIR() {
 }
 
 function default_confs() {
-	MANAGE="$DIR/odoo"
+	MANAGE="$DIR/admin/odoo-admin"
 	local ARGS=("$@")
 	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
@@ -1010,20 +1009,18 @@ function do_command() {
 		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 		chown "$DEFAULT_USER:$DEFAULT_USER" -R "$CUSTOMS_DIR"
 		;;
-	new-ticket)
+	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions)
 		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
-		cmd+=("new-ticket")
-		cmd+=("$2")
+		cmd+=("$1")
+		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
 		$MANAGE fix-src-rights
 		;;
-	merge)
+	current-ticket|open-tickets)
 		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
-		cmd+=("merge")
-		cmd+=("$2")
+		cmd+=("$1")
+		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
-		# fix source rights
-		$MANAGE fix-src-rights
 		;;
     *)
         echo "Invalid option $1"
@@ -1286,7 +1283,6 @@ function remember_customs_and_cry_if_changed() {
 
 function main() {
 	set -e
-	local ARGS=("$@")
 	startup "${ARGS[@]}"
 	if [[ "${ARGS[0]}" == "tool" ]]; then
 

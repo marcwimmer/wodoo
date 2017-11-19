@@ -24,6 +24,16 @@ from myconfigparser import MyConfigParser
 import inspect
 current_file = os.path.abspath(inspect.getfile(inspect.currentframe())) # script directory
 
+WORK_SUFFIX = "_work"
+BRANCH_WORK = "{}" + WORK_SUFFIX
+BRANCH_STAGE = "{}_stage"
+BRANCH_RELEASE = "{}_release"
+EMPTY = "<empty>"
+
+FORMAT_COMMIT_STEP = """##{ticket}##
+{comment}
+"""
+
 if len(sys.argv) >= 2:
     action = sys.argv[1]
 else:
@@ -34,11 +44,15 @@ customs_dir = odoo_config.customs_dir()
 def display_help():
     print "How to use:"
     print ""
-    print "$0 new-ticket <ticketname>"
     print "$0 unit-test"
     print "$0 help"
     print "$0 dirty - displays dirty files and modules"
-    print "$0 merge master/deploy - to merge ticket to master or deploy branch"
+    print "$0 new-ticket <ticketname>"
+    print "$0 switch-ticket <ticketname>"
+    print "$0 commit- commits current changes of files; takes command; later provided as base for squash commit"
+    print "$0 stage-ticket - puts changes of ticket to master branch, where it can be tested"
+    print "$0 deploy-ticket - makes squash commit of ticket; increases version of modules; can be merged via git merge <ticketno>"
+    print "$0 open-tickets - displays unmerged tickets (not merged on deploy)"
     print ""
     print ""
     sys.exit(-1)
@@ -52,7 +66,7 @@ def check_dirty(repo):
         os.system("git status")
         sys.exit(13)
 
-def domerge():
+def domergeto():
     branch = sys.argv[2]
 
     if branch not in ['master', 'deploy']:
@@ -71,6 +85,166 @@ def domerge():
     subprocess.check_call(['/usr/bin/git', 'merge', SQUASH, active_branch], cwd=customs_dir)
     subprocess.check_call(['/usr/bin/git', 'commit', '-am', 'merged {} into {}'.format(active_branch, branch)], cwd=customs_dir)
 
+def rungitcola(customs_dir):
+    os.chdir(customs_dir)
+    os.system('git-cola >/dev/null 2>&1 &')
+    time.sleep(1.0)
+    os.system('/usr/bin/pkill -9 -f git-cola')
+    os.system('git-cola >/dev/null 2>&1')
+
+def action_step_done():
+    repo = Repo(customs_dir)
+    active_branch = repo.active_branch.name
+
+    if not active_branch.endswith(BRANCH_WORK.split("_")[-1]):
+        print "You are not on the working branch. (like {}).".format(BRANCH_WORK)
+        sys.exit(28)
+
+    print "Please select what to commit - DO NOT COMMIT YET!"
+    for x in get_changed_files(repo):
+        repo.git.add(x)
+    os.chdir(customs_dir)
+    rungitcola(customs_dir)
+    if not get_staged_files(repo):
+        print "no staged files - nothing to commit"
+
+    text = get_text_user_input("Please describe, what was done. These contents are displayed later at squash commit") or EMPTY
+    text = FORMAT_COMMIT_STEP.format(comment=text, ticket=active_branch.split("_")[0])
+    subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir)
+
+def show_open_tickets():
+    repo = Repo(customs_dir)
+    os.chdir(customs_dir)
+    merged = subprocess.check_output(['/usr/bin/git', 'branch', '--merged', 'deploy'], cwd=customs_dir).split("\n")
+    for branch in repo.branches:
+        if branch.name.endswith("_release"):
+            if branch.name not in merged:
+                print branch.name.replace("_release", "")
+
+def show_current_ticket():
+    repo = Repo(customs_dir)
+    os.chdir(customs_dir)
+    print "You are on:\t", repo.active_branch.name.replace("_work", "")
+
+def action_switch_ticket():
+    repo = Repo(customs_dir)
+    check_dirty(repo)
+    if len(sys.argv) < 3:
+        print "Please provide ticket name!"
+        sys.exit(-1)
+
+    repo = Repo(customs_dir)
+    branch = sys.argv[2]
+    os.chdir(customs_dir)
+    branch_work = BRANCH_WORK.format(branch)
+    existing_branches = [x for x in repo.branches if x.name == branch_work]
+    if not existing_branches:
+        print "Branch not found: {}".format(branch_work)
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_work], cwd=customs_dir)
+
+def action_deploy_ticket():
+    """
+    Puts ticket branch on deploy
+    """
+    release_ticket(BRANCH_STAGE, increment_module_versions=True)
+
+def action_stage_ticket():
+    """
+    Puts ticket branch on master
+    """
+    release_ticket(BRANCH_STAGE, increment_module_versions=False)
+
+def release_ticket(branch_dest, increment_module_versions):
+    # TODO remove traces
+    repo = Repo(customs_dir)
+    check_dirty(repo)
+
+    if not repo.active_branch.name.endswith("_work"):
+        print "Please switch to a ticket"
+    original_branch = repo.active_branch.name
+    branch_basename = repo.active_branch.name.replace("_work", "")
+    branch_dest = branch_dest.format(branch_basename)
+    os.chdir(customs_dir)
+    existing_branches = [x for x in repo.branches if x.name == branch_dest]
+    if not existing_branches:
+        print "Branch not found: {}".format(branch_dest)
+
+    msg = ["stage-deploy of {ticket}".format(ticket=branch_basename), ""]
+
+    # get commit messages
+    commit_shas = []
+    for commit in repo.iter_commits(rev=repo.active_branch.name):
+
+        def is_empty(msg):
+            lines = filter(
+                lambda l: not l.startswith("##") and l,
+                msg.split("\n")
+            )
+            return EMPTY in lines or not lines
+
+        if commit.message.startswith("##{ticket}##".format(ticket=branch_basename)) and not is_empty(commit.message):
+            # remove "* " for current branch
+            branches = [x.split(" ", 1)[-1] for x in subprocess.check_output(['/usr/bin/git', 'branch', '--contains', commit.hexsha], cwd=customs_dir).split("\n")]
+            if original_branch not in branches:
+                continue
+            commit_shas.append(commit.hexsha)
+
+            cm = commit.message.split("\n")
+            cm = filter(lambda l: not l.startswith("##"), cm)
+            msg.append('\n'.join(cm))
+            msg.append("")
+
+    if increment_module_versions:
+        from pudb import set_trace
+        set_trace()
+        changeset = get_affected_modules_of_commits(repo, commit_shas)
+        for module, changes in changeset.items():
+            module_msg = msg
+
+            module_msg += 2 * '\n'
+            module_msg += '\n'.join(sorted(changes['changed_files']))
+            module_msg += 2 * '\n'
+            module_msg += '\n***************************************************************\n'.join(sorted(changes['changed_contents']))
+
+            subprocess.check_call(['/usr/bin/git', 'log', '-p', ], cwd=customs_dir)
+            msg = get_text_user_input("Please enter a meaningful description. To abort leave description empty.", '\n'.join(msg))
+            if not msg:
+                sys.exit(42)
+
+    try:
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_dest], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'merge', original_branch, '--squash', '-m', msg], cwd=customs_dir)
+    finally:
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
+
+def get_affected_modules_of_commits(repo, shas):
+    """
+
+    Returns dict of module name and
+    {
+    'changed_files':,
+    'changed_contents': ...
+    }
+
+    """
+    result = {}
+    for commit in repo.iter_commits():
+        if commit.hexsha not in shas:
+            continue
+        for file in commit.stats.files:
+            try:
+                module_name, _ = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
+            except:
+                module_name = None
+            result.setdefault(module_name, {
+                'changed_files': [],
+                'changed_contents': [],
+            })
+            result[module_name]['changed_files'] += commit.stats.files.keys()
+            result[module_name]['changed_contents'].append(subprocess.check_output(['/usr/bin/git', 'log', '-p', commit.hexsha], cwd=customs_dir))
+
+    return result
+
 def action_new_ticket():
     repo = Repo(customs_dir)
     check_dirty(repo)
@@ -81,29 +255,52 @@ def action_new_ticket():
     repo = Repo(customs_dir)
 
     branch = sys.argv[2]
-    if [x for x in repo.branches if x.name == branch]:
-        print "Branch already exists, switching to it"
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch], cwd=customs_dir)
+    branch_work = BRANCH_WORK.format(branch)
+    branch_stage = BRANCH_STAGE.format(branch)
+    branch_release = BRANCH_RELEASE.format(branch)
+
+    if [x for x in repo.branches if x.name in [branch, branch_work, branch_stage, branch_release]]:
+        print "Branch already exists - use switch command"
+        sys.exit(49)
     else:
         subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir)
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_release], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_stage], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_work], cwd=customs_dir)
+
+def get_text_user_input(prompt, default_text=None):
+    filename = tempfile.mktemp(suffix='.txt')
+    print prompt
+    time.sleep(1)
+    if default_text:
+        with open(filename, 'w') as f:
+            f.write(default_text)
+    subprocess.check_call(['/usr/bin/vim', filename])
+    with open(filename) as f:
+        return f.read()
+
+def get_changed_files(repo):
+    return [item.a_path for item in repo.index.diff(None)] + repo.untracked_files
+
+def get_staged_files(repo):
+    return [x.a_path for x in repo.index.diff("HEAD")]
+
+def increase_module_versions():
+    """
+    collects the modules of staged files
+    and increases the versionnumber within
+    """
 
 def dirty(doprint=True, interactive=True):
     repo = Repo(customs_dir)
     bool(repo.is_dirty() or repo.untracked_files)
 
-    def get_changed_files():
-        return [item.a_path for item in repo.index.diff(None)] + repo.untracked_files
-
-    def get_staged_files():
-        return [x.a_path for x in repo.index.diff("HEAD")]
-
     def unstage():
-        for file in get_staged_files():
+        for file in get_staged_files(repo):
             repo.git.reset(file)
 
     unstage()
-    changed_files = get_changed_files()
+    changed_files = get_changed_files(repo)
 
     affected_modules = []
     for mod in sorted(get_all_non_odoo_modules(return_relative_manifest_paths=True)):
@@ -128,15 +325,8 @@ def dirty(doprint=True, interactive=True):
             for file in changed_files:
                 print file
 
-    def rungitcola(path):
-        os.chdir(customs_dir)
-        os.system('git-cola >/dev/null 2>&1 &')
-        time.sleep(1.0)
-        os.system('/usr/bin/pkill -9 -f git-cola')
-        os.system('git-cola >/dev/null 2>&1')
-
     def get_modified_files_of_module(manifest_path):
-        changed_files = get_changed_files()
+        changed_files = get_changed_files(repo)
         module_path = os.path.dirname(manifest_path)
 
         module_files = [x for x in changed_files if x.startswith(module_path)]
@@ -164,7 +354,7 @@ def dirty(doprint=True, interactive=True):
         print "Just close git-cola - DO NOT COMMIT YET"
         time.sleep(1)
         rungitcola(customs_dir)
-        files = get_staged_files()
+        files = get_staged_files(repo)
         if not files:
             user = raw_input("No files staged - try again? Otherwise abort. [y]/[N]")
             if user.lower() == 'n':
@@ -185,18 +375,9 @@ def dirty(doprint=True, interactive=True):
 
         type = user.upper()
 
-        lines = []
-        print "Please describe, what was done. To finish type 'done' and hit return: (Ctrl+C to abort)\n\n"
-        while True:
-            try:
-                text = raw_input("")
-            except:
-                EOFError
-                break
-            if text == 'done':
-                break
-            lines.append(text)
-        text = '\n'.join(lines)
+        text = get_text_user_input("Please describe, what was done. To finish type 'done' and hit return.")
+        if not text:
+            sys.exit(49)
 
         format_msg = "{}@{}\n\n{}".format(
             'BUGFIX' if type == 'B' else 'FEATURE',
@@ -245,7 +426,7 @@ def dirty(doprint=True, interactive=True):
                 # TODO
                 pass
 
-        new_changed_files = [x for x in get_changed_files() if x in changed_files]
+        new_changed_files = [x for x in get_changed_files(repo) if x in changed_files]
         return new_changed_files
 
     if interactive and (changed_files or affected_modules):
@@ -420,13 +601,19 @@ def unit_tests():
 
 
 actions = {
-    'new-ticket': action_new_ticket,
     'unit-test': unit_tests,
     'unit-tests': unit_tests,
     'unit-tests-git': unit_tests_git,
     'help': display_help,
     'dirty': dirty,
-    'merge': domerge,
+    'new-ticket': action_new_ticket,
+    'switch-ticket': action_switch_ticket,
+    'stage-ticket': action_stage_ticket,
+    'deploy-ticket': action_deploy_ticket,
+    'mergeto': domergeto,
+    'open-tickets': show_open_tickets,
+    'commit': action_step_done,
+    'current-ticket': show_current_ticket,
 }
 
 
