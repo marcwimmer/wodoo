@@ -11,11 +11,13 @@ from module_tools import get_module_of_file
 from module_tools import get_relative_path_to_odoo_module
 from module_tools import write_manifest
 from module_tools import manifest2dict
+from module_tools import get_manifest_path_of_module_path
 from odoo_config import translate_path_relative_to_customs_root
 import odoo_config
 import shutil
 import datetime
 import os
+import re
 import time
 import tempfile
 from git import Repo
@@ -30,7 +32,7 @@ BRANCH_STAGE = "{}_stage"
 BRANCH_RELEASE = "{}_release"
 EMPTY = "<empty>"
 
-FORMAT_COMMIT_STEP = """##{ticket}##
+FORMAT_COMMIT_STEP = """|{ticket|}
 {comment}
 """
 
@@ -66,33 +68,24 @@ def check_dirty(repo):
         os.system("git status")
         sys.exit(13)
 
-def domergeto():
-    branch = sys.argv[2]
-
-    if branch not in ['master', 'deploy']:
-        print "Please say wether master or deploy"
-        sys.exit(1)
-    repo = Repo(customs_dir)
-    check_dirty(repo)
-
-    active_branch = repo.active_branch.name
-    if active_branch == 'master':
-        print "Cant merge master on deploy - use the sub branches to merge on deploy"
-        sys.exit(84)
-
-    SQUASH = '--squash'
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch], cwd=customs_dir)
-    subprocess.check_call(['/usr/bin/git', 'merge', SQUASH, active_branch], cwd=customs_dir)
-    subprocess.check_call(['/usr/bin/git', 'commit', '-am', 'merged {} into {}'.format(active_branch, branch)], cwd=customs_dir)
-
 def rungitcola(customs_dir):
-    os.chdir(customs_dir)
     os.system('git-cola >/dev/null 2>&1 &')
     time.sleep(1.0)
     os.system('/usr/bin/pkill -9 -f git-cola')
     os.system('git-cola >/dev/null 2>&1')
 
-def action_step_done():
+def userinteractive_stage():
+    os.chdir(customs_dir)
+    subprocess.check_call(['/usr/bin/tig', 'status'])
+
+def userinteractive_history(path):
+    os.chdir(os.path.join(customs_dir, path))
+    try:
+        subprocess.check_call(['/usr/bin/git', 'log', '-p', path])
+    except:
+        pass
+
+def action_commit():
     repo = Repo(customs_dir)
     active_branch = repo.active_branch.name
 
@@ -101,14 +94,15 @@ def action_step_done():
         sys.exit(28)
 
     print "Please select what to commit - DO NOT COMMIT YET!"
-    for x in get_changed_files(repo):
-        repo.git.add(x)
-    os.chdir(customs_dir)
-    rungitcola(customs_dir)
+    userinteractive_stage()
     if not get_staged_files(repo):
-        print "no staged files - nothing to commit"
+        print "No files staged - aborting"
+        sys.exit(42)
 
     text = get_text_user_input("Please describe, what was done. These contents are displayed later at squash commit") or EMPTY
+    if not text:
+        print "No commit message - aborting"
+        sys.exit(42)
     text = FORMAT_COMMIT_STEP.format(comment=text, ticket=active_branch.split("_")[0])
     subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir)
 
@@ -146,21 +140,34 @@ def action_deploy_ticket():
     """
     Puts ticket branch on deploy
     """
-    release_ticket(BRANCH_STAGE, increment_module_versions=True)
+    release_ticket('deploy', increment_module_versions=True, auto_squash_commit_message=False)
 
 def action_stage_ticket():
     """
     Puts ticket branch on master
     """
-    release_ticket(BRANCH_STAGE, increment_module_versions=False)
+    release_ticket('master', increment_module_versions=False, auto_squash_commit_message=True)
 
-def release_ticket(branch_dest, increment_module_versions):
+def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
+    """
+
+    :param dest: either deploy or master
+    :param auto_squash_commit_message: 
+    :param increment_module_versions: True to increment the module versions and have user input detailed text
+    """
     # TODO remove traces
     repo = Repo(customs_dir)
     check_dirty(repo)
 
+    branch_dest = {
+        'master': BRANCH_STAGE,
+        'deploy': BRANCH_RELEASE,
+    }[dest]
+
     if not repo.active_branch.name.endswith("_work"):
         print "Please switch to a ticket"
+    print "Current branch is: ", repo.active_branch.name
+    time.sleep(0.3)
     original_branch = repo.active_branch.name
     branch_basename = repo.active_branch.name.replace("_work", "")
     branch_dest = branch_dest.format(branch_basename)
@@ -177,7 +184,7 @@ def release_ticket(branch_dest, increment_module_versions):
 
         def is_empty(msg):
             lines = filter(
-                lambda l: not l.startswith("##") and l,
+                lambda l: not (l.startswith("#") or l.startswith("|")) and l,
                 msg.split("\n")
             )
             return EMPTY in lines or not lines
@@ -187,61 +194,165 @@ def release_ticket(branch_dest, increment_module_versions):
             branches = [x.split(" ", 1)[-1] for x in subprocess.check_output(['/usr/bin/git', 'branch', '--contains', commit.hexsha], cwd=customs_dir).split("\n")]
             if original_branch not in branches:
                 continue
-            commit_shas.append(commit.hexsha)
 
+            # if it is the stamped __ticket__ merged into __dest-branch__ - then stop here
+            from pudb import set_trace
+            set_trace()
+            if '|{}| merged into __{}__'.format(
+                    branch_basename,
+                    branch_dest
+            ) in commit.message:
+                from pudb import set_trace
+                set_trace()
+                break
+            commit_shas.append(commit.hexsha)
             cm = commit.message.split("\n")
-            cm = filter(lambda l: not l.startswith("##"), cm)
+            cm = filter(lambda l: not l.startswith("|"), cm) # filter out ##ticket-1321##
             msg.append('\n'.join(cm))
             msg.append("")
 
-    if increment_module_versions:
-        from pudb import set_trace
-        set_trace()
-        changeset = get_affected_modules_of_commits(repo, commit_shas)
-        for module, changes in changeset.items():
-            module_msg = msg
+    changeset = get_affected_modules_of_commits(repo, commit_shas)
 
-            module_msg += 2 * '\n'
-            module_msg += '\n'.join(sorted(changes['changed_files']))
-            module_msg += 2 * '\n'
-            module_msg += '\n***************************************************************\n'.join(sorted(changes['changed_contents']))
+    for module, changes in changeset.items():
+        module_msg = msg
 
-            subprocess.check_call(['/usr/bin/git', 'log', '-p', ], cwd=customs_dir)
-            msg = get_text_user_input("Please enter a meaningful description. To abort leave description empty.", '\n'.join(msg))
-            if not msg:
+        module_msg += 2 * ['']
+        module_msg += sorted(changes['changed_files'])
+        module_msg += 2 * ['']
+        module_msg += changes['changed_contents']
+
+        module_msg = '\n'.join(module_msg)
+        module_msg = '\n'.join([('#\t' if not auto_squash_commit_message else '') + x for x in module_msg.split("\n")])
+        user_edited_msg = module_msg
+        if module and increment_module_versions:
+            manifest_path = get_manifest_path_of_module_path(changes['module_path'])
+            d = manifest2dict(os.path.join(customs_dir, manifest_path))
+            module_name, module_path = get_module_of_file(os.path.join(customs_dir, manifest_path), return_path=True)
+
+            while True:
+                print "Module: ", module
+                print "Path:", os.path.dirname(manifest_path)
+                text = raw_input("[B]ugfix or [F]eature in {module_name}? Press [V] to view the source code.".format(module_name=module))
+                if not text:
+                    sys.exit(49)
+                if text.lower() in 'bf':
+                    type = text.upper()
+                    break
+                if text.strip().lower() == 'v':
+                    userinteractive_history(os.path.dirname(manifest_path))
+
+            type_str = {
+                'B': 'BUGFIX',
+                'F': 'FEATURE',
+            }[type]
+
+            user_edited_msg = ""
+            while True:
+                user_edited_msg = get_text_user_input("", "# Please describe the {TYPE} in Module {MODULE}\n{module_msg}".format(
+                    TYPE=type_str,
+                    MODULE=module,
+                    module_msg=module_msg,
+                ))
+
+                user = raw_input("{}\n\nUse description from above? [Y/n] ".format(user_edited_msg))
+                if user.upper() == 'Y' or not user:
+                    break
+                sys.exit(20)
+
+            manifest_path = get_manifest_path_of_module_path(changes['module_path'])
+            d = manifest2dict(os.path.join(customs_dir, manifest_path))
+            module_name, module_path = get_module_of_file(os.path.join(customs_dir, manifest_path), return_path=True)
+            v = d['version']
+            v = v.split('.')
+            if len(v) == 2:
+                v.append('0')
+            if type == 'B':
+                v[-1] = long(v[-1]) + 1
+            elif type == 'F':
+                v[-2] = long(v[-2]) + 1
+            else:
+                raise Exception("Not implemented: {}".format(type))
+
+            v = '.'.join(str(x) for x in v)
+            d['version'] = v
+            write_manifest(os.path.join(customs_dir, manifest_path), d)
+
+            README_PATH = os.path.join(module_path, 'README.rst')
+            if os.path.isfile(README_PATH):
+                format_msg = "{}@{}\n{}\n{}\n{}".format(
+                    type_str,
+                    module or '',
+                    datetime.datetime.now().strftime("%Y-%m-%d"),
+                    v, # version
+                    user_edited_msg,
+                )
+                insert_changelog(README_PATH, format_msg, new_version=v)
+                repo.git.add(README_PATH)
+
+            repo.git.add(manifest_path)
+
+        try:
+            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_dest], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'merge', original_branch, '--squash', ], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'commit', '-m', user_edited_msg], cwd=customs_dir)
+            if get_staged_files(repo):
+                print "Something went wrong - staged files lieing around."
                 sys.exit(42)
 
-    try:
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_dest], cwd=customs_dir)
-        subprocess.check_call(['/usr/bin/git', 'merge', original_branch, '--squash', '-m', msg], cwd=customs_dir)
-    finally:
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
+            subprocess.check_call(['/usr/bin/git', 'checkout', original_branch], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into __{branch_dest}__".format(
+                ticket=branch_basename,
+                branch_dest=branch_dest,
+            )], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'merge', branch_dest], cwd=customs_dir)
+
+            # # update work branch
+            # if original_branch.endswith(WORK_SUFFIX):
+                # subprocess.check_call(['/usr/bin/git', 'branch', '-D', original_branch], cwd=customs_dir)
+                # subprocess.check_call(['/usr/bin/git', 'checkout', '-b', original_branch], cwd=customs_dir)
+                # subprocess.check_call(['/usr/bin/git', 'checkout', dest], cwd=customs_dir) # avoid error message on finally step
+        finally:
+            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
 
 def get_affected_modules_of_commits(repo, shas):
     """
 
     Returns dict of module name and
     {
+    'module_path',
     'changed_files':,
     'changed_contents': ...
     }
 
     """
     result = {}
+    commits = {}
     for commit in repo.iter_commits():
         if commit.hexsha not in shas:
             continue
         for file in commit.stats.files:
             try:
-                module_name, _ = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
+                module_name, module_path = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
             except:
-                module_name = None
-            result.setdefault(module_name, {
-                'changed_files': [],
-                'changed_contents': [],
+                module_name, module_path = None, None
+            commits.setdefault(module_name, {
+                'commits': [],
+                'module_path': module_path,
             })
+            if commit.hexsha not in commits[module_name]:
+                commits[module_name]['commits'].append(commit)
+
+    for module_name in commits:
+        result.setdefault(module_name, {
+            'module_path': commits[module_name]['module_path'],
+            'changed_files': [],
+            'changed_contents': [],
+        })
+        for commit in commits[module_name]['commits']:
             result[module_name]['changed_files'] += commit.stats.files.keys()
-            result[module_name]['changed_contents'].append(subprocess.check_output(['/usr/bin/git', 'log', '-p', commit.hexsha], cwd=customs_dir))
+            changed_files = subprocess.check_output(['/usr/bin/git', 'show', commit.hexsha], cwd=customs_dir)
+            result[module_name]['changed_contents'] += [changed_files]
 
     return result
 
@@ -277,7 +388,11 @@ def get_text_user_input(prompt, default_text=None):
             f.write(default_text)
     subprocess.check_call(['/usr/bin/vim', filename])
     with open(filename) as f:
-        return f.read()
+        content = f.read().split("\n")
+        content = [x for x in content if not x.strip().startswith("#")]
+        content = '\n'.join(content)
+        content = content.strip()
+        return content
 
 def get_changed_files(repo):
     return [item.a_path for item in repo.index.diff(None)] + repo.untracked_files
@@ -290,6 +405,22 @@ def increase_module_versions():
     collects the modules of staged files
     and increases the versionnumber within
     """
+
+def insert_changelog(readme_path, changelog, new_version):
+    """
+    Inserts into readme_path the change log
+    """
+    with open(readme_path) as f:
+        content = f.read().split("\n")
+
+    content += "\n"
+    content += "Version: {}".format(new_version)
+    content += datetime.datetime.utcnow().strftime("%Y-%m-%d") + "\n"
+    content += "========================================"
+    content += changelog
+
+    with open(readme_path, 'w') as f:
+        f.write('\n'.join(content))
 
 def dirty(doprint=True, interactive=True):
     repo = Repo(customs_dir)
@@ -331,21 +462,6 @@ def dirty(doprint=True, interactive=True):
 
         module_files = [x for x in changed_files if x.startswith(module_path)]
         return module_files
-
-    def insert_changelog(readme_path, changelog):
-        """
-        Inserts into readme_path the change log
-        """
-        with open(readme_path) as f:
-            content = f.read().split("\n")
-
-        content += "\n"
-        content += datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC") + "\n"
-        content += "========================================"
-        content += changelog
-
-        with open(readme_path, 'w') as f:
-            f.write('\n'.join(content))
 
     def do_interactive_commit(changed_files, manifest_path):
         for x in changed_files:
@@ -406,7 +522,7 @@ def dirty(doprint=True, interactive=True):
 
             README_PATH = os.path.join(module_path, 'README.rst')
             if os.path.isfile(README_PATH):
-                insert_changelog(README_PATH, format_msg)
+                insert_changelog(README_PATH, format_msg, new_version=v)
                 repo.git.add(README_PATH)
 
             repo.git.add(manifest_path)
@@ -610,9 +726,8 @@ actions = {
     'switch-ticket': action_switch_ticket,
     'stage-ticket': action_stage_ticket,
     'deploy-ticket': action_deploy_ticket,
-    'mergeto': domergeto,
     'open-tickets': show_open_tickets,
-    'commit': action_step_done,
+    'commit': action_commit,
     'current-ticket': show_current_ticket,
 }
 

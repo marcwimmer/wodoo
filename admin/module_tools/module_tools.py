@@ -273,6 +273,12 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
     if not return_path:
         return os.path.basename(p)
 
+def get_manifest_path_of_module_path(module_path):
+    for m in MANIFESTS:
+        path = os.path.join(module_path, m)
+        if os.path.isfile(path):
+            return path
+
 def manifest2dict(manifest_path):
     with open(manifest_path, 'r') as f:
         content = f.read()
