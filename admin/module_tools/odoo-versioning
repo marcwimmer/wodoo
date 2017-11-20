@@ -32,7 +32,7 @@ BRANCH_STAGE = "{}_stage"
 BRANCH_RELEASE = "{}_release"
 EMPTY = "<empty>"
 
-FORMAT_COMMIT_STEP = """|{ticket|}
+FORMAT_COMMIT_STEP = """|{ticket}|
 {comment}
 """
 
@@ -180,8 +180,6 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
 
     # get commit messages
     commit_shas = []
-    from pudb import set_trace
-    set_trace()
     for commit in repo.iter_commits(rev=repo.active_branch.name):
 
         def is_empty(msg):
@@ -232,6 +230,8 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
         module_msg = '\n'.join([('#\t' if not auto_squash_commit_message else '') + x for x in module_msg.split("\n")])
         user_edited_msg = module_msg
         if module and increment_module_versions:
+            from pudb import set_trace
+            set_trace()
             manifest_path = get_manifest_path_of_module_path(changes['module_path'])
             d = manifest2dict(os.path.join(customs_dir, manifest_path))
             module_name, module_path = get_module_of_file(os.path.join(customs_dir, manifest_path), return_path=True)
@@ -299,6 +299,8 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             repo.git.add(manifest_path)
 
         try:
+            from pudb import set_trace
+            set_trace()
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_dest], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'merge', original_branch, '--squash', ], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'commit', '-m', user_edited_msg], cwd=customs_dir)
@@ -306,7 +308,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
                 print "Something went wrong - staged files lieing around."
                 sys.exit(42)
 
-            subprocess.check_call(['/usr/bin/git', 'checkout', original_branch], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into |{branch_dest}|".format(
                 ticket=branch_basename,
                 branch_dest=branch_dest,
@@ -314,11 +316,6 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'merge', branch_dest], cwd=customs_dir)
 
-            # # update work branch
-            # if original_branch.endswith(WORK_SUFFIX):
-                # subprocess.check_call(['/usr/bin/git', 'branch', '-D', original_branch], cwd=customs_dir)
-                # subprocess.check_call(['/usr/bin/git', 'checkout', '-b', original_branch], cwd=customs_dir)
-                # subprocess.check_call(['/usr/bin/git', 'checkout', dest], cwd=customs_dir) # avoid error message on finally step
         finally:
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
 
@@ -340,7 +337,7 @@ def get_affected_modules_of_commits(repo, shas):
             continue
         for file in commit.stats.files:
             try:
-                module_name, module_path = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
+                module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir, file), return_manifest=True)
             except:
                 module_name, module_path = None, None
             commits.setdefault(module_name, {

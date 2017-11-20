@@ -226,7 +226,6 @@ def get_module_flat_dependency_tree(manifest_path, all_manifests=None):
     return sorted(list(result))
 
 
-
 def get_module_of_file(filepath, return_path=False, return_manifest=False):
 
     if os.path.isdir(filepath):
@@ -236,15 +235,14 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
 
     def is_possible_module_dir(x):
         basename = os.path.basename(x)
+        for m in MANIFESTS:
+            if os.path.isfile(os.path.join(os.path.realpath(p), m)):
+                return True, x
         try:
             float(basename)
             return True, os.path.abspath(os.path.join(x, '../'))
         except:
             pass
-
-        for m in MANIFESTS:
-            if os.path.isfile(os.path.join(os.path.realpath(p), m)):
-                return True, x
 
         return False, x
 
@@ -259,6 +257,14 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
             break
         p = os.path.dirname(os.path.realpath(p))
 
+    module_name = os.path.basename(p)
+    try:
+        float(module_name)
+    except:
+        pass
+    else:
+        module_name = os.path.basename(os.path.dirname(p))
+
     if return_manifest:
         manifest = None
         for m in MANIFESTS:
@@ -266,12 +272,12 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
                 manifest = m
         if not manifest:
             raise Exception('error')
-        return os.path.basename(p), p, os.path.join(p, manifest)
+        return module_name, p, os.path.join(p, manifest)
 
     if return_path:
-        return os.path.basename(p), p
+        return module_name, p
     if not return_path:
-        return os.path.basename(p)
+        return module_name
 
 def get_manifest_path_of_module_path(module_path):
     for m in MANIFESTS:
