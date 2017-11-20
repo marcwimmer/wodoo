@@ -1013,7 +1013,9 @@ function do_command() {
 		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
 		cmd+=("$1")
 		cmd+=( "${ALL_PARAMS[@]}" )
+		set +e # fix rights afterwards
 		eval "${cmd[@]@Q}"
+
 		$MANAGE fix-src-rights
 		;;
 	current-ticket|open-tickets)

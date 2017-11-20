@@ -28,7 +28,6 @@ current_file = os.path.abspath(inspect.getfile(inspect.currentframe())) # script
 
 WORK_SUFFIX = "_work"
 BRANCH_WORK = "{}" + WORK_SUFFIX
-BRANCH_STAGE = "{}_stage"
 BRANCH_RELEASE = "{}_release"
 EMPTY = "<empty>"
 
@@ -144,9 +143,28 @@ def action_deploy_ticket():
 
 def action_stage_ticket():
     """
-    Puts ticket branch on master
+    Puts ticket branch on master;
     """
-    release_ticket('master', increment_module_versions=False, auto_squash_commit_message=True)
+    repo = Repo(customs_dir)
+    if not repo.active_branch.name.endswith("_work"):
+        print "Please switch to a ticket"
+    check_dirty(repo)
+    original_branch = repo.active_branch.name
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'master'], cwd=customs_dir)
+    try:
+        subprocess.check_call(['/usr/bin/git', 'merge', '--ff-only', '--no-commit', original_branch, ], cwd=customs_dir)
+    except:
+        print "Automatic merge failed into master - please edit by hand"
+        print "Afterwards do:"
+        print "\todoo switch-ticket {ticket}".format(ticket=original_branch.replace(WORK_SUFFIX, ''))
+    else:
+        while True:
+            user = raw_input("Shall i push to {} now? [Y/n] ".format('master'))
+            if not user or user.lower() in ['y', 'n']:
+                break
+        if user.upper() == 'Y':
+            subprocess.check_call(['/usr/bin/git', 'push'], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch, ], cwd=customs_dir)
 
 def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
     """
@@ -160,7 +178,6 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
     check_dirty(repo)
 
     branch_dest = {
-        'master': BRANCH_STAGE,
         'deploy': BRANCH_RELEASE,
     }[dest]
 
@@ -309,24 +326,21 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
 
     if something_merged:
-        try:
-            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch], cwd=customs_dir)
-            subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into |{branch_dest}|".format(
-                ticket=branch_basename,
-                branch_dest=branch_dest,
-            )], cwd=customs_dir)
-            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
-            subprocess.check_call(['/usr/bin/git', 'merge', branch_dest], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into |{branch_dest}|".format(
+            ticket=branch_basename,
+            branch_dest=branch_dest,
+        )], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'merge', branch_dest], cwd=customs_dir)
 
-            while True:
-                user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))
-                if not user or user.lower() in ['y', 'n']:
-                    break
-            if user.upper == 'Y':
-                subprocess.check_call(['/usr/bin/git', 'push'], cwd=customs_dir)
+        while True:
+            user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))
+            if not user or user.lower() in ['y', 'n']:
+                break
+        if user.upper() == 'Y':
+            subprocess.check_call(['/usr/bin/git', 'push'], cwd=customs_dir)
 
-        finally:
-            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
 
 def get_affected_modules_of_commits(repo, shas):
     """
@@ -380,16 +394,14 @@ def action_new_ticket():
 
     branch = sys.argv[2]
     branch_work = BRANCH_WORK.format(branch)
-    branch_stage = BRANCH_STAGE.format(branch)
     branch_release = BRANCH_RELEASE.format(branch)
 
-    if [x for x in repo.branches if x.name in [branch, branch_work, branch_stage, branch_release]]:
+    if [x for x in repo.branches if x.name in [branch, branch_work, branch_release]]:
         print "Branch already exists - use switch command"
         sys.exit(49)
     else:
         subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir)
         subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_release], cwd=customs_dir)
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_stage], cwd=customs_dir)
         subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_work], cwd=customs_dir)
 
 def get_text_user_input(prompt, default_text=None):
