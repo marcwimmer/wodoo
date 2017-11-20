@@ -11,4 +11,6 @@ fi
 docker-compose run \
 	--name "odoo_bash_$uuid" \
 	-e HOST_ODOO_HOME="$DIR" \
+	-e UID="$UID" \
+	-e USER="$USER" \
 	simplebash bash

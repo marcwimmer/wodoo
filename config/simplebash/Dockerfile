@@ -16,7 +16,8 @@ RUN apt update && apt install -y \
 	netcat \
 	git-cola \
 	tig \
-	vim
+	vim \
+	gosu
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt

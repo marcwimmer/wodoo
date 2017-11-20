@@ -67,12 +67,15 @@ function build_command() {
 	if [[ -n "$DISPLAY" ]]; then
 		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
 	fi
-	command=(/usr/local/bin/docker-compose)
+	docker_group_id="$(cut -d : -f3 <(getent group docker))"
 	command=(/usr/local/bin/docker-compose)
 	command+=(run)
 	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
 	command+=(-e HOST_ODOO_HOME="$DIR")
 	command+=(-e ODOO_HOME="$DIR")
+	command+=(-e UID="$UID")
+	command+=(-e USER="$USER")
+	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi

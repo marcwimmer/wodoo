@@ -6,14 +6,13 @@ services:
       - $DIR:$DIR
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - $HOME:$HOME
+      - $HOME:/opt/external_home
     working_dir: $HOME
     environment:
       - DOCKER_BASH=1
       - ODOO_HOME=/opt/odoo
       - DISPLAY
       - QT_X11_NO_MITSHM=1
-      - USER=$USER
     entrypoint: /entrypoint.sh
     env_file:
       - ../../settings

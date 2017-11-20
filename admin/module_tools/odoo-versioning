@@ -98,6 +98,8 @@ def action_commit():
         print "No files staged - aborting"
         sys.exit(42)
 
+    verify_stage_files(repo)
+
     text = get_text_user_input("Please describe, what was done. These contents are displayed later at squash commit") or EMPTY
     if not text:
         print "No commit message - aborting"
@@ -135,6 +137,16 @@ def action_switch_ticket():
         print "Branch not found: {}".format(branch_work)
     subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_work], cwd=customs_dir)
 
+def verify_stage_files(repo):
+
+    for file in get_staged_files(repo):
+        if file.endswith(".py"):
+            with open(file) as f:
+                content = f.read()
+                if 'set_trace' in content:
+                    print "set_trace not allowed in staged/deployed files: {}".format(file)
+                    sys.exit(33)
+
 def action_deploy_ticket():
     """
     Puts ticket branch on deploy
@@ -150,6 +162,7 @@ def action_stage_ticket():
         print "Please switch to a ticket"
     check_dirty(repo)
     original_branch = repo.active_branch.name
+    subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', original_branch, ], cwd=customs_dir)
     subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'master'], cwd=customs_dir)
     try:
         subprocess.check_call(['/usr/bin/git', 'merge', '--ff-only', '--no-commit', original_branch, ], cwd=customs_dir)
@@ -170,10 +183,9 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
     """
 
     :param dest: either deploy or master
-    :param auto_squash_commit_message: 
+    :param auto_squash_commit_message:
     :param increment_module_versions: True to increment the module versions and have user input detailed text
     """
-    # TODO remove traces
     repo = Repo(customs_dir)
     check_dirty(repo)
 
@@ -321,6 +333,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             if get_staged_files(repo):
                 print "Something went wrong - staged files lieing around."
                 sys.exit(42)
+            subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', branch_dest], cwd=customs_dir)
             something_merged = True
         finally:
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
@@ -333,6 +346,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
         )], cwd=customs_dir)
         subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
         subprocess.check_call(['/usr/bin/git', 'merge', branch_dest], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', original_branch, ], cwd=customs_dir)
 
         while True:
             user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))

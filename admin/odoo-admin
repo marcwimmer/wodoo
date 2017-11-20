@@ -29,6 +29,10 @@ function startup() {
 	export ODOO_MANAGER_STARTED_ONCE=1
 	export ODOO_COMPOSE_VERSION="3.3"
 	export ODOO_COMPOSE_OPENVPN_DOMAINS_DIR="$DIR/run/openvpn_domains"
+	export PGPASSFILE=/tmp/.pgpass # must match the executing script
+	export PGHOST="$DB_HOST"
+	export PGPORT="$DB_PORT"
+	export PGUSER="$DB_USER"
 	docker_compose_file="$ODOO_HOME/run/docker-compose.yml"
 	return 0
 }
@@ -73,10 +77,6 @@ function default_confs() {
     if [[ -z "$DUMPS_PATH" ]]; then
 		export DUMPS_PATH=$ODOO_HOME/dumps
     fi
-
-	if [[ -z "$DEFAULT_USER" ]]; then
-		DEFAULT_USER="1000"
-	fi
 
 }
 
@@ -369,7 +369,7 @@ fi
 
 function prepare_filesystem() {
     mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
-	sudo -E chown $DEFAULT_USER:$DEFAULT_USER -R "$DIR"/run
+	sudo -E chown $UID:$UID -R "$DIR"/run
 	return 0
 }
 
@@ -777,11 +777,11 @@ function do_command() {
 		;;
 	fix-permissions)
 		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
-			chown 1000 -R "$ODOO_FILES"
+			chown "1000" -R "$ODOO_FILES"
 		fi
 		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 		if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
-			chown 1000 -R "$CUSTOMS_DIR"
+			chown "$USER" -R "$CUSTOMS_DIR"
 		fi
 
 		;;
@@ -949,10 +949,15 @@ function do_command() {
 	compose)
 		echo "Built the docker-compose file."
 		;;
+	simplebash)
+		bash
+		;;
 	test)
 		echo 'reached the command area'
 		echo "DIR is: $DIR"
 		echo "CUSTOMS is: $CUSTOMS"
+		sudo echo "This was sudoed"
+		echo "Here is pgpassfile: $PGPASSFILE"
 		;;
 	test_make_error)
 		echo "now throwing exit code"
@@ -1005,25 +1010,13 @@ function do_command() {
 		cmd+=("dirty")
 		eval "${cmd[@]@Q}"
 		;;
-	fix-src-rights)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		chown "$DEFAULT_USER:$DEFAULT_USER" -R "$CUSTOMS_DIR"
-		;;
-	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions)
+	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
 		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
 		cmd+=("$1")
 		cmd+=( "${ALL_PARAMS[@]}" )
-		set +e # fix rights afterwards
 		eval "${cmd[@]@Q}"
+		;;
 
-		$MANAGE fix-src-rights
-		;;
-	current-ticket|open-tickets)
-		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
-		cmd+=("$1")
-		cmd+=( "${ALL_PARAMS[@]}" )
-		eval "${cmd[@]@Q}"
-		;;
     *)
         echo "Invalid option $1"
         exit -1
@@ -1055,11 +1048,6 @@ function try_to_set_owner() {
 }
 
 function sanity_check() {
-
-	grep -q "DEFAULT_USER=" < "$ODOO_HOME"/settings || {
-		echo "Please define DEFAULT_USER=1000 at least in settings."
-		exit -1
-	}
 
     if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
@@ -1223,7 +1211,7 @@ EOF
 
 function remove_temp_directories() {
 	cd "$DIR" || exit -1
-	find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs sudo rm {} -Rf \;
+	find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs rm {} -Rf \;
 }
 
 function setup_nginx_paths() {
