@@ -32,6 +32,8 @@ BRANCH_RELEASE = "{}_release"
 EMPTY = "<empty>"
 
 FORMAT_COMMIT_STEP = """|{ticket}|
+affected module of commit: {module}
+affected modules summary: {modules}
 {comment}
 """
 
@@ -85,6 +87,9 @@ def userinteractive_history(path):
         pass
 
 def action_commit():
+    """
+    Makes sure, that commits are made by affected odoo module
+    """
     repo = Repo(customs_dir)
     active_branch = repo.active_branch.name
 
@@ -100,12 +105,55 @@ def action_commit():
 
     verify_stage_files(repo)
 
-    text = get_text_user_input("Please describe, what was done. These contents are displayed later at squash commit") or EMPTY
-    if not text:
-        print "No commit message - aborting"
-        sys.exit(42)
-    text = FORMAT_COMMIT_STEP.format(comment=text, ticket=active_branch.split("_")[0])
-    subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir)
+    staged_files = get_staged_files(repo)
+
+    affected_modules = get_affected_modules_of_files(staged_files)
+
+    last_msg = ""
+    for module_change in affected_modules:
+
+        for file in get_staged_files(repo):
+            repo.git.reset(file)
+        files_of_module = [x for x in get_changed_files(repo) if x.startswith(module_change['module_path'])]
+        for file in files_of_module:
+            repo.git.add(file)
+
+        if len(affected_modules) == 1:
+            pass
+        else:
+            print "Have a look again at the module files - dont touch anything"
+            userinteractive_stage()
+        assert sorted(get_staged_files(repo)) == sorted(files_of_module)
+        text = get_text_user_input("Please describe, what was done. These contents are displayed later at squash commit", last_msg) or EMPTY
+        last_msg = text
+        if not text:
+            print "No commit message - aborting"
+            sys.exit(42)
+        text = FORMAT_COMMIT_STEP.format(
+            comment=text,
+            ticket=active_branch.split("_")[0],
+            module=module_change['module'] or '<folder>',
+            modules=', '.join((x['module'] or '<folder>') for x in affected_modules),
+        )
+        subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir)
+
+        for x in files_of_module:
+            staged_files.remove(x)
+
+def get_affected_modules_of_files(files):
+    modules = []
+    for file in files:
+        try:
+            module, module_path = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
+        except:
+            module, module_path = "", './'
+        if not filter(lambda x: x['module'] == module, modules):
+            modules.append({
+                'module': module,
+                'module_path': translate_path_relative_to_customs_root(module_path),
+            })
+    modules = sorted(modules, key=lambda x: (1 if x['module'] else 99, x['module']))
+    return modules
 
 def show_open_tickets():
     repo = Repo(customs_dir)
@@ -165,7 +213,7 @@ def action_stage_ticket():
     subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', original_branch, ], cwd=customs_dir)
     subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'master'], cwd=customs_dir)
     try:
-        subprocess.check_call(['/usr/bin/git', 'merge', '--ff-only', '--no-commit', original_branch, ], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'merge', '--log=3', '-m', "merge {} to master".format(original_branch), original_branch, ], cwd=customs_dir)
     except:
         print "Automatic merge failed into master - please edit by hand"
         print "Afterwards do:"
@@ -228,7 +276,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
         if original_branch not in branches:
             continue
 
-        if any(x in branches for x in ['deploy', 'master', branch_dest]):
+        if any(x in branches for x in [dest, branch_dest]):
             break
 
         if '|{}| merged into |{}|'.format(
