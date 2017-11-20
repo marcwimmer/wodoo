@@ -216,6 +216,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
         msg.append("")
 
     changeset = get_affected_modules_of_commits(repo, commit_shas)
+    something_merged = False
 
     for module, changes in changeset.items():
         module_msg = msg
@@ -230,8 +231,6 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
         module_msg = '\n'.join([('#\t' if not auto_squash_commit_message else '') + x for x in module_msg.split("\n")])
         user_edited_msg = module_msg
         if module and increment_module_versions:
-            from pudb import set_trace
-            set_trace()
             manifest_path = get_manifest_path_of_module_path(changes['module_path'])
             d = manifest2dict(os.path.join(customs_dir, manifest_path))
             module_name, module_path = get_module_of_file(os.path.join(customs_dir, manifest_path), return_path=True)
@@ -299,15 +298,18 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             repo.git.add(manifest_path)
 
         try:
-            from pudb import set_trace
-            set_trace()
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_dest], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'merge', original_branch, '--squash', ], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'commit', '-m', user_edited_msg], cwd=customs_dir)
             if get_staged_files(repo):
                 print "Something went wrong - staged files lieing around."
                 sys.exit(42)
+            something_merged = True
+        finally:
+            subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])
 
+    if something_merged:
+        try:
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'commit', '--allow-empty', '-m', "|{ticket}| merged into |{branch_dest}|".format(
                 ticket=branch_basename,
@@ -315,6 +317,13 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
             )], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
             subprocess.check_call(['/usr/bin/git', 'merge', branch_dest], cwd=customs_dir)
+
+            while True:
+                user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))
+                if not user or user.lower() in ['y', 'n']:
+                    break
+            if user.upper == 'Y':
+                subprocess.check_call(['/usr/bin/git', 'push'], cwd=customs_dir)
 
         finally:
             subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch])

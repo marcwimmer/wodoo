@@ -64,7 +64,9 @@ function collect_extra_volumes() {
 function build_command() {
 	# using absolute path, to work in crontab
 	export HOSTNAME_TO_USE="$HOST"
-	xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
+	if [[ -n "$DISPLAY" ]]; then
+		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
+	fi
 	command=(/usr/local/bin/docker-compose)
 	command=(/usr/local/bin/docker-compose)
 	command+=(run)
