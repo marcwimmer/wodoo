@@ -32,8 +32,9 @@ BRANCH_RELEASE = "{}_release"
 EMPTY = "<empty>"
 
 FORMAT_COMMIT_STEP = """|{ticket}|
-affected module of commit: {module}
-affected modules summary: {modules}
+Modules affected by this commit: {module}
+Modules affected by this ticket: {modules}
+
 {comment}
 """
 
