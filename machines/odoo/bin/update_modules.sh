@@ -153,6 +153,10 @@ function main() {
 	done
 	echo "UPDATE ${MODULE:0:30}..."
 	echo
+	python <<-EOF
+	import module_tools
+	module_tools.check_if_all_modules_from_instal_are_installed()
+	EOF
 	echo
 	echo
 }

@@ -129,6 +129,12 @@ def get_all_manifests():
                 if is_module_dir_in_version(root)['ok']:
                     yield os.path.join(root, filename)
 
+def get_modules_from_install_file():
+    with open(install_file(), 'r') as f:
+        content = f.read().split('\n')
+        modules_from_file = [x for x in content if not x.strip().startswith("#") and x]
+        return modules_from_file
+
 def get_customs_modules(customs_path=None, mode=None):
     """
 
@@ -147,9 +153,7 @@ def get_customs_modules(customs_path=None, mode=None):
 
     path_modules = install_file()
     if os.path.isfile(path_modules):
-        with open(path_modules, 'r') as f:
-            content = f.read().split('\n')
-            modules_from_file = [x for x in content[1:] if not x.startswith("#") and x]
+        modules_from_file = get_modules_from_install_file()
         modules = sorted(list(set(get_all_installed_modules() + modules_from_file)))
 
         installed_modules = set(list(get_all_installed_modules()))
@@ -792,6 +796,13 @@ def update_view_in_db(filepath, lineno):
             finally:
                 cr.close()
                 conn.close()
+
+
+def check_if_all_modules_from_instal_are_installed():
+    for module in get_modules_from_install_file():
+        if not is_module_installed(module):
+            print "Module {} not installed!".format(module)
+            sys.exit(32)
 
 
 if __name__ == '__main__':
