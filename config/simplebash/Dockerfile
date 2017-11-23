@@ -18,7 +18,7 @@ RUN apt update && apt install -y \
 	tig \
 	vim \
 	gosu \
-	net-utils
+	net-tools
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt
