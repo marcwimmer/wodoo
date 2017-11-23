@@ -7,11 +7,14 @@ function startup() {
 	DIR=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
 	export DIR="$DIR"
 
+	eval "export $(grep PROJECT_NAME "$DIR/settings")"
+
 	# create empty file, so that simple bash runs
 	settings_override_file="$DIR/settings.override"
 	if [[ ! -f "$settings_override_file" ]]; then
 		touch "$settings_override_file"
 	fi
+	export HOSTNAME_TO_USE="$HOST"
 }
 
 function show_help() {
@@ -38,7 +41,7 @@ function fix() {
 
 function remove_old_bash() {
 	cd "$DIR/config/simplebash" || exit -1
-	/usr/local/bin/docker-compose rm -f 1>/dev/null 2>&1
+	/usr/local/bin/docker-compose rm -f simplebash 1>/dev/null 2>&1
 }
 
 
@@ -63,13 +66,13 @@ function collect_extra_volumes() {
 
 function build_command() {
 	# using absolute path, to work in crontab
-	export HOSTNAME_TO_USE="$HOST"
 	if [[ -n "$DISPLAY" ]]; then
 		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
 	fi
 	docker_group_id="$(cut -d : -f3 <(getent group docker))"
 	command=(/usr/local/bin/docker-compose)
 	command+=(run)
+	command+=(--service-ports)
 	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
 	command+=(-e HOST_ODOO_HOME="$DIR")
 	command+=(-e ODOO_HOME="$DIR")

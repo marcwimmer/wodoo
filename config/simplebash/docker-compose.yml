@@ -18,3 +18,7 @@ services:
       - ../../settings
       - ../../settings.override
     hostname: $HOSTNAME_TO_USE
+networks:
+    default:
+        external:
+            name: ${PROJECT_NAME}_default
