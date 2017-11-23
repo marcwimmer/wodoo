@@ -555,6 +555,10 @@ function do_command() {
 		dumpfile="$2"
 		restore_check "$dumpfile"
 
+		if [[ "$DEVMODE" == "1" ]]; then
+			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"
+		fi
+
 		echo "$*" |grep -q '[-]force' || {
 			askcontinue "Deletes database $DBNAME!"
 		}
