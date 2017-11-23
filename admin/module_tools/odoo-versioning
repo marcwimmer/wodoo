@@ -61,8 +61,10 @@ def display_help():
     print ""
     sys.exit(-1)
 
-def check_dirty(repo):
-    dirty = bool(repo.is_dirty() or repo.untracked_files)
+def check_dirty(repo, ignore_untracked=False):
+    dirty = bool(repo.is_dirty())
+    if not dirty and not ignore_untracked:
+        dirty = bool(repo.untracked_files)
 
     if dirty:
         print "Please clean-up before - it is dirty here:"
@@ -295,6 +297,8 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
 
     changeset = get_affected_modules_of_commits(repo, commit_shas)
     something_merged = False
+    from pudb import set_trace
+    set_trace()
 
     for module, changes in changeset.items():
         module_msg = msg
@@ -448,7 +452,7 @@ def get_affected_modules_of_commits(repo, shas):
 
 def action_new_ticket():
     repo = Repo(customs_dir)
-    check_dirty(repo)
+    check_dirty(repo, ignore_untracked=True)
     if action in ['new-ticket'] and len(sys.argv) < 3:
         print "Please provide ticket name!"
         sys.exit(-1)
