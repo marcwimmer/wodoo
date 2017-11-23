@@ -26,11 +26,7 @@ mkdir -p "$(dirname "$OUTPUT_FILENAME")"
 
 DOLLAR='$'
 
-if [[ "$1" == "/" ]]; then
-	LOCATION="$1" # e.g. /
-else
-	LOCATION=" = $1"  # e.g. = /cal
-fi
+LOCATION="$1"
 
 tee "$OUTPUT_FILENAME.path" >/dev/null  <<EOF
 location $LOCATION
@@ -39,6 +35,7 @@ location $LOCATION
 	#resolver 127.0.0.11;
 	#https://serverfault.com/questions/240476/how-to-force-nginx-to-resolve-dns-of-a-dynamic-hostname-everytime-when-doing-p
 	resolver 127.0.0.11 valid=15s;
+	rewrite ^/cal/(.*) /${DOLLAR}1 break;
 	proxy_pass http://$DOLLAR${DNSNAME}_${URLPATH/\//}:$PORT;
 }
 
