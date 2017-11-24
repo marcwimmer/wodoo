@@ -160,7 +160,7 @@ def translate_path_relative_to_customs_root(path):
             break
         parent = os.path.dirname(parent)
     if parent == '/':
-        raise Exception("no .customsroot found!")
+        raise Exception("no .customsroot found! - started at: {}".format(path))
     path = path[len(parent) + 1:]
     return path
 
