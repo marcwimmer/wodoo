@@ -22,7 +22,7 @@ cache_xml_ids = {}
 modified_filename = ""
 try:
     VERSION = current_version()
-except:
+except Exception:
     VERSION = None
 
 def ignore_file(full_path):
@@ -53,7 +53,7 @@ def _determine_module(current_file):
         result = os.path.basename(current_path)
         try:
             float(result)
-        except:
+        except Exception:
             pass
         else:
             # is a version take parent path
@@ -100,7 +100,7 @@ def is_ln_and_version_ok(path):
             content = f.read()
         try:
             content = eval(content)
-        except:
+        except Exception:
             content = {}
 
         if isinstance(content, dict):
@@ -140,7 +140,7 @@ def walk_files(on_match, pattern):
         root = os.path.dirname(modified_filename)
         try:
             module, module_path = get_module_of_file(modified_filename, return_path=True)
-        except:
+        except Exception:
             # no module edited, ignore:
             return
 
@@ -254,7 +254,7 @@ def _get_xml_ids():
     def on_match(filename, module, lines):
         try:
             tree = etree.parse(filename)
-        except:
+        except Exception:
             return
 
         if filename not in cache_xml_ids["files"]:
@@ -333,12 +333,12 @@ def _get_xml_ids():
                 name = id
                 try:
                     name = r.attrib["name"]
-                except:
+                except Exception:
                     # if there is no name, then name comes from
                     # associated action
                     try:
                         action = r.attrib['action']
-                    except:
+                    except Exception:
                         action = ""
 
                     if action in cache_xml_ids:
@@ -466,14 +466,18 @@ def update_cache(arg_modified_filename=None):
     fields = _get_fields()
     views = _get_views()
 
-    local_modified_filename = translate_path_relative_to_customs_root(modified_filename) if modified_filename else None
+    try:
+        local_modified_filename = translate_path_relative_to_customs_root(modified_filename) if modified_filename else None
+    except Exception:
+        # suck errors - called from vim for all files
+        return
     # get the relative module path and ignore everthing from that module;
     # the walk routine scanned the whole module
     from module_tools import get_module_of_file
     try:
         module, module_path = get_module_of_file(modified_filename, return_path=True)
         module_path = translate_path_relative_to_customs_root(module_path) + "/"
-    except:
+    except Exception:
         module_path = None
 
     if os.path.isfile(plainfile) and local_modified_filename:
@@ -623,12 +627,12 @@ def try_to_get_context(line_content, lines_before, filename):
         if re.search("<field.*name=['\"]inherit_id['\"]", line):
             try:
                 inherit_id = re.search("\ ref=['\"]([^\"^']*)", line).group(1)
-            except:
+            except Exception:
                 pass
         if re.search("<field.*name=['\"]model['\"]", line):
             try:
                 model = re.search(".*>([^<]*)<", line).group(1)
-            except:
+            except Exception:
                 pass
 
         if re.search("<record", line):
