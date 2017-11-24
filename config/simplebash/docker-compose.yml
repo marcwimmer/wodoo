@@ -3,14 +3,16 @@ services:
   simplebash:
     build: .
     volumes:
-      - $DIR:$DIR
+      - $ODOO_HOME:$ODOO_HOME
+      - /:/ROOT
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME:/opt/external_home
     working_dir: $HOME
     environment:
+      - EXTERNAL_ROOT=/ROOT
       - DOCKER_BASH=1
-      - ODOO_HOME=/opt/odoo
+      - ODOO_HOME
       - DISPLAY
       - QT_X11_NO_MITSHM=1
     entrypoint: /entrypoint.sh

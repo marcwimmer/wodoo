@@ -1,16 +1,17 @@
 #!/bin/bash
 set +x
 ARGS=( "$@" )
+WORKING_DIR=$(pwd)
 
 function startup() {
 	set -e
-	DIR=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
-	export DIR="$DIR"
+	ODOO_HOME=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
+	export ODOO_HOME="$ODOO_HOME"
 
-	eval "export $(grep PROJECT_NAME "$DIR/settings")"
+	eval "export $(grep PROJECT_NAME "$ODOO_HOME/settings")"
 
 	# create empty file, so that simple bash runs
-	settings_override_file="$DIR/settings.override"
+	settings_override_file="$ODOO_HOME/settings.override"
 	if [[ ! -f "$settings_override_file" ]]; then
 		touch "$settings_override_file"
 	fi
@@ -21,7 +22,7 @@ function show_help() {
 	if [[ "$1" == '--help' ]]; then
 		echo "If you experience problems, try to call"
 		echo ""
-		echo "$DIR/odoo --fix"
+		echo "$ODOO_HOME/odoo --fix"
 		echo ""
 		echo "- docker-container admin bash is updated by that"
 		exit 0
@@ -30,39 +31,20 @@ function show_help() {
 
 function fix() {
 	if [[ "$1" == '--fix' ]]; then
-		cd "$DIR/config/simplebash"
+		cd "$ODOO_HOME/config/simplebash"
 		./rebuild.sh
 
-		cd "$DIR/config/telegrambot"
+		cd "$ODOO_HOME/config/telegrambot"
 		/usr/local/bin/docker-compose build
 		exit 0
 	fi
 }
 
 function remove_old_bash() {
-	cd "$DIR/config/simplebash" || exit -1
+	cd "$ODOO_HOME/config/simplebash" || exit -1
 	/usr/local/bin/docker-compose rm -f simplebash 1>/dev/null 2>&1
 }
 
-
-function collect_extra_volumes() {
-	extra_volumes=()
-
-	if [[ -n "$2" ]]; then
-		if [[ "$1" == "backup" || "$1" == "backup-db" || "$2" == "backup-files" ]]; then
-			extra_volumes=("-v $2:$2")
-		elif [[ "$1" == "restore" || "$1" == "restore-files" || "$2" == "restore-db" ]]; then
-			if [[ -f "$2" ]]; then
-				dir=$(dirname "$2")
-				extra_volumes+=("-v $dir:$dir")
-			fi
-			if [[ -f "$3" ]]; then
-				dir=$(dirname "$3")
-				extra_volumes+=("-v $dir:$dir")
-			fi
-		fi
-	fi
-}
 
 function build_command() {
 	# using absolute path, to work in crontab
@@ -74,16 +56,17 @@ function build_command() {
 	command+=(run)
 	command+=(--service-ports)
 	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
-	command+=(-e HOST_ODOO_HOME="$DIR")
-	command+=(-e ODOO_HOME="$DIR")
+	command+=(-e ODOO_HOME="$ODOO_HOME")
+	command+=(-e HOST_ODOO_HOME="$ODOO_HOME")
 	command+=(-e UID="$UID")
 	command+=(-e USER="$USER")
+	command+=(-e WORKING_DIR="${WORKING_DIR}")
 	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi
 	command+=(simplebash)
-	command+=("$DIR/admin/odoo-admin")
+	command+=("$ODOO_HOME/admin/odoo-admin")
 	command+=( "${ARGS[@]}" )
 }
 
@@ -95,6 +78,5 @@ startup
 show_help "${ARGS[@]}"
 fix "${ARGS[@]}"
 remove_old_bash
-collect_extra_volumes "${ARGS[@]}"
 build_command
 run_command

@@ -80,6 +80,45 @@ function default_confs() {
 
 }
 
+function make_path_as_hosts_sees_it() {
+    #
+	#
+	# converts /ROOT/home/marc... to /home/marc
+	#
+	local path
+	path="$1"
+
+	if [[ "$path" == $EXTERNAL_ROOT* ]]; then
+		path=${path:${#EXTERNAL_ROOT}}
+	fi
+	realpath "$path"
+}
+
+function make_path_accessible_from_container_but_file_is_outside() {
+    #
+	# Transforms relative paths and absolute path to a path,
+	# that resolves to the host.
+	#
+	# odoo calls this script with WORKING_DIR set, so we know
+	# for relative paths, where to start.
+	#
+	# example:
+	#
+	# /opt/dumps/db1.gz --> /ROOT/dumps/db1.gz
+	# dumps/db1.gz --> /home/user1/dumps/db1.gz where /home/user1 is $WORKING_DIR
+	#
+	local path
+	path="$1"
+	path=$(readlink -f "$path")
+
+	if [[ "$path" != /* ]]; then
+		path="${WORKING_DIR}/$path"
+	fi
+	path="${EXTERNAL_ROOT}$path"
+
+	realpath "$path"
+}
+
 function file2env() {
 	if [[ ! -f "$1" ]]; then
 		return 0
@@ -190,15 +229,10 @@ function do_restore_db_in_docker_container () {
 	# remove the postgres volume and reinit
 
 	echo "Restoring dump within docker container postgres"
-	dump_file=$(readlink -f "$1")
+	dump_file="$1"
 
     if [[ ! -f "$dump_file" ]]; then
         echo "File $dump_file not found!"
-        exit -1
-    fi
-
-    if [[ "$(dirname "$dump_file")" != "$DUMPS_PATH" ]]; then
-        echo "The database to restore must lie in dumps path $DUMPS_PATH"
         exit -1
     fi
 
@@ -210,7 +244,9 @@ function do_restore_db_in_docker_container () {
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
-    dcrun postgres /restore.sh "$(basename "$dump_file")"
+	RESTOREFILE=/opt/dumpfile
+	dump_file=$(make_path_as_hosts_sees_it "$dump_file")
+	dcrun -v "$dump_file:$RESTOREFILE" -e "RESTOREFILE=$RESTOREFILE" postgres /restore.sh
 }
 
 function do_restore_db_on_external_postgres () {
@@ -237,14 +273,11 @@ function do_restore_db_on_external_postgres () {
 
 function do_restore_files () {
 	# remove the postgres volume and reinit
-	tararchive_full_path=$1
+	filepath=$1
 
-    if [[ "$(dirname "$tararchive_full_path")" != "$DUMPS_PATH" ]]; then
-        echo "The file to restore must lie in dumps path $DUMPS_PATH"
-        exit -1
-    fi
-
-	dcrun odoo /bin/restore_files.sh "$(basename "$tararchive_full_path")"
+	filepath=$(make_path_as_hosts_sees_it "$filepath")
+	RESTOREFILE=/tmp/archive
+	dcrun -v "$filepath:$RESTOREFILE"  odoo /bin/restore_files.sh
 	return 0
 }
 
@@ -542,17 +575,19 @@ function do_command() {
 
 	restore-files)
 		set -e
+		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
         if [[ -z "$2" ]]; then
 			echo "Please provide the tar file-name."
 			exit -1
         fi
 		echo 'Extracting files...'
-		do_restore_files "$2"
+		do_restore_files "$dumpfile"
 		;;
 
 	restore-db)
 		set -e
-		dumpfile="$2"
+		set -x
+		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
 
 		if [[ "$DEVMODE" == "1" ]]; then
@@ -562,6 +597,7 @@ function do_command() {
 		echo "$*" |grep -q '[-]force' || {
 			askcontinue "Deletes database $DBNAME!"
 		}
+
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			do_restore_db_in_docker_container "$dumpfile"
@@ -954,7 +990,7 @@ function do_command() {
 		echo "Built the docker-compose file."
 		;;
 	simplebash)
-		bash
+		bash --noprofile
 		;;
 	test)
 		echo 'reached the command area'
