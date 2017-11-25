@@ -5,11 +5,11 @@ volumes:
 
 services:
   asterisk_redis:
-      build: $HOST_ODOO_HOME/machines/asterisk/redis
+      build: $ODOO_HOME/machines/asterisk/redis
       container_name: ${DCPREFIX}_asterisk_redis
   ari:
     container_name: ${DCPREFIX}_ari
-    build: $HOST_ODOO_HOME/machines/asterisk/ari
+    build: $ODOO_HOME/machines/asterisk/ari
     depends_on:
       - asterisk_redis
     ports:
@@ -28,33 +28,33 @@ services:
       PROXY_PORT_IN: 29926
       PROXY_PORT_OUT: 80
     volumes:
-      - ${HOST_ODOO_HOME}/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
-      - $HOST_ODOO_HOME/data/ari/calls:/opt/permstore/calls
-      - $HOST_ODOO_HOME/data/ari/uploaded_calls:/opt/permstore/uploaded_calls
-      - $HOST_ODOO_HOME/data/ari/record_clicked:/opt/permstore/record_clicked
-      - $HOST_ODOO_HOME/data/asterisk/moh_custom:/opt/asterisk/moh_custom
-      - $HOST_ODOO_HOME/data/asterisk/recordings:/opt/asterisk/recording
-      - $HOST_ODOO_HOME/data/asterisk/reloader:/opt/asterisk/reloader
-      - $HOST_ODOO_HOME/data/asterisk/sounds:/opt/asterisk/sounds
-      - $HOST_ODOO_HOME/machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
+      - ${ODOO_HOME}/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
+      - $ODOO_HOME/data/ari/calls:/opt/permstore/calls
+      - $ODOO_HOME/data/ari/uploaded_calls:/opt/permstore/uploaded_calls
+      - $ODOO_HOME/data/ari/record_clicked:/opt/permstore/record_clicked
+      - $ODOO_HOME/data/asterisk/moh_custom:/opt/asterisk/moh_custom
+      - $ODOO_HOME/data/asterisk/recordings:/opt/asterisk/recording
+      - $ODOO_HOME/data/asterisk/reloader:/opt/asterisk/reloader
+      - $ODOO_HOME/data/asterisk/sounds:/opt/asterisk/sounds
+      - $ODOO_HOME/machines/asterisk/asterisk/etc/asterisk:/opt/asterisk/etc
     env_file:
-      - $HOST_ODOO_HOME/settings
-      - $HOST_ODOO_HOME/settings.override
+      - $ODOO_HOME/settings
+      - $ODOO_HOME/settings.override
 
   stasis:
-      build: $HOST_ODOO_HOME/machines/asterisk/stasis
+      build: $ODOO_HOME/machines/asterisk/stasis
       container_name: ${DCPREFIX}_stasis
       environment:
         PROXY_PORT_IN: 28121
         PROXY_PORT_OUT: 80
       env_file:
-        - $HOST_ODOO_HOME/settings
+        - $ODOO_HOME/settings
       depends_on:
         - asterisk
         - asterisk_redis
       volumes:
-        - $HOST_ODOO_HOME/data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
-        - $HOST_ODOO_HOME/data/asterisk/reloader:/opt/reloader
+        - $ODOO_HOME/data/src/customs/${CUSTOMS}/common/asterisk_ari/stasis:/opt/src:ro
+        - $ODOO_HOME/data/asterisk/reloader:/opt/reloader
         - asterisk_logs:/var/log/asterisk
 
   asterisk:
@@ -62,22 +62,22 @@ services:
     depends_on:
         - asterisk_ovpn_server
     build:
-        context: $HOST_ODOO_HOME/machines/asterisk/asterisk
+        context: $ODOO_HOME/machines/asterisk/asterisk
         args:
             - ASTERISK_COUNTRY_ITU=${ASTERISK_COUNTRY_ITU}
     environment:
       TRIGGER: /opt/reloader/reload
     volumes:
-      - $HOST_ODOO_HOME/run/asterisk/etc:/etc/asterisk:ro
-      - $HOST_ODOO_HOME/data/ovpn/client:/opt/certs:ro
-      - $HOST_ODOO_HOME/data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
-      - $HOST_ODOO_HOME/data/asterisk/recordings:/var/spool/asterisk/recording
-      - $HOST_ODOO_HOME/data/asterisk/reloader:/opt/reloader
-      - $HOST_ODOO_HOME/data/asterisk/sounds:/var/lib/asterisk/sounds:ro
+      - $ODOO_HOME/run/asterisk/etc:/etc/asterisk:ro
+      - $ODOO_HOME/data/ovpn/client:/opt/certs:ro
+      - $ODOO_HOME/data/asterisk/moh_custom:/var/lib/asterisk/moh_custom:ro
+      - $ODOO_HOME/data/asterisk/recordings:/var/spool/asterisk/recording
+      - $ODOO_HOME/data/asterisk/reloader:/opt/reloader
+      - $ODOO_HOME/data/asterisk/sounds:/var/lib/asterisk/sounds:ro
       - asterisk_logs:/var/log/asterisk
     env_file:
-        - $HOST_ODOO_HOME/settings
-        - $HOST_ODOO_HOME/settings.override
+        - $ODOO_HOME/settings
+        - $ODOO_HOME/settings.override
     cap_add:
         - NET_ADMIN
     healthcheck:

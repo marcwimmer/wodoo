@@ -9,7 +9,6 @@ from datetime import datetime
 import subprocess
 import inspect
 odoo_home = os.environ['ODOO_HOME']
-host_odoo_home = os.environ['HOST_ODOO_HOME']
 
 dest_file = sys.argv[1]
 paths = sys.argv[2].split("\n")
@@ -139,14 +138,15 @@ cmdline.append('config')
 # annotation: per symlink all subfiles/folders are linked to a path,
 # that matches the host system path
 shutil.move(tempdir, odoo_home)
+tempdir = os.path.join(odoo_home, os.path.basename(tempdir))
 
 try:
-    proc = subprocess.Popen(cmdline, cwd=host_odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmdline, cwd=odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     conf, err = proc.communicate()
     if err:
         print err
         raise Exception(err)
-except:
+except Exception:
     print cmdline
     raise
 else:
@@ -158,6 +158,4 @@ else:
     with open(dest_file, 'w') as f:
         f.write(conf)
 finally:
-    if host_odoo_home != odoo_home:
-        shutil.move(os.path.join(host_odoo_home, os.path.basename(tempdir)), tempdir)
-        shutil.rmtree(tempdir)
+    shutil.rmtree(tempdir)
