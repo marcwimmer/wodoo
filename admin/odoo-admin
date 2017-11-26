@@ -179,7 +179,10 @@ function export_settings() {
 	cd "$ODOO_HOME/admin/module_tools" || exit -1
 	python <<-EOF
 	import odoo_config
-	v = odoo_config.get_version_from_customs("$CUSTOMS")
+	try:
+	    v = odoo_config.get_version_from_customs("$CUSTOMS")
+	except:
+	    v = 'no-version'
 	print v
 	EOF
 	)
@@ -1092,6 +1095,26 @@ function do_command() {
 		cmd+=("$1")
 		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
+		;;
+
+	switch)
+		# switch customs
+		if [[ -z "${ALL_PARAMS[0]}" ]]; then
+			echo "Customs missing"
+			exit 1
+		fi
+		newcustoms="${ALL_PARAMS[0]}"
+
+		$(
+		cd "$ODOO_HOME/admin/module_tools"
+		python <<-EOF
+		import odoo_config
+		odoo_config.set_customs("$newcustoms")
+		EOF
+		)
+
+		echo "Customs set to $newcustoms"
+
 		;;
 
     *)
