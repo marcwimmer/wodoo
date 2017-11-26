@@ -59,7 +59,7 @@ function build_command() {
 	command+=(-e ODOO_HOME="$ODOO_HOME")
 	command+=(-e UID="$UID")
 	command+=(-e USER="$USER")
-	command+=(-e WORKING_DIR="${WORKING_DIR}")
+	command+=(-e WORKING_DIR="$(realpath "${WORKING_DIR}")")
 	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
