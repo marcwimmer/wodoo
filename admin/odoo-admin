@@ -47,7 +47,6 @@ import os
 import time
 working_dir = os.environ['LOCAL_WORKING_DIR']
 while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
-	print working_dir
 	try:
 		working_dir = os.path.dirname(working_dir)
 	except:
