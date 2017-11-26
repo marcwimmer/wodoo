@@ -73,7 +73,7 @@ apt-get install -y --no-install-recommends \
 
 
 # install docker cli
-RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-17.03.2-ce.tgz -o /tmp/docker.tgz
+RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-17.09.0-ce.tgz -o /tmp/docker.tgz
 RUN mkdir -p /opt/docker
 WORKDIR /opt/docker
 RUN tar xfz /tmp/docker.tgz
