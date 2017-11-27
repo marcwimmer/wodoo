@@ -87,7 +87,7 @@ def userinteractive_history(path):
     os.chdir(os.path.join(customs_dir, path))
     try:
         subprocess.check_call(['/usr/bin/git', 'log', '-p', path])
-    except:
+    except Exception:
         pass
 
 def action_commit():
@@ -186,14 +186,15 @@ def action_commit():
         subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir)
 
         for x in files_of_module:
-            staged_files.remove(x)
+            if x in staged_files:
+                staged_files.remove(x)
 
 def get_affected_modules_of_files(files):
     modules = []
     for file in files:
         try:
             module, module_path = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
-        except:
+        except Exception:
             module, module_path = "", './'
         if not filter(lambda x: x['module'] == module, modules):
             modules.append({
@@ -248,7 +249,7 @@ def action_deploy_ticket():
     """
     Puts ticket branch on deploy
     """
-    #release_ticket('deploy', increment_module_versions=True, auto_squash_commit_message=False)
+    # release_ticket('deploy', increment_module_versions=True, auto_squash_commit_message=False)
     simple_release_ticket('deploy')
 
 def action_stage_ticket():
@@ -271,7 +272,7 @@ def simple_release_ticket(dest=None):
     subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
     try:
         subprocess.check_call(['/usr/bin/git', 'merge', '--log=3', '-m', "merge {} to {}".format(original_branch, dest), original_branch, ], cwd=customs_dir)
-    except:
+    except Exception:
         print "Automatic merge failed into {} - please edit by hand".format(dest)
         print "Afterwards do:"
         print "\todoo switch-ticket {ticket}".format(ticket=original_branch.replace(WORK_SUFFIX, ''))
@@ -452,7 +453,7 @@ def get_affected_modules_of_commits(repo, shas):
         for file in commit.stats.files:
             try:
                 module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir, file), return_manifest=True)
-            except:
+            except Exception:
                 module_name, module_path = None, None
             commits.setdefault(module_name, {
                 'commits': [],
@@ -531,9 +532,9 @@ def insert_changelog(readme_path, changelog, new_version=None):
 
     content += "\n"
     if new_version:
-        content += "Version: {}".format(new_version)
-    content += datetime.datetime.utcnow().strftime("%Y-%m-%d") + "\n"
-    content += "========================================"
+        content += ["Version: {}".format(new_version)]
+    content += [datetime.datetime.utcnow().strftime("%Y-%m-%d") + "\n"]
+    content += ["========================================"]
     content += changelog
 
     with open(readme_path, 'w') as f:
