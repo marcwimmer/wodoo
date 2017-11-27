@@ -157,8 +157,8 @@ function file2env() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
+		export "$var" # export local variable to environment
     done <"$1"
-    export $(cut -d= -f1 "$1")  # export vars now in local variables
 
 	return 0
 }
@@ -614,7 +614,6 @@ function do_command() {
 
 	restore-db)
 		set -e
-		set -x
 		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
 
