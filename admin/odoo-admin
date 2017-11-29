@@ -674,7 +674,8 @@ function do_command() {
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		$MANAGE restore-db "${ALL_PARAMS[@]}"
+		set +e
+		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
 
         ;;
