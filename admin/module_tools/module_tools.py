@@ -245,7 +245,7 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
         try:
             float(basename)
             return True, os.path.abspath(os.path.join(x, '../'))
-        except:
+        except Exception:
             pass
 
         return False, x
@@ -264,7 +264,7 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
     module_name = os.path.basename(p)
     try:
         float(module_name)
-    except:
+    except Exception:
         pass
     else:
         module_name = os.path.basename(os.path.dirname(p))
@@ -294,7 +294,7 @@ def manifest2dict(manifest_path):
         content = f.read()
     try:
         info = eval(content)
-    except:
+    except Exception:
         print "error at file: %s" % manifest_path
         raise
     return info
@@ -390,9 +390,56 @@ def is_module_dir_in_version(module_dir):
 
     return result
 
-def get_uninstalled_modules_where_otheres_depend_on():
+def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     sql = """
-select d.name from ir_module_module_dependency d inner join ir_module_module m on m.id = d.module_id  inner join ir_module_module mprior on mprior.name = d.name where m.state in ('installed', 'to install', 'to upgrade') and mprior.state = 'uninstalled';
+        select
+            mprior.name, mprior.state
+        from
+            ir_module_module_dependency d
+        inner join
+            ir_module_module m
+        on
+            m.id = d.module_id
+        inner join
+            ir_module_module mprior
+        on
+            mprior.name = d.name
+        where
+            m.name = '{module}';
+    """
+    conn, cr = get_conn()
+    result = []
+    try:
+        cr.execute("select id, name from ir_module_module where state in ('uninstalled') and auto_install;")
+        for mod in [x[1] for x in cr.fetchall()]:
+            cr.execute(sql.format(module=mod))
+            if all(x[1] == 'installed' for x in cr.fetchall()):
+                # means that all predecessing modules are installed but not the one;
+                # so it shoule be installed
+                result.append(mod)
+    finally:
+        cr.close()
+        conn.close()
+    return result
+
+def get_uninstalled_modules_where_others_depend_on():
+    sql = """
+        select
+            d.name
+        from
+            ir_module_module_dependency d
+        inner join
+            ir_module_module m
+        on
+            m.id = d.module_id
+        inner join
+            ir_module_module mprior
+        on
+            mprior.name = d.name
+        where
+            m.state in ('installed', 'to install', 'to upgrade')
+        and
+            mprior.state = 'uninstalled';
     """
     conn, cr = get_conn()
     try:
@@ -787,11 +834,11 @@ def update_view_in_db(filepath, lineno):
                                 rel_path,
                                 res_id
                             ])
-                        except:
+                        except Exception:
                             conn.rollback()
 
                 conn.commit()
-            except:
+            except Exception:
                 conn.rollback()
             finally:
                 cr.close()

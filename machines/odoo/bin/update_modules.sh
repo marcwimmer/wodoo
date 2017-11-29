@@ -7,19 +7,21 @@ function get_modules() {
 import module_tools
 modules = []
 if "$mode" == "to_install":
-	modules += module_tools.get_uninstalled_modules_where_otheres_depend_on()
+	modules += module_tools.get_uninstalled_modules_where_others_depend_on()
 else:
 	modules += module_tools.get_customs_modules("/opt/odoo/active_customs", "$mode")
 print ','.join(sorted(list(set(modules))))
 EOF
 }
 
-function get_modules_that_need_to_be_installed_as_depended_on() {
+function get_uninstalled_modules_that_are_auto_install_and_should_be_installed() {
 	cd /opt/odoo/admin/module_tools
-	python <<-EOF
-	import module_tools
-	module_tools.get_uninstalled_modules_where_otheres_depend_on()
-	EOF
+	python <<EOF
+import module_tools
+modules = []
+modules += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+print ','.join(sorted(list(set(modules))))
+EOF
 }
 
 function delete_qweb() {
@@ -141,6 +143,12 @@ function main() {
 		delete_qweb "$MODULE"
 	fi
 	update 'u' "$MODULE"
+
+	# check if at auto installed modules all predecessors are now installed; then install them
+	auto_install_modules=$(get_uninstalled_modules_that_are_auto_install_and_should_be_installed)
+	if [[ -n "$auto_install_modules" ]]; then
+		update 'i' "$auto_install_modules"
+	fi
 
 	echo
 	echo
