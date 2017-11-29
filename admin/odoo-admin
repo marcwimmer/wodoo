@@ -1097,7 +1097,7 @@ function do_command() {
 		eval "${cmd[@]@Q}"
 		;;
 
-	switch)
+	switch-customs)
 		# switch customs
 		if [[ -z "${ALL_PARAMS[0]}" ]]; then
 			echo "Customs missing"
