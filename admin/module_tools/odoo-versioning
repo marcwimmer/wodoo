@@ -278,6 +278,8 @@ def simple_release_ticket(dest=None):
         print "\todoo switch-ticket {ticket}".format(ticket=original_branch.replace(WORK_SUFFIX, ''))
     else:
         while True:
+            from pudb import set_trace
+            set_trace()
             user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))
             if not user or user.lower() in ['y', 'n']:
                 break
@@ -427,7 +429,7 @@ def release_ticket(dest, increment_module_versions, auto_squash_commit_message):
         subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', original_branch, ], cwd=customs_dir)
 
         while True:
-            user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))
+            user = raw_input("Shall i push to {} now? [Y/n] ".format(dest)) or 'y'
             if not user or user.lower() in ['y', 'n']:
                 break
         if user.upper() == 'Y':
