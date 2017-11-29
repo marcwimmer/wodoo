@@ -278,8 +278,6 @@ def simple_release_ticket(dest=None):
         print "\todoo switch-ticket {ticket}".format(ticket=original_branch.replace(WORK_SUFFIX, ''))
     else:
         while True:
-            from pudb import set_trace
-            set_trace()
             user = raw_input("Shall i push to {} now? [Y/n] ".format(dest))
             if not user or user.lower() in ['y', 'n']:
                 break
