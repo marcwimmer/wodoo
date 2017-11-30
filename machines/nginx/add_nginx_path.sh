@@ -34,8 +34,8 @@ location $LOCATION
 	set $DOLLAR${DNSNAME}_${URLPATH/\//} $DNSNAME;
 	#resolver 127.0.0.11;
 	#https://serverfault.com/questions/240476/how-to-force-nginx-to-resolve-dns-of-a-dynamic-hostname-everytime-when-doing-p
-	resolver 127.0.0.11 valid=15s;
-	rewrite ^/cal/(.*) /${DOLLAR}1 break;
+	resolver 127.0.0.11 valid=5s;
+	rewrite ^${LOCATION}/(.*) /${DOLLAR}1 break;
 	proxy_pass http://$DOLLAR${DNSNAME}_${URLPATH/\//}:$PORT;
 }
 
