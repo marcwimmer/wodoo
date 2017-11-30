@@ -51,9 +51,11 @@ function build_command() {
 	if [[ -n "$DISPLAY" ]]; then
 		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
 	fi
+	export WORKING_DIR="$WORKING_DIR"
 	docker_group_id="$(cut -d : -f3 <(getent group docker))"
 	command=(/usr/local/bin/docker-compose)
 	command+=(run)
+	command+=(--rm)
 	command+=(--service-ports)
 	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
 	command+=(-e ODOO_HOME="$ODOO_HOME")

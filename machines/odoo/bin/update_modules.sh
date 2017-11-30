@@ -147,6 +147,13 @@ function main() {
 	# check if at auto installed modules all predecessors are now installed; then install them
 	auto_install_modules=$(get_uninstalled_modules_that_are_auto_install_and_should_be_installed)
 	if [[ -n "$auto_install_modules" ]]; then
+		echo "Going to install following modules, that are auto installable modules"
+		sleep 5
+		echo "$auto_install_modules"
+		echo ""
+		sleep 2
+		echo "You should press Ctrl+C NOW to abort"
+		sleep 8
 		update 'i' "$auto_install_modules"
 	fi
 

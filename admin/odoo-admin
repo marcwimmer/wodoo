@@ -133,14 +133,8 @@ function make_path_accessible_from_container_but_file_is_outside() {
 	# dumps/db1.gz --> /home/user1/dumps/db1.gz where /home/user1 is $WORKING_DIR
 	#
 	local path
-	path="$1"
+	path="/WORKING_DIR/$1"
 	path=$(readlink -f "$path")
-
-	if [[ "$path" != /* ]]; then
-		path="${WORKING_DIR}/$path"
-	fi
-	path="${EXTERNAL_ROOT}$path"
-
 	realpath "$path"
 }
 
@@ -295,6 +289,7 @@ function do_restore_db_on_external_postgres () {
 	gunzip -c "$1" > "$pipe" &
 	echo "Restoring Database $DBNAME"
 	$PGRESTORE -d "$DBNAME" < "$pipe"
+	echo $?
 
 	return 0
 }
@@ -640,34 +635,6 @@ function do_command() {
 		set_db_ownership
 		;;
 
-    restore)
-
-        if [[ ! -f $2 ]]; then
-            echo "File $2 not found!"
-            exit -1
-        fi
-        if [[ -n "$3" && ! -f $3 ]]; then
-            echo "File $3 not found!"
-            exit -1
-        fi
-
-		dumpfile=$2
-		tarfiles=$3
-
-		$MANAGE restore-db "$dumpfile"
-		
-		if [[ "$tarfiles" == "[-]force" ]]; then
-			tarfiles=""
-		fi
-
-        if [[ -n "$tarfiles" ]]; then
-			$MANAGE restore-files $tarfiles
-        fi
-
-		$MANAGE fix-permissions
-
-        echo "Restart systems by $MANAGE restart"
-        ;;
     restore-dev-db)
 		if [[ "$ALLOW_RESTORE_DEV" ]]; then
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."

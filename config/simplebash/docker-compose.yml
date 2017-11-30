@@ -4,7 +4,8 @@ services:
     build: .
     volumes:
       - $ODOO_HOME:$ODOO_HOME
-      - /:/ROOT
+      # - /:/ROOT  never mount root / problems on older kernels and system (device or resource busy)
+      - $WORKING_DIR:/WORKING_DIR
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME:/opt/external_home
