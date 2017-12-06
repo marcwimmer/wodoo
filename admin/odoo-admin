@@ -109,6 +109,7 @@ function make_path_as_hosts_sees_it() {
     #
 	#
 	# converts /ROOT/home/marc... to /home/marc
+	# converts /WORKING_DIR/dumpfile... to /tmp/a/b/c/dumpfile
 	#
 	local path
 	path="$1"
@@ -116,7 +117,11 @@ function make_path_as_hosts_sees_it() {
 	if [[ "$path" == $EXTERNAL_ROOT* ]]; then
 		path=${path:${#EXTERNAL_ROOT}}
 	fi
-	realpath "$path"
+
+	if [[ "$path" == */WORKING_DIR/* ]]; then
+		path=${path/\/WORKING_DIR/$WORKING_DIR}
+	fi
+	echo "$path"
 }
 
 function make_path_accessible_from_container_but_file_is_outside() {
@@ -266,6 +271,7 @@ function do_restore_db_in_docker_container () {
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
+	set -x
 	RESTOREFILE=/opt/dumpfile
 	dump_file=$(make_path_as_hosts_sees_it "$dump_file")
 	dcrun -v "$dump_file:$RESTOREFILE" -e "RESTOREFILE=$RESTOREFILE" postgres /restore.sh
