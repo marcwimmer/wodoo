@@ -533,8 +533,9 @@ def insert_changelog(readme_path, changelog, new_version=None):
     content += ["\n"]
     if new_version:
         content += ["Version: {}".format(new_version)]
-    content += [datetime.datetime.utcnow().strftime("%Y-%m-%d") + "\n"]
+    content += [datetime.datetime.utcnow().strftime("%Y-%m-%d")]
     content += ["========================================"]
+    content += [""]
     content += [changelog]
 
     with open(readme_path, 'w') as f:
