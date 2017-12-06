@@ -830,8 +830,8 @@ function do_command() {
 		$MANAGE abort-upgrade
 
         echo "Run module update"
-		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
-			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
+		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
 		fi
 		# running duplicate updates is really a problem;
         $dc kill 
@@ -851,8 +851,8 @@ function do_command() {
         $dc restart nginx
 
         df -h / # case: after update disk / was full
-		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
-			echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
+		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+			echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
 		fi
 		$MANAGE telegram-send "Update done" # &> /dev/null
 

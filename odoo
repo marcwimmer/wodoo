@@ -3,19 +3,48 @@ set +x
 ARGS=( "$@" )
 WORKING_DIR=$(pwd)
 
+function file2env() {
+	if [[ ! -f "$1" ]]; then
+		return 0
+	fi
+
+    # set variables from settings
+    while read -r line; do
+        # reads KEY1=A GmbH and makes export KEY1="A GmbH" basically
+        [[ "$line" == '#*' ]] && continue
+        [[ "$line" == '' ]] && continue
+        var="${line%=*}"
+        value="${line##*=}"
+        eval "$var=\"$value\""
+		export "$var" # export local variable to environment
+    done <"$1"
+
+	return 0
+}
+
+
 function startup() {
 	set -e
 	ODOO_HOME=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
 	export ODOO_HOME="$ODOO_HOME"
-
-	eval "export $(grep PROJECT_NAME "$ODOO_HOME/settings")"
 
 	# create empty file, so that simple bash runs
 	settings_override_file="$ODOO_HOME/settings.override"
 	if [[ ! -f "$settings_override_file" ]]; then
 		touch "$settings_override_file"
 	fi
+	ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH=/tmp/update_touch_file_dummy
+
+	file2env "$ODOO_HOME/settings"
+	file2env "$ODOO_HOME/settings.override"
 	export HOSTNAME_TO_USE="$HOST"
+
+	# TODO make per docker compose option to mount non existent file mount as file
+	if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
+		ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH=$(dirname "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE")
+	fi
+	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH="$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH"
+
 }
 
 function show_help() {
