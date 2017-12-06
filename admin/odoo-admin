@@ -51,7 +51,7 @@ while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
 		working_dir = os.path.dirname(working_dir)
 	except:
 		break
-	if working_dir == '/':
+	if not working_dir.replace("/", ""):
 		break
 if os.path.isfile(os.path.join(working_dir, '.customsroot')):
 	current_customs = os.path.basename(working_dir)
@@ -80,7 +80,6 @@ function default_confs() {
 	local ARGS=("$@")
 	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
-	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
 	export DB_PORT=5432
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
