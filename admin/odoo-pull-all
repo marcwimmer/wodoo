@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+set -x
+echo "Es fehlt herauszufinden, wie das repo eines subtrees lautet"
+exit -1
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+if [[ ! -d common ]]; then
+    echo "Directory common not found - are you in root?"
+    exit 1
+fi
+
+if [[ ! -d ".git" ]]; then
+	echo "No local git repo - where are you?"
+	exit -1
+fi
+
+#git log | grep git-subtree-dir | grep "common/" | awk '{ print $2}' | awk '{ split($0,a,"/"); print a[2]}'
+all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
+readarray -t all_tres <<<"$all_trees"
+
+for tree in "${all_tres[@]}"; do
+	git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
+done
+
