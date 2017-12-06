@@ -8,6 +8,8 @@ services:
     build: $ODOO_HOME/machines/perftest
     env_file:
         - $ODOO_HOME/settings
+    volumes:
+        - ${ODOO_HOME}/data/src/customs/${CUSTOMS}/machines/perftest.py:/usr/local/bin/tests.py
     environment:
       DURATION_TO_OUTPUT: 2
       SLEEP: 10

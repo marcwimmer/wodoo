@@ -1,3 +1,4 @@
+# place into ODOO_HOME/data/src/customs/CUSTOMS/machines/perftest.py
 def search_products(exe):
     exe("product.product", 'search', [('code5', 'ilike=', 'A0000%')])
 
