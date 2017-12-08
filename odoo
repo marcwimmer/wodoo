@@ -51,15 +51,15 @@ function show_help() {
 	if [[ "$1" == '--help' ]]; then
 		echo "If you experience problems, try to call"
 		echo ""
-		echo "$ODOO_HOME/odoo --fix"
+		echo "$ODOO_HOME/odoo --update"
 		echo ""
 		echo "- docker-container admin bash is updated by that"
 		exit 0
 	fi
 }
 
-function fix() {
-	if [[ "$1" == '--fix' ]]; then
+function update() {
+	if [[ "$1" == '--update' ]]; then
 		cd "$ODOO_HOME/config/simplebash"
 		./rebuild.sh
 
@@ -106,7 +106,7 @@ function run_command() {
 
 startup
 show_help "${ARGS[@]}"
-fix "${ARGS[@]}"
+update "${ARGS[@]}"
 remove_old_bash
 build_command
 run_command
