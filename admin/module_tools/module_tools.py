@@ -768,40 +768,45 @@ def update_view_in_db(filepath, lineno):
     line = lineno
     xmlid = ""
     while line >= 0:
-        if "<record " in xml[line]:
+        if "<record " in xml[line] or "<template " in xml[line]:
             # with search:
             match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line])
             if match:
                 xmlid = match[0]
                 break
+
         line -= 1
+
+    def extract_html(parent_node):
+        arch = parent_node.xpath("*")
+        result = None
+        if arch[0].tag == "data" or len(arch) == 1:
+            result = arch[0]
+        else:
+            data = etree.Element("data")
+            for el in arch:
+                data.append(el)
+            result = data
+        if result is None:
+            return ""
+        result = etree.tounicode(result)
+        return result
 
     def get_arch():
         _xml = xml
         if xml and xml[0] and 'encoding' in xml[0]:
             _xml = _xml[1:]
         doc = etree.XML("\n".join(_xml))
-        for node in doc.xpath("//record"):
-            if xmlid in node.get("id", ""):
+        for node in doc.xpath("//*[@id='{}']".format(xmlid)):
+            if node.tag == 'record':
                 arch = node.xpath("field[@name='arch']")
-                if arch:
-                    inherit = node.xpath("field[@name='inherit_id']")
-                    if not inherit or not inherit[0].get("ref", False):
-                        inherit = None
-                    if not inherit:
-                        return etree.tounicode(arch[0].xpath("*")[0])
-                    else:
-                        arch = arch[0].xpath("*")
-                        if arch[0].tag == "data":
-                            result = arch[0]
-                        else:
-                            data = etree.Element("data")
-                            for el in arch:
-                                data.append(el)
-                            result = data
+            elif node.tag == 'template':
+                arch = [node]
+            else:
+                raise Exception("impl")
 
-                        s = etree.tounicode(result)
-                        return s
+            if arch:
+                return extract_html(arch[0])
 
         return None
 
@@ -822,6 +827,15 @@ def update_view_in_db(filepath, lineno):
                 res = cr.fetchone()
                 if res:
                     res_id = res[0]
+                    cr.execute("select type from ir_ui_view where id=%s", (res_id,))
+                    view_type = cr.fetchone()[0]
+                    if view_type == 'qweb':
+                        arch = arch.strip()
+                        if arch.startswith('<data>'):
+                            arch = arch[len("<data>"):]
+                        if arch.endswith('</data>'):
+                            arch = arch[:-len("</data>")]
+
                     cr.execute("update ir_ui_view set {}=%s where id=%s".format(arch_column), [
                         arch,
                         res_id
@@ -840,6 +854,7 @@ def update_view_in_db(filepath, lineno):
                 conn.commit()
             except Exception:
                 conn.rollback()
+                raise
             finally:
                 cr.close()
                 conn.close()
