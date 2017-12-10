@@ -7,19 +7,21 @@ function get_modules() {
 import module_tools
 modules = []
 if "$mode" == "to_install":
-	modules += module_tools.get_uninstalled_modules_where_otheres_depend_on()
+	modules += module_tools.get_uninstalled_modules_where_others_depend_on()
 else:
 	modules += module_tools.get_customs_modules("/opt/odoo/active_customs", "$mode")
 print ','.join(sorted(list(set(modules))))
 EOF
 }
 
-function get_modules_that_need_to_be_installed_as_depended_on() {
+function get_uninstalled_modules_that_are_auto_install_and_should_be_installed() {
 	cd /opt/odoo/admin/module_tools
-	python <<-EOF
-	import module_tools
-	module_tools.get_uninstalled_modules_where_otheres_depend_on()
-	EOF
+	python <<EOF
+import module_tools
+modules = []
+modules += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+print ','.join(sorted(list(set(modules))))
+EOF
 }
 
 function delete_qweb() {
@@ -142,6 +144,19 @@ function main() {
 	fi
 	update 'u' "$MODULE"
 
+	# check if at auto installed modules all predecessors are now installed; then install them
+	auto_install_modules=$(get_uninstalled_modules_that_are_auto_install_and_should_be_installed)
+	if [[ -n "$auto_install_modules" ]]; then
+		echo "Going to install following modules, that are auto installable modules"
+		sleep 5
+		echo "$auto_install_modules"
+		echo ""
+		sleep 2
+		echo "You should press Ctrl+C NOW to abort"
+		sleep 8
+		update 'i' "$auto_install_modules"
+	fi
+
 	echo
 	echo
 	echo "--------------------------------------------------------------------------------"
@@ -153,6 +168,11 @@ function main() {
 	done
 	echo "UPDATE ${MODULE:0:30}..."
 	echo
+	cd /opt/odoo/admin/module_tools
+	python <<-EOF
+	import module_tools
+	module_tools.check_if_all_modules_from_instal_are_installed()
+	EOF
 	echo
 	echo
 }

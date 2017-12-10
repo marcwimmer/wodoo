@@ -3,12 +3,12 @@ version: '2.1'
 services:
   sslproxy:
     container_name: ${DCPREFIX}_odoo_ssl_proxy
-    build: $HOST_ODOO_HOME/machines/sslproxy
+    build: $ODOO_HOME/machines/sslproxy
     depends_on: 
         - odoo
     ports:
         - "${SSL_PORT}:8068"
 
     volumes:
-        - $HOST_ODOO_HOME/config/sslproxy:/opt/conf
+        - $ODOO_HOME/config/sslproxy:/opt/conf
     command: python /opt/src/proxy.py

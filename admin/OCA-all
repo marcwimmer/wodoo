@@ -1,9 +1,0 @@
-#!/bin/bash
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-
-$DIR/OCA account-financial-tools
-$DIR/OCA knowledge
-$DIR/OCA partner-contact
-$DIR/OCA server-tools
-$DIR/OCA web
-$DIR/OCA sale-workflow

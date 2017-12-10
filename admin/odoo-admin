@@ -10,7 +10,6 @@
 #
 # TODO use shift instead of ARGS, ALL_PARAMS - is more bash style
 # TODO replace all bash commands to be called within dockerbash
-set +x
 
 function dcrun() {
 	$dc run -T -e ODOO_HOME=/opt/odoo "$@"
@@ -21,16 +20,46 @@ function dcexec() {
 }
 
 function startup() {
+	set +x
 	local ARGS=("$@")
-	# TODO set dir to odoo_home and test
-	local $DIR
+	local $DIR >/dev/null
 	DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
 	ODOO_HOME=$DIR
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export ODOO_MANAGER_STARTED_ONCE=1
+	export ODOO_COMPOSE_VERSION="3.3"
+	export ODOO_COMPOSE_OPENVPN_DOMAINS_DIR="$DIR/run/openvpn_domains"
+	export PGPASSFILE=/tmp/.pgpass # must match the executing script
+	export PGHOST="$DB_HOST"
+	export PGPORT="$DB_PORT"
+	export PGUSER="$DB_USER"
+	export LOCAL_WORKING_DIR="$EXTERNAL_ROOT/$WORKING_DIR"  # the working directory accessible from container of this script.
 	docker_compose_file="$ODOO_HOME/run/docker-compose.yml"
 	return 0
+}
 
+function check_working_dir_customs_mismatch() {
+	# Checks wether the current working is in a customs directory, but
+	# is not matching the correct customs. Avoid creating wrong tickets
+	# in the wrong customizations.
+	python <<EOF
+import os
+import time
+working_dir = os.environ['LOCAL_WORKING_DIR']
+while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
+	try:
+		working_dir = os.path.dirname(working_dir)
+	except:
+		break
+	if not working_dir.replace("/", ""):
+		break
+if os.path.isfile(os.path.join(working_dir, '.customsroot')):
+	current_customs = os.path.basename(working_dir)
+	if current_customs != os.environ['CUSTOMS']: 
+		print "Caution: current customs is {} but you are in another customs directory: {}".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
+		print "Continue at your own risk!"
+		time.sleep(5)
+EOF
 }
 
 function get_CUSTOMS_DIR() {
@@ -47,11 +76,10 @@ function get_CUSTOMS_DIR() {
 }
 
 function default_confs() {
-	MANAGE="$DIR/odoo"
+	MANAGE="$DIR/admin/odoo-admin"
 	local ARGS=("$@")
 	export FORCE_CONTINUE=0
 	export ODOO_FILES=$DIR/data/odoo.files
-	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE=$DIR/run/update_started
 	export RUN_POSTGRES=1
 	export DB_PORT=5432
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
@@ -74,10 +102,44 @@ function default_confs() {
 		export DUMPS_PATH=$ODOO_HOME/dumps
     fi
 
-	if [[ -z "$DEFAULT_USER" ]]; then
-		DEFAULT_USER="1000"
+}
+
+function make_path_as_hosts_sees_it() {
+    #
+	#
+	# converts /ROOT/home/marc... to /home/marc
+	# converts /WORKING_DIR/dumpfile... to /tmp/a/b/c/dumpfile
+	#
+	local path
+	path="$1"
+
+	if [[ "$path" == $EXTERNAL_ROOT* ]]; then
+		path=${path:${#EXTERNAL_ROOT}}
 	fi
 
+	if [[ "$path" == */WORKING_DIR/* ]]; then
+		path=${path/\/WORKING_DIR/$WORKING_DIR}
+	fi
+	echo "$path"
+}
+
+function make_path_accessible_from_container_but_file_is_outside() {
+    #
+	# Transforms relative paths and absolute path to a path,
+	# that resolves to the host.
+	#
+	# odoo calls this script with WORKING_DIR set, so we know
+	# for relative paths, where to start.
+	#
+	# example:
+	#
+	# /opt/dumps/db1.gz --> /ROOT/dumps/db1.gz
+	# dumps/db1.gz --> /home/user1/dumps/db1.gz where /home/user1 is $WORKING_DIR
+	#
+	local path
+	path="/WORKING_DIR/$1"
+	path=$(readlink -f "$path")
+	realpath "$path"
 }
 
 function file2env() {
@@ -93,8 +155,8 @@ function file2env() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
+		export "$var" # export local variable to environment
     done <"$1"
-    export $(cut -d= -f1 "$1")  # export vars now in local variables
 
 	return 0
 }
@@ -115,7 +177,10 @@ function export_settings() {
 	cd "$ODOO_HOME/admin/module_tools" || exit -1
 	python <<-EOF
 	import odoo_config
-	v = odoo_config.get_version_from_customs("$CUSTOMS")
+	try:
+	    v = odoo_config.get_version_from_customs("$CUSTOMS")
+	except:
+	    v = 'no-version'
 	print v
 	EOF
 	)
@@ -190,15 +255,10 @@ function do_restore_db_in_docker_container () {
 	# remove the postgres volume and reinit
 
 	echo "Restoring dump within docker container postgres"
-	dump_file=$(readlink -f "$1")
+	dump_file="$1"
 
     if [[ ! -f "$dump_file" ]]; then
         echo "File $dump_file not found!"
-        exit -1
-    fi
-
-    if [[ "$(dirname "$dump_file")" != "$DUMPS_PATH" ]]; then
-        echo "The database to restore must lie in dumps path $DUMPS_PATH"
         exit -1
     fi
 
@@ -210,7 +270,10 @@ function do_restore_db_in_docker_container () {
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
-    dcrun postgres /restore.sh "$(basename "$dump_file")"
+	set -x
+	RESTOREFILE=/opt/dumpfile
+	dump_file=$(make_path_as_hosts_sees_it "$dump_file")
+	dcrun -v "$dump_file:$RESTOREFILE" -e "RESTOREFILE=$RESTOREFILE" postgres /restore.sh
 }
 
 function do_restore_db_on_external_postgres () {
@@ -231,20 +294,18 @@ function do_restore_db_on_external_postgres () {
 	gunzip -c "$1" > "$pipe" &
 	echo "Restoring Database $DBNAME"
 	$PGRESTORE -d "$DBNAME" < "$pipe"
+	echo $?
 
 	return 0
 }
 
 function do_restore_files () {
 	# remove the postgres volume and reinit
-	tararchive_full_path=$1
+	filepath=$1
 
-    if [[ "$(dirname "$tararchive_full_path")" != "$DUMPS_PATH" ]]; then
-        echo "The file to restore must lie in dumps path $DUMPS_PATH"
-        exit -1
-    fi
-
-	dcrun odoo /bin/restore_files.sh "$(basename "$tararchive_full_path")"
+	filepath=$(make_path_as_hosts_sees_it "$filepath")
+	RESTOREFILE=/tmp/archive
+	dcrun -v "$filepath:$RESTOREFILE"  odoo /bin/restore_files.sh
 	return 0
 }
 
@@ -355,6 +416,9 @@ function showhelp() {
 	echo ""
 	echo "make-customs"
     echo
+	echo "patch - run without arguments for help"
+	echo ""
+	echo "version - run without arguments for help"
 	echo ""
 	echo "lsyncd - displays the command to execute lsyncd"
 }
@@ -366,7 +430,7 @@ fi
 
 function prepare_filesystem() {
     mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
-	sudo -E chown $DEFAULT_USER:$DEFAULT_USER -R "$DIR"/run
+	sudo -E chown $UID:$UID -R "$DIR"/run
 	return 0
 }
 
@@ -388,25 +452,24 @@ function prepare_yml_files_from_template_files() {
 	# only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
 	#
 	# - also replace all environment variables
-	find "$DIR/run" -name '*docker-compose*.yml' -delete
-        declare -a all_dirs
+	PATTERN='docker-compose*.yml'
+	rm "$DIR/run/$PATTERN" > /dev/null 2>&1 || true
+
+	declare -a all_dirs
 	all_dirs[0]="machines"
 	if [[ -d "$CUSTOMS_DIR/machines" ]]; then
 		all_dirs[1]="$CUSTOMS_DIR/machines"
 	fi
-	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name 'docker-compose*.yml')
-	python ./admin/prepare_dockercompose_files.py ./run/docker-compose.yml "$ALL_CONFIG_FILES"
+	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
 
-	# append custom docker composes
-	# TODO append file contents to docker compose file
-	#if [[ -n "$ADDITIONAL_DOCKER_COMPOSE" ]]; then
-		#cp $ADDITIONAL_DOCKER_COMPOSE "$DIR/run"
-		#for file in $ADDITIONAL_DOCKER_COMPOSE; do
-			#ALL_CONFIG_FILES+=" -f "
-			#ALL_CONFIG_FILES+=$file
-		#done
-	#fi
-	#echo $ALL_CONFIG_FILES
+	# append openvpnconfig from domain preparation of vpn domains 
+	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES"; find "$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR" -type f -name "$PATTERN")
+
+
+	# Make all config files to absolutepath
+	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES" | while read -r f; do readlink -e "$f"; done)
+
+	python ./admin/prepare_dockercompose_files.py ./run/docker-compose.yml "$ALL_CONFIG_FILES"
 
 	return 0
 }
@@ -472,14 +535,15 @@ function do_command() {
         LINKPATH=$DIR/dumps/latest_dump
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
-			# by following command the call is crontab safe;
-			docker exec -i "$($dc ps -q postgres)" /backup.sh
+			dcexec postgres /backup.sh
 			mv "$DIR/dumps/$DBNAME.gz" "$filepath"
 		else
 			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
 		fi
-        /bin/rm "$LINKPATH" || true
-        ln -s "$filepath" "$LINKPATH"
+		if [[ "$NO_BACKUP_SYMBOLIC_LINK_DUMP" != "1" ]]; then
+			/bin/rm "$LINKPATH"
+			ln -s "$filepath" "$LINKPATH" > /dev/null 2>&1
+		fi
         md5sum "$filepath"
         echo "Dumped to $filepath"
 		$MANAGE telegram-send "Database Backup $DBNAME done to $filepath"
@@ -539,22 +603,28 @@ function do_command() {
 
 	restore-files)
 		set -e
+		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
         if [[ -z "$2" ]]; then
 			echo "Please provide the tar file-name."
 			exit -1
         fi
 		echo 'Extracting files...'
-		do_restore_files "$2"
+		do_restore_files "$dumpfile"
 		;;
 
 	restore-db)
 		set -e
-		dumpfile="$2"
+		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
+
+		if [[ "$DEVMODE" == "1" ]]; then
+			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"
+		fi
 
 		echo "$*" |grep -q '[-]force' || {
 			askcontinue "Deletes database $DBNAME!"
 		}
+
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			do_restore_db_in_docker_container "$dumpfile"
@@ -570,41 +640,14 @@ function do_command() {
 		set_db_ownership
 		;;
 
-    restore)
-
-        if [[ ! -f $2 ]]; then
-            echo "File $2 not found!"
-            exit -1
-        fi
-        if [[ -n "$3" && ! -f $3 ]]; then
-            echo "File $3 not found!"
-            exit -1
-        fi
-
-		dumpfile=$2
-		tarfiles=$3
-
-		$MANAGE restore-db "$dumpfile"
-		
-		if [[ "$tarfiles" == "[-]force" ]]; then
-			tarfiles=""
-		fi
-
-        if [[ -n "$tarfiles" ]]; then
-			$MANAGE restore-files $tarfiles
-        fi
-
-		$MANAGE fix-permissions
-
-        echo "Restart systems by $MANAGE restart"
-        ;;
     restore-dev-db)
 		if [[ "$ALLOW_RESTORE_DEV" ]]; then
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
 			exit -1
 		fi
         echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		$MANAGE restore-db "${ALL_PARAMS[@]}"
+		set +e
+		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
 
         ;;
@@ -628,6 +671,7 @@ function do_command() {
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
+			$MANAGE wait_for_container_postgres
             SQLFILE="$DIR/run/sqlscripts/script.sql"
             echo "$query" | tee "$SQLFILE"
 
@@ -745,13 +789,14 @@ function do_command() {
         cd "$DIR"
         eval "$dc kill $2"
         eval "$dc rm -f $2"
+        eval "$dc create --force-recreate $2"
         eval "$dc up -d $2"
         ;;
 
 	dev)
 		$MANAGE kill
 		$MANAGE rm -f
-		$MANAGE build
+		$MANAGE compose
 		$MANAGE up -d
 		$MANAGE attach odoo
 		;;
@@ -772,11 +817,11 @@ function do_command() {
 		;;
 	fix-permissions)
 		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
-			chown 1000 -R "$ODOO_FILES"
+			chown "1000" -R "$ODOO_FILES"
 		fi
 		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 		if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
-			chown 1000 -R "$CUSTOMS_DIR"
+			chown "$USER" -R "$CUSTOMS_DIR"
 		fi
 
 		;;
@@ -785,35 +830,29 @@ function do_command() {
 		$MANAGE abort-upgrade
 
         echo "Run module update"
-		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
-			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
+		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
 		fi
+		# running duplicate updates is really a problem;
+        $dc kill 
+        $dc rm -f
+        $dc create --force-recreate
         if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
+			$MANAGE wait_for_container_postgres
         fi
-		# running duplicate updates is really a problem;
-        $dc kill odoo_cronjobs # to allow update of cronjobs (active cronjob, cannot update otherwise)
-        $dc kill odoo_update
-        $dc rm -f
-        $dc up -d postgres && sleep 3
 
         dcrun odoo_update /update_modules.sh "$2" || true
 		$MANAGE show-install-state || exit 34
 
-        $dc kill odoo nginx
-        if [[ "$RUN_ASTERISK" == "1" ]]; then
-            $dc kill ari stasis
-        fi
-        $dc kill
-        $dc rm -f
         $dc up -d
-        echo 'Removing unneeded containers'
-		sleep 10
-        $dc kill nginx
         $dc up -d
+        $dc up -d
+        $dc restart nginx
+
         df -h / # case: after update disk / was full
-		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
-			echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE"
+		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+			echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
 		fi
 		$MANAGE telegram-send "Update done" # &> /dev/null
 
@@ -836,29 +875,27 @@ function do_command() {
 		;;
 
     show-openvpn-ciphers)
-	   dcrun ovpn_minimal /usr/sbin/openvpn --show-ciphers
+	   dcrun default_ovpn_minimal /usr/sbin/openvpn --show-ciphers
 	   ;;
 
 	enter-VPN)
-		domain=$2
-		machine_name="${domain}_ovpn_server_client"
-		$MANAGE up -d "$machine_name"
-		$MANAGE runbash "$machine_name"
+		echo "Starting a machine, so you have access to the VPN Network"
+		echo "You can scan for live hosts and check if the network is up."
+		echo
+		echo "Samples: "
+		echo "------------"
+		echo "ifconfig"
+		echo "nmap -sP 192.168.2.1/24"
+		echo
+		domain="$2"
+		$MANAGE up -d "${domain}_ovpn_server"
+		$MANAGE run "${domain}_ovpn_server_client" run_ovpn_server_as_client.sh 
 		;;
     make-phone-CA)
 		$MANAGE make-CA asterisk
 		;;
-	setup-ovpn-domain)
-		domain=$2
-
-		cd "$DIR/machines/openvpn"
-		local f
-		f="$DIR/run/9999-docker-compose.ovpn.$domain.yml"
-
-		cp docker-compose.yml "$f"
-
-		;;
 	force-ovpn-domain)
+		# checks for parameter "$domain"
 		domain=$2
 		if [[ -z "$domain" ]]; then
 			echo "OVPN Domain missing"
@@ -946,13 +983,21 @@ function do_command() {
 		chromium-browser http://localhost
 
 		;;
+	OCA)
+		"$ODOO_HOME/admin/OCA" "${ALL_PARAMS[@]}"
+		;;
 	compose)
 		echo "Built the docker-compose file."
+		;;
+	simplebash)
+		bash --noprofile
 		;;
 	test)
 		echo 'reached the command area'
 		echo "DIR is: $DIR"
 		echo "CUSTOMS is: $CUSTOMS"
+		sudo echo "This was sudoed"
+		echo "Here is pgpassfile: $PGPASSFILE"
 		;;
 	test_make_error)
 		echo "now throwing exit code"
@@ -979,6 +1024,71 @@ function do_command() {
 		cmd+=("${ALL_PARAMS[@]}")
 		eval "${cmd[@]@Q}"
 		;;
+	wait_for_port)
+		started=$(date +"%s")
+		while ! nc -q 1 "$2" "$3" </dev/null; do 
+			sleep 1;
+			now=$(date +"%s")
+			(( elapsed = ("$now" - "$started") % 5))
+			if [[ "$elapsed" == "0" ]]; then
+				echo "Waiting for $2 on port $3..."
+			fi
+
+			if [[ "$elapsed" -gt 20 ]]; then
+				echo "Waiting too long for $2 on port $3. Exiting with error-code."
+				exit 20
+			fi
+			
+		done
+		;;
+	wait_for_container_postgres)
+		$MANAGE wait_for_port postgres 5432
+		;;
+
+	dirty)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("dirty")
+		eval "${cmd[@]@Q}"
+		;;
+	stage)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("stage-ticket")
+		cmd+=( "${ALL_PARAMS[@]}" )
+		eval "${cmd[@]@Q}"
+		;;
+	deploy)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("deploy-ticket")
+		cmd+=( "${ALL_PARAMS[@]}" )
+		eval "${cmd[@]@Q}"
+		;;
+	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
+		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd+=("$1")
+		cmd+=( "${ALL_PARAMS[@]}" )
+		eval "${cmd[@]@Q}"
+		;;
+
+	switch-customs)
+		# switch customs
+		if [[ -z "${ALL_PARAMS[0]}" ]]; then
+			echo "Customs missing"
+			exit 1
+		fi
+		newcustoms="${ALL_PARAMS[0]}"
+
+		$(
+		cd "$ODOO_HOME/admin/module_tools"
+		python <<-EOF
+		import odoo_config
+		odoo_config.set_customs("$newcustoms")
+		EOF
+		)
+
+		echo "Customs set to $newcustoms"
+
+		;;
+
     *)
         echo "Invalid option $1"
         exit -1
@@ -1001,7 +1111,7 @@ function try_to_set_owner() {
 	OWNER=$1
 	dir=$2
 	if [[ -d "$dir" && "$(stat -c "%u" "$dir")" != "$OWNER" ]]; then
-		echo "Trying to set correct permissions on restore directory"
+		echo "Trying to set correct permissions on $dir"
 		chown "$OWNER" "$dir"
 		if [[ "$?" != 0 ]]; then
 			sudo chown "$OWNER" "$dir"
@@ -1010,11 +1120,6 @@ function try_to_set_owner() {
 }
 
 function sanity_check() {
-
-	grep -q "DEFAULT_USER=" < "$ODOO_HOME"/settings || {
-		echo "Please define DEFAULT_USER=1000 at least in settings."
-		exit -1
-	}
 
     if [[ ( "$RUN_POSTGRES" == "1" || -z "$RUN_POSTGRES" ) && "$DB_HOST" != 'postgres' ]]; then
         echo "You are using the docker postgres container, but you do not have the DB_HOST set to use it."
@@ -1100,8 +1205,14 @@ function update_openvpn_domains() {
 	# template openvpn docker compose to run; 
 	# attaches the docker-compose to $dc then
 
+	[[ -d "${ODOO_COMPOSE_OPENVPN_DOMAINS_DIR:?}" ]] && rm -Rf "$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR"
+
 	find "$DIR/machines" -name 'ovpn-domain.conf' | while read -r file; do
-		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "$docker_compose_file" "${file}" "$DIR"
+		local parent
+		parent="$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR/$(basename "$(dirname "$file")")"
+		mkdir -p "$parent"
+		OPENVPN_CONFIG_FILE="$parent/docker-compose.run_openvpn.yml"
+		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "${file}" "$DIR" "$OPENVPN_CONFIG_FILE"
 	done
 
 	return 0
@@ -1172,7 +1283,7 @@ EOF
 
 function remove_temp_directories() {
 	cd "$DIR" || exit -1
-	find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs sudo rm {} -Rf \;
+	find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs rm {} -Rf \;
 }
 
 function setup_nginx_paths() {
@@ -1234,8 +1345,8 @@ function remember_customs_and_cry_if_changed() {
 
 function main() {
 	set -e
-	local ARGS=("$@")
 	startup "${ARGS[@]}"
+	check_working_dir_customs_mismatch
 	if [[ "${ARGS[0]}" == "tool" ]]; then
 
 		python "$DIR/admin/module_tools/tool.py" "${ALL_PARAMS[@]@Q}"
@@ -1250,11 +1361,11 @@ function main() {
 				set -e
 				remove_temp_directories
 				prepare_filesystem
+				update_openvpn_domains 
 				prepare_yml_files_from_template_files
 				reset_nginx_configs
 				setup_odoo_instances
 				setup_nginx_paths
-				update_openvpn_domains 
 				;;
 
 			*)

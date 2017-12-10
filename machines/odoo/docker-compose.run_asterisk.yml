@@ -1,0 +1,7 @@
+# manage-order 1001
+version: '3.3'
+
+services:
+  odoo_base:
+    volumes:
+      - $ODOO_HOME/run/asterisk/etc:/opt/asterisk/etc

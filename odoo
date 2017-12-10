@@ -1,77 +1,102 @@
 #!/bin/bash
 set +x
 ARGS=( "$@" )
+WORKING_DIR=$(pwd)
+
+function file2env() {
+	if [[ ! -f "$1" ]]; then
+		return 0
+	fi
+
+    # set variables from settings
+    while read -r line; do
+        # reads KEY1=A GmbH and makes export KEY1="A GmbH" basically
+        [[ "$line" == '#*' ]] && continue
+        [[ "$line" == '' ]] && continue
+        var="${line%=*}"
+        value="${line##*=}"
+        eval "$var=\"$value\""
+		export "$var" # export local variable to environment
+    done <"$1"
+
+	return 0
+}
+
 
 function startup() {
 	set -e
-	DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-	export DIR="$DIR"
+	ODOO_HOME=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
+	export ODOO_HOME="$ODOO_HOME"
 
 	# create empty file, so that simple bash runs
-	settings_override_file="$DIR/settings.override"
+	settings_override_file="$ODOO_HOME/settings.override"
 	if [[ ! -f "$settings_override_file" ]]; then
 		touch "$settings_override_file"
 	fi
+	ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH=/tmp/update_touch_file_dummy
+
+	file2env "$ODOO_HOME/settings"
+	file2env "$ODOO_HOME/settings.override"
+	export HOSTNAME_TO_USE="$HOST"
+
+	# TODO make per docker compose option to mount non existent file mount as file
+	if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
+		ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH=$(dirname "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE")
+	fi
+	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH="$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH"
+
 }
 
 function show_help() {
 	if [[ "$1" == '--help' ]]; then
 		echo "If you experience problems, try to call"
 		echo ""
-		echo "$DIR/odoo --fix"
+		echo "$ODOO_HOME/odoo --update"
 		echo ""
 		echo "- docker-container admin bash is updated by that"
 		exit 0
 	fi
 }
 
-function fix() {
-	if [[ "$1" == '--fix' ]]; then
-		cd "$DIR/config/simplebash"
+function update() {
+	if [[ "$1" == '--update' ]]; then
+		cd "$ODOO_HOME/config/simplebash"
 		./rebuild.sh
 
-		cd "$DIR/config/telegrambot"
-		docker-compose build
+		cd "$ODOO_HOME/config/telegrambot"
+		/usr/local/bin/docker-compose build
 		exit 0
 	fi
 }
 
 function remove_old_bash() {
-	cd "$DIR/config/simplebash" || exit -1
-	docker-compose rm -f 1>/dev/null 2>&1
+	cd "$ODOO_HOME/config/simplebash" || exit -1
+	/usr/local/bin/docker-compose rm -f simplebash 1>/dev/null 2>&1
 }
 
-
-function collect_extra_volumes() {
-	extra_volumes=()
-
-	if [[ -n "$2" ]]; then
-		if [[ "$1" == "backup" || "$1" == "backup-db" || "$2" == "backup-files" ]]; then
-			extra_volumes=("-v $2:$2")
-		elif [[ "$1" == "restore" || "$1" == "restore-files" || "$2" == "restore-db" ]]; then
-			if [[ -f "$2" ]]; then
-				dir=$(dirname "$2")
-				extra_volumes+=("-v $dir:$dir")
-			fi
-			if [[ -f "$3" ]]; then
-				dir=$(dirname "$3")
-				extra_volumes+=("-v $dir:$dir")
-			fi
-		fi
-	fi
-}
 
 function build_command() {
-	command=(docker-compose run)
-
-	command+=(--name "odoo_bash_$(uuidgen)")
-	command+=(-e HOST_ODOO_HOME="$DIR")
-	command+=(-e ODOO_HOME="$DIR")
+	# using absolute path, to work in crontab
+	if [[ -n "$DISPLAY" ]]; then
+		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
+	fi
+	export WORKING_DIR="$WORKING_DIR"
+	docker_group_id="$(cut -d : -f3 <(getent group docker))"
+	command=(/usr/local/bin/docker-compose)
+	command+=(run)
+	command+=(--rm)
+	command+=(--service-ports)
+	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
+	command+=(-e ODOO_HOME="$ODOO_HOME")
+	command+=(-e UID="$UID")
+	command+=(-e USER="$USER")
+	command+=(-e WORKING_DIR="$(realpath "${WORKING_DIR}")")
+	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi
 	command+=(simplebash)
-	command+=("$DIR/admin/odoo-admin")
+	command+=("$ODOO_HOME/admin/odoo-admin")
 	command+=( "${ARGS[@]}" )
 }
 
@@ -81,8 +106,7 @@ function run_command() {
 
 startup
 show_help "${ARGS[@]}"
-fix "${ARGS[@]}"
+update "${ARGS[@]}"
 remove_old_bash
-collect_extra_volumes "${ARGS[@]}"
 build_command
 run_command

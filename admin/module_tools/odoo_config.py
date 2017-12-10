@@ -160,15 +160,18 @@ def translate_path_relative_to_customs_root(path):
             break
         parent = os.path.dirname(parent)
     if parent == '/':
-        raise Exception("no .customsroot found!")
+        raise Exception("no .customsroot found! - started at: {}".format(path))
     path = path[len(parent) + 1:]
     return path
 
 def set_customs(customs, dbname=None):
     dbname = dbname or customs
     root = odoo_root()
-    conf = MyConfigParser(os.path.join(root, 'settings'))
+    candidates = ['settings.override', 'settings']
+    for candidate in candidates:
+        if os.path.isfile(os.path.join(root, candidate)):
+            break
+    conf = MyConfigParser(os.path.join(root, candidate))
     conf['CUSTOMS'] = customs
     conf['DBNAME'] = dbname
     conf.write()
-    execute_managesh("prepare")

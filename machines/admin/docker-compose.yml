@@ -4,7 +4,7 @@ version: '3.3'
 services:
   admin:
     container_name: ${DCPREFIX}_admin
-    build: $HOST_ODOO_HOME/machines/admin
+    build: $ODOO_HOME/machines/admin
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -12,10 +12,10 @@ services:
       - SYS_ADMIN
       - NET_ADMIN
     volumes:
-      - $HOST_ODOO_HOME/machines/admin/src:/opt/src
+      - $ODOO_HOME/machines/admin/src:/opt/src
       - /var/run/docker.sock:/var/run/docker.sock
-      - $HOST_ODOO_HOME:/opt/odoo
-      - $HOST_ODOO_HOME/machines/odoo/bin/update_modules.sh:/update_modules.sh
+      - $ODOO_HOME:/opt/odoo
+      - $ODOO_HOME/machines/odoo/bin/update_modules.sh:/update_modules.sh
     environment:
         DBNAME: admin
         LOGLEVEL: info
@@ -26,7 +26,7 @@ services:
         DEPLOY_BRANCH: deploy
         MASTER_BRANCH: master
     env_file:
-      - $HOST_ODOO_HOME/settings
+      - $ODOO_HOME/settings
     command: /rootrun.sh
     ports:
        - "4488:8069"

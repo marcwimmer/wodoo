@@ -1,3 +1,5 @@
+pudb
+gitpython
 lxml
 pyyaml
 configobj

@@ -6,7 +6,7 @@ volumes:
 services:
   libreoffice:
     container_name: ${DCPREFIX}_libreoffice
-    build: $HOST_ODOO_HOME/machines/libreoffice
+    build: $ODOO_HOME/machines/libreoffice
     environment:
       INPUT: /tmp/lo/1
       OUTPUT: /tmp/lo/2

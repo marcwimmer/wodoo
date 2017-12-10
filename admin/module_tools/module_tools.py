@@ -129,6 +129,12 @@ def get_all_manifests():
                 if is_module_dir_in_version(root)['ok']:
                     yield os.path.join(root, filename)
 
+def get_modules_from_install_file():
+    with open(install_file(), 'r') as f:
+        content = f.read().split('\n')
+        modules_from_file = [x for x in content if not x.strip().startswith("#") and x]
+        return modules_from_file
+
 def get_customs_modules(customs_path=None, mode=None):
     """
 
@@ -147,9 +153,7 @@ def get_customs_modules(customs_path=None, mode=None):
 
     path_modules = install_file()
     if os.path.isfile(path_modules):
-        with open(path_modules, 'r') as f:
-            content = f.read().split('\n')
-            modules_from_file = [x for x in content[1:] if not x.startswith("#") and x]
+        modules_from_file = get_modules_from_install_file()
         modules = sorted(list(set(get_all_installed_modules() + modules_from_file)))
 
         installed_modules = set(list(get_all_installed_modules()))
@@ -165,14 +169,17 @@ def get_customs_modules(customs_path=None, mode=None):
         return modules
     return []
 
-def get_all_non_odoo_modules():
+def get_all_non_odoo_modules(return_relative_manifest_paths=False):
     """
     Returns module names of all modules, that are from customs or OCA.
     """
     for manifest in get_all_manifests():
         relpath = translate_path_relative_to_customs_root(manifest)
         if any(relpath.startswith(x) for x in ['common/', 'modules/', 'OCA/']):
-            yield get_module_of_file(manifest)
+            if not return_relative_manifest_paths:
+                yield get_module_of_file(manifest)
+            else:
+                yield relpath
 
 def get_all_module_dependency_tree(all_manifests=None):
     """
@@ -222,7 +229,8 @@ def get_module_flat_dependency_tree(manifest_path, all_manifests=None):
     x(deptree)
     return sorted(list(result))
 
-def get_module_of_file(filepath, return_path=False):
+
+def get_module_of_file(filepath, return_path=False, return_manifest=False):
 
     if os.path.isdir(filepath):
         p = filepath
@@ -231,15 +239,14 @@ def get_module_of_file(filepath, return_path=False):
 
     def is_possible_module_dir(x):
         basename = os.path.basename(x)
-        try:
-            float(basename)
-            return True, os.path.abspath(os.path.join(x, '../'))
-        except:
-            pass
-
         for m in MANIFESTS:
             if os.path.isfile(os.path.join(os.path.realpath(p), m)):
                 return True, x
+        try:
+            float(basename)
+            return True, os.path.abspath(os.path.join(x, '../'))
+        except Exception:
+            pass
 
         return False, x
 
@@ -254,18 +261,40 @@ def get_module_of_file(filepath, return_path=False):
             break
         p = os.path.dirname(os.path.realpath(p))
 
-    if not return_path:
-        return os.path.basename(p)
+    module_name = os.path.basename(p)
+    try:
+        float(module_name)
+    except Exception:
+        pass
     else:
-        return os.path.basename(p), p
+        module_name = os.path.basename(os.path.dirname(p))
 
+    if return_manifest:
+        manifest = None
+        for m in MANIFESTS:
+            if os.path.isfile(os.path.join(p, m)):
+                manifest = m
+        if not manifest:
+            raise Exception('error')
+        return module_name, p, os.path.join(p, manifest)
+
+    if return_path:
+        return module_name, p
+    if not return_path:
+        return module_name
+
+def get_manifest_path_of_module_path(module_path):
+    for m in MANIFESTS:
+        path = os.path.join(module_path, m)
+        if os.path.isfile(path):
+            return path
 
 def manifest2dict(manifest_path):
     with open(manifest_path, 'r') as f:
         content = f.read()
     try:
         info = eval(content)
-    except:
+    except Exception:
         print "error at file: %s" % manifest_path
         raise
     return info
@@ -295,7 +324,9 @@ def get_relative_path_to_odoo_module(filepath):
     path_to_module = get_path_to_current_odoo_module(filepath)
     for m in MANIFESTS:
         path_to_module = path_to_module.replace("/{}".format(m), "")
-    filepath = filepath.replace(path_to_module, "")
+    filepath = filepath[len(path_to_module):]
+    if filepath.startswith("/"):
+        filepath = filepath[1:]
     return filepath
 
 def goto_inherited_view(filepath, line, current_buffer):
@@ -359,9 +390,56 @@ def is_module_dir_in_version(module_dir):
 
     return result
 
-def get_uninstalled_modules_where_otheres_depend_on():
+def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     sql = """
-select d.name from ir_module_module_dependency d inner join ir_module_module m on m.id = d.module_id  inner join ir_module_module mprior on mprior.name = d.name where m.state in ('installed', 'to install', 'to upgrade') and mprior.state = 'uninstalled';
+        select
+            mprior.name, mprior.state
+        from
+            ir_module_module_dependency d
+        inner join
+            ir_module_module m
+        on
+            m.id = d.module_id
+        inner join
+            ir_module_module mprior
+        on
+            mprior.name = d.name
+        where
+            m.name = '{module}';
+    """
+    conn, cr = get_conn()
+    result = []
+    try:
+        cr.execute("select id, name from ir_module_module where state in ('uninstalled') and auto_install;")
+        for mod in [x[1] for x in cr.fetchall()]:
+            cr.execute(sql.format(module=mod))
+            if all(x[1] == 'installed' for x in cr.fetchall()):
+                # means that all predecessing modules are installed but not the one;
+                # so it shoule be installed
+                result.append(mod)
+    finally:
+        cr.close()
+        conn.close()
+    return result
+
+def get_uninstalled_modules_where_others_depend_on():
+    sql = """
+        select
+            d.name
+        from
+            ir_module_module_dependency d
+        inner join
+            ir_module_module m
+        on
+            m.id = d.module_id
+        inner join
+            ir_module_module mprior
+        on
+            mprior.name = d.name
+        where
+            m.state in ('installed', 'to install', 'to upgrade')
+        and
+            mprior.state = 'uninstalled';
     """
     conn, cr = get_conn()
     try:
@@ -670,10 +748,12 @@ def update_module_file(current_file):
     if "application" not in mod:
         mod["application"] = False
 
-    file = open(file_path, "wb")
-    pp = pprint.PrettyPrinter(indent=4, stream=file)
-    pp.pprint(mod)
-    file.close()
+    write_manifest(file_path, mod)
+
+def write_manifest(manifest_path, data):
+    with open(manifest_path, "wb") as file:
+        pp = pprint.PrettyPrinter(indent=4, stream=file)
+        pp.pprint(data)
 
 def update_view_in_db_in_debug_file(filepath, lineno):
     filepath = translate_path_into_machine_path(filepath)
@@ -688,40 +768,45 @@ def update_view_in_db(filepath, lineno):
     line = lineno
     xmlid = ""
     while line >= 0:
-        if "<record " in xml[line]:
+        if "<record " in xml[line] or "<template " in xml[line]:
             # with search:
             match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line])
             if match:
                 xmlid = match[0]
                 break
+
         line -= 1
+
+    def extract_html(parent_node):
+        arch = parent_node.xpath("*")
+        result = None
+        if arch[0].tag == "data" or len(arch) == 1:
+            result = arch[0]
+        else:
+            data = etree.Element("data")
+            for el in arch:
+                data.append(el)
+            result = data
+        if result is None:
+            return ""
+        result = etree.tounicode(result)
+        return result
 
     def get_arch():
         _xml = xml
         if xml and xml[0] and 'encoding' in xml[0]:
             _xml = _xml[1:]
         doc = etree.XML("\n".join(_xml))
-        for node in doc.xpath("//record"):
-            if xmlid in node.get("id", ""):
+        for node in doc.xpath("//*[@id='{}']".format(xmlid)):
+            if node.tag == 'record':
                 arch = node.xpath("field[@name='arch']")
-                if arch:
-                    inherit = node.xpath("field[@name='inherit_id']")
-                    if not inherit or not inherit[0].get("ref", False):
-                        inherit = None
-                    if not inherit:
-                        return etree.tounicode(arch[0].xpath("*")[0])
-                    else:
-                        arch = arch[0].xpath("*")
-                        if arch[0].tag == "data":
-                            result = arch[0]
-                        else:
-                            data = etree.Element("data")
-                            for el in arch:
-                                data.append(el)
-                            result = data
+            elif node.tag == 'template':
+                arch = [node]
+            else:
+                raise Exception("impl")
 
-                        s = etree.tounicode(result)
-                        return s
+            if arch:
+                return extract_html(arch[0])
 
         return None
 
@@ -742,6 +827,15 @@ def update_view_in_db(filepath, lineno):
                 res = cr.fetchone()
                 if res:
                     res_id = res[0]
+                    cr.execute("select type from ir_ui_view where id=%s", (res_id,))
+                    view_type = cr.fetchone()[0]
+                    if view_type == 'qweb':
+                        arch = arch.strip()
+                        if arch.startswith('<data>'):
+                            arch = arch[len("<data>"):]
+                        if arch.endswith('</data>'):
+                            arch = arch[:-len("</data>")]
+
                     cr.execute("update ir_ui_view set {}=%s where id=%s".format(arch_column), [
                         arch,
                         res_id
@@ -754,15 +848,23 @@ def update_view_in_db(filepath, lineno):
                                 rel_path,
                                 res_id
                             ])
-                        except:
+                        except Exception:
                             conn.rollback()
 
                 conn.commit()
-            except:
+            except Exception:
                 conn.rollback()
+                raise
             finally:
                 cr.close()
                 conn.close()
+
+
+def check_if_all_modules_from_instal_are_installed():
+    for module in get_modules_from_install_file():
+        if not is_module_installed(module):
+            print "Module {} not installed!".format(module)
+            sys.exit(32)
 
 
 if __name__ == '__main__':

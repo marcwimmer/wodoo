@@ -2,13 +2,20 @@
 set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 
-RESTOREFILE=/opt/dumps/$1
+if [[ -z "$RESTOREFILE" ]]; then
+	echo "RESTOREFILE is missing."
+	exit -1
+fi
 
 if [ "$(id -u)" = '0' ]; then
 
 	exec gosu postgres "$BASH_SOURCE" "$@" #restart self (like they do in entry point)
 
 else
+	echo "This is the dump file size:"
+	stat --printf="%s" "$RESTOREFILE"
+	sleep 2
+
 	echo "Restoring database $DBNAME"
 
 	echo "try postgres-format or custom gzipped format"
