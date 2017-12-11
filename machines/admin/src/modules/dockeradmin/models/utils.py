@@ -7,6 +7,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def compose():
+    """
+    Updates the main docker compose file. Necessary after updating
+    the instances.
+    """
+    try:
+        proc = subprocess.Popen([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'compose'], cwd=os.environ['ODOO_HOME'])
+        std, err = proc.communicate()
+        if err:
+            raise Exception(std + "\n=================================\n" + err)
+    except Exception:
+        msg = traceback.format_exc()
+        raise Exception(msg)
+
 def get_root_path():
     return os.path.join(os.environ["ODOO_HOME"], 'data', 'src', 'customs', os.environ['CUSTOMS'])
 
@@ -31,7 +45,7 @@ def start_container(name):
         std, err = proc.communicate()
         if err:
             raise Exception(std + "\n=================================\n" + err)
-    except:
+    except Exception:
         msg = traceback.format_exc()
         raise Exception(msg)
 
@@ -110,7 +124,7 @@ def merge(username, which_branch, on_this_branch, path=get_root_path()):
         subprocess.check_call(['/usr/bin/git', 'merge', which_branch], cwd=path)
         git_push(path)
 
-    except:
+    except Exception:
         msg = traceback.format_exc()
         logger.error(msg)
         raise
