@@ -5,6 +5,7 @@ from utils import get_containers
 from utils import restart_container
 from utils import start_container
 from utils import stop_container
+from utils import compose
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
 
@@ -37,6 +38,7 @@ class Instance(models.Model):
     @api.multi
     def start(self):
         self.ensure_one()
+        compose()
         start_container(self.technical_name)
         time.sleep(3)
 
