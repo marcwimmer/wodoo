@@ -143,9 +143,11 @@ cmdline.append("/opt/docker/docker")
 cmdline.append("run")
 cmdline.append('-e')
 cmdline.append('ODOO_HOME={}'.format(host_odoo_home))
-for VAR in ['DCPREFIX', 'ODOO_VERSION']:
-    cmdline.append('-e')
-    cmdline.append('{}={}'.format(VAR, os.environ[VAR]))
+for envfile in ['settings', 'settings.override']:
+    envfile = os.path.join(local_odoo_home, envfile)
+    if os.path.isfile(envfile):
+        cmdline.append('--env-file')
+        cmdline.append(envfile)
 cmdline.append("--rm")
 cmdline.append('-v')
 cmdline.append("{HOST_ODOO_HOME}:{HOST_ODOO_HOME}".format(HOST_ODOO_HOME=os.environ["ODOO_HOME"]))
