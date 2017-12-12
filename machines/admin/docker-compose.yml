@@ -21,6 +21,7 @@ services:
         LOGLEVEL: info
         INSTANCES_FILE: /opt/odoo/run/odoo_instances
         ODOO_HOME: /opt/odoo
+        HOST_ODOO_HOME: $ODOO_HOME
         DCPREFIX: $DCPREFIX
         MINIMUM_CONTAINERS: nginx,redis
         DEPLOY_BRANCH: deploy

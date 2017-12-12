@@ -7,19 +7,28 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def compose():
-    """
-    Updates the main docker compose file. Necessary after updating
-    the instances.
-    """
+def execute_odoo(*params):
     try:
-        proc = subprocess.Popen([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'compose'], cwd=os.environ['ODOO_HOME'])
+        local_odoo_home, host_odoo_home, working_dir = os.getenv("ODOO_HOME", ""), os.getenv('HOST_ODOO_HOME', ""), os.getenv('WORKING_DIR', "")
+        os.environ['ODOO_HOME'] = host_odoo_home
+        os.environ['WORKING_DIR'] = host_odoo_home
+        proc = subprocess.Popen([os.path.join(local_odoo_home, 'odoo')] + list(params), cwd=local_odoo_home)
         std, err = proc.communicate()
         if err:
             raise Exception(std + "\n=================================\n" + err)
     except Exception:
         msg = traceback.format_exc()
         raise Exception(msg)
+    finally:
+        os.environ['ODOO_HOME'] = local_odoo_home
+        os.environ['WORKING_DIR'] = working_dir
+
+def compose():
+    """
+    Updates the main docker compose file. Necessary after updating
+    the instances.
+    """
+    execute_odoo("compose")
 
 def get_root_path():
     return os.path.join(os.environ["ODOO_HOME"], 'data', 'src', 'customs', os.environ['CUSTOMS'])
@@ -40,21 +49,13 @@ def start_container(name):
     """
     :param name: e.g. odoo, asterisk
     """
-    try:
-        proc = subprocess.Popen([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'up', '-d', name], cwd=os.environ['ODOO_HOME'])
-        std, err = proc.communicate()
-        if err:
-            raise Exception(std + "\n=================================\n" + err)
-    except Exception:
-        msg = traceback.format_exc()
-        raise Exception(msg)
-
+    execute_odoo("up", "-d", name)
 
 def stop_container(name):
     """
     :param name: e.g. odoo, asterisk
     """
-    subprocess.check_call([os.path.join(os.environ['ODOO_HOME'], 'odoo'), 'kill', name], cwd=os.environ['ODOO_HOME'])
+    execute_odoo("kill", name)
 
 def get_submodules(path=get_root_path()):
     submodules = subprocess.check_output(['/usr/bin/git', 'submodule'], cwd=path)

@@ -7,7 +7,7 @@ from myconfigparser import MyConfigParser
 from consts import VERSIONS
 try:
     import psycopg2
-except:
+except Exception:
     pass
 
 def get_odoo_addons_paths():
@@ -56,10 +56,15 @@ def run_dir():
     return result
 
 def odoo_root():
-    result = os.getenv('ODOO_HOME', False)
-    if not result:
-        raise Exception("ODOO_HOME is not defined (usually ~/odoo)")
-    result = os.path.realpath(result)
+    #
+    # be compatible with VIM on host and executed in container.
+    #
+    odoo_home = os.getenv('ODOO_HOME', False)
+    if not os.path.isdir(odoo_home):
+        odoo_home = '/opt/odoo'
+    if not os.path.isdir(odoo_home):
+        raise Exception("ODOO_HOME not found and not given per environment.")
+    result = os.path.realpath(odoo_home)
     return result
 
 def plaintextfile():
@@ -70,7 +75,7 @@ def _read_file(path, default=None):
     try:
         with open(path, 'r') as f:
             return (f.read() or '').strip()
-    except:
+    except Exception:
         return default
 
 def get_env():

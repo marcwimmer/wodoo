@@ -8,7 +8,9 @@ from yaml import load, dump
 from datetime import datetime
 import subprocess
 import inspect
-odoo_home = os.environ['ODOO_HOME']
+local_odoo_home = os.environ['LOCAL_ODOO_HOME']
+host_odoo_home = os.environ["ODOO_HOME"]
+
 
 dest_file = sys.argv[1]
 paths = sys.argv[2].split("\n")
@@ -80,15 +82,15 @@ for path in set(paths):
             j['version'] = '3.3'
 
             # set settings environment and the override settings after that
-            if os.path.exists(os.path.join(odoo_home, 'settings.override')):
+            if os.path.exists(os.path.join(local_odoo_home, 'settings.override')):
                 if 'services' in j:
                     for service in j['services']:
                         service = j['services'][service]
                         if service and 'env_file' in service:
                             if isinstance(service['env_file'], (str, unicode)):
                                 service['env_file'] = [service['env_file']]
-                            if not [x for x in service['env_file'] if x == '../settings.override']:
-                                service['env_file'].append('../settings.override')
+                            if not [x for x in service['env_file'] if x == '$ODOO_HOME/settings.override']:
+                                service['env_file'].append('$ODOO_HOME/settings.override')
 
             dest.write(dump(j, default_flow_style=False))
             dest.write("\n")
@@ -105,7 +107,7 @@ def post_process_complete_yaml_config(yml):
     to all odoo containers.
     """
 
-    with open(os.path.join(odoo_home, 'machines/odoo/docker-compose.yml')) as f:
+    with open(os.path.join(local_odoo_home, 'machines/odoo/docker-compose.yml')) as f:
         odoodc = load(f.read())
 
     for odoomachine in odoodc['services']:
@@ -125,10 +127,32 @@ def post_process_complete_yaml_config(yml):
 
     return yml
 
+def get_docker_image():
+    hostname = os.environ['HOSTNAME']
+    result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
+    if result:
+        result = result[0].split("sha256:")[-1].split('"')[0]
+        return result[:12]
+    raise Exception("Image not determined")
+
 
 # call docker compose config to get the complete config
 files = sorted(temp_files, key=lambda x: float(x.split("/")[-1].replace("-", ".")))
 cmdline = []
+cmdline.append("/opt/docker/docker")
+cmdline.append("run")
+cmdline.append('-e')
+cmdline.append('ODOO_HOME={}'.format(host_odoo_home))
+for VAR in ['DCPREFIX', 'ODOO_VERSION']:
+    cmdline.append('-e')
+    cmdline.append('{}={}'.format(VAR, os.environ[VAR]))
+cmdline.append("--rm")
+cmdline.append('-v')
+cmdline.append("{HOST_ODOO_HOME}:{HOST_ODOO_HOME}".format(HOST_ODOO_HOME=os.environ["ODOO_HOME"]))
+cmdline.append("--workdir")
+cmdline.append(host_odoo_home)
+cmdline.append(get_docker_image())
+
 cmdline.append("/usr/local/bin/docker-compose")
 for file in files:
     cmdline.append('-f')
@@ -137,20 +161,25 @@ cmdline.append('config')
 
 # annotation: per symlink all subfiles/folders are linked to a path,
 # that matches the host system path
-shutil.move(tempdir, odoo_home)
-tempdir = os.path.join(odoo_home, os.path.basename(tempdir))
+shutil.move(tempdir, local_odoo_home)
+tempdir = os.path.join(local_odoo_home, os.path.basename(tempdir))
 
 try:
-    proc = subprocess.Popen(cmdline, cwd=odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(cmdline, cwd=local_odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     conf, err = proc.communicate()
     if err:
+        print "==================================================================="
+        print "command line: "
+        for x in cmdline:
+            print x
+        print "==================================================================="
         print err
+        print "==================================================================="
         raise Exception(err)
 except Exception:
     print cmdline
     raise
 else:
-
     # post-process config config
     conf = post_process_complete_yaml_config(load(conf))
     conf = dump(conf, default_flow_style=False)

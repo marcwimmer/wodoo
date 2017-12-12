@@ -24,7 +24,6 @@ function startup() {
 	local ARGS=("$@")
 	local $DIR >/dev/null
 	DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
-	ODOO_HOME=$DIR
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export ODOO_MANAGER_STARTED_ONCE=1
 	export ODOO_COMPOSE_VERSION="3.3"
@@ -34,7 +33,7 @@ function startup() {
 	export PGPORT="$DB_PORT"
 	export PGUSER="$DB_USER"
 	export LOCAL_WORKING_DIR="$EXTERNAL_ROOT/$WORKING_DIR"  # the working directory accessible from container of this script.
-	docker_compose_file="$ODOO_HOME/run/docker-compose.yml"
+	docker_compose_file="$DIR/run/docker-compose.yml"
 	return 0
 }
 
@@ -65,7 +64,7 @@ EOF
 function get_CUSTOMS_DIR() {
 	local CUSTOMS_DIR
 	CUSTOMS_DIR=$(
-	cd "$ODOO_HOME/admin/module_tools" && \
+	cd "$DIR/admin/module_tools" && \
 	python <<-EOF
 	import odoo_config
 	v = odoo_config.customs_dir()
@@ -85,7 +84,6 @@ function default_confs() {
 	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
 	export ADDITIONAL_DOCKER_COMPOSE=""
 	export RUN_ODOODEV=0
-	export ODOO_HOME=$DIR
 	export TELEGRAM_ENABLED=1
 	FORCE=0
 	echo "${ARGS[*]}" |grep -q '[-]force' && {
@@ -99,7 +97,7 @@ function default_confs() {
 		FORCE_UNVERBOSE=1
 	}
     if [[ -z "$DUMPS_PATH" ]]; then
-		export DUMPS_PATH=$ODOO_HOME/dumps
+		export DUMPS_PATH=$DIR/dumps
     fi
 
 }
@@ -174,22 +172,21 @@ function export_settings() {
 
 	# get odoo version
 	ODOO_VERSION=$(
-	cd "$ODOO_HOME/admin/module_tools" || exit -1
+	cd "$DIR/admin/module_tools" || exit -1
 	python <<-EOF
 	import odoo_config
-	try:
-	    v = odoo_config.get_version_from_customs("$CUSTOMS")
-	except:
-	    v = 'no-version'
+	v = odoo_config.get_version_from_customs("$CUSTOMS")
 	print v
 	EOF
 	)
 	export ODOO_VERSION=$ODOO_VERSION
 
 	# set odoo version in settings file for machines
-cd "$ODOO_HOME/admin/module_tools" || exit -1
+cd "$DIR/admin/module_tools" || exit -1
 python <<- END
+import os
 import odoo_config
+os.environ['ODOO_HOME'] = os.getenv("LOCAL_ODOO_HOME")
 env = odoo_config.get_env()
 env['ODOO_VERSION'] = "$ODOO_VERSION"
 env.write()
@@ -305,7 +302,7 @@ function do_restore_files () {
 
 	filepath=$(make_path_as_hosts_sees_it "$filepath")
 	RESTOREFILE=/tmp/archive
-	dcrun -v "$filepath:$RESTOREFILE"  odoo /bin/restore_files.sh
+	dcrun -v "$filepath:$RESTOREFILE" odoo /bin/restore_files.sh
 	return 0
 }
 
@@ -966,25 +963,25 @@ function do_command() {
 		$MANAGE kill
 		CUSTOMS=$2
 		VERSION=$3
-		"$ODOO_HOME/admin/module_tools/make_customs" "$2" "$3"
-		cd "$ODOO_HOME/admin/module_tools"
+		"$DIR/admin/module_tools/make_customs" "$2" "$3"
+		cd "$DIR/admin/module_tools"
 		python <<- END
 		import odoo_config
 		odoo_config.set_customs("$2")
 		END
 
-		cd "$ODOO_HOME/customs/$2"
+		cd "$DIR/customs/$2"
 		git submodule add https://github.com/odoo/odoo odoo
 		cd odoo
 		git checkout "$VERSION"
-		"$ODOO_HOME/admin/OCA-all"
-		"$ODOO_HOME/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
-		"$ODOO_HOME/$MANAGE" up -d
+		"$DIR/admin/OCA-all"
+		"$DIR/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
+		"$DIR/$MANAGE" up -d
 		chromium-browser http://localhost
 
 		;;
 	OCA)
-		"$ODOO_HOME/admin/OCA" "${ALL_PARAMS[@]}"
+		"$DIR/admin/OCA" "${ALL_PARAMS[@]}"
 		;;
 	compose)
 		echo "Built the docker-compose file."
@@ -998,6 +995,12 @@ function do_command() {
 		echo "CUSTOMS is: $CUSTOMS"
 		sudo echo "This was sudoed"
 		echo "Here is pgpassfile: $PGPASSFILE"
+		echo "Now calling simple psql"
+		SQL=$(cat <<-EOF
+			select state, count(*) from ir_module_module group by state;
+			EOF
+			)
+		echo "$SQL" | $MANAGE psql "$DBNAME"
 		;;
 	test_make_error)
 		echo "now throwing exit code"
@@ -1015,12 +1018,12 @@ function do_command() {
 		echo "All configurations prepared."
 		;;
 	link)
-		python "$ODOO_HOME/admin/link_modules"
+		python "$DIR/admin/link_modules"
 	
 		;;
 
 	patch)
-		cmd=("$ODOO_HOME/admin/odoo-patch")
+		cmd=("$DIR/admin/odoo-patch")
 		cmd+=("${ALL_PARAMS[@]}")
 		eval "${cmd[@]@Q}"
 		;;
@@ -1046,24 +1049,24 @@ function do_command() {
 		;;
 
 	dirty)
-		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd=("$DIR/admin/module_tools/odoo-versioning")
 		cmd+=("dirty")
 		eval "${cmd[@]@Q}"
 		;;
 	stage)
-		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd=("$DIR/admin/module_tools/odoo-versioning")
 		cmd+=("stage-ticket")
 		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
 		;;
 	deploy)
-		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd=("$DIR/admin/module_tools/odoo-versioning")
 		cmd+=("deploy-ticket")
 		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
 		;;
 	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
-		cmd=("$ODOO_HOME/admin/module_tools/odoo-versioning")
+		cmd=("$DIR/admin/module_tools/odoo-versioning")
 		cmd+=("$1")
 		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
@@ -1078,7 +1081,7 @@ function do_command() {
 		newcustoms="${ALL_PARAMS[0]}"
 
 		$(
-		cd "$ODOO_HOME/admin/module_tools"
+		cd "$DIR/admin/module_tools"
 		python <<-EOF
 		import odoo_config
 		odoo_config.set_customs("$newcustoms")
@@ -1229,10 +1232,10 @@ function reset_nginx_configs() {
 	local nginx_configs_dir
 	local paths_dir
 
-	nginx_configs_dir="$ODOO_HOME/run/nginx_confs"
+	nginx_configs_dir="$DIR/run/nginx_confs"
 	rm "${nginx_configs_dir:?}"/* -Rf 1>/dev/null 2>&1 || true
 
-	paths_dir="$ODOO_HOME/run/nginx_paths"
+	paths_dir="$DIR/run/nginx_paths"
 	if [[ -d "$paths_dir" ]]; then
 		rm "${paths_dir:?}"/\* -Rf 1>/dev/null 2>&1 || true
 	else
@@ -1246,7 +1249,7 @@ function setup_odoo_instances() {
 	local subdomain_path
 	local config_path
 
-	nginx_configs_dir=$ODOO_HOME/run/nginx_confs
+	nginx_configs_dir=$DIR/run/nginx_confs
 	if [[ -f "$DIR/run/odoo_instances" ]]; then
 		rm "$nginx_configs_dir"/odoo_instance_* 1>/dev/null 2>&1 || true
 
@@ -1254,7 +1257,7 @@ function setup_odoo_instances() {
 			name="$(echo "$line"| awk '{print $1}')"
 			subdomain_path="$(echo "$line"| awk '{print $2}')"
 			config_path="$nginx_configs_dir/odoo_instance_${name}.conf"
-			cp "$ODOO_HOME/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
+			cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
 			sed -i "s|__HTTP_HOST__|$subdomain_path|g" "$config_path"
 			# treat the name of the instance as domain; is used in setup_nginx_paths, too
 			sed -i "s|__PATH_DIR__|$name|g" "$config_path"
@@ -1287,9 +1290,9 @@ function remove_temp_directories() {
 }
 
 function setup_nginx_paths() {
-	URLPATH_DIR="$ODOO_HOME/run/nginx_paths"
+	URLPATH_DIR="$DIR/run/nginx_paths"
 
-	find "$ODOO_HOME/machines" -name 'nginx.path' | while read -r f; do
+	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
 		content=$(
 			envsubst < "$f"
 		)
@@ -1373,7 +1376,7 @@ function main() {
 		esac
 		sanity_check
 
-		cd "$ODOO_HOME"
+		cd "$DIR"
 		do_command "${ARGS[@]}"
 		cleanup
 	fi
