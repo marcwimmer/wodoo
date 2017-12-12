@@ -1233,11 +1233,12 @@ function reset_nginx_configs() {
 	local paths_dir
 
 	nginx_configs_dir="$DIR/run/nginx_confs"
-	rm "${nginx_configs_dir:?}"/* -Rf 1>/dev/null 2>&1 || true
+
+	cd "${nginx_configs_dir:?}" && rm -Rf *
 
 	paths_dir="$DIR/run/nginx_paths"
 	if [[ -d "$paths_dir" ]]; then
-		rm "${paths_dir:?}"/\* -Rf 1>/dev/null 2>&1 || true
+		cd "${paths_dir:?}" && rm -iRf *
 	else
 	    mkdir -p "$paths_dir"
 	fi
