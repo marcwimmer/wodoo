@@ -7,6 +7,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def reload_nginx():
+    execute_odoo("nginx-reload")
+
 def execute_odoo(*params):
     try:
         local_odoo_home, host_odoo_home, working_dir = os.getenv("ODOO_HOME", ""), os.getenv('HOST_ODOO_HOME', ""), os.getenv('WORKING_DIR', "")

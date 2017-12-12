@@ -13,4 +13,5 @@ services:
       - $ODOO_HOME/run/nginx_paths:/etc/nginx/paths
       - $ODOO_HOME/run/nginx_confs:/etc/nginx/conf.d
       - $ODOO_HOME/machines/nginx/bin:/opt/bin
+    entrypoint: ['/bin/sh', '/opt/bin/entrypoint.sh']
     command: /bin/bash /opt/bin/run.sh

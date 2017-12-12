@@ -637,6 +637,10 @@ function do_command() {
 		set_db_ownership
 		;;
 
+	nginx-reload)
+		dcexec nginx /hot_reload.sh
+		;;
+
     restore-dev-db)
 		if [[ "$ALLOW_RESTORE_DEV" ]]; then
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
