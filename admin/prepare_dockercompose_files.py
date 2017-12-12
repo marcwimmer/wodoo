@@ -82,15 +82,19 @@ for path in set(paths):
             j['version'] = '3.3'
 
             # set settings environment and the override settings after that
-            if os.path.exists(os.path.join(local_odoo_home, 'settings.override')):
-                if 'services' in j:
-                    for service in j['services']:
-                        service = j['services'][service]
-                        if service and 'env_file' in service:
+            for file in ['settings', 'settings.override']:
+                path = os.path.join(local_odoo_home, file)
+                if os.path.exists(path):
+                    if 'services' in j:
+                        for service in j['services']:
+                            service = j['services'][service]
+                            if 'env_file' not in service:
+                                service['env_file'] = []
                             if isinstance(service['env_file'], (str, unicode)):
                                 service['env_file'] = [service['env_file']]
-                            if not [x for x in service['env_file'] if x == '$ODOO_HOME/settings.override']:
-                                service['env_file'].append('$ODOO_HOME/settings.override')
+
+                            if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
+                                service['env_file'].append('$ODOO_HOME/{}'.format(file))
 
             dest.write(dump(j, default_flow_style=False))
             dest.write("\n")
@@ -145,7 +149,7 @@ cmdline.append('-e')
 cmdline.append('ODOO_HOME={}'.format(host_odoo_home))
 for envfile in ['settings', 'settings.override']:
     envfile = os.path.join(local_odoo_home, envfile)
-    if os.path.isfile(envfile):
+    if os.path.exists(envfile):
         cmdline.append('--env-file')
         cmdline.append(envfile)
 cmdline.append("--rm")
