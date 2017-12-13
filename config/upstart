@@ -1,6 +1,0 @@
-description "ODOO ${CUSTOMS}"
-author "Marc Wimmer"
-start on filesystem and started docker
-stop on runlevel [!2345]
-exec ${PATH}/odoo up
-pre-stop exec ${PATH}/odoo stop
