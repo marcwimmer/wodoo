@@ -4,6 +4,6 @@ services:
   telegrambot:
     build: .
     volumes:
-        - $DIR:/opt/odoo
+        - $ODOO_HOME:/opt/odoo
     environment:
       ODOO_HOME: /opt/odoo

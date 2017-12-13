@@ -38,7 +38,7 @@ else:
     updates = bot.getUpdates()
     try:
         conf['TELEGRAM_CHAT_ID']
-    except:
+    except Exception:
         print "Please configure TELEGRAM_CHAT_ID by running the setup. Cannot send telegram messages now."
     else:
         chat_id = conf['TELEGRAM_CHAT_ID']
