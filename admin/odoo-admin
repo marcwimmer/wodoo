@@ -953,11 +953,16 @@ function do_command() {
         dcrun "${domain}_ovpn_manage" make_default_keys.sh
         dcrun "${domain}_ovpn_manage" pack_server_conf.sh
         ;;
+	get_all_langs)
+		SQL="select code from res_lang;"
+		langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
+		echo $langs
+		;;
     export-i18n)
         LANG=$2
         MODULES=$3
         if [[ -z "$MODULES" ]]; then
-            echo "Please define at least one module"
+            echo "Syntax: export-i18n LANG MODULES"
             exit -1
         fi
         dcrun odoo /export_i18n.sh "$LANG" "$MODULES"

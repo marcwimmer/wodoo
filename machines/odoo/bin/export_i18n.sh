@@ -23,7 +23,7 @@ fi
 
 TMP="$(mktemp -u)"
 mkdir -p "$TMP"
-chown "$ODOO_USER" "$TMP"
+chown -R "$ODOO_USER" "$TMP"
 TMP=${TMP}/$LANG.po
 sudo -E -H -u "$ODOO_USER" \
 	"$SERVER_DIR/openerp-server" \
@@ -35,4 +35,6 @@ sudo -E -H -u "$ODOO_USER" \
 	--i18n-export="$TMP" \
 	--modules="$MODULES"
 
-cp "$TMP" "$export_dir/i18n/$LANG.po" 
+DEST_PATH="$export_dir/i18n/$LANG.po" 
+cp "$TMP" "$DEST_PATH"
+chown -R "$ODOO_USER" $(dirname "$DEST_PATH")
