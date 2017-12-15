@@ -283,7 +283,6 @@ function do_restore_db_on_external_postgres () {
 	CREATEDB="createdb $args"
 	PGRESTORE="pg_restore $args"
 
-	remove_postgres_connections
 	eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
 	eval "$CREATEDB $DBNAME"
 	pipe="$(mktemp -u)"
@@ -611,8 +610,12 @@ function do_command() {
 
 	restore-db)
 		set -e
+		SUFFIX="_restoring"
 		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
+
+		DBNAME_TARGET="$DBNAME"
+		DBNAME="${DBNAME}${SUFFIX}"
 
 		if [[ "$DEVMODE" == "1" ]]; then
 			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"
@@ -622,13 +625,28 @@ function do_command() {
 			askcontinue "Deletes database $DBNAME!"
 		}
 
-
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			do_restore_db_in_docker_container "$dumpfile"
 		else
 			askcontinue "Trying to restore database on remote database. Please make sure, that the user $DB_USER has enough privileges for that."
 			do_restore_db_on_external_postgres "$dumpfile"
 		fi
+
+		remove_postgres_connections
+		sql=()
+		sql+=("
+			SELECT pg_terminate_backend(pg_stat_activity.pid)
+			FROM pg_stat_activity 
+			WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
+			AND pid <> pg_backend_pid(); 
+			")
+		sql+=("drop database if exists $DBNAME_TARGET;")
+	    echo "${sql[0]}"| $MANAGE psql template1
+
+		sql=("alter database $DBNAME rename to $DBNAME_TARGET;")
+	    echo "${sql[0]}"| $MANAGE psql template1
+		DBNAME="$DBNAME_TARGET"
+
 		set_db_ownership
 		$MANAGE telegram-send "Database Restore $DBNAME done."
 
@@ -671,7 +689,7 @@ function do_command() {
 		fi	
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres odoo
+			$dc up -d postgres
 			$MANAGE wait_for_container_postgres
             SQLFILE="$DIR/run/sqlscripts/script.sql"
             echo "$query" | tee "$SQLFILE"
@@ -1183,6 +1201,7 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
+			$MANAGE wait_for_container_postgres
 		fi
 		dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
 	fi
