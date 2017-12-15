@@ -610,6 +610,8 @@ function do_command() {
 
 	restore-db)
 		set -e
+		echo "DB_HOST: $DB_HOST"
+		echo "DB_PORT: $DB_PORT"
 		SUFFIX="_restoring"
 		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
@@ -664,7 +666,7 @@ function do_command() {
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
 			exit -1
 		fi
-        echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
+        echo "Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs"
 		set +e
 		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
