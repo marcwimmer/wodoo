@@ -869,7 +869,7 @@ function do_command() {
 		for i in $(seq 5);
 		do
 			$dc up -d
-			$dc nginx-reload
+			$MANAGE nginx-reload
 			sleep 2
 		done
 
