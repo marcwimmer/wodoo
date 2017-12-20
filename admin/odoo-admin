@@ -274,6 +274,11 @@ function do_restore_db_in_docker_container () {
 }
 
 function do_restore_db_on_external_postgres () {
+	SUFFIX="_restoring"
+	DBNAME_TARGET="$DBNAME"
+	DBNAME="${DBNAME}${SUFFIX}"
+	export DBNAME="$DBNAME"
+
 	echo "Restoring dump on $DB_HOST"
 	dump_file=$1
 	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
@@ -290,7 +295,22 @@ function do_restore_db_on_external_postgres () {
 	gunzip -c "$1" > "$pipe" &
 	echo "Restoring Database $DBNAME"
 	$PGRESTORE -d "$DBNAME" < "$pipe"
-	echo $?
+
+	remove_postgres_connections
+	sql=("
+		SELECT pg_terminate_backend(pg_stat_activity.pid)
+		FROM pg_stat_activity 
+		WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
+		AND pid <> pg_backend_pid(); 
+
+		drop database if exists $DBNAME_TARGET;
+		alter database $DBNAME rename to $DBNAME_TARGET;
+		")
+	echo "${sql[0]}"| $MANAGE psql template1
+
+	DBNAME="$DBNAME_TARGET"
+	export DBNAME="$DBNAME"
+	remove_postgres_connections
 
 	return 0
 }
@@ -612,12 +632,8 @@ function do_command() {
 		set -e
 		echo "DB_HOST: $DB_HOST"
 		echo "DB_PORT: $DB_PORT"
-		SUFFIX="_restoring"
 		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
-
-		DBNAME_TARGET="$DBNAME"
-		DBNAME="${DBNAME}${SUFFIX}"
 
 		if [[ "$DEVMODE" == "1" ]]; then
 			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"
@@ -635,20 +651,6 @@ function do_command() {
 		fi
 
 		remove_postgres_connections
-		sql=("
-			SELECT pg_terminate_backend(pg_stat_activity.pid)
-			FROM pg_stat_activity 
-			WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
-			AND pid <> pg_backend_pid(); 
-
-			drop database if exists $DBNAME_TARGET;
-
-			alter database $DBNAME rename to $DBNAME_TARGET;
-
-			")
-	    echo "${sql[0]}"| $MANAGE psql template1
-		DBNAME="$DBNAME_TARGET"
-		export DBNAME="$DBNAME"
 		set_db_ownership
 		$MANAGE telegram-send "Database Restore $DBNAME done."
 
