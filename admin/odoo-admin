@@ -267,7 +267,6 @@ function do_restore_db_in_docker_container () {
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
-	set -x
 	RESTOREFILE=/opt/dumpfile
 	dump_file=$(make_path_as_hosts_sees_it "$dump_file")
 	dcrun -v "$dump_file:$RESTOREFILE" -e "RESTOREFILE=$RESTOREFILE" postgres /restore.sh
