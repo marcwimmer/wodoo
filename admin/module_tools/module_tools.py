@@ -108,15 +108,7 @@ def get_all_customs():
     return customs
 
 def get_all_langs():
-    langs = []
-    conn, cr = get_conn()
-    try:
-        cr.execute("select code from res_lang")
-        langs = [x[0] for x in cr.fetchall()]
-
-    finally:
-        cr.close()
-        conn.close()
+    langs = execute_managesh('get_all_langs').split(' ')
     return langs
 
 def get_all_manifests():

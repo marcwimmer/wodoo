@@ -111,19 +111,20 @@ def current_db():
 def execute_managesh(*args, **kwargs):
     args = ['./odoo'] + list(args)
     proc = subprocess.Popen(args, cwd=odoo_root(), bufsize=1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = []
     if not kwargs.get('do_async', False):
-        output = ''
         while True:
             line = proc.stdout.readline()
             line = line.decode(errors='ignore')
             if line == '':
                 break
-            output += line
+            output += [line]
 
         while proc.returncode is None:
             proc.wait()
         if proc.returncode:
-            raise Exception(output)
+            raise Exception(u'\n'.join(output))
+    return u'\n'.join(output)
 
 def get_conn(db=None, host=None):
     if db != "template1":

@@ -267,13 +267,17 @@ function do_restore_db_in_docker_container () {
 	VOLUMENAME=${PROJECT_NAME}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
-	set -x
 	RESTOREFILE=/opt/dumpfile
 	dump_file=$(make_path_as_hosts_sees_it "$dump_file")
 	dcrun -v "$dump_file:$RESTOREFILE" -e "RESTOREFILE=$RESTOREFILE" postgres /restore.sh
 }
 
 function do_restore_db_on_external_postgres () {
+	SUFFIX="_restoring"
+	DBNAME_TARGET="$DBNAME"
+	DBNAME="${DBNAME}${SUFFIX}"
+	export DBNAME="$DBNAME"
+
 	echo "Restoring dump on $DB_HOST"
 	dump_file=$1
 	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
@@ -283,7 +287,6 @@ function do_restore_db_on_external_postgres () {
 	CREATEDB="createdb $args"
 	PGRESTORE="pg_restore $args"
 
-	remove_postgres_connections
 	eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
 	eval "$CREATEDB $DBNAME"
 	pipe="$(mktemp -u)"
@@ -291,7 +294,22 @@ function do_restore_db_on_external_postgres () {
 	gunzip -c "$1" > "$pipe" &
 	echo "Restoring Database $DBNAME"
 	$PGRESTORE -d "$DBNAME" < "$pipe"
-	echo $?
+
+	remove_postgres_connections
+	sql=("
+		SELECT pg_terminate_backend(pg_stat_activity.pid)
+		FROM pg_stat_activity 
+		WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
+		AND pid <> pg_backend_pid(); 
+
+		drop database if exists $DBNAME_TARGET;
+		alter database $DBNAME rename to $DBNAME_TARGET;
+		")
+	echo "${sql[0]}"| $MANAGE psql template1
+
+	DBNAME="$DBNAME_TARGET"
+	export DBNAME="$DBNAME"
+	remove_postgres_connections
 
 	return 0
 }
@@ -611,6 +629,8 @@ function do_command() {
 
 	restore-db)
 		set -e
+		echo "DB_HOST: $DB_HOST"
+		echo "DB_PORT: $DB_PORT"
 		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
 
@@ -622,13 +642,14 @@ function do_command() {
 			askcontinue "Deletes database $DBNAME!"
 		}
 
-
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			do_restore_db_in_docker_container "$dumpfile"
 		else
 			askcontinue "Trying to restore database on remote database. Please make sure, that the user $DB_USER has enough privileges for that."
 			do_restore_db_on_external_postgres "$dumpfile"
 		fi
+
+		remove_postgres_connections
 		set_db_ownership
 		$MANAGE telegram-send "Database Restore $DBNAME done."
 
@@ -646,7 +667,7 @@ function do_command() {
 			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
 			exit -1
 		fi
-        echo "Restores dump to locally installed postgres and executes to scripts to adapt user passwords, mailservers and cronjobs"
+        echo "Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs"
 		set +e
 		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
@@ -671,7 +692,7 @@ function do_command() {
 		fi	
 
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres odoo
+			$dc up -d postgres
 			$MANAGE wait_for_container_postgres
             SQLFILE="$DIR/run/sqlscripts/script.sql"
             echo "$query" | tee "$SQLFILE"
@@ -843,13 +864,19 @@ function do_command() {
 			$MANAGE wait_for_container_postgres
         fi
 
-        dcrun odoo_update /update_modules.sh "$2" || true
+        dcrun odoo_update /update_modules.sh "$2" || {
+			res="$?"
+			echo "Error at /update_modules.sh - aborting update process."
+			exit $res
+		}
 		$MANAGE show-install-state || exit 34
 
-        $dc up -d
-        $dc up -d
-        $dc up -d
-        $dc restart nginx
+		for i in $(seq 5);
+		do
+			$dc up -d
+			$MANAGE nginx-reload
+			sleep 2
+		done
 
         df -h / # case: after update disk / was full
 		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
@@ -935,11 +962,16 @@ function do_command() {
         dcrun "${domain}_ovpn_manage" make_default_keys.sh
         dcrun "${domain}_ovpn_manage" pack_server_conf.sh
         ;;
+	get_all_langs)
+		SQL="select code from res_lang;"
+		langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
+		echo $langs
+		;;
     export-i18n)
         LANG=$2
         MODULES=$3
         if [[ -z "$MODULES" ]]; then
-            echo "Please define at least one module"
+            echo "Syntax: export-i18n LANG MODULES"
             exit -1
         fi
         dcrun odoo /export_i18n.sh "$LANG" "$MODULES"
@@ -1183,6 +1215,7 @@ function set_db_ownership() {
 	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres
+			$MANAGE wait_for_container_postgres
 		fi
 		dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
 	fi
