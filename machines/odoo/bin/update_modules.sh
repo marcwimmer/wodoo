@@ -90,6 +90,18 @@ function update_module_list() {
 	else
 		update "u" "update_module_list"
 	fi
+
+	if [[ "$(is_module_installed "update_module_list")" != "1" ]]; then
+		echo ""
+		echo ""
+		echo ""
+		echo "Severe update error - module 'update_module_list' not installable, but is required."
+		echo ""
+		echo "Try to manually start odoo and click on "Module Update" and install this by hand."
+		echo ""
+		echo ""
+		exit 82
+	fi
 }
 
 function check_for_dangling_modules() {

@@ -864,7 +864,11 @@ function do_command() {
 			$MANAGE wait_for_container_postgres
         fi
 
-        dcrun odoo_update /update_modules.sh "$2" || true
+        dcrun odoo_update /update_modules.sh "$2" || {
+			res="$?"
+			echo "Error at /update_modules.sh - aborting update process."
+			exit $res
+		}
 		$MANAGE show-install-state || exit 34
 
 		for i in $(seq 5);

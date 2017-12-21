@@ -22,3 +22,4 @@ settings
 .Dockerfile
 settings.customs
 settings.override
+*.override.bak
