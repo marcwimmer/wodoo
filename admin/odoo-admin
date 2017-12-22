@@ -57,8 +57,14 @@ if os.path.isfile(os.path.join(working_dir, '.customsroot')):
 	if current_customs != os.environ['CUSTOMS']: 
 		print "Caution: current customs is {} but you are in another customs directory: {}".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
 		print "Continue at your own risk!"
-		time.sleep(5)
 EOF
+	secs=$((5))
+	while [ $secs -gt 0 ]; do
+	   echo -ne "Continue in $secs seconds...\033[0K\r"
+	   sleep 1
+	   : $((secs--))
+	done
+	echo ''
 }
 
 function get_CUSTOMS_DIR() {
