@@ -43,30 +43,35 @@ function check_working_dir_customs_mismatch() {
 	# Checks wether the current working is in a customs directory, but
 	# is not matching the correct customs. Avoid creating wrong tickets
 	# in the wrong customizations.
-	python <<EOF
-import os
-import time
-working_dir = os.environ['LOCAL_WORKING_DIR']
-while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
-	try:
-		working_dir = os.path.dirname(working_dir)
-	except:
-		break
-	if not working_dir.replace("/", ""):
-		break
-if os.path.isfile(os.path.join(working_dir, '.customsroot')):
-	current_customs = os.path.basename(working_dir)
-	if current_customs != os.environ['CUSTOMS']: 
-		print "Caution: current customs is {} but you are in another customs directory: {}".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
-		print "Continue at your own risk!"
-EOF
-	secs=$((5))
-	while [ $secs -gt 0 ]; do
-	   echo -ne "Continue in $secs seconds...\033[0K\r"
-	   sleep 1
-	   : $((secs--))
-	done
-	echo ''
+
+	res=$(python <<-EOF
+	import os
+	import time
+	working_dir = os.environ['LOCAL_WORKING_DIR']
+	while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
+	    try:
+	        working_dir = os.path.dirname(working_dir)
+	    except:
+	        break
+	    if not working_dir.replace("/", ""):
+	        break
+	if os.path.isfile(os.path.join(working_dir, '.customsroot')):
+	    current_customs = os.path.basename(working_dir)
+	    if current_customs != os.environ['CUSTOMS']: 
+	        print "Caution: current customs is {} but you are in another customs directory: {}".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
+	        print "Continue at your own risk!"
+	EOF
+	)
+
+	echo "$res" | grep -q 'risk' && {
+		secs=$((5))
+		while [ $secs -gt 0 ]; do
+		   echo -ne "Continue in $secs seconds...\033[0K\r"
+		   sleep 1
+		   : $((secs--))
+		done
+		echo ''
+	}
 }
 
 function get_CUSTOMS_DIR() {
