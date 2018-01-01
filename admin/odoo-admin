@@ -24,10 +24,12 @@ function startup() {
 	local ARGS=("$@")
 	local $DIR >/dev/null
 	DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
+
+	proxy_configs_dir=$DIR/run/proxy
+	export proxy_configs_dir="$proxy_configs_dir"
 	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
 	export ODOO_MANAGER_STARTED_ONCE=1
 	export ODOO_COMPOSE_VERSION="3.3"
-	export ODOO_COMPOSE_OPENVPN_DOMAINS_DIR="$DIR/run/openvpn_domains"
 	export PGPASSFILE=/tmp/.pgpass # must match the executing script
 	export PGHOST="$DB_HOST"
 	export PGPORT="$DB_PORT"
@@ -389,17 +391,6 @@ function showhelp() {
     echo "logs - show log output; use parameter to specify machine"
 	echo ""
     echo "logall - shows log til now; use parameter to specify machine"
-
-	echo ""
-	echo "---------------------------------------------------------------"
-	echo "OVPN"
-	echo ""
-    echo 'make-CA - recreates CA caution! for asterisk domain e.g. provide parameter "asterisk"'
-    echo "make-phone-CA - recreates CA caution!"
-    echo "show-openvpn-ciphers - lists the available ciphers"
-    echo "enter-VPN <domain> - starts machine and you have some tools like nmap"
-	echo ""
-	echo "---------------------------------------------------------------"
 	echo ""
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
 	echo ""
@@ -450,8 +441,13 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR"/run/{config,sqlscripts,debug,nginx_confs}
+    mkdir -p "$DIR"/run/{config,sqlscripts,debug,proxy}
 	sudo -E chown $UID:$UID -R "$DIR"/run
+
+	if [[ ! -e "$DIR/run/odoo_instances" ]]; then
+		echo "default default" > "$DIR/run/odoo_instances"
+	fi
+
 	return 0
 }
 
@@ -482,10 +478,6 @@ function prepare_yml_files_from_template_files() {
 		all_dirs[1]="$CUSTOMS_DIR/machines"
 	fi
 	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
-
-	# append openvpnconfig from domain preparation of vpn domains 
-	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES"; find "$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR" -type f -name "$PATTERN")
-
 
 	# Make all config files to absolutepath
 	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES" | while read -r f; do readlink -e "$f"; done)
@@ -664,8 +656,8 @@ function do_command() {
 		set_db_ownership
 		;;
 
-	nginx-reload)
-		dcexec nginx /hot_reload.sh
+	proxy-reload)
+		dcexec proxy /hot_reload.sh
 		;;
 
     restore-dev-db)
@@ -730,6 +722,7 @@ function do_command() {
     up)
 		set_db_ownership
         $dc up "${ALL_PARAMS[@]}"
+		$MANAGE proxy-reload
         ;;
     debug)
 		# puts endless loop into container command and then attaches to it;
@@ -880,7 +873,7 @@ function do_command() {
 		for i in $(seq 5);
 		do
 			$dc up -d
-			$MANAGE nginx-reload
+			$MANAGE proxy-reload
 			sleep 2
 		done
 
@@ -905,74 +898,14 @@ function do_command() {
 			echo "Dangling modules detected - please fix installation problems and retry!"
 			exit -32
 		fi
-
 		;;
 
-    show-openvpn-ciphers)
-	   dcrun default_ovpn_minimal /usr/sbin/openvpn --show-ciphers
-	   ;;
-
-	enter-VPN)
-		echo "Starting a machine, so you have access to the VPN Network"
-		echo "You can scan for live hosts and check if the network is up."
-		echo
-		echo "Samples: "
-		echo "------------"
-		echo "ifconfig"
-		echo "nmap -sP 192.168.2.1/24"
-		echo
-		domain="$2"
-		$MANAGE up -d "${domain}_ovpn_server"
-		$MANAGE run "${domain}_ovpn_server_client" run_ovpn_server_as_client.sh 
-		;;
-    make-phone-CA)
-		$MANAGE make-CA asterisk
-		;;
-	force-ovpn-domain)
-		# checks for parameter "$domain"
-		domain=$2
-		if [[ -z "$domain" ]]; then
-			echo "OVPN Domain missing"
-			exit -1
-		fi
-		;;
-    make-CA)
-        echo '!!!!!!!!!!!!!!!!!!'
-        echo '!!!!!!!!!!!!!!!!!!'
-        echo '!!!!!!!!!!!!!!!!!!'
-        echo
-        echo
-        echo "Extreme Caution!"
-        echo 
-        echo '!!!!!!!!!!!!!!!!!!'
-        echo '!!!!!!!!!!!!!!!!!!'
-        echo '!!!!!!!!!!!!!!!!!!'
-		domain=$2
-		set -e
-		$MANAGE force-ovpn-domain "$domain"
-
-        askcontinue -force
-        export dc=$dc
-        $dc kill "${domain}_ovpn_manage"
-		# backup old data before
-
-		mkdir -p "$DIR/data/ovpn_backup"
-		cd "$DIR/data/ovpn_backup"
-		if [[ -d $domain ]]; then
-			tar cfz "$domain-$(date +%Y%m%d-%H%M%S).tar.gz" "$DIR/data/ovpn/$domain"
-		fi
-
-        dcrun "${domain}_ovpn_manage" clean_all.sh
-        dcrun "${domain}_ovpn_manage" make_ca.sh
-        dcrun "${domain}_ovpn_manage" make_server_keys.sh
-        dcrun "${domain}_ovpn_manage" make_default_keys.sh
-        dcrun "${domain}_ovpn_manage" pack_server_conf.sh
-        ;;
 	get_all_langs)
 		SQL="select code from res_lang;"
 		langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
 		echo $langs
 		;;
+
     export-i18n)
         LANG=$2
         MODULES=$3
@@ -983,9 +916,11 @@ function do_command() {
         dcrun odoo /export_i18n.sh "$LANG" "$MODULES"
         # file now is in $DIR/run/i18n/export.po
         ;;
+
     import-i18n)
         dcrun odoo /import_i18n.sh "${ALL_PARAMS[@]}"
         ;;
+
 	remove-web-assets)
 		askcontinue
 		dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
@@ -1114,7 +1049,7 @@ function do_command() {
 		eval "${cmd[@]@Q}"
 		;;
 
-	switch-customs)
+	customs)
 		# switch customs
 		if [[ -z "${ALL_PARAMS[0]}" ]]; then
 			echo "Customs missing"
@@ -1245,82 +1180,58 @@ function display_machine_tips() {
 	return 0
 }
 
-function update_openvpn_domains() {
-
-	# searches for config files of openvpn and then copies the 
-	# template openvpn docker compose to run; 
-	# attaches the docker-compose to $dc then
-
-	[[ -d "${ODOO_COMPOSE_OPENVPN_DOMAINS_DIR:?}" ]] && rm -Rf "$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR"
-
-	find "$DIR/machines" -name 'ovpn-domain.conf' | while read -r file; do
-		local parent
-		parent="$ODOO_COMPOSE_OPENVPN_DOMAINS_DIR/$(basename "$(dirname "$file")")"
-		mkdir -p "$parent"
-		OPENVPN_CONFIG_FILE="$parent/docker-compose.run_openvpn.yml"
-		python "$DIR/machines/openvpn/bin/prepare_domain_for_manage.py" "${file}" "$DIR" "$OPENVPN_CONFIG_FILE"
-	done
-
-	return 0
-
-}
-
 function awk() {
 	AWK=$(which awk)
 	command "${AWK:-awk}" "$@";
 	return 0
 }
 
-function reset_nginx_configs() {
-	local nginx_configs_dir
-	local paths_dir
+function reset_proxy_configs() {
+	local configs_dir
 
-	nginx_configs_dir="$DIR/run/nginx_confs"
+	configs_dir="$DIR/run/proxy"
 
-	cd "${nginx_configs_dir:?}" && rm -Rf *
-
-	paths_dir="$DIR/run/nginx_paths"
-	if [[ -d "$paths_dir" ]]; then
-		cd "${paths_dir:?}" && rm -iRf *
-	else
-	    mkdir -p "$paths_dir"
-	fi
+	cd "${configs_dir:?}" && rm -Rf *
 }
 
 function setup_odoo_instances() {
-	local nginx_configs_dir
 	local name
 	local subdomain_path
 	local config_path
 
-	nginx_configs_dir=$DIR/run/nginx_confs
 	if [[ -f "$DIR/run/odoo_instances" ]]; then
-		rm "$nginx_configs_dir"/odoo_instance_* 1>/dev/null 2>&1 || true
+		rm "${proxy_configs_dir:?}/*.host" 1>/dev/null 2>&1 || true
 
 		while read -r line; do
 			name="$(echo "$line"| awk '{print $1}')"
-			subdomain_path="$(echo "$line"| awk '{print $2}')"
-			config_path="$nginx_configs_dir/odoo_instance_${name}.conf"
-			cp "$DIR/machines/nginx/nginx_${ODOO_VERSION}.conf" "$config_path"
-			sed -i "s|__HTTP_HOST__|$subdomain_path|g" "$config_path"
-			# treat the name of the instance as domain; is used in setup_nginx_paths, too
-			sed -i "s|__PATH_DIR__|$name|g" "$config_path"
+			domain="$(echo "$line"| awk '{print $2}')"
 
-			# adapt the one yml file and duplicate the odoo service there;
-			# removing any ports
-			python <<EOF
-import yaml, os
-from copy import deepcopy
-with open("$docker_compose_file") as f:
-	j = yaml.load(f.read())
-odoo = deepcopy(j['services']['odoo'])
-if 'ports' in odoo:
-	del odoo['ports']
-odoo['container_name'] = '_'.join([os.environ['DCPREFIX'], "odoo", "$name"])
-j['services']['odoo_{}'.format("$name")] = odoo
-with open("$docker_compose_file", 'w') as f:
-	f.write(yaml.dump(j, default_flow_style=False))
-EOF
+			config_path="$proxy_configs_dir/${name}.host"
+			cp "$DIR/machines/proxy/odoo_instance.conf" "$config_path"
+			if [[ "$domain" == "default" ]]; then
+				sed -i 's|__DOMAIN__|*|g' "$config_path"
+			else
+				sed -i "s|__DOMAIN__|${domain:?}|g" "$config_path"
+			fi
+			sed -i "s|__CONTAINERNAME__|${name:?}|g" "$config_path"
+
+			if [[ $name != 'default' ]]; then
+				# adapt the one yml file and duplicate the odoo service there;
+				# removing any ports
+				python <<-EOF
+				import yaml, os
+				from copy import deepcopy
+				with open("$docker_compose_file") as f:
+				    j = yaml.load(f.read())
+				odoo = deepcopy(j['services']['odoo'])
+				if 'ports' in odoo:
+				    del odoo['ports']
+				odoo['container_name'] = '_'.join([os.environ['DCPREFIX'], "odoo", "$name"])
+				j['services']['odoo_{}'.format("$name")] = odoo
+				with open("$docker_compose_file", 'w') as f:
+				    f.write(yaml.dump(j, default_flow_style=False))
+				EOF
+			fi
 
 		done <"$DIR/run/odoo_instances"
 	fi
@@ -1333,10 +1244,10 @@ function remove_temp_directories() {
 	find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs rm {} -Rf \;
 }
 
-function setup_nginx_paths() {
-	URLPATH_DIR="$DIR/run/nginx_paths"
+function setup_proxy() {
+	CONFIG_DIR="$DIR/run/proxy"
 
-	find "$DIR/machines" -name 'nginx.path' | while read -r f; do
+	find "$DIR/machines" -name 'upstream.path' | while read -r f; do
 		content=$(
 			envsubst < "$f"
 		)
@@ -1345,27 +1256,43 @@ function setup_nginx_paths() {
 			local MACHINE
 			local PORT
 
-			URLPATH=$(echo "$line" | awk '{print $1}')
-			MACHINE=$(echo "$line" | awk '{print $2}')
-			PORT=$(echo "$line" | awk '{print $3}')
+			LOCATION=$(echo "$line" | awk '{print $1}')
+			UPSTREAM=$(echo "$line" | awk '{print $2}')
 
-			if [[ -z "$PORT" || -z "$MACHINE" ]]; then
-				echo "Invalid nginx urlpath: $f"
+			if [[ -z "$LOCATION" || -z "$UPSTREAM" ]]; then
+				echo "Invalid: $f"
+				echo "Example:   / http://odoo:8072/"
 				exit -1
 			fi
 
-			"$DIR/machines/nginx/add_nginx_path.sh" "$URLPATH" "$MACHINE" "$PORT" "$URLPATH_DIR" 
+			if [[ "$(basename $(dirname $f))" == "odoo" ]]; then
+				subdir="odoo"
+				mkdir -p "$CONFIG_DIR/$subdir"
 
-			# set subdomains also for other odoo instances
-			if [[ -f "$DIR/run/odoo_instances" && "$MACHINE" == "odoo" ]]; then
-				while read -r line; do
-					name="$(echo "$line"| awk '{print $1}')"
-					hostname="$(echo "$line"| awk '{print $2}')"
-					container_name="odoo_$name"  # e.g. odoo
-					"$DIR/machines/nginx/add_nginx_path.sh" "/" "$container_name" "$PORT" "$URLPATH_DIR" "" "$hostname"
+				if [[ -e "$DIR/run/odoo_instances" ]]; then
 
-				done <"$DIR/run/odoo_instances"
+					while read -r line; do
+						name="$(echo "$line"| awk '{print $1}')"
+						domain="$(echo "$line"| awk '{print $2}')"
+						filename="$name.location"
+						CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
+						if [[ "$name" == "default" ]]; then
+							UPSTREAM_INSTANCE="${UPSTREAM/default/odoo}"
+						else
+							UPSTREAM_INSTANCE=${UPSTREAM/odoo/odoo_$name}
+						fi
+						"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM_INSTANCE" "$CONFIG_PATH"
+					done<"$DIR/run/odoo_instances"
+				fi
+
+			else
+				subdir="default"
+				mkdir -p "$CONFIG_DIR/$subdir"
+				filename=${LOCATION//\//_}_${LOCATION//\//_}.location
+				CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
+				"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM" "$CONFIG_PATH"
 			fi
+
 		done <<< "$content"
 	done
 	return 0
@@ -1404,15 +1331,14 @@ function main() {
 		export_settings
 		remember_customs_and_cry_if_changed
 		case $1 in
-			up|build|compose)
+			build|compose)
 				set -e
 				remove_temp_directories
 				prepare_filesystem
-				update_openvpn_domains 
 				prepare_yml_files_from_template_files
-				reset_nginx_configs
+				reset_proxy_configs
+				setup_proxy
 				setup_odoo_instances
-				setup_nginx_paths
 				;;
 
 			*)
