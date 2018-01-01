@@ -70,8 +70,8 @@ function check_working_dir_customs_mismatch() {
 		   sleep 1
 		   : $((secs--))
 		done
-		echo ''
 	}
+	echo ''
 }
 
 function get_CUSTOMS_DIR() {
