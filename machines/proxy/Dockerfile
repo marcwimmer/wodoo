@@ -1,6 +1,5 @@
 FROM phusion/baseimage:0.9.22
 
-# nginx-full contains extended webdav module, which provides PROPFIND
 RUN \
 apt update && \
 apt install -y apache2
