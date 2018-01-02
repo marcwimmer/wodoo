@@ -6,7 +6,7 @@ from utils import restart_container
 from utils import start_container
 from utils import stop_container
 from utils import compose
-from utils import reload_nginx
+from utils import reload_proxy
 from openerp import _, api, fields, models, SUPERUSER_ID
 from openerp.exceptions import UserError, RedirectWarning, ValidationError
 
@@ -41,7 +41,7 @@ class Instance(models.Model):
         self.ensure_one()
         compose()
         start_container(self.technical_name)
-        reload_nginx()
+        reload_proxy()
         time.sleep(3)
 
     @api.multi

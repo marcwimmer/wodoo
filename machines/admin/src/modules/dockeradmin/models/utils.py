@@ -7,8 +7,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def reload_nginx():
-    execute_odoo("nginx-reload")
+def reload_proxy():
+    execute_odoo("proxy-reload")
 
 def execute_odoo(*params):
     try:
