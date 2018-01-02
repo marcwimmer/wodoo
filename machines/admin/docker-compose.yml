@@ -23,7 +23,7 @@ services:
         ODOO_HOME: /opt/odoo
         HOST_ODOO_HOME: $ODOO_HOME
         DCPREFIX: $DCPREFIX
-        MINIMUM_CONTAINERS: nginx,redis
+        MINIMUM_CONTAINERS: proxy,redis
         DEPLOY_BRANCH: deploy
         MASTER_BRANCH: master
     env_file:
