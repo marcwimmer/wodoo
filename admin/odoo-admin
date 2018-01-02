@@ -815,8 +815,8 @@ function do_command() {
         cd "$DIR"
         eval "$dc kill $2"
         eval "$dc rm -f $2"
-        eval "$dc create --force-recreate $2"
-        eval "$dc up -d $2"
+        eval "$dc up --force-recreate -d $2"
+		$MANAGE proxy-reload
         ;;
 
 	dev)
