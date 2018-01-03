@@ -1,0 +1,12 @@
+LoadModule proxy_html_module modules/mod_proxy_html.so
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+LoadModule proxy_balancer_module modules/mod_proxy_balancer.so
+LoadModule proxy_hcheck_module modules/mod_proxy_hcheck.so
+LoadModule proxy_http2_module modules/mod_proxy_http2.so
+LoadModule xml2enc_module modules/mod_xml2enc.so
+
+
+
+
+

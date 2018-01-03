@@ -37,6 +37,7 @@ RUN \
 --enable-dav \
 --enable-alias \
 --enable-http2 \
+--enable-xml2enc \
 --with-included-apr \
 --with-mpm=prefork
 RUN make -j 4
@@ -44,7 +45,11 @@ RUN make install
 
 RUN sed -i 's|/usr/local/games|/usr/local/apache2/bin|g' /etc/environment 
 RUN echo "Include /etc/proxy/*.host" >> /usr/local/apache2/conf/httpd.conf
+RUN echo "Include conf/modules.enabled" >> /usr/local/apache2/conf/httpd.conf
+RUN echo "Include conf/my.conf" >> /usr/local/apache2/conf/httpd.conf
 
+COPY modules.enabled /usr/local/apache2/conf/modules.enabled
+COPY my.conf /usr/local/apache2/conf/my.conf
 COPY bin/service.sh /etc/service/apache/run
 COPY bin/init.sh /etc/my_init.d/
 

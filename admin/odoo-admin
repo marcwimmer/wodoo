@@ -771,7 +771,7 @@ function do_command() {
             exit -1
         fi
 		display_machine_tips "$2"
-        $dc run "$2" bash
+        $dc run --rm "$2" bash
         ;;
     rebuild)
         cd "$DIR"
