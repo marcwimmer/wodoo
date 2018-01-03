@@ -18,11 +18,18 @@ fi
 LOCATION="$1"
 UPSTREAM="$2"
 OUTPUT_FILENAME="$3"
+PROXY_NAME=${LOCATION//\//SLASH}
 
 DOLLAR='$'
 tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
+
+<Proxy balancer://$PROXY_NAME/>
+	BalancerMember $UPSTREAM
+</Proxy>
+
 <Location $LOCATION>
-ProxyPass $UPSTREAM
-ProxyPassReverse $UPSTREAM
+
+ProxyPass balancer://$PROXY_NAME/
+ProxyPassReverse balancer://$PROXY_NAME/
 </Location>
 EOF
