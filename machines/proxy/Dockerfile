@@ -56,4 +56,7 @@ COPY bin/init.sh /etc/my_init.d/
 
 RUN \
 chmod a+x /etc/my_init.d/*.sh && \
-chmod a+x /etc/service/apache/run
+chmod a+x /etc/service/apache/run && \
+rm -Rf /tmp/*
+
+WORKDIR /usr/local/apache2
