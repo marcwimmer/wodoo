@@ -23,13 +23,20 @@ PROXY_NAME=${LOCATION//\//SLASH}
 DOLLAR='$'
 tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
 
+#https://httpd.apache.org/docs/2.4/howto/reverse_proxy.html
+
 <Proxy balancer://$PROXY_NAME/>
-	BalancerMember $UPSTREAM
+	BalancerMember $UPSTREAM hcmethod=GET hcpasses=1 hcfails=1 hcinterval=2 hcuri=/
 </Proxy>
 
 <Location $LOCATION>
 
 ProxyPass balancer://$PROXY_NAME/
 ProxyPassReverse balancer://$PROXY_NAME/
+</Location>
+
+<Location "$LOCATION/balancer-manager">
+    SetHandler balancer-manager
+	Require all granted
 </Location>
 EOF
