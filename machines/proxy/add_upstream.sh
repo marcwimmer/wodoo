@@ -20,6 +20,8 @@ LOCATION="$1"
 UPSTREAM="${2%/}"
 OUTPUT_FILENAME="$3"
 PROXY_NAME=${LOCATION//\//SLASH}
+URL_BALANCER_MANAGER="$LOCATION/balancer-manager"
+URL_BALANCER_MANAGER="${URL_BALANCER_MANAGER//\/\//\/}"
 
 DOLLAR='$'
 tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
@@ -30,7 +32,7 @@ tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
 	BalancerMember $UPSTREAM hcmethod=GET hcpasses=1 hcfails=1 hcinterval=2 hcuri=/
 </Proxy>
 
-<Location $LOCATION/balancer-manager>
+<Location ${URL_BALANCER_MANAGER}>
 	Require all granted
     SetHandler balancer-manager
 </Location>
