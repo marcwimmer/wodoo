@@ -38,6 +38,7 @@ RUN \
 --enable-alias \
 --enable-http2 \
 --enable-xml2enc \
+--enable-slotmem-shm \
 --with-included-apr \
 --with-mpm=prefork
 RUN make -j 4

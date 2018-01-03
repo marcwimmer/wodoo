@@ -5,6 +5,10 @@ LoadModule proxy_balancer_module modules/mod_proxy_balancer.so
 LoadModule proxy_hcheck_module modules/mod_proxy_hcheck.so
 LoadModule proxy_http2_module modules/mod_proxy_http2.so
 LoadModule xml2enc_module modules/mod_xml2enc.so
+LoadModule slotmem_shm_module modules/mod_slotmem_shm.so
+LoadModule lbmethod_byrequests_module modules/mod_lbmethod_byrequests.so
+LoadModule watchdog_module modules/mod_watchdog.so
+
 
 
 
