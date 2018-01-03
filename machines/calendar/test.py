@@ -23,6 +23,7 @@ END:VCALENDAR
 
 #caldav client and sync token
 #http://sabre.io/dav/building-a-caldav-client/
+client = caldav.DAVClient("http://localhost:8200/calendars/caldav.php", username='test', password='test')
 client = caldav.DAVClient("http://localhost/calendars/caldav.php", username='test', password='test')
 try:
     principal = client.principal()
@@ -31,7 +32,8 @@ except:
     msg = traceback.format_exc()
     print msg
     print 'error'
-    time.sleep(5)
+else:
+    print principal.calendars()
 from pudb import set_trace
 set_trace()
 sys.exit(0)

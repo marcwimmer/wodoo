@@ -8,7 +8,7 @@ LoadModule xml2enc_module modules/mod_xml2enc.so
 LoadModule slotmem_shm_module modules/mod_slotmem_shm.so
 LoadModule lbmethod_byrequests_module modules/mod_lbmethod_byrequests.so
 LoadModule watchdog_module modules/mod_watchdog.so
-
+LoadModule dav_module modules/mod_dav.so
 
 
 
