@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 #
 # Place a file upstream.path in the root directory of machines
 # 
@@ -16,7 +17,7 @@ if [[ -z "$3" ]]; then
 	exit -1
 fi
 LOCATION="$1"
-UPSTREAM="$2"
+UPSTREAM="${2%/}"
 OUTPUT_FILENAME="$3"
 PROXY_NAME=${LOCATION//\//SLASH}
 
@@ -25,9 +26,14 @@ tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
 
 #https://httpd.apache.org/docs/2.4/howto/reverse_proxy.html
 
-<Proxy balancer://$PROXY_NAME/>
+<Proxy balancer://$PROXY_NAME>
 	BalancerMember $UPSTREAM hcmethod=GET hcpasses=1 hcfails=1 hcinterval=2 hcuri=/
 </Proxy>
+
+<Location $LOCATION/balancer-manager>
+	Require all granted
+    SetHandler balancer-manager
+</Location>
 
 <Location $LOCATION>
 
@@ -35,8 +41,4 @@ ProxyPass balancer://$PROXY_NAME/
 ProxyPassReverse balancer://$PROXY_NAME/
 </Location>
 
-<Location "$LOCATION/balancer-manager">
-    SetHandler balancer-manager
-	Require all granted
-</Location>
 EOF
