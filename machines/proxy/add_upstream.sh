@@ -1,6 +1,4 @@
 #!/bin/bash
-set -x
-#
 # Place a file upstream.path in the root directory of machines
 # 
 # /calendar http://davical:80/
@@ -20,8 +18,10 @@ LOCATION="$1"
 UPSTREAM="${2%/}"
 OUTPUT_FILENAME="$3"
 PROXY_NAME=${LOCATION//\//SLASH}
-URL_BALANCER_MANAGER="$LOCATION/balancer-manager"
+URL_BALANCER_MANAGER="$LOCATION/__balancer_manager__"
 URL_BALANCER_MANAGER="${URL_BALANCER_MANAGER//\/\//\/}"
+
+URL_SERVER_STATUS="/__server_status__"
 
 DOLLAR='$'
 tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
@@ -32,15 +32,19 @@ tee "$OUTPUT_FILENAME" >/dev/null  <<EOF
 	BalancerMember $UPSTREAM hcmethod=GET hcpasses=1 hcfails=1 hcinterval=2 hcuri=/
 </Proxy>
 
+<Location $URL_SERVER_STATUS>
+    SetHandler server-status
+    Require all granted
+</Location>
+
 <Location ${URL_BALANCER_MANAGER}>
-	Require all granted
     SetHandler balancer-manager
+	Require all granted
 </Location>
 
-<Location $LOCATION>
-
-ProxyPass balancer://$PROXY_NAME/
-ProxyPassReverse balancer://$PROXY_NAME/
-</Location>
+ProxyPass $URL_BALANCER_MANAGER !
+ProxyPass $URL_SERVER_STATUS !
+ProxyPass $LOCATION balancer://$PROXY_NAME/
+ProxyPassReverse $LOCATION balancer://$PROXY_NAME/
 
 EOF
