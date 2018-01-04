@@ -682,7 +682,11 @@ def update_module_file(current_file):
         if common_prefix != "/":
             all_files[i] = all_files[i][len(common_prefix):]
 
-    mod["data"] = []
+    DATA_NAME = 'data'
+    if get_version_from_customs() <= 7.0:
+        DATA_NAME = 'update_xml'
+
+    mod[DATA_NAME] = []
     mod["qweb"] = []
     mod["js"] = []
     mod["demo_xml"] = []
@@ -697,7 +701,7 @@ def update_module_file(current_file):
             elif f.startswith("static%s" % os.sep):
                 mod["qweb"].append(f)
             else:
-                mod["data"].append(f)
+                mod[DATA_NAME].append(f)
         elif f.endswith(".js"):
             mod["js"].append(f)
         elif f.endswith(".css"):
@@ -707,7 +711,7 @@ def update_module_file(current_file):
     mod["test"] = []
 
     # sort
-    mod["data"].sort()
+    mod[DATA_NAME].sort()
     mod["js"].sort()
     mod["css"].sort()
     if 'depends' in mod:
@@ -718,7 +722,7 @@ def update_module_file(current_file):
     # but cannot find action ids
     # 06.05.2014: put the ir.model.acces.csv always at the end, because it references others, but security/groups always in front
     sorted_by_index = [] # contains tuples (index, filename)
-    for filename in mod['data']:
+    for filename in mod[DATA_NAME]:
         filename_xml = filename
         filename = os.path.join(module_path, filename)
         sequence = 0
@@ -733,7 +737,7 @@ def update_module_file(current_file):
         sorted_by_index.append((sequence, filename_xml))
 
     sorted_by_index = sorted(sorted_by_index, key=lambda x: x[0])
-    mod['data'] = [x[1] for x in sorted_by_index]
+    mod[DATA_NAME] = [x[1] for x in sorted_by_index]
 
     if mod["qweb"]:
         mod["web"] = True
