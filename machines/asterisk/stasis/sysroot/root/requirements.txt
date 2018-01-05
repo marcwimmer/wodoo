@@ -1,8 +1,0 @@
-websocket-client==0.34.0
-argparse
-flask
-pudb
-flake8==3.0.3
-redis
-requests
-arrow

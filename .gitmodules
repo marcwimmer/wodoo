@@ -5,3 +5,9 @@
 [submodule "repos/odoo"]
 	path = repos/odoo
 	url = https://github.com/odoo/odoo
+[submodule "machines/calendar/src/davical"]
+	path = machines/calendar/src/davical
+	url = https://gitlab.com/davical-project/davical.git
+[submodule "machines/calendar/src/awl"]
+	path = machines/calendar/src/awl
+	url = https://gitlab.com/davical-project/awl.git

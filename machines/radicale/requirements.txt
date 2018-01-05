@@ -1,5 +1,0 @@
-vobject==0.9.5
-arrow==0.10.0
-pytz==2017.2
-dateutils==0.6.6
-pudb

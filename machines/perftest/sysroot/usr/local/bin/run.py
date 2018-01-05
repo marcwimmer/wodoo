@@ -20,7 +20,7 @@ def getenv(name):
     return result
 
 
-host = "http://nginx"
+host = "http://proxy"
 username = "admin"
 pwd = getenv("PASSWORD")
 db = getenv("DBNAME")

@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# append configuration option to run old odoo on port 8072
+case "$ODOO_VERSION" in
+	"7.0" | "6.1" | "6.0")
+		echo "xmlrpc_port=8072" >> /home/odoo/config_debug
+		;;
+esac
+
 set +x
 LOCKFILE=$(mktemp -u)
 echo "Starting debugger"

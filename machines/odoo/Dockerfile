@@ -105,6 +105,7 @@ ADD config/* /home/odoo/
 RUN chmod a+x /*.sh && \
 chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /usr/local/bin/* && \
+chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R && \
 locale-gen en_US.UTF-8 && \
 update-locale && \
@@ -113,4 +114,3 @@ echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
 
 WORKDIR /opt/odoo
-CMD /rootrun.sh

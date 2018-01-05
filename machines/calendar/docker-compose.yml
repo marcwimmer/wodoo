@@ -1,0 +1,43 @@
+version: '3.3'
+
+volumes:
+  calendar:
+  calendar_db:
+
+services:
+  calendar:
+    container_name: ${DCPREFIX}_calendar
+    build: $ODOO_HOME/machines/calendar
+    depends_on:
+      - calendar_db
+    ports:
+      - "8200:80"
+      - "3333:3333"
+    volumes:
+        - $ODOO_HOME/machines/calendar/conf:/config
+        - calendar:/var/www/html
+        - $ODOO_HOME/machines/calendar/src:/opt/src
+        - $ODOO_HOME/machines/calendar/admin.py:/opt/admin.py
+    environment:
+        PHP_VERSION: 7.0.10
+        PGPASSWORD: davical
+        PSQLOPTS: -h calendar_db -U davical
+        AWL_DBAUSER: davical
+        AWL_DBNAME: davical
+        AWL_APPUSER: davical
+        INITIAL_ADMIN_PASSWORD: admin!!
+        DBHOST: calendar_db
+        DBPORT: 5432
+        DBAOPTS: --dbhost calendar_db --dbuser davical
+        SRC_DIR: /opt/src_filemodeupdated
+  calendar_db:
+    container_name: ${DCPREFIX}_calendar_db
+    image: postgres:9.6.6
+    volumes:
+        - calendar_db:/data
+        - $ODOO_HOME/machines/calendar/add_users.sql:/docker-entrypoint-initdb.d/add_users.sql
+    environment:
+        POSTGRES_PASSWORD: davical
+        POSTGRES_USER: davical
+        POSTGRES_DB: postgres
+        PGDATA: /data
