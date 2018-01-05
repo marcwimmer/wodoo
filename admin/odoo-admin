@@ -1256,7 +1256,20 @@ function setup_proxy() {
 		content=$(
 			envsubst < "$f"
 		)
+		paths=()
+
+		#extract rewrite rules
+		REWRITE_RULES=()
 		while read -r line; do
+			if echo "$line" | grep -q ^RewriteRule; then
+				REWRITE_RULES+=("$line")
+			else
+				paths+=("$line")
+			fi
+		done <<< "$content"
+
+		for line in "${paths[@]}"
+		do
 			local URLPATH
 			local MACHINE
 			local PORT
@@ -1286,7 +1299,7 @@ function setup_proxy() {
 						else
 							UPSTREAM_INSTANCE=${UPSTREAM/odoo/odoo_$name}
 						fi
-						"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM_INSTANCE" "$CONFIG_PATH"
+						"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM_INSTANCE" "$CONFIG_PATH" "$REWRITE_RULES"
 					done<"$DIR/run/odoo_instances"
 				fi
 
@@ -1295,10 +1308,10 @@ function setup_proxy() {
 				mkdir -p "$CONFIG_DIR/$subdir"
 				filename=${LOCATION//\//_}_${LOCATION//\//_}.location
 				CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
-				"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM" "$CONFIG_PATH"
+				"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM" "$CONFIG_PATH" "$REWRITE_RULES"
 			fi
 
-		done <<< "$content"
+		done
 	done
 	return 0
 }
