@@ -1,2 +1,3 @@
 /calendars http://calendar/calendars
+RewriteRule ^/cal[/]?$ /calendars/caldav.php  [NC,PT]
 RewriteRule ^/cal/([^\/]*) /calendars/caldav.php/$1/calendar/  [NC,PT]

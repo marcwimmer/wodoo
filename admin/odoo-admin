@@ -19,6 +19,8 @@ function dcexec() {
 	$dc exec -T "$@"
 }
 
+function join_by { local IFS="$1"; shift; echo "$*"; }
+
 function startup() {
 	set +x
 	local ARGS=("$@")
@@ -1267,6 +1269,9 @@ function setup_proxy() {
 				paths+=("$line")
 			fi
 		done <<< "$content"
+
+		REWRITE_RULES=$(printf "\n%s" "${REWRITE_RULES[@]}")
+		REWRITE_RULES=${REWRITE_RULES:1}
 
 		for line in "${paths[@]}"
 		do
