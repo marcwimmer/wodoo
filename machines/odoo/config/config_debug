@@ -25,3 +25,4 @@ smtp_server = localhost
 workers = 1
 xmlrpcs = False
 netrpc = False
+proxy_mode = True
