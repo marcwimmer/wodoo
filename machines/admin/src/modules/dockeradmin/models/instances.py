@@ -95,7 +95,7 @@ class Instance(models.Model):
 
     @api.model
     def update_contents(self):
-        content = []
+        content = ['default default']
         for rec in self.search([]):
             content.append("{} {}".format(
                 rec.name.replace("\n", ""),
@@ -114,6 +114,9 @@ class Instance(models.Model):
             if not line:
                 continue
             name, hostname = line.split(" ")
+
+            if name == 'default':
+                continue
 
             instances |= self.create({
                 'name': name,
