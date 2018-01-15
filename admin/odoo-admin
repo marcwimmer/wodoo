@@ -1010,6 +1010,8 @@ function do_command() {
 		;;
 
 	patch)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+		cd "$CUSTOMS_DIR/odoo" || exit 1
 		cmd=("$DIR/admin/odoo-patch")
 		cmd+=("${ALL_PARAMS[@]}")
 		eval "${cmd[@]@Q}"
