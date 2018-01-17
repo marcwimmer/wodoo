@@ -664,7 +664,7 @@ function do_command() {
 		;;
 
 	proxy-reload)
-		dcexec proxy /hot_reload.sh
+		dcexec proxy /opt/bin/hot_reload.sh
 		;;
 
     restore-dev-db)
