@@ -26,6 +26,9 @@ services:
       - $ODOO_HOME/settings
       - $ODOO_HOME/machines/odoo/docker-env
     command: echo 'odoo_base - good bye - it is ok!'
+    logging:
+        options:
+            max-size: 1g
 
   odoo: &odoo
     <<: *odoo_base
@@ -55,6 +58,9 @@ services:
     environment:
       IS_ODOO_CRONJOB: 1
     command: /rootrun.sh
+    logging:
+        options:
+            max-size: 3g
 
   odoo_update:
     <<: *odoo_base
