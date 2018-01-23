@@ -1,3 +1,4 @@
+src
 data.backup
 config/docker-compose.odoo.yml
 config/docker-compose.asterisk.yml
