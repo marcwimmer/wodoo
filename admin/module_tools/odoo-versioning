@@ -49,15 +49,11 @@ customs_dir = odoo_config.customs_dir()
 def display_help():
     print "How to use:"
     print ""
-    print "$0 unit-test"
-    print "$0 help"
-    print "$0 dirty - displays dirty files and modules"
-    print "$0 new-ticket <ticketname>"
-    print "$0 switch-ticket <ticketname>"
-    print "$0 commit- commits current changes of files; takes command; later provided as base for squash commit"
-    print "$0 stage-ticket - puts changes of ticket to master branch, where it can be tested"
-    print "$0 deploy-ticket - makes squash commit of ticket; increases version of modules; can be merged via git merge <ticketno>"
-    print "$0 open-tickets - displays unmerged tickets (not merged on deploy)"
+    for action in actions:
+        print os.path.basename(sys.argv[0]), action, '[' if parameters.get('action', '') else '', '|'.join(parameters.get(action, [])), ']' if parameters.get('action', '') else ''
+        if help.get(action, ""):
+            print '\t\t', help[action]
+            print ""
     print ""
     print ""
     sys.exit(-1)
@@ -107,7 +103,7 @@ def action_commit():
         print "No files staged - aborting"
         sys.exit(42)
 
-    verify_stage_files(repo)
+    verify_stage_files(repo, allow_traces=any(x == 'allow-traces' for x in sys.argv))
 
     staged_files = get_staged_files(repo)
 
@@ -234,7 +230,7 @@ def action_switch_ticket():
         print "Branch not found: {}".format(branch_work)
     subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_work], cwd=customs_dir)
 
-def verify_stage_files(repo):
+def verify_stage_files(repo, allow_traces=False):
 
     for file in get_staged_files(repo):
         if file.endswith(".py"):
@@ -242,8 +238,9 @@ def verify_stage_files(repo):
                 with open(file) as f:
                     content = f.read()
                     if 'set_trace' in content:
-                        print "set_trace not allowed in staged/deployed files: {}".format(file)
-                        sys.exit(33)
+                        if not allow_traces:
+                            print "set_trace not allowed in staged/deployed files: {}".format(file)
+                            sys.exit(33)
 
 def action_deploy_ticket():
     """
@@ -850,6 +847,20 @@ actions = {
     'current-ticket': show_current_ticket,
 }
 
+parameters = {
+    'commit': ['allow-traces'],
+    'new-ticket': ['<ticket-name>'],
+    'switch-ticket': ['<ticket-name>'],
+}
+
+help = {
+    'dirty': "displays dirty files and modules",
+    'commit': "commits current changes of files; takes command; later provided as base for squash commit",
+    'stage-ticket': "puts changes of ticket to master branch, where it can be tested",
+    "deploy-ticket": "makes squash commit of ticket; increases version of modules; can be merged via git merge <ticketno>",
+    'open-tickets': "displays unmerged tickets (not merged on deploy)",
+
+}
 
 if action not in actions:
     print "Invalid verb: {}".format(action)

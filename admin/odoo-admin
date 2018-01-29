@@ -1054,6 +1054,11 @@ function do_command() {
 		cmd+=( "${ALL_PARAMS[@]}" )
 		eval "${cmd[@]@Q}"
 		;;
+	versioning)
+		cmd=("$DIR/admin/module_tools/odoo-versioning")
+		cmd+=( "${ALL_PARAMS[@]}" )
+		eval "${cmd[@]@Q}"
+		;;
 	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
 		cmd=("$DIR/admin/module_tools/odoo-versioning")
 		cmd+=("$1")
