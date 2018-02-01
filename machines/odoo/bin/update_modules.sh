@@ -72,7 +72,7 @@ function update() {
 	fi
 
 	echo "$__module__"
-	time sudo -H -u "$ODOO_USER" "$SERVER_DIR/openerp-server" \
+	time sudo -H -u "$ODOO_USER" "$SERVER_DIR/$ODOO_EXECUTABLE" \
 		-c "$CONFIG_DIR/config_openerp" \
 		-d "$DBNAME" \
 		-"$__mode__" "$__module__" \

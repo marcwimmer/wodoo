@@ -19,7 +19,7 @@ path=${ADDONS_CUSTOMS}/${2}/i18n/$LANG.po
 if [[ -f "$path" ]]; then
 
 	sudo -E -H -u "$ODOO_USER" \
-		"$SERVER_DIR/openerp-server" \
+		"$SERVER_DIR/$ODOO_EXECUTABLE" \
 		-c "$CONFIG_DIR/config_openerp" \
 		--log-level=warn \
 		--stop-after-init \

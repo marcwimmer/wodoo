@@ -1,6 +1,18 @@
 #!/bin/bash
 set -e
 
+if [[ -z "$1" ]]; then
+	echo "Please provide OCA module, examples:"
+	echo ""
+	echo "partner-contact"
+	echo "account-financial-tools"
+	echo "bank-payment"
+	echo "knowledge"
+	echo "server-tools"
+	echo "web"
+	exit 1
+fi
+
 cd "$ODOO_HOME/data/src/customs/$CUSTOMS" || exit -1
 
 if [[ ! -d common ]]; then

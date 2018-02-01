@@ -1,39 +1,33 @@
 FROM ubuntu:16.04
 ARG ODOO_VERSION
+ARG ODOO_PYTHON_VERSION
+ARG ODOO_EXECUTABLE
 MAINTAINER marc@itewimmer.de
 
 RUN apt-get update --fix-missing && \
 apt-get install \
 	-y \
 	--no-install-recommends \
-			python-software-properties \
 			software-properties-common \
 			man \
             cmake \
             ctags \
 			build-essential \
-            python \
             htop \
             ca-certificates \
             curl \
             node-less \
 			node-clean-css \
-            python-pyinotify \
-            python-renderpm \
-			libpython-dev \
 			libpq-dev \
 			libjpeg-dev \
             libcurl3-dev \
 			libxml2-dev \
 			libxslt1-dev \
-			python-dev \ 
-		    python-lxml \
 			libffi-dev \
             tmux \
             libfreetype6-dev \
             libpng-dev \
             libjpeg-dev \
-            python-pychart \
             automake \
             pkg-config \
             libpcre3-dev \
@@ -41,7 +35,6 @@ apt-get install \
             liblzma-dev \
             make \
             ssh \
-            python-gevent \
             mc \
             libxml2-utils \
             nodejs \
@@ -49,9 +42,6 @@ apt-get install \
             libxrender1 \
             libxext6 \
             libfontconfig \
-            python-ldap \
-            python-cups \
-            python-psycopg2 \
             htop \
             rsync \
             vim \
@@ -62,7 +52,9 @@ apt-get install \
             sudo \
             less \
             freetds-dev \
-            libsasl2-dev python-dev libldap2-dev libssl-dev \
+            libsasl2-dev \
+			libldap2-dev \
+			libssl-dev \
             wget \
             cifs-utils \
             imagemagick \
@@ -72,34 +64,25 @@ apt-get install \
             libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
             locales \
             pdftk \
-			python-wand libmagickwand-dev python-magic
-
-RUN apt install -y python-pip && pip install pip --upgrade
+			libmagickwand-dev
 
 WORKDIR /tmp
-RUN curl -L -o /tmp/wkhtml.tar.xz https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.3/wkhtmltox-0.12.3_linux-generic-amd64.tar.xz && \
-tar xf /tmp/wkhtml.tar.xz  && \
-cp /tmp/wkhtmltox/bin/* /usr/bin/ 
 
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
 ADD sysroot/ /
 RUN \
 chown odoo:odoo /home/odoo -R && \
-pip install requests[security] && \
-pip install glob2 && \
-pip install pudb && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
-ADD requirements.txt /root/requirements.txt
-ADD requirements_70.txt /root/requirements_70.txt
+ADD requirements/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
 #install pip packages depending on version
 ADD install_python_packages.sh /install_python_packages.sh
-RUN chmod a+x /install_python_packages.sh
-RUN /bin/bash /install_python_packages.sh ${ODOO_VERSION}
 
-RUN apt-get install -y locales
+RUN chmod a+x /install_python_packages.sh
+RUN /bin/bash /install_python_packages.sh "${ODOO_VERSION}" "${ODOO_PYTHON_VERSION}"
+
 ADD bin/ /
 ADD config/* /home/odoo/
 RUN chmod a+x /*.sh && \
@@ -113,4 +96,5 @@ echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
 echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
 
+ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo

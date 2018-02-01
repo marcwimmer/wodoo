@@ -26,7 +26,7 @@ mkdir -p "$TMP"
 chown -R "$ODOO_USER" "$TMP"
 TMP=${TMP}/$LANG.po
 sudo -E -H -u "$ODOO_USER" \
-	"$SERVER_DIR/openerp-server" \
+	"$SERVER_DIR/$ODOO_EXECUTABLE" \
 	-c "$CONFIG_DIR/config_openerp" \
 	--log-level=warn \
 	--stop-after-init \

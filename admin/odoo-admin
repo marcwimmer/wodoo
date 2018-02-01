@@ -195,6 +195,17 @@ function export_settings() {
 	EOF
 	)
 	export ODOO_VERSION=$ODOO_VERSION
+	case "$ODOO_VERSION" in
+		"6.0"|"6.1"|"7.0"|"8.0"|"9.0")
+			export ODOO_PYTHON_VERSION=2
+			export ODOO_EXECUTABLE=openerp-server
+		;;
+		*)
+			export ODOO_PYTHON_VERSION=3
+			export ODOO_EXECUTABLE=odoo-bin
+		;;
+	esac
+
 
 	# set odoo version in settings file for machines
 cd "$DIR/admin/module_tools" || exit -1
@@ -767,11 +778,11 @@ function do_command() {
         $dc run "${ALL_PARAMS[@]}"
 		;;
     runbash)
-		set_db_ownership
         if [[ -z "$2" ]]; then
             echo "Please give machine name as second parameter e.g. postgres, odoo"
             exit -1
         fi
+		set_db_ownership
 		display_machine_tips "$2"
         $dc run --rm "$2" bash
         ;;

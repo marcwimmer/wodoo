@@ -20,3 +20,4 @@ alter table project_task add constraint project_task_displayed_image_id_fkey for
 update asterisk_sipaccount set enabled = false;
 
 update fetchmail_server set server='mail', "user"='postmaster', password='postmaster', type='imap';
+update caldav_cal set password = '1';
