@@ -6,7 +6,7 @@ qrcode==5.3
 requests_ntlm==1.0.0
 hubarcode==1.0.0
 pillow==3.4.2
-Weasyprint==0.31
+Weasyprint==0.42
 pybarcode==0.7
 xlwt==1.1.2
 phonenumbers==7.7.5
