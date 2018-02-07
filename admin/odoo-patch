@@ -128,17 +128,34 @@ case $1 in
 
 		;;
 
-	prepare)
-		set -e
-
-		"$0" reset
-		"$0" gitify
+	default_patches)
+		echo ""
+		echo ""
+		echo "Applying default patches"
+		echo "-remove module install notfications"
+		echo ""
+		echo ""
 
 		cd "$ODOO_HOME/admin/module_tools" || exit -1
 		python <<-EOF
 			import module_tools
 			module_tools.remove_module_install_notifications("$CUSTOMSDIR")
 		EOF
+		echo ""
+		echo "Apply default patches DONE"
+		echo ""
+		echo ""
+		echo ""
+		;;
+
+	prepare)
+		set -e
+
+		"$0" reset
+		"$0" gitify
+
+		"$0" default_patches
+
 		cd "$ODOO_LOCAL" || exit -1
 		git add .
 		git commit -qam "removed install notifications"
@@ -159,6 +176,7 @@ case $1 in
 
 		cd "$ODOO_LOCAL" || exit -1
 
+		git add --intent-to-add .
 		git diff --binary
 
 		;;
@@ -209,6 +227,7 @@ case $1 in
 
 	apply_all)
 		"$0" reset
+		"$0" default_patches
 		"$0" list | while read -r file
 		do
 			echo "Applying patch $file"
