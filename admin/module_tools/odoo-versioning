@@ -579,10 +579,10 @@ def unit_tests_git():
         file1 = r['file1']
         assert len(repo.untracked_files) == 1
         changed_files = [item.a_path for item in repo.index.diff(None)]
-        #staged_files = [item.a_path for item in repo.index.diff("HEAD")]
+        # staged_files = [item.a_path for item in repo.index.diff("HEAD")]
         repo.index.add([os.path.basename(file1)])
         repo.index.commit("msg1", author=r['author'], committer=r['author'])
-        #repo.git.add(update=True) # no new files
+        # repo.git.add(update=True) # no new files
 
         with open(file1, 'w') as f:
             f.write("2")
@@ -626,19 +626,19 @@ def unit_tests_git():
         repo = r['repo']
         file1 = r['file1']
         assert len(repo.untracked_files) == 1
-        changed_files = [item.a_path for item in repo.index.diff(None)]
-        #staged_files = [item.a_path for item in repo.index.diff("HEAD")]
+        # changed_files = [item.a_path for item in repo.index.diff(None)]
+        # staged_files = [item.a_path for item in repo.index.diff("HEAD")]
         repo.index.add([os.path.basename(file1)])
         repo.index.commit("msg1", author=r['author'], committer=r['author'])
 
-        #clone submodule
+        # clone submodule
         subrepo_dir = 'subrepo'
         repo.clone_from(r['path_subrepo'], os.path.join(repo.working_dir, subrepo_dir))
 
         repo.index.commit("subrepo added")
 
-    #case1()
-    #case_empty_commit()
+    # case1()
+    # case_empty_commit()
     case_submodule()
 
 def unit_tests():
