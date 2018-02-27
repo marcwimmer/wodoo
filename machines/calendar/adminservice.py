@@ -132,7 +132,9 @@ class CalidavAdminService(object):
 
             for field in data.keys():
                 if field == 'password':
-                    data[field] = "**" + data[field] # says: no hash used
+                    if not data[field]:
+                        continue
+                    data[field] = "**" + data[field] # says: no hash used https://wiki.davical.org/index.php/Force_Admin_Password
 
                 cr.execute("""
 
