@@ -8,4 +8,6 @@
     'demo_xml': [],
     'data': [],
     'installable': True,
+    'conflicts': [],
+    'post_load': 'post_load',
 }
