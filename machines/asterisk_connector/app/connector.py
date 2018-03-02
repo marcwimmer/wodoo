@@ -30,8 +30,8 @@ data = {
 
 odoo = {
     'host': "http://{}:{}".format(os.environ['ODOO_HOST'], os.environ['ODOO_PORT']),
-    'username': os.environ['ODOO_USER'],
-    'pwd': os.environ['ODOO_PASSWORD'],
+    'username': os.environ['PHONEBOX_ODOO_USER'],
+    'pwd': os.environ['PHONEBOX_ODOO_PASSWORD'],
     'db': os.environ['DBNAME'],
 }
 
