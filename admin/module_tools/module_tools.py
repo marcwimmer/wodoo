@@ -61,22 +61,41 @@ def delete_qweb(modules):
         else:
             cr.execute("select name from ir_module_module; ")
 
+        def erase_view(view_id):
+            cr.execute("select id from ir_ui_view where inherit_id = %s;", (view_id, ))
+            for child_view_id in [x[0] for x in cr.fetchall()]:
+                erase_view(child_view_id)
+            cr.execute("""
+            select
+                id
+            from
+                ir_model_data
+            where
+                model='ir.ui.view' and res_id =%s
+            """, (view_id,))
+            data_ids = [x[0] for x in cr.fetchall()]
+
+            for data_id in data_ids:
+                cr.execute("delete from ir_model_data where id = %s", (data_id,))
+
+            cr.execute("""
+               delete from ir_ui_view where id = %s;
+            """, [view_id])
+
         for module in cr.fetchall():
             if not is_module_installed(module):
                 continue
             cr.execute("""
                 select
-                    id, res_id
+                    res_id
                 from
                     ir_model_data
                 where
                     module=%s and model='ir.ui.view' and res_id in (select id from ir_ui_view where type='qweb');
             """, [module])
-            for view in cr.fetchall():
-                cr.execute("""
-                   delete from ir_model_data where id = %s;
-                   delete from ir_ui_view where id = %s;
-                """, [view[0], view[1]])
+            for view_id in [x[0] for x in cr.fetchall()]:
+                erase_view(view_id)
+
         conn.commit()
     finally:
         cr.close()

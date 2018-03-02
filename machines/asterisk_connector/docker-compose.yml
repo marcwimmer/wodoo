@@ -1,0 +1,22 @@
+#manage-order: 5000
+version: '3.3'
+
+services:
+  asterisk_connector:
+    container_name: ${DCPREFIX}_asterisk_connector
+    build: $ODOO_HOME/machines/asterisk_connector
+    ports:
+      - "8500:80"
+    volumes:
+      - $ODOO_HOME/machines/asterisk_connector/app:/usr/src/app
+    environment:
+        ASTERISK_SERVER: 18.196.22.95
+        ASTERISK_ARI_PORT: 8088
+        ASTERISK_CUSTOM_ADMIN_PORT: 7771
+        ASTERISK_ARI_USER: ariuser1
+        ASTERISK_ARI_PASSWORD: password1
+        OUTSIDE_PORT: 8500
+        ODOO_USER: phonebox
+        ODOO_PASSWORD: 7?T]C(*CRA,2t~pj
+        ODOO_HOST: proxy
+        ODOO_PORT: 80
