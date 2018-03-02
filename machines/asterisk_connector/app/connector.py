@@ -193,6 +193,8 @@ class Connector(object):
     @cp.tools.json_out()
     @cp.expose
     def set_dnd(self):
+        if not cp.request.json['endpoint']:
+            raise Exception("Endpoint missing!")
         self.adminconsole("database {verb} DND {endpoint} {dnd}".format(
             endpoint=cp.request.json['endpoint'],
             dnd='YES' if cp.request.json['dnd'] else '',
