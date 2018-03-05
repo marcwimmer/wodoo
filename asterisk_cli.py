@@ -38,10 +38,10 @@ class ARCLI(object):
             out = str(out)
             print(out)
 
-            success = "success" in out
+            success = "success" in out.lower()
             out = b64encode(out.encode("utf-8")).decode("utf-8")
-            if success:
-                out = dumps({"code": 418, "exception": "AMI not Successful!", "data": out})
+            if not success:
+                return dumps({"code": 418, "exception": "AMI not Successful!", "data": out})
         else:
             raise Exception("Unhandled type")
         return dumps({"code": 200, "data": out})

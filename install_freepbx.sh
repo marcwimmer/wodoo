@@ -30,8 +30,7 @@ cd /usr/src
 # no dahdi needed
 #wget http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-current.tar.gz
 wget http://downloads.asterisk.org/pub/telephony/libpri/libpri-current.tar.gz
-wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz
-git clone -b 14 http://gerrit.asterisk.org/asterisk /usr/local/asterisk-14-current
+git clone -b 14 http://gerrit.asterisk.org/asterisk ./asterisk-14-current
 wget -O jansson.tar.gz https://github.com/akheron/jansson/archive/v2.7.tar.gz
 wget http://www.pjsip.org/release/2.4/pjproject-2.4.tar.bz2
 
@@ -129,9 +128,9 @@ EOF
 
 #download and install freepbx
 cd /usr/src
-wget http://mirror.freepbx.org/modules/packages/freepbx/freepbx-13.0-latest.tgz
-tar vxfz freepbx-13.0-latest.tgz
-rm -f freepbx-13.0-latest.tgz
+wget http://mirror.freepbx.org/modules/packages/freepbx/freepbx-14.0-latest.tgz
+tar vxfz freepbx-14.0-latest.tgz
+rm -f freepbx-14.0-latest.tgz
 cd freepbx
 ./start_asterisk start
 ./install -n
