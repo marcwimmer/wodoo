@@ -40,6 +40,9 @@ logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 
+def clean_number(number):
+    return (number or '').strip().replace(' ', '')
+
 class Connector(object):
 
     def __init__(self):
@@ -250,10 +253,11 @@ class Connector(object):
     def originate(self):
         # app=
         # callerId
-        endpoint = "SIP/{}".format(cp.request.json['endpoint'])
+        endpoint = clean_number(cp.request.json['endpoint'])
+        endpoint = "SIP/{}".format(endpoint)
         self.client().channels.originate(
             endpoint=endpoint,
-            extension=cp.request.json['extension'],
+            extension=clean_number(cp.request.json['extension']),
             context=cp.request.json['context'],
         )
 
