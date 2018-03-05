@@ -834,7 +834,7 @@ function do_command() {
 
 	dev)
 		if [[ -n "${ALL_PARAMS[0]}" ]]; then
-			$MANAGE customs "${ALL_PARAMS[0]}"
+			$MANAGE customs "${ALL_PARAMS[@]}"
 		fi
 		$MANAGE kill
 		$MANAGE rm -f
@@ -1084,16 +1084,21 @@ function do_command() {
 			exit 1
 		fi
 		newcustoms="${ALL_PARAMS[0]}"
+		newdb="${ALL_PARAMS[1]}"
+
+		if [[ -z "$newdb" ]]; then
+			newdb=$newcustoms
+		fi
 
 		$(
 		cd "$DIR/admin/module_tools"
 		python <<-EOF
 		import odoo_config
-		odoo_config.set_customs("$newcustoms")
+		odoo_config.set_customs("$newcustoms", "$newdb")
 		EOF
 		)
 
-		echo "Customs set to $newcustoms"
+		echo "Customs set to $newcustoms with database $newdb"
 
 		;;
 
