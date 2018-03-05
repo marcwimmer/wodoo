@@ -159,7 +159,7 @@ class Connector(object):
             "name": 'Atxfer',
             "ActionID": str(uuid.uuid4()),
             "Channel": cp.request.json['channel_id'],
-            "Exten": cp.request.json['exten'],
+            "Exten": clean_number(cp.request.json['exten']),
             "Context": cp.request.json['context'],
         }
         self.adminconsole(action, 'AMI')
