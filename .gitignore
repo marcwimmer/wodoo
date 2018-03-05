@@ -24,3 +24,4 @@ settings
 settings.customs
 settings.override
 *.override.bak
+./tmp*
