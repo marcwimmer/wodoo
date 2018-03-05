@@ -31,6 +31,7 @@ cd /usr/src
 #wget http://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-current.tar.gz
 wget http://downloads.asterisk.org/pub/telephony/libpri/libpri-current.tar.gz
 wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz
+git clone -b 14 http://gerrit.asterisk.org/asterisk /usr/local/asterisk-14-current
 wget -O jansson.tar.gz https://github.com/akheron/jansson/archive/v2.7.tar.gz
 wget http://www.pjsip.org/release/2.4/pjproject-2.4.tar.bz2
 
@@ -55,10 +56,10 @@ make
 make install
 
 #install asterisk
-cd /usr/src
-tar xvfz asterisk-13-current.tar.gz
-rm -f asterisk-13-current.tar.gz
-cd asterisk-*
+cd /usr/src/asterisk-*
+#tar xvfz asterisk-13-current.tar.gz
+#rm -f asterisk-13-current.tar.gz
+#cd asterisk-*
 contrib/scripts/install_prereq install
 ./configure
 contrib/scripts/get_mp3_source.sh
