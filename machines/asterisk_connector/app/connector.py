@@ -189,6 +189,13 @@ class Connector(object):
     @cp.tools.json_in()
     @cp.tools.json_out()
     @cp.expose
+    def get_channel(self):
+        channels = [x for x in self.client().channels.list() if x.json['id'] == cp.request.json['id']]
+        return channels[0].json if channels else None
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
     def get_active_channel(self):
         number = cp.request.json['number']
         return self._get_active_channel(number)
