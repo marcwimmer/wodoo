@@ -91,7 +91,7 @@ chown asterisk. /var/run/asterisk
 chown -R asterisk. /etc/asterisk
 chown -R asterisk. /var/{lib,log,spool}/asterisk
 chown -R asterisk. /usr/lib/asterisk
-rm -rf /var/www/html
+#rm -rf /var/www/html
 
 # apache modifications
 
