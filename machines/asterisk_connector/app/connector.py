@@ -18,6 +18,7 @@ import logging
 import hashlib
 import base64
 import websocket
+import re
 from threading import Lock, Thread
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
@@ -56,6 +57,53 @@ class Connector(object):
         self.client().on_channel_event("ChannelStateChange", self.onChannelStateChanged)
         self.client().on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
 
+        self.stop_check_for_destroyed_channels = False
+        t = threading.Thread(target=self.check_for_destroyed_channels)
+        t.daemon = True
+        t.start()
+
+    def check_for_destroyed_channels(self):
+        while True:
+            if self.stop_check_for_destroyed_channels:
+                break
+            try:
+                for extension in list(self.extensions):
+                    try:
+                        es = self.extensions[extension]
+                    except KeyError:
+                        continue
+                    else:
+                        channel_id = self._get_active_channel(extension)
+                        if not channel_id:
+                            if es.state != "Down":
+                                es.update_state(state="Down")
+                        else:
+                            channel = [x.json for x in self.client().channels.list() if x.json['id'] == channel_id]
+                            if channel:
+                                if channel[0]['state'] == "Down":
+                                    es.update_state(state=channel[0]['state'], channel=channel[0])
+                            else:
+                                if es.state != "Down":
+                                    es.update_state(state="Down")
+
+            except Exception:
+                logger.error(traceback.format_exc())
+                time.sleep(1)
+
+            try:
+                for channel in self.client().channels.list():
+                    extension = channel.json['name']
+                    extension = re.findall(r'SIP\/(\d*)', channel.json['name'])
+                    extension = extension and extension[-1] or ""
+                    if extension not in self.extensions:
+                        self.extensions.setdefault(extension, Connector.ExtensionState(self, extension))
+                        self.extensions[extension].update_state(state=channel.json['state'], channel=channel.json)
+
+            except Exception:
+                logger.error(traceback.format_exc())
+                time.sleep(1)
+            time.sleep(1)
+
     def client(self):
         return data['client']
 
@@ -68,11 +116,10 @@ class Connector(object):
         def reset(self):
             self.update_state("Down")
 
-        def update_state(self, state, channel=False, bridge=False):
+        def update_state(self, state, channel=False):
             changed = False
             if self.state != state:
                 changed = True
-            if changed:
                 self.state = state
 
             other_channels = []
@@ -97,10 +144,9 @@ class Connector(object):
         with self.lock:
             if channel_json.get('caller', False):
                 if channel_json['caller'].get('number', False):
-                    extension = channel_json['caller']['number'] # e.g. 80
+                    extension = str(channel_json['caller']['number']) # e.g. 80
                     self.extensions.setdefault(extension, Connector.ExtensionState(self, extension))
-                    bridges = map(lambda bridge: bridge.json, filter(lambda bridge: channel_json['id'] in bridge.json['channels'], self.client().bridges.list()))
-                    self.extensions[extension].update_state(state=channel_json['state'], channel=channel_json, bridge=bridges[0] if bridges else False)
+                    self.extensions[extension].update_state(state=channel_json['state'], channel=channel_json)
 
     def onChannelDestroyed(self, channel_obj, ev):
         channel = channel_obj.json
@@ -145,10 +191,19 @@ class Connector(object):
     @cp.expose
     def get_active_channel(self):
         number = cp.request.json['number']
+        return self._get_active_channel(number)
+
+    def _get_active_channel(self, extension):
         channels = map(lambda c: c.json, self.client().channels.list())
-        channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(number), channels)
+        channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(extension), channels)
+        if not channels:
+            channels = map(lambda c: c.json, self.client().channels.list())
+            channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), channels)
+
         if channels:
+            print 'found channel found for {}'.format(extension)
             return channels[0]['id']
+        print ' no channel found for {}'.format(extension)
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -227,6 +282,7 @@ class Connector(object):
         dnds = self.dnd()
 
         return {
+            'extension_states': self.get_extension_states(),
             'admin': r,
             'channels': [x.json for x in self.client().channels.list()],
             'dnds': dnds,
