@@ -95,7 +95,7 @@ class Connector(object):
                     extension = channel.json['name']
                     extension = re.findall(r'SIP\/(\d*)', channel.json['name'])
                     extension = extension and extension[-1] or ""
-                    if extension not in self.extensions:
+                    if extension and extension not in self.extensions:
                         self.extensions.setdefault(extension, Connector.ExtensionState(self, extension))
                         self.extensions[extension].update_state(state=channel.json['state'], channel=channel.json)
 
@@ -318,11 +318,12 @@ class Connector(object):
         # callerId
         endpoint = clean_number(cp.request.json['endpoint'])
         endpoint = "SIP/{}".format(endpoint)
-        self.client().channels.originate(
+        result = self.client().channels.originate(
             endpoint=endpoint,
             extension=clean_number(cp.request.json['extension']),
             context=cp.request.json['context'],
         )
+        return result.json['id']  # channel
 
 def connect_ariclient():
     ws = websocket.WebSocket()
@@ -352,7 +353,15 @@ def run_ariclient():
             try:
                 data['client'].close()
             except Exception:
-                connect_ariclient()
+                while True:
+                    try:
+                        connect_ariclient()
+                    except Exception:
+                        msg = traceback.format_exc()
+                        logger.error(msg)
+                        time.sleep(2)
+                    else:
+                        break
         time.sleep(1)
 
 
@@ -362,10 +371,15 @@ if __name__ == '__main__':
         'server.socket_port': 80,
     })
 
-    connect_ariclient()
     t = threading.Thread(target=run_ariclient)
     t.daemon = True
     t.start()
 
-    connector = Connector()
+    while True:
+        try:
+            connector = Connector()
+        except Exception:
+            logger.error(traceback.format_exc())
+            logger.info("Retrying after 1 second")
+            time.sleep(1)
     cp.quickstart(connector)
