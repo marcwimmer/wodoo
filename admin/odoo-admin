@@ -72,7 +72,9 @@ function check_working_dir_customs_mismatch() {
 		echo -e "\e[39m"
 	    echo ''
 		secs=5
+		set +e
 	    read -p "Continue in $secs seconds or press any key to continue now..." -N 1 -s -t $secs a
+		set -e
 	}
 	echo ''
 	echo ''
