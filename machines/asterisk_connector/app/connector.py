@@ -63,6 +63,10 @@ class Connector(object):
         t.daemon = True
         t.start()
 
+    def ignore_channel(self, channel_json):
+        if channel_json.get('dialplan', {}).get('exten', "") == "s":
+            return True
+
     def check_for_destroyed_channels(self):
         while True:
             if self.stop_check_for_destroyed_channels:
@@ -74,25 +78,20 @@ class Connector(object):
                     except KeyError:
                         continue
                     else:
-                        channel_id = self._get_active_channel(extension)
-                        if not channel_id:
+                        channel = self._get_active_channel(extension)
+                        if not channel:
                             if es.state != "Down":
                                 es.update_state(state="Down")
                         else:
-                            channel = [x.json for x in self.client().channels.list() if x.json['id'] == channel_id]
-                            if channel:
-                                if channel[0]['state'] == "Down":
-                                    es.update_state(state=channel[0]['state'], channel=channel[0])
-                            else:
-                                if es.state != "Down":
-                                    es.update_state(state="Down")
+                            if channel['state'] == "Down":
+                                es.update_state(state=channel[0]['state'], channel=channel[0])
 
             except Exception:
                 logger.error(traceback.format_exc())
                 time.sleep(1)
 
             try:
-                for channel in self.client().channels.list():
+                for channel in filter(lambda channel: not self.ignore_channel(channel.json), self.client().channels.list()):
                     extension = channel.json['name']
                     extension = re.findall(r'SIP\/(\d*)', channel.json['name'])
                     extension = extension and extension[-1] or ""
@@ -143,6 +142,8 @@ class Connector(object):
             }
 
     def on_channel_change(self, channel_json):
+        if self.ignore_channel(channel_json):
+            return
         with self.lock:
             if channel_json.get('caller', False):
                 if channel_json['caller'].get('number', False):
@@ -200,17 +201,18 @@ class Connector(object):
     @cp.expose
     def get_active_channel(self):
         number = cp.request.json['number']
-        return self._get_active_channel(number)
+        return self._get_active_channel(number)['id']
 
     def _get_active_channel(self, extension):
-        channels = map(lambda c: c.json, self.client().channels.list())
-        channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(extension), channels)
+        current_channels = map(lambda c: c.json, self.client().channels.list())
+        current_channels = filter(lambda channel: not self.ignore_channel(channel), current_channels)
+
+        channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(extension), current_channels)
         if not channels:
-            channels = map(lambda c: c.json, self.client().channels.list())
-            channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), channels)
+            channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), current_channels)
 
         if channels:
-            return channels[0]['id']
+            return channels[0]
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -369,7 +371,7 @@ def run_ariclient():
 
 if __name__ == '__main__':
     cp.config.update({
-        "server.thread_pool": 8,
+        "server.thread_pool": 1, # important to avoid race conditions
         "server.socket_timeout": 100,
         'server.socket_host': '0.0.0.0',
         'server.socket_port': 80,
