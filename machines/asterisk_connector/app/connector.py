@@ -44,6 +44,7 @@ logger = logging.getLogger('')  # root handler
 def clean_number(number):
     return (number or '').strip().replace(' ', '')
 
+
 class Connector(object):
 
     def __init__(self):
@@ -375,6 +376,8 @@ if __name__ == '__main__':
     t.daemon = True
     t.start()
 
+    time.sleep(2)
+
     while True:
         try:
             connector = Connector()
@@ -382,4 +385,6 @@ if __name__ == '__main__':
             logger.error(traceback.format_exc())
             logger.info("Retrying after 1 second")
             time.sleep(1)
+        else:
+            break
     cp.quickstart(connector)
