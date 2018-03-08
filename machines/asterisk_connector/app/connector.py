@@ -182,7 +182,10 @@ class Connector(object):
     @cp.expose
     def get_active_channel(self):
         number = cp.request.json['number']
-        return self._get_active_channel(number)['id']
+        channel = self._get_active_channel(number)
+        if channel:
+            return channel['id']
+        return False
 
     def _get_active_channel(self, extension):
         current_channels = map(lambda c: c.json, self.client().channels.list())
@@ -335,19 +338,24 @@ def run_ariclient():
                 raise KeyError()
             data['client'].run(apps=APP_NAME)
         except Exception:
-            data['client'] = None
             try:
-                data['client'].close()
+                if data['client']:
+                    data['client'].close()
             except Exception:
-                while True:
-                    try:
-                        connect_ariclient()
-                    except Exception:
-                        msg = traceback.format_exc()
-                        logger.error(msg)
-                        time.sleep(2)
-                    else:
-                        break
+                msg = traceback.format_exc()
+                logger.error(msg)
+                time.sleep(2)
+
+            data['client'] = None
+            while True:
+                try:
+                    connect_ariclient()
+                except Exception:
+                    msg = traceback.format_exc()
+                    logger.error(msg)
+                    time.sleep(2)
+                else:
+                    break
         time.sleep(1)
 
 
