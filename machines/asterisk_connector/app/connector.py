@@ -64,6 +64,7 @@ class Connector(object):
         t.start()
 
     def ignore_channel(self, channel_json):
+        return False
         if channel_json.get('dialplan', {}).get('exten', "") == "s":
             return True
 
@@ -84,7 +85,7 @@ class Connector(object):
                                 es.update_state(state="Down")
                         else:
                             if channel['state'] == "Down":
-                                es.update_state(state=channel[0]['state'], channel=channel[0])
+                                es.update_state(state=channel['state'], channel=channel)
 
             except Exception:
                 logger.error(traceback.format_exc())
@@ -117,6 +118,8 @@ class Connector(object):
             self.update_state("Down")
 
         def update_state(self, state, channel=False):
+            if 'Ring' == state and channel:
+                self.parent.odoo('asterisk.connector', 'store_caller_number_for_channel_id', channel['id'], channel.get('caller', {}).get('number', False))
 
             other_channels = []
             # try to identify session for attended transfers
@@ -127,9 +130,16 @@ class Connector(object):
                     # ignore anonymous call to pick phone, when call is started by frontend
                     if not name and not number:
                         return
-                    all_channels = map(lambda c: c.json, self.parent.client().channels.list())
-                    other_channels = filter(lambda c: c.get('caller', {}).get('number', False) == number or c.get('connected', {}).get('number', False) == number, all_channels)
-                    other_channels = filter(lambda c: c['id'] != channel['id'], all_channels)
+
+            if channel:
+                for bridge in self.parent.client().bridges.list():
+                    bridge = bridge.json
+                    if channel['id'] in bridge['channels']:
+                        for channel_id in bridge['channels']:
+                            if channel_id != channel['id']:
+                                other_channel = self.parent._get_channel(channel_id)
+                                if other_channel:
+                                    other_channels.append(other_channel)
 
             if self.state != state:
                 self.state = state
@@ -193,7 +203,10 @@ class Connector(object):
     @cp.tools.json_out()
     @cp.expose
     def get_channel(self):
-        channels = [x for x in self.client().channels.list() if x.json['id'] == cp.request.json['id']]
+        return self._get_channel(cp.request.json['id'])
+
+    def _get_channel(self, id):
+        channels = [x for x in self.client().channels.list() if x.json['id'] == id]
         return channels[0].json if channels else None
 
     @cp.tools.json_in()
