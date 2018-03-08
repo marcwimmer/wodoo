@@ -118,21 +118,22 @@ class Connector(object):
             self.update_state("Down")
 
         def update_state(self, state, channel=False):
-            changed = False
-            if self.state != state:
-                changed = True
-                self.state = state
 
             other_channels = []
             # try to identify session for attended transfers
             if state == "Ringing":
                 if channel:
                     number = channel['connected']['number']
+                    name = channel['connected']['name']
+                    # ignore anonymous call to pick phone, when call is started by frontend
+                    if not name and not number:
+                        return
                     all_channels = map(lambda c: c.json, self.parent.client().channels.list())
                     other_channels = filter(lambda c: c.get('caller', {}).get('number', False) == number or c.get('connected', {}).get('number', False) == number, all_channels)
                     other_channels = filter(lambda c: c['id'] != channel['id'], all_channels)
 
-            if changed:
+            if self.state != state:
+                self.state = state
                 self.parent.odoo('asterisk.connector', 'asterisk_updated_channel_state', self.extension, self.state, channel, other_channels)
 
         def jsonify(self):
@@ -209,9 +210,7 @@ class Connector(object):
             channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), channels)
 
         if channels:
-            print 'found channel found for {}'.format(extension)
             return channels[0]['id']
-        print ' no channel found for {}'.format(extension)
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -342,6 +341,8 @@ def connect_ariclient():
         os.environ["ASTERISK_ARI_PORT"],
     ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
     data['client'] = ariclient
+    for logger in logging.Logger.manager.loggerDict.keys():
+        logging.getLogger(logger).setLevel(logging.ERROR)
 
 
 def run_ariclient():
@@ -368,6 +369,8 @@ def run_ariclient():
 
 if __name__ == '__main__':
     cp.config.update({
+        "server.thread_pool": 8,
+        "server.socket_timeout": 100,
         'server.socket_host': '0.0.0.0',
         'server.socket_port': 80,
     })
