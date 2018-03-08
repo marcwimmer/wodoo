@@ -9,3 +9,4 @@ graphviz
 jsonpickle
 rst2pdf
 docker-compose
+termdown

@@ -66,13 +66,15 @@ function check_working_dir_customs_mismatch() {
 	)
 
 	echo "$res" | grep -q 'risk' && {
-		secs=$((5))
-		while [ $secs -gt 0 ]; do
-		   echo -ne "Continue in $secs seconds...\033[0K\r"
-		   sleep 1
-		   : $((secs--))
-		done
+	    echo ''
+		echo -e "\e[31m"
+		echo "$res"
+		echo -e "\e[39m"
+	    echo ''
+		secs=5
+	    read -p "Continue in $secs seconds or press any key to continue now..." -N 1 -s -t $secs a
 	}
+	echo ''
 	echo ''
 }
 
