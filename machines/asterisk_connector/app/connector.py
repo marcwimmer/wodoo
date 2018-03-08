@@ -58,59 +58,16 @@ class Connector(object):
         self.client().on_channel_event("ChannelStateChange", self.onChannelStateChanged)
         self.client().on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
 
-        self.stop_check_for_destroyed_channels = False
-        t = threading.Thread(target=self.check_for_destroyed_channels)
-        t.daemon = True
-        t.start()
-
     def ignore_channel(self, channel_json):
         return False
         if channel_json.get('dialplan', {}).get('exten', "") == "s":
             return True
 
-    def check_for_destroyed_channels(self):
-        while True:
-            if self.stop_check_for_destroyed_channels:
-                break
-            try:
-                for extension in list(self.extensions):
-                    try:
-                        es = self.extensions[extension]
-                    except KeyError:
-                        continue
-                    else:
-                        channel = self._get_active_channel(extension)
-                        if not channel:
-                            if es.state != "Down":
-                                es.update_state(state="Down")
-                        else:
-                            if channel['state'] == "Down":
-                                es.update_state(state=channel['state'], channel=channel)
-
-            except Exception:
-                logger.error(traceback.format_exc())
-                time.sleep(1)
-
-            try:
-                for channel in filter(lambda channel: not self.ignore_channel(channel.json), self.client().channels.list()):
-                    extension = channel.json['name']
-                    extension = re.findall(r'SIP\/(\d*)', channel.json['name'])
-                    extension = extension and extension[-1] or ""
-                    if extension and extension not in self.extensions:
-                        self.extensions.setdefault(extension, Connector.ExtensionState(self, extension))
-                        self.extensions[extension].update_state(state=channel.json['state'], channel=channel.json)
-
-            except Exception:
-                logger.error(traceback.format_exc())
-                time.sleep(1)
-            time.sleep(1)
-
     def client(self):
         while True:
-            if not data.get('client', False):
-                time.sleep(1)
-            else:
+            if data.get('client', False):
                 break
+            time.sleep(1)
         return data['client']
 
     class ExtensionState(object):
@@ -124,7 +81,13 @@ class Connector(object):
 
         def update_state(self, state, channel=False):
             if 'Ring' == state and channel:
-                self.parent.odoo('asterisk.connector', 'store_caller_number_for_channel_id', channel['id'], channel.get('caller', {}).get('number', False))
+                self.parent.odoo(
+                    'asterisk.connector',
+                    'store_caller_number_for_channel_id',
+                    channel['id'],
+                    channel.get('caller', {}).get('number', False),
+                    state,
+                )
 
             other_channels = []
             # try to identify session for attended transfers
@@ -372,6 +335,7 @@ def run_ariclient():
                 raise KeyError()
             data['client'].run(apps=APP_NAME)
         except Exception:
+            data['client'] = None
             try:
                 data['client'].close()
             except Exception:
