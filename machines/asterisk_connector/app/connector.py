@@ -106,6 +106,11 @@ class Connector(object):
             time.sleep(1)
 
     def client(self):
+        while True:
+            if not data.get('client', False):
+                time.sleep(1)
+            else:
+                break
         return data['client']
 
     class ExtensionState(object):
