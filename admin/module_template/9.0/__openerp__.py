@@ -9,4 +9,5 @@
     'demo_xml': [],
     'conflicts': [],
     'post_load': 'post_load',
+    'post_init_hook': 'post_init_hook',
 }

@@ -1,5 +1,4 @@
 from .models import *
 from .tests import *
 
-def post_load():
-    pass
+from hooks import post_load, post_init_hook
