@@ -20,7 +20,9 @@ import base64
 import websocket
 import re
 import Queue
+from datetime import datetime
 from threading import Lock, Thread
+CONST_PERM_DIR = os.environ['PERM_DIR']
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
 connector = None
@@ -57,7 +59,6 @@ class Connector(object):
         self.lock = Lock()
         self.blocked_extensions = set()
         self.extensions = {}
-        self.odoo_thread()
 
         with data_client_lock:
             if data['client']:
@@ -145,40 +146,12 @@ class Connector(object):
         self.on_channel_change(channel_obj.json)
 
     def odoo(self, *params):
-        odoo_queue.put(params)
+        params = json.dumps(params)
 
-    def odoo_thread(self):
-
-        def exe(*params):
-            def login(username, password):
-                socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
-                uid = socket_obj.login(odoo['db'], username, password)
-                return uid
-            uid = login(odoo['username'], odoo['pwd'])
-
-            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
-            return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
-
-        def consumer():
-            while True:
-                if not odoo_queue.empty():
-                    params = odoo_queue.get()
-                    print 'having params {}'.format(params)
-                    while True:
-                        try:
-                            exe(*params)
-                        except:
-                            msg = traceback.format_exc()
-                            logger.error(msg)
-                            time.sleep(1)
-                        else:
-                            break
-                time.sleep(0.1)
-
-
-        t = threading.Thread(target=consumer)
-        t.daemon = True
-        t.start()
+        filename = 'odoo_' + datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f") + '.params'
+        with open(os.path.join(CONST_PERM_DIR, filename), 'w') as f:
+            f.write(params)
+            f.flush()
 
     @cp.expose
     def index(self):
@@ -395,6 +368,44 @@ def run_ariclient():
         time.sleep(1)
 
 
+def odoo_thread():
+
+    def exe(*params):
+        def login(username, password):
+            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+            uid = socket_obj.login(odoo['db'], username, password)
+            return uid
+        uid = login(odoo['username'], odoo['pwd'])
+
+        socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+        return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
+
+    while True:
+        try:
+            files = os.listdir(CONST_PERM_DIR)
+            files = sorted(files)
+            for filename in files:
+                filepath = os.path.join(CONST_PERM_DIR, filename)
+                with open(filepath, 'r') as f:
+                    params = json.loads(f.read())
+                print 'having params {}'.format(params)
+                while True:
+                    try:
+                        exe(*params)
+                    except:
+                        msg = traceback.format_exc()
+                        logger.error(msg)
+                        time.sleep(1)
+                    else:
+                        os.unlink(filepath)
+                        break
+        except:
+            msg = traceback.format_exc()
+            logger.error(msg)
+            time.sleep(1)
+        time.sleep(0.1)
+
+
 if __name__ == '__main__':
     cp.config.update({
         "server.thread_pool": 1, # important to avoid race conditions
@@ -404,6 +415,10 @@ if __name__ == '__main__':
     })
 
     t = threading.Thread(target=run_ariclient)
+    t.daemon = True
+    t.start()
+
+    t = threading.Thread(target=odoo_thread)
     t.daemon = True
     t.start()
 
