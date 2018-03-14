@@ -19,6 +19,7 @@ import hashlib
 import base64
 import websocket
 import re
+import Queue
 from threading import Lock, Thread
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
@@ -31,6 +32,8 @@ APP_NAME = 'odoo-asterisk-connector'
 data = {
     'client': None,
 }
+
+odoo_queue = Queue.Queue(1000)
 
 odoo = {
     'host': "http://{}:{}".format(os.environ['ODOO_HOST'], os.environ['ODOO_PORT']),
@@ -54,6 +57,7 @@ class Connector(object):
         self.lock = Lock()
         self.blocked_extensions = set()
         self.extensions = {}
+        self.odoo_thread()
 
         with data_client_lock:
             if data['client']:
@@ -141,14 +145,40 @@ class Connector(object):
         self.on_channel_change(channel_obj.json)
 
     def odoo(self, *params):
-        def login(username, password):
-            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
-            uid = socket_obj.login(odoo['db'], username, password)
-            return uid
-        uid = login(odoo['username'], odoo['pwd'])
+        odoo_queue.put(params)
 
-        socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
-        return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
+    def odoo_thread(self):
+
+        def exe(*params):
+            def login(username, password):
+                socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+                uid = socket_obj.login(odoo['db'], username, password)
+                return uid
+            uid = login(odoo['username'], odoo['pwd'])
+
+            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+            return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
+
+        def consumer():
+            while True:
+                if not odoo_queue.empty():
+                    params = odoo_queue.get()
+                    print 'having params {}'.format(params)
+                    while True:
+                        try:
+                            exe(*params)
+                        except:
+                            msg = traceback.format_exc()
+                            logger.error(msg)
+                            time.sleep(1)
+                        else:
+                            break
+                time.sleep(0.1)
+
+
+        t = threading.Thread(target=consumer)
+        t.daemon = True
+        t.start()
 
     @cp.expose
     def index(self):
