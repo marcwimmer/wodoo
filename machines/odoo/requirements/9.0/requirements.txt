@@ -29,3 +29,4 @@ pyPdf==1.13
 PyPDF2==1.25.1
 html2text==2016.9.19
 filemagic==1.6
+beautifulsoup4==4.6.0
