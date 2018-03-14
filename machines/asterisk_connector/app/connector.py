@@ -22,6 +22,9 @@ import re
 from threading import Lock, Thread
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
+connector = None
+data_client_lock = threading.Lock()
+
 OUTSIDE_PORT = os.environ['OUTSIDE_PORT']
 APP_NAME = 'odoo-asterisk-connector'
 
@@ -52,23 +55,25 @@ class Connector(object):
         self.blocked_extensions = set()
         self.extensions = {}
 
+        with data_client_lock:
+            if data['client']:
+                self.bind_events()
+
+    def bind_events(self):
         self.client().applications.subscribe(applicationName=[APP_NAME], eventSource="endpoint:SIP")
         # self.client.applications.subscribe(applicationName=[APP_NAME], eventSource="endpoint:PJSIP")
         self.client().on_channel_event("ChannelCreated", self.onChannelStateChanged)
         self.client().on_channel_event("ChannelStateChange", self.onChannelStateChanged)
         self.client().on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
 
-    def ignore_channel(self, channel_json):
-        return False
-        if channel_json.get('dialplan', {}).get('exten', "") == "s":
-            return True
-
     def client(self):
         while True:
-            if data.get('client', False):
-                break
+            with data_client_lock:
+                if data.get('client', False):
+                    break
             time.sleep(1)
-        return data['client']
+        with data_client_lock:
+            return data['client']
 
     class ExtensionState(object):
         def __init__(self, parent, extension):
@@ -120,8 +125,6 @@ class Connector(object):
             }
 
     def on_channel_change(self, channel_json):
-        if self.ignore_channel(channel_json):
-            return
         with self.lock:
             if channel_json.get('caller', False):
                 if channel_json['caller'].get('number', False):
@@ -189,7 +192,6 @@ class Connector(object):
 
     def _get_active_channel(self, extension):
         current_channels = map(lambda c: c.json, self.client().channels.list())
-        current_channels = filter(lambda channel: not self.ignore_channel(channel), current_channels)
 
         channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(extension), current_channels)
         if not channels:
@@ -326,7 +328,10 @@ def connect_ariclient():
         os.environ["ASTERISK_SERVER"],
         os.environ["ASTERISK_ARI_PORT"],
     ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
-    data['client'] = ariclient
+    with data_client_lock:
+        data['client'] = ariclient
+    if connector:
+        connector.bind_events()
     for logger in logging.Logger.manager.loggerDict.keys():
         logging.getLogger(logger).setLevel(logging.ERROR)
 
@@ -336,6 +341,7 @@ def run_ariclient():
         try:
             if not data['client']:
                 raise KeyError()
+            running = True
             data['client'].run(apps=APP_NAME)
         except Exception:
             try:
@@ -370,8 +376,6 @@ if __name__ == '__main__':
     t = threading.Thread(target=run_ariclient)
     t.daemon = True
     t.start()
-
-    time.sleep(2)
 
     while True:
         try:
