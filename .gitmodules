@@ -11,3 +11,6 @@
 [submodule "machines/calendar/src/awl"]
 	path = machines/calendar/src/awl
 	url = https://gitlab.com/davical-project/awl.git
+[submodule "extra_install/asterisk_customs"]
+	path = extra_install/asterisk_customs
+	url = git.itewimmer.de:/git/asterisk_customs
