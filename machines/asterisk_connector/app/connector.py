@@ -57,6 +57,7 @@ class Connector(object):
         self.lock = Lock()
         self.blocked_extensions = set()
         self.extensions = {}
+        self.dnd = {} # per extension
 
     class ExtensionState(object):
         def __init__(self, parent, extension):
@@ -204,24 +205,10 @@ class Connector(object):
         if ttype == "AMI":
             assert isinstance(cmd, dict)
             cmd = json.dumps(cmd)
+        assert isinstnace(cmd, (str, unicode))
 
-        h = hashlib.sha256()
-        h.update(cmd)
-        hash = h.hexdigest()
-        cmd = base64.b64encode(cmd)
-
-        url = "http://{server}:{port}/d9a1fbfeddcfaf?cmd={cmd}&ttype={type}&chash={hash}".format(
-            server=os.environ['ASTERISK_SERVER'],
-            port=os.environ['ASTERISK_CUSTOM_ADMIN_PORT'],
-            cmd=cmd,
-            hash=hash,
-            type=ttype,
-        )
-        r = requests.get(url)
-        if r.status_code != 200:
-            r.raise_for_status()
-        result = base64.b64decode(r.json()['data'])
-        return result
+        mqttclient.publish('asterisk/{}'.format(ttype), payload=cmd, qos=2)
+        return None
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -342,28 +329,26 @@ def on_mqtt_connect(client, userdata, flags, rc):
 def on_mqtt_message(client, userdata, msg):
     logger.info("%s %s", msg.topic, str(msg.payload))
 
+def on_mqtt_disconnect(client, userdata, rc):
+    if rc != 0:
+        logger.error("Unexpected MQTT disconnection. Will auto-reconnect")
+
 def mqtt_thread():
+    global mqttclient
     while True:
         try:
             mqttclient = mqtt.Client(client_id="asterisk_connector_receiver",)
+            #mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
             logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT'])))
             mqttclient.connect(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT']), keepalive=10)
             mqttclient.on_connect = on_mqtt_connect
             mqttclient.on_message = on_mqtt_message
+            mqttclient.on_disconnect = on_mqtt_disconnect
             logger.info("Looping mqtt")
             mqttclient.loop_forever()
         except:
             logger.error(traceback.format_exc())
             time.sleep(1)
-
-def mqtt_send():
-    while True:
-        try:
-            logger.info("publishing")
-            mqtt_publish.single("asterisk/test", "payload", qos=2, hostname=os.environ['MOSQUITTO_HOST'], port=long(os.environ['MOSQUITTO_PORT']))
-        except:
-            logger.error(traceback.format_exc())
-        time.sleep(1)
 
 if __name__ == '__main__':
     cp.config.update({
@@ -378,10 +363,6 @@ if __name__ == '__main__':
     t.start()
 
     t = threading.Thread(target=mqtt_thread)
-    t.daemon = True
-    t.start()
-
-    t = threading.Thread(target=mqtt_send)
     t.daemon = True
     t.start()
 
