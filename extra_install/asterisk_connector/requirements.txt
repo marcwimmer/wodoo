@@ -1,5 +1,5 @@
 pymustache
-CherryPy==14.0.0
+ari
 pudb
 requests
 paho-mqtt

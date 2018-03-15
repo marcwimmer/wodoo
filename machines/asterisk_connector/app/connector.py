@@ -4,7 +4,6 @@ import json
 import requests
 import os
 import socket
-import ari
 import cherrypy as cp
 import threading
 import inspect
@@ -259,13 +258,13 @@ class Connector(object):
         # callerId
         endpoint = clean_number(cp.request.json['endpoint'])
         endpoint = "SIP/{}".format(endpoint)
-        odoo_instance = cp.request.json['odoo_instance'] or ''
+        odoo_instance = cp.request.json.get('odoo_instance', '') or ''
         mqttclient.publish('asterisk/ari/originate', payload=json.dumps({
             endpoint=endpoint,
             extension=clean_number(cp.request.json['extension']),
             context=cp.request.json['context'],
+            odoo_instance=odoo_instance,
         }), qos=2)
-        return result.json['id']  # channel
 
 def odoo_thread():
 
@@ -385,48 +384,3 @@ if __name__ == '__main__':
         else:
             break
     cp.quickstart(connector)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-put to connecto
-
-    def onChannelDestroyed(self, channel_obj, ev):
-        channel = channel_obj.json
-        channel['state'] = "Down"
-        self.on_channel_change(channel)
-
-    def onChannelStateChanged(self, channel_obj, ev):
-        self.on_channel_change(channel_obj.json)
-
-    def _get_channel(self, id):
-        channels = [x for x in self.client().channels.list() if x.json['id'] == id]
-        return channels[0].json if channels else None
-
-        # result = self.client().channels.originate(
-client.subscribe("asterisk/ari/channel_update")
-    client.subscribe("asterisk/ari/originate/result")
-
-
-
-
-
-
-
-    # result = self.client().channels.originate(
