@@ -1,5 +1,5 @@
-pymustache
-ari
+pymustache==0.3
+ari==0.1.3
 pudb
-requests
-paho-mqtt
+requests==2.8.14
+paho-mqtt==1.3.1

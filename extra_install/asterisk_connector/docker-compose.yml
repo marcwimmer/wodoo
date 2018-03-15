@@ -12,3 +12,5 @@ services:
         ASTERISK_ARI_PASSWORD: ...
     volumes:
         - ./app.py:/app.py
+        - /usr/local/bin/asterisk:/usr/local/bin/asterisk
+    network_mode: host

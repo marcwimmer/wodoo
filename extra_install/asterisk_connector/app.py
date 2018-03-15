@@ -13,17 +13,22 @@ logger = logging.getLogger(__name__)
 
 class Asterisk_ACM(object):
     def __init__(self):
-        self.mqtt_broker = os.environ.get("MQTT_BROKER_HOST","192.168.1.71")
+        self.mqtt_broker = os.environ["MQTT_BROKER_HOST"]
         self.mqtt_port = int(os.environ.get("MQTT_BROKER_PORT", 1883))
         self.mqtt_user = os.environ.get("MQTT_BROKER_USERNAME", "")
         self.mqtt_pass = os.environ.get("MQTT_BROKER_PASSWORD")
-        self.ari_server = os.environ.get("ASTERISK_SERVER")
-        self.ari_port = int(os.environ.get("ASTERISK_ARI_PORT"))
-        self.ari_user = os.environ.get("ASTERISK_ARI_USER")
-        self.ari_pass = os.environ.get("ASTERISK_ARI_PASSWORD")
+        self.ari_server = os.environ["ASTERISK_SERVER"]
+        self.ari_port = int(os.environ.get("ASTERISK_ARI_PORT", "8088"))
+        self.ari_user = os.environ["ASTERISK_ARI_USER"]
+        self.ari_pass = os.environ["ASTERISK_ARI_PASSWORD"]
 
-        self.mqqtclient = mqtt.Client(client_id="Asterisk_ACM",clean_session=False,userdata=None,protocol=mqtt.MQTTv311)
-        self.connect_ariclient
+        self.mqttclient = mqtt.Client(
+            client_id=os.environ['HOSTNAME'],
+            clean_session=False,
+            userdata=None,
+            protocol=mqtt.MQTTv311
+        )
+        self.connect_ariclient()
         for logger in logging.Logger.manager.loggerDict.keys():
             logging.getLogger(logger).setLevel(logging.ERROR)
 
@@ -55,7 +60,7 @@ class Asterisk_ACM(object):
                     self.mqttclient.publish('asterisk/ari/originate/result', json.dumps({
                         'channel_id': channel_id,
                         'odoo_instance': odoo_instance,
-                    })
+                    }))
 
         except Exception:
             logger.error(traceback.format_exc())
@@ -104,7 +109,7 @@ class Asterisk_ACM(object):
         self.on_channel_change(channel_obj.json)
 
     def on_channel_change(self, channel_json):
-        self.publish("asterisk/ari/channel_update", json.dumps(channel_json)
+        self.publish("asterisk/ari/channel_update", json.dumps(channel_json))
 
     def _get_channel(self, id):
         channels = [x for x in self.client().channels.list() if x.json['id'] == id]
