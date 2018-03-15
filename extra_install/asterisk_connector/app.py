@@ -115,7 +115,6 @@ class Asterisk_ACM(object):
 
         ariclient.on_channel_event("ChannelCreated", self.onChannelStateChanged)
         ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)
-        ariclient.on_channel_event("ChannelStateChange", onChannelStateChanged)
         ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
         self.ariclient = ariclient
 
