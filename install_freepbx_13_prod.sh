@@ -91,7 +91,7 @@ chown asterisk. /var/run/asterisk
 chown -R asterisk. /etc/asterisk
 chown -R asterisk. /var/{lib,log,spool}/asterisk
 chown -R asterisk. /usr/lib/asterisk
-#rm -rf /var/www/html
+rm -rf /var/www/html
 
 # apache modifications
 
@@ -128,9 +128,9 @@ EOF
 
 #download and install freepbx
 cd /usr/src
-wget http://mirror.freepbx.org/modules/packages/freepbx/freepbx-14.0-latest.tgz
-tar vxfz freepbx-14.0-latest.tgz
-rm -f freepbx-14.0-latest.tgz
+wget http://mirror.freepbx.org/modules/packages/freepbx/freepbx-13.0-latest.tgz
+tar vxfz freepbx-13.0-latest.tgz
+rm -f freepbx-13.0-latest.tgz
 cd freepbx
 ./start_asterisk start
 ./install -n
@@ -140,6 +140,7 @@ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 apt install nodejs
 
 # install runuser
+# only uncomment if really neccessary!
 #cd /usr/src
 #wget https://www.kernel.org/pub/linux/utils/util-linux/v2.23/util-linux-2.23.tar.gz
 #tar xzf util-linux-2.23.tar.gz
@@ -147,6 +148,5 @@ apt install nodejs
 #./configure
 #make
 #make install
-
 
 echo "finished!";
