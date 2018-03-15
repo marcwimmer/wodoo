@@ -57,7 +57,7 @@ class Asterisk_ACM(object):
                         'odoo_instance': odoo_instance,
                     })
 
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
 
     def publish(self,topic,payload):
