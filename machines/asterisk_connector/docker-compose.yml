@@ -17,3 +17,5 @@ services:
         ODOO_HOST: proxy
         ODOO_PORT: 80
         PERM_DIR: /opt/perm
+        MOSQUITTO_PORT: 1883
+        MOSQUITTO_HOST: mosquitto

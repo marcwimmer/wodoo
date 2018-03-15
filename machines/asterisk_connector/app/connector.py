@@ -20,20 +20,18 @@ import base64
 import websocket
 import re
 import Queue
+import paho.mqtt.client as mqtt
+import paho.mqtt.publish as mqtt_publish
 from datetime import datetime
 from threading import Lock, Thread
+
 CONST_PERM_DIR = os.environ['PERM_DIR']
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
-connector = None
+mqttclient = None
 data_client_lock = threading.Lock()
 
 OUTSIDE_PORT = os.environ['OUTSIDE_PORT']
-APP_NAME = 'odoo-asterisk-connector'
-
-data = {
-    'client': None,
-}
 
 odoo_queue = Queue.Queue(1000)
 
@@ -59,26 +57,6 @@ class Connector(object):
         self.lock = Lock()
         self.blocked_extensions = set()
         self.extensions = {}
-
-        with data_client_lock:
-            if data['client']:
-                self.bind_events()
-
-    def bind_events(self):
-        self.client().applications.subscribe(applicationName=[APP_NAME], eventSource="endpoint:SIP")
-        # self.client.applications.subscribe(applicationName=[APP_NAME], eventSource="endpoint:PJSIP")
-        self.client().on_channel_event("ChannelCreated", self.onChannelStateChanged)
-        self.client().on_channel_event("ChannelStateChange", self.onChannelStateChanged)
-        self.client().on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
-
-    def client(self):
-        while True:
-            with data_client_lock:
-                if data.get('client', False):
-                    break
-            time.sleep(1)
-        with data_client_lock:
-            return data['client']
 
     class ExtensionState(object):
         def __init__(self, parent, extension):
@@ -316,56 +294,6 @@ class Connector(object):
         )
         return result.json['id']  # channel
 
-def connect_ariclient():
-    ws = websocket.WebSocket()
-    url = "ws://{host}:{port}/ari/events?api_key={user}:{password}&app={app}".format(
-        host=os.environ["ASTERISK_SERVER"],
-        port=os.environ["ASTERISK_ARI_PORT"],
-        user=os.environ["ASTERISK_ARI_USER"],
-        password=os.environ["ASTERISK_ARI_PASSWORD"],
-        app=APP_NAME,
-    )
-    ws.connect(url, sockopts=socket.SO_KEEPALIVE)
-    time.sleep(2)
-    ariclient = ari.connect('http://{}:{}/'.format(
-        os.environ["ASTERISK_SERVER"],
-        os.environ["ASTERISK_ARI_PORT"],
-    ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
-    with data_client_lock:
-        data['client'] = ariclient
-    if connector:
-        connector.bind_events()
-    for logger in logging.Logger.manager.loggerDict.keys():
-        logging.getLogger(logger).setLevel(logging.ERROR)
-
-
-def run_ariclient():
-    while True:
-        try:
-            if not data['client']:
-                raise KeyError()
-            running = True
-            data['client'].run(apps=APP_NAME)
-        except Exception:
-            try:
-                if data['client']:
-                    data['client'].close()
-            except Exception:
-                msg = traceback.format_exc()
-                logger.error(msg)
-                time.sleep(2)
-
-            data['client'] = None
-            while True:
-                try:
-                    connect_ariclient()
-                except Exception:
-                    msg = traceback.format_exc()
-                    logger.error(msg)
-                    time.sleep(2)
-                else:
-                    break
-        time.sleep(1)
 
 
 def odoo_thread():
@@ -385,6 +313,8 @@ def odoo_thread():
             files = os.listdir(CONST_PERM_DIR)
             files = sorted(files)
             for filename in files:
+                if not filename.startswith("odoo_"):
+                    continue
                 filepath = os.path.join(CONST_PERM_DIR, filename)
                 with open(filepath, 'r') as f:
                     params = json.loads(f.read())
@@ -405,6 +335,35 @@ def odoo_thread():
             time.sleep(1)
         time.sleep(0.1)
 
+def on_mqtt_connect(client, userdata, flags, rc):
+    logger.info("connected with result code " + str(rc))
+    client.subscribe("asterisk/#")
+
+def on_mqtt_message(client, userdata, msg):
+    logger.info("%s %s", msg.topic, str(msg.payload))
+
+def mqtt_thread():
+    while True:
+        try:
+            mqttclient = mqtt.Client(client_id="asterisk_connector_receiver",)
+            logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT'])))
+            mqttclient.connect(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT']), keepalive=10)
+            mqttclient.on_connect = on_mqtt_connect
+            mqttclient.on_message = on_mqtt_message
+            logger.info("Looping mqtt")
+            mqttclient.loop_forever()
+        except:
+            logger.error(traceback.format_exc())
+            time.sleep(1)
+
+def mqtt_send():
+    while True:
+        try:
+            logger.info("publishing")
+            mqtt_publish.single("asterisk/test", "payload", qos=2, hostname=os.environ['MOSQUITTO_HOST'], port=long(os.environ['MOSQUITTO_PORT']))
+        except:
+            logger.error(traceback.format_exc())
+        time.sleep(1)
 
 if __name__ == '__main__':
     cp.config.update({
@@ -414,11 +373,15 @@ if __name__ == '__main__':
         'server.socket_port': 80,
     })
 
-    t = threading.Thread(target=run_ariclient)
+    t = threading.Thread(target=odoo_thread)
     t.daemon = True
     t.start()
 
-    t = threading.Thread(target=odoo_thread)
+    t = threading.Thread(target=mqtt_thread)
+    t.daemon = True
+    t.start()
+
+    t = threading.Thread(target=mqtt_send)
     t.daemon = True
     t.start()
 
