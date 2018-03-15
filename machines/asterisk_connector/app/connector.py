@@ -21,7 +21,6 @@ import websocket
 import re
 import Queue
 import paho.mqtt.client as mqtt
-import paho.mqtt.publish as mqtt_publish
 from datetime import datetime
 from threading import Lock, Thread
 
@@ -29,7 +28,6 @@ CONST_PERM_DIR = os.environ['PERM_DIR']
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
 mqttclient = None
-data_client_lock = threading.Lock()
 
 OUTSIDE_PORT = os.environ['OUTSIDE_PORT']
 
@@ -51,78 +49,74 @@ def clean_number(number):
     return (number or '').strip().replace(' ', '')
 
 
+class ExtensionState(object):
+    def __init__(self, parent, extension):
+        self.parent = parent
+        self.extension = extension
+        self.state = "Down"
+
+    def reset(self):
+        self.update_state("Down")
+
+    def update_state(self, state, channel=False):
+        if 'Ring' == state and channel:
+            self.parent.odoo(
+                'asterisk.connector',
+                'store_caller_number_for_channel_id',
+                channel['id'],
+                channel.get('caller', {}).get('number', False),
+                state,
+            )
+
+        other_channels = []
+        # try to identify session for attended transfers
+        if state == "Ringing":
+            if channel:
+                number = channel['connected']['number']
+                name = channel['connected']['name']
+                # ignore anonymous call to pick phone, when call is started by frontend
+                if not name and not number:
+                    return
+
+        if channel:
+            for bridge in self.parent.client().bridges.list():
+                bridge = bridge.json
+                if channel['id'] in bridge['channels']:
+                    for channel_id in bridge['channels']:
+                        if channel_id != channel['id']:
+                            other_channel = self.parent._get_channel(channel_id)
+                            if other_channel:
+                                other_channels.append(other_channel)
+
+        if self.state != state:
+            self.state = state
+            self.parent.odoo('asterisk.connector', 'asterisk_updated_channel_state', self.extension, self.state, channel, other_channels)
+
+    def jsonify(self):
+        return {
+            'state': self.state or 'Down',
+            'extension': self.extension,
+        }
+
 class Connector(object):
 
     def __init__(self):
         self.lock = Lock()
-        self.blocked_extensions = set()
         self.extensions = {}
-        self.dnd = {} # per extension
+        self.dnds = set()
+        self.lock = Lock()
+        self.channels = {}
 
-    class ExtensionState(object):
-        def __init__(self, parent, extension):
-            self.parent = parent
-            self.extension = extension
-            self.state = "Down"
-
-        def reset(self):
-            self.update_state("Down")
-
-        def update_state(self, state, channel=False):
-            if 'Ring' == state and channel:
-                self.parent.odoo(
-                    'asterisk.connector',
-                    'store_caller_number_for_channel_id',
-                    channel['id'],
-                    channel.get('caller', {}).get('number', False),
-                    state,
-                )
-
-            other_channels = []
-            # try to identify session for attended transfers
-            if state == "Ringing":
-                if channel:
-                    number = channel['connected']['number']
-                    name = channel['connected']['name']
-                    # ignore anonymous call to pick phone, when call is started by frontend
-                    if not name and not number:
-                        return
-
-            if channel:
-                for bridge in self.parent.client().bridges.list():
-                    bridge = bridge.json
-                    if channel['id'] in bridge['channels']:
-                        for channel_id in bridge['channels']:
-                            if channel_id != channel['id']:
-                                other_channel = self.parent._get_channel(channel_id)
-                                if other_channel:
-                                    other_channels.append(other_channel)
-
-            if self.state != state:
-                self.state = state
-                self.parent.odoo('asterisk.connector', 'asterisk_updated_channel_state', self.extension, self.state, channel, other_channels)
-
-        def jsonify(self):
-            return {
-                'state': self.state or 'Down',
-                'extension': self.extension,
-            }
+        # initially load status
+        self.ask_for_dnd()
 
     def on_channel_change(self, channel_json):
-        with self.lock:
-            if channel_json.get('caller', False):
-                if channel_json['caller'].get('number', False):
-                    extension = str(channel_json['caller']['number']) # e.g. 80
-                    self.extensions.setdefault(extension, Connector.ExtensionState(self, extension))
+        if channel_json.get('caller', False):
+            if channel_json['caller'].get('number', False):
+                extension = str(channel_json['caller']['number']) # e.g. 80
+                with self.lock:
+                    self.extensions.setdefault(extension, ExtensionState(self, extension))
                     self.extensions[extension].update_state(state=channel_json['state'], channel=channel_json)
-
-    def onChannelDestroyed(self, channel_obj, ev):
-        channel = channel_obj.json
-        channel['state'] = "Down"
-        self.on_channel_change(channel)
-
-    def onChannelStateChanged(self, channel_obj, ev):
-        self.on_channel_change(channel_obj.json)
 
     def odoo(self, *params):
         params = json.dumps(params)
@@ -141,26 +135,13 @@ class Connector(object):
         })
         return content
 
-    @cp.expose
-    def simulate_set_blocked(self, extension, blocked):
-        extension = long(extension)
-        blocked = long(blocked) == 1
-        with self.lock:
-            if blocked:
-                self.blocked_extensions.add(extension)
-            else:
-                self.blocked_extensions.remove(extension)
-        self.odoo('asterisk.connector', 'asterisk_updated_block_state', extension, blocked)
-
     @cp.tools.json_in()
     @cp.tools.json_out()
     @cp.expose
     def get_channel(self):
-        return self._get_channel(cp.request.json['id'])
-
-    def _get_channel(self, id):
-        channels = [x for x in self.client().channels.list() if x.json['id'] == id]
-        return channels[0].json if channels else None
+        id = cp.request.json['id']
+        with self.lock:
+            return self.channels.get(id, None)
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -173,7 +154,8 @@ class Connector(object):
         return False
 
     def _get_active_channel(self, extension):
-        current_channels = map(lambda c: c.json, self.client().channels.list())
+        with self.lock:
+            current_channels = filter(lambda channel: channel['state'] != 'Down', self.channels.values())
 
         channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(extension), current_channels)
         if not channels:
@@ -227,32 +209,38 @@ class Connector(object):
             verb='put' if cp.request.json['dnd'] else 'del',
         ), 'Console')
 
+    def ask_for_dnd(self):
+        self.adminconsole("DND-State", "database show dnd", 'Console')
+
+    def eval_dnd_state(self, payload):
+        with self.lock:
+            self.dnds = set()
+            for line in payload.split("\n"):
+                line = line.strip()
+                if line.startswith("/DND/"):
+                    extension = line.split("/DND/")[-1].split(":")[0].strip()
+                    self.dnds.add(extension)
+
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
     def dnd(self):
-        dnds = self.adminconsole("DND-State", "database show dnd", 'Console')
-        result = []
-        for line in dnds.split("\n"):
-            line = line.strip()
-            if line.startswith("/DND/"):
-                extension = long(line.split("/DND/")[-1].split(":")[0].strip())
-                result.append(extension)
-        return result
+        self.adminconsole("DND-State", "database show dnd", 'Console')
+        with lock:
+            return list(self.dnds)
 
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
     def get_state(self):
 
-        # http://18.196.22.95:7771/d9a1fbfeddcfaf?cmd="test"&hash=
-        r = self.adminconsole("sip show channels", "sip show channels", "Console")
-        dnds = self.dnd()
-
+        self.adminconsole("sip show channels", "sip show channels", "Console")
+        with lock:
+            dnds = self.dnds
         return {
             'extension_states': self.get_extension_states(),
             'admin': r,
-            'channels': [x.json for x in self.client().channels.list()],
+            'channels': self.channels.values(),
             'dnds': dnds,
         }
 
@@ -260,16 +248,8 @@ class Connector(object):
     @cp.tools.json_in()
     @cp.tools.json_out()
     def get_extension_states(self):
-        return [x.jsonify() for x in self.extensions.values()]
-
-    @cp.expose
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    def get_blocked_extensions(self):
         with self.lock:
-            return {
-                'blocked': list(self.blocked_extensions),
-            }
+            return [x.jsonify() for x in self.extensions.values()]
 
     @cp.expose
     @cp.tools.json_in()
@@ -279,14 +259,13 @@ class Connector(object):
         # callerId
         endpoint = clean_number(cp.request.json['endpoint'])
         endpoint = "SIP/{}".format(endpoint)
-        result = self.client().channels.originate(
+        odoo_instance = cp.request.json['odoo_instance'] or ''
+        mqttclient.publish('asterisk/ari/originate', payload=json.dumps({
             endpoint=endpoint,
             extension=clean_number(cp.request.json['extension']),
             context=cp.request.json['context'],
-        )
+        }), qos=2)
         return result.json['id']  # channel
-
-
 
 def odoo_thread():
 
@@ -332,14 +311,27 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/Console/result/#")
     client.subscribe("asterisk/AMI/result/#")
     client.subscribe("asterisk/ari/channel_update")
+    client.subscribe("asterisk/ari/originate/result")
 
 def on_mqtt_message(client, userdata, msg):
-    logger.info("%s %s", msg.topic, str(msg.payload))
-    if msg.topic.startswith("asterisk/Console/result/"):
-        id = msg.topic.split("/")[3]
-        if id == 'DND-State':
-            from pudb import set_trace
-            set_trace()
+    try:
+        logger.info("%s %s", msg.topic, str(msg.payload))
+        if msg.topic.startswith("asterisk/Console/result/"):
+            id = msg.topic.split("/")[3]
+            if id == 'DND-State':
+                connector.eval_dnd_state(msg.payload)
+        elif msg.topic == 'asterisk/ari/originate/result':
+            payload = json.loads(msg.payload)
+            if payload.get('odoo_instance'):
+                model, id = odoo_instance.split(',')
+                channel_id = payload['channel_id']
+                id = long(id)
+                connector.odoo(model, 'on_channel_originated', [id], channel_id)
+        elif msg.topic = 'asterisk/ari/channel_update':
+            payload = json.loads(msg.payload)
+            connector.on_channel_change(payload)
+    except:
+        logger.error(traceback.format_exc())
 
 def on_mqtt_disconnect(client, userdata, rc):
     if rc != 0:
@@ -362,12 +354,17 @@ def mqtt_thread():
             logger.error(traceback.format_exc())
             time.sleep(1)
 
+
 if __name__ == '__main__':
     cp.config.update({
         "server.thread_pool": 1, # important to avoid race conditions
         "server.socket_timeout": 100,
         'server.socket_host': '0.0.0.0',
         'server.socket_port': 80,
+        'global': {
+            'environment' : 'production',
+            'engine.autoreload.on' : False
+          }
     })
 
     t = threading.Thread(target=odoo_thread)
@@ -388,3 +385,48 @@ if __name__ == '__main__':
         else:
             break
     cp.quickstart(connector)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+put to connecto
+
+    def onChannelDestroyed(self, channel_obj, ev):
+        channel = channel_obj.json
+        channel['state'] = "Down"
+        self.on_channel_change(channel)
+
+    def onChannelStateChanged(self, channel_obj, ev):
+        self.on_channel_change(channel_obj.json)
+
+    def _get_channel(self, id):
+        channels = [x for x in self.client().channels.list() if x.json['id'] == id]
+        return channels[0].json if channels else None
+
+        # result = self.client().channels.originate(
+client.subscribe("asterisk/ari/channel_update")
+    client.subscribe("asterisk/ari/originate/result")
+
+
+
+
+
+
+
+    # result = self.client().channels.originate(
