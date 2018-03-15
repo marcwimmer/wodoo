@@ -27,6 +27,8 @@ CONST_PERM_DIR = os.environ['PERM_DIR']
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
 mqttclient = None
+connector = None
+
 
 OUTSIDE_PORT = os.environ['OUTSIDE_PORT']
 
@@ -313,6 +315,8 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/ari/originate/result")
 
 def on_mqtt_message(client, userdata, msg):
+    while not connector:
+        time.sleep(1)
     try:
         logger.info("%s %s", msg.topic, str(msg.payload))
         if msg.topic.startswith("asterisk/Console/result/"):

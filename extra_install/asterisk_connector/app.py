@@ -12,7 +12,7 @@ import socket
 import time
 import ari
 
-ARI_APP_NAME = "asterisk_odoo_connector"
+ARI_APP_NAME = "asterisk_odoo_connector1"
 DOCKER_HOST = subprocess.check_output(["route | awk '/^default/ { print $2 }'"], shell=True).strip()
 if os.getenv("ASTERISK_SERVER", "") == "DOCKER_HOST":
     os.environ['ASTERISK_SERVER'] = DOCKER_HOST
@@ -95,8 +95,7 @@ class Asterisk_ACM(object):
         self.mqttclient.loop_forever()
 
     def connect_ariclient(self):
-        print 'connecting ariclient'
-        import pudb;pudb.set_trace()
+        logger.info('connecting ariclient')
         ws = websocket.WebSocket()
         url = "ws://{host}:{port}/ari/events?api_key={user}:{password}&app={app}".format(
             host=os.environ["ASTERISK_SERVER"],
@@ -113,8 +112,10 @@ class Asterisk_ACM(object):
             os.environ["ASTERISK_ARI_PORT"],
         ), os.environ["ASTERISK_ARI_USER"],os.environ["ASTERISK_ARI_PASSWORD"])
         ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP")
+
         ariclient.on_channel_event("ChannelCreated", self.onChannelStateChanged)
         ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)
+        ariclient.on_channel_event("ChannelStateChange", onChannelStateChanged)
         ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
         self.ariclient = ariclient
 
@@ -125,7 +126,6 @@ class Asterisk_ACM(object):
         self.on_channel_change(channel)
 
     def onChannelStateChanged(self, channel_obj, ev):
-        print 'hier2'
         self.on_channel_change(channel_obj.json)
 
     def on_channel_change(self, channel_json):
@@ -138,10 +138,9 @@ class Asterisk_ACM(object):
 
     def run_ariclient(self):
         while True:
-            import pudb;pudb.set_trace()
-            print 'Running ariclient'
+            logger.info("Run Ari Client")
             try:
-                self.ariclient.run(apps=APP_NAME)
+                self.ariclient.run(apps=ARI_APP_NAME)
             except Exception:
                 try:
                     if self.ariclient:
