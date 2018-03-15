@@ -259,12 +259,12 @@ class Connector(object):
         endpoint = clean_number(cp.request.json['endpoint'])
         endpoint = "SIP/{}".format(endpoint)
         odoo_instance = cp.request.json.get('odoo_instance', '') or ''
-        mqttclient.publish('asterisk/ari/originate', payload=json.dumps({
+        mqttclient.publish('asterisk/ari/originate', payload=json.dumps(dict(
             endpoint=endpoint,
             extension=clean_number(cp.request.json['extension']),
             context=cp.request.json['context'],
             odoo_instance=odoo_instance,
-        }), qos=2)
+        )), qos=2)
 
 def odoo_thread():
 
@@ -326,7 +326,7 @@ def on_mqtt_message(client, userdata, msg):
                 channel_id = payload['channel_id']
                 id = long(id)
                 connector.odoo(model, 'on_channel_originated', [id], channel_id)
-        elif msg.topic = 'asterisk/ari/channel_update':
+        elif msg.topic == 'asterisk/ari/channel_update':
             payload = json.loads(msg.payload)
             connector.on_channel_change(payload)
     except:
@@ -356,13 +356,13 @@ def mqtt_thread():
 
 if __name__ == '__main__':
     cp.config.update({
-        "server.thread_pool": 1, # important to avoid race conditions
-        "server.socket_timeout": 100,
-        'server.socket_host': '0.0.0.0',
-        'server.socket_port': 80,
         'global': {
             'environment' : 'production',
-            'engine.autoreload.on' : False
+            'engine.autoreload.on' : False,
+            "server.thread_pool": 1, # important to avoid race conditions
+            "server.socket_timeout": 100,
+            'server.socket_host': '0.0.0.0',
+            'server.socket_port': 80,
           }
     })
 
@@ -373,6 +373,10 @@ if __name__ == '__main__':
     t = threading.Thread(target=mqtt_thread)
     t.daemon = True
     t.start()
+
+    while not mqttclient:
+        time.sleep(1)
+        logger.info("Waiting for mqtt client")
 
     while True:
         try:

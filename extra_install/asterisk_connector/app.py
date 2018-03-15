@@ -7,9 +7,20 @@ import threading
 import json
 import logging
 import traceback
-ARI_APP_NAME = "asterisk_odoo_connector"
+import websocket
+import socket
+import time
+import ari
 
-logger = logging.getLogger(__name__)
+ARI_APP_NAME = "asterisk_odoo_connector"
+DOCKER_HOST = subprocess.check_output(["route | awk '/^default/ { print $2 }'"], shell=True).strip()
+if os.getenv("ASTERISK_SERVER", "") == "DOCKER_HOST":
+    os.environ['ASTERISK_SERVER'] = DOCKER_HOST
+
+FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
+logging.basicConfig(format=FORMAT)
+logging.getLogger().setLevel(logging.DEBUG)
+logger = logging.getLogger('')  # root handler
 
 class Asterisk_ACM(object):
     def __init__(self):
@@ -30,11 +41,15 @@ class Asterisk_ACM(object):
         )
         self.connect_ariclient()
         for logger in logging.Logger.manager.loggerDict.keys():
-            logging.getLogger(logger).setLevel(logging.ERROR)
+            logging.getLogger(logger).setLevel(logging.INFO)
+
+        t = threading.Thread(target=self.run_ariclient)
+        t.daemon = True
+        t.start()
 
     def run_Console(self,cmd,id=None):
 
-        cmd = "/usr/sbin/asterisk -x \"{}\"".format(cmd)
+        cmd = "/usr/bin/ssh {} \"/usr/sbin/asterisk -x '{}'\"".format(DOCKER_HOST, cmd)
         p = subprocess.check_output(cmd, shell=True)
 
         if id:
@@ -80,61 +95,66 @@ class Asterisk_ACM(object):
         self.mqttclient.loop_forever()
 
     def connect_ariclient(self):
+        print 'connecting ariclient'
+        import pudb;pudb.set_trace()
         ws = websocket.WebSocket()
         url = "ws://{host}:{port}/ari/events?api_key={user}:{password}&app={app}".format(
             host=os.environ["ASTERISK_SERVER"],
             port=os.environ["ASTERISK_ARI_PORT"],
             user=os.environ["ASTERISK_ARI_USER"],
             password=os.environ["ASTERISK_ARI_PASSWORD"],
-            app=APP_NAME,
+            app=ARI_APP_NAME,
         )
+        print(url)
         ws.connect(url, sockopts=socket.SO_KEEPALIVE)
         time.sleep(2)
-        self.ariclient = ari.connect('http://{}:{}/'.format(
+        ariclient = ari.connect('http://{}:{}/'.format(
             os.environ["ASTERISK_SERVER"],
             os.environ["ASTERISK_ARI_PORT"],
         ), os.environ["ASTERISK_ARI_USER"],os.environ["ASTERISK_ARI_PASSWORD"])
-        self.ariclient().applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP")
-        # self.client.applications.subscribe(applicationName=[APP_NAME], eventSource="endpoint:PJSIP")
-        self.ariclient().on_channel_event("ChannelCreated", self.onChannelStateChanged)
-        self.ariclient().on_channel_event("ChannelStateChange", self.onChannelStateChanged)
-        self.ariclient().on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
+        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP")
+        ariclient.on_channel_event("ChannelCreated", self.onChannelStateChanged)
+        ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)
+        ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
+        self.ariclient = ariclient
 
     def onChannelDestroyed(self, channel_obj, ev):
+        print 'hier'
         channel = channel_obj.json
         channel['state'] = "Down"
         self.on_channel_change(channel)
 
     def onChannelStateChanged(self, channel_obj, ev):
+        print 'hier2'
         self.on_channel_change(channel_obj.json)
 
     def on_channel_change(self, channel_json):
+        print 'channel state change'
         self.publish("asterisk/ari/channel_update", json.dumps(channel_json))
 
     def _get_channel(self, id):
-        channels = [x for x in self.client().channels.list() if x.json['id'] == id]
+        channels = [x for x in self.ariclient().channels.list() if x.json['id'] == id]
         return channels[0].json if channels else None
 
     def run_ariclient(self):
         while True:
+            import pudb;pudb.set_trace()
+            print 'Running ariclient'
             try:
-                if not data['client']:
-                    raise KeyError()
-                running = True
-                data['client'].run(apps=APP_NAME)
+                self.ariclient.run(apps=APP_NAME)
             except Exception:
                 try:
-                    if data['client']:
-                        data['client'].close()
+                    if self.ariclient:
+                        self.ariclient.close()
                 except Exception:
                     msg = traceback.format_exc()
                     logger.error(msg)
                     time.sleep(2)
 
-                data['client'] = None
+                self.ariclient = None
                 while True:
                     try:
-                        connect_ariclient()
+                        self.connect_ariclient()
                     except Exception:
                         msg = traceback.format_exc()
                         logger.error(msg)
@@ -148,6 +168,5 @@ class Asterisk_ACM(object):
 if __name__=="__main__":
     acm = Asterisk_ACM()
     acm.run()
-
 
 

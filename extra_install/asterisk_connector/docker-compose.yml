@@ -3,14 +3,6 @@ version: "3.3"
 services:
   asterisk_connector:
     build: .
-    environment:
-        MQTT_BROKER_HOST: "....."
-        MQTT_BROKER_PORT: "1883"
-        ASTERISK_SERVER: 127.0.0.1
-        ASTERISK_ARI_PORT: 8088
-        ASTERISK_ARI_USER: ...
-        ASTERISK_ARI_PASSWORD: ...
     volumes:
-        - ./app.py:/app.py
-        - /usr/local/bin/asterisk:/usr/local/bin/asterisk
-    network_mode: host
+        - ./app.py:/app.py:ro
+    env_file: .env
