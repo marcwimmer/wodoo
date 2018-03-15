@@ -107,11 +107,34 @@ class Connector(object):
         self.dnds = set()
         self.lock = Lock()
         self.channels = {}
+        self.bridges = {}
 
         # initially load status
         self.ask_for_dnd()
 
+    def try_to_get_channels(self, channel_ids):
+        channels = []
+        for channel_id in channel_ids:
+            channel = self.channels.get(channel_id, None)
+            if channel:
+                channels.append(channel)
+        return channels
+
+    def on_channels_connected(self, channel_ids, channel_entered):
+        channels = self.try_to_get_channels(channel_ids)
+        self.odoo('asterisk.connector', 'asterisk_channels_connected', channels, channel_entered)
+
+    def on_channels_disconnected(self, channel_ids, channel_left):
+        channels = self.try_to_get_channels(channel_ids)
+        self.odoo('asterisk.connector', 'asterisk_channels_disconnected', channels, channel_left)
+
     def on_channel_change(self, channel_json):
+        if not channel_json:
+            return
+        channel_id = channel_json['id']
+        with self.lock:
+            self.channels.setdefault(channel_json['id'], channel_json)
+
         if channel_json.get('caller', False):
             if channel_json['caller'].get('number', False):
                 extension = str(channel_json['caller']['number']) # e.g. 80
@@ -312,6 +335,8 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/Console/result/#")
     client.subscribe("asterisk/AMI/result/#")
     client.subscribe("asterisk/ari/channel_update")
+    client.subscribe("asterisk/ari/channels_connected")
+    client.subscribe("asterisk/ari/channels_disconnected")
     client.subscribe("asterisk/ari/originate/result")
 
 def on_mqtt_message(client, userdata, msg):
@@ -333,6 +358,18 @@ def on_mqtt_message(client, userdata, msg):
         elif msg.topic == 'asterisk/ari/channel_update':
             payload = json.loads(msg.payload)
             connector.on_channel_change(payload)
+        elif msg.topic == 'asterisk/ari/channels_connected':
+            payload = json.loads(msg.payload)
+            connector.on_channels_connected(
+                payload['channel_ids'],
+                payload['channel_entered'],
+            )
+        elif msg.topic == 'asterisk/ari/channels_disconnected':
+            payload = json.loads(msg.payload)
+            connector.on_channels_disconnected(
+                payload['channel_ids'],
+                payload['channel_left']
+            )
     except:
         logger.error(traceback.format_exc())
 

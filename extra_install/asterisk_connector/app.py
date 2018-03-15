@@ -116,10 +116,23 @@ class Asterisk_ACM(object):
         ariclient.on_channel_event("ChannelCreated", self.onChannelStateChanged)
         ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)
         ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
+        ariclient.on_channel_event("ChannelEnteredBridge", self.onBridgeEntered)
+        ariclient.on_channel_event("ChannelLeftBridge", self.onBridgeLeft)
         self.ariclient = ariclient
 
+    def onBridgeEntered(self, bridge, channel):
+        self.publish("asterisk/ari/channels_connected", json.dumps({
+            'channel_ids': bridge.json['channels'],
+            'channel_entered': channel.json,
+        }))
+
+    def onBridgeLeft(self, bridge, channel):
+        self.publish("asterisk/ari/channels_disconnected", json.dumps({
+            'channel_ids': bridge.json['channels'],
+            'channel_left': channel.json,
+        }))
+
     def onChannelDestroyed(self, channel_obj, ev):
-        print 'hier'
         channel = channel_obj.json
         channel['state'] = "Down"
         self.on_channel_change(channel)
@@ -128,7 +141,6 @@ class Asterisk_ACM(object):
         self.on_channel_change(channel_obj.json)
 
     def on_channel_change(self, channel_json):
-        print 'channel state change'
         self.publish("asterisk/ari/channel_update", json.dumps(channel_json))
 
     def _get_channel(self, id):
