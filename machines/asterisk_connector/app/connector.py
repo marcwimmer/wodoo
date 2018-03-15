@@ -194,10 +194,11 @@ class Connector(object):
             "Exten": clean_number(cp.request.json['exten']),
             "Context": cp.request.json['context'],
         }
-        self.adminconsole(action, 'AMI')
+        self.adminconsole(None, action, 'AMI')
 
-    def adminconsole(self, cmd, ttype):
+    def adminconsole(self, id, cmd, ttype):
         """
+        :param id: result gets the same id, e.g. DND-Status
         :param ttype: values: 'AMI', 'Console'
 
         """
@@ -205,9 +206,13 @@ class Connector(object):
         if ttype == "AMI":
             assert isinstance(cmd, dict)
             cmd = json.dumps(cmd)
-        assert isinstnace(cmd, (str, unicode))
+        assert isinstance(cmd, (str, unicode))
 
-        mqttclient.publish('asterisk/{}'.format(ttype), payload=cmd, qos=2)
+        topic = 'asterisk/{}/send'.format(ttype)
+        if id:
+            topic += '/{}'.format(id)
+
+        mqttclient.publish(topic, payload=cmd, qos=2)
         return None
 
     @cp.tools.json_in()
@@ -216,7 +221,7 @@ class Connector(object):
     def set_dnd(self):
         if not cp.request.json['endpoint']:
             raise Exception("Endpoint missing!")
-        self.adminconsole("database {verb} DND {endpoint} {dnd}".format(
+        self.adminconsole('set_dnd', "database {verb} DND {endpoint} {dnd}".format(
             endpoint=cp.request.json['endpoint'],
             dnd='YES' if cp.request.json['dnd'] else '',
             verb='put' if cp.request.json['dnd'] else 'del',
@@ -226,7 +231,7 @@ class Connector(object):
     @cp.tools.json_in()
     @cp.tools.json_out()
     def dnd(self):
-        dnds = self.adminconsole("database show dnd", 'Console')
+        dnds = self.adminconsole("DND-State", "database show dnd", 'Console')
         result = []
         for line in dnds.split("\n"):
             line = line.strip()
@@ -241,7 +246,7 @@ class Connector(object):
     def get_state(self):
 
         # http://18.196.22.95:7771/d9a1fbfeddcfaf?cmd="test"&hash=
-        r = self.adminconsole("sip show channels", "Console")
+        r = self.adminconsole("sip show channels", "sip show channels", "Console")
         dnds = self.dnd()
 
         return {
@@ -324,10 +329,17 @@ def odoo_thread():
 
 def on_mqtt_connect(client, userdata, flags, rc):
     logger.info("connected with result code " + str(rc))
-    client.subscribe("asterisk/#")
+    client.subscribe("asterisk/Console/result/#")
+    client.subscribe("asterisk/AMI/result/#")
+    client.subscribe("asterisk/ari/channel_update")
 
 def on_mqtt_message(client, userdata, msg):
     logger.info("%s %s", msg.topic, str(msg.payload))
+    if msg.topic.startswith("asterisk/Console/result/"):
+        id = msg.topic.split("/")[3]
+        if id == 'DND-State':
+            from pudb import set_trace
+            set_trace()
 
 def on_mqtt_disconnect(client, userdata, rc):
     if rc != 0:
