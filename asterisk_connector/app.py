@@ -12,7 +12,7 @@ import socket
 import time
 import ari
 
-ARI_APP_NAME = "asterisk_odoo_connector1"
+ARI_APP_NAME = "asterisk_odoo_connector2"
 DOCKER_HOST = subprocess.check_output(["route | awk '/^default/ { print $2 }'"], shell=True).strip()
 if os.getenv("ASTERISK_SERVER", "") == "DOCKER_HOST":
     os.environ['ASTERISK_SERVER'] = DOCKER_HOST
@@ -81,7 +81,7 @@ class Asterisk_ACM(object):
             logger.error(traceback.format_exc())
 
     def publish(self,topic,payload):
-        print("Sende {} auf: {}".format(payload,topic))
+        print("Sending {} auf: {}".format(payload,topic))
         self.mqttclient.publish(topic,payload,qos=2,retain=True)
 
     def run(self):
@@ -111,24 +111,30 @@ class Asterisk_ACM(object):
             os.environ["ASTERISK_SERVER"],
             os.environ["ASTERISK_ARI_PORT"],
         ), os.environ["ASTERISK_ARI_USER"],os.environ["ASTERISK_ARI_PASSWORD"])
-        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP")
+        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP,bridge:")  # or just endpoint:
 
-        ariclient.on_channel_event("ChannelCreated", self.onChannelStateChanged)
+        ariclient.on_channel_event("ChannelCreated", self.onChannelCreated)
         ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)
         ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
         ariclient.on_channel_event("ChannelEnteredBridge", self.onBridgeEntered)
-        ariclient.on_channel_event("ChannelLeftBridge", self.onBridgeLeft)
+        ariclient.on_bridge_event("ChannelLeftBridge", self.onBridgeLeft)
         self.ariclient = ariclient
 
-    def onBridgeEntered(self, bridge, channel):
+    def onBridgeCreated(self, *args, **kwargs):
+        print 'Bridge.............................................................................................'
+        import pudb;pudb.set_trace()
+
+    def onBridgeEntered(self, channel, ev):
+        bridge = ev['bridge']
         self.publish("asterisk/ari/channels_connected", json.dumps({
-            'channel_ids': bridge.json['channels'],
+            'channel_ids': bridge['channels'],
             'channel_entered': channel.json,
         }))
 
-    def onBridgeLeft(self, bridge, channel):
+    def onBridgeLeft(self, channel, ev):
+        bridge = ev['bridge']
         self.publish("asterisk/ari/channels_disconnected", json.dumps({
-            'channel_ids': bridge.json['channels'],
+            'channel_ids': bridge['channels'],
             'channel_left': channel.json,
         }))
 
@@ -136,6 +142,10 @@ class Asterisk_ACM(object):
         channel = channel_obj.json
         channel['state'] = "Down"
         self.on_channel_change(channel)
+
+    def onChannelCreated(self, channel_obj, ev):
+        #channel_obj.on_event('ChannelEnteredBridge', self.onBridgeCreated)
+        self.on_channel_change(channel_obj.json)
 
     def onChannelStateChanged(self, channel_obj, ev):
         self.on_channel_change(channel_obj.json)
