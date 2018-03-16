@@ -32,8 +32,6 @@ connector = None
 
 OUTSIDE_PORT = os.environ['OUTSIDE_PORT']
 
-odoo_queue = Queue.Queue(1000)
-
 odoo = {
     'host': "http://{}:{}".format(os.environ['ODOO_HOST'], os.environ['ODOO_PORT']),
     'username': os.environ['PHONEBOX_ODOO_USER'],
@@ -49,56 +47,6 @@ logger = logging.getLogger('')  # root handler
 def clean_number(number):
     return (number or '').strip().replace(' ', '')
 
-
-class ExtensionState(object):
-    def __init__(self, parent, extension):
-        self.parent = parent
-        self.extension = extension
-        self.state = "Down"
-
-    def reset(self):
-        self.update_state("Down")
-
-    def update_state(self, state, channel=False):
-        if 'Ring' == state and channel:
-            self.parent.odoo(
-                'asterisk.connector',
-                'store_caller_number_for_channel_id',
-                channel['id'],
-                channel.get('caller', {}).get('number', False),
-                state,
-            )
-
-        other_channels = []
-        # try to identify session for attended transfers
-        if state == "Ringing":
-            if channel:
-                number = channel['connected']['number']
-                name = channel['connected']['name']
-                # ignore anonymous call to pick phone, when call is started by frontend
-                if not name and not number:
-                    return
-
-        if channel:
-            for bridge in self.parent.client().bridges.list():
-                bridge = bridge.json
-                if channel['id'] in bridge['channels']:
-                    for channel_id in bridge['channels']:
-                        if channel_id != channel['id']:
-                            other_channel = self.parent._get_channel(channel_id)
-                            if other_channel:
-                                other_channels.append(other_channel)
-
-        if self.state != state:
-            self.state = state
-            self.parent.odoo('asterisk.connector', 'asterisk_updated_channel_state', self.extension, self.state, channel, other_channels)
-
-    def jsonify(self):
-        return {
-            'state': self.state or 'Down',
-            'extension': self.extension,
-        }
-
 class Connector(object):
 
     def __init__(self):
@@ -108,6 +56,7 @@ class Connector(object):
         self.lock = Lock()
         self.channels = {}
         self.bridges = {}
+        self.possible_extensions = {} # per channel_id
 
         # initially load status
         self.ask_for_dnd()
@@ -131,16 +80,28 @@ class Connector(object):
     def on_channel_change(self, channel_json):
         if not channel_json:
             return
-        channel_id = channel_json['id']
         with self.lock:
             self.channels.setdefault(channel_json['id'], channel_json)
+            self.possible_extensions.setdefault(channel_json['id'], set())
 
-        if channel_json.get('caller', False):
-            if channel_json['caller'].get('number', False):
-                extension = str(channel_json['caller']['number']) # e.g. 80
-                with self.lock:
-                    self.extensions.setdefault(extension, ExtensionState(self, extension))
-                    self.extensions[extension].update_state(state=channel_json['state'], channel=channel_json)
+        extension_or_number = channel_json.get('number', channel_json.get('caller', {}).get('number', ""))
+        if extension_or_number:
+            self.possible_extensions[channel_json['id']].add(extension_or_number)
+
+        state = channel_json['state']
+
+        if 'Ring' == state:
+            self.odoo(
+                'asterisk.connector',
+                'store_caller_number_for_channel_id',
+                channel_json['id'],
+                channel_json.get('caller', {}).get('number', False),
+                channel_json['state'],
+            )
+
+        with self.lock:
+            possible_extensions = list(self.possible_extensions[channel_json['id']])
+        self.odoo('asterisk.connector', 'asterisk_updated_channel_state', possible_extensions, channel_json)
 
     def odoo(self, *params):
         params = json.dumps(params)
@@ -250,7 +211,7 @@ class Connector(object):
     @cp.tools.json_out()
     def dnd(self):
         self.adminconsole("DND-State", "database show dnd", 'Console')
-        with lock:
+        with self.lock:
             return list(self.dnds)
 
     @cp.expose
@@ -259,11 +220,10 @@ class Connector(object):
     def get_state(self):
 
         self.adminconsole("sip show channels", "sip show channels", "Console")
-        with lock:
+        with self.lock:
             dnds = self.dnds
         return {
             'extension_states': self.get_extension_states(),
-            'admin': r,
             'channels': self.channels.values(),
             'dnds': dnds,
         }
@@ -314,17 +274,22 @@ def odoo_thread():
                 with open(filepath, 'r') as f:
                     params = json.loads(f.read())
                 print 'having params {}'.format(params)
+                had_error = False
                 while True:
                     try:
                         exe(*params)
-                    except:
+                        if had_error:
+                            had_error = False
+                            logger.info("Odoo is back online and just accepted packages")
+                    except Exception:
+                        had_error = True
                         msg = traceback.format_exc()
                         logger.error(msg)
                         time.sleep(1)
                     else:
                         os.unlink(filepath)
                         break
-        except:
+        except Exception:
             msg = traceback.format_exc()
             logger.error(msg)
             time.sleep(1)
@@ -351,7 +316,7 @@ def on_mqtt_message(client, userdata, msg):
         elif msg.topic == 'asterisk/ari/originate/result':
             payload = json.loads(msg.payload)
             if payload.get('odoo_instance'):
-                model, id = odoo_instance.split(',')
+                model, id = payload['odoo_instance'].split(',')
                 channel_id = payload['channel_id']
                 id = long(id)
                 connector.odoo(model, 'on_channel_originated', [id], channel_id)
@@ -370,7 +335,7 @@ def on_mqtt_message(client, userdata, msg):
                 payload['channel_ids'],
                 payload['channel_left']
             )
-    except:
+    except Exception:
         logger.error(traceback.format_exc())
 
 def on_mqtt_disconnect(client, userdata, rc):
@@ -382,7 +347,7 @@ def mqtt_thread():
     while True:
         try:
             mqttclient = mqtt.Client(client_id="asterisk_connector_receiver",)
-            #mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
+            # mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
             logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT'])))
             mqttclient.connect(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT']), keepalive=10)
             mqttclient.on_connect = on_mqtt_connect
@@ -390,7 +355,7 @@ def mqtt_thread():
             mqttclient.on_disconnect = on_mqtt_disconnect
             logger.info("Looping mqtt")
             mqttclient.loop_forever()
-        except:
+        except Exception:
             logger.error(traceback.format_exc())
             time.sleep(1)
 
@@ -398,13 +363,13 @@ def mqtt_thread():
 if __name__ == '__main__':
     cp.config.update({
         'global': {
-            'environment' : 'production',
-            'engine.autoreload.on' : False,
+            'environment': 'production',
+            'engine.autoreload.on': False,
             "server.thread_pool": 1, # important to avoid race conditions
             "server.socket_timeout": 100,
             'server.socket_host': '0.0.0.0',
             'server.socket_port': 80,
-          }
+        }
     })
 
     t = threading.Thread(target=odoo_thread)
