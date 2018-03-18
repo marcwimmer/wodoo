@@ -21,6 +21,8 @@ import re
 import Queue
 import paho.mqtt.client as mqtt
 from datetime import datetime
+from datetime import timedelta
+import arrow
 from threading import Lock, Thread
 
 CONST_PERM_DIR = os.environ['PERM_DIR']
@@ -56,7 +58,6 @@ class Connector(object):
         self.lock = Lock()
         self.channels = {}
         self.bridges = {}
-        self.possible_extensions = {} # per channel_id
 
         # initially load status
         self.ask_for_dnd()
@@ -78,30 +79,19 @@ class Connector(object):
         self.odoo('asterisk.connector', 'asterisk_channels_disconnected', channels, channel_left)
 
     def on_channel_change(self, channel_json):
+        print
+        print
+        print channel_json['state'], channel_json['id']
+        print
+        print
         if not channel_json:
             return
         with self.lock:
             self.channels.setdefault(channel_json['id'], channel_json)
-            self.possible_extensions.setdefault(channel_json['id'], set())
+            for k, v in channel_json.items():
+                self.channels[channel_json['id']][k] = v
 
-        extension_or_number = channel_json.get('number', channel_json.get('caller', {}).get('number', ""))
-        if extension_or_number:
-            self.possible_extensions[channel_json['id']].add(extension_or_number)
-
-        state = channel_json['state']
-
-        if 'Ring' == state:
-            self.odoo(
-                'asterisk.connector',
-                'store_caller_number_for_channel_id',
-                channel_json['id'],
-                channel_json.get('caller', {}).get('number', False),
-                channel_json['state'],
-            )
-
-        with self.lock:
-            possible_extensions = list(self.possible_extensions[channel_json['id']])
-        self.odoo('asterisk.connector', 'asterisk_updated_channel_state', possible_extensions, channel_json)
+        self.odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
 
     def odoo(self, *params):
         params = json.dumps(params)
@@ -131,23 +121,28 @@ class Connector(object):
     @cp.tools.json_in()
     @cp.tools.json_out()
     @cp.expose
-    def get_active_channel(self):
-        number = cp.request.json['number']
-        channel = self._get_active_channel(number)
-        if channel:
-            return channel['id']
-        return False
+    def get_active_channels(self):
+        extensions = cp.request.json['extensions']
+        result = {}
+        for ext in extensions:
+            result[ext] = self._get_active_channel(ext)
+        print
+        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        print
+        print result, len(self.channels), [(x['id'], x['state']) for x in self.channels.values()]
+        print
+        print
+        return result
 
     def _get_active_channel(self, extension):
         with self.lock:
-            current_channels = filter(lambda channel: channel['state'] != 'Down', self.channels.values())
+            critdate = arrow.get(datetime.now() - timedelta(days=1)).replace(tzinfo='utc').datetime
+            current_channels = filter(lambda channel: channel['state'] != 'Down' and arrow.get(channel['creationtime']).datetime > critdate, self.channels.values())
 
-        channels = filter(lambda c: str(c.get('caller', {}).get('number', False)) == str(extension), current_channels)
+        channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
         if not channels:
             channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), current_channels)
-
-        if channels:
-            return channels[0]
+        return channels
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -319,7 +314,7 @@ def on_mqtt_message(client, userdata, msg):
                 model, id = payload['odoo_instance'].split(',')
                 channel_id = payload['channel_id']
                 id = long(id)
-                connector.odoo(model, 'on_channel_originated', [id], channel_id)
+                connector.odoo('asterisk.connector', 'on_channel_originated', model, [id], channel_id)
         elif msg.topic == 'asterisk/ari/channel_update':
             payload = json.loads(msg.payload)
             connector.on_channel_change(payload)
