@@ -69,7 +69,8 @@ class Asterisk_ACM(object):
                 #self.publish("asterisk/Console/result",message.payload)
             elif message.topic == 'asterisk/ari/originate':
                 params = json.loads(message.payload)
-                channel = self.ariclient().channels.originate(**params)
+                odoo_instance = params.pop('odoo_instance', False)
+                channel = self.ariclient.channels.originate(**params)
                 if channel:
                     channel_id = channel.json['id']
                     self.mqttclient.publish('asterisk/ari/originate/result', json.dumps({
@@ -91,7 +92,7 @@ class Asterisk_ACM(object):
         self.mqttclient.subscribe("asterisk/AMI/send")
         self.mqttclient.subscribe("asterisk/Console/send")
         self.mqttclient.subscribe("asterisk/Console/send/#")
-        self.mqttclient.subscribe("asterisk/ari")
+        self.mqttclient.subscribe("asterisk/ari/originate")
         self.mqttclient.loop_forever()
 
     def connect_ariclient(self):
@@ -120,10 +121,6 @@ class Asterisk_ACM(object):
         ariclient.on_bridge_event("ChannelLeftBridge", self.onBridgeLeft)
         self.ariclient = ariclient
 
-    def onBridgeCreated(self, *args, **kwargs):
-        print 'Bridge.............................................................................................'
-        import pudb;pudb.set_trace()
-
     def onBridgeEntered(self, channel, ev):
         bridge = ev['bridge']
         self.publish("asterisk/ari/channels_connected", json.dumps({
@@ -144,7 +141,6 @@ class Asterisk_ACM(object):
         self.on_channel_change(channel)
 
     def onChannelCreated(self, channel_obj, ev):
-        #channel_obj.on_event('ChannelEnteredBridge', self.onBridgeCreated)
         self.on_channel_change(channel_obj.json)
 
     def onChannelStateChanged(self, channel_obj, ev):
