@@ -78,6 +78,9 @@ class Connector(object):
         channels = self.try_to_get_channels(channel_ids)
         self.odoo('asterisk.connector', 'asterisk_channels_disconnected', channels, channel_left)
 
+    def on_attended_transfer(self, channel_ids):
+        self.odoo('asterisk.connector', 'asterisk_on_attended_transfer', channel_ids)
+
     def on_channel_change(self, channel_json):
         print
         print
@@ -126,12 +129,7 @@ class Connector(object):
         result = {}
         for ext in extensions:
             result[ext] = self._get_active_channel(ext)
-        print
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        print
-        print result, len(self.channels), [(x['id'], x['state']) for x in self.channels.values()]
-        print
-        print
+        # print result, len(self.channels), [(x['id'], x['state']) for x in self.channels.values()]
         return result
 
     def _get_active_channel(self, extension):
@@ -300,6 +298,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/ari/channel_update")
     client.subscribe("asterisk/ari/channels_connected")
     client.subscribe("asterisk/ari/channels_disconnected")
+    client.subscribe("asterisk/ari/attended_transfer_done")
     client.subscribe("asterisk/ari/originate/result")
 
 def on_mqtt_message(client, userdata, msg):
@@ -333,6 +332,15 @@ def on_mqtt_message(client, userdata, msg):
                 payload['channel_ids'],
                 payload['channel_left']
             )
+        elif msg.topic == 'asterisk/ari/attended_transfer_done':
+            event = json.loads(msg.payload)['event']
+            channels = []
+            channels += event['transferer_first_leg_bridge']['channels']
+            channels += event['transferer_second_leg_bridge']['channels']
+            channels += [event['transferer_first_leg']['id']]
+            channels = list(set(channels))
+            connector.on_attended_transfer(channels)
+
     except Exception:
         logger.error(traceback.format_exc())
 
