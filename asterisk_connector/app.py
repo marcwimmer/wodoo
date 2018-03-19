@@ -47,26 +47,25 @@ class Asterisk_ACM(object):
         t.daemon = True
         t.start()
 
-    def run_Console(self,cmd,id=None):
+    def run_Console(self, cmd, id=None):
 
         cmd = "/usr/bin/ssh {} \"/usr/sbin/asterisk -x '{}'\"".format(DOCKER_HOST, cmd)
         p = subprocess.check_output(cmd, shell=True)
 
         if id:
-            self.publish("asterisk/Console/result/{}".format(id),p.strip())
+            self.publish("asterisk/Console/result/{}".format(id), p.strip())
             return
-        self.publish("asterisk/Console/result",p)
+        self.publish("asterisk/Console/result", p)
 
     def on_message(self, client, userdata, message):
         try:
             if message.topic.startswith("asterisk/Console/send"):
                 mt = message.topic.split("/")
-                id=""
-                if len(mt)==4:
-                    id=mt[3]
+                id = ""
+                if len(mt) == 4:
+                    id = mt[3]
 
-                self.run_Console(message.payload.decode("utf-8"),id)
-                #self.publish("asterisk/Console/result",message.payload)
+                self.run_Console(message.payload.decode("utf-8"), id)
             elif message.topic == 'asterisk/ari/originate':
                 params = json.loads(message.payload)
                 odoo_instance = params.pop('odoo_instance', False)
@@ -76,19 +75,20 @@ class Asterisk_ACM(object):
                     self.mqttclient.publish('asterisk/ari/originate/result', json.dumps({
                         'channel_id': channel_id,
                         'odoo_instance': odoo_instance,
+                        'extension': params['extension'],
                     }))
 
         except Exception:
             logger.error(traceback.format_exc())
 
-    def publish(self,topic,payload):
-        print("Sending {} auf: {}".format(payload,topic))
-        self.mqttclient.publish(topic,payload,qos=2,retain=True)
+    def publish(self, topic, payload):
+        print("Sending {} auf: {}".format(payload, topic))
+        self.mqttclient.publish(topic, payload, qos=2, retain=True)
 
     def run(self):
-        #self.mqttclient.username_pw_set(self.mqtt_user,self.mqtt_pass)
-        self.mqttclient.connect(self.mqtt_broker,self.mqtt_port,keepalive=60)
-        self.mqttclient.on_message=self.on_message
+        # self.mqttclient.username_pw_set(self.mqtt_user,self.mqtt_pass)
+        self.mqttclient.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
+        self.mqttclient.on_message = self.on_message
         self.mqttclient.subscribe("asterisk/AMI/send")
         self.mqttclient.subscribe("asterisk/Console/send")
         self.mqttclient.subscribe("asterisk/Console/send/#")
@@ -111,7 +111,7 @@ class Asterisk_ACM(object):
         ariclient = ari.connect('http://{}:{}/'.format(
             os.environ["ASTERISK_SERVER"],
             os.environ["ASTERISK_ARI_PORT"],
-        ), os.environ["ASTERISK_ARI_USER"],os.environ["ASTERISK_ARI_PASSWORD"])
+        ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
         ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP,bridge:")  # or just endpoint:
 
         ariclient.on_channel_event("ChannelCreated", self.onChannelCreated)
@@ -198,9 +198,6 @@ class Asterisk_ACM(object):
             time.sleep(1)
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     acm = Asterisk_ACM()
     acm.run()
-
-
