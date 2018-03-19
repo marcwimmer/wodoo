@@ -119,7 +119,21 @@ class Asterisk_ACM(object):
         ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
         ariclient.on_channel_event("ChannelEnteredBridge", self.onBridgeEntered)
         ariclient.on_bridge_event("ChannelLeftBridge", self.onBridgeLeft)
+        ariclient.on_bridge_event("BridgeAttendedTransfer", self.onBridgeAttendedTransfer)
+        ariclient.on_bridge_event("BridgeBlindTransfer", self.onBridgeBlindTransfer)
         self.ariclient = ariclient
+
+    def onBridgeAttendedTransfer(self, *args, **kwargs):
+        print '************************************************************************************************************************************'
+        print args
+        print kwargs
+        print '************************************************************************************************************************************'
+
+    def onBridgeBlindTransfer(self, *args, **kwargs):
+        print '************************************************************************************************************************************'
+        print args
+        print kwargs
+        print '************************************************************************************************************************************'
 
     def onBridgeEntered(self, channel, ev):
         bridge = ev['bridge']
