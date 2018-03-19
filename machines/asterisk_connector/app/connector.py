@@ -315,8 +315,9 @@ def on_mqtt_message(client, userdata, msg):
             if payload.get('odoo_instance'):
                 model, id = payload['odoo_instance'].split(',')
                 channel_id = payload['channel_id']
+                extension = payload['extension']
                 id = long(id)
-                connector.odoo('asterisk.connector', 'on_channel_originated', model, [id], channel_id)
+                connector.odoo('asterisk.connector', 'on_channel_originated', model, [id], channel_id, extension)
         elif msg.topic == 'asterisk/ari/channel_update':
             payload = json.loads(msg.payload)
             connector.on_channel_change(payload)
