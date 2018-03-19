@@ -237,11 +237,14 @@ class Connector(object):
         # app=
         # callerId
         endpoint = clean_number(cp.request.json['endpoint'])
+        extension = clean_number(cp.request.json['extension'])
+        if endpoint == extension: # dont allow call self; originated to self, second channel and so on
+            return
         endpoint = "SIP/{}".format(endpoint)
         odoo_instance = cp.request.json.get('odoo_instance', '') or ''
         mqttclient.publish('asterisk/ari/originate', payload=json.dumps(dict(
             endpoint=endpoint,
-            extension=clean_number(cp.request.json['extension']),
+            extension=extension,
             context=cp.request.json['context'],
             odoo_instance=odoo_instance,
         )), qos=2)
@@ -341,7 +344,7 @@ def mqtt_thread():
     global mqttclient
     while True:
         try:
-            mqttclient = mqtt.Client(client_id="asterisk_connector_receiver",)
+            mqttclient = mqtt.Client(client_id="asterisk_connector_receiver.{}".format(socket.gethostname()),)
             # mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
             logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT'])))
             mqttclient.connect(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT']), keepalive=10)
