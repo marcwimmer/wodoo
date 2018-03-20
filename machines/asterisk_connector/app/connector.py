@@ -264,7 +264,7 @@ def odoo_thread():
             files = os.listdir(CONST_PERM_DIR)
             files = sorted(files)
             for filename in files:
-                if not filename.startswith("odoo_"):
+                if not filename.startswith("odoo_") or not filename.endswith('.params'):
                     continue
                 filepath = os.path.join(CONST_PERM_DIR, filename)
                 with open(filepath, 'r') as f:
