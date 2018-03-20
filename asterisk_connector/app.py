@@ -11,6 +11,7 @@ import websocket
 import socket
 import time
 import ari
+from asterisk.ami import AMIClient, SimpleAction
 
 ARI_APP_NAME = "asterisk_odoo_connector2"
 DOCKER_HOST = subprocess.check_output(["route | awk '/^default/ { print $2 }'"], shell=True).strip()
@@ -55,7 +56,19 @@ class Asterisk_ACM(object):
         if id:
             self.publish("asterisk/Console/result/{}".format(id), p.strip())
             return
-        self.publish("asterisk/Console/result", p)
+
+    def run_AMI(self, cmd, id=None):
+        client = AMIClient(address=DOCKER_HOST, port=5038)
+        client.login(username='admin', secret='0469fb7914d19888210e54e9fa9c4912')
+        action = SimpleAction(**cmd)
+        out = client.send_action(action).response
+        out = str(out).strip()
+        success = 'success' in out
+
+        if id:
+            result = {'success': success, 'data': out}
+            self.publish("asterisk/AMI/result/{}".format(id), json.dumps(result))
+            return
 
     def on_message(self, client, userdata, message):
         try:
@@ -66,6 +79,13 @@ class Asterisk_ACM(object):
                     id = mt[3]
 
                 self.run_Console(message.payload.decode("utf-8"), id)
+            elif message.topic.startswith("asterisk/AMI/send"):
+                mt = message.topic.split("/")
+                id = ""
+                if len(mt) == 4:
+                    id = mt[3]
+
+                self.run_AMI(message.payload.decode("utf-8"), id)
             elif message.topic == 'asterisk/ari/originate':
                 params = json.loads(message.payload)
                 odoo_instance = params.pop('odoo_instance', False)
