@@ -129,7 +129,6 @@ class Connector(object):
         result = {}
         for ext in extensions:
             result[ext] = self._get_active_channel(ext)
-        # print result, len(self.channels), [(x['id'], x['state']) for x in self.channels.values()]
         return result
 
     def _get_active_channel(self, extension):
@@ -137,7 +136,8 @@ class Connector(object):
             critdate = arrow.get(datetime.now() - timedelta(days=1)).replace(tzinfo='utc').datetime
             current_channels = filter(lambda channel: channel['state'] != 'Down' and arrow.get(channel['creationtime']).datetime > critdate, self.channels.values())
 
-        channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
+        # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
+        channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels)
         if not channels:
             channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), current_channels)
         return channels
@@ -257,7 +257,15 @@ def odoo_thread():
         uid = login(odoo['username'], odoo['pwd'])
 
         socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
-        return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
+        try:
+            return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
+        except Exception as e:
+            if 'MissingError' in str(e) and 'on_channel_originated' in params:
+                return
+            logger.error("Odoo Error")
+            for v in params:
+                logger.error(v)
+            raise
 
     while True:
         try:
