@@ -50,6 +50,11 @@ class Asterisk_ACM(object):
         t.daemon = True
         t.start()
 
+        t = threading.Thread(target=self.run_amiclient)
+        t.daemon = True
+        t.start()
+
+
     def run_Console(self, cmd, id=None):
 
         cmd = "/usr/bin/ssh {} \"/usr/sbin/asterisk -x '{}'\"".format(DOCKER_HOST, cmd)
@@ -129,6 +134,17 @@ class Asterisk_ACM(object):
         self.mqttclient.subscribe("asterisk/ari/originate")
         self.mqttclient.loop_forever()
 
+    def ami_event_listener(self, event, **kwargs):
+        print event, kwargs
+        payload = json.dumps(kwargs)
+        self.publish('asterisk/ami/event', payload)
+
+    def connect_amiclient(self):
+        logger.info('connecting amiclient')
+        amiclient = AMIClient(address=DOCKER_HOST, port=int(os.getenv('ASTERISK_AMI_PORT', '5038')))
+        amiclient.add_event_listener(self.ami_event_listener)
+        self.amiclient = amiclient
+
     def connect_ariclient(self):
         logger.info('connecting ariclient')
         ws = websocket.WebSocket()
@@ -204,6 +220,16 @@ class Asterisk_ACM(object):
     def _get_channel(self, id):
         channels = [x for x in self.ariclient().channels.list() if x.json['id'] == id]
         return channels[0].json if channels else None
+
+    def run_amiclient(self):
+        while True:
+            logger.info("Run AMI Client")
+            try:
+                self.amiclient
+            except:
+                connect_amiclient()
+            else:
+                time.sleep(5)
 
     def run_ariclient(self):
         while True:
