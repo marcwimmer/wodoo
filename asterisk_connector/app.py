@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import os
 import paho.mqtt.client as mqtt
 import subprocess
@@ -11,7 +10,7 @@ import websocket
 import socket
 import time
 import ari
-from asterisk.ami import AMIClient, SimpleAction
+from asterisk.ami import AMIClient, SimpleAction, AutoReconnect, EventListener
 
 ARI_APP_NAME = "asterisk_odoo_connector2"
 DOCKER_HOST = subprocess.check_output(["route | awk '/^default/ { print $2 }'"], shell=True).strip()
@@ -25,7 +24,7 @@ logger = logging.getLogger('')  # root handler
 
 logger.info("Using Asterisk Server on {}".format(DOCKER_HOST))
 
-class Asterisk_ACM(object):
+class Asterisk_ACM(EventListener):
     def __init__(self):
         self.mqtt_broker = os.environ["MQTT_BROKER_HOST"]
         self.mqtt_port = int(os.environ.get("MQTT_BROKER_PORT", 1883))
@@ -54,7 +53,6 @@ class Asterisk_ACM(object):
         t.daemon = True
         t.start()
 
-
     def run_Console(self, cmd, id=None):
 
         cmd = "/usr/bin/ssh {} \"/usr/sbin/asterisk -x '{}'\"".format(DOCKER_HOST, cmd)
@@ -66,7 +64,7 @@ class Asterisk_ACM(object):
 
     def run_AMI(self, cmd, id=None):
         if not cmd:
-            raise Exception("Command missin!")
+            raise Exception("Command missing!")
         logger.debug('using host: {}'.format(DOCKER_HOST))
         client = AMIClient(address=DOCKER_HOST, port=int(os.getenv('ASTERISK_AMI_PORT', '5038')))
         username = os.environ["ASTERISK_AMI_USER"]
@@ -134,16 +132,19 @@ class Asterisk_ACM(object):
         self.mqttclient.subscribe("asterisk/ari/originate")
         self.mqttclient.loop_forever()
 
-    def ami_event_listener(self, event, **kwargs):
-        print event, kwargs
-        payload = json.dumps(kwargs)
-        self.publish('asterisk/ami/event', payload)
+    def on_event(self, event, **kwargs):
+        logger.info(event)
+        self.mqtt_client.publish('asterisk/ami/event', event.name)
 
     def connect_amiclient(self):
         logger.info('connecting amiclient')
         amiclient = AMIClient(address=DOCKER_HOST, port=int(os.getenv('ASTERISK_AMI_PORT', '5038')))
-        amiclient.add_event_listener(self.ami_event_listener)
+        username = os.environ["ASTERISK_AMI_USER"]
+        logger.debug('logging in {}'.format(username))
+        amiclient.login(username=username, secret=os.environ['ASTERISK_AMI_PASSWORD'])
+        amiclient.add_event_listener(self.on_event)
         self.amiclient = amiclient
+        AutoReconnect(self.amiclient)
 
     def connect_ariclient(self):
         logger.info('connecting ariclient')
@@ -222,14 +223,15 @@ class Asterisk_ACM(object):
         return channels[0].json if channels else None
 
     def run_amiclient(self):
+        try:
+            self.connect_amiclient()
+            logger.info('after connect')
+        except Exception:
+            logger.error(traceback.format_exc())
+            time.sleep(5)
+            self.run_amiclient()
         while True:
-            logger.info("Run AMI Client")
-            try:
-                self.amiclient
-            except:
-                connect_amiclient()
-            else:
-                time.sleep(5)
+            time.sleep(1)
 
     def run_ariclient(self):
         while True:
