@@ -23,6 +23,8 @@ logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 
+logger.info("Using Asterisk Server on {}".format(DOCKER_HOST))
+
 class Asterisk_ACM(object):
     def __init__(self):
         self.mqtt_broker = os.environ["MQTT_BROKER_HOST"]
@@ -58,10 +60,20 @@ class Asterisk_ACM(object):
             return
 
     def run_AMI(self, cmd, id=None):
-        client = AMIClient(address=DOCKER_HOST, port=5038)
-        client.login(username='admin', secret='0469fb7914d19888210e54e9fa9c4912')
+        if not cmd:
+            raise Exception("Command missin!")
+        logger.debug('using host: {}'.format(DOCKER_HOST))
+        client = AMIClient(address=DOCKER_HOST, port=int(os.getenv('ASTERISK_AMI_PORT', '5038')))
+        username = os.environ["ASTERISK_AMI_USER"]
+        logger.debug('logging in {}'.format(username))
+        client.login(username=username, secret=os.environ['ASTERISK_AMI_PASSWORD'])
+        logger.info("Command %s", cmd)
+        logger.debug('login successful')
+        cmd = json.loads(cmd)
+        logger.debug("SimpleAction of cmd")
         action = SimpleAction(**cmd)
         out = client.send_action(action).response
+        logger.debug("Result: {}".format(out))
         out = str(out).strip()
         success = 'success' in out
 
@@ -72,6 +84,7 @@ class Asterisk_ACM(object):
 
     def on_message(self, client, userdata, message):
         try:
+            logger.info("New Message %s", message.topic)
             if message.topic.startswith("asterisk/Console/send"):
                 mt = message.topic.split("/")
                 id = ""
@@ -85,7 +98,8 @@ class Asterisk_ACM(object):
                 if len(mt) == 4:
                     id = mt[3]
 
-                self.run_AMI(message.payload.decode("utf-8"), id)
+                msg = message.payload.decode("utf-8")
+                self.run_AMI(msg, id)
             elif message.topic == 'asterisk/ari/originate':
                 params = json.loads(message.payload)
                 odoo_instance = params.pop('odoo_instance', False)
