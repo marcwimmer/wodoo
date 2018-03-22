@@ -47,6 +47,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 
 def clean_number(number):
+    number = number.replace("+", "00")
     return (number or '').strip().replace(' ', '')
 
 class Connector(object):
@@ -147,6 +148,8 @@ class Connector(object):
     @cp.expose
     def attended_transfer(self):
         # https://wiki.asterisk.org/wiki/display/AST/Asterisk+13+ManagerAction_Atxfer
+        from pudb import set_trace
+        set_trace()
         action = {
             "name": 'Atxfer',
             "ActionID": str(uuid.uuid4()),
