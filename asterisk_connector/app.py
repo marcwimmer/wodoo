@@ -133,8 +133,7 @@ class Asterisk_ACM(EventListener):
         self.mqttclient.loop_forever()
 
     def on_event(self, event, **kwargs):
-        logger.info(event)
-        self.mqtt_client.publish('asterisk/ami/event', event.name)
+        self.publish('asterisk/ami/event/{}'.format(event.name), json.dumps(event.keys))
 
     def connect_amiclient(self):
         logger.info('connecting amiclient')
