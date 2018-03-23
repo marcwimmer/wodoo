@@ -141,7 +141,7 @@ class Asterisk_ACM(EventListener):
         username = os.environ["ASTERISK_AMI_USER"]
         logger.debug('logging in {}'.format(username))
         amiclient.login(username=username, secret=os.environ['ASTERISK_AMI_PASSWORD'])
-        amiclient.add_event_listener(self.on_event)
+        amiclient.add_event_listener(self.on_event, white_list=['Pickup'])
         self.amiclient = amiclient
         AutoReconnect(self.amiclient)
 
