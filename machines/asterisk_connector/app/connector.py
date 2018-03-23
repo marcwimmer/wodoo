@@ -148,8 +148,6 @@ class Connector(object):
     @cp.expose
     def attended_transfer(self):
         # https://wiki.asterisk.org/wiki/display/AST/Asterisk+13+ManagerAction_Atxfer
-        from pudb import set_trace
-        set_trace()
         action = {
             "name": 'Atxfer',
             "ActionID": str(uuid.uuid4()),
@@ -250,6 +248,35 @@ class Connector(object):
             odoo_instance=odoo_instance,
         )), qos=2)
 
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def accept_call(self):
+        # does not work
+        channel_name = cp.request.json['channel_name']
+        action = {
+            "name": 'AGI',
+            "ActionID": str(uuid.uuid4()),
+            "Channel": channel_name,
+            "Command": "ANSWER",
+            "CommandID": "test",
+        }
+        self.adminconsole(None, action, 'AMI')
+
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def reject_call(self):
+        # does not work
+        channel_id = cp.request.json['channel_id']
+        action = {
+            "name": 'AGI',
+            "ActionID": str(uuid.uuid4()),
+            "Channel": channel_id,
+            "Command": "REJECT",
+        }
+        self.adminconsole(None, action, 'AMI')
+
 def odoo_thread():
 
     def exe(*params):
@@ -311,6 +338,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/ari/channels_disconnected")
     client.subscribe("asterisk/ari/attended_transfer_done")
     client.subscribe("asterisk/ari/originate/result")
+    client.subscribe("asterisk/ami/event/#")
 
 def on_mqtt_message(client, userdata, msg):
     while not connector:
@@ -352,6 +380,19 @@ def on_mqtt_message(client, userdata, msg):
             channels += [event['transferer_first_leg']['id']]
             channels = list(set(channels))
             connector.on_attended_transfer(channels)
+
+        elif msg.topic.startswith('asterisk/ami/event/'):
+            if 'Pickup' == msg.topic.split("/")[-1]:
+                # logger.info("AMI EVENT %s", msg.topic)
+                data = json.loads(msg.payload)
+                # logger.info(json.dumps(data, sort_keys=True, indent=4))
+                mqttclient.publish(topic="asterisk/ari/channels_connected", qos=2, payload=json.dumps({
+                    'channel_ids': [data['Uniqueid'], data['TargetUniqueid']],  # they are names from AMI, but is converted in try_to_get_channels
+                    'channel_entered': {
+                        'name': data['Channel'],
+                        'id': data['Uniqueid'],
+                    },
+                }))
 
     except Exception:
         logger.error(traceback.format_exc())
