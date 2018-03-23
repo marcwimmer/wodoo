@@ -58,7 +58,6 @@ class Connector(object):
         self.dnds = set()
         self.lock = Lock()
         self.channels = {}
-        self.bridges = {}
 
         # initially load status
         self.ask_for_dnd()
@@ -83,11 +82,6 @@ class Connector(object):
         self.odoo('asterisk.connector', 'asterisk_on_attended_transfer', channel_ids)
 
     def on_channel_change(self, channel_json):
-        print
-        print
-        print channel_json['state'], channel_json['id']
-        print
-        print
         if not channel_json:
             return
         with self.lock:
@@ -307,7 +301,6 @@ def odoo_thread():
                 filepath = os.path.join(CONST_PERM_DIR, filename)
                 with open(filepath, 'r') as f:
                     params = json.loads(f.read())
-                print 'having params {}'.format(params)
                 had_error = False
                 while True:
                     try:
@@ -338,7 +331,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/ari/channels_disconnected")
     client.subscribe("asterisk/ari/attended_transfer_done")
     client.subscribe("asterisk/ari/originate/result")
-    client.subscribe("asterisk/ami/event/#")
+    client.subscribe("asterisk/ami/event/Pickup")
 
 def on_mqtt_message(client, userdata, msg):
     while not connector:
