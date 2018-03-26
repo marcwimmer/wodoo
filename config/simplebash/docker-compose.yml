@@ -27,4 +27,4 @@ services:
 networks:
     default:
         external:
-            name: ${PROJECT_NAME}_default
+            name: ${DCPREFIX}_default

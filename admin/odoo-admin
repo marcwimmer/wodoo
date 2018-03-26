@@ -226,7 +226,7 @@ env.write()
 
 	[[ "$VERBOSE" == "1" ]] && set -x
 
-    dc="/usr/local/bin/docker-compose -p $PROJECT_NAME -f $docker_compose_file"
+    dc="/usr/local/bin/docker-compose -p $DCPREFIX -f $docker_compose_file"
 	return 0
 }
 
@@ -292,7 +292,7 @@ function do_restore_db_in_docker_container () {
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
 		askcontinue "Removing docker volume postgres-data (irreversible)"
 	fi
-	VOLUMENAME=${PROJECT_NAME}_postgresdata
+	VOLUMENAME=${DCPREFIX}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
 	RESTOREFILE=/opt/dumpfile
