@@ -1,7 +1,7 @@
 #manage-order: 5000
 version: '3.3'
 volumes:
-    ${DCPREFIX}_asterisk_connector_perm:
+    asterisk_connector_perm:
 
 services:
   asterisk_connector:
@@ -11,7 +11,7 @@ services:
       - "8500:80"
     volumes:
       - $ODOO_HOME/machines/asterisk_connector/app:/usr/src/app
-      - ${DCPREFIX}_asterisk_connector_perm:/opt/perm
+      - asterisk_connector_perm:/opt/perm
     environment:
         OUTSIDE_PORT: 8500
         ODOO_HOST: proxy
