@@ -1,7 +1,7 @@
 #manage-order: 5000
 version: '3.3'
 volumes:
-  ${DCPREFIX}_libreoffice_exchange:
+  libreoffice_exchange:
 
 services:
   libreoffice:
@@ -11,10 +11,10 @@ services:
       INPUT: /tmp/lo/1
       OUTPUT: /tmp/lo/2
     volumes:
-      - ${DCPREFIX}_libreoffice_exchange:/tmp/lo
+      - libreoffice_exchange:/tmp/lo
   odoo_base:
     volumes:
-      - ${DCPREFIX}_libreoffice_exchange:/opt/libreoffice
+      - libreoffice_exchange:/opt/libreoffice
     environment:
       LIBREOFFICE_SEND: /opt/libreoffice/1
       LIBREOFFICE_RECEIVE: /opt/libreoffice/2

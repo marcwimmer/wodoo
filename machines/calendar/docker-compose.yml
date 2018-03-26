@@ -1,8 +1,8 @@
 version: '3.3'
 
 volumes:
-  ${DCPREFIX}_calendar:
-  ${DCPREFIX}_calendar_db:
+  calendar:
+  calendar_db:
 
 services:
   calendar:
@@ -15,7 +15,7 @@ services:
       - "3333:3333"
     volumes:
         - $ODOO_HOME/machines/calendar/conf:/config
-        - ${DCPREFIX}_calendar:/var/www/html
+        - calendar:/var/www/html
         - $ODOO_HOME/machines/calendar/src:/opt/src
         - $ODOO_HOME/machines/calendar/admin.py:/opt/admin.py
     environment:
@@ -34,7 +34,7 @@ services:
     container_name: ${DCPREFIX}_calendar_db
     image: postgres:9.6.6
     volumes:
-        - ${DCPREFIX}_calendar_db:/data
+        - calendar_db:/data
         - $ODOO_HOME/machines/calendar/add_users.sql:/docker-entrypoint-initdb.d/add_users.sql
     environment:
         POSTGRES_PASSWORD: davical
