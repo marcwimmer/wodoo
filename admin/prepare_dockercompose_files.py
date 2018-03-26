@@ -118,7 +118,7 @@ def post_process_complete_yaml_config(yml):
         if odoomachine == 'odoo_base':
             continue
         machine = yml['services'][odoomachine]
-
+        #yml['services'][odoomachine]["image"]=odoomachine
         for k in ['volumes']:
             machine[k] = []
             for x in yml['services']['odoo_base'][k]:
