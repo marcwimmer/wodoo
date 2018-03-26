@@ -2,8 +2,8 @@
 # so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
 version: '3.3'
 volumes:
-  mosquitto_logs:
-  mosquitto_data:
+  ${DCPREFIX}_mosquitto_logs:
+  ${DCPREFIX}_mosquitto_data:
 
 services:
 
@@ -13,8 +13,8 @@ services:
     build: $ODOO_HOME/machines/mosquitto
     volumes:
         - $ODOO_HOME/machines/mosquitto/config:/mqtt/config
-        - mosquitto_logs:/mqtt/logs
-        - mosquitto_data:/mqtt/data
+        - ${DCPREFIX}_mosquitto_logs:/mqtt/logs
+        - ${DCPREFIX}_mosquitto_data:/mqtt/data
     ports:
         - "1883:1883"
         - "9001:9001"

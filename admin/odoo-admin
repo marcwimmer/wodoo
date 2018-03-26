@@ -198,7 +198,7 @@ function export_settings() {
 	)
 	export ODOO_VERSION=$ODOO_VERSION
 	case "$ODOO_VERSION" in
-		"6.0"|"6.1"|"7.0"|"8.0"|"9.0")
+		"6.0"|"6.1"|"7.0"|"8.0"|"9.0"|"10.0")
 			export ODOO_PYTHON_VERSION=2
 			export ODOO_EXECUTABLE=openerp-server
 		;;
@@ -287,7 +287,7 @@ function do_restore_db_in_docker_container () {
         exit -1
     fi
 
-	$dc kill
+	$MANAGE kill
 	$dc rm -f || true
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
 		askcontinue "Removing docker volume postgres-data (irreversible)"
@@ -755,7 +755,7 @@ function do_command() {
         echo "Current machine $2 is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then."
         askcontinue
         # shutdown current machine and start via run and port-mappings the replacement machine
-        $dc kill "$2"
+		$MANAGE kill "$2"
         cd "$DIR"
 		DEBUGGING_COMPOSER=$DIR/run/debugging.yml
 		cp "$DIR/config/debugging/template.yml" "$DEBUGGING_COMPOSER"
@@ -796,9 +796,22 @@ function do_command() {
         cd "$DIR"
         $dc build "${ALL_PARAMS[@]}"
         ;;
+	force-kill)
+		if [[ -z "$2" ]]; then
+			echo "Please provide machine name."
+			exit 1
+		fi
+        eval "$dc kill $2"
+		;;
     kill)
         cd "$DIR"
-        eval "$dc kill $2 $3 $4 $5 $6 $7 $8 $9"
+		if [[ -z "$2" ]]; then
+			eval "$dc stop -t 20 redis"  # persist data
+			if [[ "$RUN_POSTGRES" == "1" ]]; then
+				eval "$dc stop -t 20 postgres"
+			fi
+		fi
+		eval "$dc stop -t 10 $2 $3 $4 $5 $6 $7 $8 $9"
         ;;
     stop)
         cd "$DIR"
@@ -828,7 +841,7 @@ function do_command() {
         ;;
     restart)
         cd "$DIR"
-        eval "$dc kill $2"
+		eval "$dc stop $2"
         eval "$dc rm -f $2"
         eval "$dc up --force-recreate -d $2"
 		$MANAGE proxy-reload

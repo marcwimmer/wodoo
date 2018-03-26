@@ -1,6 +1,10 @@
 #manage-order 1500
 version: '3.3'
+volumes:
+    ${DCPREFIX}_redis_persistent_data:
 services:
   redis:
     container_name: ${DCPREFIX}_redis
     image: redis
+    volumes: 
+      - ${DCPREFIX}_redis_persistent_data:/data

@@ -1,7 +1,7 @@
 #manage-order: 5000
 version: '3.3'
 volumes:
-    asterisk_connector_perm:
+    ${DCPREFIX}_asterisk_connector_perm:
 
 services:
   asterisk_connector:
@@ -11,9 +11,12 @@ services:
       - "8500:80"
     volumes:
       - $ODOO_HOME/machines/asterisk_connector/app:/usr/src/app
-      - asterisk_connector_perm:/opt/perm
+      - ${DCPREFIX}_asterisk_connector_perm:/opt/perm
     environment:
         OUTSIDE_PORT: 8500
         ODOO_HOST: proxy
         ODOO_PORT: 80
         PERM_DIR: /opt/perm
+        REDIS_HOST: redis
+    depends_on: 
+        - redis

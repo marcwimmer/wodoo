@@ -1,7 +1,7 @@
 # manage-order: 500
 version: '3.3'
 volumes:
-  postgresdata:
+  ${DCPREFIX}_postgresdata:
 services:
   postgres:
     container_name: ${DCPREFIX}_postgres
@@ -9,7 +9,7 @@ services:
     volumes:
       - ${DUMPS_PATH}:/opt/dumps
       - $ODOO_HOME/run/sqlscripts:/opt/sqlscripts
-      - postgresdata:/var/lib/postgresql/data
+      - ${DCPREFIX}_postgresdata:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: 1
       PGDATA: /var/lib/postgresql/data/pgdata

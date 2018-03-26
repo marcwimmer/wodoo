@@ -2,8 +2,8 @@
 # so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
 version: '3.3'
 volumes:
-  mailstorage:
-  mailsqlite:
+  ${DCPREFIX}_mailstorage:
+  ${DCPREFIX}_mailsqlite:
 
 services:
 
@@ -12,8 +12,8 @@ services:
     container_name: ${DCPREFIX}_mail
     build: $ODOO_HOME/machines/mail
     volumes:
-      - mailstorage:/home/postmaster/Maildir
-      - mailsqlite:/rc
+      - ${DCPREFIX}_mailstorage:/home/postmaster/Maildir
+      - ${DCPREFIX}_mailsqlite:/rc
       - $ODOO_HOME/machines/mail/bin:/opt/bin
     ports:
       - "${SMTP_PORT}:25"

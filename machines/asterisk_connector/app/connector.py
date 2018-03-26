@@ -23,7 +23,13 @@ import paho.mqtt.client as mqtt
 from datetime import datetime
 from datetime import timedelta
 import arrow
-from threading import Lock, Thread
+from threading import Thread
+import redis
+from redis import StrictRedis
+from redisworks import Root as Redis
+REDIS_HOST = 'redis'
+EXPIRE_CHANNEL = 3600 * 24 # seconds
+redis_connection_pool = redis.BlockingConnectionPool(host=os.environ['REDIS_HOST'])
 
 CONST_PERM_DIR = os.environ['PERM_DIR']
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
@@ -53,19 +59,13 @@ def clean_number(number):
 class Connector(object):
 
     def __init__(self):
-        self.lock = Lock()
-        self.extensions = {}
-        self.dnds = set()
-        self.lock = Lock()
-        self.channels = {}
-
         # initially load status
         self.ask_for_dnd()
 
     def try_to_get_channels(self, channel_ids):
         channels = []
         for channel_id in channel_ids:
-            channel = self.channels.get(channel_id, None)
+            channel = self._get_channel(channel_id)
             if channel:
                 channels.append(channel)
         return channels
@@ -84,10 +84,19 @@ class Connector(object):
     def on_channel_change(self, channel_json):
         if not channel_json:
             return
-        with self.lock:
-            self.channels.setdefault(channel_json['id'], channel_json)
-            for k, v in channel_json.items():
-                self.channels[channel_json['id']][k] = v
+
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        id = channel_json['id']
+        pipeline = redisStrict.pipeline()
+        pipeline.sadd('channel_ids', id)
+        pipeline.setex(name='channel_creation_date,{}'.format(id), value=channel_json['creationtime'], time=EXPIRE_CHANNEL)
+        current_value = self._get_channel(id) or {}
+        for k, v in channel_json.items():
+            current_value[k] = v
+        current_value = json.dumps(current_value)
+        pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
+        print 'setting channel', 'channel,{}'.format(id)
+        pipeline.execute()
 
         self.odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
 
@@ -113,8 +122,15 @@ class Connector(object):
     @cp.expose
     def get_channel(self):
         id = cp.request.json['id']
-        with self.lock:
-            return self.channels.get(id, None)
+        return self._get_channel(id)
+
+    def _get_channel(self, id):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        result = redisStrict.get('channel,{}'.format(id))
+        print 'get channel', 'channel,{}'.format(id), result
+        if result:
+            result = json.loads(result)
+        return result
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -127,9 +143,30 @@ class Connector(object):
         return result
 
     def _get_active_channel(self, extension):
-        with self.lock:
-            critdate = arrow.get(datetime.now() - timedelta(days=1)).replace(tzinfo='utc').datetime
-            current_channels = filter(lambda channel: channel['state'] != 'Down' and arrow.get(channel['creationtime']).datetime > critdate, self.channels.values())
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        critdate = arrow.get(datetime.now() - timedelta(days=1)).replace(tzinfo='utc').datetime
+
+        data = {
+            'date_reached': False,
+        }
+
+        def filter_channel(channel_id):
+            if data['date_reached']:
+                return False
+
+            channel = self._get_channel(channel_id)
+            if not channel:
+                return False
+            if channel['state'] == "Down":
+                return False
+            if arrow.get(channel['creationtime']).datetime < critdate:
+                data['date_reached'] = True
+                return False
+            return channel
+
+        current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(redisStrict.smembers('channel_ids'), reverse=True)))
+        if extension == '13':
+            print len(current_channels)
 
         # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
         channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels)
@@ -186,42 +223,34 @@ class Connector(object):
         self.adminconsole("DND-State", "database show dnd", 'Console')
 
     def eval_dnd_state(self, payload):
-        with self.lock:
-            self.dnds = set()
-            for line in payload.split("\n"):
-                line = line.strip()
-                if line.startswith("/DND/"):
-                    extension = line.split("/DND/")[-1].split(":")[0].strip()
-                    self.dnds.add(extension)
+        dnds = set()
+        for line in payload.split("\n"):
+            line = line.strip()
+            if line.startswith("/DND/"):
+                extension = line.split("/DND/")[-1].split(":")[0].strip()
+                dnds.add(extension)
+        redis.DND = dnds or None
 
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
     def dnd(self):
         self.adminconsole("DND-State", "database show dnd", 'Console')
-        with self.lock:
-            return list(self.dnds)
+        return list(redis.DND or [])
 
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
     def get_state(self):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
 
         self.adminconsole("sip show channels", "sip show channels", "Console")
-        with self.lock:
-            dnds = self.dnds
+        dnds = list(redis.DND or [])
         return {
             'extension_states': self.get_extension_states(),
-            'channels': self.channels.values(),
+            'channels': redisStrict.smembers('channel_ids'),
             'dnds': dnds,
         }
-
-    @cp.expose
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    def get_extension_states(self):
-        with self.lock:
-            return [x.jsonify() for x in self.extensions.values()]
 
     @cp.expose
     @cp.tools.json_in()

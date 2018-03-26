@@ -6,3 +6,4 @@ arrow==0.12.1
 websocket==0.2.1
 redis==2.10.6
 pudb
+redisworks==0.2.7
