@@ -95,7 +95,6 @@ class Connector(object):
             current_value[k] = v
         current_value = json.dumps(current_value)
         pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
-        print 'setting channel', 'channel,{}'.format(id)
         pipeline.execute()
 
         self.odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
@@ -127,7 +126,6 @@ class Connector(object):
     def _get_channel(self, id):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         result = redisStrict.get('channel,{}'.format(id))
-        print 'get channel', 'channel,{}'.format(id), result
         if result:
             result = json.loads(result)
         return result
@@ -165,8 +163,6 @@ class Connector(object):
             return channel
 
         current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(redisStrict.smembers('channel_ids'), reverse=True)))
-        if extension == '13':
-            print len(current_channels)
 
         # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
         channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels)
@@ -223,20 +219,26 @@ class Connector(object):
         self.adminconsole("DND-State", "database show dnd", 'Console')
 
     def eval_dnd_state(self, payload):
-        dnds = set()
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        exts = set()
         for line in payload.split("\n"):
             line = line.strip()
             if line.startswith("/DND/"):
                 extension = line.split("/DND/")[-1].split(":")[0].strip()
-                dnds.add(extension)
-        redis.DND = dnds or None
+                redisStrict.sadd('DND', extension)
+                exts.add(extension)
+        for x in redisStrict.smembers("DND"):
+            if x not in exts:
+                redisStrict.srem('DND', x)
 
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
     def dnd(self):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         self.adminconsole("DND-State", "database show dnd", 'Console')
-        return list(redis.DND or [])
+        result = list(redisStrict.smembers('DND') or [])
+        return result
 
     @cp.expose
     @cp.tools.json_in()
@@ -245,7 +247,7 @@ class Connector(object):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
 
         self.adminconsole("sip show channels", "sip show channels", "Console")
-        dnds = list(redis.DND or [])
+        dnds = list(redisStrict.smembers('DND') or [])
         return {
             'extension_states': self.get_extension_states(),
             'channels': redisStrict.smembers('channel_ids'),
