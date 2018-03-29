@@ -96,5 +96,8 @@ echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
 echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
 
+ADD wkhtmltox/wkhtmltox-0.12.1_linux-trusty-amd64.deb /tmp/wkhtml.deb
+RUN dpkg -i /tmp/wkhtml.deb
+
 ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
