@@ -198,10 +198,14 @@ function export_settings() {
 	)
 	export ODOO_VERSION=$ODOO_VERSION
 	case "$ODOO_VERSION" in
-		"6.0"|"6.1"|"7.0"|"8.0"|"9.0"|"10.0")
+		"6.0"|"6.1"|"7.0"|"8.0"|"9.0")
 			export ODOO_PYTHON_VERSION=2
 			export ODOO_EXECUTABLE=openerp-server
-		;;
+			;;
+		"10.0")
+			export ODOO_PYTHON_VERSION=2
+			export ODOO_EXECUTABLE=odoo-bin
+			;;
 		*)
 			export ODOO_PYTHON_VERSION=3
 			export ODOO_EXECUTABLE=odoo-bin

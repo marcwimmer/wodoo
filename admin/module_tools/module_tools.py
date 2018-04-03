@@ -782,13 +782,16 @@ def update_view_in_db(filepath, lineno):
 
     line = lineno
     xmlid = ""
-    while line >= 0:
+    while line >= 0 and not xmlid:
         if "<record " in xml[line] or "<template " in xml[line]:
-            # with search:
-            match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line])
-            if match:
-                xmlid = match[0]
-                break
+            line2 = line
+            while line2 < lineno:
+                # with search:
+                match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line2])
+                if match:
+                    xmlid = match[0]
+                    break
+                line2 += 1
 
         line -= 1
 
@@ -827,6 +830,8 @@ def update_view_in_db(filepath, lineno):
 
     if xmlid:
         arch = get_arch()
+        if '.' in xmlid:
+            module, xmlid = xmlid.split('.', 1)
         if arch:
             conn, cr = get_conn()
             try:
@@ -841,6 +846,7 @@ def update_view_in_db(filepath, lineno):
                              ])
                 res = cr.fetchone()
                 if res:
+                    print 'updating view of xmlid: %s.%s' % (module, xmlid)
                     res_id = res[0]
                     cr.execute("select type from ir_ui_view where id=%s", (res_id,))
                     view_type = cr.fetchone()[0]
