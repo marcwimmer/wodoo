@@ -123,7 +123,7 @@ def execute_managesh(*args, **kwargs):
         while proc.returncode is None:
             proc.wait()
         if proc.returncode:
-            raise Exception(u'\n'.join(output))
+            raise Exception(u'\n'.join(map(str, output)))
     return u'\n'.join(output)
 
 def get_conn(db=None, host=None):

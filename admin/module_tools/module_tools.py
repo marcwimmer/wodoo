@@ -23,6 +23,8 @@ from myconfigparser import MyConfigParser
 import traceback
 import odoo_parser
 from odoo_parser import get_view
+from odoo_parser import is_module_of_version
+from odoo_parser import manifest2dict
 import fnmatch
 import re
 import pprint
@@ -36,6 +38,20 @@ import threading
 
 
 ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
+host = "http://localhost:8069"
+
+username = "admin"
+pwd = "1"
+
+
+def exe(*params):
+    def login(username, password):
+        socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (host))
+        return socket_obj.login(current_db(), username, password)
+    uid = login(username, pwd)
+    socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (host))
+    return socket_obj.execute(current_db(), uid, pwd, *params)
+
 
 def apply_po_file(pofile_path):
     """
@@ -300,16 +316,6 @@ def get_manifest_path_of_module_path(module_path):
         if os.path.isfile(path):
             return path
 
-def manifest2dict(manifest_path):
-    with open(manifest_path, 'r') as f:
-        content = f.read()
-    try:
-        info = eval(content)
-    except Exception:
-        print "error at file: %s" % manifest_path
-        raise
-    return info
-
 
 def get_path_to_current_odoo_module(current_file):
     """
@@ -367,37 +373,45 @@ def goto_inherited_view(filepath, line, current_buffer):
 
 def is_module_dir_in_version(module_dir):
     version = current_version()
-    result = {'ok': False, "paths": []}
-    info_file = os.path.join(module_dir, ".ln")
-    if os.path.exists(info_file):
-        info = manifest2dict(info_file)
-        if isinstance(info, (float, long, int)):
-            min_ver = info
-            max_ver = info
-            info = {'minimum_version': min_ver, 'maximum_version': max_ver}
-        else:
-            min_ver = info.get("minimum_version", 1.0)
-            max_ver = info.get("maximum_version", 1000.0)
-        if min_ver > max_ver:
-            raise Exception("Invalid version: {}".format(module_dir))
-        if float(version) >= float(min_ver) and float(version) <= float(max_ver):
-            result['ok'] = True
+    raise Exception('hier')
+    if version >= 11.0:
+        ok = is_module_of_version(module_dir)
+        return {
+            'ok': ok,
+            'paths': [module_dir]
+        }
+    else:
+        result = {'ok': False, "paths": []}
+        info_file = os.path.join(module_dir, '.ln')
+        if os.path.exists(info_file):
+            info = manifest2dict(info_file)
+            if isinstance(info, (float, long, int)):
+                min_ver = info
+                max_ver = info
+                info = {'minimum_version': min_ver, 'maximum_version': max_ver}
+            else:
+                min_ver = info.get("minimum_version", 1.0)
+                max_ver = info.get("maximum_version", 1000.0)
+            if min_ver > max_ver:
+                raise Exception("Invalid version: {}".format(module_dir))
+            if float(version) >= float(min_ver) and float(version) <= float(max_ver):
+                result['ok'] = True
 
-        for m in MANIFESTS:
-            if os.path.exists(os.path.join(module_dir, m)):
-                result['paths'].append(module_dir)
-        if info.get('paths') and result['ok']:
-            # used for OCA paths for example
-            for path in info['paths']:
-                path = os.path.abspath(os.path.join(module_dir, path))
-                result['paths'].append(path)
-    elif "/OCA/" in module_dir:
-        relpath = module_dir.split(u"/OCA/")[1].split("/")
-        if len(relpath) == 2:
-            return {
-                'ok': True,
-                'paths': [module_dir],
-            }
+            for m in MANIFESTS:
+                if os.path.exists(os.path.join(module_dir, m)):
+                    result['paths'].append(module_dir)
+            if info.get('paths') and result['ok']:
+                # used for OCA paths for example
+                for path in info['paths']:
+                    path = os.path.abspath(os.path.join(module_dir, path))
+                    result['paths'].append(path)
+        elif "/OCA/" in module_dir:
+            relpath = module_dir.split(u"/OCA/")[1].split("/")
+            if len(relpath) == 2:
+                return {
+                    'ok': True,
+                    'paths': [module_dir],
+                }
 
     return result
 
@@ -824,7 +838,13 @@ def update_view_in_db(filepath, lineno):
                 raise Exception("impl")
 
             if arch:
-                return extract_html(arch[0])
+                html = extract_html(arch[0])
+                if node.tag == 'template':
+                    html = """
+<t t-name="{}">
+{}
+</t>""".format(xmlid, html)
+                return html
 
         return None
 
@@ -873,6 +893,8 @@ def update_view_in_db(filepath, lineno):
                             conn.rollback()
 
                 conn.commit()
+
+                exe("ir.ui.view", "write", [res_id], {'arch_db': arch})
             except Exception:
                 conn.rollback()
                 raise
