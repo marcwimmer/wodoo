@@ -2,7 +2,7 @@
 {
     'auto_install': False,
     'name': '__module_name__',
-    'version': '1.0',
+    'version': '11.0.1.0',
     'author': 'Marc Wimmer (marc@itewimmer.de)',
     'depends': ['base'],
     'demo_xml': [],

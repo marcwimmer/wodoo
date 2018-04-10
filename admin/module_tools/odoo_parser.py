@@ -112,7 +112,8 @@ def is_module_of_version(path):
             manifest = manifest2dict(path)
             v = manifest.get('version', '0.0')
             if len(v.split('.')) < 4:
-                raise Exception("Manifest file {} contains invalid version: {}".format(path, v))
+                # raise Exception("Manifest file {} contains invalid version: {}".format(path, v))
+                return False
             return v.startswith(str(VERSION) + ".")
     else:
         LNFILE = os.path.join(path, LN_FILE)
