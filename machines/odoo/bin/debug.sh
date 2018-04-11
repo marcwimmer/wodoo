@@ -10,4 +10,4 @@ echo "$*" |grep -q '[-]quick' || {
 }
 
 sudo pkill -9 -f /opt/odoo > /dev/null
-sudo -E -H -u odoo $SERVER_DIR/$ODOO_EXECUTABLE -d $DBNAME -c $CONFIG_DIR/config_debug --pidfile=$DEBUGGER_ODOO_PID 2>/dev/null #WSGI server logs to stdout
+ODOO_TRACE=1 sudo -E -H -u odoo $SERVER_DIR/$ODOO_EXECUTABLE -d $DBNAME -c $CONFIG_DIR/config_debug --pidfile=$DEBUGGER_ODOO_PID 2>/dev/null #WSGI server logs to stdout
