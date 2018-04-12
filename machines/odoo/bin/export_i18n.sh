@@ -7,12 +7,12 @@ if [ -z "$1" ]; then
     exit -1
 fi
 
-LANG=$1
-MODULES=$2
+LANG="$1"
+MODULES="$2"
 
 /apply-env-to-config.sh
 
-export_dir=${ADDONS_CUSTOMS}/${MODULES}
+export_dir="${ADDONS_CUSTOMS}/$MODULES"
 if [[ -z "$(find "$export_dir" 2>/dev/null)" ]]; then
 	echo "Symlink not found: $export_dir"
 fi

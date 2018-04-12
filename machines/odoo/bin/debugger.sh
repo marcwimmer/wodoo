@@ -132,7 +132,20 @@ while true; do
 					/unit_test.sh "$last_unit_test"
 				fi
 
+			elif [[ "$action" == 'export_i18n' ]]; then
+				# export_i18n:lang:module
+				lang=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
+				module=$(awk '{split($0, a, ":"); print a[3]}' < "$DEBUGGER_WATCH")
+				/export_i18n.sh "$lang" "$module"
+				
+			elif [[ "$action" == 'import_i18n' ]]; then
+				# import_i18n:lang:filepath
+				lang=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
+				filepath=$(awk '{split($0, a, ":"); print a[3]}' < "$DEBUGGER_WATCH")
+				/import_i18n.sh "$lang" "$filepath"
+
 			fi
+
 			last_mod=$new_mod
 		fi
 

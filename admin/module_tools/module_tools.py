@@ -9,7 +9,6 @@ from odoo_config import get_env
 from odoo_config import odoo_root
 from odoo_config import run_dir
 from odoo_config import get_version_from_customs
-from odoo_config import execute_managesh
 from odoo_config import get_conn
 from odoo_config import current_customs
 from odoo_config import current_version
@@ -19,6 +18,7 @@ from odoo_config import install_file
 from odoo_config import translate_path_into_machine_path
 from odoo_config import set_customs
 from odoo_config import translate_path_relative_to_customs_root
+from odoo_config import get_module_directory_in_machine
 from myconfigparser import MyConfigParser
 import traceback
 import odoo_parser
@@ -38,6 +38,10 @@ import threading
 
 
 ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
+if current_version() == 7.0:
+    LANG = 'de'
+else:
+    LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
 host = "http://localhost:8069"
 
 username = "admin"
@@ -57,17 +61,12 @@ def apply_po_file(pofile_path):
     """
     pofile_path - pathin in the machine
     """
+    modname = get_module_of_file(pofile_path)
     LANG = os.path.basename(pofile_path).split(".po")[0]
-    module = get_module_of_file(pofile_path)
-    langs = get_all_langs()
+    pofile_path = os.path.join(modname, pofile_path.split(modname + "/")[-1])
 
-    for lang in langs:
-        if not lang.startswith(LANG):
-            continue
-
-        tempfile_within_container = os.path.join('/opt/odoo/server/addons/', module, 'i18n', os.path.basename(pofile_path))
-
-        execute_managesh('import-i18n', lang, tempfile_within_container)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('import_i18n:{}:{}'.format(LANG, pofile_path))
 
 def delete_qweb(modules):
     conn, cr = get_conn()
@@ -119,19 +118,8 @@ def delete_qweb(modules):
 
 def export_lang(current_file):
     module = get_module_of_file(current_file)
-    langs = get_all_langs()
-    for lang in langs:
-        execute_managesh('export-i18n', lang, module)
-
-        # here is the new generated po file now
-        new_file_path = os.path.join(run_dir(), 'i18n', 'export.po')
-
-        dest_path = os.path.join(
-            get_path_to_current_odoo_module(current_file),
-            'i18n',
-            '{}.po'.format(lang)
-        )
-        shutil.copy(new_file_path, dest_path)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('export_i18n:{}:{}'.format(LANG, module))
 
 def get_all_customs():
     home = os.path.join(odoo_root(), 'data/src/customs')
@@ -141,10 +129,6 @@ def get_all_customs():
         if os.path.isdir(os.path.join(home, dir)):
             customs.append(dir)
     return customs
-
-def get_all_langs():
-    langs = execute_managesh('get_all_langs').split(' ')
-    return langs
 
 def get_all_manifests():
     """
@@ -680,16 +664,7 @@ def set_ownership_exclusive(host=None):
 
 def syncsource(path, do_async=False):
     if path.endswith('.po'):
-        machine_path = translate_path_into_machine_path(path)
-        apply_po_file(machine_path)
-
-def switch_customs_and_db(customs, db):
-    if not db:
-        db = customs.split("_")[-1]
-
-    execute_managesh('kill')
-    set_customs(customs, db)
-    execute_managesh('up', '-d', do_async=True)
+        apply_po_file(path)
 
 def update_module_file(current_file):
     if not current_file:
