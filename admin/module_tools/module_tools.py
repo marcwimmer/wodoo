@@ -357,7 +357,6 @@ def goto_inherited_view(filepath, line, current_buffer):
 
 def is_module_dir_in_version(module_dir):
     version = current_version()
-    raise Exception('hier')
     if version >= 11.0:
         ok = is_module_of_version(module_dir)
         return {
