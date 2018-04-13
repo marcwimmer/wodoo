@@ -1,4 +1,7 @@
 from .models import *
-from .tests import *
+#from .tests import *
+# def post_init_hook(cr, pool):
+    # pass
 
-from .hooks import post_load, post_init_hook
+# def post_load():
+    # pass
