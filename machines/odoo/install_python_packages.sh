@@ -49,7 +49,7 @@ elif [ "$ODOO_PYTHON_VERSION" == "3" ]; then
 
 fi
 
-$PIP install pip --upgrade
+$PIP install pip==9.0.3 --upgrade
 
 # minimum packages
 $PIP install pudb
