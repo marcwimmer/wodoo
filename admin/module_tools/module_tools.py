@@ -553,11 +553,6 @@ def make_module(parent_path, module_name):
         with open(install_file(), 'w') as f:
             f.write("\n".join(content))
 
-def update_module(filepath):
-    module = get_module_of_file(filepath)
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        f.write('update_module:{}'.format(module))
-
 def restart(quick):
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         if quick:
@@ -664,6 +659,11 @@ def set_ownership_exclusive(host=None):
 def syncsource(path, do_async=False):
     if path.endswith('.po'):
         apply_po_file(path)
+
+def update_module(filepath, full=False):
+    module = get_module_of_file(filepath)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('update_module{}:{}'.format('_full' if full else '', module))
 
 def update_module_file(current_file):
     if not current_file:

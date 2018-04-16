@@ -115,10 +115,13 @@ while true; do
 				reset
 				/debug.sh -quick
 
-
-			elif [[ "$action" == 'update_module' ]]; then
+			elif [[ "$action" == 'update_module' || "$action" == "update_module_full" ]]; then
+				PARAM_FAST=""
+				if [[ "$action" == "update_module" ]]; then
+					PARAM_FAST="-fast"
+				fi
 				module=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-				/update_modules.sh "$module" && {
+				/update_modules.sh "$module" "$PARAM_FAST" && {
 					/debug.sh -quick
 				}
 

@@ -1,4 +1,11 @@
 #!/bin/bash
+ARGS=( "$@" )
+FASTMODE=0
+echo "${ARGS[*]} " |grep -P -q '[-]fast\ ' && {
+	FASTMODE=1
+}
+DANGLING=0
+
 function get_modules() {
 	local mode
 	mode="$1" #to_install, to_update
@@ -133,9 +140,11 @@ function main() {
 
 	summary=()
 	# could be, that a new version is triggered
-	check_for_dangling_modules
+	if [[ "$FASTMODE" == 0 ]]; then
+		check_for_dangling_modules
+	fi
 
-	if [[ "$DANGLING" == "0" ]]; then
+	if [[ "$FASTMODE" == "0" && "$DANGLING" == "0" ]]; then
 		update_module_list
 	fi
 
@@ -157,16 +166,18 @@ function main() {
 	update 'u' "$MODULE"
 
 	# check if at auto installed modules all predecessors are now installed; then install them
-	auto_install_modules=$(get_uninstalled_modules_that_are_auto_install_and_should_be_installed)
-	if [[ -n "$auto_install_modules" ]]; then
-		echo "Going to install following modules, that are auto installable modules"
-		sleep 5
-		echo "$auto_install_modules"
-		echo ""
-		sleep 2
-		echo "You should press Ctrl+C NOW to abort"
-		sleep 8
-		update 'i' "$auto_install_modules"
+	if [[ "$FASTMODE" == "0" ]]; then
+		auto_install_modules=$(get_uninstalled_modules_that_are_auto_install_and_should_be_installed)
+		if [[ -n "$auto_install_modules" ]]; then
+			echo "Going to install following modules, that are auto installable modules"
+			sleep 5
+			echo "$auto_install_modules"
+			echo ""
+			sleep 2
+			echo "You should press Ctrl+C NOW to abort"
+			sleep 8
+			update 'i' "$auto_install_modules"
+		fi
 	fi
 
 	echo
@@ -180,12 +191,15 @@ function main() {
 	done
 	echo "UPDATE ${MODULE:0:30}..."
 	echo
-	cd /opt/odoo/admin/module_tools
-	python <<-EOF
-	import module_tools
-	module_tools.check_if_all_modules_from_instal_are_installed()
-	EOF
-	echo
+
+	if [[ "$FASTMODE" == "0" ]]; then
+		cd /opt/odoo/admin/module_tools
+		python <<-EOF
+		import module_tools
+		module_tools.check_if_all_modules_from_instal_are_installed()
+		EOF
+		echo
+	fi
 	echo
 }
 
