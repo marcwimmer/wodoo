@@ -143,11 +143,8 @@ def is_module_of_version(path):
 
 def walk_files(on_match, pattern):
     from module_tools import get_module_of_file
-    IGNORE_PATHS = set()
 
     def handle(path, dirs, files):
-        if any(path.startswith(x) for x in IGNORE_PATHS):
-            return
         if is_module_of_version(path):
             for filename in fnmatch.filter(files, pattern):
                 filename = os.path.join(path, filename)
@@ -160,8 +157,6 @@ def walk_files(on_match, pattern):
                     lines = f.read().split("\n")
 
                 on_match(filename, module, lines)
-        else:
-            IGNORE_PATHS.add(path)
 
     if modified_filename:
         root = os.path.dirname(modified_filename)
