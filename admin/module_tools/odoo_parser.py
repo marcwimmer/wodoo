@@ -107,7 +107,12 @@ def manifest2dict(manifest_path):
 
 def is_module_of_version(path):
     if VERSION >= 11.0:
-        path = os.path.join(os.path.abspath(path), MANIFEST_FILE)
+        p = path
+        while p and p != '/':
+            if os.path.exists(os.path.join(os.path.abspath(p), MANIFEST_FILE)):
+                break
+            p = os.path.dirname(p)
+        path = os.path.join(os.path.abspath(p), MANIFEST_FILE)
         if os.path.exists(path):
             manifest = manifest2dict(path)
             v = manifest.get('version', '0.0')
