@@ -656,7 +656,7 @@ function do_command() {
 		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
 		restore_check "$dumpfile"
 
-		if [[ "$DEVMODE" == "1" ]]; then
+		if [[ "$DEVMODE" == "1" && "$RESTORE_DEV_DB" != "1" ]]; then
 			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"
 		fi
 
@@ -690,6 +690,7 @@ function do_command() {
 			exit -1
 		fi
         echo "Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs"
+		export RESTORE_DEV_DB=1
 		set +e
 		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
 		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
