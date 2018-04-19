@@ -145,7 +145,8 @@ def walk_files(on_match, pattern):
     from module_tools import get_module_of_file
 
     def handle(path, dirs, files):
-        if is_module_of_version(path):
+
+        if is_module_of_version(path) or 'odoo/addons' in path:
             for filename in fnmatch.filter(files, pattern):
                 filename = os.path.join(path, filename)
                 if ignore_file(filename):

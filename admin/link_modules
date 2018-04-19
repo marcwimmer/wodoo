@@ -36,6 +36,8 @@ def search_dir_for_modules(base_dir):
     def link_module(complete_module_dir):
         global counter
         if version >= 11.0:
+            if not os.path.exists(os.path.join(complete_module_dir, '__manifest__.py')):
+                return
             abs_root = os.path.abspath(base_dir)
             dir = os.path.abspath(complete_module_dir)
             module_name = get_module_of_file(complete_module_dir)
@@ -48,6 +50,8 @@ def search_dir_for_modules(base_dir):
                     elif "/OCA/" in complete_module_dir:
                         os.unlink(target)
                     else:
+                        from pudb import set_trace
+                        set_trace()
                         raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
             rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
             os.symlink(rel_path, target)
@@ -94,6 +98,8 @@ def search_dir_for_modules(base_dir):
 
     def visit(root, dir, files):
         if '/.git/' in dir:
+            return
+        if '__pycache__' in dir:
             return
         if any(x in dir for x in IGNORE_PATHS):
             return
