@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import os
 import paho.mqtt.client as mqtt
 import subprocess
@@ -11,6 +10,7 @@ import websocket
 import socket
 import time
 import ari
+from asterisk.ami import AMIClient, SimpleAction, AutoReconnect, EventListener
 
 ARI_APP_NAME = "asterisk_odoo_connector2"
 DOCKER_HOST = subprocess.check_output(["route | awk '/^default/ { print $2 }'"], shell=True).strip()
@@ -22,7 +22,9 @@ logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 
-class Asterisk_ACM(object):
+logger.info("Using Asterisk Server on {}".format(DOCKER_HOST))
+
+class Asterisk_ACM(EventListener):
     def __init__(self):
         self.mqtt_broker = os.environ["MQTT_BROKER_HOST"]
         self.mqtt_port = int(os.environ.get("MQTT_BROKER_PORT", 1883))
@@ -47,52 +49,101 @@ class Asterisk_ACM(object):
         t.daemon = True
         t.start()
 
-    def run_Console(self,cmd,id=None):
+        t = threading.Thread(target=self.run_amiclient)
+        t.daemon = True
+        t.start()
+
+    def run_Console(self, cmd, id=None):
 
         cmd = "/usr/bin/ssh {} \"/usr/sbin/asterisk -x '{}'\"".format(DOCKER_HOST, cmd)
         p = subprocess.check_output(cmd, shell=True)
 
         if id:
-            self.publish("asterisk/Console/result/{}".format(id),p.strip())
+            self.publish("asterisk/Console/result/{}".format(id), p.strip())
             return
-        self.publish("asterisk/Console/result",p)
+
+    def run_AMI(self, cmd, id=None):
+        if not cmd:
+            raise Exception("Command missing!")
+        logger.debug('using host: {}'.format(DOCKER_HOST))
+        client = AMIClient(address=DOCKER_HOST, port=int(os.getenv('ASTERISK_AMI_PORT', '5038')))
+        username = os.environ["ASTERISK_AMI_USER"]
+        logger.debug('logging in {}'.format(username))
+        client.login(username=username, secret=os.environ['ASTERISK_AMI_PASSWORD'])
+        logger.info("Command %s", cmd)
+        logger.debug('login successful')
+        cmd = json.loads(cmd)
+        logger.debug("SimpleAction of cmd")
+        action = SimpleAction(**cmd)
+        out = client.send_action(action).response
+        logger.debug("Result: {}".format(out))
+        out = str(out).strip()
+        success = 'success' in out
+
+        if id:
+            result = {'success': success, 'data': out}
+            self.publish("asterisk/AMI/result/{}".format(id), json.dumps(result))
+            return
 
     def on_message(self, client, userdata, message):
         try:
+            logger.info("New Message %s", message.topic)
             if message.topic.startswith("asterisk/Console/send"):
                 mt = message.topic.split("/")
-                id=""
-                if len(mt)==4:
-                    id=mt[3]
+                id = ""
+                if len(mt) == 4:
+                    id = mt[3]
 
-                self.run_Console(message.payload.decode("utf-8"),id)
-                #self.publish("asterisk/Console/result",message.payload)
+                self.run_Console(message.payload.decode("utf-8"), id)
+            elif message.topic.startswith("asterisk/AMI/send"):
+                mt = message.topic.split("/")
+                id = ""
+                if len(mt) == 4:
+                    id = mt[3]
+
+                msg = message.payload.decode("utf-8")
+                self.run_AMI(msg, id)
             elif message.topic == 'asterisk/ari/originate':
                 params = json.loads(message.payload)
-                channel = self.ariclient().channels.originate(**params)
+                odoo_instance = params.pop('odoo_instance', False)
+                channel = self.ariclient.channels.originate(**params)
                 if channel:
                     channel_id = channel.json['id']
                     self.mqttclient.publish('asterisk/ari/originate/result', json.dumps({
                         'channel_id': channel_id,
                         'odoo_instance': odoo_instance,
+                        'extension': params['extension'],
                     }))
 
         except Exception:
             logger.error(traceback.format_exc())
 
-    def publish(self,topic,payload):
-        print("Sending {} auf: {}".format(payload,topic))
-        self.mqttclient.publish(topic,payload,qos=2,retain=True)
+    def publish(self, topic, payload):
+        print("Sending {} auf: {}".format(payload, topic))
+        self.mqttclient.publish(topic, payload, qos=2, retain=True)
 
     def run(self):
-        #self.mqttclient.username_pw_set(self.mqtt_user,self.mqtt_pass)
-        self.mqttclient.connect(self.mqtt_broker,self.mqtt_port,keepalive=60)
-        self.mqttclient.on_message=self.on_message
+        # self.mqttclient.username_pw_set(self.mqtt_user,self.mqtt_pass)
+        self.mqttclient.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
+        self.mqttclient.on_message = self.on_message
         self.mqttclient.subscribe("asterisk/AMI/send")
         self.mqttclient.subscribe("asterisk/Console/send")
         self.mqttclient.subscribe("asterisk/Console/send/#")
-        self.mqttclient.subscribe("asterisk/ari")
+        self.mqttclient.subscribe("asterisk/ari/originate")
         self.mqttclient.loop_forever()
+
+    def on_event(self, event, **kwargs):
+        self.publish('asterisk/ami/event/{}'.format(event.name), json.dumps(event.keys))
+
+    def connect_amiclient(self):
+        logger.info('connecting amiclient')
+        amiclient = AMIClient(address=DOCKER_HOST, port=int(os.getenv('ASTERISK_AMI_PORT', '5038')))
+        username = os.environ["ASTERISK_AMI_USER"]
+        logger.debug('logging in {}'.format(username))
+        amiclient.login(username=username, secret=os.environ['ASTERISK_AMI_PASSWORD'])
+        amiclient.add_event_listener(self.on_event, white_list=['Pickup'])
+        self.amiclient = amiclient
+        AutoReconnect(self.amiclient)
 
     def connect_ariclient(self):
         logger.info('connecting ariclient')
@@ -110,7 +161,7 @@ class Asterisk_ACM(object):
         ariclient = ari.connect('http://{}:{}/'.format(
             os.environ["ASTERISK_SERVER"],
             os.environ["ASTERISK_ARI_PORT"],
-        ), os.environ["ASTERISK_ARI_USER"],os.environ["ASTERISK_ARI_PASSWORD"])
+        ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
         ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP,bridge:")  # or just endpoint:
 
         ariclient.on_channel_event("ChannelCreated", self.onChannelCreated)
@@ -118,11 +169,25 @@ class Asterisk_ACM(object):
         ariclient.on_channel_event("ChannelDestroyed", self.onChannelDestroyed)
         ariclient.on_channel_event("ChannelEnteredBridge", self.onBridgeEntered)
         ariclient.on_bridge_event("ChannelLeftBridge", self.onBridgeLeft)
+        ariclient.on_bridge_event("BridgeAttendedTransfer", self.onBridgeAttendedTransfer)
+        ariclient.on_bridge_event("BridgeBlindTransfer", self.onBridgeBlindTransfer)
         self.ariclient = ariclient
 
-    def onBridgeCreated(self, *args, **kwargs):
-        print 'Bridge.............................................................................................'
-        import pudb;pudb.set_trace()
+    def onBridgeAttendedTransfer(self, legs, ev, *args, **kwargs):
+        self.publish("asterisk/ari/attended_transfer_done", json.dumps({
+            'event': ev,
+        }))
+
+    def onBridgeBlindTransfer(self, *args, **kwargs):
+        print '************************************************************************************************************************************'
+        print '************************************************************************************************************************************'
+        print '************************************************************************************************************************************'
+        print '************************************************************************************************************************************'
+        raise Exception("TODO BlindTransfer")
+        print '************************************************************************************************************************************'
+        print '************************************************************************************************************************************'
+        print '************************************************************************************************************************************'
+        print '************************************************************************************************************************************'
 
     def onBridgeEntered(self, channel, ev):
         bridge = ev['bridge']
@@ -144,7 +209,6 @@ class Asterisk_ACM(object):
         self.on_channel_change(channel)
 
     def onChannelCreated(self, channel_obj, ev):
-        #channel_obj.on_event('ChannelEnteredBridge', self.onBridgeCreated)
         self.on_channel_change(channel_obj.json)
 
     def onChannelStateChanged(self, channel_obj, ev):
@@ -156,6 +220,17 @@ class Asterisk_ACM(object):
     def _get_channel(self, id):
         channels = [x for x in self.ariclient().channels.list() if x.json['id'] == id]
         return channels[0].json if channels else None
+
+    def run_amiclient(self):
+        try:
+            self.connect_amiclient()
+            logger.info('after connect')
+        except Exception:
+            logger.error(traceback.format_exc())
+            time.sleep(5)
+            self.run_amiclient()
+        while True:
+            time.sleep(1)
 
     def run_ariclient(self):
         while True:
@@ -184,9 +259,6 @@ class Asterisk_ACM(object):
             time.sleep(1)
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     acm = Asterisk_ACM()
     acm.run()
-
-
