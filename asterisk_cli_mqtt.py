@@ -6,6 +6,11 @@ import subprocess
 import json
 
 
+class Asterisk_ADC(object):
+    def __init__(self):
+        pass
+
+
 class Asterisk_ACM(object):
     def __init__(self):
         self.mqtt_broker = os.environ.get("MQTT_BROKER_HOST","192.168.1.71")
@@ -43,6 +48,7 @@ class Asterisk_ACM(object):
 
             self.run_Console(message.payload.decode("utf-8"),id)
             #self.publish("asterisk/Console/result",message.payload)
+        if message.topic.startswith("asterisk/Callgroup")
 
     def publish(self,topic,payload):
         print("Sende {} auf: {}".format(payload,topic))

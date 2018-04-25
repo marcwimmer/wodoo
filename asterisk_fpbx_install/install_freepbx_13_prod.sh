@@ -3,7 +3,7 @@
 #set -e
 
 # install php5.6 repo
-add-apt-repository ppa:ondrej/php
+add-apt-repository -y ppa:ondrej/php
 
 #packetlist updates
 apt-get update 
