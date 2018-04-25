@@ -162,7 +162,8 @@ class Connector(object):
                 return False
             return channel
 
-        current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(redisStrict.smembers('channel_ids'), reverse=True)))
+        channel_ids = redisStrict.smembers('channel_ids')
+        current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(channel_ids, reverse=True)[:500])) #TBD 500 entries should be enough
 
         # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
         channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels)
