@@ -138,6 +138,10 @@ def is_module_of_version(path):
                 _to = content
             result = VERSION >= _from and VERSION <= _to
             return result
+        elif '/OCA/' in path:
+            MANIFEST = os.path.join(path, "__openerp__.py")
+            if os.path.exists(MANIFEST):
+                return True
         return False
 
 

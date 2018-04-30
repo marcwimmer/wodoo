@@ -814,10 +814,16 @@ def update_view_in_db(filepath, lineno):
             if arch:
                 html = extract_html(arch[0])
                 if node.tag == 'template':
-                    html = """
-<t t-name="{}">
-{}
-</t>""".format(xmlid, html)
+                    if node.get('inherit_id', False):
+                        html = """
+    <data inherit_id="{}" name="{}">
+    {}
+    </t>""".format(node.get('inherit_id'), node.get("name", ""), html)
+                    else:
+                        html = """
+    <t t-name="{}">
+    {}
+    </t>""".format(xmlid, html)
                 return html
 
         return None
