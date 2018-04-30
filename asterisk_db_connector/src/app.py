@@ -119,7 +119,7 @@ class FPBXDBConnector(object):
         if self._is_connected():
             return
         try:
-            h = self.db_data["ASTERISK_SERVER"]
+            h = self.db_data["AMPDBHOST"]
             d = self.db_data["AMPDBNAME"]
             u = self.db_data["AMPDBUSER"]
             p = self.db_data["AMPDBPASS"]
