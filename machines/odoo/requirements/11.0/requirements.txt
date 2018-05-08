@@ -28,3 +28,6 @@ html2text==2018.1.9
 filemagic==1.6
 beautifulsoup4==4.6.0
 ipython
+dxfgrabber
+Shapely
+matplotlib

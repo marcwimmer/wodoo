@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+if [[ -z "$CUSTOMS" ]]; then
+	echo "Try to call odoo OCA $1"
+	exit 1
+fi
+
 if [[ -z "$1" ]]; then
 	echo "Please provide OCA module, examples:"
 	echo ""

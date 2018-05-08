@@ -1122,11 +1122,97 @@ function do_command() {
 
 		;;
 
-    *)
-        echo "Invalid option $1"
-        exit -1
-        ;;
-    esac
+	pull)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+		cd "$CUSTOMS_DIR" || exit -1
+
+		if [[ -z "${ALL_PARAMS[0]}" ]]; then
+			echo "Please provide the submodule name."
+			exit -1
+		fi
+		if [[ ! -d ".git" ]]; then
+			echo "No local git repo - where are you?"
+			exit -1
+		fi
+
+		module="${ALL_PARAMS[0]}"
+		git subtree pull --message "SUBTREE-PULL $module" --prefix="common/$module" --squash git.mt-software.de:"/git/openerp/modules/$module" master
+		;;
+
+	pull-all)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+		cd "$CUSTOMS_DIR" || exit -1
+
+		if [[ -z "${ALL_PARAMS[0]}" ]]; then
+			echo "Please provide the submodule name."
+			exit -1
+		fi
+		if [[ ! -d ".git" ]]; then
+			echo "No local git repo - where are you?"
+			exit -1
+		fi
+
+		all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
+		readarray -t all_tres <<<"$all_trees"
+
+		for tree in "${all_tres[@]}"; do
+			git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
+		done
+
+		;;
+
+	push)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+		cd "$CUSTOMS_DIR" || exit -1
+
+		if [[ -z "${ALL_PARAMS[0]}" ]]; then
+			echo "Please provide the submodule name."
+			exit -1
+		fi
+
+		cd "$CUSTOMS_DIR"
+		module="${ALL_PARAMS[0]}"
+		git subtree push --prefix="common/$module" git.mt-software.de:"/git/openerp/modules/$module" master
+
+		;;
+
+	rmpyc)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+		cd "$CUSTOMS_DIR" || exit -1
+		find . -name *.pyc -delete
+		;;
+
+
+	submodule)
+		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+
+		if [[ -z "${ALL_PARAMS[0]}" ]]; then
+			echo "Please provide the submodule name."
+			exit -1
+		fi
+
+		cd "$CUSTOMS_DIR"
+		if [[ ! -d common ]]; then
+			echo "Directory common not found - are you in root?"
+			exit 1
+		fi
+
+		if [[ ! -d ".git" ]]; then
+			git init .
+		fi
+
+		for i in ${ALL_PARAMS[0]//,/ };
+		do
+			git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
+		done
+		;;
+
+
+		*)
+			echo "Invalid option $1"
+			exit -1
+			;;
+		esac
 }
 
 

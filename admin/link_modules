@@ -50,8 +50,6 @@ def search_dir_for_modules(base_dir):
                     elif "/OCA/" in complete_module_dir:
                         os.unlink(target)
                     else:
-                        from pudb import set_trace
-                        set_trace()
                         raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
             rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
             os.symlink(rel_path, target)
