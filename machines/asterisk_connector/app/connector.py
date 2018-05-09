@@ -304,17 +304,15 @@ class Connector(object):
         self.adminconsole(None, action, 'AMI')
 
 def odoo_thread():
+    data = {}
+    data['uid'] = None
 
     def exe(*params):
-        def login(username, password):
-            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
-            uid = socket_obj.login(odoo['db'], username, password)
-            return uid
-        uid = login(odoo['username'], odoo['pwd'])
+        started = datetime.now()
 
         socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
         try:
-            return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
+            result = socket_obj.execute(odoo['db'], data['uid'], odoo['pwd'], *params)
         except Exception as e:
             if 'MissingError' in str(e) and 'on_channel_originated' in params:
                 return
@@ -322,6 +320,17 @@ def odoo_thread():
             for v in params:
                 logger.error(v)
             raise
+
+        logger.info("ODOO call took {}".format((datetime.now() - started).total_seconds()))
+        return result
+
+    while not data['uid']:
+        def login(username, password):
+            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+            uid = socket_obj.login(odoo['db'], username, password)
+            return uid
+        data['uid'] = login(odoo['username'], odoo['pwd'])
+        time.sleep(2)
 
     while True:
         try:
