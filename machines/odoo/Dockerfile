@@ -68,6 +68,14 @@ apt-get install \
 
 WORKDIR /tmp
 
+RUN curl -o wkhtmltox.tar.xz -SL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
+        && echo '3f923f425d345940089e44c1466f6408b9619562 wkhtmltox.tar.xz' | sha1sum -c - \
+        && tar xvf wkhtmltox.tar.xz \
+        && cp wkhtmltox/lib/* /usr/local/lib/ \
+        && cp wkhtmltox/bin/* /usr/local/bin/ \
+        && cp -r wkhtmltox/share/man/man1 /usr/local/share/man/
+
+
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
 ADD sysroot/ /
@@ -78,6 +86,13 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD requirements/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
 #install pip packages depending on version
+#RUN apt install -y python python-pip python-psycopg2 python-lxml; \
+#	pip install unidecode; \
+#	pip install pip --upgrade;
+#RUN apt install -y python3-pip
+#RUN pip install --upgrade pip
+#RUN apt remove -y python3-pip
+#RUN easy_install3 pip
 ADD install_python_packages.sh /install_python_packages.sh
 
 RUN chmod a+x /install_python_packages.sh

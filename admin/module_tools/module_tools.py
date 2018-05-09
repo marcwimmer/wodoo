@@ -9,7 +9,6 @@ from odoo_config import get_env
 from odoo_config import odoo_root
 from odoo_config import run_dir
 from odoo_config import get_version_from_customs
-from odoo_config import execute_managesh
 from odoo_config import get_conn
 from odoo_config import current_customs
 from odoo_config import current_version
@@ -19,10 +18,13 @@ from odoo_config import install_file
 from odoo_config import translate_path_into_machine_path
 from odoo_config import set_customs
 from odoo_config import translate_path_relative_to_customs_root
+from odoo_config import get_module_directory_in_machine
 from myconfigparser import MyConfigParser
 import traceback
 import odoo_parser
 from odoo_parser import get_view
+from odoo_parser import is_module_of_version
+from odoo_parser import manifest2dict
 import fnmatch
 import re
 import pprint
@@ -36,22 +38,35 @@ import threading
 
 
 ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
+if current_version() == 7.0:
+    LANG = 'de'
+else:
+    LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
+host = "http://localhost:8069"
+
+username = "admin"
+pwd = "1"
+
+
+def exe(*params):
+    def login(username, password):
+        socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (host))
+        return socket_obj.login(current_db(), username, password)
+    uid = login(username, pwd)
+    socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (host))
+    return socket_obj.execute(current_db(), uid, pwd, *params)
+
 
 def apply_po_file(pofile_path):
     """
     pofile_path - pathin in the machine
     """
+    modname = get_module_of_file(pofile_path)
     LANG = os.path.basename(pofile_path).split(".po")[0]
-    module = get_module_of_file(pofile_path)
-    langs = get_all_langs()
+    pofile_path = os.path.join(modname, pofile_path.split(modname + "/")[-1])
 
-    for lang in langs:
-        if not lang.startswith(LANG):
-            continue
-
-        tempfile_within_container = os.path.join('/opt/odoo/server/addons/', module, 'i18n', os.path.basename(pofile_path))
-
-        execute_managesh('import-i18n', lang, tempfile_within_container)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('import_i18n:{}:{}'.format(LANG, pofile_path))
 
 def delete_qweb(modules):
     conn, cr = get_conn()
@@ -103,19 +118,8 @@ def delete_qweb(modules):
 
 def export_lang(current_file):
     module = get_module_of_file(current_file)
-    langs = get_all_langs()
-    for lang in langs:
-        execute_managesh('export-i18n', lang, module)
-
-        # here is the new generated po file now
-        new_file_path = os.path.join(run_dir(), 'i18n', 'export.po')
-
-        dest_path = os.path.join(
-            get_path_to_current_odoo_module(current_file),
-            'i18n',
-            '{}.po'.format(lang)
-        )
-        shutil.copy(new_file_path, dest_path)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('export_i18n:{}:{}'.format(LANG, module))
 
 def get_all_customs():
     home = os.path.join(odoo_root(), 'data/src/customs')
@@ -125,10 +129,6 @@ def get_all_customs():
         if os.path.isdir(os.path.join(home, dir)):
             customs.append(dir)
     return customs
-
-def get_all_langs():
-    langs = execute_managesh('get_all_langs').split(' ')
-    return langs
 
 def get_all_manifests():
     """
@@ -300,16 +300,6 @@ def get_manifest_path_of_module_path(module_path):
         if os.path.isfile(path):
             return path
 
-def manifest2dict(manifest_path):
-    with open(manifest_path, 'r') as f:
-        content = f.read()
-    try:
-        info = eval(content)
-    except Exception:
-        print "error at file: %s" % manifest_path
-        raise
-    return info
-
 
 def get_path_to_current_odoo_module(current_file):
     """
@@ -367,37 +357,44 @@ def goto_inherited_view(filepath, line, current_buffer):
 
 def is_module_dir_in_version(module_dir):
     version = current_version()
-    result = {'ok': False, "paths": []}
-    info_file = os.path.join(module_dir, ".ln")
-    if os.path.exists(info_file):
-        info = manifest2dict(info_file)
-        if isinstance(info, (float, long, int)):
-            min_ver = info
-            max_ver = info
-            info = {'minimum_version': min_ver, 'maximum_version': max_ver}
-        else:
-            min_ver = info.get("minimum_version", 1.0)
-            max_ver = info.get("maximum_version", 1000.0)
-        if min_ver > max_ver:
-            raise Exception("Invalid version: {}".format(module_dir))
-        if float(version) >= float(min_ver) and float(version) <= float(max_ver):
-            result['ok'] = True
+    if version >= 11.0:
+        ok = is_module_of_version(module_dir)
+        return {
+            'ok': ok,
+            'paths': [module_dir]
+        }
+    else:
+        result = {'ok': False, "paths": []}
+        info_file = os.path.join(module_dir, '.ln')
+        if os.path.exists(info_file):
+            info = manifest2dict(info_file)
+            if isinstance(info, (float, long, int)):
+                min_ver = info
+                max_ver = info
+                info = {'minimum_version': min_ver, 'maximum_version': max_ver}
+            else:
+                min_ver = info.get("minimum_version", 1.0)
+                max_ver = info.get("maximum_version", 1000.0)
+            if min_ver > max_ver:
+                raise Exception("Invalid version: {}".format(module_dir))
+            if float(version) >= float(min_ver) and float(version) <= float(max_ver):
+                result['ok'] = True
 
-        for m in MANIFESTS:
-            if os.path.exists(os.path.join(module_dir, m)):
-                result['paths'].append(module_dir)
-        if info.get('paths') and result['ok']:
-            # used for OCA paths for example
-            for path in info['paths']:
-                path = os.path.abspath(os.path.join(module_dir, path))
-                result['paths'].append(path)
-    elif "/OCA/" in module_dir:
-        relpath = module_dir.split(u"/OCA/")[1].split("/")
-        if len(relpath) == 2:
-            return {
-                'ok': True,
-                'paths': [module_dir],
-            }
+            for m in MANIFESTS:
+                if os.path.exists(os.path.join(module_dir, m)):
+                    result['paths'].append(module_dir)
+            if info.get('paths') and result['ok']:
+                # used for OCA paths for example
+                for path in info['paths']:
+                    path = os.path.abspath(os.path.join(module_dir, path))
+                    result['paths'].append(path)
+        elif "/OCA/" in module_dir:
+            relpath = module_dir.split(u"/OCA/")[1].split("/")
+            if len(relpath) == 2:
+                return {
+                    'ok': True,
+                    'paths': [module_dir],
+                }
 
     return result
 
@@ -556,11 +553,6 @@ def make_module(parent_path, module_name):
         with open(install_file(), 'w') as f:
             f.write("\n".join(content))
 
-def update_module(filepath):
-    module = get_module_of_file(filepath)
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        f.write('update_module:{}'.format(module))
-
 def restart(quick):
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         if quick:
@@ -666,16 +658,12 @@ def set_ownership_exclusive(host=None):
 
 def syncsource(path, do_async=False):
     if path.endswith('.po'):
-        machine_path = translate_path_into_machine_path(path)
-        apply_po_file(machine_path)
+        apply_po_file(path)
 
-def switch_customs_and_db(customs, db):
-    if not db:
-        db = customs.split("_")[-1]
-
-    execute_managesh('kill')
-    set_customs(customs, db)
-    execute_managesh('up', '-d', do_async=True)
+def update_module(filepath, full=False):
+    module = get_module_of_file(filepath)
+    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
+        f.write('update_module{}:{}'.format('_full' if full else '', module))
 
 def update_module_file(current_file):
     if not current_file:
@@ -782,13 +770,16 @@ def update_view_in_db(filepath, lineno):
 
     line = lineno
     xmlid = ""
-    while line >= 0:
+    while line >= 0 and not xmlid:
         if "<record " in xml[line] or "<template " in xml[line]:
-            # with search:
-            match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line])
-            if match:
-                xmlid = match[0]
-                break
+            line2 = line
+            while line2 < lineno:
+                # with search:
+                match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line2])
+                if match:
+                    xmlid = match[0]
+                    break
+                line2 += 1
 
         line -= 1
 
@@ -821,12 +812,26 @@ def update_view_in_db(filepath, lineno):
                 raise Exception("impl")
 
             if arch:
-                return extract_html(arch[0])
+                html = extract_html(arch[0])
+                if node.tag == 'template':
+                    if node.get('inherit_id', False):
+                        html = """
+    <data inherit_id="{}" name="{}">
+    {}
+    </t>""".format(node.get('inherit_id'), node.get("name", ""), html)
+                    else:
+                        html = """
+    <t t-name="{}">
+    {}
+    </t>""".format(xmlid, html)
+                return html
 
         return None
 
     if xmlid:
         arch = get_arch()
+        if '.' in xmlid:
+            module, xmlid = xmlid.split('.', 1)
         if arch:
             conn, cr = get_conn()
             try:
@@ -841,6 +846,7 @@ def update_view_in_db(filepath, lineno):
                              ])
                 res = cr.fetchone()
                 if res:
+                    print 'updating view of xmlid: %s.%s' % (module, xmlid)
                     res_id = res[0]
                     cr.execute("select type from ir_ui_view where id=%s", (res_id,))
                     view_type = cr.fetchone()[0]
@@ -867,6 +873,8 @@ def update_view_in_db(filepath, lineno):
                             conn.rollback()
 
                 conn.commit()
+
+                exe("ir.ui.view", "write", [res_id], {'arch_db': arch})
             except Exception:
                 conn.rollback()
                 raise

@@ -28,30 +28,41 @@ if [[ "$ODOO_PYTHON_VERSION" == "2" ]]; then
 	PIP=pip
 	$PIP install requests[security]
 	$PIP install glob2
+	$PIP install pip==9.0.3 --upgrade
 
 elif [ "$ODOO_PYTHON_VERSION" == "3" ]; then 
 	
 	# minimum python for admin scripts;
 	apt install -y python python-pip python-psycopg2 python-lxml
 	pip install unidecode
+	pip install pip --upgrade
 
-	apt install -y \
-		python3-dev \
-		python3-pip \
-		python3 \
-		python3-pyinotify  \
-		python3-renderpm \
-		python3-magic \
-		python3-wand \
-		python3-cups \
-		python3-psycopg2
+	hash -r
+	pip install pip --upgrade;
+	apt install -y python3-pip python3-dev python3 
+	hash -r  # pip3 10.0 is in other directories; hash -r clears the cache of the path
+	pip install --upgrade pip
+	hash -r
+	apt remove -y python3-pip
+	easy_install3 pip
+	hash -r
+	pip3 install --upgrade setuptools
+
+	pip3 install psycopg2
+	pip3 install pyinotify
+
+	apt install -y libmagickwand-dev libmagic-dev
+	pip3 install python-magic
+	pip3 install wand
+
+	apt install -y libcups2-dev
+	pip3 install pycups
 	PIP=pip3
-
 fi
 
-$PIP install pip --upgrade
 
 # minimum packages
+hash -r
 $PIP install pudb
 $PIP install -r /root/requirements.txt
 

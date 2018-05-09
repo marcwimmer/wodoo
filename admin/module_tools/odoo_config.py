@@ -108,24 +108,6 @@ def current_version():
 def current_db():
     return get_env().get('DBNAME', '')
 
-def execute_managesh(*args, **kwargs):
-    args = ['./odoo'] + list(args)
-    proc = subprocess.Popen(args, cwd=odoo_root(), bufsize=1, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output = []
-    if not kwargs.get('do_async', False):
-        while True:
-            line = proc.stdout.readline()
-            line = line.decode(errors='ignore')
-            if line == '':
-                break
-            output += [line]
-
-        while proc.returncode is None:
-            proc.wait()
-        if proc.returncode:
-            raise Exception(u'\n'.join(output))
-    return u'\n'.join(output)
-
 def get_conn(db=None, host=None):
     if db != "template1":
         # waiting until postgres is up
@@ -148,6 +130,9 @@ def get_conn(db=None, host=None):
     conn = psycopg2.connect(connstring)
     cr = conn.cursor()
     return conn, cr
+
+def get_module_directory_in_machine(module_name):
+    return os.path.join('/opt/odoo/addons_customs', module_name)
 
 def translate_path_into_machine_path(path):
     path = os.path.realpath(path)

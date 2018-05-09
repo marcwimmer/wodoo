@@ -16,7 +16,9 @@ from odoo_config import current_customs
 from odoo_config import plaintextfile
 from odoo_config import current_version
 from odoo_config import translate_path_relative_to_customs_root
+from consts import MANIFEST_FILE
 from consts import MANIFESTS
+from consts import LN_FILE
 cache_models = {}
 cache_xml_ids = {}
 modified_filename = ""
@@ -93,35 +95,62 @@ def get_view(inherit_id):
                 return get_file_lineno(line)
     return None, None
 
-def is_ln_and_version_ok(path):
-    LNFILE = os.path.join(path, '.ln')
-    if os.path.isfile(LNFILE):
-        with open(LNFILE, 'r') as f:
-            content = f.read()
-        try:
-            content = eval(content)
-        except Exception:
-            content = {}
+def manifest2dict(manifest_path):
+    with open(manifest_path, 'r') as f:
+        content = f.read()
+    try:
+        info = eval(content)
+    except Exception:
+        print "error at file: %s" % manifest_path
+        raise
+    return info
 
-        if isinstance(content, dict):
-            _from = content.get('minimum_version', 0)
-            _to = content.get('maximum_version', 9999)
-        elif isinstance(content, (float, int, long)):
-            _from = content
-            _to = content
-        result = VERSION >= _from and VERSION <= _to
-        return result
-    return True
+def is_module_of_version(path):
+    if VERSION >= 11.0:
+        p = path
+        while p and p != '/':
+            if os.path.exists(os.path.join(os.path.abspath(p), MANIFEST_FILE)):
+                break
+            p = os.path.dirname(p)
+        path = os.path.join(os.path.abspath(p), MANIFEST_FILE)
+        if os.path.exists(path):
+            manifest = manifest2dict(path)
+            v = manifest.get('version', '0.0')
+            if len(v.split('.')) < 4:
+                # raise Exception("Manifest file {} contains invalid version: {}".format(path, v))
+                return False
+            return v.startswith(str(VERSION) + ".")
+    else:
+        LNFILE = os.path.join(path, LN_FILE)
+        if os.path.isfile(LNFILE):
+            with open(LNFILE, 'r') as f:
+                content = f.read()
+            try:
+                content = eval(content)
+            except Exception:
+                content = {}
+
+            if isinstance(content, dict):
+                _from = content.get('minimum_version', 0)
+                _to = content.get('maximum_version', 9999)
+            elif isinstance(content, (float, int, long)):
+                _from = content
+                _to = content
+            result = VERSION >= _from and VERSION <= _to
+            return result
+        elif '/OCA/' in path:
+            MANIFEST = os.path.join(path, "__openerp__.py")
+            if os.path.exists(MANIFEST):
+                return True
+        return False
 
 
 def walk_files(on_match, pattern):
     from module_tools import get_module_of_file
-    IGNORE_PATHS = set()
 
     def handle(path, dirs, files):
-        if any(path.startswith(x) for x in IGNORE_PATHS):
-            return
-        if is_ln_and_version_ok(path):
+
+        if is_module_of_version(path) or 'odoo/addons' in path:
             for filename in fnmatch.filter(files, pattern):
                 filename = os.path.join(path, filename)
                 if ignore_file(filename):
@@ -133,8 +162,6 @@ def walk_files(on_match, pattern):
                     lines = f.read().split("\n")
 
                 on_match(filename, module, lines)
-        else:
-            IGNORE_PATHS.add(path)
 
     if modified_filename:
         root = os.path.dirname(modified_filename)

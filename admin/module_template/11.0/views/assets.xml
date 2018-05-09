@@ -1,4 +1,4 @@
-<openerp>
+<odoo>
 	<data>
         <!--
 		<template id="assets_backend" name="__module_name__ assets" inherit_id="web.assets_backend">
@@ -9,4 +9,4 @@
 		</template>
         -->
 	</data>
-</openerp>
+</odoo>
