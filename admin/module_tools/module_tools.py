@@ -786,7 +786,7 @@ def update_view_in_db(filepath, lineno):
     def extract_html(parent_node):
         arch = parent_node.xpath("*")
         result = None
-        if arch[0].tag == "data" or len(arch) == 1:
+        if arch[0].tag == "data":
             result = arch[0]
         else:
             data = etree.Element("data")
@@ -795,7 +795,7 @@ def update_view_in_db(filepath, lineno):
             result = data
         if result is None:
             return ""
-        result = etree.tounicode(result)
+        result = etree.tounicode(result, pretty_print=True)
         return result
 
     def get_arch():
@@ -814,16 +814,14 @@ def update_view_in_db(filepath, lineno):
             if arch:
                 html = extract_html(arch[0])
                 if node.tag == 'template':
+                    doc = etree.XML(html)
                     if node.get('inherit_id', False):
-                        html = """
-    <data inherit_id="{}" name="{}">
-    {}
-    </t>""".format(node.get('inherit_id'), node.get("name", ""), html)
+                        doc.xpath("/data")[0].set('inherit_id', node.get('inherit_id'))
+                        doc.xpath("/data")[0].set('name', node.get('name', ''))
                     else:
-                        html = """
-    <t t-name="{}">
-    {}
-    </t>""".format(xmlid, html)
+                        doc.xpath("/data")[0].set('t-name', xmlid)
+                    html = etree.tounicode(doc, pretty_print=True)
+                print html
                 return html
 
         return None
@@ -839,24 +837,20 @@ def update_view_in_db(filepath, lineno):
                 columns = [x[0] for x in cr.fetchall()]
                 arch_column = 'arch_db' if 'arch_db' in columns else 'arch'
                 arch_fs_column = 'arch_fs' if 'arch_fs' in columns else None
+                print "Searching view/template for {}.{}".format(module, xmlid)
                 cr.execute("select res_id from ir_model_data where model='ir.ui.view' and module=%s and name=%s",
                              [
                                  module,
                                  xmlid
                              ])
                 res = cr.fetchone()
-                if res:
+                if not res:
+                    print "No view found for {}.{}".format(module, xmlid)
+                else:
                     print 'updating view of xmlid: %s.%s' % (module, xmlid)
                     res_id = res[0]
                     cr.execute("select type from ir_ui_view where id=%s", (res_id,))
-                    view_type = cr.fetchone()[0]
-                    if view_type == 'qweb':
-                        arch = arch.strip()
-                        if arch.startswith('<data>'):
-                            arch = arch[len("<data>"):]
-                        if arch.endswith('</data>'):
-                            arch = arch[:-len("</data>")]
-
+                    # view_type = cr.fetchone()[0]
                     cr.execute("update ir_ui_view set {}=%s where id=%s".format(arch_column), [
                         arch,
                         res_id
@@ -872,9 +866,10 @@ def update_view_in_db(filepath, lineno):
                         except Exception:
                             conn.rollback()
 
-                conn.commit()
+                    conn.commit()
 
-                exe("ir.ui.view", "write", [res_id], {'arch_db': arch})
+                    if res:
+                        exe("ir.ui.view", "write", [res_id], {'arch_db': arch})
             except Exception:
                 conn.rollback()
                 raise
