@@ -11,7 +11,8 @@ services:
       - "8500:80"
     volumes:
       - $ODOO_HOME/machines/asterisk_connector/app:/usr/src/app
-      - asterisk_connector_perm:/opt/perm
+        #- asterisk_connector_perm:/opt/perm
+      - /tmp/asterisk:/opt/perm
     environment:
         OUTSIDE_PORT: 8500
         ODOO_HOST: proxy

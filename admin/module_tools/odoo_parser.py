@@ -121,6 +121,15 @@ def is_module_of_version(path):
                 return False
             return v.startswith(str(VERSION) + ".")
     else:
+        p = path
+        while p and p != '/':
+            if os.path.exists(os.path.join(os.path.abspath(p), "__openerp__.py")):
+                break
+            if os.path.exists(os.path.join(os.path.abspath(p), LN_FILE)):
+                break
+            p = os.path.dirname(p)
+        path = os.path.abspath(p)
+
         LNFILE = os.path.join(path, LN_FILE)
         if os.path.isfile(LNFILE):
             with open(LNFILE, 'r') as f:
