@@ -325,12 +325,17 @@ def odoo_thread():
         return result
 
     while not data['uid']:
-        def login(username, password):
-            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
-            uid = socket_obj.login(odoo['db'], username, password)
-            return uid
-        data['uid'] = login(odoo['username'], odoo['pwd'])
-        time.sleep(2)
+        try:
+            def login(username, password):
+                socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+                uid = socket_obj.login(odoo['db'], username, password)
+                return uid
+            data['uid'] = login(odoo['username'], odoo['pwd'])
+        except Exception:
+            msg = traceback.format_exc()
+            logger.error(msg)
+        finally:
+            time.sleep(2)
 
     while True:
         try:
