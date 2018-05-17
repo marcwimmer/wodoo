@@ -15,16 +15,16 @@ class OCT(object):
         self.mqtt_port = int(os.environ.get("MQTT_BROKER_PORT", 1883))
         self.mqtt_user = os.environ.get("MQTT_BROKER_USERNAME", "")
         self.mqtt_pass = os.environ.get("MQTT_BROKER_PASSWORD")
-        self.client = mqtt.Client(client_id="Asterisk_OCT", clean_session=False, userdata=None, protocol=mqtt.MQTTv311)
+        self.client = mqtt.Client(client_id="Asterisk_TOCT", clean_session=False, userdata=None, protocol=mqtt.MQTTv311)
         self.client.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
-        self.client.subscribe("asterisk/extension/pickupgroup",qos=2)
+        self.client.subscribe("asterisk/pickupgroup",qos=2)
         self.client.on_message=self.on_message
 
     def set_pickup_group(self,extension,new_grp):
-        data=json.dumps({"cmd":"UPDATE","extension":extension,"pickupgroups":new_grp})
+        data=json.dumps({"cmd":"CREATE","extensions":extension,"pickupgroup":new_grp})
         print(data)
 
-        self.publish('asterisk/extension/pickupgroup/result',data)
+        self.publish('asterisk/pickupgroup',data)
         print("published")
 
     def simulate_call(self):
@@ -55,5 +55,5 @@ if __name__=="__main__":
     os.environ["MQTT_BROKER_PASSWORD"] = "mqttpass1"
 
     oct = OCT()
-    oct.set_pickup_group(14,1)
+    oct.set_pickup_group([14],221)
 

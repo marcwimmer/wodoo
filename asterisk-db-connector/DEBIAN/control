@@ -1,0 +1,5 @@
+Package: asterisk-db-connector
+Version: 1.2.1
+Architecture: all
+Maintainer: Daniel Petermeier
+Description: MQTT-Connector zu Asterisk Datenbank.
