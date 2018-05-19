@@ -31,3 +31,4 @@ ipython
 dxfgrabber
 Shapely
 matplotlib
+dill==0.2.7.1

@@ -1207,6 +1207,11 @@ function do_command() {
 		done
 		;;
 
+	update-ast)
+		set -x
+		cd admin/module_tools
+		python -c'from odoo_parser import update_cache; update_cache()'
+		;;
 
 		*)
 			echo "Invalid option $1"

@@ -24,9 +24,14 @@ from datetime import datetime
 from datetime import timedelta
 import arrow
 from threading import Thread
+from threading import Timer
 import redis
 from redis import StrictRedis
 from redisworks import Root as Redis
+from functools import wraps
+
+odoo_data = {}
+odoo_data['uid'] = None
 REDIS_HOST = 'redis'
 EXPIRE_CHANNEL = 3600 * 24 # seconds
 redis_connection_pool = redis.BlockingConnectionPool(host=os.environ['REDIS_HOST'])
@@ -55,6 +60,51 @@ logger = logging.getLogger('')  # root handler
 def clean_number(number):
     number = number.replace("+", "00")
     return (number or '').strip().replace(' ', '')
+
+
+class throttle(object):
+    """
+    Decorator that prevents a function from being called more than once every
+    time period.
+    To create a function that cannot be called more than once a minute:
+        @throttle(minutes=1)
+        def my_fun():
+            pass
+    """
+    def __init__(self, seconds=0, minutes=0, hours=0):
+        self.throttle_period = timedelta(
+            seconds=seconds, minutes=minutes, hours=hours
+        )
+        self.time_of_last_call = datetime.min
+
+    def __call__(self, fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            now = datetime.now()
+            time_since_last_call = now - self.time_of_last_call
+
+            if time_since_last_call > self.throttle_period:
+                self.time_of_last_call = now
+                return fn(*args, **kwargs)
+
+        return wrapper
+
+def exe(*params):
+    started = datetime.now()
+
+    socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+    try:
+        result = socket_obj.execute(odoo['db'], odoo_data['uid'], odoo['pwd'], *params)
+    except Exception as e:
+        if 'MissingError' in str(e) and 'on_channel_originated' in params:
+            return
+        logger.error("Odoo Error")
+        for v in params:
+            logger.error(v)
+        raise
+
+    logger.info("ODOO call took {}".format((datetime.now() - started).total_seconds()))
+    return result
 
 class Connector(object):
 
@@ -95,7 +145,6 @@ class Connector(object):
             current_value[k] = v
         current_value = json.dumps(current_value)
         pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
-        print 'setting channel', 'channel,{}'.format(id)
         pipeline.execute()
 
         self.odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
@@ -127,7 +176,6 @@ class Connector(object):
     def _get_channel(self, id):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         result = redisStrict.get('channel,{}'.format(id))
-        print 'get channel', 'channel,{}'.format(id), result
         if result:
             result = json.loads(result)
         return result
@@ -164,9 +212,8 @@ class Connector(object):
                 return False
             return channel
 
-        current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(redisStrict.smembers('channel_ids'), reverse=True)))
-        if extension == '13':
-            print len(current_channels)
+        channel_ids = redisStrict.smembers('channel_ids')
+        current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(channel_ids, reverse=True)[:500])) # TBD 500 entries should be enough
 
         # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
         channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels)
@@ -223,20 +270,26 @@ class Connector(object):
         self.adminconsole("DND-State", "database show dnd", 'Console')
 
     def eval_dnd_state(self, payload):
-        dnds = set()
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        exts = set()
         for line in payload.split("\n"):
             line = line.strip()
             if line.startswith("/DND/"):
                 extension = line.split("/DND/")[-1].split(":")[0].strip()
-                dnds.add(extension)
-        redis.DND = dnds or None
+                redisStrict.sadd('DND', extension)
+                exts.add(extension)
+        for x in redisStrict.smembers("DND"):
+            if x not in exts:
+                redisStrict.srem('DND', x)
 
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
     def dnd(self):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         self.adminconsole("DND-State", "database show dnd", 'Console')
-        return list(redis.DND or [])
+        result = list(redisStrict.smembers('DND') or [])
+        return result
 
     @cp.expose
     @cp.tools.json_in()
@@ -245,7 +298,7 @@ class Connector(object):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
 
         self.adminconsole("sip show channels", "sip show channels", "Console")
-        dnds = list(redis.DND or [])
+        dnds = list(redisStrict.smembers('DND') or [])
         return {
             'extension_states': self.get_extension_states(),
             'channels': redisStrict.smembers('channel_ids'),
@@ -300,25 +353,25 @@ class Connector(object):
         }
         self.adminconsole(None, action, 'AMI')
 
+@throttle(seconds=2)
+def odoo_bus_send_channel_state():
+    exe("asterisk.connector", "send_channel_state")
+
+
 def odoo_thread():
 
-    def exe(*params):
-        def login(username, password):
-            socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
-            uid = socket_obj.login(odoo['db'], username, password)
-            return uid
-        uid = login(odoo['username'], odoo['pwd'])
-
-        socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+    while not odoo_data['uid']:
         try:
-            return socket_obj.execute(odoo['db'], uid, odoo['pwd'], *params)
-        except Exception as e:
-            if 'MissingError' in str(e) and 'on_channel_originated' in params:
-                return
-            logger.error("Odoo Error")
-            for v in params:
-                logger.error(v)
-            raise
+            def login(username, password):
+                socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+                uid = socket_obj.login(odoo['db'], username, password)
+                return uid
+            odoo_data['uid'] = login(odoo['username'], odoo['pwd'])
+        except Exception:
+            msg = traceback.format_exc()
+            logger.error(msg)
+        finally:
+            time.sleep(2)
 
     while True:
         try:
@@ -342,9 +395,14 @@ def odoo_thread():
                         msg = traceback.format_exc()
                         logger.error(msg)
                         time.sleep(1)
+                        break
                     else:
                         os.unlink(filepath)
                         break
+
+                t = threading.Thread(target=odoo_bus_send_channel_state)
+                t.daemon = True
+                t.start()
         except Exception:
             msg = traceback.format_exc()
             logger.error(msg)
