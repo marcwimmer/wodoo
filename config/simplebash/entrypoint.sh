@@ -1,11 +1,18 @@
 #!/bin/bash
-set +x
+set -x
 set -e
 
 if [[ "$USER" != "root" && "$USER" != "" ]]; then
-	useradd --uid "$UID" --home-dir /opt/external_home "$USER"
-	groupadd -g "$DOCKER_GROUP_ID" docker  # to be able to access docker socket
-	usermod -aG docker "$USER"
+	if [[ "$HOST_TYPE" == "macos" ]]; then
+		useradd --uid "$UID" --home-dir /opt/external_home "$USER"
+		chown "$USER" /var/run/docker.sock
+		usermod -aG daemon "$USER"
+	else
+		useradd --uid "$UID" --home-dir /opt/external_home "$USER"
+		groupname="$(getent group "$DOCKER_GROUP_ID")"
+		groupadd -g "$DOCKER_GROUP_ID" "$groupname"  # to be able to access docker socket
+		usermod -aG docker "$USER"
+	fi
 	echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers
 fi
 
@@ -17,4 +24,3 @@ chmod 600 "$PGPASSFILE"
 chown "$USER" "$PGPASSFILE"
 
 exec gosu "$USER" "$@"
-

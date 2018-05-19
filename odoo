@@ -91,7 +91,13 @@ function build_command() {
 		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
 	fi
 	export WORKING_DIR="$WORKING_DIR"
-	docker_group_id="$(cut -d : -f3 <(getent group docker))"
+	if [[ "$(uname)" == "Darwin" ]]; then
+		docker_group_id="$(cut -d : -f3 <(dscl . -read /Groups/staff | awk '($1 == "PrimaryGroupID:") { print $2 }'))"
+		host_type='macos'
+	else
+	    docker_group_id="$(cut -d : -f3 <(getent group docker))"
+		host_type='linux'
+	fi
 	command=(/usr/local/bin/docker-compose)
 	command+=(run)
 	command+=(--rm)
@@ -102,6 +108,7 @@ function build_command() {
 	command+=(-e USER="$USER")
 	command+=(-e WORKING_DIR="$WORKING_DIR")
 	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
+	command+=(-e HOST_TYPE="$host_type")
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi
