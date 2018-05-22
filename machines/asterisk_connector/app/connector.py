@@ -353,6 +353,33 @@ class Connector(object):
         }
         self.adminconsole(None, action, 'AMI')
 
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def create_pickupgroup(self):
+        extensions = cp.request.json["extensions"]
+        pickupgroup = cp.request.json["pickupgroup"]
+        out = {"cmd": "CREATE", "pickupgroup": pickupgroup, "extensions": extensions}
+        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
+
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def update_pickupgroup(self):
+        extensions = cp.request.json["extensions"]
+        pickupgroup = cp.request.json["pickupgroup"]
+        out = {"cmd": "UPDATE", "pickupgroup": pickupgroup, "extensions": extensions}
+        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
+
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def remove_pickupgroup(self):
+        extensions = cp.request.json["extensions"]
+        pickupgroup = cp.request.json["pickupgroup"]
+        out = {"cmd": "REMOVE", "pickupgroup": pickupgroup, "extensions": extensions}
+        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
+
 @throttle(seconds=2)
 def odoo_bus_send_channel_state():
     exe("asterisk.connector", "send_channel_state")
