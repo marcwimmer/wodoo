@@ -49,22 +49,39 @@ class MQTT_Connector(object):
         logger.debug("applying database changes")
         cmd = "/usr/sbin/fwconsole reload"
         p = subprocess.check_output(cmd, shell=True)
+#        self.publish("asterisk/extension/pickupgroup/result",p.strip())
 
-    #        self.publish("asterisk/extension/pickupgroup/result",p.strip())
     def create_pickupgroup(self,data):
-        print(data)
-        #for ext in data['extensions']:
-         #   self.pbxdb.create_pickupgroup(ext,data['pickupgroup'])
+        for ext in data["extensions"]:
+            logger.info("processing: {}".format(ext))
+            self.pbxdb.add_pickupgroup(ext, data['pickupgroup'])
+        self.apply_db_changes()
 
     def update_pickgroup(self,data):
-        self.pbxdb.update_pickupgroup(data['extensions'], data['pickupgroup'])
-        ngrp = self.pbxdb.show_pickupgroup(data['extensions'])
-        data['pickupgroup'] = ngrp
+
+        all_groups = self.pbxdb.get_all_pickupgroups()
+        for row in all_groups:
+            if data["pickupgroup"] in row[2]:
+                logger.info("pickupgroup %r in row: %r",data["pickupgroup"],row)
+                if row[0] not in data["extensions"]:
+                    logger.info("but should not...")
+                    logger.info("deleting pickupgroup.")
+                    self.pbxdb.remove_pickupgroup(row[0],data["pickupgroup"])
+            else:
+                logger.info("pickupgroup %r not in row: %r",data["pickupgroup"],row)
+                if row[0] in data["extensions"]:
+                    logger.info("but should be.")
+                    logger.info("adding_pickupgroup.")
+                    self.pbxdb.add_pickupgroup(row[0],data["pickupgroup"])
         self.apply_db_changes()
-        data['changes_applied'] = True
-        self.publish("asterisk/pickupgroup/result", json.dumps(data))
+
     def remove_pickupgroup(self,data):
-        print(data)
+        all_groups = self.pbxdb.get_all_pickupgroups()
+        for row in all_groups:
+            if data["pickupgroup"] not in row[2]:
+                continue
+            self.pbxdb.remove_pickupgroup(row[0],data["pickupgroup"])
+        self.apply_db_changes()
 
     def get_pickgroup(self,data):
         ngrp= self.pbxdb.show_pickupgroup(data['extension'])
@@ -319,22 +336,29 @@ class FPBXDBConnector(object):
 
 
     def add_pickupgroup(self,extension_nr,npg):
+        # converting to string if int
+        npg = "{}".format(npg)
         # fetching current pickup group
-        curr_grps = self.show_extension(extension_nr)
+        curr_grps = self.show_pickupgroup(extension_nr)
+        o=[]
         if curr_grps:
+            logger.info("%r - %s",curr_grps,type(curr_grps))
             curr_grps=curr_grps.split(",")
             for grp in curr_grps:
+                grp="{}".format(grp)
                 if npg == grp or len(grp) < 1:
-                    return True
-            curr_grps=",".join(curr_grps)
-            curr_grps+=",{}".format(npg)
+                    continue
+                else:
+                    o.append(grp)
+            o.append(npg)
+            curr_grps=",".join(o)
             self.set_pickupgroup(extension_nr, curr_grps)
         else:
             self.set_pickupgroup(extension_nr, npg)
 
     def remove_pickupgroup(self,extension_nr,npg):
         # fetching current pickup groups
-        curr_grps = self.show_extension(extension_nr)
+        curr_grps = self.show_pickupgroup(extension_nr)
         o=[]
         if curr_grps:
             curr_grps=curr_grps.split(",")
@@ -347,11 +371,19 @@ class FPBXDBConnector(object):
     def update_pickupgroup(self,extensions,npg):
         pass
 
+    def get_all_pickupgroups(self):
+        table = self.metadata.tables["sip"]
+        qry = sqlalchemy.select([table]).where(table.c.keyword == "namedpickupgroup")
+        res = self.conn.execute(qry).fetchall()
+        return res
+
     def show_pickupgroup(self, extension_nr):
         table = self.metadata.tables["sip"]
         qry = sqlalchemy.select([table]).where(and_(table.c.id == extension_nr, table.c.keyword == "namedpickupgroup"))
         res = self.conn.execute(qry).fetchone()
-        return res["data"]
+        if res:
+            return res["data"]
+        
 
     def set_pickupgroup(self, extension_nr, npg):
         metadata = MetaData()

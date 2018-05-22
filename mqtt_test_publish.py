@@ -55,5 +55,5 @@ if __name__=="__main__":
     os.environ["MQTT_BROKER_PASSWORD"] = "mqttpass1"
 
     oct = OCT()
-    oct.set_pickup_group([14],221)
+    oct.set_pickup_group([14,88],"DEV")
 
