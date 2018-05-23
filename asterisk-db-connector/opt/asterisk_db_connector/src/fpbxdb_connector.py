@@ -102,7 +102,7 @@ class FPBXDBConnector(object):
 
 
         table = self.metadata.tables["userman_users"]
-        qry = sqlalchemy.select([func.count()]).select_from(table)
+        qry = sqlalchemy.select([func.max(table.c.id)]).select_from(table)
         last_id=int(self.conn.execute(qry).fetchone()[0])+1
         print("Last ID: {}".format(last_id))
         print("New ID : {}".format(last_id+1))
@@ -260,9 +260,6 @@ class FPBXDBConnector(object):
                     o.append(grp)
             curr_grps=",".join(o)
             self.set_pickupgroup(extension_nr, curr_grps)
-
-    def update_pickupgroup(self,extensions,npg):
-        pass
 
     def show_pickupgroup(self, extension_nr):
         table = self.metadata.tables["sip"]

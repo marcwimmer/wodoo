@@ -38,6 +38,7 @@ class Asterisk_MQR(object):
 #        self.client.subscribe("asterisk/ari/attended_transfer_done")
 #        self.client.subscribe("asterisk/ari/originate/result")
 #        self.client.subscribe("asterisk/ami/event/Pickup")
+        self.client.subscribe('asterisk/man_extension')
         self.client.subscribe('asterisk/pickupgroup')
         self.client.subscribe('asterisk/pickupgroup/result')
         print("Reader started. Now listening on channels.")
