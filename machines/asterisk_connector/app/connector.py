@@ -380,6 +380,31 @@ class Connector(object):
         out = {"cmd": "REMOVE", "pickupgroup": pickupgroup, "extensions": extensions}
         mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
 
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def create_extension(self):
+        ext_data = cp.request.json["ext_data"]
+        out = {"cmd": "CREATE", "ext_data": ext_data}
+        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
+
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def update_extension(self):
+        ext_data = cp.request.json["ext_data"]
+        out = {"cmd": "UPDATE", "ext_data": ext_data}
+        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
+
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def remove_extension(self):
+        ext_data = cp.request.json["ext_data"]
+        out = {"cmd": "REMOVE", "ext_data": ext_data}
+        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
+
+
 @throttle(seconds=2)
 def odoo_bus_send_channel_state():
     exe("asterisk.connector", "send_channel_state")
@@ -515,6 +540,7 @@ def mqtt_thread():
             mqttclient = mqtt.Client(client_id="asterisk_connector_receiver.{}".format(socket.gethostname()),)
             # mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
             logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT'])))
+            os.environ["MOSQUITTO_HOST"]="192.168.1.71"
             mqttclient.connect(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT']), keepalive=10)
             mqttclient.on_connect = on_mqtt_connect
             mqttclient.on_message = on_mqtt_message
