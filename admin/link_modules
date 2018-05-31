@@ -67,6 +67,9 @@ def search_dir_for_modules(base_dir):
             except Exception:
                 return
 
+            if not os.path.exists(os.path.join(complete_module_dir, "__openerp__.py")):
+                return
+
             target = os.path.join(LN_DIR, module_name)
 
             if os.path.exists(target):

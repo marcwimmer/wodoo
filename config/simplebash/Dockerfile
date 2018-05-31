@@ -1,5 +1,7 @@
-FROM ubuntu:17.10
-RUN apt update && apt install -y \
+FROM ubuntu:18.04
+RUN apt update && \
+export DEBIAN_FRONTEND=noninteractive && \
+apt install -y \
 	python \
 	python-pip \
 	gettext-base \
@@ -8,7 +10,7 @@ RUN apt update && apt install -y \
 	pigz \
 	shellcheck \
 	sudo \ 
-	postgresql-client \
+	postgresql-client-10 \
 	uuid-runtime \
 	git \
 	rsync \ 
@@ -40,3 +42,10 @@ RUN \
 git config --global user.email admin && \
 git config --global user.name admin
 WORKDIR /opt/odoo
+
+
+# install postgres 10 client
+#RUN add-apt-repository 'deb http://apt.postgresql.org/pub/repos/apt/ zesty-pgdg main'
+#RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - ; \
+#apt-get update
+#RUN apt install postgresql-10
