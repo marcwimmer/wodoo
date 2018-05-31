@@ -821,6 +821,12 @@ def update_view_in_db(filepath, lineno):
                     else:
                         doc.xpath("/data")[0].set('t-name', xmlid)
                     html = etree.tounicode(doc, pretty_print=True)
+                # if not inherited from anything, then base tag must not be <data>
+                doc = etree.XML(html)
+                if not doc.xpath("/data/*[@position] | /*[@position]"):
+                    if doc.xpath("/data"):
+                        html = etree.tounicode(doc.xpath("/data/*")[0])
+
                 print html
                 return html
 
