@@ -9,7 +9,7 @@ if [[ "$USER" != "root" && "$USER" != "" ]]; then
 		usermod -aG daemon "$USER"
 	else
 		useradd --uid "$UID" --home-dir /opt/external_home "$USER"
-		groupname="$(getent group "$DOCKER_GROUP_ID")"
+		groupname="docker"
 		groupadd -g "$DOCKER_GROUP_ID" "$groupname"  # to be able to access docker socket
 		usermod -aG docker "$USER"
 	fi

@@ -543,7 +543,10 @@ def update_cache(arg_modified_filename=None):
     if os.path.isfile(plainfile):
         f = open(plainfile, 'a')
     else:
-        f = open(plainfile, 'w')
+        if os.path.isdir(os.path.dirname(plainfile)):
+            f = open(plainfile, 'w')
+        else:
+            return
 
     try:
         TEMPLATE = "{type}\t[{module}]\t{name}\t" + SEP_FILE + "{filepath}" + SEP_LINENO + "{line}"
