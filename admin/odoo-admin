@@ -575,7 +575,9 @@ function do_command() {
 			dcexec postgres /backup.sh
 			mv "$DIR/dumps/$DBNAME.gz" "$filepath"
 		else
+			set -e
 			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
+			set +e
 		fi
 		if [[ "$NO_BACKUP_SYMBOLIC_LINK_DUMP" != "1" ]]; then
 			/bin/rm "$LINKPATH"
