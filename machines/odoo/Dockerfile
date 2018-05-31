@@ -85,14 +85,6 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
 ADD requirements/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
-#install pip packages depending on version
-#RUN apt install -y python python-pip python-psycopg2 python-lxml; \
-#	pip install unidecode; \
-#	pip install pip --upgrade;
-#RUN apt install -y python3-pip
-#RUN pip install --upgrade pip
-#RUN apt remove -y python3-pip
-#RUN easy_install3 pip
 ADD install_python_packages.sh /install_python_packages.sh
 
 RUN chmod a+x /install_python_packages.sh

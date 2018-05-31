@@ -11,156 +11,167 @@
 # TODO use shift instead of ARGS, ALL_PARAMS - is more bash style
 # TODO replace all bash commands to be called within dockerbash
 
+
 function dcrun() {
-	$dc run -T -e ODOO_HOME=/opt/odoo "$@"
+    $dc run -T -e ODOO_HOME=/opt/odoo "$@"
 }
 
 function dcexec() {
-	$dc exec -T "$@"
+    $dc exec -T "$@"
+}
+
+function get_platform() {
+    if [[ "$PLATFORM" == "Darwin" || "$PLATFORM" == "OSX" ]]; then
+        echo "OSX"
+    else
+        echo "Linux"
+    fi
 }
 
 function join_by { local IFS="$1"; shift; echo "$*"; }
 
 function startup() {
-	set +x
-	local ARGS=("$@")
-	local $DIR >/dev/null
-	DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
+    PLATFORM="$(get_platform)"
+    unset -f get_platform
+    local ARGS=("$@")
+    local $DIR >/dev/null
+    DIR=$(realpath "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..")
 
-	proxy_configs_dir=$DIR/run/proxy
-	export proxy_configs_dir="$proxy_configs_dir"
-	ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
-	export ODOO_MANAGER_STARTED_ONCE=1
-	export ODOO_COMPOSE_VERSION="3.3"
-	export PGPASSFILE=/tmp/.pgpass # must match the executing script
-	export PGHOST="$DB_HOST"
-	export PGPORT="$DB_PORT"
-	export PGUSER="$DB_USER"
-	export LOCAL_WORKING_DIR="$EXTERNAL_ROOT/$WORKING_DIR"  # the working directory accessible from container of this script.
-	docker_compose_file="$DIR/run/docker-compose.yml"
-	return 0
+    proxy_configs_dir=$DIR/run/proxy
+    export proxy_configs_dir="$proxy_configs_dir"
+    ALL_PARAMS=("${ARGS[@]:1}") # all parameters without command
+    export ODOO_MANAGER_STARTED_ONCE=1
+    export ODOO_COMPOSE_VERSION="3.3"
+    export PGPASSFILE=/tmp/.pgpass # must match the executing script
+    export PGHOST="$DB_HOST"
+    export PGPORT="$DB_PORT"
+    export PGUSER="$DB_USER"
+    export LOCAL_WORKING_DIR="$EXTERNAL_ROOT/$WORKING_DIR"  # the working directory accessible from container of this script.
+    docker_compose_file="$DIR/run/docker-compose.yml"
+    return 0
 }
 
 function check_working_dir_customs_mismatch() {
-	# Checks wether the current working is in a customs directory, but
-	# is not matching the correct customs. Avoid creating wrong tickets
-	# in the wrong customizations.
+    # Checks wether the current working is in a customs directory, but
+    # is not matching the correct customs. Avoid creating wrong tickets
+    # in the wrong customizations.
 
-	res=$(python <<-EOF
-	import os
-	import time
-	working_dir = os.environ['LOCAL_WORKING_DIR']
-	while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
-	    try:
-	        working_dir = os.path.dirname(working_dir)
-	    except:
-	        break
-	    if not working_dir.replace("/", ""):
-	        break
-	if os.path.isfile(os.path.join(working_dir, '.customsroot')):
-	    current_customs = os.path.basename(working_dir)
-	    if current_customs != os.environ['CUSTOMS']: 
-	        print "Caution: current customs is {} but you are in another customs directory: {}".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
-	        print "Continue at your own risk!"
-	EOF
-	)
+    res=$(python <<-EOF
+import os
+import time
+working_dir = os.environ['LOCAL_WORKING_DIR']
+while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
+    try:
+        working_dir = os.path.dirname(working_dir)
+    except:
+        break
+    if not working_dir.replace("/", ""):
+        break
+if os.path.isfile(os.path.join(working_dir, '.customsroot')):
+    current_customs = os.path.basename(working_dir)
+    if current_customs != os.environ['CUSTOMS']: 
+        print "Caution: current customs is {} but you are in another customs directory: {}".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
+        print "Continue at your own risk!"
+EOF
+    )
 
-	echo "$res" | grep -q 'risk' && {
-	    echo ''
-		echo -e "\e[31m"
-		echo "$res"
-		echo -e "\e[39m"
-	    echo ''
-		secs=10
-	    read -p "Continue in $secs seconds or press any key to continue now..." -N 1 -s -t $secs a || true
-	}
-	echo ''
-	echo ''
+    echo "$res" | grep -q 'risk' && {
+        echo ''
+        echo -e "\e[31m"
+        echo "$res"
+        echo -e "\e[39m"
+        echo ''
+        secs=10
+        read -p "Continue in $secs seconds or press any key to continue now..." -N 1 -s -t $secs a || true
+    }
+    echo ''
+    echo ''
 }
 
 function get_CUSTOMS_DIR() {
-	local CUSTOMS_DIR
-	CUSTOMS_DIR=$(
-	cd "$DIR/admin/module_tools" && \
-	python <<-EOF
-	import odoo_config
-	v = odoo_config.customs_dir()
-	print v
-	EOF
-	)
-	echo "$CUSTOMS_DIR"
+    local CUSTOMS_DIR
+
+    CUSTOMS_DIR=$(
+    cd "$DIR/admin/module_tools" && \
+    python <<- EOF
+import odoo_config
+v = odoo_config.customs_dir()
+print v
+EOF
+    )
+    echo "$CUSTOMS_DIR"
 }
 
 function default_confs() {
-	MANAGE="$DIR/admin/odoo-admin"
-	local ARGS=("$@")
-	export FORCE_CONTINUE=0
-	export ODOO_FILES=$DIR/data/odoo.files
-	export RUN_POSTGRES=1
-	export DB_PORT=5432
-	export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
-	export ADDITIONAL_DOCKER_COMPOSE=""
-	export RUN_ODOODEV=0
-	export TELEGRAM_ENABLED=1
-	FORCE=0
-	echo "${ARGS[*]}" |grep -q '[-]force' && {
-		FORCE=1
-	}
+    MANAGE="$DIR/admin/odoo-admin"
+    local ARGS=("$@")
+    export FORCE_CONTINUE=0
+    export ODOO_FILES=$DIR/data/odoo.files
+    export RUN_POSTGRES=1
+    export DB_PORT=5432
+    export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
+    export ADDITIONAL_DOCKER_COMPOSE=""
+    export RUN_ODOODEV=0
+    export TELEGRAM_ENABLED=1
+    FORCE=0
+    echo "${ARGS[*]}" |grep -q '[-]force' && {
+        FORCE=1
+    }
 
-	if [[ -z "$FORCE_UNVERBOSE" ]]; then
-		FORCE_UNVERBOSE=0
-	fi
-	echo "${ARGS[*]}" |grep -q '[-]unverbose' && {
-		FORCE_UNVERBOSE=1
-	}
+    if [[ -z "$FORCE_UNVERBOSE" ]]; then
+        FORCE_UNVERBOSE=0
+    fi
+    echo "${ARGS[*]}" |grep -q '[-]unverbose' && {
+        FORCE_UNVERBOSE=1
+    }
     if [[ -z "$DUMPS_PATH" ]]; then
-		export DUMPS_PATH=$DIR/dumps
+        export DUMPS_PATH=$DIR/dumps
     fi
 
 }
 
 function make_path_as_hosts_sees_it() {
     #
-	#
-	# converts /ROOT/home/marc... to /home/marc
-	# converts /WORKING_DIR/dumpfile... to /tmp/a/b/c/dumpfile
-	#
-	local path
-	path="$1"
+    #
+    # converts /ROOT/home/marc... to /home/marc
+    # converts /WORKING_DIR/dumpfile... to /tmp/a/b/c/dumpfile
+    #
+    local path
+    path="$1"
 
-	if [[ "$path" == $EXTERNAL_ROOT* ]]; then
-		path=${path:${#EXTERNAL_ROOT}}
-	fi
+    if [[ "$path" == $EXTERNAL_ROOT* ]]; then
+        path=${path:${#EXTERNAL_ROOT}}
+    fi
 
-	if [[ "$path" == */WORKING_DIR/* ]]; then
-		path=${path/\/WORKING_DIR/$WORKING_DIR}
-	fi
-	echo "$path"
+    if [[ "$path" == */WORKING_DIR/* ]]; then
+        path=${path/\/WORKING_DIR/$WORKING_DIR}
+    fi
+    echo "$path"
 }
 
 function make_path_accessible_from_container_but_file_is_outside() {
     #
-	# Transforms relative paths and absolute path to a path,
-	# that resolves to the host.
-	#
-	# odoo calls this script with WORKING_DIR set, so we know
-	# for relative paths, where to start.
-	#
-	# example:
-	#
-	# /opt/dumps/db1.gz --> /ROOT/dumps/db1.gz
-	# dumps/db1.gz --> /home/user1/dumps/db1.gz where /home/user1 is $WORKING_DIR
-	#
-	local path
-	path="/WORKING_DIR/$1"
-	path=$(readlink -f "$path")
-	realpath "$path"
+    # Transforms relative paths and absolute path to a path,
+    # that resolves to the host.
+    #
+    # odoo calls this script with WORKING_DIR set, so we know
+    # for relative paths, where to start.
+    #
+    # example:
+    #
+    # /opt/dumps/db1.gz --> /ROOT/dumps/db1.gz
+    # dumps/db1.gz --> /home/user1/dumps/db1.gz where /home/user1 is $WORKING_DIR
+    #
+    local path
+    path="/WORKING_DIR/$1"
+    path=$(readlink -f "$path")
+    realpath "$path"
 }
 
 function file2env() {
-	if [[ ! -f "$1" ]]; then
-		return 0
-	fi
+    if [[ ! -f "$1" ]]; then
+        return 0
+    fi
 
     # set variables from settings
     while read -r line; do
@@ -170,121 +181,121 @@ function file2env() {
         var="${line%=*}"
         value="${line##*=}"
         eval "$var=\"$value\""
-		export "$var" # export local variable to environment
+        export "$var" # export local variable to environment
     done <"$1"
 
-	return 0
+    return 0
 }
 
 function export_settings() {
-	file2env "$DIR/settings"
-	file2env "$DIR/settings.override"
+    file2env "$DIR/settings"
+    file2env "$DIR/settings.override"
 
-	if [[ "$RUN_POSTGRES" == "1" ]]; then
-		DB_HOST=postgres
-		DB_PORT=5432
-		DB_USER=odoo
-		DB_PWD=odoo
-	fi
+    if [[ "$RUN_POSTGRES" == "1" ]]; then
+        DB_HOST=postgres
+        DB_PORT=5432
+        DB_USER=odoo
+        DB_PWD=odoo
+    fi
 
-	# get odoo version
-	ODOO_VERSION=$(
-	cd "$DIR/admin/module_tools" || exit -1
-	python <<-EOF
-	import odoo_config
-	v = odoo_config.get_version_from_customs("$CUSTOMS")
-	print v
-	EOF
-	)
-	export ODOO_VERSION=$ODOO_VERSION
-	case "$ODOO_VERSION" in
-		"6.0"|"6.1"|"7.0"|"8.0"|"9.0")
-			export ODOO_PYTHON_VERSION=2
-			export ODOO_EXECUTABLE=openerp-server
-			;;
-		"10.0")
-			export ODOO_PYTHON_VERSION=2
-			export ODOO_EXECUTABLE=odoo-bin
-			;;
-		*)
-			export ODOO_PYTHON_VERSION=3
-			export ODOO_EXECUTABLE=odoo-bin
-		;;
-	esac
+    # get odoo version
+    ODOO_VERSION=$(
+    cd "$DIR/admin/module_tools" || exit -1
+    python <<-EOF
+import odoo_config
+v = odoo_config.get_version_from_customs("$CUSTOMS")
+print v
+EOF
+    )
+    export ODOO_VERSION=$ODOO_VERSION
+    case "$ODOO_VERSION" in
+        "6.0"|"6.1"|"7.0"|"8.0"|"9.0")
+            export ODOO_PYTHON_VERSION=2
+            export ODOO_EXECUTABLE=openerp-server
+            ;;
+        "10.0")
+            export ODOO_PYTHON_VERSION=2
+            export ODOO_EXECUTABLE=odoo-bin
+            ;;
+        *)
+            export ODOO_PYTHON_VERSION=3
+            export ODOO_EXECUTABLE=odoo-bin
+        ;;
+    esac
 
 
-	# set odoo version in settings file for machines
-cd "$DIR/admin/module_tools" || exit -1
-python <<- END
+    # set odoo version in settings file for machines
+    cd "$DIR/admin/module_tools" || exit -1
+    python <<- END
 import os
 import odoo_config
 os.environ['ODOO_HOME'] = os.getenv("LOCAL_ODOO_HOME")
 env = odoo_config.get_env()
 env['ODOO_VERSION'] = "$ODOO_VERSION"
 env.write()
-	END
+END
 
-	if [[ "$FORCE_UNVERBOSE" == "1" ]]; then
-		VERBOSE=0
-	fi
+    if [[ "$FORCE_UNVERBOSE" == "1" ]]; then
+        VERBOSE=0
+    fi
 
-	[[ "$VERBOSE" == "1" ]] && set -x
+    [[ "$VERBOSE" == "1" ]] && set -x
 
     dc="/usr/local/bin/docker-compose -p $DCPREFIX -f $docker_compose_file"
-	return 0
+    return 0
 }
 
 function restore_check() {
-	dumpname="$(basename "$1")"
-	local force=0
+    dumpname="$(basename "$1")"
+    local force=0
 
-	# asterisk as one word, @ as separate words
-	echo "${ALL_PARAMS[*]}" |grep -P -q '[-]force' && {
-		force=1
-	}
+    # asterisk as one word, @ as separate words
+    echo "${ALL_PARAMS[*]}" |grep -P -q '[-]force' && {
+        force=1
+    }
 
-	if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
-		echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
-		exit -1
-	fi
+    if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
+        echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
+        exit -1
+    fi
 
-	return 0
+    return 0
 }
 
 function exists_db() {
-	sql=("select 'database_exists' from pg_database where datname='$DBNAME'")
-	if FORCE_UNVERBOSE=1 echo "${sql[0]}"| $MANAGE psql template1 | grep -q 'database_exists'
-	then
-		echo 'database exists'
-	else
-		echo 'database does not exist'
-	fi
+    sql=("select 'database_exists' from pg_database where datname='$DBNAME'")
+    if FORCE_UNVERBOSE=1 echo "${sql[0]}"| $MANAGE psql template1 | grep -q 'database_exists'
+    then
+        echo 'database exists'
+    else
+        echo 'database does not exist'
+    fi
 
-	return 0
+    return 0
 }
 
 function remove_postgres_connections() {
-	echo "Removing all current connections"
+    echo "Removing all current connections"
 
-	if [[ "$(exists_db)" != "database does not exist" ]]; then
-		SQL=$(cat <<-EOF
-			SELECT pg_terminate_backend(pg_stat_activity.pid)
-			FROM pg_stat_activity 
-			WHERE pg_stat_activity.datname = '$DBNAME' 
-			AND pid <> pg_backend_pid(); 
-			EOF
-			)
-		echo "$SQL" | $MANAGE psql template1
-	fi
+    if [[ "$(exists_db)" != "database does not exist" ]]; then
+        SQL=$(cat <<-EOF
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity 
+            WHERE pg_stat_activity.datname = '$DBNAME' 
+            AND pid <> pg_backend_pid(); 
+EOF
+            )
+        echo "$SQL" | $MANAGE psql template1
+    fi
 
-	return 0
+    return 0
 }
 
 function do_restore_db_in_docker_container () {
-	# remove the postgres volume and reinit
+    # remove the postgres volume and reinit
 
-	echo "Restoring dump within docker container postgres"
-	dump_file="$1"
+    echo "Restoring dump within docker container postgres"
+    dump_file="$1"
 
     if [[ ! -f "$dump_file" ]]; then
         echo "File $dump_file not found!"
@@ -305,81 +316,81 @@ function do_restore_db_in_docker_container () {
 }
 
 function do_restore_db_on_external_postgres () {
-	SUFFIX="_restoring"
-	DBNAME_TARGET="$DBNAME"
-	DBNAME="${DBNAME}${SUFFIX}"
-	export DBNAME="$DBNAME"
+    SUFFIX="_restoring"
+    DBNAME_TARGET="$DBNAME"
+    DBNAME="${DBNAME}${SUFFIX}"
+    export DBNAME="$DBNAME"
 
-	echo "Restoring dump on $DB_HOST"
-	dump_file=$1
-	echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
-	export PGPASSWORD=$DB_PWD
-	local args="-h $DB_HOST -p $DB_PORT -U $DB_USER"
-	DROPDB="dropdb $args"
-	CREATEDB="createdb $args"
-	PGRESTORE="pg_restore $args"
+    echo "Restoring dump on $DB_HOST"
+    dump_file=$1
+    echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
+    export PGPASSWORD=$DB_PWD
+    local args="-h $DB_HOST -p $DB_PORT -U $DB_USER"
+    DROPDB="dropdb $args"
+    CREATEDB="createdb $args"
+    PGRESTORE="pg_restore $args"
 
-	eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
-	eval "$CREATEDB $DBNAME"
-	pipe="$(mktemp -u)"
-	mkfifo "$pipe"
-	gunzip -c "$1" > "$pipe" &
-	echo "Restoring Database $DBNAME"
-	$PGRESTORE -d "$DBNAME" < "$pipe"
+    eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
+    eval "$CREATEDB $DBNAME"
+    pipe="$(mktemp -u)"
+    mkfifo "$pipe"
+    gunzip -c "$1" > "$pipe" &
+    echo "Restoring Database $DBNAME"
+    $PGRESTORE -d "$DBNAME" < "$pipe"
 
-	remove_postgres_connections
-	sql=("
-		SELECT pg_terminate_backend(pg_stat_activity.pid)
-		FROM pg_stat_activity 
-		WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
-		AND pid <> pg_backend_pid(); 
+    remove_postgres_connections
+    sql=("
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity 
+        WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
+        AND pid <> pg_backend_pid(); 
 
-		drop database if exists $DBNAME_TARGET;
-		alter database $DBNAME rename to $DBNAME_TARGET;
-		")
-	echo "${sql[0]}"| $MANAGE psql template1
+        drop database if exists $DBNAME_TARGET;
+        alter database $DBNAME rename to $DBNAME_TARGET;
+        ")
+    echo "${sql[0]}"| $MANAGE psql template1
 
-	DBNAME="$DBNAME_TARGET"
-	export DBNAME="$DBNAME"
-	remove_postgres_connections
+    DBNAME="$DBNAME_TARGET"
+    export DBNAME="$DBNAME"
+    remove_postgres_connections
 
-	return 0
+    return 0
 }
 
 function do_restore_files () {
-	# remove the postgres volume and reinit
-	filepath=$1
+    # remove the postgres volume and reinit
+    filepath=$1
 
-	filepath=$(make_path_as_hosts_sees_it "$filepath")
-	RESTOREFILE=/tmp/archive
-	dcrun -v "$filepath:$RESTOREFILE" odoo /bin/restore_files.sh
-	return 0
+    filepath=$(make_path_as_hosts_sees_it "$filepath")
+    RESTOREFILE=/tmp/archive
+    dcrun -v "$filepath:$RESTOREFILE" odoo /bin/restore_files.sh
+    return 0
 }
 
 function askcontinue() {
-	if [[ "$1" != "-force" ]]; then
-		echo "$1"
-	fi
-	force=0
-	echo "$*" |grep -q '[-]force' && {
-		force=1
-	}
-	if [[ "$force" == "1" || "$FORCE" == "1" || "$FORCE_CONTINUE" == "1" ]]; then
-		# display prompt
-		echo "Ask continue disabled, continuing..."
-	else
-		read -r -p "Continue? (Ctrl+C to break)" || {
-			exit -1
-		}
-	fi
-	return 0
+    if [[ "$1" != "-force" ]]; then
+        echo "$1"
+    fi
+    force=0
+    echo "$*" |grep -q '[-]force' && {
+        force=1
+    }
+    if [[ "$force" == "1" || "$FORCE" == "1" || "$FORCE_CONTINUE" == "1" ]]; then
+        # display prompt
+        echo "Ask continue disabled, continuing..."
+    else
+        read -r -p "Continue? (Ctrl+C to break)" || {
+            exit -1
+        }
+    fi
+    return 0
 }
 
 function showhelp() {
     echo Management of odoo instance
     echo
     echo
-	echo ./odoo sanity-check
+    echo ./odoo sanity-check
     echo Reinit fresh db:
     echo './odoo reset-db'
     echo
@@ -389,74 +400,73 @@ function showhelp() {
     echo 'Minimal downtime - but there is a downtime, even for phones'
     echo 
     echo "Please call odoo springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
-	echo ""
-	echo "abort-upgrade"
-	echo ""
+    echo ""
+    echo "abort-upgrade"
+    echo ""
     echo "attach <machine> - attaches to running machine"
-	echo ""
+    echo ""
     echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
-	echo ""
+    echo ""
     echo "backup-db <backup-dir>"
-	echo ""
+    echo ""
     echo "backup-files <backup-dir>"
-	echo ""
+    echo ""
     echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
-	echo ""
+    echo ""
     echo "dev - starts developing in the odoo container"
-	echo ""
+    echo ""
     echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
-	echo ""
-	echo "link - links all modules into ./links"
-	echo ""
+    echo ""
+    echo "link - links all modules into ./links"
+    echo ""
     echo "telegram-setup- helps creating a permanent chatid"
-	echo ""
+    echo ""
     echo "kill - kills running machines"
-	echo ""
+    echo ""
     echo "logs - show log output; use parameter to specify machine"
-	echo ""
+    echo ""
     echo "logall - shows log til now; use parameter to specify machine"
-	echo ""
+    echo ""
     echo "springclean - remove dead containers, untagged images, delete unwanted volums"
-	echo ""
+    echo ""
     echo "rm - command"
-	echo ""
-	echo "compose - just build the big docker-compose file"
-	echo ""
+    echo ""
+    echo "compose - just build the big docker-compose file"
+    echo ""
     echo "rebuild - rebuilds docker-machines - data not deleted"
-	echo ""
+    echo ""
     echo "restart - restarts docker-machine(s) - parameter name"
-	echo ""
+    echo ""
     echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
-	echo ""
+    echo ""
     echo "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
-	echo ""
+    echo ""
     echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
-	echo ""
+    echo ""
     echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
-	echo ""
+    echo ""
     echo "stop - like docker-compose stop"
-	echo ""
+    echo ""
     echo "quickpull - fetch latest source, oeln - good for mako templates"
-	echo ""
-	echo "turn-into-dev - applies scripts to make the database a dev database"
-	echo ""
+    echo ""
+    echo "turn-into-dev - applies scripts to make the database a dev database"
+    echo ""
     echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
-	echo ""
+    echo ""
     echo "up - starts all machines equivalent to service <service> start "
-	echo ""
-	echo "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
-	echo ""
-	echo "fix-permissions - sets user 1000 for odoo and odoo_files"
-	echo ""
-	echo "show-install-state "
-	echo ""
-	echo "make-customs"
+    echo ""
+    echo "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
+    echo ""
+    echo "fix-permissions - sets user 1000 for odoo and odoo_files"
+    echo ""
+    echo "show-install-state "
+    echo ""
+    echo "make-customs"
     echo
-	echo "patch - run without arguments for help"
-	echo ""
-	echo "version - run without arguments for help"
-	echo ""
-	echo "lsyncd - displays the command to execute lsyncd"
+    echo "patch - run without arguments for help"
+    echo ""
+    echo "version - run without arguments for help"
+    echo ""
 }
 
 if [ -z "$1" ]; then
@@ -466,13 +476,13 @@ fi
 
 function prepare_filesystem() {
     mkdir -p "$DIR"/run/{config,sqlscripts,debug,proxy}
-	sudo -E chown $UID:$UID -R "$DIR"/run
+    sudo -E chown $UID:$UID -R "$DIR"/run
 
-	if [[ ! -e "$DIR/run/odoo_instances" ]]; then
-		echo "default default" > "$DIR/run/odoo_instances"
-	fi
+    if [[ ! -e "$DIR/run/odoo_instances" ]]; then
+        echo "default default" > "$DIR/run/odoo_instances"
+    fi
 
-	return 0
+    return 0
 }
 
 function prepare_yml_files_from_template_files() {
@@ -480,52 +490,52 @@ function prepare_yml_files_from_template_files() {
     # replace variables in docker-compose;
     cd "$DIR"
 
-	if [[ "$ODOO_MANAGER_STARTED_ONCE" != "1" ]]; then
-		echo "CUSTOMS: $CUSTOMS"
-		echo "DB: $DBNAME"
-		echo "VERSION: $ODOO_VERSION"
-		echo "FILES: $ODOO_FILES"
-	fi
-	CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+    if [[ "$ODOO_MANAGER_STARTED_ONCE" != "1" ]]; then
+        echo "CUSTOMS: $CUSTOMS"
+        echo "DB: $DBNAME"
+        echo "VERSION: $ODOO_VERSION"
+        echo "FILES: $ODOO_FILES"
+    fi
+    CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 
-	# python: find all configuration files from machines folder; extract sort 
-	# by manage-sort flag and put file into run directory
-	# only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
-	#
-	# - also replace all environment variables
-	PATTERN='docker-compose*.yml'
-	rm "$DIR/run/$PATTERN" > /dev/null 2>&1 || true
+    # python: find all configuration files from machines folder; extract sort 
+    # by manage-sort flag and put file into run directory
+    # only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
+    #
+    # - also replace all environment variables
+    PATTERN='docker-compose*.yml'
+    rm "$DIR/run/$PATTERN" > /dev/null 2>&1 || true
 
-	declare -a all_dirs
-	all_dirs[0]="machines"
-	if [[ -d "$CUSTOMS_DIR/machines" ]]; then
-		all_dirs[1]="$CUSTOMS_DIR/machines"
-	fi
-	ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
+    declare -a all_dirs
+    all_dirs[0]="machines"
+    if [[ -d "$CUSTOMS_DIR/machines" ]]; then
+        all_dirs[1]="$CUSTOMS_DIR/machines"
+    fi
+    ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
 
-	# Make all config files to absolutepath
-	ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES" | while read -r f; do readlink -e "$f"; done)
+    # Make all config files to absolutepath
+    ALL_CONFIG_FILES=$(echo "$ALL_CONFIG_FILES" | while read -r f; do readlink -e "$f"; done)
 
-	python ./admin/prepare_dockercompose_files.py ./run/docker-compose.yml "$ALL_CONFIG_FILES"
+    python ./admin/prepare_dockercompose_files.py ./run/docker-compose.yml "$ALL_CONFIG_FILES"
 
-	return 0
+    return 0
 }
 
 
 function do_command() {
     case $1 in
-	abort-upgrade)
-		SQL=$(cat <<-EOF
-			UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
-			UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
-			EOF
-			)
-		echo "$SQL" | $MANAGE psql "$DBNAME"
+    abort-upgrade)
+        SQL=$(cat <<-EOF
+            UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
+            UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
+EOF
+            )
+        echo "$SQL" | $MANAGE psql "$DBNAME"
 
-		;;
+        ;;
     setup-startup)
         PATH=$DIR
-		exit 5
+        exit 5
 
         if [[ -f /sbin/initctl ]]; then
             # ubuntu 14.04 upstart
@@ -587,20 +597,6 @@ function do_command() {
         echo "Dumped to $filepath"
 		$MANAGE telegram-send "Database Backup $DBNAME done to $filepath"
         ;;
-	lsyncd)
-		echo 
-		echo 
-		echo Use for syncing remote machine:
-		echo
-		echo
-		echo
-		for line in $(cd "$DIR"; find "./config/lsyncd/" -not -path '*/\.*' -not -path '*/' -maxdepth 1|tr '\n' ' or '); do
-			echo "sudo lsyncd -nodaemon $line"
-		done
-		echo
-		echo
-		echo
-		;;
     backup-files)
         if [[ -n "$2" ]]; then
             BACKUPDIR=$2
@@ -848,106 +844,106 @@ function do_command() {
         ;;
     restart)
         cd "$DIR"
-		eval "$dc stop $2"
+        eval "$dc stop $2"
         eval "$dc rm -f $2"
         eval "$dc up --force-recreate -d $2"
-		$MANAGE proxy-reload
+        $MANAGE proxy-reload
         ;;
 
-	dev)
-		if [[ -n "${ALL_PARAMS[0]}" ]]; then
-			$MANAGE customs "${ALL_PARAMS[@]}"
-		fi
-		$MANAGE kill
-		$MANAGE rm -f
-		$MANAGE build
-		$MANAGE up -d
-		$MANAGE attach odoo
-		;;
+    dev)
+        if [[ -n "${ALL_PARAMS[0]}" ]]; then
+            $MANAGE customs "${ALL_PARAMS[@]}"
+        fi
+        $MANAGE kill
+        $MANAGE rm -f
+        $MANAGE build
+        $MANAGE up -d
+        $MANAGE attach odoo
+        ;;
 
-	telegram-setup)
-		if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
-			export DIR="$DIR"
-			cd "$DIR"/config/telegrambot
-			docker-compose run telegrambot /setup.sh
-		fi
-		;;
-	telegram-send)
-		if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
-			export DIR="$DIR"
-			cd "$DIR"/config/telegrambot
-			docker-compose run telegrambot /send.py "$2"
-		fi
-		;;
-	fix-permissions)
-		if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
-			chown "1000" -R "$ODOO_FILES"
-		fi
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
-			chown "$USER" -R "$CUSTOMS_DIR"
-		fi
+    telegram-setup)
+        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
+            export DIR="$DIR"
+            cd "$DIR"/config/telegrambot
+            docker-compose run telegrambot /setup.sh
+        fi
+        ;;
+    telegram-send)
+        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
+            export DIR="$DIR"
+            cd "$DIR"/config/telegrambot
+            docker-compose run telegrambot /send.py "$2"
+        fi
+        ;;
+    fix-permissions)
+        if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
+            chown "1000" -R "$ODOO_FILES"
+        fi
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
+            chown "$USER" -R "$CUSTOMS_DIR"
+        fi
 
-		;;
+        ;;
     update)
 
-		$MANAGE abort-upgrade
+        $MANAGE abort-upgrade
 
         echo "Run module update"
-		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
-			date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
-		fi
-		# running duplicate updates is really a problem;
+        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+            date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
+        fi
+        # running duplicate updates is really a problem;
         $dc kill 
         $dc rm -f
         $dc create --force-recreate
         if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres
-			$MANAGE wait_for_container_postgres
+            $dc up -d postgres
+            $MANAGE wait_for_container_postgres
         fi
 
         dcrun odoo_update /update_modules.sh "$2" || {
-			res="$?"
-			echo "Error at /update_modules.sh - aborting update process."
-			exit $res
-		}
-		$MANAGE show-install-state || exit 34
+            res="$?"
+            echo "Error at /update_modules.sh - aborting update process."
+            exit $res
+        }
+        $MANAGE show-install-state || exit 34
 
-		for i in $(seq 5);
-		do
-			$dc up -d
-			$MANAGE proxy-reload
-			sleep 2
-		done
+        for i in $(seq 5);
+        do
+            $dc up -d
+            $MANAGE proxy-reload
+            sleep 2
+        done
 
         df -h / # case: after update disk / was full
-		if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
-			echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
-		fi
-		$MANAGE telegram-send "Update done" # &> /dev/null
+        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+            echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
+        fi
+        $MANAGE telegram-send "Update done" # &> /dev/null
 
        ;;
 
-	show-install-state)
-		SQL=$(cat <<-EOF
-			SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');
-			EOF
-			)
-		echo "Displaying dangling modules:"
-		echo "$SQL" | $MANAGE psql "$DBNAME"
+    show-install-state)
+        SQL=$(cat <<-EOF
+            SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');
+EOF
+            )
+        echo "Displaying dangling modules:"
+        echo "$SQL" | $MANAGE psql "$DBNAME"
 
-		has_dangling=$(echo "$SQL" | $MANAGE psql "$DBNAME" | grep "(0 rows)")
-		if [[ -z "$has_dangling" ]]; then
-			echo "Dangling modules detected - please fix installation problems and retry!"
-			exit -32
-		fi
-		;;
+        has_dangling=$(echo "$SQL" | $MANAGE psql "$DBNAME" | grep "(0 rows)")
+        if [[ -z "$has_dangling" ]]; then
+            echo "Dangling modules detected - please fix installation problems and retry!"
+            exit -32
+        fi
+        ;;
 
-	get_all_langs)
-		SQL="select code from res_lang;"
-		langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
-		echo $langs
-		;;
+    get_all_langs)
+        SQL="select code from res_lang;"
+        langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
+        echo $langs
+        ;;
 
     export-i18n|export_i18n)
         LANG=$2
@@ -964,262 +960,273 @@ function do_command() {
         dcrun odoo /import_i18n.sh "${ALL_PARAMS[@]}"
         ;;
 
-	remove-web-assets)
-		askcontinue
-		dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
-		echo
-		echo
-		echo "Please login as admin, so that assets are recreated."
-		echo
-		echo
-		echo
-		;;
-	sanity_check)
-		sanity_check
-		;;
-	make_customs)
-		set -e
-		askcontinue
-		$MANAGE kill
-		CUSTOMS=$2
-		VERSION=$3
-		"$DIR/admin/module_tools/make_customs" "$2" "$3"
-		cd "$DIR/admin/module_tools"
-		python <<- END
-		import odoo_config
-		odoo_config.set_customs("$2")
-		END
+    remove-web-assets)
+        askcontinue
+        dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
+        echo
+        echo
+        echo "Please login as admin, so that assets are recreated."
+        echo
+        echo
+        echo
+        ;;
+    sanity_check)
+        sanity_check
+        ;;
+    make_customs)
+        set -e
+        askcontinue
+        $MANAGE kill
+        CUSTOMS=$2
+        VERSION=$3
+        "$DIR/admin/module_tools/make_customs" "$2" "$3"
+        cd "$DIR/admin/module_tools"
+        python <<- END
+import odoo_config
+odoo_config.set_customs("$2")
+END
 
-		cd "$DIR/customs/$2"
-		git submodule add https://github.com/odoo/odoo odoo
-		cd odoo
-		git checkout "$VERSION"
-		"$DIR/admin/OCA-all"
-		"$DIR/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
-		"$DIR/$MANAGE" up -d
-		chromium-browser http://localhost
+        cd "$DIR/customs/$2"
+        git submodule add https://github.com/odoo/odoo odoo
+        cd odoo
+        git checkout "$VERSION"
+        "$DIR/admin/OCA-all"
+        "$DIR/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
+        "$DIR/$MANAGE" up -d
+        chromium-browser http://localhost
 
-		;;
-	OCA)
-		"$DIR/admin/OCA" "${ALL_PARAMS[@]}"
-		;;
-	compose)
-		echo "Built the docker-compose file."
-		;;
-	simplebash)
-		bash --noprofile
-		;;
-	test)
-		echo 'reached the command area'
-		echo "DIR is: $DIR"
-		echo "CUSTOMS is: $CUSTOMS"
-		sudo echo "This was sudoed"
-		echo "Here is pgpassfile: $PGPASSFILE"
-		echo "Now calling simple psql"
-		SQL=$(cat <<-EOF
-			select state, count(*) from ir_module_module group by state;
-			EOF
-			)
-		echo "$SQL" | $MANAGE psql "$DBNAME"
-		;;
-	test_make_error)
-		echo "now throwing exit code"
-		exit -123
-		;;
-	progress)
-		SQL=$(cat <<-EOF
-			select state, count(*) from ir_module_module group by state;
-			EOF
-			)
-		echo "$SQL" | $MANAGE psql "$DBNAME"
+        ;;
+    OCA)
+        "$DIR/admin/OCA" "${ALL_PARAMS[@]}"
+        ;;
+    compose)
+        echo "Built the docker-compose file."
+        ;;
+    simplebash)
+        if [[ "${#ALL_PARAMS[@]}" == "0" ]]; then
+            bash --noprofile
+        else
+            bash --noprofile -c "${ALL_PARAMS[*]}"
+        fi
+        ;;
+    test)
+        echo 'reached the command area'
+        echo "DIR is: $DIR"
+        echo "CUSTOMS is: $CUSTOMS"
+        sudo echo "This was sudoed"
+        echo "Here is pgpassfile: $PGPASSFILE"
+        echo "Now calling simple psql"
+        SQL=$(cat <<-'            EOF'
+            select state, count(*) from ir_module_module group by state;
+            EOF
+            )
+        echo "$SQL" | $MANAGE psql "$DBNAME"
+        ;;
+    test_make_error)
+        echo "now throwing exit code"
+        exit -123
+        ;;
+    progress)
+        SQL=$(cat <<-EOF
+            select state, count(*) from ir_module_module group by state;
+EOF
+            )
+        echo "$SQL" | $MANAGE psql "$DBNAME"
 
-		;;
-	prepare)
-		echo "All configurations prepared."
-		;;
-	link)
-		python "$DIR/admin/link_modules"
-	
-		;;
+        ;;
+    prepare)
+        echo "All configurations prepared."
+        ;;
+    link)
+        python "$DIR/admin/link_modules"
+        ;;
 
-	patch)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		cd "$CUSTOMS_DIR/odoo" || exit 1
-		cmd=("$DIR/admin/odoo-patch")
-		cmd+=("${ALL_PARAMS[@]}")
-		eval "${cmd[@]@Q}"
-		;;
-	wait_for_port)
-		started=$(date +"%s")
-		while ! nc -q 1 "$2" "$3" </dev/null; do 
-			sleep 1;
-			now=$(date +"%s")
-			(( elapsed = ("$now" - "$started") % 5))
-			if [[ "$elapsed" == "0" ]]; then
-				echo "Waiting for $2 on port $3..."
-			fi
+    patch)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR/odoo" || exit 1
+        cmd=("$DIR/admin/odoo-patch")
+        cmd+=("${ALL_PARAMS[@]}")
+        eval "${cmd[@]@Q}"
+        ;;
+    wait_for_port)
+        started=$(date +"%s")
+        while ! nc -q 1 "$2" "$3" </dev/null; do 
+            sleep 1;
+            now=$(date +"%s")
+            (( elapsed = ("$now" - "$started") % 5))
+            if [[ "$elapsed" == "0" ]]; then
+                echo "Waiting for $2 on port $3..."
+            fi
 
-			if [[ "$elapsed" -gt 20 ]]; then
-				echo "Waiting too long for $2 on port $3. Exiting with error-code."
-				exit 20
-			fi
-			
-		done
-		;;
-	wait_for_container_postgres)
-		$MANAGE wait_for_port postgres 5432
-		;;
+            if [[ "$elapsed" -gt 20 ]]; then
+                echo "Waiting too long for $2 on port $3. Exiting with error-code."
+                exit 20
+            fi
+        done
+        ;;
+    wait_for_container_postgres)
+        $MANAGE wait_for_port postgres 5432
+        ;;
 
-	dirty)
-		cmd=("$DIR/admin/module_tools/odoo-versioning")
-		cmd+=("dirty")
-		eval "${cmd[@]@Q}"
-		;;
-	stage)
-		cmd=("$DIR/admin/module_tools/odoo-versioning")
-		cmd+=("stage-ticket")
-		cmd+=( "${ALL_PARAMS[@]}" )
-		eval "${cmd[@]@Q}"
-		;;
-	deploy)
-		cmd=("$DIR/admin/module_tools/odoo-versioning")
-		cmd+=("deploy-ticket")
-		cmd+=( "${ALL_PARAMS[@]}" )
-		eval "${cmd[@]@Q}"
-		;;
-	versioning)
-		cmd=("$DIR/admin/module_tools/odoo-versioning")
-		cmd+=( "${ALL_PARAMS[@]}" )
-		eval "${cmd[@]@Q}"
-		;;
-	new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
-		cmd=("$DIR/admin/module_tools/odoo-versioning")
-		cmd+=("$1")
-		cmd+=( "${ALL_PARAMS[@]}" )
-		eval "${cmd[@]@Q}"
-		;;
+    dirty)
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("dirty")
+        eval "${cmd[@]@Q}"
+        ;;
+    stage)
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("stage-ticket")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+    deploy)
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("deploy-ticket")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+    versioning)
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+    new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("$1")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
 
-	customs)
-		# switch customs
-		if [[ -z "${ALL_PARAMS[0]}" ]]; then
-			echo "Customs missing"
-			exit 1
-		fi
-		newcustoms="${ALL_PARAMS[0]}"
-		newdb="${ALL_PARAMS[1]}"
+    customs)
+        # switch customs
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Customs missing"
+            exit 1
+        fi
+        newcustoms="${ALL_PARAMS[0]}"
+        newdb="${ALL_PARAMS[1]}"
 
-		if [[ -z "$newdb" ]]; then
-			newdb=$newcustoms
-		fi
+        if [[ -z "$newdb" ]]; then
+            newdb=$newcustoms
+        fi
 
-		$(
-		cd "$DIR/admin/module_tools"
-		python <<-EOF
-		import odoo_config
-		odoo_config.set_customs("$newcustoms", "$newdb")
-		EOF
-		)
+        $(
+        cd "$DIR/admin/module_tools"
+        python <<-'EOF'
+import odoo_config
+odoo_config.set_customs("$newcustoms", "$newdb")
+EOF
+        )
 
-		echo "Customs set to $newcustoms with database $newdb"
+        echo "Customs set to $newcustoms with database $newdb"
 
-		;;
+        ;;
 
-	pull)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		cd "$CUSTOMS_DIR" || exit -1
+    pull)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
 
-		if [[ -z "${ALL_PARAMS[0]}" ]]; then
-			echo "Please provide the submodule name."
-			exit -1
-		fi
-		if [[ ! -d ".git" ]]; then
-			echo "No local git repo - where are you?"
-			exit -1
-		fi
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
+        if [[ ! -d ".git" ]]; then
+            echo "No local git repo - where are you?"
+            exit -1
+        fi
 
-		module="${ALL_PARAMS[0]}"
-		git subtree pull --message "SUBTREE-PULL $module" --prefix="common/$module" --squash git.mt-software.de:"/git/openerp/modules/$module" master
-		;;
+        module="${ALL_PARAMS[0]}"
+        git subtree pull --message "SUBTREE-PULL $module" --prefix="common/$module" --squash git.mt-software.de:"/git/openerp/modules/$module" master
+        ;;
 
-	pull-all)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		cd "$CUSTOMS_DIR" || exit -1
+    pull-all)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
 
-		if [[ -z "${ALL_PARAMS[0]}" ]]; then
-			echo "Please provide the submodule name."
-			exit -1
-		fi
-		if [[ ! -d ".git" ]]; then
-			echo "No local git repo - where are you?"
-			exit -1
-		fi
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
+        if [[ ! -d ".git" ]]; then
+            echo "No local git repo - where are you?"
+            exit -1
+        fi
 
-		all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
-		readarray -t all_tres <<<"$all_trees"
+        all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
+        readarray -t all_tres <<<"$all_trees"
 
-		for tree in "${all_tres[@]}"; do
-			git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
-		done
+        for tree in "${all_tres[@]}"; do
+            git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
+        done
 
-		;;
+        ;;
 
-	push)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		cd "$CUSTOMS_DIR" || exit -1
+    push)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
 
-		if [[ -z "${ALL_PARAMS[0]}" ]]; then
-			echo "Please provide the submodule name."
-			exit -1
-		fi
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
 
-		cd "$CUSTOMS_DIR"
-		module="${ALL_PARAMS[0]}"
-		git subtree push --prefix="common/$module" git.mt-software.de:"/git/openerp/modules/$module" master
+        cd "$CUSTOMS_DIR"
+        module="${ALL_PARAMS[0]}"
+        git subtree push --prefix="common/$module" git.mt-software.de:"/git/openerp/modules/$module" master
 
-		;;
+        ;;
 
-	rmpyc)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-		cd "$CUSTOMS_DIR" || exit -1
-		find . -name *.pyc -delete
-		;;
+    rmpyc)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
+        find . -name *.pyc -delete
+        ;;
 
 
-	submodule)
-		CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+    submodule)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
 
-		if [[ -z "${ALL_PARAMS[0]}" ]]; then
-			echo "Please provide the submodule name."
-			exit -1
-		fi
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
 
-		cd "$CUSTOMS_DIR"
-		if [[ ! -d common ]]; then
-			echo "Directory common not found - are you in root?"
-			exit 1
-		fi
+        cd "$CUSTOMS_DIR"
+        if [[ ! -d common ]]; then
+            echo "Directory common not found - are you in root?"
+            exit 1
+        fi
 
-		if [[ ! -d ".git" ]]; then
-			git init .
-		fi
+        if [[ ! -d ".git" ]]; then
+            git init .
+        fi
 
-		for i in ${ALL_PARAMS[0]//,/ };
-		do
-			git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
-		done
-		;;
+        for i in ${ALL_PARAMS[0]//,/ };
+        do
+            git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
+        done
+        ;;
 
-	update-ast)
-		set -x
-		cd admin/module_tools
-		python -c'from odoo_parser import update_cache; update_cache()'
-		;;
+    update-ast)
+        if [[ "$PLATFORM" == "OSX" ]]; then
+            echo "Update is extreme slow on osx due to share performance. Please use following command natively:"
+            echo
+            echo
+            echo 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
+            echo
+            echo
+            exit 2
+        fi
+        cd admin/module_tools
+        echo "Updating ast - can take about one minute; slow on OSX due to share"
+        time python -c'from odoo_parser import update_cache; update_cache()'
+        ;;
 
-		*)
-			echo "Invalid option $1"
-			exit -1
-			;;
-		esac
+    *)
+        echo "Invalid option $1"
+        exit -1
+        ;;
+    esac
 }
 
 
@@ -1229,20 +1236,20 @@ function cleanup() {
         /bin/rm config/docker-compose.yml || true
     fi
 
-	remove_temp_directories
+    remove_temp_directories
 
 }
 
 function try_to_set_owner() {
-	OWNER=$1
-	dir=$2
-	if [[ -d "$dir" && "$(stat -c "%u" "$dir")" != "$OWNER" ]]; then
-		echo "Trying to set correct permissions on $dir"
-		chown "$OWNER" "$dir"
-		if [[ "$?" != 0 ]]; then
-			sudo chown "$OWNER" "$dir"
-		fi
-	fi
+    OWNER=$1
+    dir=$2
+    if [[ -d "$dir" && "$(stat -c "%u" "$dir")" != "$OWNER" ]]; then
+        echo "Trying to set correct permissions on $dir"
+        chown "$OWNER" "$dir"
+        if [[ "$?" != 0 ]]; then
+            sudo chown "$OWNER" "$dir"
+        fi
+    fi
 }
 
 function sanity_check() {
@@ -1256,262 +1263,261 @@ function sanity_check() {
     fi
 
     if [[ "$RUN_POSTGRES" == "1"  ]]; then
-		RESTORE_DIR="$DIR/run/restore"
-		if [[ -d "$RESTORE_DIR" ]]; then
-			try_to_set_owner "1000" "$RESTORE_DIR"
-		fi
-	fi
+        RESTORE_DIR="$DIR/run/restore"
+        if [[ -d "$RESTORE_DIR" ]]; then
+            try_to_set_owner "1000" "$RESTORE_DIR"
+        fi
+    fi
 
-	if [[ -d $ODOO_FILES ]]; then
-		# checking directory permissions of session files and filestorage
-		try_to_set_owner "1000" "$ODOO_FILES"
-	fi
+    if [[ -d $ODOO_FILES ]]; then
+        # checking directory permissions of session files and filestorage
+        try_to_set_owner "1000" "$ODOO_FILES"
+    fi
 
-	# make sure the odoo_debug.txt exists; otherwise directory is created
-	if [[ ! -f "$DIR/run/odoo_debug.txt" ]]; then
-		touch "$DIR/run/odoo_debug.txt"
-	fi
+    # make sure the odoo_debug.txt exists; otherwise directory is created
+    if [[ ! -f "$DIR/run/odoo_debug.txt" ]]; then
+        touch "$DIR/run/odoo_debug.txt"
+    fi
 
-	if [[ -z "$ODOO_MODULE_UPDATE_DELETE_QWEB" ]]; then
-		echo "Please define ODOO_MODULE_UPDATE_DELETE_QWEB"
-		echo "Whenever modules are updated, then the qweb views are deleted."
-		echo
-		echo "Typical use for development environment."
-		echo
-		exit -1
-	fi
+    if [[ -z "$ODOO_MODULE_UPDATE_DELETE_QWEB" ]]; then
+        echo "Please define ODOO_MODULE_UPDATE_DELETE_QWEB"
+        echo "Whenever modules are updated, then the qweb views are deleted."
+        echo
+        echo "Typical use for development environment."
+        echo
+        exit -1
+    fi
 
-	if [[ -z "$ODOO_MODULE_UPDATE_RUN_TESTS" ]]; then
-		echo "Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS"
-		echo
-		exit -1
-	fi
+    if [[ -z "$ODOO_MODULE_UPDATE_RUN_TESTS" ]]; then
+        echo "Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS"
+        echo
+        exit -1
+    fi
 
-	if [[ -z "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
-		echo "Please define ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO"
-		echo In development environments it is safe to set ownership, so
-		echo that accidently accessing the db fails
-		echo
-		exit -1
-	fi
+    if [[ -z "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
+        echo "Please define ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO"
+        echo In development environments it is safe to set ownership, so
+        echo that accidently accessing the db fails
+        echo
+        exit -1
+    fi
 }
 
 function set_db_ownership() {
-	# in development environments it is safe to set ownership, so
-	# that accidently accessing the db fails
-	if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
-		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres
-			$MANAGE wait_for_container_postgres
-		fi
-		dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
-	fi
+    # in development environments it is safe to set ownership, so
+    # that accidently accessing the db fails
+    if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
+        if [[ "$RUN_POSTGRES" == "1" ]]; then
+            $dc up -d postgres
+            $MANAGE wait_for_container_postgres
+        fi
+        dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import set_ownership_exclusive; set_ownership_exclusive()'"
+    fi
 }
 
 function display_machine_tips() {
-	cd "$DIR"
-	tipfile=$(find "machines" -name 'tips.txt' | grep -P "\/$1\/" | while read -r file; do
-		echo "$DIR/$file"
-	done)
-	if [[ -f "$tipfile" ]]; then
-		echo 
-		echo Please note:
-		echo ---------------
-		echo
-		cat "$tipfile"
-		echo 
-		echo
-	fi
+    cd "$DIR"
+    tipfile=$(find "machines" -name 'tips.txt' | grep -P "\/$1\/" | while read -r file; do
+        echo "$DIR/$file"
+    done)
+    if [[ -f "$tipfile" ]]; then
+        echo 
+        echo Please note:
+        echo ---------------
+        echo
+        cat "$tipfile"
+        echo 
+        echo
+    fi
 
-	return 0
+    return 0
 }
 
 function awk() {
-	AWK=$(which awk)
-	command "${AWK:-awk}" "$@";
-	return 0
+    AWK=$(which awk)
+    command "${AWK:-awk}" "$@";
+    return 0
 }
 
 function reset_proxy_configs() {
-	local configs_dir
+    local configs_dir
 
-	configs_dir="$DIR/run/proxy"
+    configs_dir="$DIR/run/proxy"
 
-	cd "${configs_dir:?}" && rm -Rf *
+    cd "${configs_dir:?}" && rm -Rf *
 }
 
 function setup_odoo_instances() {
-	local name
-	local subdomain_path
-	local config_path
+    local name
+    local subdomain_path
+    local config_path
 
-	if [[ -f "$DIR/run/odoo_instances" ]]; then
-		rm "${proxy_configs_dir:?}/*.host" 1>/dev/null 2>&1 || true
+    if [[ -f "$DIR/run/odoo_instances" ]]; then
+        rm "${proxy_configs_dir:?}/*.host" 1>/dev/null 2>&1 || true
 
-		while read -r line; do
-			name="$(echo "$line"| awk '{print $1}')"
-			domain="$(echo "$line"| awk '{print $2}')"
+        while read -r line; do
+            name="$(echo "$line"| awk '{print $1}')"
+            domain="$(echo "$line"| awk '{print $2}')"
 
-			config_path="$proxy_configs_dir/${name}.host"
-			cp "$DIR/machines/proxy/odoo_instance.conf" "$config_path"
-			if [[ "$domain" == "default" ]]; then
-				sed -i 's|__DOMAIN__|*|g' "$config_path"
-			else
-				sed -i "s|__DOMAIN__|${domain:?}|g" "$config_path"
-			fi
-			sed -i "s|__CONTAINERNAME__|${name:?}|g" "$config_path"
+            config_path="$proxy_configs_dir/${name}.host"
+            cp "$DIR/machines/proxy/odoo_instance.conf" "$config_path"
+            if [[ "$domain" == "default" ]]; then
+                sed -i 's|__DOMAIN__|*|g' "$config_path"
+            else
+                sed -i "s|__DOMAIN__|${domain:?}|g" "$config_path"
+            fi
+            sed -i "s|__CONTAINERNAME__|${name:?}|g" "$config_path"
 
-			if [[ $name != 'default' ]]; then
-				# adapt the one yml file and duplicate the odoo service there;
-				# removing any ports
-				python <<-EOF
-				import yaml, os
-				from copy import deepcopy
-				with open("$docker_compose_file") as f:
-				    j = yaml.load(f.read())
-				odoo = deepcopy(j['services']['odoo'])
-				if 'ports' in odoo:
-				    del odoo['ports']
-				odoo['container_name'] = '_'.join([os.environ['DCPREFIX'], "odoo", "$name"])
-				j['services']['odoo_{}'.format("$name")] = odoo
-				with open("$docker_compose_file", 'w') as f:
-				    f.write(yaml.dump(j, default_flow_style=False))
-				EOF
-			fi
+            if [[ $name != 'default' ]]; then
+                # adapt the one yml file and duplicate the odoo service there;
+                # removing any ports
+                python <<-EOF
+import yaml, os
+from copy import deepcopy
+with open("$docker_compose_file") as f:
+    j = yaml.load(f.read())
+odoo = deepcopy(j['services']['odoo'])
+if 'ports' in odoo:
+    del odoo['ports']
+odoo['container_name'] = '_'.join([os.environ['DCPREFIX'], "odoo", "$name"])
+j['services']['odoo_{}'.format("$name")] = odoo
+with open("$docker_compose_file", 'w') as f:
+    f.write(yaml.dump(j, default_flow_style=False))
+EOF
+            fi
 
-		done <"$DIR/run/odoo_instances"
-	fi
-	return 0
-	
+        done <"$DIR/run/odoo_instances"
+    fi
+    return 0
 }
 
 function remove_temp_directories() {
-	cd "$DIR" || exit -1
-	find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs rm {} -Rf \;
+    cd "$DIR" || exit -1
+    find . -maxdepth 1 -type d|grep -E 'tmp......' | xargs rm {} -Rf \;
 }
 
 function setup_proxy() {
-	CONFIG_DIR="$DIR/run/proxy"
+    CONFIG_DIR="$DIR/run/proxy"
 
-	find "$DIR/machines" -name 'upstream.path' | while read -r f; do
-		content=$(
-			envsubst < "$f"
-		)
-		paths=()
+    find "$DIR/machines" -name 'upstream.path' | while read -r f; do
+        content=$(
+            envsubst < "$f"
+        )
+        paths=()
 
-		#extract rewrite rules
-		REWRITE_RULES=()
-		while read -r line; do
-			if echo "$line" | grep -q ^RewriteRule; then
-				REWRITE_RULES+=("$line")
-			else
-				paths+=("$line")
-			fi
-		done <<< "$content"
+        #extract rewrite rules
+        REWRITE_RULES=()
+        while read -r line; do
+            if echo "$line" | grep -q ^RewriteRule; then
+                REWRITE_RULES+=("$line")
+            else
+                paths+=("$line")
+            fi
+        done <<< "$content"
 
-		REWRITE_RULES=$(printf "\n%s" "${REWRITE_RULES[@]}")
-		REWRITE_RULES=${REWRITE_RULES:1}
+        REWRITE_RULES=$(printf "\n%s" "${REWRITE_RULES[@]}")
+        REWRITE_RULES=${REWRITE_RULES:1}
 
-		for line in "${paths[@]}"
-		do
-			local URLPATH
-			local MACHINE
-			local PORT
+        for line in "${paths[@]}"
+        do
+            local URLPATH
+            local MACHINE
+            local PORT
 
-			LOCATION=$(echo "$line" | awk '{print $1}')
-			UPSTREAM=$(echo "$line" | awk '{print $2}')
+            LOCATION=$(echo "$line" | awk '{print $1}')
+            UPSTREAM=$(echo "$line" | awk '{print $2}')
 
-			if [[ -z "$LOCATION" || -z "$UPSTREAM" ]]; then
-				echo "Invalid: $f"
-				echo "Example:   / http://odoo:8072/"
-				exit -1
-			fi
+            if [[ -z "$LOCATION" || -z "$UPSTREAM" ]]; then
+                echo "Invalid: $f"
+                echo "Example:   / http://odoo:8072/"
+                exit -1
+            fi
 
-			if [[ "$(basename $(dirname $f))" == "odoo" ]]; then
-				subdir="odoo"
-				mkdir -p "$CONFIG_DIR/$subdir"
+            if [[ "$(basename $(dirname $f))" == "odoo" ]]; then
+                subdir="odoo"
+                mkdir -p "$CONFIG_DIR/$subdir"
 
-				if [[ -e "$DIR/run/odoo_instances" ]]; then
+                if [[ -e "$DIR/run/odoo_instances" ]]; then
 
-					while read -r line; do
-						name="$(echo "$line"| awk '{print $1}')"
-						domain="$(echo "$line"| awk '{print $2}')"
-						filename="$name.location"
-						CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
-						if [[ "$name" == "default" ]]; then
-							UPSTREAM_INSTANCE="${UPSTREAM/default/odoo}"
-						else
-							UPSTREAM_INSTANCE=${UPSTREAM/odoo/odoo_$name}
-						fi
-						"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM_INSTANCE" "$CONFIG_PATH" "$REWRITE_RULES"
-					done<"$DIR/run/odoo_instances"
-				fi
+                    while read -r line; do
+                        name="$(echo "$line"| awk '{print $1}')"
+                        domain="$(echo "$line"| awk '{print $2}')"
+                        filename="$name.location"
+                        CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
+                        if [[ "$name" == "default" ]]; then
+                            UPSTREAM_INSTANCE="${UPSTREAM/default/odoo}"
+                        else
+                            UPSTREAM_INSTANCE=${UPSTREAM/odoo/odoo_$name}
+                        fi
+                        "$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM_INSTANCE" "$CONFIG_PATH" "$REWRITE_RULES"
+                    done<"$DIR/run/odoo_instances"
+                fi
 
-			else
-				subdir="default"
-				mkdir -p "$CONFIG_DIR/$subdir"
-				filename=${LOCATION//\//_}_${LOCATION//\//_}.location
-				CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
-				"$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM" "$CONFIG_PATH" "$REWRITE_RULES"
-			fi
+            else
+                subdir="default"
+                mkdir -p "$CONFIG_DIR/$subdir"
+                filename=${LOCATION//\//_}_${LOCATION//\//_}.location
+                CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
+                "$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM" "$CONFIG_PATH" "$REWRITE_RULES"
+            fi
 
-		done
-	done
-	return 0
+        done
+    done
+    return 0
 }
 
 
 function remember_customs_and_cry_if_changed() {
-	# if customs changed, then restart is required
-	if [[ "$ODOO_MANAGER_STARTED_ONCE" == "1" ]]; then
-		return 0
-	fi
+    # if customs changed, then restart is required
+    if [[ "$ODOO_MANAGER_STARTED_ONCE" == "1" ]]; then
+        return 0
+    fi
 
-	current_customs=$(cd "$DIR"; dcexec odoo env | grep "^CUSTOMS=" || echo "")
-	current_customs=${current_customs/CUSTOMS=/}
+    current_customs=$(cd "$DIR"; dcexec odoo env | grep "^CUSTOMS=" || echo "")
+    current_customs=${current_customs/CUSTOMS=/}
 
-	if [[ -n "$current_customs" && "$current_customs" != "$CUSTOMS" ]]; then
-		echo "Customs changed - you need to restart and/or rebuild!"
-		sleep 3
-		"$MANAGE" kill
-	fi
+    if [[ -n "$current_customs" && "$current_customs" != "$CUSTOMS" ]]; then
+        echo "Customs changed - you need to restart and/or rebuild!"
+        sleep 3
+        "$MANAGE" kill
+    fi
 
-	return 0
+    return 0
 }
 
 function main() {
-	set -e
-	startup "${ARGS[@]}"
-	check_working_dir_customs_mismatch
-	if [[ "${ARGS[0]}" == "tool" ]]; then
+    set -e
+    startup "${ARGS[@]}"
+    check_working_dir_customs_mismatch
+    if [[ "${ARGS[0]}" == "tool" ]]; then
 
-		python "$DIR/admin/module_tools/tool.py" "${ALL_PARAMS[@]@Q}"
+        python "$DIR/admin/module_tools/tool.py" "${ALL_PARAMS[@]@Q}"
 
-	else
+    else
 
-		default_confs "${ARGS[@]}"
-		export_settings
-		remember_customs_and_cry_if_changed
-		case $1 in
-			build|compose)
-				set -e
-				remove_temp_directories
-				prepare_filesystem
-				prepare_yml_files_from_template_files
-				reset_proxy_configs
-				setup_proxy
-				setup_odoo_instances
-				;;
+        default_confs "${ARGS[@]}"
+        export_settings
+        remember_customs_and_cry_if_changed
+        case $1 in
+            build|compose)
+                set -e
+                remove_temp_directories
+                prepare_filesystem
+                prepare_yml_files_from_template_files
+                reset_proxy_configs
+                setup_proxy
+                setup_odoo_instances
+                ;;
 
-			*)
-			;;
-		esac
-		sanity_check
+            *)
+            ;;
+        esac
+        sanity_check
 
-		cd "$DIR"
-		do_command "${ARGS[@]}"
-		cleanup
-	fi
+        cd "$DIR"
+        do_command "${ARGS[@]}"
+        cleanup
+    fi
 }
 
 

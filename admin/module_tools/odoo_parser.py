@@ -22,6 +22,10 @@ from consts import LN_FILE
 cache_models = {}
 cache_xml_ids = {}
 modified_filename = ""
+
+SEP_FILE = ":::"
+SEP_LINENO = "::"
+
 try:
     VERSION = current_version()
 except Exception:
@@ -81,7 +85,7 @@ def try_to_get_filepath(filepath):
     return filepath
 
 def get_file_lineno(line):
-    path, lineno = line.split(":::")[1].split("::")
+    path, lineno = line.split(SEP_FILE)[1].split(SEP_LINENO)
     path = path.replace("//", "/")
     path = try_to_get_filepath(path)
     return path, int(lineno)
@@ -158,6 +162,8 @@ def walk_files(on_match, pattern):
     from module_tools import get_module_of_file
 
     def handle(path, dirs, files):
+        if '/migration/' in path: # ignore migrations folder that contain OpenUpgrade
+            return
 
         if is_module_of_version(path) or 'odoo/addons' in path:
             for filename in fnmatch.filter(files, pattern):
@@ -169,6 +175,10 @@ def walk_files(on_match, pattern):
                 module = _determine_module(filename)
                 with open(filename, "r") as f:
                     lines = f.read().split("\n")
+
+                if modified_filename:
+                    if modified_filename != filename:
+                        continue
 
                 on_match(filename, module, lines)
 
@@ -284,8 +294,8 @@ def _get_views():
 def _get_xml_ids():
     result = []
 
-    if "files" not in cache_xml_ids: cache_xml_ids["files"] = {}
-    if "ids" not in cache_xml_ids: cache_xml_ids["ids"] = {}
+    cache_xml_ids.setdefault('files', {})
+    cache_xml_ids.setdefault('ids', {})
 
     def on_match(filename, module, lines):
         try:
@@ -478,6 +488,16 @@ def _get_models():
             })
     return result
 
+def _remove_entries(plain_text_file, rel_path):
+    """
+    Removes entries pointing to the relative path
+    """
+    with open(plain_text_file, 'r') as f:
+        lines = f.readlines()
+    match = "{}{}{}".format(SEP_FILE, rel_path, SEP_LINENO)
+    temp = tempfile.mktemp(suffix='.tmp')
+    os.system("cat '{plain_text_file}' | grep -v '{match}' > '{temp}'; cp '{temp}' '{plain_text_file}'".format(**locals()))
+
 def update_cache(arg_modified_filename=None):
     """
     param: modified_filename - if given, then only this filename is parsed;
@@ -495,6 +515,15 @@ def update_cache(arg_modified_filename=None):
     global modified_filename
     modified_filename = arg_modified_filename
 
+    try:
+        rel_path = translate_path_relative_to_customs_root(modified_filename) if modified_filename else None
+    except Exception:
+        # suck errors - called from vim for all files
+        return
+
+    if arg_modified_filename and os.path.isfile(plainfile):
+        _remove_entries(plainfile, rel_path)
+
     cache_models = {}
     xml_ids = _get_xml_ids()
     models = _get_models()
@@ -502,11 +531,6 @@ def update_cache(arg_modified_filename=None):
     fields = _get_fields()
     views = _get_views()
 
-    try:
-        local_modified_filename = translate_path_relative_to_customs_root(modified_filename) if modified_filename else None
-    except Exception:
-        # suck errors - called from vim for all files
-        return
     # get the relative module path and ignore everthing from that module;
     # the walk routine scanned the whole module
     from module_tools import get_module_of_file
@@ -516,27 +540,13 @@ def update_cache(arg_modified_filename=None):
     except Exception:
         module_path = None
 
-    if os.path.isfile(plainfile) and local_modified_filename:
-        f, filename2 = tempfile.mkstemp(suffix='.ast')
-        with open(filename2, 'w') as tempf:
-            with open(plainfile, 'r') as plainf:
-                for line in plainf.readlines():
-                    line = line.strip()
-                    if not line:
-                        continue
-                    if ':::{}'.format(module_path) in line:
-                        continue
-                    tempf.write(line)
-                    tempf.write("\n")
-        shutil.move(filename2, plainfile)
-
+    if os.path.isfile(plainfile):
         f = open(plainfile, 'a')
-        f.write("\n")
     else:
         f = open(plainfile, 'w')
 
     try:
-        TEMPLATE = "{type}\t[{module}]\t{name}\t:::{filepath}::{line}"
+        TEMPLATE = "{type}\t[{module}]\t{name}\t" + SEP_FILE + "{filepath}" + SEP_LINENO + "{line}"
         for model in models:
             f.write(TEMPLATE.format(type="model", module=model['module'], name=model['model'], filepath=translate_path_relative_to_customs_root(model['filepath']), line=model['line']))
             f.write("\n")

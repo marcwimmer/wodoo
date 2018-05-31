@@ -1,0 +1,12 @@
+# manage-order 1001
+version: '3.3'
+volumes:
+    odoo_customs_${CUSTOMS}:
+services:
+  odoo_base:
+      volumes:
+          - odoo_customs_${CUSTOMS}:/opt/odoo/active_customs
+  odoo:
+      ports:
+          # rsync server
+          - "10873:873"

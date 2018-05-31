@@ -70,3 +70,9 @@ services:
     # called by manage.sh
     command: echo 'good bye - it is ok!'
 
+  odoo_source_syncer: &odoo_source_syncer
+    <<: *odoo_base
+    container_name: ${DCPREFIX}_odoo_source_syncer
+    command: rsync --daemon --no-detach
+    ports:
+      - "10874:873"

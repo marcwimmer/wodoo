@@ -656,10 +656,6 @@ def set_ownership_exclusive(host=None):
         cr.close()
         conn.close()
 
-def syncsource(path, do_async=False):
-    if path.endswith('.po'):
-        apply_po_file(path)
-
 def update_module(filepath, full=False):
     module = get_module_of_file(filepath)
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:

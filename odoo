@@ -79,14 +79,15 @@ function update() {
 	fi
 }
 
-function remove_old_bash() {
-	cd "$LOCAL_ODOO_HOME/config/simplebash" || exit -1
-	/usr/local/bin/docker-compose rm -f simplebash 1>/dev/null 2>&1
-}
+#function remove_old_bash() {
+#	cd "$LOCAL_ODOO_HOME/config/simplebash" || exit -1
+#	/usr/local/bin/docker-compose rm -f simplebash 1>/dev/null 2>&1
+#}
 
 
 function build_command() {
 	# using absolute path, to work in crontab
+	cd "$LOCAL_ODOO_HOME/config/simplebash" || exit -1
 	if [[ -n "$DISPLAY" ]]; then
 		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
 	fi
@@ -109,6 +110,7 @@ function build_command() {
 	command+=(-e WORKING_DIR="$WORKING_DIR")
 	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
 	command+=(-e HOST_TYPE="$host_type")
+	command+=(-e PLATFORM="$(uname)")
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi
@@ -121,9 +123,31 @@ function run_command() {
 	eval "${command[@]@Q}"
 }
 
+function start_background_sync_from_host() {
+	if [[ "$NO_SYNC" == "1" || "$DOCKER_MACHINE" == "1" ]]; then
+		return
+	fi
+	if [[ "$(uname)" == "Darwin" ]]; then
+		if [[ "$RUN_RSYNCED" != "1" ]]; then
+			echo
+			echo "Warning: on macos you should turn on RUN_RSYNCED in settings."
+			echo
+			echo
+			sleep 3
+			return
+		fi
+	fi
+	if [[ "$RUN_RSYNCED" == "1" ]]; then
+		if [[ "${ARGS[0]}" == "dev" ]]; then
+			"$LOCAL_ODOO_HOME/admin/sync_source.sh" "$CUSTOMS" > /dev/null & disown
+		fi
+	fi
+}
+
+
 startup
 show_help "${ARGS[@]}"
 update "${ARGS[@]}"
-remove_old_bash
 build_command
+start_background_sync_from_host
 run_command
