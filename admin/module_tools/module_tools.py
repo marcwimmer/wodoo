@@ -779,6 +779,9 @@ def update_view_in_db(filepath, lineno):
 
         line -= 1
 
+    if '.' not in xmlid:
+        xmlid = module + '.' + xmlid
+
     def extract_html(parent_node):
         arch = parent_node.xpath("*")
         result = None
@@ -799,7 +802,7 @@ def update_view_in_db(filepath, lineno):
         if xml and xml[0] and 'encoding' in xml[0]:
             _xml = _xml[1:]
         doc = etree.XML("\n".join(_xml))
-        for node in doc.xpath("//*[@id='{}']".format(xmlid)):
+        for node in doc.xpath("//*[@id='{}' or @id='{}']".format(xmlid, xmlid.split('.')[-1])):
             if node.tag == 'record':
                 arch = node.xpath("field[@name='arch']")
             elif node.tag == 'template':
@@ -811,17 +814,20 @@ def update_view_in_db(filepath, lineno):
                 html = extract_html(arch[0])
                 if node.tag == 'template':
                     doc = etree.XML(html)
+                    datanode = doc.xpath("/data")[0]
                     if node.get('inherit_id', False):
-                        doc.xpath("/data")[0].set('inherit_id', node.get('inherit_id'))
-                        doc.xpath("/data")[0].set('name', node.get('name', ''))
+                        datanode.set('inherit_id', node.get('inherit_id'))
+                        datanode.set('name', node.get('name', ''))
                     else:
-                        doc.xpath("/data")[0].set('t-name', xmlid)
+                        datanode.set('t-name', xmlid)
+                        datanode.tag = 't'
                     html = etree.tounicode(doc, pretty_print=True)
+
                 # if not inherited from anything, then base tag must not be <data>
                 doc = etree.XML(html)
                 if not doc.xpath("/data/*[@position] | /*[@position]"):
                     if doc.xpath("/data"):
-                        html = etree.tounicode(doc.xpath("/data/*")[0])
+                        html = etree.tounicode(doc.xpath("/data/*", pretty_print=True)[0])
 
                 print html
                 return html
