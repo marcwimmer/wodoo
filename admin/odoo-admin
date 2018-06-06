@@ -508,14 +508,14 @@ function prepare_yml_files_from_template_files() {
     ALL_SETTINGS=$(echo -e "machines/defaults\n$ALL_SETTINGS")
     # append config from customs
     if [[ "$CUSTOMS" != "" && -e "$DIR/data/src/customs/$CUSTOMS/settings" ]]; then
-        ALL_SETTINGS=$(echo -e "$DIR/data/src/customs/$CUSTOMS/settings")
+        ALL_SETTINGS=$(echo -e "$DIR/data/src/customs/$CUSTOMS/settings\n$ALL_SETTINGS")
     fi
     # append config file from etc as last
     if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/settings" ]]; then
-        ALL_SETTINGS=$(echo -e "/etc_host/odoo/settings")
+        ALL_SETTINGS=$(echo -e "/etc_host/odoo/settings\n$ALL_SETTINGS")
     fi
     if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/$CUSTOMS/settings" ]]; then
-        ALL_SETTINGS=$(echo -e "/etc_host/odoo/$CUSTOMS/settings")
+        ALL_SETTINGS=$(echo -e "/etc_host/odoo/$CUSTOMS/settings\n$ALL_SETTINGS")
     fi
 
     python ./admin/make_settings.py "$SETTINGS_FILE" "$ALL_SETTINGS"
