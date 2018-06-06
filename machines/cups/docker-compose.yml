@@ -5,7 +5,7 @@ volumes:
 
 services:
   cups:
-    container_name: ${DCPREFIX}_cups
+    container_name: ${CUSTOMS}_cups
     build: $ODOO_HOME/machines/cups
     ports:
       - "${CUPS_PORT}:631"
@@ -14,7 +14,7 @@ services:
       - $ODOO_HOME/data/cups/printed:/opt/printed 
       - $ODOO_HOME/data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
     env_file:
-      - $ODOO_HOME/settings
+      - $ODOO_HOME/run/settings
     environment:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed

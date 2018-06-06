@@ -3,7 +3,7 @@ version: '3.3'
 
 services:
   admin:
-    container_name: ${DCPREFIX}_admin
+    container_name: ${CUSTOMS}_admin
     build: $ODOO_HOME/machines/admin
     security_opt:
       - apparmor:unconfined
@@ -22,12 +22,12 @@ services:
         INSTANCES_FILE: /opt/odoo/run/odoo_instances
         ODOO_HOME: /opt/odoo
         HOST_ODOO_HOME: $ODOO_HOME
-        DCPREFIX: $DCPREFIX
+        CUSTOMS: $CUSTOMS
         MINIMUM_CONTAINERS: proxy,redis
         DEPLOY_BRANCH: deploy
         MASTER_BRANCH: master
     env_file:
-      - $ODOO_HOME/settings
+      - $ODOO_HOME/run/settings
     command: /rootrun.sh
     ports:
        - "4488:8069"

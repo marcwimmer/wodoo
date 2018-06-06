@@ -11,7 +11,6 @@
 # TODO use shift instead of ARGS, ALL_PARAMS - is more bash style
 # TODO replace all bash commands to be called within dockerbash
 
-
 function dcrun() {
     $dc run -T -e ODOO_HOME=/opt/odoo "$@"
 }
@@ -106,13 +105,6 @@ function default_confs() {
     MANAGE="$DIR/admin/odoo-admin"
     local ARGS=("$@")
     export FORCE_CONTINUE=0
-    export ODOO_FILES=$DIR/data/odoo.files
-    export RUN_POSTGRES=1
-    export DB_PORT=5432
-    export ALLOW_DIRTY_ODOO=0 # to modify odoo source it may be dirty
-    export ADDITIONAL_DOCKER_COMPOSE=""
-    export RUN_ODOODEV=0
-    export TELEGRAM_ENABLED=1
     FORCE=0
     echo "${ARGS[*]}" |grep -q '[-]force' && {
         FORCE=1
@@ -124,10 +116,7 @@ function default_confs() {
     echo "${ARGS[*]}" |grep -q '[-]unverbose' && {
         FORCE_UNVERBOSE=1
     }
-    if [[ -z "$DUMPS_PATH" ]]; then
-        export DUMPS_PATH=$DIR/dumps
-    fi
-
+    return 0
 }
 
 function make_path_as_hosts_sees_it() {
@@ -188,15 +177,18 @@ function file2env() {
 }
 
 function export_settings() {
-    file2env "$DIR/settings"
-    file2env "$DIR/settings.override"
-
-    if [[ "$RUN_POSTGRES" == "1" ]]; then
-        DB_HOST=postgres
-        DB_PORT=5432
-        DB_USER=odoo
-        DB_PWD=odoo
+    SETTINGS_FILE="$DIR/run/settings"
+    if [[ ! -e "$SETTINGS_FILE" ]]; then
+        case $1 in
+            build|compose)
+                echo "CUSTOMS=$2" > "$SETTINGS_FILE"
+            ;;
+            *)
+                echo "Please call ./odoo compose <CUSTOMS> initially."
+                exit 1
+        esac
     fi
+    file2env "$SETTINGS_FILE"
 
     # get odoo version
     ODOO_VERSION=$(
@@ -511,6 +503,24 @@ function prepare_yml_files_from_template_files() {
     if [[ -d "$CUSTOMS_DIR/machines" ]]; then
         all_dirs[1]="$CUSTOMS_DIR/machines"
     fi
+    ALL_SETTINGS=$(cd "$DIR"; find "${all_dirs[@]}" -name default.settings)
+    ALL_SETTINGS=$(echo "$ALL_SETTINGS" | while read -r f; do readlink -e "$f"; done) # make absolute path
+    ALL_SETTINGS=$(echo -e "machines/defaults\n$ALL_SETTINGS")
+    # append config from customs
+    if [[ "$CUSTOMS" != "" && -e "$DIR/data/src/customs/$CUSTOMS/settings" ]]; then
+        ALL_SETTINGS=$(echo -e "$DIR/data/src/customs/$CUSTOMS/settings")
+    fi
+    # append config file from etc as last
+    if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/settings" ]]; then
+        ALL_SETTINGS=$(echo -e "/etc_host/odoo/settings")
+    fi
+    if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/$CUSTOMS/settings" ]]; then
+        ALL_SETTINGS=$(echo -e "/etc_host/odoo/$CUSTOMS/settings")
+    fi
+
+    python ./admin/make_settings.py "$SETTINGS_FILE" "$ALL_SETTINGS"
+    file2env "$SETTINGS_FILE"
+
     ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
 
     # Make all config files to absolutepath
@@ -1279,34 +1289,18 @@ function sanity_check() {
         touch "$DIR/run/odoo_debug.txt"
     fi
 
-    if [[ -z "$ODOO_MODULE_UPDATE_DELETE_QWEB" ]]; then
-        echo "Please define ODOO_MODULE_UPDATE_DELETE_QWEB"
-        echo "Whenever modules are updated, then the qweb views are deleted."
-        echo
-        echo "Typical use for development environment."
-        echo
-        exit -1
-    fi
-
     if [[ -z "$ODOO_MODULE_UPDATE_RUN_TESTS" ]]; then
         echo "Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS"
         echo
         exit -1
     fi
 
-    if [[ -z "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
-        echo "Please define ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO"
-        echo In development environments it is safe to set ownership, so
-        echo that accidently accessing the db fails
-        echo
-        exit -1
-    fi
 }
 
 function set_db_ownership() {
     # in development environments it is safe to set ownership, so
     # that accidently accessing the db fails
-    if [[ -n "$ODOO_CHANGE_POSTGRES_OWNER_TO_ODOO" ]]; then
+    if [[ "$DEVMODE" == "1" ]]; then
         if [[ "$RUN_POSTGRES" == "1" ]]; then
             $dc up -d postgres
             $MANAGE wait_for_container_postgres

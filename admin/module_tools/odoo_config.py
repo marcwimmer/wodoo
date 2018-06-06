@@ -84,11 +84,7 @@ def get_env():
         return os.environ
     else:
         root = odoo_root()
-        conf = MyConfigParser(os.path.join(root, 'settings'))
-        if os.path.exists(os.path.join(root, 'settings.override')):
-            conf2 = MyConfigParser(os.path.join(root, 'settings.override'))
-            conf.apply(conf2)
-
+        conf = MyConfigParser(os.path.join(root, 'run/settings'))
     return conf
 
 def current_customs():
@@ -158,11 +154,7 @@ def translate_path_relative_to_customs_root(path):
 def set_customs(customs, dbname=None):
     dbname = dbname or customs
     root = odoo_root()
-    candidates = ['settings.override', 'settings']
-    for candidate in candidates:
-        if os.path.isfile(os.path.join(root, candidate)):
-            break
-    conf = MyConfigParser(os.path.join(root, candidate))
+    conf = MyConfigParser(os.path.join(root, 'run/settings'))
     conf['CUSTOMS'] = customs
     conf['DBNAME'] = dbname
     conf.write()

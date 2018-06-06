@@ -5,7 +5,7 @@ volumes:
 
 services:
   asterisk_connector:
-    container_name: ${DCPREFIX}_asterisk_connector
+    container_name: ${CUSTOMS}_asterisk_connector
     build: $ODOO_HOME/machines/asterisk_connector
     ports:
       - "8500:80"

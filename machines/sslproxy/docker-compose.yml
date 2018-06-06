@@ -2,7 +2,7 @@
 version: '2.1'
 services:
   sslproxy:
-    container_name: ${DCPREFIX}_odoo_ssl_proxy
+    container_name: ${CUSTOMS}_odoo_ssl_proxy
     build: $ODOO_HOME/machines/sslproxy
     depends_on: 
         - odoo

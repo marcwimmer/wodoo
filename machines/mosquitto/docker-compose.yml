@@ -9,7 +9,7 @@ services:
 
   # public mail server can receive mails
   mosquitto:
-    container_name: ${DCPREFIX}_mosquitto
+    container_name: ${CUSTOMS}_mosquitto
     build: $ODOO_HOME/machines/mosquitto
     volumes:
         - $ODOO_HOME/machines/mosquitto/config:/mqtt/config

@@ -10,11 +10,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME:/opt/external_home
-      - $ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH:/tmp/timestamp_update/
+      - /etc:/etc_host:ro
     working_dir: $HOME
     env_file:
-      - ../../settings
-      - ../../settings.override
+      - ../../run/settings
     environment:
       - DOCKER_BASH=1
       - ODOO_HOME
@@ -27,4 +26,4 @@ services:
 networks:
     default:
         external:
-            name: ${DCPREFIX}_default
+            name: ${CUSTOMS}_default

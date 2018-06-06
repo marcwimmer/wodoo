@@ -46,7 +46,7 @@ while True:
     try:
         uid = login(getenv("USERNAME"), pwd)
         break
-    except:
+    except Exception:
         logger.warn("Login failed: either wrong username/password or odoo not available")
         time.sleep(5)
 
@@ -77,7 +77,7 @@ while True:
                 m = max(x['duration'] for x in records)
                 logger.info("%s: %ss (avg), max: %ss", name, avg, m)
         time.sleep(long(getenv("SLEEP")))
-    except:
+    except Exception:
         msg = traceback.format_exc()
         logger.error(msg)
         time.sleep(long(getenv("SLEEP")))

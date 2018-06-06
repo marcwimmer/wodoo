@@ -26,6 +26,7 @@ function startup() {
 	set -e
 	WORKING_DIR=${WORKING_DIR}
 	LOCAL_ODOO_HOME=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
+    SETTINGS_FILE="$LOCAL_ODOO_HOME/run/settings"
 
 	if [[ -z "$WORKING_DIR" ]]; then
 		WORKING_DIR=$(realpath "$(pwd)")
@@ -38,22 +39,12 @@ function startup() {
 	export ODOO_HOME="$ODOO_HOME"
 	export WORKING_DIR="$WORKING_DIR"
 
-	# create empty file, so that simple bash runs
-	settings_override_file="$LOCAL_ODOO_HOME/settings.override"
-	if [[ ! -f "$settings_override_file" ]]; then
-		touch "$settings_override_file"
-	fi
-	ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH=/tmp/update_touch_file_dummy
+    if [[ ! -e "$SETTINGS_FILE" ]]; then
+        touch "$SETTINGS_FILE"
+    fi
 
-	file2env "$LOCAL_ODOO_HOME/settings"
-	file2env "$LOCAL_ODOO_HOME/settings.override"
+	file2env "$SETTINGS_FILE"
 	export HOSTNAME_TO_USE="$HOST"
-
-	# TODO make per docker compose option to mount non existent file mount as file
-	if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE" ]]; then
-		ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH=$(dirname "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE")
-	fi
-	export ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH="$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_PATH"
 
 }
 
@@ -77,6 +68,21 @@ function update() {
 		/usr/local/bin/docker-compose build
 		exit 0
 	fi
+}
+
+function check_customs() {
+    if [[ "$CUSTOMS" == "" ]]; then
+        if [[ "${ARGS[0]}" == 'compose' && -n "${ARGS[1]}" ]]; then
+            mkdir -p "$(dirname "$SETTINGS_FILE")"
+            echo "CUSTOMS=${ARGS[1]}" > $LOCAL_ODOO_HOME/run/settings
+            file2env "$SETTINGS_FILE"
+        else
+            echo "Please define customs with:"
+            echo "./odoo compose <CUSTOMS>"
+            exit 1
+        fi
+    fi
+
 }
 
 #function remove_old_bash() {
@@ -148,6 +154,8 @@ function start_background_sync_from_host() {
 startup
 show_help "${ARGS[@]}"
 update "${ARGS[@]}"
+
+check_customs
 build_command
 start_background_sync_from_host
 run_command

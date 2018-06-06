@@ -160,7 +160,7 @@ function main() {
 		fi
 	done
 
-	if [[ "$ODOO_MODULE_UPDATE_DELETE_QWEB" == "1" ]]; then
+	if [[ "$DEVMODE" == "1" ]]; then
 		delete_qweb "$MODULE"
 	fi
 	update 'u' "$MODULE"

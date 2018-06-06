@@ -4,7 +4,7 @@ volumes:
     redis_persistent_data:
 services:
   redis:
-    container_name: ${DCPREFIX}_redis
+    container_name: ${CUSTOMS}_redis
     image: redis
     volumes: 
       - redis_persistent_data:/data

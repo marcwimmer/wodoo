@@ -82,7 +82,7 @@ for path in set(paths):
             j['version'] = '3.3'
 
             # set settings environment and the override settings after that
-            for file in ['settings', 'settings.override']:
+            for file in ['run/settings']:
                 path = os.path.join(local_odoo_home, file)
                 if os.path.exists(path):
                     if 'services' in j:
@@ -118,7 +118,6 @@ def post_process_complete_yaml_config(yml):
         if odoomachine == 'odoo_base':
             continue
         machine = yml['services'][odoomachine]
-        #yml['services'][odoomachine]["image"]=odoomachine
         for k in ['volumes']:
             machine[k] = []
             for x in yml['services']['odoo_base'][k]:
@@ -147,7 +146,7 @@ cmdline.append("/opt/docker/docker")
 cmdline.append("run")
 cmdline.append('-e')
 cmdline.append('ODOO_HOME={}'.format(host_odoo_home))
-for envfile in ['settings', 'settings.override']:
+for envfile in ['run/settings']:
     envfile = os.path.join(local_odoo_home, envfile)
     if os.path.exists(envfile):
         cmdline.append('--env-file')

@@ -25,7 +25,10 @@ else
 	mkfifo "$tmppipe"
 	gunzip -c  "$RESTOREFILE" > "$tmppipe" &
 	echo "Restoring..."
+    set +e
 	pg_restore -d "$DBNAME" < "$tmppipe"
+    echo $?
+    exit -1
 
 	echo "Restoring snapshot done!"
 	pg_ctl -w stop
