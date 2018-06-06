@@ -91,7 +91,7 @@ RUN chmod a+x /install_python_packages.sh
 RUN /bin/bash /install_python_packages.sh "${ODOO_VERSION}" "${ODOO_PYTHON_VERSION}"
 
 ADD bin/ /
-ADD config/* /home/odoo/
+ADD config/$ODOO_VERSION/* /home/odoo/
 RUN chmod a+x /*.sh && \
 chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /usr/local/bin/* && \

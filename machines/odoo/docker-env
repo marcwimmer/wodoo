@@ -8,4 +8,3 @@ ADDONS_CUSTOMS=/opt/odoo/addons_customs
 ADMIN_DIR=/opt/odoo/admin
 CONFIG_DIR=/home/odoo
 ODOO_USER=odoo
-LOCAL_ODOO_HOST=localhost:8072
