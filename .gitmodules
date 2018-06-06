@@ -14,3 +14,6 @@
 [submodule "extra_install/asterisk_customs"]
 	path = extra_install/asterisk_customs
 	url = git.itewimmer.de:/git/asterisk_customs
+[submodule "repos/OpenUpgrade"]
+	path = repos/OpenUpgrade
+	url = https://github.com/OCA/OpenUpgrade.git
