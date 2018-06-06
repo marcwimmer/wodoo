@@ -21,14 +21,26 @@ else
 	echo "try postgres-format or custom gzipped format"
 	pg_ctl -w start
 
-	tmppipe=$(mktemp -u)
-	mkfifo "$tmppipe"
-	gunzip -c  "$RESTOREFILE" > "$tmppipe" &
-	echo "Restoring..."
-    set +e
-	pg_restore -d "$DBNAME" < "$tmppipe"
-    echo $?
-    exit -1
+    # determine restore method 
+    method=pg_restore
+    needs_unzip=1
+    gunzip -c "$RESTOREFILE" | head | grep -q PostgreSQL.database.dump && {
+        method=psql
+    }
+    head "$RESTOREFILE" | grep -q PostgreSQL.database.dump && {
+        needs_unzip=0
+        method=psql
+    }
+
+    if [[ "$needs_unzip" == "1" ]]; then
+        tmppipe=$(mktemp -u)
+        mkfifo "$tmppipe"
+        gunzip -c  "$RESTOREFILE" > "$tmppipe" &
+    else
+        tmppipe="$RESTOREFILE"
+    fi
+	echo "Restoring using $method..."
+	$method -d "$DBNAME" < "$tmppipe"
 
 	echo "Restoring snapshot done!"
 	pg_ctl -w stop

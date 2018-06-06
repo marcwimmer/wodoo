@@ -520,6 +520,10 @@ function prepare_yml_files_from_template_files() {
 
     python ./admin/make_settings.py "$SETTINGS_FILE" "$ALL_SETTINGS"
     file2env "$SETTINGS_FILE"
+    if [[ "$DBNAME" == "" ]]; then
+        echo "DBNAME=$CUSTOMS" >> "$SETTINGS_FILE"
+        file2env "$SETTINGS_FILE"
+    fi
 
     ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
 
@@ -640,7 +644,7 @@ EOF
         echo
         echo 
         echo
-        echo "Database initialized. You have to restart now."
+        echo "Database initialized."
 
         ;;
 
