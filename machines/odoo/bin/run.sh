@@ -23,29 +23,14 @@ if [[ "$ENDLESS_LOOP" == "1" ]]; then
 	do
 		sleep 100
 	done
-
-else 
-	case "$ODOO_VERSION" in
-		"6.0" | "7.0" | "8.0" | "9.0" | "10.0")
-			if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
-				echo 'Starting odoo cronjobs'
-				sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$ODOO_EXECUTABLE" -c "$CONFIG_DIR/config_openerp" -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
-			else
-				echo 'Starting odoo gevent'
-				sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/openerp-gevent" -c "$CONFIG_DIR/config_gevent"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
-			fi
-
-		;;
-
-		*)
-			if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
-				echo 'Starting odoo cronjobs'
-				sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$ODOO_EXECUTABLE" -c "$CONFIG_DIR/config_openerp" -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL" --no-http
-			else
-				echo 'Starting odoo gevent'
-				sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$ODOO_EXECUTABLE" -c "$CONFIG_DIR/config_gevent"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
-			fi
-
-		;;
-	esac
+    exit 0
 fi
+
+if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
+    echo 'Starting odoo cronjobs'
+    CONFIG=config_openerp
+else
+    echo 'Starting odoo gevent'
+    CONFIG=config_gevent
+fi
+sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$ODOO_EXECUTABLE" -c "$CONFIG_DIR/$CONFIG"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
