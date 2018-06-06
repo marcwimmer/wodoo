@@ -233,7 +233,7 @@ END
 
     [[ "$VERBOSE" == "1" ]] && set -x
 
-    dc="/usr/local/bin/docker-compose -p $DCPREFIX -f $docker_compose_file"
+    dc="/usr/local/bin/docker-compose -p $CUSTOMS -f $docker_compose_file"
     return 0
 }
 
@@ -299,7 +299,7 @@ function do_restore_db_in_docker_container () {
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
 		askcontinue "Removing docker volume postgres-data (irreversible)"
 	fi
-	VOLUMENAME=${DCPREFIX}_postgresdata
+	VOLUMENAME=${CUSTOMS}_postgresdata
 	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
 	$MANAGE reset-db
 	RESTOREFILE=/opt/dumpfile
@@ -508,14 +508,14 @@ function prepare_yml_files_from_template_files() {
     ALL_SETTINGS=$(echo -e "machines/defaults\n$ALL_SETTINGS")
     # append config from customs
     if [[ "$CUSTOMS" != "" && -e "$DIR/data/src/customs/$CUSTOMS/settings" ]]; then
-        ALL_SETTINGS=$(echo -e "$DIR/data/src/customs/$CUSTOMS/settings\n$ALL_SETTINGS")
+        ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n$DIR/data/src/customs/$CUSTOMS/settings")
     fi
     # append config file from etc as last
     if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/settings" ]]; then
-        ALL_SETTINGS=$(echo -e "/etc_host/odoo/settings\n$ALL_SETTINGS")
+        ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n/etc_host/odoo/settings")
     fi
     if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/$CUSTOMS/settings" ]]; then
-        ALL_SETTINGS=$(echo -e "/etc_host/odoo/$CUSTOMS/settings\n$ALL_SETTINGS")
+        ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n/etc_host/odoo/$CUSTOMS/settings")
     fi
 
     python ./admin/make_settings.py "$SETTINGS_FILE" "$ALL_SETTINGS"
@@ -553,7 +553,6 @@ EOF
 
             echo "Setting up upstart script in $file"
             /bin/cp "$DIR/config/upstart" "$file"
-            /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" "$file"
             /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" "$file"
             /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
             /sbin/initctl reload-configuration
@@ -564,7 +563,6 @@ EOF
 
             echo "Setting up upstart script in $file"
             /bin/cp "$DIR/config/systemd" "$file"
-            /bin/sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${DCPREFIX}/$DCPREFIX/" "$file"
             /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" "$file"
             /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
 
@@ -772,7 +770,7 @@ EOF
         cd "$DIR"
 		DEBUGGING_COMPOSER=$DIR/run/debugging.yml
 		cp "$DIR/config/debugging/template.yml" "$DEBUGGING_COMPOSER"
-		sed -i -e "s/\${DCPREFIX}/$DCPREFIX/" -e "s/\${NAME}/$2/" "$DEBUGGING_COMPOSER"
+		sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${NAME}/$2/" "$DEBUGGING_COMPOSER"
 		dc="$dc -f $DEBUGGING_COMPOSER"  # command now has while loop
 
         #execute self
@@ -1381,7 +1379,7 @@ with open("$docker_compose_file") as f:
 odoo = deepcopy(j['services']['odoo'])
 if 'ports' in odoo:
     del odoo['ports']
-odoo['container_name'] = '_'.join([os.environ['DCPREFIX'], "odoo", "$name"])
+odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", "$name"])
 j['services']['odoo_{}'.format("$name")] = odoo
 with open("$docker_compose_file", 'w') as f:
     f.write(yaml.dump(j, default_flow_style=False))
