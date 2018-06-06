@@ -32,7 +32,7 @@ function startup() {
 		WORKING_DIR=$(realpath "$(pwd)")
 	fi
 
-	if [[ -z "$ODOO_HOME" ]]; then
+	if [[ -z "$ODOO_HOME" || "$DOCKER_MACHINE" != "1" ]]; then
 		ODOO_HOME="$LOCAL_ODOO_HOME"
 	fi
 
