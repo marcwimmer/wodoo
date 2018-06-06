@@ -178,15 +178,17 @@ function file2env() {
 
 function export_settings() {
     SETTINGS_FILE="$DIR/run/settings"
+    case "${ARGS[0]}" in
+        compose)
+            if [[ -n "${ALL_PARAMS[0]}" ]]; then
+                echo "CUSTOMS=${ARGS[1]}" > "$SETTINGS_FILE"
+                file2env "$SETTINGS_FILE"
+            fi
+        ;;
+    esac
     if [[ ! -e "$SETTINGS_FILE" ]]; then
-        case $1 in
-            build|compose)
-                echo "CUSTOMS=$2" > "$SETTINGS_FILE"
-            ;;
-            *)
-                echo "Please call ./odoo compose <CUSTOMS> initially."
-                exit 1
-        esac
+        echo "Please call ./odoo compose <CUSTOMS> initially."
+        exit 1
     fi
     file2env "$SETTINGS_FILE"
 
@@ -1107,31 +1109,6 @@ EOF
         cmd+=("$1")
         cmd+=( "${ALL_PARAMS[@]}" )
         eval "${cmd[@]@Q}"
-        ;;
-
-    customs)
-        # switch customs
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Customs missing"
-            exit 1
-        fi
-        newcustoms="${ALL_PARAMS[0]}"
-        newdb="${ALL_PARAMS[1]}"
-
-        if [[ -z "$newdb" ]]; then
-            newdb=$newcustoms
-        fi
-
-        $(
-        cd "$DIR/admin/module_tools"
-        python <<-EOF
-import odoo_config
-odoo_config.set_customs("$newcustoms", "$newdb")
-EOF
-        )
-
-        echo "Customs set to $newcustoms with database $newdb"
-
         ;;
 
     pull)

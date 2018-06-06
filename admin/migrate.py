@@ -10,10 +10,10 @@ import logging
 import subprocess
 from logging import FileHandler
 from optparse import OptionParser
-from ConfigParser import SafeConfigParser
 from module_tools.odoo_config import customs_dir
+from module_tools.odoo_config import customs_dir
+from module_tools.myconfigparser import MyConfigParser
 
-config = SafeConfigParser()
 parser = OptionParser(
     description='Migration from odoo x to odoo y'
     ''
@@ -47,7 +47,10 @@ if not options.from_version or \
     parser.print_help()
     sys.exit()
 
-config.read(options.from_version)
+# Make sure that RUN_MIGRATION is temporarily set to 1
+settings = MyConfigParser("/opt/odoo/run/settings")
+settings['RUN_MIGRATION'] = '1'
+settings.write()
 
 FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(filename="/dev/null", format=FORMAT)
