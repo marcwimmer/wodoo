@@ -1222,6 +1222,14 @@ EOF
         time python -c'from odoo_parser import update_cache; update_cache()'
         ;;
 
+    migrate)
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd admin
+        LOGFILE=$CUSTOMS_DIR/migration.log
+        echo "$MANAGE"
+        python migrate.py --log-file "$LOGFILE" --manage-command "$MANAGE" "${ALL_PARAMS[@]}"
+        ;;
+
     *)
         echo "Invalid option $1"
         exit -1
