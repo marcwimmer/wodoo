@@ -1,4 +1,4 @@
-FROM postgres:10.0:latest
+FROM postgres:10.0
 RUN mkdir -p  /docker-entrypoint-initdb.d
 
 RUN apt-get update && apt-get install -y procps pigz sudo

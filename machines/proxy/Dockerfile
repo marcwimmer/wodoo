@@ -2,15 +2,17 @@ FROM phusion/baseimage:0.9.22
 ENV apache_version=2.4.29
 ENV apr_version=1.6.3
 ENV apr_util_version=1.6.1
+ENV URL=http://www-eu.apache.org/dist/
+ENV URL=http://mirrors.ae-online.de/apache/
 
 RUN \
 apt update
 
 RUN apt install -y build-essential libpcre3-dev zlib1g-dev libexpat1-dev wget libnghttp2-dev libxml2-dev
 WORKDIR /tmp
-RUN wget -O apache.tar.gz http://www-eu.apache.org/dist//httpd/httpd-$apache_version.tar.gz
-RUN wget -O apr.tar.gz http://www-eu.apache.org/dist//apr/apr-$apr_version.tar.gz
-RUN wget -O apr-util.tar.gz http://www-eu.apache.org/dist//apr/apr-util-$apr_util_version.tar.gz
+RUN wget -O apache.tar.gz $URL/httpd/httpd-$apache_version.tar.gz
+RUN wget -O apr.tar.gz $URL/apr/apr-$apr_version.tar.gz
+RUN wget -O apr-util.tar.gz $URL/apr/apr-util-$apr_util_version.tar.gz
 RUN tar xfz apache.tar.gz
 RUN tar xfz apr.tar.gz
 RUN tar xfz apr-util.tar.gz
