@@ -8,6 +8,8 @@ if [[ "$IS_ODOO_CRONJOB" == "1" && "$RUN_CRONJOBS" != "1" ]]; then
     exit 0
 fi
 
-rsync --daemon
+if [[ "$RUN_RSYNCED" == "1" ]]; then
+    rsync --daemon
+fi
 
 /run.sh
