@@ -1454,7 +1454,11 @@ def __prepare_docker_compose_files(dest_file, paths):
 def __empty_dir(dir):
     if os.path.isdir(dir):
         for f in os.listdir(dir):
-            __rmtree(os.path.join(dir, f))
+            filepath = os.path.join(dir, f)
+            if os.path.isdir(filepath):
+                __rmtree(filepath)
+            else:
+                os.unlink(filepath)
 
 def _reset_proxy_configs():
     __empty_dir(dirs['run/proxy'])
@@ -1618,6 +1622,7 @@ def __rmtree(path):
         raise Exception("Not allowed: {}".format(path))
     if not any(path.startswith(dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
         raise Exception('not allowed')
+    shutil.rmtree(path)
 
 
 if __name__ == '__main__':
