@@ -1,9 +1,4 @@
 # db access (define if you dont use RUN_POSTGRES=1)
-DB_HOST=postgres
-DB_PWD=odoo
-DB_USER=odoo
-DB_PORT=5432
-DB_MAXCONN=1000
 
 # external directory where files are stored (when using file storage)
 ODOO_FILES=/opt/oefiles

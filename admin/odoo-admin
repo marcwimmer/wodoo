@@ -12,7 +12,7 @@
 # TODO replace all bash commands to be called within dockerbash
 
 function dcrun() {
-    $dc run -T -e ODOO_HOME=/opt/odoo "$@"
+    $dc run -rm -T -e ODOO_HOME=/opt/odoo "$@"
 }
 
 function dcexec() {
@@ -285,54 +285,68 @@ EOF
     return 0
 }
 
-function do_restore_db_in_docker_container () {
+function reset_postgres_container () {
     # remove the postgres volume and reinit
-
-    echo "Restoring dump within docker container postgres"
-    dump_file="/opt/dumps/$1"
-
-    if [[ ! -f "$dump_file" ]]; then
-        echo "File $dump_file not found!"
-        exit -1
-    fi
-
-	$MANAGE kill
-	$dc rm -f || true
 	if [[ "$RUN_POSTGRES" == 1 ]]; then
-		askcontinue "Removing docker volume postgres-data (irreversible)"
+        echo "Resettings postgres - killing data - not reversible"
+        $MANAGE kill
+        $dc rm -f # set volume free
+        VOLUMENAME=${CUSTOMS}_postgresdata
+        docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
+        $MANAGE reset-db
+        $MANAGE up -d postgres
+        $MANAGE wait_for_container_postgres
 	fi
-	VOLUMENAME=${CUSTOMS}_postgresdata
-	docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
-	$MANAGE reset-db
-	RESTOREFILE=/opt/dumpfile
-	dump_file=$(make_path_as_hosts_sees_it "$dump_file")
-	dcrun -v "$dump_file:$RESTOREFILE" -e "RESTOREFILE=$RESTOREFILE" postgres /restore.sh
+
 }
 
-function do_restore_db_on_external_postgres () {
+function do_restore_db_on_postgres () {
     SUFFIX="_restoring"
     DBNAME_TARGET="$DBNAME"
     DBNAME="${DBNAME}${SUFFIX}"
     export DBNAME="$DBNAME"
+    dump_file=/host/dumps/$1
+    set -e
+
+    if [[ ! -e "$dump_file" ]]; then
+        echo "File $dump_file not found!"
+        exit 1
+    fi
 
     echo "Restoring dump on $DB_HOST"
-    dump_file=/host/dumps/$1
     echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
     export PGPASSWORD=$DB_PWD
     local args="-h $DB_HOST -p $DB_PORT -U $DB_USER"
     DROPDB="dropdb $args"
     CREATEDB="createdb $args"
-    PGRESTORE="pg_restore $args"
+    PGRESTORE="pg_restore --no-owner --no-privileges --no-acl  --single-transaction --exit-on-error $args"
+    PSQL="psql $args"
 
     eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
     eval "$CREATEDB $DBNAME"
-    pipe="$(mktemp -u)"
-    mkfifo "$pipe"
-    gunzip -c "$dump_file" > "$pipe" &
-    echo "Restoring Database $DBNAME"
-    set +e
-    $PGRESTORE -d "$DBNAME" < "$pipe"
-    set -e
+
+    set -x
+    method="$PGRESTORE"
+    needs_unzip=1
+    gunzip -c "$dump_file" | head | grep -q PostgreSQL.database.dump && {
+        method="$PSQL"
+    }
+    if [[ "$method" != "psql" ]]; then
+        head "$dump_file" | grep -q PostgreSQL.database.dump && {
+            needs_unzip=0
+            method="$PSQL"
+        }
+    fi
+
+    if [[ "$needs_unzip" == "1" ]]; then
+        pipe=$(mktemp -u)
+        mkfifo "$pipe"
+        gunzip -c  "$dump_file" > "$pipe" &
+    else
+        pipe="$dump_file"
+    fi
+	echo "Restoring $DBNAME using $method..."
+	$method -d "$DBNAME" < "$pipe"
 
     remove_postgres_connections
     sql=("
@@ -524,10 +538,10 @@ function prepare_yml_files_from_template_files() {
 
     python ./admin/make_settings.py "$SETTINGS_FILE" "$ALL_SETTINGS"
     file2env "$SETTINGS_FILE"
-    if [[ "$DBNAME" == "" ]]; then
+    grep "DBNAME=" "$SETTINGS_FILE" -q || {
         echo "DBNAME=$CUSTOMS" >> "$SETTINGS_FILE"
         file2env "$SETTINGS_FILE"
-    fi
+    }
 
     ALL_CONFIG_FILES=$(cd "$DIR"; find "${all_dirs[@]}" -name "$PATTERN")
 
@@ -693,12 +707,8 @@ EOF
 			askcontinue "Deletes database $DBNAME!"
 		}
 
-		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			do_restore_db_in_docker_container "$dumpfile"
-		else
-			askcontinue "Trying to restore database on remote database. Please make sure, that the user $DB_USER has enough privileges for that."
-			do_restore_db_on_external_postgres "$dumpfile"
-		fi
+        reset_postgres_container
+        do_restore_db_on_postgres "$dumpfile"
 
 		remove_postgres_connections
 		set_db_ownership

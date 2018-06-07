@@ -3,8 +3,6 @@ RUN mkdir -p  /docker-entrypoint-initdb.d
 
 RUN apt-get update && apt-get install -y procps pigz sudo
 
-ADD backup.sh /backup.sh
-ADD restore.sh /restore.sh
 ADD postgresql2.conf /opt/postgres.conf.d/postgresql2.conf
 ADD init.sql /docker-entrypoint-initdb.d/
 ADD entrypoint2.sh /entrypoint2.sh
