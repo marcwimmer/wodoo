@@ -7,7 +7,7 @@ services:
     container_name: ${CUSTOMS}_postgres
     build: $ODOO_HOME/machines/postgres
     volumes:
-      - ${DUMPS_PATH}:/opt/dumps
+      - $DUMPS_PATH:/opt/dumps
       - $ODOO_HOME/run/sqlscripts:/opt/sqlscripts
       - postgresdata:/var/lib/postgresql/data
     environment:

@@ -120,6 +120,11 @@ function build_command() {
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi
+    if [[ "$DOCKER_MACHINE" != "1" ]]; then
+        if [[ -n "$DUMPS_PATH" ]]; then
+            command+=(-v "${DUMPS_PATH}:/host/dumps")
+        fi
+    fi
 	command+=(simplebash)
 	command+=("/opt/odoo/admin/odoo-admin")
 	command+=( "${ARGS[@]}" )

@@ -289,7 +289,7 @@ function do_restore_db_in_docker_container () {
     # remove the postgres volume and reinit
 
     echo "Restoring dump within docker container postgres"
-    dump_file="$1"
+    dump_file="/opt/dumps/$1"
 
     if [[ ! -f "$dump_file" ]]; then
         echo "File $dump_file not found!"
@@ -316,7 +316,7 @@ function do_restore_db_on_external_postgres () {
     export DBNAME="$DBNAME"
 
     echo "Restoring dump on $DB_HOST"
-    dump_file=$1
+    dump_file=/host/dumps/$1
     echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
     export PGPASSWORD=$DB_PWD
     local args="-h $DB_HOST -p $DB_PORT -U $DB_USER"
@@ -328,7 +328,7 @@ function do_restore_db_on_external_postgres () {
     eval "$CREATEDB $DBNAME"
     pipe="$(mktemp -u)"
     mkfifo "$pipe"
-    gunzip -c "$1" > "$pipe" &
+    gunzip -c "$dump_file" > "$pipe" &
     echo "Restoring Database $DBNAME"
     $PGRESTORE -d "$DBNAME" < "$pipe"
 
@@ -585,13 +585,17 @@ EOF
         $dc exec "${ALL_PARAMS[@]}"
         ;;
     backup-db)
-        set -x
+        set -e
         if [[ -n "${ALL_PARAMS[0]}" ]]; then
             filename="${ALL_PARAMS[0]}"
         else
             filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
         fi
-        BACKUPDIR=$DIR/dumps
+        if [[ "$filename" == *\/* ]]; then
+            echo "No slash for backup filename allowed"
+            exit 1
+        fi
+        BACKUPDIR=/host/dumps
         echo "Databasename is $DBNAME"
         filepath=$BACKUPDIR/$filename
         if [[ -e "$filepath" ]]; then
@@ -602,15 +606,10 @@ EOF
         fi
         LINKPATH=$DIR/dumps/latest_dump
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres odoo
-			dcexec postgres /backup.sh
-			mv "$DIR/dumps/$DBNAME.gz" "$filepath"
-		else
-			set -e
-			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
-			set +e
-		fi
-        set -e
+			$dc up -d postgres
+			$MANAGE wait_for_container_postgres
+        fi
+        pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
 		if [[ "$NO_BACKUP_SYMBOLIC_LINK_DUMP" != "1" ]]; then
             if [[ -e "$LINKPATH" ]]; then
                 /bin/rm "$LINKPATH"
@@ -675,8 +674,12 @@ EOF
 		set -e
 		echo "DB_HOST: $DB_HOST"
 		echo "DB_PORT: $DB_PORT"
-		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
+		dumpfile="${ALL_PARAMS[0]}"
 		restore_check "$dumpfile"
+        if [[ "$dumpfile" == *\/* ]]; then
+            echo "No slash for backup filename allowed"
+            exit 1
+        fi
 
 		if [[ "$DEVMODE" == "1" && "$RESTORE_DEV_DB" != "1" ]]; then
 			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"

@@ -53,6 +53,11 @@ parser.add_option(
     "-C", "--manage-command", action="store", type="string",
     dest="manage_command",
     help="manage command default /opt/odoo/admin/odoo-admin (required)")
+parser.add_option(
+    "--no-auto-backup", action="store_true",
+    default=False,
+    dest="no_auto_backup",
+    help="if set, then no backups are done; otherwise after every migration a dump is created; existing dump is overwritten")
 (options, args) = parser.parse_args()
 
 
@@ -160,14 +165,14 @@ Migration to Version {}
         'before',
     ])
 
-    run_cmd([
-        options.manage_command,
-        "run",
-        "odoo",
-        "/run_openupgradelib.sh",
-        migrations[version]['branch'],
-        migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
-    ])
+    # run_cmd([
+        # options.manage_command,
+        # "run",
+        # "odoo",
+        # "/run_openupgradelib.sh",
+        # migrations[version]['branch'],
+        # migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
+    # ])
 
     run_cmd([
         options.manage_command,
@@ -176,6 +181,13 @@ Migration to Version {}
         "/run_migration.sh",
         'after',
     ])
+
+    if not options.no_auto_backup:
+        run_cmd([
+            options.manage_command,
+            "backup-db",
+            "{dbname}_{version}".format(version=version, dbname=os.environ['DBNAME']),
+        ])
 
 with open(os.path.join(customs_dir(), '.version'), 'w') as f:
     f.write(options.to_version)
