@@ -10,6 +10,7 @@ import inspect
 import yaml
 import shutil
 import tempfile
+import docker
 from datetime import datetime
 from copy import deepcopy
 from threading import Thread
@@ -268,10 +269,14 @@ def reset_postgres_container():
         do_command("kill")
         dc(["rm", "-f"]) # set volume free
         VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
-        docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
-        $MANAGE reset-db
-        $MANAGE up -d postgres
-        $MANAGE wait_for_container_postgres
+        docker_client = docker.from_env()
+        from pudb import set_trace
+        set_trace()
+        for volume in docker_client.volumes.list():
+            if volume == VOLUMENAME:
+                v.remove()
+        do_command("reset-db")
+        __start_postgres_and_wait()
 
 def remove_postgres_connections():
     print "Removing all current connections"
@@ -284,12 +289,8 @@ def remove_postgres_connections():
         """.format(E("DBNAME"))
         __execute_sql(SQL)
 
-"""
 
-
-
-
-function do_restore_db_on_postgres () {
+def do_restore_db_on_postgres():
     SUFFIX="_restoring"
     DBNAME_TARGET="$DBNAME"
     DBNAME="${DBNAME}${SUFFIX}"
@@ -352,101 +353,88 @@ function do_restore_db_on_postgres () {
     export DBNAME="$DBNAME"
     remove_postgres_connections
 
-    return 0
-}
+def _showhelp():
+    print Management of odoo instance
+    print ""
+    print "./odoo sanity-check"
+    print "Reinit fresh db:"
+    print './odoo reset-db'
+    print ""
+    print "Update:"
+    print './odoo update [module]'
+    print 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
+    print 'Minimal downtime - but there is a downtime, even for phones'
+    print ""
+    print "Please call odoo springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
+    print ""
+    print "abort-upgrade"
+    print ""
+    print "attach <machine> - attaches to running machine"
+    print ""
+    print "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
+    print ""
+    print "backup-db <backup-dir>"
+    print ""
+    print "backup-files <backup-dir>"
+    print ""
+    print "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
+    print ""
+    print "dev - starts developing in the odoo container"
+    print ""
+    print "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
+    print ""
+    print "link - links all modules into ./links"
+    print ""
+    print "telegram-setup- helps creating a permanent chatid"
+    print ""
+    print "kill - kills running machines"
+    print ""
+    print "logs - show log output; use parameter to specify machine"
+    print ""
+    print "logall - shows log til now; use parameter to specify machine"
+    print ""
+    print "springclean - remove dead containers, untagged images, delete unwanted volums"
+    print ""
+    print "rm - command"
+    print ""
+    print "compose - just build the big docker-compose file"
+    print ""
+    print "rebuild - rebuilds docker-machines - data not deleted"
+    print ""
+    print "restart - restarts docker-machine(s) - parameter name"
+    print ""
+    print "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
+    print ""
+    print "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
+    print ""
+    print "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
+    print ""
+    print "setup-startup makes skript in /etc/init/${CUSTOMS}"
+    print ""
+    print "stop - like docker-compose stop"
+    print ""
+    print "quickpull - fetch latest source, oeln - good for mako templates"
+    print ""
+    print "turn-into-dev - applies scripts to make the database a dev database"
+    print ""
+    print "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
+    print ""
+    print "up - starts all machines equivalent to service <service> start "
+    print ""
+    print "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
+    print ""
+    print "fix-permissions - sets user 1000 for odoo and odoo_files"
+    print ""
+    print "show-install-state "
+    print ""
+    print "make-customs"
+    print
+    print "patch - run without arguments for help"
+    print ""
+    print "version - run without arguments for help"
+    print ""
 
-function showhelp() {
-    echo Management of odoo instance
-    echo
-    echo
-    echo ./odoo sanity-check
-    echo Reinit fresh db:
-    echo './odoo reset-db'
-    echo
-    echo Update:
-    echo './odoo update [module]'
-    echo 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
-    echo 'Minimal downtime - but there is a downtime, even for phones'
-    echo 
-    echo "Please call odoo springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
-    echo ""
-    echo "abort-upgrade"
-    echo ""
-    echo "attach <machine> - attaches to running machine"
-    echo ""
-    echo "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
-    echo ""
-    echo "backup-db <backup-dir>"
-    echo ""
-    echo "backup-files <backup-dir>"
-    echo ""
-    echo "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
-    echo ""
-    echo "dev - starts developing in the odoo container"
-    echo ""
-    echo "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
-    echo ""
-    echo "link - links all modules into ./links"
-    echo ""
-    echo "telegram-setup- helps creating a permanent chatid"
-    echo ""
-    echo "kill - kills running machines"
-    echo ""
-    echo "logs - show log output; use parameter to specify machine"
-    echo ""
-    echo "logall - shows log til now; use parameter to specify machine"
-    echo ""
-    echo "springclean - remove dead containers, untagged images, delete unwanted volums"
-    echo ""
-    echo "rm - command"
-    echo ""
-    echo "compose - just build the big docker-compose file"
-    echo ""
-    echo "rebuild - rebuilds docker-machines - data not deleted"
-    echo ""
-    echo "restart - restarts docker-machine(s) - parameter name"
-    echo ""
-    echo "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
-    echo ""
-    echo "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
-    echo ""
-    echo "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
-    echo ""
-    echo "setup-startup makes skript in /etc/init/${CUSTOMS}"
-    echo ""
-    echo "stop - like docker-compose stop"
-    echo ""
-    echo "quickpull - fetch latest source, oeln - good for mako templates"
-    echo ""
-    echo "turn-into-dev - applies scripts to make the database a dev database"
-    echo ""
-    echo "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
-    echo ""
-    echo "up - starts all machines equivalent to service <service> start "
-    echo ""
-    echo "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
-    echo ""
-    echo "fix-permissions - sets user 1000 for odoo and odoo_files"
-    echo ""
-    echo "show-install-state "
-    echo ""
-    echo "make-customs"
-    echo
-    echo "patch - run without arguments for help"
-    echo ""
-    echo "version - run without arguments for help"
-    echo ""
-}
-
-if [ -z "$1" ]; then
-    showhelp
-    exit -1
-fi
-
-
-
-
-function display_machine_tips() {
+def display_machine_tips():
     cd "$DIR"
     tipfile=$(find "machines" -name 'tips.txt' | grep -P "\/$1\/" | while read -r file; do
         echo "$DIR/$file"
@@ -461,17 +449,6 @@ function display_machine_tips() {
         echo
     fi
 
-    return 0
-}
-
-function awk() {
-    AWK=$(which awk)
-    command "${AWK:-awk}" "$@";
-    return 0
-}
-
-
-"""
 def E(name):
     if name.startswith("$"):
         name = name[1:]
@@ -1130,26 +1107,23 @@ def do_command(command, command_parameters=[]):
 
         ;;
     elif command == "attach":
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-		display_machine_tips "$2"
-        $dc exec "$2" bash
-        ;;
+        if not command_parameters:
+            raise Exception("Please give machine name as second parameter e.g. postgres, odoo")
+        machine == command_parameters[0]
+        __display_machine_tips(machine)
+        dcexec([machine, "bash"])
+
     elif command == "run":
-		set_db_ownership
-        $dc run "${ALL_PARAMS[@]}"
-		;;
+        __set_db_ownership()
+        dcrun(command_parameters)
+
     elif command == "runbash":
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-		set_db_ownership
-		display_machine_tips "$2"
-        $dc run --rm "$2" bash
-        ;;
+        if not command_parameters:
+            raise Exception("Please give machine name as second parameter e.g. postgres, odoo")
+        __set_db_ownership()
+        __display_machine_tips(machine)
+        dcrun(['--rm', machine, 'bash'])
+
     elif command == "rebuild":
         cd "$DIR"
         $dc build --no-cache "${ALL_PARAMS[@]}"
@@ -1254,7 +1228,7 @@ def do_command(command, command_parameters=[]):
             date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
         fi
         # running duplicate updates is really a problem;
-        $dc kill 
+        $dc kill
         $dc rm -f
         $dc create --force-recreate
         if [[ "$RUN_POSTGRES" == "1" ]]; then
@@ -1445,7 +1419,7 @@ EOF
         eval "${cmd[@]@Q}"
         ;;
 
-    elif command == pull:
+    elif command == "pull":
         CUSTOMS_DIR=$(get_CUSTOMS_DIR)
         cd "$CUSTOMS_DIR" || exit -1
 
@@ -1574,6 +1548,8 @@ if __name__ == '__main__':
         _reset_proxy_configs()
         _setup_proxy()
         _setup_odoo_instances()
+    elif not args:
+        _show_help()
     _sanity_check()
 
     try:
