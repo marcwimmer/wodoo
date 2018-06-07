@@ -330,7 +330,9 @@ function do_restore_db_on_external_postgres () {
     mkfifo "$pipe"
     gunzip -c "$dump_file" > "$pipe" &
     echo "Restoring Database $DBNAME"
+    set +e
     $PGRESTORE -d "$DBNAME" < "$pipe"
+    set -e
 
     remove_postgres_connections
     sql=("
