@@ -22,15 +22,18 @@ else
 	pg_ctl -w start
 
     # determine restore method 
+    set -x
     method=pg_restore
     needs_unzip=1
     gunzip -c "$RESTOREFILE" | head | grep -q PostgreSQL.database.dump && {
         method=psql
     }
-    head "$RESTOREFILE" | grep -q PostgreSQL.database.dump && {
-        needs_unzip=0
-        method=psql
-    }
+    if [[ "$method" != "psql" ]]; then
+        head "$RESTOREFILE" | grep -q PostgreSQL.database.dump && {
+            needs_unzip=0
+            method=psql
+        }
+    fi
 
     if [[ "$needs_unzip" == "1" ]]; then
         tmppipe=$(mktemp -u)

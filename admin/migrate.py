@@ -157,6 +157,7 @@ Migration to Version {}
         options.manage_command,
         "build",
     ])
+    settings.write() # reapply run_migration=1
     run_cmd([
         options.manage_command,
         "run",
@@ -165,14 +166,14 @@ Migration to Version {}
         'before',
     ])
 
-    # run_cmd([
-        # options.manage_command,
-        # "run",
-        # "odoo",
-        # "/run_openupgradelib.sh",
-        # migrations[version]['branch'],
-        # migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
-    # ])
+    run_cmd([
+        options.manage_command,
+        "run",
+        "odoo",
+        "/run_openupgradelib.sh",
+        migrations[version]['branch'],
+        migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
+    ])
 
     run_cmd([
         options.manage_command,
