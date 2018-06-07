@@ -6,3 +6,6 @@ services:
     ports:
        - "8072:8072"
        - "8069:8069"
+  odoo_base:
+    volumes:
+      - ${ODOO_HOME}/run/odoo_outdir:/opt/out_dir

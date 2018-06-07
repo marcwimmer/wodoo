@@ -69,14 +69,7 @@ def update_assets(module, assets_path, rel_path):
 dir = os.getcwd()
 module = get_module_of_file(dir)
 
-if action in ['static']:
-
-    try:
-        filename = sys.argv[2]
-    except:
-        print "Please provide a filename e.g. file1.js"
-        sys.exit(0)
-
+def _run_static(filename):
     if not os.path.exists(os.path.join(dir, 'static')):
         os.mkdir(os.path.join(dir, 'static'))
 
@@ -86,7 +79,7 @@ if action in ['static']:
     relpath = 'static/src/{}'.format(action)
     try:
         os.makedirs(os.path.join(dir, relpath))
-    except:
+    except Exception:
         pass
     update_assets(module, os.path.join(dir, ASSETS_PATH), os.path.join(relpath, filename))
 
@@ -104,3 +97,6 @@ if action in ['static']:
     print
     print
 
+def run(action, *args, **kwargs):
+    if action == 'static':
+        _run_static(*args, **kwargs)
