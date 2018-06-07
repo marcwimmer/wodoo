@@ -4,9 +4,12 @@ import re
 import os
 import sys
 import logging
+import importlib
 import subprocess
 import time
 import inspect
+import yaml
+from copy import deepcopy
 from threading import Thread
 from Queue import Queue
 from logging import FileHandler
@@ -31,9 +34,13 @@ parser = OptionParser(
 """
 )
 set_trace()
-parser.add_options(
+parser.add_option(
     '-f', '--force', action='store_true', default=False, help="Force actions if asked"
+)
+parser.add_option(
     '--verbose', action='store_true', default=False,
+)
+parser.add_option(
     '--no-verbose', action='store_true', default=False,
 )
 (options, args) = parser.parse_args()
@@ -52,6 +59,7 @@ dirs = {
     'run/proxy': 'run/proxy',
     'run/restore': 'run/restore',
     'machines': 'machines',
+    'machines/proxy': 'machines/proxy',
     'customs': '',
 }
 
@@ -61,6 +69,7 @@ files = {
     'odoo_instances': 'run/odoo_instances',
     'config/docker-compose.yml': 'config/docker-compose.yml',
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
+    'machines/proxy/odoo_instance.conf': 'machines/proxy/odoo_instance.conf',
 }
 commands = {
     'manage': 'admin/odoo-admin',
@@ -1428,114 +1437,93 @@ def _reset_proxy_configs():
 def _setup_proxy():
     CONFIG_DIR = dirs['run/proxy']
 
-    find "$DIR/machines" -name 'upstream.path' | while read -r f; do
-        content=$(
-            envsubst < "$f"
-        )
-        paths=()
+    sys.path.append(dirs['machines/proxy'])
+    importlib.import_module("add_upstream")
+    from add_upstream import add_upstream as f_add_upstream
 
-        #extract rewrite rules
-        REWRITE_RULES=()
-        while read -r line; do
-            if echo "$line" | grep -q ^RewriteRule; then
-                REWRITE_RULES+=("$line")
-            else
-                paths+=("$line")
-            fi
-        done <<< "$content"
+    def get_rules():
+        for root, _, filenames in os.walk(dirs['machines']):
+            for filename in filenames:
+                if filename == 'upstream.path':
+                    filepath = os.path.join(root, filename)
+                    with open(filepath, 'r') as f:
+                        for l in f.readlines():
+                            if l:
+                                yield filepath, l
 
-        REWRITE_RULES=$(printf "\n%s" "${REWRITE_RULES[@]}")
-        REWRITE_RULES=${REWRITE_RULES:1}
+    for filepath, rule in get_rules():
+        rule = os.path.expandvars(rule)
 
-        for line in "${paths[@]}"
-        do
-            local URLPATH
-            local MACHINE
-            local PORT
+        LOCATION, UPSTREAM = rule.strip().split(" ")
 
-            LOCATION=$(echo "$line" | awk '{print $1}')
-            UPSTREAM=$(echo "$line" | awk '{print $2}')
+        if not LOCATION or not UPSTREAM:
+            raise Exception("Invalid rule: {}".format(rule))
 
-            if [[ -z "$LOCATION" || -z "$UPSTREAM" ]]; then
-                echo "Invalid: $f"
-                echo "Example:   / http://odoo:8072/"
-                exit -1
-            fi
+        parent_dir = os.path.dirname(filepath)
+        if os.path.basename(parent_dir) == "odoo":
+            subdir = "odoo"
+            os.makedirs(os.path.join(CONFIG_DIR, subdir))
 
-            if [[ "$(basename $(dirname $f))" == "odoo" ]]; then
-                subdir="odoo"
-                mkdir -p "$CONFIG_DIR/$subdir"
+            if os.path.exists(files['odoo_instances']):
+                for line in __file_get_lines(files['odoo_instances']):
+                    name, domain = line.strip().split(" ")
+                    filename = "{}.location".format(name)
+                    CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
+                    if name == "default":
+                        UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
+                    else:
+                        UPSTREAM_INSTANCE = UPSTREAM.replace("odoo", "odoo_{}".format(name))
+                    fi
+                    f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
-                if [[ -e "$DIR/run/odoo_instances" ]]; then
+        else:
+            subdir = "default"
+            os.makedirs(os.path.join(CONFIG_DIR, subdir))
+            safe_location = LOCATION.replace("\", "_")
+            filename = "{location}_{location}.location".format(location_safe_location)
+            CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
+            f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
-                    while read -r line; do
-                        name="$(echo "$line"| awk '{print $1}')"
-                        domain="$(echo "$line"| awk '{print $2}')"
-                        filename="$name.location"
-                        CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
-                        if [[ "$name" == "default" ]]; then
-                            UPSTREAM_INSTANCE="${UPSTREAM/default/odoo}"
-                        else
-                            UPSTREAM_INSTANCE=${UPSTREAM/odoo/odoo_$name}
-                        fi
-                        "$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM_INSTANCE" "$CONFIG_PATH" "$REWRITE_RULES"
-                    done<"$DIR/run/odoo_instances"
-                fi
+def __file_get_lines(path):
+    with open(path) as f:
+        return f.readlines()
 
-            else
-                subdir="default"
-                mkdir -p "$CONFIG_DIR/$subdir"
-                filename=${LOCATION//\//_}_${LOCATION//\//_}.location
-                CONFIG_PATH="$CONFIG_DIR/$subdir/$filename"
-                "$DIR/machines/proxy/add_upstream.sh" "$LOCATION" "$UPSTREAM" "$CONFIG_PATH" "$REWRITE_RULES"
-            fi
+def __replace_in_file(filepath, text, replacewith):
+    with open(filepath, 'r') as f:
+        content = file.readlines()
+    content = content.replace(text, replacewith)
+    with open(filepath, 'w') as f:
+        f.write(content)
 
-        done
-    done
-    return 0
-}
 def _setup_odoo_instances():
-    local name
-    local subdomain_path
-    local config_path
+    if os.path.exists(files['odoo_instances']):
+        __empty_dir(dirs['proxy_configs_dir'])
 
-    if [[ -f "$DIR/run/odoo_instances" ]]; then
-        rm "${proxy_configs_dir:?}/*.host" 1>/dev/null 2>&1 || true
+        if os.path.exists(files['odoo_instances']):
+            for line in __file_get_lines(files['odoo_instances']):
+                name, domain = line.strip().split(" ")
+                config_path = os.path.join(dirs['proxy_configs_dir'], "{}.host".format(name))
+                shutil.copy(files['machines/proxy/odoo_instance.conf'], config_path)
+                if domain == "default":
+                    __replace_in_file(config_path, "__DOMAIN__", "*")
+                else:
+                    if domain:
+                        __replace_in_file(config_path, "__DOMAIN__", domain)
+            if name:
+                __replace_in_file(config_path, "__CONTAINERNAME__", name)
 
-        while read -r line; do
-            name="$(echo "$line"| awk '{print $1}')"
-            domain="$(echo "$line"| awk '{print $2}')"
-
-            config_path="$proxy_configs_dir/${name}.host"
-            cp "$DIR/machines/proxy/odoo_instance.conf" "$config_path"
-            if [[ "$domain" == "default" ]]; then
-                sed -i 's|__DOMAIN__|*|g' "$config_path"
-            else
-                sed -i "s|__DOMAIN__|${domain:?}|g" "$config_path"
-            fi
-            sed -i "s|__CONTAINERNAME__|${name:?}|g" "$config_path"
-
-            if [[ $name != 'default' ]]; then
+            if name != "default":
                 # adapt the one yml file and duplicate the odoo service there;
                 # removing any ports
-                python <<-EOF
-import yaml, os
-from copy import deepcopy
-with open("$docker_compose_file") as f:
-    j = yaml.load(f.read())
-odoo = deepcopy(j['services']['odoo'])
-if 'ports' in odoo:
-    del odoo['ports']
-odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", "$name"])
-j['services']['odoo_{}'.format("$name")] = odoo
-with open("$docker_compose_file", 'w') as f:
-    f.write(yaml.dump(j, default_flow_style=False))
-EOF
-            fi
-
-        done <"$DIR/run/odoo_instances"
-    fi
-    return 0
+                with open(files['docker_compose_file']) as f:
+                    j = yaml.load(f.read())
+                odoo = deepcopy(j['services']['odoo'])
+                if 'ports' in odoo:
+                    del odoo['ports']
+                odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
+                j['services']['odoo_{}'.format(name)] = odoo
+                with open(files['docker_compose_file'], 'w') as f:
+                    f.write(yaml.dump(j, default_flow_style=False))
 
 def _sanity_check():
     if not E("RUN_POSTGRES"):
