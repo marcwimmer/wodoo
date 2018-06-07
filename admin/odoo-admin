@@ -12,7 +12,7 @@
 # TODO replace all bash commands to be called within dockerbash
 
 function dcrun() {
-    $dc run -rm -T -e ODOO_HOME=/opt/odoo "$@"
+    $dc run --rm -T -e ODOO_HOME=/opt/odoo "$@"
 }
 
 function dcexec() {
@@ -325,7 +325,6 @@ function do_restore_db_on_postgres () {
     eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
     eval "$CREATEDB $DBNAME"
 
-    set -x
     method="$PGRESTORE"
     needs_unzip=1
     gunzip -c "$dump_file" | head | grep -q PostgreSQL.database.dump && {
