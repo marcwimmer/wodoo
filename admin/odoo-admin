@@ -883,7 +883,7 @@ EOF
 
     dev)
         if [[ -n "${ALL_PARAMS[0]}" ]]; then
-            $MANAGE customs "${ALL_PARAMS[@]}"
+            $MANAGE compose "${ALL_PARAMS[@]}"
         fi
         $MANAGE kill
         $MANAGE rm -f
