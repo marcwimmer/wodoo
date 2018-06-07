@@ -2,13 +2,15 @@
 import sys
 import re
 import os
-import sys
 import logging
 import importlib
 import subprocess
 import time
 import inspect
 import yaml
+import shutil
+import tempfile
+from datetime import datetime
 from copy import deepcopy
 from threading import Thread
 from Queue import Queue
@@ -16,7 +18,7 @@ from logging import FileHandler
 from optparse import OptionParser
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
-from module_tools import set_ownership_exclusive
+from module_tools.module_tools import set_ownership_exclusive
 
 try:
     from pudb import set_trace
@@ -28,12 +30,12 @@ import wait
 
 PLATFORM_OSX = "OSX"
 PLATFORM_LINUX = "Linux"
+YAML_VERSION = '3.3'
 
 parser = OptionParser(
     description="""Odoo Administration Script
 """
 )
-set_trace()
 parser.add_option(
     '-f', '--force', action='store_true', default=False, help="Force actions if asked"
 )
@@ -76,17 +78,6 @@ commands = {
     'dc': "/usr/local/bin/docker-compose -p $CUSTOMS -f $docker_compose_file",
 }
 
-def get_logger():
-    FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s\n%(message)s'
-    logging.basicConfig(filename="/dev/stdout", format=FORMAT)
-    logging.getLogger().setLevel(logging.DEBUG)
-    logger = logging.getLogger('')  # root handler
-    formatter = logging.Formatter(FORMAT)
-    return logger
-
-
-logger = get_logger()
-
 
 def trace():
     if set_trace:
@@ -99,7 +90,6 @@ def _get_platform():
         return PLATFORM_LINUX
 
 def _startup():
-    trace()
     dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
     dir = os.path.dirname(dir)
     dirs['odoo_home'] = dir
@@ -159,7 +149,7 @@ def _file2env(filepath):
 def _collect_settings_files():
     files = []
     files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
-    for root, _, filenames in os.walk(dirs['odoo_home']):
+    for root, _, filenames in os.walk(dirs['machines']):
         for filename in filenames:
             if filename == 'default.settings':
                 files.append(os.path.join(root, filename))
@@ -170,10 +160,11 @@ def _collect_settings_files():
         files.append('/etc_host/odoo/settings')
     if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
         files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
-    for filename in os.listdir(dirs['settings.d']):
-        filepath = os.path.join(dirs['settings.d'], filename)
-        if os.path.exists(filepath):
-            files.append(filepath)
+    if os.path.isdir(dirs['settings.d']):
+        for filename in os.listdir(dirs['settings.d']):
+            filepath = os.path.join(dirs['settings.d'], filename)
+            if os.path.exists(filepath):
+                files.append(filepath)
     return files
 
 def _make_settings_file(outfile, setting_files):
@@ -192,15 +183,18 @@ def _export_settings():
     if args and args[0] == 'compose':
         if len(args) > 1:
             customs = args[1]
-            with open(files['settings'], 'w') as f:
-                f.write("CUSTOMS=" + customs)
+            if os.path.isfile(files['settings']):
+                os.unlink(files['settings'])
+            config = MyConfigParser(files['settings'])
+            config['CUSTOMS'] = customs
+            config.write()
     _file2env(files['settings'])
 
     if not os.path.exists(files['settings']):
         raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
 
     # get odoo version
-    ODOO_VERSION = odoo_config.get_version_from_customs(os.environ['CUSTOMS'])
+    ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
     os.environ['ODOO_VERSION'] = ODOO_VERSION
     if ODOO_VERSION in ["6.0", "6.1", "7.0", "8.0", "9.0"]:
         os.environ['ODOO_PYTHON_VERSION'] = '2'
@@ -217,13 +211,13 @@ def _export_settings():
     setting_files = _collect_settings_files()
     _make_settings_file(files['settings'], setting_files)
     config = MyConfigParser(files['settings'])
-    if "DBNAME" not in config.key():
+    if "DBNAME" not in config.keys():
         config['DBNAME'] = config['CUSTOMS']
         config.write()
     _file2env(files['settings'])
 
 
-def docommand(cmnd):
+def docommand(cmd):
     out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
     return out
 
@@ -251,6 +245,7 @@ def _remember_customs_and_cry_if_changed():
         if current_customs != os.environ['CUSTOMS']:
             print("Customs changed - you need to restart and/or rebuild!")
             docommand(commands['manage'], 'kill')
+
 
 """
 
@@ -1226,15 +1221,19 @@ def __file_default_content(path, default_content):
             f.write(default_content)
 
 def _remove_temp_directories():
-    trace()
     for dir in os.listdir(dirs['odoo_home']):
         if dir.startswith("tmp") and len(dir) == len('tmp......'):
+            trace()
             shutil.rmtree(os.path.join(dirs['odoo_home']), dir)
 
+def __makedirs(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
 def _prepare_filesystem():
-    os.makedirs(dirs['settings.d'])
+    __makedirs(dirs['settings.d'])
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
-        os.makedirs(os.path.join(dirs['odoo_home']), 'run', 'subdir')
+        __makedirs(os.path.join(dirs['odoo_home'], 'run', 'subdir'))
     subprocess.check_call(['sudo', '-E', 'chown', "{uid}:{uid}".format(uid=E("UID")), "-R", dirs['run']])
 
     __file_default_content(files['odoo_instances'], "default default\n")
@@ -1257,20 +1256,47 @@ def _prepare_yml_files_from_template_files():
         for root, _, filenames in os.walk(dirs['machines']):
             for filename in filenames:
                 if re.findall(PATTERN, filename):
-                    files.append(os.path.join(root, filename))
-    files = []
-    files += find_files(dirs['machines'])
-    files += find_files(odoo_config.customs_dir())
+                    yield os.path.join(root, filename)
+    _files = []
+    _files += find_files(dirs['machines'])
+    _files += find_files(odoo_config.customs_dir())
 
-    __prepare_docker_compose_files(files)
+    __prepare_docker_compose_files(files['docker_compose'], _files)
 
-def __prepare_docker_compose_files():
-    trace()
-    local_odoo_home = os.environ['LOCAL_ODOO_HOME']
+def __get_docker_image():
+    hostname = os.environ['HOSTNAME']
+    result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
+    if result:
+        result = result[0].split("sha256:")[-1].split('"')[0]
+        return result[:12]
+    raise Exception("Image not determined")
+
+def get_run_command():
+    """
+    Returns bash ready command to call simplebash self by run.
+
+    """
     host_odoo_home = os.environ["ODOO_HOME"]
+    local_odoo_home = os.environ['LOCAL_ODOO_HOME']
+    cmdline = []
+    cmdline.append("/opt/docker/docker")
+    cmdline.append("run")
+    cmdline.append('-e')
+    cmdline.append('ODOO_HOME={}'.format(host_odoo_home))
+    envfile = os.path.join(local_odoo_home, 'run/settings')
+    if os.path.exists(envfile):
+        cmdline.append('--env-file')
+        cmdline.append(envfile)
+    cmdline.append("--rm")
+    cmdline.append('-v')
+    cmdline.append("{HOST_ODOO_HOME}:{HOST_ODOO_HOME}".format(HOST_ODOO_HOME=os.environ["ODOO_HOME"]))
+    cmdline.append("--workdir")
+    cmdline.append(host_odoo_home)
+    cmdline.append(__get_docker_image())
+    return cmdline
 
-    dest_file = sys.argv[1]
-    paths = sys.argv[2].split("\n")
+def __prepare_docker_compose_files(dest_file, paths):
+    local_odoo_home = os.environ['LOCAL_ODOO_HOME']
 
     temp_files = set()
     tempdir = tempfile.mkdtemp()
@@ -1294,7 +1320,6 @@ def __prepare_docker_compose_files():
                 content = content.replace(param, os.environ[name])
         with open(filepath, 'w') as f:
             f.write(content)
-
 
     for path in set(paths):
         filename = os.path.basename(path)
@@ -1334,9 +1359,9 @@ def __prepare_docker_compose_files():
 
         with open(temp_path, 'w') as dest:
             with open(path, 'r') as source:
-                j = load(source.read())
+                j = yaml.load(source.read())
                 # TODO complain version - override version
-                j['version'] = '3.3'
+                j['version'] = YAML_VERSION
 
                 # set settings environment and the override settings after that
                 for file in ['run/settings']:
@@ -1353,7 +1378,7 @@ def __prepare_docker_compose_files():
                                 if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
                                     service['env_file'].append('$ODOO_HOME/{}'.format(file))
 
-                dest.write(dump(j, default_flow_style=False))
+                dest.write(yaml.dump(j, default_flow_style=False))
                 dest.write("\n")
         replace_all_envs_in_file(temp_path)
         temp_files.add(os.path.basename(temp_path))
@@ -1369,7 +1394,7 @@ def __prepare_docker_compose_files():
         """
 
         with open(os.path.join(local_odoo_home, 'machines/odoo/docker-compose.yml')) as f:
-            odoodc = load(f.read())
+            odoodc = yaml.load(f.read())
 
         for odoomachine in odoodc['services']:
             if odoomachine == 'odoo_base':
@@ -1419,15 +1444,18 @@ def __prepare_docker_compose_files():
         raise
     else:
         # post-process config config
-        conf = post_process_complete_yaml_config(load(conf))
-        conf = dump(conf, default_flow_style=False)
+        conf = post_process_complete_yaml_config(yaml.load(conf))
+        conf = yaml.dump(conf, default_flow_style=False)
 
         with open(dest_file, 'w') as f:
             f.write(conf)
     finally:
+        trace()
         shutil.rmtree(tempdir)
 
 def __empty_dir(dir):
+    from pudb import set_trace
+    set_trace()
     for f in os.listdir(dir):
         shutil.rmtree(os.path.join(dir), f)
 
@@ -1473,14 +1501,13 @@ def _setup_proxy():
                         UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
                     else:
                         UPSTREAM_INSTANCE = UPSTREAM.replace("odoo", "odoo_{}".format(name))
-                    fi
                     f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
         else:
             subdir = "default"
             os.makedirs(os.path.join(CONFIG_DIR, subdir))
-            safe_location = LOCATION.replace("\", "_")
-            filename = "{location}_{location}.location".format(location_safe_location)
+            safe_location = LOCATION.replace("\\", "_")
+            filename = "{location}_{location}.location".format(location=safe_location)
             CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
             f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
@@ -1560,7 +1587,7 @@ def __rm_file_if_exists(path):
         os.unlink(path)
 
 def _cleanup():
-    __rm_file_if_exists(files['config/docker-compose.yml')
+    __rm_file_if_exists(files['config/docker-compose.yml'])
     _remove_temp_directories
 
 def __try_to_set_owner(UID, path):
@@ -1589,7 +1616,6 @@ def __wait_for_port(host, port, timeout=None):
 
 
 if __name__ == '__main__':
-    trace()
     _startup()
     _check_working_dir_customs_mismatch
     if args:
@@ -1603,13 +1629,14 @@ if __name__ == '__main__':
     if args and args[0] in ['build', 'compose']:
         _remove_temp_directories()
         _prepare_filesystem()
-        _prepare_yml_files_from_template_files
-        _reset_proxy_configs
-        _setup_proxy
-        _setup_odoo_instances
-    _sanity_check
+        _prepare_yml_files_from_template_files()
+        _reset_proxy_configs()
+        _setup_proxy()
+        _setup_odoo_instances()
+    _sanity_check()
 
     try:
-        do_command "${ARGS[@]}"
+        # do_command()
+        pass
     finally:
         _cleanup

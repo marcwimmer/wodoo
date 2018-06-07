@@ -3,7 +3,6 @@ import os
 import sys
 
 def add_upstream(location, upstream_instance, config_path):
-from optparse import OptionParser
 # Place a file upstream.path in the root directory of machines
 #
 # /calendar http://davical:80/

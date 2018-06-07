@@ -25,6 +25,8 @@ class MyConfigParser:
         return self.quoteOptions.keys()
 
     def _open(self):
+        if not os.path.exists(self.fileName):
+            return
         try:
             with open(self.fileName, 'r') as file:
                 for line in file:
@@ -39,13 +41,16 @@ class MyConfigParser:
                             self.quoteOptions[key.strip()] = ''
                         else:
                             self.quoteOptions[key.strip()] = '\"'
-        except:
+        except Exception:
             print "ERROR: File " + self.fileName + " Not Found\n"
 
     def write(self):
         handled_keys = set()
         try:
             # Write the file contents
+            if not os.path.isfile(self.fileName):
+                with open(self.fileName, 'w'):
+                    pass
             with open(self.fileName, 'r+') as file:
                 lines = file.readlines()
                 # Truncate file so we don't need to close it and open it again
@@ -101,5 +106,5 @@ class MyConfigParser:
     def get(self, key, default_value):
         try:
             return self[key]
-        except:
+        except Exception:
             return default_value
