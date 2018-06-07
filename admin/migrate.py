@@ -8,18 +8,34 @@ import os
 import sys
 import logging
 import subprocess
+from threading import Thread
+from Queue import Queue
 from logging import FileHandler
 from optparse import OptionParser
 from module_tools.odoo_config import customs_dir
-from module_tools.odoo_config import customs_dir
 from module_tools.myconfigparser import MyConfigParser
 
+CONFIG_FILE = '/home/odoo/config_migration'
+
 parser = OptionParser(
-    description='Migration from odoo x to odoo y'
-    ''
-    '-log is written to stdout and parallel to $CUSTOMS_FOLDER/migration.log'
-    '-put a migration folder into your customs'
-    '-put destination .version into your customs'
+    description="""Migration from odoo x to odoo y
+
+-log is written to stdout and parallel to $CUSTOMS_FOLDER/migration.log
+-put a migration folder into your customs with following structure:
+
+(These files are optional)
+data/src/customs/<customs>/migration/8.0/before.sql
+data/src/customs/<customs>/migration/8.0/after.sql
+data/src/customs/<customs>/migration/8.0/before.py
+data/src/customs/<customs>/migration/8.0/after.py
+
+The py files must contain:
+
+def run(cr):
+    ....
+
+
+"""
 )
 parser.add_option(
     "-L", "--log-file", action="store", type="string",
@@ -52,8 +68,8 @@ settings = MyConfigParser("/opt/odoo/run/settings")
 settings['RUN_MIGRATION'] = '1'
 settings.write()
 
-FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
-logging.basicConfig(filename="/dev/null", format=FORMAT)
+FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s\n%(message)s'
+logging.basicConfig(filename="/dev/stdout", format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 formatter = logging.Formatter(FORMAT)
@@ -67,62 +83,97 @@ logger.addHandler(rh)
 
 migrations = {
     '11.0': {
-        'server': {
-            'url': 'git://github.com/OpenUpgrade/OpenUpgrade.git',
-            'branch': '11.0',
-            'cmd': 'odoo-bin --update=all --database=%(db)s '
-                   '--config=%(config)s --stop-after-init --no-xmlrpc',
-        },
+        'branch': '11.0',
+        'cmd': 'odoo-bin --update=all --database={db} '
+               '--config={configfile} --stop-after-init --no-xmlrpc',
     },
     '10.0': {
-        'server': {
-            'url': 'git://github.com/OpenUpgrade/OpenUpgrade.git',
-            'branch': '10.0',
-            'addons_dir': os.path.join('odoo', 'addons'),
-            'root_dir': os.path.join(''),
-            'cmd': 'odoo-bin --update=all --database=%(db)s '
-                   '--config=%(config)s --stop-after-init --no-xmlrpc',
-        },
+        'branch': '10.0',
+        'cmd': 'odoo-bin --update=all --database={db} '
+               '--config={configfile} --stop-after-init --no-xmlrpc',
     },
     '9.0': {
-        'server': {
-            'url': 'git://github.com/OpenUpgrade/OpenUpgrade.git',
-            'branch': '9.0',
-            'cmd': 'openerp-server --update=all --database=%(db)s '
-                   '--config=%(config)s --stop-after-init --no-xmlrpc',
-        },
+        'branch': '9.0',
+        'cmd': 'openerp-server --update=all --database={db} '
+               '--config={configfile} --stop-after-init --no-xmlrpc',
     },
     '8.0': {
-        'server': {
-            'url': 'git://github.com/OpenUpgrade/OpenUpgrade.git',
-            'branch': '8.0',
-            'cmd': 'openerp-server --update=all --database=%(db)s '
-                   '--config=%(config)s --stop-after-init --no-xmlrpc',
-        },
+        'branch': '8.0',
+        'cmd': 'openerp-server --update=all --database={db} '
+               '--config={configfile} --stop-after-init --no-xmlrpc',
     },
     '7.0': {
-        'server': {
-            'url': 'git://github.com/OpenUpgrade/OpenUpgrade.git',
-            'branch': '7.0',
-            'cmd': 'openerp-server --update=all --database=%(db)s '
-                   '--config=%(config)s --stop-after-init --no-xmlrpc '
-                   '--no-netrpc',
-        },
+        'branch': '7.0',
+        'cmd': 'openerp-server --update=all --database={db} '
+               '--config={configfile} --stop-after-init --no-xmlrpc '
+               '--no-netrpc',
     },
 }
 
 if options.from_version not in migrations:
     print "Invalid from version: {}".format(options.from_version)
 
+def run_cmd(cmd):
+    logger.info("Executing:\n{}".format(" ".join(cmd)))
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
-for version in sorted(filter(lambda v: float(v) >= float(options.from_version) and float(v) <= float(options.to_version), migrations), key=lambda x: float(x)):
+    def reader(pipe, q):
+        try:
+            with pipe:
+                for line in iter(pipe.readline, ''):
+                    q.put((pipe, line))
+        finally:
+            q.put(None)
+
+    q = Queue()
+    Thread(target=reader, args=[proc.stdout, q]).start()
+    Thread(target=reader, args=[proc.stderr, q]).start()
+    for source, line in iter(q.get, None):
+        line = (line or '').strip()
+        if source == proc.stderr:
+            logger.error(line)
+        else:
+            logger.info(line)
+
+    proc.wait()
+
+
+for version in sorted(filter(lambda v: float(v) > float(options.from_version) and float(v) <= float(options.to_version), migrations), key=lambda x: float(x)):
     with open(os.path.join(customs_dir(), '.version'), 'w') as f:
         f.write(version)
     logger.info("""\n========================================================================
 Migration to Version {}
 ========================================================================""".format(version)
                 )
-    #subprocess.check_call([options.manage_command, "build"])
+
+    run_cmd([
+        options.manage_command,
+        "build",
+    ])
+    run_cmd([
+        options.manage_command,
+        "run",
+        "odoo",
+        "/run_migration.sh",
+        'before',
+    ])
+
+    run_cmd([
+        options.manage_command,
+        "run",
+        "odoo",
+        "/run_openupgradelib.sh",
+        migrations[version]['branch'],
+        migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
+    ])
+
+    run_cmd([
+        options.manage_command,
+        "run",
+        "odoo",
+        "/run_migration.sh",
+        'after',
+    ])
 
 with open(os.path.join(customs_dir(), '.version'), 'w') as f:
     f.write(options.to_version)

@@ -4,11 +4,12 @@ set -e
 
 if [[ "$USER" != "root" && "$USER" != "" ]]; then
 	if [[ "$HOST_TYPE" == "macos" ]]; then
-		useradd --uid "$UID" --home-dir /opt/external_home "$USER"
+		useradd --uid "$UID" "$USER"
 		chown "$USER" /var/run/docker.sock
 		usermod -aG daemon "$USER"
 	else
-		useradd --uid "$UID" --home-dir /opt/external_home "$USER"
+		#useradd --uid "$UID" --home-dir /opt/external_home "$USER"
+		useradd --uid "$UID" "$USER"
 		groupname="docker"
 		groupadd -g "$DOCKER_GROUP_ID" "$groupname"  # to be able to access docker socket
 		usermod -aG docker "$USER"
