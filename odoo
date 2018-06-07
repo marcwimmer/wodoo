@@ -105,6 +105,9 @@ function build_command() {
 	    docker_group_id="$(cut -d : -f3 <(getent group docker))"
 		host_type='linux'
 	fi
+
+
+
 	command=(/usr/local/bin/docker-compose)
 	command+=(run)
 	command+=(--rm)
@@ -120,6 +123,11 @@ function build_command() {
 	if [[ -n "${extra_volumes[*]}" ]]; then
 		command+=( "${extra_volumes[@]}" )
 	fi
+    if [[ "$DOCKER_MACHINE" != "1" ]]; then
+        command+=(-v /etc:/etc_host)
+        command+=(-v /sbin:/sbin_host)
+        command+=(-v /tmp:/tmp_host)
+    fi
 	command+=(simplebash)
 	command+=("/opt/odoo/admin/odoo-admin")
 	command+=( "${ARGS[@]}" )

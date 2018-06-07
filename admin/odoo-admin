@@ -550,35 +550,37 @@ EOF
 
         ;;
     setup-startup)
-        PATH=$DIR
-        exit 5
+        local_PATH=$DIR
 
-        if [[ -f /sbin/initctl ]]; then
+        if [[ -e /sbin_host/initctl ]]; then
             # ubuntu 14.04 upstart
-            file=/etc/init/${CUSTOMS}_odoo.conf
+            file=/etc_host/init/${CUSTOMS}_odoo.conf
 
             echo "Setting up upstart script in $file"
             /bin/cp "$DIR/config/upstart" "$file"
-            /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" "$file"
+            /bin/sed -i -e "s|\${PATH}|$local_PATH|" -e "s|\${PATH}|$local_PATH|" "$file"
             /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
-            /sbin/initctl reload-configuration
+            echo "Please execute on Host:"
+            echo "/sbin/initctl reload-configuration"
         else
             echo "Setting up systemd script for startup"
             servicename=${CUSTOMS}_odoo.service
-            file=/lib/systemd/system/$servicename
+            # file=/etc_host/systemd/system/$servicename
+            file=/tmp_host/$servicename
 
-            echo "Setting up upstart script in $file"
+            # echo "Setting up upstart script in $file"
             /bin/cp "$DIR/config/systemd" "$file"
-            /bin/sed -i -e "s|\${PATH}|$PATH|" -e "s|\${PATH}|$PATH|" "$file"
+            /bin/sed -i -e "s|\${PATH}|$local_PATH|" -e "s|\${PATH}|$local_PATH|" "$file"
             /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
 
-            /bin/systemctl disable "$servicename"
-            /bin/rm "/etc/systemd/system/$servicename"
-            /bin/rm "lib/systemd/system/$servicename"
-            /bin/systemctl daemon-reload
-            /bin/systemctl reset-failed
-            /bin/systemctl enable "$servicename"
-            /bin/systemctl start "$servicename"
+            echo "Please execute on host now (perhaps as sudo):"
+            echo "cp /tmp/$servicename /etc/systemd/system"
+            echo "systemctl stop $servicename"
+            echo "systemctl disable $servicename"
+            echo "systemctl daemon-reload"
+            echo "systemctl reset-failed"
+            echo "systemctl enable $servicename"
+            echo "systemctl start $servicename"
         fi
         ;;
     exec)
