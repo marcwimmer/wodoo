@@ -16,6 +16,7 @@ from threading import Thread
 from Queue import Queue
 from logging import FileHandler
 from optparse import OptionParser
+import psycopg2
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
 from module_tools.module_tools import set_ownership_exclusive
@@ -31,6 +32,7 @@ import wait
 PLATFORM_OSX = "OSX"
 PLATFORM_LINUX = "Linux"
 YAML_VERSION = '3.3'
+BACKUPDIR = "/host/dumps"
 
 parser = OptionParser(
     description="""Odoo Administration Script
@@ -46,7 +48,6 @@ parser.add_option(
     '--no-verbose', action='store_true', default=False,
 )
 (options, args) = parser.parse_args()
-command_parameters = args[1:] if len(args) > 1 else []
 
 if options.verbose and options.no_verbose:
     print("Please set either verbose or not verbose.")
@@ -214,8 +215,9 @@ def _export_settings():
     if "DBNAME" not in config.keys():
         config['DBNAME'] = config['CUSTOMS']
         config.write()
+    # store the host root folder
+    config['HOST_ODOO_HOME'] = E("ODOO_HOME")
     _file2env(files['settings'])
-
 
 def docommand(cmd):
     out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
@@ -246,70 +248,46 @@ def _remember_customs_and_cry_if_changed():
             print("Customs changed - you need to restart and/or rebuild!")
             docommand(commands['manage'], 'kill')
 
+def __restore_check(filepath):
+    dumpname = os.path.basename(filepath)
 
-"""
+    if E("DBNAME") not in dumpname or options.force:
+        raise Exception("The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't.")
 
+def __exists_db():
+    sql = "select count(*) from pg_database where datname='{}'".format(E("DBNAME"))
+    record = __execute_sql(sql, fetchone=True)
+    if not record or not record[0]:
+        return False
+    return True
 
-function restore_check() {
-    dumpname="$(basename "$1")"
-    local force=0
-
-    # asterisk as one word, @ as separate words
-    echo "${ALL_PARAMS[*]}" |grep -P -q '[-]force' && {
-        force=1
-    }
-
-    if [[ ! "${dumpname%.*}" == *"$DBNAME"* ]]; then
-        echo "The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't."
-        exit -1
-    fi
-
-    return 0
-}
-
-function exists_db() {
-    sql=("select 'database_exists' from pg_database where datname='$DBNAME'")
-    if FORCE_UNVERBOSE=1 echo "${sql[0]}"| $MANAGE psql template1 | grep -q 'database_exists'
-    then
-        echo 'database exists'
-    else
-        echo 'database does not exist'
-    fi
-
-    return 0
-}
-
-function remove_postgres_connections() {
-    echo "Removing all current connections"
-
-    if [[ "$(exists_db)" != "database does not exist" ]]; then
-        SQL=$(cat <<-EOF
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity 
-            WHERE pg_stat_activity.datname = '$DBNAME' 
-            AND pid <> pg_backend_pid(); 
-EOF
-            )
-        echo "$SQL" | $MANAGE psql template1
-    fi
-
-    return 0
-}
-
-function reset_postgres_container () {
+def reset_postgres_container():
     # remove the postgres volume and reinit
-	if [[ "$RUN_POSTGRES" == 1 ]]; then
-        echo "Resettings postgres - killing data - not reversible"
-        $MANAGE kill
-        $dc rm -f # set volume free
-        VOLUMENAME=${CUSTOMS}_postgresdata
+    if E("RUN_POSTGRES") == "1":
+        print "Resettings postgres - killing data - not reversible"
+        do_command("kill")
+        dc(["rm", "-f"]) # set volume free
+        VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
         docker volume ls |grep -q "$VOLUMENAME" && docker volume rm "$VOLUMENAME"
         $MANAGE reset-db
         $MANAGE up -d postgres
         $MANAGE wait_for_container_postgres
-	fi
 
-}
+def remove_postgres_connections():
+    print "Removing all current connections"
+    if __exists_db():
+        SQL = """
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '{}'
+            AND pid <> pg_backend_pid();
+        """.format(E("DBNAME"))
+        __execute_sql(SQL)
+
+"""
+
+
+
 
 function do_restore_db_on_postgres () {
     SUFFIX="_restoring"
@@ -374,16 +352,6 @@ function do_restore_db_on_postgres () {
     export DBNAME="$DBNAME"
     remove_postgres_connections
 
-    return 0
-}
-
-function do_restore_files () {
-    # remove the postgres volume and reinit
-    filepath=$1
-
-    filepath=$(make_path_as_hosts_sees_it "$filepath")
-    RESTOREFILE=/tmp/archive
-    dcrun -v "$filepath:$RESTOREFILE" odoo /bin/restore_files.sh
     return 0
 }
 
@@ -476,712 +444,6 @@ if [ -z "$1" ]; then
 fi
 
 
-
-function do_command() {
-    case $1 in
-    abort-upgrade)
-        SQL=$(cat <<-EOF
-            UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
-            UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
-EOF
-            )
-        echo "$SQL" | $MANAGE psql "$DBNAME"
-
-        ;;
-    setup-startup)
-        local_PATH=$DIR
-
-        if [[ -e /sbin_host/initctl ]]; then
-            # ubuntu 14.04 upstart
-            file=/etc_host/init/${CUSTOMS}_odoo.conf
-
-            echo "Setting up upstart script in $file"
-            /bin/cp "$DIR/config/upstart" "$file"
-            /bin/sed -i -e "s|\${PATH}|$local_PATH|" -e "s|\${PATH}|$local_PATH|" "$file"
-            /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
-            echo "Please execute on Host:"
-            echo "/sbin/initctl reload-configuration"
-        else
-            echo "Setting up systemd script for startup"
-            servicename=${CUSTOMS}_odoo.service
-            # file=/etc_host/systemd/system/$servicename
-            file=/tmp_host/$servicename
-
-            # echo "Setting up upstart script in $file"
-            /bin/cp "$DIR/config/systemd" "$file"
-            /bin/sed -i -e "s|\${PATH}|$local_PATH|" -e "s|\${PATH}|$local_PATH|" "$file"
-            /bin/sed -i -e "s|\${CUSTOMS}|$CUSTOMS|" -e "s|\${CUSTOMS}|$CUSTOMS|" "$file"
-
-            echo "Please execute on host now (perhaps as sudo):"
-            echo "cp /tmp/$servicename /etc/systemd/system"
-            echo "systemctl stop $servicename"
-            echo "systemctl disable $servicename"
-            echo "systemctl daemon-reload"
-            echo "systemctl reset-failed"
-            echo "systemctl enable $servicename"
-            echo "systemctl start $servicename"
-        fi
-        ;;
-    exec)
-        $dc exec "${ALL_PARAMS[@]}"
-        ;;
-    backup-db)
-        set -e
-        if [[ -n "${ALL_PARAMS[0]}" ]]; then
-            filename="${ALL_PARAMS[0]}"
-        else
-            filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
-        fi
-        if [[ "$filename" == *\/* ]]; then
-            echo "No slash for backup filename allowed"
-            exit 1
-        fi
-        BACKUPDIR=/host/dumps
-        echo "Databasename is $DBNAME"
-        filepath=$BACKUPDIR/$filename
-        if [[ -e "$filepath" ]]; then
-            rm "$filepath" || {
-                echo "Could not remove existing dump file"
-                exit 1
-            }
-        fi
-        LINKPATH=$DIR/dumps/latest_dump
-		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres
-			$MANAGE wait_for_container_postgres
-        fi
-        pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
-		if [[ "$NO_BACKUP_SYMBOLIC_LINK_DUMP" != "1" ]]; then
-            if [[ -e "$LINKPATH" ]]; then
-                /bin/rm "$LINKPATH"
-            fi
-			ln -s "$filepath" "$LINKPATH" > /dev/null 2>&1
-		fi
-        md5sum "$filepath"
-        echo "Dumped to $filepath"
-		$MANAGE telegram-send "Database Backup $DBNAME done to $filepath"
-        ;;
-    backup-files)
-        if [[ -n "$2" ]]; then
-            BACKUPDIR=$2
-        else
-            BACKUPDIR=$DIR/dumps
-        fi
-        BACKUP_FILENAME=$CUSTOMS.files.tar.gz
-        BACKUP_FILEPATH=$BACKUPDIR/$BACKUP_FILENAME
-
-		dcrun odoo /backup_files.sh
-        [[ -f $BACKUP_FILEPATH ]] && rm -Rf "$BACKUP_FILEPATH"
-        mv "$DIR/dumps/odoofiles.tar" "$BACKUP_FILEPATH"
-
-        echo "Backup files done to $BACKUP_FILEPATH"
-        ;;
-
-    backup)
-		$MANAGE backup-db "${ALL_PARAMS[@]}"
-		$MANAGE backup-files "${ALL_PARAMS[@]}"
-        ;;
-    reset-db)
-		echo "$*" |grep -q '[-]force' || {
-            askcontinue "Deletes database $DBNAME!"
-		}
-		if [[ "$RUN_POSTGRES" != "1" ]]; then
-			echo "Postgres container is disabled; cannot reset external database"
-			exit -1
-		fi
-        echo "Stopping all services and creating new database"
-        echo "After creation the database container is stopped. You have to start the system up then."
-        $dc kill
-        dcrun -e INIT=1 postgres /entrypoint2.sh
-        echo
-        echo 
-        echo
-        echo "Database initialized."
-
-        ;;
-
-	restore-files)
-		set -e
-		dumpfile=$(make_path_accessible_from_container_but_file_is_outside "$2")
-        if [[ -z "$2" ]]; then
-			echo "Please provide the tar file-name."
-			exit -1
-        fi
-		echo 'Extracting files...'
-		do_restore_files "$dumpfile"
-		;;
-
-	restore-db)
-		set -e
-		echo "DB_HOST: $DB_HOST"
-		echo "DB_PORT: $DB_PORT"
-		dumpfile="${ALL_PARAMS[0]}"
-		restore_check "$dumpfile"
-        if [[ "$dumpfile" == *\/* ]]; then
-            echo "No slash for backup filename allowed"
-            exit 1
-        fi
-
-		if [[ "$DEVMODE" == "1" && "$RESTORE_DEV_DB" != "1" ]]; then
-			askcontinue "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?"
-		fi
-
-		echo "$*" |grep -q '[-]force' || {
-			askcontinue "Deletes database $DBNAME!"
-		}
-
-        reset_postgres_container
-        do_restore_db_on_postgres "$dumpfile"
-
-		remove_postgres_connections
-		set_db_ownership
-		$MANAGE telegram-send "Database Restore $DBNAME done."
-
-		;;
-	set_db_ownership)
-		set_db_ownership
-		;;
-
-	proxy-reload)
-        local ok
-        ok=xxxx
-        [$dc ps -q proxy ] && {
-            dcexec proxy /opt/bin/hot_reload.sh
-        } || {
-            :
-        }
-		;;
-
-    restore-dev-db)
-		if [[ "$ALLOW_RESTORE_DEV" ]]; then
-			echo "ALLOW_RESTORE_DEV must be explicitly allowed."
-			exit -1
-		fi
-        echo "Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		export RESTORE_DEV_DB=1
-		set +e
-		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
-		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
-
-        ;;
-	turn-into-dev)
-		if [[ "$DEVMODE" != "1" ]]; then
-			echo "When applying this sql scripts, the database is not usable anymore for production environments. "
-			echo "Please set DEVMODE=1 to allow this"
-			exit -1
-		fi
-        SQLFILE=machines/postgres/turndb2dev.sql
-		$MANAGE psql "$DBNAME" < $SQLFILE
-		
-		;;
-	psql)
-		# gets sql query from pipe
-		# check if there is a pipe argument
-		local query=""
-		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
-			query="$(cat /dev/stdin)"
-		fi	
-
-		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres
-			$MANAGE wait_for_container_postgres
-            SQLFILE="$DIR/run/sqlscripts/script.sql"
-            echo "$query" | tee "$SQLFILE"
-
-            dcexec postgres gosu postgres psql "${ALL_PARAMS[*]}" -U "$DB_USER" -f "/opt/sqlscripts/$(basename "$SQLFILE")"
-            rm "$SQLFILE"
-		else
-			export PGPASSWORD=$DB_PWD
-			echo "$query" | psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -w "${ALL_PARAMS[@]}"
-		fi 
-		;;
-
-    springclean)
-        docker system prune
-
-        echo removing dead containers
-		docker ps -a -q | while read -r id; do
-			docker rm "$id"
-		done
-
-        echo Remove untagged images
-        docker images | grep "<none>" | awk '{ print "docker rmi " $3 }' | bash
-
-        echo "delete unwanted volumes (can pass -dry-run)"
-		docker images -q -f='dangling=true' | while read -r id; do
-			docker rmi "$id"
-		done
-        ;;
-    up)
-		set_db_ownership
-        $dc up "${ALL_PARAMS[@]}"
-		$MANAGE proxy-reload
-        ;;
-    debug)
-		# puts endless loop into container command and then attaches to it;
-		# by this, name resolution to the container still works
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-		set_db_ownership
-        echo "Current machine $2 is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then."
-        askcontinue
-        # shutdown current machine and start via run and port-mappings the replacement machine
-		$MANAGE kill "$2"
-        cd "$DIR"
-		DEBUGGING_COMPOSER=$DIR/run/debugging.yml
-		cp "$DIR/config/debugging/template.yml" "$DEBUGGING_COMPOSER"
-		sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${NAME}/$2/" "$DEBUGGING_COMPOSER"
-		dc="$dc -f $DEBUGGING_COMPOSER"  # command now has while loop
-
-        #execute self
-		$dc up -d "$2"
-		$MANAGE attach "$2"
-
-        ;;
-    attach)
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-		display_machine_tips "$2"
-        $dc exec "$2" bash
-        ;;
-    run)
-		set_db_ownership
-        $dc run "${ALL_PARAMS[@]}"
-		;;
-    runbash)
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-		set_db_ownership
-		display_machine_tips "$2"
-        $dc run --rm "$2" bash
-        ;;
-    rebuild)
-        cd "$DIR"
-        $dc build --no-cache "${ALL_PARAMS[@]}"
-        ;;
-    build)
-        cd "$DIR"
-        $dc build "${ALL_PARAMS[@]}"
-        ;;
-	force-kill)
-		if [[ -z "$2" ]]; then
-			echo "Please provide machine name."
-			exit 1
-		fi
-        eval "$dc kill $2"
-		;;
-    kill)
-        cd "$DIR"
-		if [[ -z "$2" ]]; then
-			eval "$dc stop -t 20 redis"  # persist data
-			if [[ "$RUN_POSTGRES" == "1" ]]; then
-				eval "$dc stop -t 20 postgres"
-			fi
-		fi
-		eval "$dc stop -t 10 $2 $3 $4 $5 $6 $7 $8 $9"
-        ;;
-    stop)
-        cd "$DIR"
-        eval "$dc stop $2 $3 $4"
-        ;;
-    logsn)
-        cd "$DIR"
-        eval "$dc logs --tail=$2 -f -t $3 $4"
-        ;;
-    logs)
-        cd "$DIR"
-        lines="${ARGS[-1]}"
-        if [[ -n ${lines//[0-9]/} ]]; then
-            lines="5000"
-        else
-            echo "Showing last $lines lines"
-        fi
-        eval "$dc logs --tail=$lines -f -t $2 "
-        ;;
-    logall)
-        cd "$DIR"
-        eval "$dc logs -f -t $2 $3"
-        ;;
-    rm)
-        cd "$DIR"
-        $dc rm "${ALL_PARAMS[@]}"
-        ;;
-    restart)
-        cd "$DIR"
-        eval "$dc stop $2"
-        eval "$dc rm -f $2"
-        eval "$dc up --force-recreate -d $2"
-        $MANAGE proxy-reload
-        ;;
-
-    dev)
-        if [[ -n "${ALL_PARAMS[0]}" ]]; then
-            $MANAGE compose "${ALL_PARAMS[@]}"
-        fi
-        $MANAGE kill
-        $MANAGE rm -f
-        $MANAGE build
-        $MANAGE up -d
-        $MANAGE attach odoo
-        ;;
-
-    telegram-setup)
-        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
-            export DIR="$DIR"
-            cd "$DIR"/config/telegrambot
-            docker-compose run telegrambot /setup.sh
-        fi
-        ;;
-    telegram-send)
-        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
-            export DIR="$DIR"
-            cd "$DIR"/config/telegrambot
-            docker-compose run telegrambot /send.py "$2"
-        fi
-        ;;
-    fix-permissions)
-        if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
-            chown "1000" -R "$ODOO_FILES"
-        fi
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
-            chown "$USER" -R "$CUSTOMS_DIR"
-        fi
-
-        ;;
-    update)
-
-        $MANAGE abort-upgrade
-
-        echo "Run module update"
-        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
-            date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
-        fi
-        # running duplicate updates is really a problem;
-        $dc kill 
-        $dc rm -f
-        $dc create --force-recreate
-        if [[ "$RUN_POSTGRES" == "1" ]]; then
-            $dc up -d postgres
-            $MANAGE wait_for_container_postgres
-        fi
-
-        dcrun odoo_update /update_modules.sh "$2" || {
-            res="$?"
-            echo "Error at /update_modules.sh - aborting update process."
-            exit $res
-        }
-        $MANAGE show-install-state || exit 34
-
-        for i in $(seq 5);
-        do
-            $dc up -d
-            $MANAGE proxy-reload
-            sleep 2
-        done
-
-        df -h / # case: after update disk / was full
-        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
-            echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
-        fi
-        $MANAGE telegram-send "Update done" # &> /dev/null
-
-       ;;
-
-    show-install-state)
-        SQL=$(cat <<-EOF
-            SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');
-EOF
-            )
-        echo "Displaying dangling modules:"
-        echo "$SQL" | $MANAGE psql "$DBNAME"
-
-        has_dangling=$(echo "$SQL" | $MANAGE psql "$DBNAME" | grep "(0 rows)")
-        if [[ -z "$has_dangling" ]]; then
-            echo "Dangling modules detected - please fix installation problems and retry!"
-            exit -32
-        fi
-        ;;
-
-    get_all_langs)
-        SQL="select code from res_lang;"
-        langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
-        echo $langs
-        ;;
-
-    export-i18n|export_i18n)
-        LANG=$2
-        MODULES=$3
-        if [[ -z "$MODULES" ]]; then
-            echo "Syntax: export-i18n LANG MODULES"
-            exit -1
-        fi
-        dcrun odoo /export_i18n.sh "$LANG" "$MODULES"
-        # file now is in $DIR/run/i18n/export.po
-        ;;
-
-    import-i18n)
-        dcrun odoo /import_i18n.sh "${ALL_PARAMS[@]}"
-        ;;
-
-    remove-web-assets)
-        askcontinue
-        dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
-        echo
-        echo
-        echo "Please login as admin, so that assets are recreated."
-        echo
-        echo
-        echo
-        ;;
-    sanity_check)
-        sanity_check
-        ;;
-    make_customs)
-        set -e
-        askcontinue
-        $MANAGE kill
-        CUSTOMS=$2
-        VERSION=$3
-        "$DIR/admin/module_tools/make_customs" "$2" "$3"
-        cd "$DIR/admin/module_tools"
-        python <<- END
-import odoo_config
-odoo_config.set_customs("$2")
-END
-
-        cd "$DIR/customs/$2"
-        git submodule add https://github.com/odoo/odoo odoo
-        cd odoo
-        git checkout "$VERSION"
-        "$DIR/admin/OCA-all"
-        "$DIR/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
-        "$DIR/$MANAGE" up -d
-        chromium-browser http://localhost
-
-        ;;
-    OCA)
-        "$DIR/admin/OCA" "${ALL_PARAMS[@]}"
-        ;;
-    compose)
-        echo "Built the docker-compose file."
-        ;;
-    simplebash)
-        if [[ "${#ALL_PARAMS[@]}" == "0" ]]; then
-            bash --noprofile
-        else
-            bash --noprofile -c "${ALL_PARAMS[*]}"
-        fi
-        ;;
-    test)
-        echo 'reached the command area'
-        echo "DIR is: $DIR"
-        echo "CUSTOMS is: $CUSTOMS"
-        sudo echo "This was sudoed"
-        echo "Here is pgpassfile: $PGPASSFILE"
-        echo "Now calling simple psql"
-        SQL=$(cat <<-'            EOF'
-            select state, count(*) from ir_module_module group by state;
-            EOF
-            )
-        echo "$SQL" | $MANAGE psql "$DBNAME"
-        ;;
-    test_make_error)
-        echo "now throwing exit code"
-        exit -123
-        ;;
-    progress)
-        SQL=$(cat <<-EOF
-            select state, count(*) from ir_module_module group by state;
-EOF
-            )
-        echo "$SQL" | $MANAGE psql "$DBNAME"
-
-        ;;
-    prepare)
-        echo "All configurations prepared."
-        ;;
-    link)
-        python "$DIR/admin/link_modules"
-        ;;
-
-    patch)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR/odoo" || exit 1
-        cmd=("$DIR/admin/odoo-patch")
-        cmd+=("${ALL_PARAMS[@]}")
-        eval "${cmd[@]@Q}"
-        ;;
-    wait_for_port)
-        __wait_for_port(.......)
-        started=$(date +"%s")
-        while ! nc -q 1 "$2" "$3" </dev/null; do 
-            sleep 1;
-            now=$(date +"%s")
-            (( elapsed = ("$now" - "$started") % 5))
-            if [[ "$elapsed" == "0" ]]; then
-                echo "Waiting for $2 on port $3..."
-            fi
-
-            if [[ "$elapsed" -gt 20 ]]; then
-                echo "Waiting too long for $2 on port $3. Exiting with error-code."
-                exit 20
-            fi
-        done
-        ;;
-    wait_for_container_postgres)
-        $MANAGE wait_for_port postgres 5432
-        ;;
-
-    dirty)
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("dirty")
-        eval "${cmd[@]@Q}"
-        ;;
-    stage)
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("stage-ticket")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
-    deploy)
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("deploy-ticket")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
-    versioning)
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
-    new-ticket|switch-ticket|mergeto|deploy-ticket|stage-ticket|commit|incversions|current-ticket|open-tickets)
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("$1")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
-
-    pull)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
-
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-        if [[ ! -d ".git" ]]; then
-            echo "No local git repo - where are you?"
-            exit -1
-        fi
-
-        module="${ALL_PARAMS[0]}"
-        git subtree pull --message "SUBTREE-PULL $module" --prefix="common/$module" --squash git.mt-software.de:"/git/openerp/modules/$module" master
-        ;;
-
-    pull-all)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
-
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-        if [[ ! -d ".git" ]]; then
-            echo "No local git repo - where are you?"
-            exit -1
-        fi
-
-        all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
-        readarray -t all_tres <<<"$all_trees"
-
-        for tree in "${all_tres[@]}"; do
-            git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
-        done
-
-        ;;
-
-    push)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
-
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-
-        cd "$CUSTOMS_DIR"
-        module="${ALL_PARAMS[0]}"
-        git subtree push --prefix="common/$module" git.mt-software.de:"/git/openerp/modules/$module" master
-
-        ;;
-
-    rmpyc)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
-        find . -name *.pyc -delete
-        ;;
-
-
-    submodule)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-
-        cd "$CUSTOMS_DIR"
-        if [[ ! -d common ]]; then
-            echo "Directory common not found - are you in root?"
-            exit 1
-        fi
-
-        if [[ ! -d ".git" ]]; then
-            git init .
-        fi
-
-        for i in ${ALL_PARAMS[0]//,/ };
-        do
-            git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
-        done
-        ;;
-
-    update-ast)
-        if [[ "$PLATFORM" == "OSX" ]]; then
-            echo "Update is extreme slow on osx due to share performance. Please use following command natively:"
-            echo
-            echo
-            echo 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
-            echo
-            echo
-            exit 2
-        fi
-        cd admin/module_tools
-        echo "Updating ast - can take about one minute; slow on OSX due to share"
-        time python -c'from odoo_parser import update_cache; update_cache()'
-        ;;
-
-    migrate)
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd admin
-        LOGFILE=$CUSTOMS_DIR/migration.log
-        echo "$MANAGE"
-        python migrate.py --log-file "$LOGFILE" --manage-command "$MANAGE" "${ALL_PARAMS[@]}"
-        ;;
-
-    *)
-        echo "Invalid option $1"
-        exit -1
-        ;;
-    esac
-}
 
 
 function display_machine_tips() {
@@ -1599,10 +861,11 @@ def __try_to_set_owner(UID, path):
             os.system("chown {} '{}'".format(UID, path))
 
 def __start_postgres_and_wait():
-    dc(["up", "-d", "postgres"])
-    __wait_for_port('postgres', 5432)
+    if E("RUN_POSTGRES") == "1":
+        dc(["up", "-d", "postgres"])
+        __wait_for_port('postgres', 5432)
 
-def _set_db_ownership():
+def __set_db_ownership():
     # in development environments it is safe to set ownership, so
     # that accidently accessing the db fails
     if E("DEVMODE") == "1":
@@ -1624,6 +887,674 @@ def __rmtree(path):
         raise Exception('not allowed')
     shutil.rmtree(path)
 
+def __execute_sql(sql, dbname=None, fetchone=False):
+    if not dbname:
+        dbname = E("DBNAME")
+    conn = psycopg2.connect(
+        dbname=dbname,
+        user=E("DB_USER"),
+        password=E("DB_PWD"),
+        host=E("DB_HOST"),
+        port=E("DB_PORT")
+    )
+    result = None
+    cr = conn.cursor()
+    try:
+        cr.execute(sql)
+        if fetchone:
+            result = cr.fetchone()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cr.close()
+        conn.close()
+    return result
+
+def do_command(command, command_parameters=[]):
+    if not command:
+        return
+
+    if command == "abort-upgrade":
+        SQL = """
+            UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
+            UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
+        """
+        __execute_sql(SQL)
+
+    elif command == "setup-startup":
+        if os.path.exists("/sbin_host/initctl"):
+            raise Exception("Not impl")
+        else:
+            print "Setting up systemd script for startup"
+            servicename = os.path.expandvars("${CUSTOMS}_odoo.service")
+            file = os.path.join("/tmp_host, servicename")
+
+            # echo "Setting up upstart script in $file"
+            shutil.copy(os.path.join(dirs['odoo_home'], 'config', 'systemd'), file)
+            __replace_in_file(file, "${CUSTOMS}", E("CUSTOMS"))
+            __replace_in_file(file, "${PATH}", E("HOST_ODOO_HOME"))
+
+            print("Please execute on host now (perhaps as sudo):")
+            print("""cp /tmp/{servicename} /etc/systemd/system")
+            systemctl stop {servicename}
+            systemctl disable {servicename}
+            systemctl daemon-reload
+            systemctl reset-failed
+            systemctl enable {servicename}
+            systemctl start {servicename}
+            """.format(servicename=servicename)
+                  )
+    elif command == 'exec':
+        dcexec(command_parameters)
+
+    elif command == "backup-db":
+        if command_parameters:
+            filename = command_parameters[0]
+        else:
+            filename = datetime.now().strftime("{} %Y-%m-%d_%H%M%S.dump.gz".format(E("CUSTOMS")))
+
+        if filename.startswith("/"):
+            raise Exception("No slash for backup filename allowed")
+        print "Databasename is " + E("DBNAME")
+        filepath = os.path.join(BACKUPDIR, filename)
+        if os.path.exists(filepath):
+            os.unlink(filepath)
+        LINKPATH = os.path.join(BACKUPDIR, 'latest_dump')
+        __start_postgres_and_wait()
+        os.system('pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "{}"'.format(filepath))
+        if E("NO_BACKUP_SYMBOLIC_LINK_DUMP") != "1":
+            if os.path.exists(LINKPATH):
+                os.unlink(LINKPATH)
+            os.symlink(filepath, LINKPATH)
+        print "Dumped to ", filepath
+        __telegram_send("Database Backup $DBNAME done to $filepath")
+
+    elif command == "backup-files":
+        if command_parameters:
+            raise Exception("No parameters allowed")
+        BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=E("CUSTOMS"))
+
+        if os.path.exists(BACKUP_FILEPATH):
+            second = BACKUP_FILEPATH + ".bak"
+            if os.path.exists(second):
+                os.unlink(second)
+            shutil.move(BACKUP_FILEPATH, second)
+        dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
+        print "Backup files done to {}".format(BACKUP_FILENAME)
+
+    elif command == backup:
+        manage(["backup-db"])
+        manage(["backup-files"])
+
+    elif command == 'reset-db':
+        _askcontinue("Delete database {}".format(E("DBNAME")))
+        if E("RUN_POSTGERS") != "1":
+            print "Postgres container is disabled; cannot reset external database"
+            return
+        print "Stopping all services and creating new database"
+        print "After creation the database container is stopped. You have to start the system up then."
+        dc(['kill'])
+        dcrun(['-e INIT=1', 'postgres', '/entrypoint2.sh'])
+        print "Database initialized."
+
+    elif command == "restore-files":
+        dumpfile = command_parameters[0]
+        if not command_parameters:
+            raise Exception("Please provide the tar file-name.")
+        __do_restore_files("$dumpfile")
+
+    elif command == "restore-db":
+        for x in ["DB_HOST", "DB_PORT"]:
+            print("{}: {}".format(x, E(x)))
+        dumpfile = command_parameters[1]
+        if dumpfile.startswith("/"):
+            raise Exception("No path in dump file allowed")
+        __restore_check(dumpfile)
+        if [[ "$DEVMODE" == "1" && "$RESTORE_DEV_DB" != "1" ]]; then
+            _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
+
+        if not options.force:
+            _askcontinue("Deletes database {}!".format(E("DBNAME")))
+        }
+
+        __reset_postgres_container()
+        do_restore_db_on_postgres "$dumpfile"
+
+		remove_postgres_connections
+		__set_db_ownership
+		$MANAGE telegram-send "Database Restore $DBNAME done."
+
+		;;
+    elif command == "set_db_ownership":
+        __set_db_ownership()
+		;;
+
+    elif command == "proxy-reload":
+        local ok
+        ok=xxxx
+        [$dc ps -q proxy ] && {
+            dcexec proxy /opt/bin/hot_reload.sh
+        } || {
+            :
+        }
+		;;
+
+    elif command == "restore-dev-db":
+        if [[ "$ALLOW_RESTORE_DEV" ]]; then
+                echo "ALLOW_RESTORE_DEV must be explicitly allowed."
+                exit -1
+        fi
+        echo "Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs"
+		export RESTORE_DEV_DB=1
+		set +e
+		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
+		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
+
+        ;;
+    elif command == "turn-into-dev"
+		if [[ "$DEVMODE" != "1" ]]; then
+			echo "When applying this sql scripts, the database is not usable anymore for production environments. "
+			echo "Please set DEVMODE=1 to allow this"
+			exit -1
+		fi
+        SQLFILE=machines/postgres/turndb2dev.sql
+		$MANAGE psql "$DBNAME" < $SQLFILE
+		
+		;;
+    elif command == "psql":
+		# gets sql query from pipe
+		# check if there is a pipe argument
+		local query=""
+		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
+			query="$(cat /dev/stdin)"
+		fi	
+
+		if [[ "$RUN_POSTGRES" == "1" ]]; then
+			$dc up -d postgres
+			$MANAGE wait_for_container_postgres
+            SQLFILE="$DIR/run/sqlscripts/script.sql"
+            echo "$query" | tee "$SQLFILE"
+
+            dcexec postgres gosu postgres psql "${ALL_PARAMS[*]}" -U "$DB_USER" -f "/opt/sqlscripts/$(basename "$SQLFILE")"
+            rm "$SQLFILE"
+		else
+			export PGPASSWORD=$DB_PWD
+			echo "$query" | psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -w "${ALL_PARAMS[@]}"
+		fi 
+		;;
+
+    elif command == "springclean":
+        docker system prune
+
+        echo removing dead containers
+		docker ps -a -q | while read -r id; do
+			docker rm "$id"
+		done
+
+        echo Remove untagged images
+        docker images | grep "<none>" | awk '{ print "docker rmi " $3 }' | bash
+
+        echo "delete unwanted volumes (can pass -dry-run)"
+		docker images -q -f='dangling=true' | while read -r id; do
+			docker rmi "$id"
+		done
+        ;;
+    elif command == "up":
+        __set_db_ownership()
+        $dc up "${ALL_PARAMS[@]}"
+		$MANAGE proxy-reload
+        ;;
+    elif command == "debug":
+		# puts endless loop into container command and then attaches to it;
+		# by this, name resolution to the container still works
+        if [[ -z "$2" ]]; then
+            echo "Please give machine name as second parameter e.g. postgres, odoo"
+            exit -1
+        fi
+		set_db_ownership
+        echo "Current machine $2 is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then."
+        askcontinue
+        # shutdown current machine and start via run and port-mappings the replacement machine
+		$MANAGE kill "$2"
+        cd "$DIR"
+		DEBUGGING_COMPOSER=$DIR/run/debugging.yml
+		cp "$DIR/config/debugging/template.yml" "$DEBUGGING_COMPOSER"
+		sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${NAME}/$2/" "$DEBUGGING_COMPOSER"
+		dc="$dc -f $DEBUGGING_COMPOSER"  # command now has while loop
+
+        #execute self
+		$dc up -d "$2"
+		$MANAGE attach "$2"
+
+        ;;
+    elif command == "attach":
+        if [[ -z "$2" ]]; then
+            echo "Please give machine name as second parameter e.g. postgres, odoo"
+            exit -1
+        fi
+		display_machine_tips "$2"
+        $dc exec "$2" bash
+        ;;
+    elif command == "run":
+		set_db_ownership
+        $dc run "${ALL_PARAMS[@]}"
+		;;
+    elif command == "runbash":
+        if [[ -z "$2" ]]; then
+            echo "Please give machine name as second parameter e.g. postgres, odoo"
+            exit -1
+        fi
+		set_db_ownership
+		display_machine_tips "$2"
+        $dc run --rm "$2" bash
+        ;;
+    elif command == "rebuild":
+        cd "$DIR"
+        $dc build --no-cache "${ALL_PARAMS[@]}"
+        ;;
+    elif command == "build":
+        cd "$DIR"
+        $dc build "${ALL_PARAMS[@]}"
+        ;;
+	force-kill)
+		if [[ -z "$2" ]]; then
+			echo "Please provide machine name."
+			exit 1
+		fi
+        eval "$dc kill $2"
+		;;
+    elif command == "kill":
+        cd "$DIR"
+		if [[ -z "$2" ]]; then
+			eval "$dc stop -t 20 redis"  # persist data
+			if [[ "$RUN_POSTGRES" == "1" ]]; then
+				eval "$dc stop -t 20 postgres"
+			fi
+		fi
+		eval "$dc stop -t 10 $2 $3 $4 $5 $6 $7 $8 $9"
+        ;;
+    elif command == "stop"
+        cd "$DIR"
+        eval "$dc stop $2 $3 $4"
+        ;;
+    elif command == "logsn":
+        cd "$DIR"
+        eval "$dc logs --tail=$2 -f -t $3 $4"
+        ;;
+    elif command == "logs":
+        cd "$DIR"
+        lines="${ARGS[-1]}"
+        if [[ -n ${lines//[0-9]/} ]]; then
+            lines="5000"
+        else
+            echo "Showing last $lines lines"
+        fi
+        eval "$dc logs --tail=$lines -f -t $2 "
+        ;;
+    elif command == "logall":
+        cd "$DIR"
+        eval "$dc logs -f -t $2 $3"
+        ;;
+    elif command == "rm":
+        cd "$DIR"
+        $dc rm "${ALL_PARAMS[@]}"
+        ;;
+    elif command == "restart":
+        cd "$DIR"
+        eval "$dc stop $2"
+        eval "$dc rm -f $2"
+        eval "$dc up --force-recreate -d $2"
+        $MANAGE proxy-reload
+        ;;
+
+    elif command == "dev":
+        if [[ -n "${ALL_PARAMS[0]}" ]]; then
+            $MANAGE compose "${ALL_PARAMS[@]}"
+        fi
+        $MANAGE kill
+        $MANAGE rm -f
+        $MANAGE build
+        $MANAGE up -d
+        $MANAGE attach odoo
+        ;;
+
+    elif command == "telegram-setup":
+        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
+            export DIR="$DIR"
+            cd "$DIR"/config/telegrambot
+            docker-compose run telegrambot /setup.sh
+        fi
+        ;;
+
+    elif command == "telegram-send":
+        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
+            export DIR="$DIR"
+            cd "$DIR"/config/telegrambot
+            docker-compose run telegrambot /send.py "$2"
+        fi
+        ;;
+    elif command == "fix-permissions":
+        if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
+            chown "1000" -R "$ODOO_FILES"
+        fi
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
+            chown "$USER" -R "$CUSTOMS_DIR"
+        fi
+
+        ;;
+    elif command == "update":
+
+        $MANAGE abort-upgrade
+
+        echo "Run module update"
+        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+            date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
+        fi
+        # running duplicate updates is really a problem;
+        $dc kill 
+        $dc rm -f
+        $dc create --force-recreate
+        if [[ "$RUN_POSTGRES" == "1" ]]; then
+            $dc up -d postgres
+            $MANAGE wait_for_container_postgres
+        fi
+
+        dcrun odoo_update /update_modules.sh "$2" || {
+            res="$?"
+            echo "Error at /update_modules.sh - aborting update process."
+            exit $res
+        }
+        $MANAGE show-install-state || exit 34
+
+        for i in $(seq 5);
+        do
+            $dc up -d
+            $MANAGE proxy-reload
+            sleep 2
+        done
+
+        df -h / # case: after update disk / was full
+        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
+            echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
+        fi
+        $MANAGE telegram-send "Update done" # &> /dev/null
+
+       ;;
+
+    elif command == "show-install-state":
+        SQL=$(cat <<-EOF
+            SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');
+EOF
+            )
+        echo "Displaying dangling modules:"
+        echo "$SQL" | $MANAGE psql "$DBNAME"
+
+        has_dangling=$(echo "$SQL" | $MANAGE psql "$DBNAME" | grep "(0 rows)")
+        if [[ -z "$has_dangling" ]]; then
+            echo "Dangling modules detected - please fix installation problems and retry!"
+            exit -32
+        fi
+        ;;
+
+    elif command == "get_all_langs":
+        SQL="select code from res_lang;"
+        langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
+        echo $langs
+        ;;
+
+    elif command in ["export-i18n", "export_i18n"]:
+        LANG=$2
+        MODULES=$3
+        if [[ -z "$MODULES" ]]; then
+            echo "Syntax: export-i18n LANG MODULES"
+            exit -1
+        fi
+        dcrun odoo /export_i18n.sh "$LANG" "$MODULES"
+        # file now is in $DIR/run/i18n/export.po
+        ;;
+
+    elif command == "import-i18n":
+        dcrun odoo /import_i18n.sh "${ALL_PARAMS[@]}"
+        ;;
+
+    elif command == "remove-web-assets":
+        askcontinue
+        dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
+        echo
+        echo
+        echo "Please login as admin, so that assets are recreated."
+        echo
+        echo
+        echo
+        ;;
+    elif command == "sanity_check":
+        sanity_check
+        ;;
+    elif command == "make_customs":
+        set -e
+        askcontinue
+        $MANAGE kill
+        CUSTOMS=$2
+        VERSION=$3
+        "$DIR/admin/module_tools/make_customs" "$2" "$3"
+        cd "$DIR/admin/module_tools"
+        python <<- END
+import odoo_config
+odoo_config.set_customs("$2")
+END
+
+        cd "$DIR/customs/$2"
+        git submodule add https://github.com/odoo/odoo odoo
+        cd odoo
+        git checkout "$VERSION"
+        "$DIR/admin/OCA-all"
+        "$DIR/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
+        "$DIR/$MANAGE" up -d
+        chromium-browser http://localhost
+
+        ;;
+    elif command == "OCA":
+        "$DIR/admin/OCA" "${ALL_PARAMS[@]}"
+        ;;
+    elif command == "compose":
+        echo "Built the docker-compose file."
+        ;;
+    elif command == "simplebash":
+        if [[ "${#ALL_PARAMS[@]}" == "0" ]]; then
+            bash --noprofile
+        else
+            bash --noprofile -c "${ALL_PARAMS[*]}"
+        fi
+        ;;
+    elif command == "test":
+        echo 'reached the command area'
+        echo "DIR is: $DIR"
+        echo "CUSTOMS is: $CUSTOMS"
+        sudo echo "This was sudoed"
+        echo "Here is pgpassfile: $PGPASSFILE"
+        echo "Now calling simple psql"
+        SQL=$(cat <<-'            EOF'
+            select state, count(*) from ir_module_module group by state;
+            EOF
+            )
+        echo "$SQL" | $MANAGE psql "$DBNAME"
+        ;;
+    elif command == "test_make_error"
+        echo "now throwing exit code"
+        exit -123
+        ;;
+    elif command == "progress":
+        SQL=$(cat <<-EOF
+            select state, count(*) from ir_module_module group by state;
+EOF
+            )
+        echo "$SQL" | $MANAGE psql "$DBNAME"
+
+        ;;
+    elif command == "prepare":
+        echo "All configurations prepared."
+        ;;
+    elif command == "link":
+        python "$DIR/admin/link_modules"
+        ;;
+
+    elif command == "patch":
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR/odoo" || exit 1
+        cmd=("$DIR/admin/odoo-patch")
+        cmd+=("${ALL_PARAMS[@]}")
+        eval "${cmd[@]@Q}"
+        ;;
+    elif command == "wait_for_port":
+        host = command_parameters[0]
+        port = long(command_parameters[1])
+        __wait_for_port(host=host, port=port)
+
+    elif command == "wait_for_container_postgres":
+        __start_postgres_and_wait()
+
+    elif command == "dirty":
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("dirty")
+        eval "${cmd[@]@Q}"
+        ;;
+    elif command == "stage":
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("stage-ticket")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+    elif command == "deploy":
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("deploy-ticket")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+    elif command == "versioning":
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+    elif command in ["new-ticket","switch-ticket","mergeto","deploy-ticket","stage-ticket","commit","incversions","current-ticket","open-tickets"]
+        cmd=("$DIR/admin/module_tools/odoo-versioning")
+        cmd+=("$1")
+        cmd+=( "${ALL_PARAMS[@]}" )
+        eval "${cmd[@]@Q}"
+        ;;
+
+    elif command == pull:
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
+
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
+        if [[ ! -d ".git" ]]; then
+            echo "No local git repo - where are you?"
+            exit -1
+        fi
+
+        module="${ALL_PARAMS[0]}"
+        git subtree pull --message "SUBTREE-PULL $module" --prefix="common/$module" --squash git.mt-software.de:"/git/openerp/modules/$module" master
+        ;;
+
+    elif command == "pull-all"
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
+
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
+        if [[ ! -d ".git" ]]; then
+            echo "No local git repo - where are you?"
+            exit -1
+        fi
+
+        all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
+        readarray -t all_tres <<<"$all_trees"
+
+        for tree in "${all_tres[@]}"; do
+            git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
+        done
+
+        ;;
+
+    elif command == "push":
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
+
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
+
+        cd "$CUSTOMS_DIR"
+        module="${ALL_PARAMS[0]}"
+        git subtree push --prefix="common/$module" git.mt-software.de:"/git/openerp/modules/$module" master
+
+        ;;
+
+    elif command == "rmpyc":
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        cd "$CUSTOMS_DIR" || exit -1
+        find . -name *.pyc -delete
+        ;;
+
+
+    elif command == "submodule":
+        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+
+        if [[ -z "${ALL_PARAMS[0]}" ]]; then
+            echo "Please provide the submodule name."
+            exit -1
+        fi
+
+        cd "$CUSTOMS_DIR"
+        if [[ ! -d common ]]; then
+            echo "Directory common not found - are you in root?"
+            exit 1
+        fi
+
+        if [[ ! -d ".git" ]]; then
+            git init .
+        fi
+
+        for i in ${ALL_PARAMS[0]//,/ };
+        do
+            git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
+        done
+        ;;
+
+    elif command == "update-ast":
+        if [[ "$PLATFORM" == "OSX" ]]; then
+            echo "Update is extreme slow on osx due to share performance. Please use following command natively:"
+            echo
+            echo
+            echo 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
+            echo
+            echo
+            exit 2
+        fi
+        cd admin/module_tools
+        echo "Updating ast - can take about one minute; slow on OSX due to share"
+        time python -c'from odoo_parser import update_cache; update_cache()'
+        ;;
+
+    elif command == "migrate":
+        LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
+        python migrate.py --log-file "$LOGFILE" --manage-command "$MANAGE" "${ALL_PARAMS[@]}"
+
+    else:
+        raise Exception("Unknown Command: {} {}".format(command, " ".join(command_parameters)))
+
+def __do_restore_files(filepath):
+    # remove the postgres volume and reinit
+    dcrun(['odoo', '/bin/restore_files.sh', os.path.basename(filepath)])
 
 if __name__ == '__main__':
     _startup()
@@ -1646,7 +1577,8 @@ if __name__ == '__main__':
     _sanity_check()
 
     try:
-        # do_command()
+        command_parameters = args[1:] if len(args) > 1 else []
+        do_command(args[0], command_parameters)
         pass
     finally:
         _cleanup
