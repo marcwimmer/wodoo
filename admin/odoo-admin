@@ -484,7 +484,7 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR"/run/{config,sqlscripts,debug,proxy}
+    mkdir -p "$DIR"/run/{config,sqlscripts,debug,proxy,settings.d}
     sudo -E chown $UID:$UID -R "$DIR"/run
 
     if [[ ! -e "$DIR/run/odoo_instances" ]]; then
@@ -534,6 +534,9 @@ function prepare_yml_files_from_template_files() {
     if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/$CUSTOMS/settings" ]]; then
         ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n/etc_host/odoo/$CUSTOMS/settings")
     fi
+    for file in run/settings.d/*; do
+        ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n$DIR/$file")
+    done
 
     python ./admin/make_settings.py "$SETTINGS_FILE" "$ALL_SETTINGS"
     file2env "$SETTINGS_FILE"
