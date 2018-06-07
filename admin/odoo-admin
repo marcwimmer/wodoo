@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/usr/bin/python
 #set -u # treat unset variables as error
 # Basic Rules:
 # - if a command would stop production run, then ask to continue is done before
@@ -484,7 +485,8 @@ if [ -z "$1" ]; then
 fi
 
 function prepare_filesystem() {
-    mkdir -p "$DIR"/run/{config,sqlscripts,debug,proxy,settings.d}
+    mkdir -p "$DIR/settings.d"
+    mkdir -p "$DIR"/run/{config,sqlscripts,debug,proxy}
     sudo -E chown $UID:$UID -R "$DIR"/run
 
     if [[ ! -e "$DIR/run/odoo_instances" ]]; then
@@ -534,7 +536,7 @@ function prepare_yml_files_from_template_files() {
     if [[ "$CUSTOMS" != "" && -e "/etc_host/odoo/$CUSTOMS/settings" ]]; then
         ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n/etc_host/odoo/$CUSTOMS/settings")
     fi
-    for file in run/settings.d/*; do
+    for file in settings.d/*; do
         ALL_SETTINGS=$(echo -e "$ALL_SETTINGS\n$DIR/$file")
     done
 

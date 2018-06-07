@@ -16,6 +16,7 @@ from module_tools.odoo_config import customs_dir
 from module_tools.myconfigparser import MyConfigParser
 
 CONFIG_FILE = '/home/odoo/config_migration'
+SETTINGS_D_FILE = os.path.join(os.environ['ODOO_HOME'], 'settings.d/migration')
 
 parser = OptionParser(
     description="""Migration from odoo x to odoo y
@@ -69,7 +70,9 @@ if not options.from_version or \
     sys.exit()
 
 # Make sure that RUN_MIGRATION is temporarily set to 1
-settings = MyConfigParser("/opt/odoo/run/settings")
+from pudb import set_trace
+set_trace()
+settings = MyConfigParser(SETTINGS_D_FILE)
 settings['RUN_MIGRATION'] = '1'
 settings.write()
 
@@ -157,7 +160,7 @@ Migration to Version {}
         options.manage_command,
         "build",
     ])
-    settings.write() # reapply run_migration=1
+
     run_cmd([
         options.manage_command,
         "run",
@@ -192,3 +195,9 @@ Migration to Version {}
 
 with open(os.path.join(customs_dir(), '.version'), 'w') as f:
     f.write(options.to_version)
+
+os.unlink(SETTINGS_D_FILE)
+run_cmd([
+    options.manage_command,
+    "build",
+])
