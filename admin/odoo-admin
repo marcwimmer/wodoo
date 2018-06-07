@@ -1223,8 +1223,7 @@ def __file_default_content(path, default_content):
 def _remove_temp_directories():
     for dir in os.listdir(dirs['odoo_home']):
         if dir.startswith("tmp") and len(dir) == len('tmp......'):
-            trace()
-            shutil.rmtree(os.path.join(dirs['odoo_home']), dir)
+            __rmtree(os.path.join(dirs['odoo_home'], dir))
 
 def __makedirs(path):
     if not os.path.exists(path):
@@ -1450,14 +1449,12 @@ def __prepare_docker_compose_files(dest_file, paths):
         with open(dest_file, 'w') as f:
             f.write(conf)
     finally:
-        trace()
-        shutil.rmtree(tempdir)
+        __rmtree(tempdir)
 
 def __empty_dir(dir):
-    from pudb import set_trace
-    set_trace()
-    for f in os.listdir(dir):
-        shutil.rmtree(os.path.join(dir), f)
+    if os.path.isdir(dir):
+        for f in os.listdir(dir):
+            __rmtree(os.path.join(dir, f))
 
 def _reset_proxy_configs():
     __empty_dir(dirs['run/proxy'])
@@ -1490,7 +1487,7 @@ def _setup_proxy():
         parent_dir = os.path.dirname(filepath)
         if os.path.basename(parent_dir) == "odoo":
             subdir = "odoo"
-            os.makedirs(os.path.join(CONFIG_DIR, subdir))
+            __makedirs(os.path.join(CONFIG_DIR, subdir))
 
             if os.path.exists(files['odoo_instances']):
                 for line in __file_get_lines(files['odoo_instances']):
@@ -1505,11 +1502,11 @@ def _setup_proxy():
 
         else:
             subdir = "default"
-            os.makedirs(os.path.join(CONFIG_DIR, subdir))
-            safe_location = LOCATION.replace("\\", "_")
+            __makedirs(os.path.join(CONFIG_DIR, subdir))
+            safe_location = LOCATION.replace("\\", "_").replace("/", "")
             filename = "{location}_{location}.location".format(location=safe_location)
             CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
-            f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
+            f_add_upstream(LOCATION, UPSTREAM, CONFIG_PATH)
 
 def __file_get_lines(path):
     with open(path) as f:
@@ -1517,7 +1514,7 @@ def __file_get_lines(path):
 
 def __replace_in_file(filepath, text, replacewith):
     with open(filepath, 'r') as f:
-        content = file.readlines()
+        content = f.read()
     content = content.replace(text, replacewith)
     with open(filepath, 'w') as f:
         f.write(content)
@@ -1575,7 +1572,7 @@ def _sanity_check():
         __try_to_set_owner(E("OWNER_UID"), E("$ODOO_FILES"))
 
     # make sure the odoo_debug.txt exists; otherwise directory is created
-    __file_default_content(files['run/odoo_debug.txt'], "", append_new_line=False)
+    __file_default_content(files['run/odoo_debug.txt'], "")
 
     if not E("ODOO_MODULE_UPDATE_RUN_TESTS"):
         print("Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS")
@@ -1613,6 +1610,14 @@ def __wait_for_port(host, port, timeout=None):
     res = wait(port, host=host, timeout=timeout)
     if not res and timeout:
         raise Exception("Timeout elapsed waiting for {}:{}".format(host, port))
+
+def __rmtree(path):
+    if not path or path == '/':
+        raise Exception("Not allowed: {}".format(path))
+    if not path.startswith("/"):
+        raise Exception("Not allowed: {}".format(path))
+    if not any(path.startswith(dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
+        raise Exception('not allowed')
 
 
 if __name__ == '__main__':
