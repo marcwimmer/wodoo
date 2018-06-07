@@ -136,6 +136,8 @@ def run_cmd(cmd):
             logger.info(line)
 
     proc.wait()
+    if proc.returncode:
+        raise Exception("Error executing command, out put is above; command is:\n{}".format(" ".join(cmd)))
 
 
 for version in sorted(filter(lambda v: float(v) > float(options.from_version) and float(v) <= float(options.to_version), migrations), key=lambda x: float(x)):

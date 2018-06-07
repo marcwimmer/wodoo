@@ -585,14 +585,21 @@ EOF
         $dc exec "${ALL_PARAMS[@]}"
         ;;
     backup-db)
-        if [[ -n "$2" ]]; then
-            BACKUPDIR=$2
-			
+        set -x
+        if [[ -n "${ALL_PARAMS[0]}" ]]; then
+            filename="${ALL_PARAMS[0]}"
         else
-            BACKUPDIR=$DIR/dumps
+            filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
         fi
-        filename=$DBNAME.$(date "+%Y-%m-%d_%H%M%S").dump.gz
+        BACKUPDIR=$DIR/dumps
+        echo "Databasename is $DBNAME"
         filepath=$BACKUPDIR/$filename
+        if [[ -e "$filepath" ]]; then
+            rm "$filepath" || {
+                echo "Could not remove existing dump file"
+                exit 1
+            }
+        fi
         LINKPATH=$DIR/dumps/latest_dump
 		if [[ "$RUN_POSTGRES" == "1" ]]; then
 			$dc up -d postgres odoo
@@ -603,8 +610,11 @@ EOF
 			pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "$filepath"
 			set +e
 		fi
+        set -e
 		if [[ "$NO_BACKUP_SYMBOLIC_LINK_DUMP" != "1" ]]; then
-			/bin/rm "$LINKPATH"
+            if [[ -e "$LINKPATH" ]]; then
+                /bin/rm "$LINKPATH"
+            fi
 			ln -s "$filepath" "$LINKPATH" > /dev/null 2>&1
 		fi
         md5sum "$filepath"
