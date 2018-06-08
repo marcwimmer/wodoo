@@ -726,9 +726,10 @@ help = {
 
 }
 
-if action not in actions:
-    print "Invalid verb: {}".format(action)
-    display_help()
-    sys.exit(-1)
-else:
-    actions[action]()
+if __name__ == '__main__':
+    if action not in actions:
+        print "Invalid verb: {}".format(action)
+        display_help()
+        sys.exit(-1)
+    else:
+        actions[action]()

@@ -86,8 +86,7 @@ files = {
     'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
 }
 commands = {
-    'manage': 'admin/odoo-admin',
-    'dc': "/usr/local/bin/docker-compose -p $CUSTOMS -f $docker_compose_file",
+    'dc': ["/usr/local/bin/docker-compose", "-p", "$CUSTOMS", "-f",  "$docker_compose_file"],
 }
 
 
@@ -112,7 +111,6 @@ def _startup():
                 d[k] = os.path.join(dir, v)
     make_absolute(dirs)
     make_absolute(files)
-    make_absolute(commands)
     os.environ['ODOO_MANAGER_STARTED_ONCE'] = '1'
     os.environ['ODOO_COMPOSE_VERSION'] = "3.3"
     os.environ['PGPASSFILE'] = "/tmp/.pgpass" # must match the executing script
@@ -121,6 +119,7 @@ def _startup():
     os.environ['PGUSER'] = "$DB_USER"
     os.environ['LOCAL_WORKING_DIR'] = "{}/{}".format(os.getenv("EXTERNAL_ROOT"), os.getenv("WORKING_DIR"))  # the working directory accessible from container of this script.
     dirs['host_working_dir'] = os.environ['LOCAL_WORKING_DIR']
+    commands['dc'] = [x.replace("$docker_compose_file", files['docker_compose']) for x in commands['dc']]
 
 def __assert_file_exists(path, isdir=False):
     if not os.path.exists(path):
@@ -160,8 +159,10 @@ def __do_restore_db_on_postgres(filename, dbname):
     elif dump_type == 'zipped_sql':
         method = PSQL
         needs_unzip = True
-    elif dump_type == "pgdump":
+    elif dump_type == "zipped_pgdump":
         pass
+    elif dump_type == "unzipped_pgdump":
+        needs_unzip = False
     else:
         raise Exception("not impl: {}".format(dump_type))
 
@@ -313,20 +314,24 @@ def __get_docker_image():
 
 def __get_dump_type(filepath):
     temp = tempfile.mktemp(suffix='.check')
-    os.system('gunzip -c "{}" | head > "{}"'.format(filepath, temp))
+    os.system('gunzip -c "{}" | head > "{}" 2>/dev/null'.format(filepath, temp))
     MARKER = "PostgreSQL database dump"
-    with open(filepath, 'r') as f:
-        for i, line in enumerate(f):
-            if i > 50:
-                return
-            if MARKER in line:
-                return "plain_text"
 
     if os.path.exists(temp):
         content = __read_file(temp)
         if MARKER in content:
             return 'zipped_sql'
-    return 'pgdump'
+        if content.startswith("PGDMP"):
+            return "zipped_pgdump"
+    with open(filepath, 'r') as f:
+        for i, line in enumerate(f):
+            if i == 0 and line.startswith("PGDMP"):
+                return 'pgdump'
+            if i > 50:
+                break
+            if MARKER in line:
+                return "plain_text"
+    return 'unzipped_pgdump'
 
 def __is_container_running(machine_name):
     out = dc(['ps', '-q', machine_name])
@@ -416,9 +421,14 @@ def __rmtree(path):
         raise Exception('not allowed')
     shutil.rmtree(path)
 
-def __safeget(array, index, exception_on_missing):
+def __safeget(array, index, exception_on_missing, file_options=None):
+    if file_options:
+        if os.path.exists(file_options):
+            file_options = '\n' + '\n'.join(os.listdir(file_options))
+    file_options = file_options or ''
     if len(array) < index + 1:
-        raise Exception(exception_on_missing)
+        raise Exception(exception_on_missing + file_options)
+    return array[index]
 
 def __start_postgres_and_wait():
     if E("RUN_POSTGRES") == "1":
@@ -932,18 +942,25 @@ def _showhelp():
     print ""
 
 
+def __get_cmd():
+    cmd = commands['dc']
+    cmd = [os.path.expandvars(x) for x in cmd]
+    return cmd
+
 def dcexec(cmd):
-    cmd = [commands['dc'], 'exec', '-T'] + cmd
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
+    c = __get_cmd()
+    c = c + ['exec', '-T'] + cmd
+    out = subprocess.check_output(c, cwd=dirs['odoo_home'])
     return out
 
 def dc(cmd):
-    cmd = [commands['dc']] + cmd
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
+    c = __get_cmd() + cmd
+    out = subprocess.check_output(c, cwd=dirs['odoo_home'])
     return out
 
 def dcrun(cmd):
-    cmd = [commands['dc'], 'run', '--rm', '-T', '-e ODOO_HOME=/opt/odoo'] + cmd
+    cmd = [os.path.expandvars(x) for x in cmd]
+    cmd = ['run', '--rm', '-T', '-e ODOO_HOME=/opt/odoo'] + cmd
     return dc(cmd)
 
 def E(name):
@@ -963,9 +980,7 @@ def do_command(command, command_parameters=[], options={}):
         """
         __execute_sql(SQL)
     elif command == "dump_type":
-        from pudb import set_trace
-        set_trace()
-        dump_file = __safeget(command_parameters, 0, "Please provide the dump name")
+        dump_file = __safeget(command_parameters, 0, "Please provide the dump name", file_options=BACKUPDIR)
         dump_file = os.path.join(BACKUPDIR, dump_file)
         print __get_dump_type(dump_file)
 
