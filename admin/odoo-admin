@@ -334,9 +334,8 @@ def __get_dump_type(filepath):
     return 'unzipped_pgdump'
 
 def __is_container_running(machine_name):
-    out = dc(['ps', '-q', machine_name])
-    return machine_name in out
-
+    out = dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True)
+    return bool(out)
 
 def __makedirs(path):
     if not os.path.exists(path):
@@ -443,7 +442,7 @@ def __set_db_ownership():
             __start_postgres_and_wait()
         set_ownership_exclusive()
 
-def __system(cmd, cwd=None, suppress_out=False):
+def __system(cmd, cwd=None, suppress_out=False, raise_exception=True):
     assert isinstance(cmd, list)
 
     proc = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, cwd=cwd)
@@ -468,7 +467,7 @@ def __system(cmd, cwd=None, suppress_out=False):
             sys.stdout.flush()
 
     proc.wait()
-    if proc.returncode:
+    if proc.returncode and raise_exception:
         raise Exception("Error executing: {}".format(" ".join(cmd)))
     return out
 
@@ -972,9 +971,9 @@ def dcexec(cmd):
     out = __system(c, cwd=dirs['odoo_home'])
     return out
 
-def dc(cmd):
+def dc(cmd, suppress_out=False, raise_exception=True):
     c = __get_cmd() + cmd
-    out = __system(c, cwd=dirs['odoo_home'])
+    out = __system(c, cwd=dirs['odoo_home'], suppress_out=suppress_out, raise_exception=raise_exception)
     return out
 
 def dcrun(cmd, interactive=False):
@@ -1204,14 +1203,14 @@ Please set DEVMODE=1 to allow this""")
         dc(['kill', machine_name])
 
     elif command == "kill":
-        # TODO check if exists
         machine_name = command_parameters[0] if command_parameters else None
         if not machine_name or machine_name == 'redis':
             if __is_container_running('redis'):
                 dc(["stop", "-t 20", "redis"])  # persist data
 
         if not command_parameters:
-            dc(["stop", "-t 20", "postgres"])  # persist data
+            if __is_container_running('postgres'):
+                dc(["stop", "-t 20", "postgres"])  # persist data
         dc(['stop', '-t 10'] + command_parameters)
 
     elif command == "stop":
