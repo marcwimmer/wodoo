@@ -122,205 +122,6 @@ def _startup():
     os.environ['LOCAL_WORKING_DIR'] = "{}/{}".format(os.getenv("EXTERNAL_ROOT"), os.getenv("WORKING_DIR"))  # the working directory accessible from container of this script.
     dirs['host_working_dir'] = os.environ['LOCAL_WORKING_DIR']
 
-def _check_working_dir_customs_mismatch():
-    # Checks wether the current working is in a customs directory, but
-    # is not matching the correct customs. Avoid creating wrong tickets
-    # in the wrong customizations.
-
-    working_dir = dirs['host_working_dir']
-    while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
-        try:
-            working_dir = os.path.dirname(working_dir)
-        except Exception:
-            break
-        if not working_dir.replace("/", ""):
-            break
-
-    if os.path.isfile(os.path.join(working_dir, '.customsroot')):
-        current_customs = os.path.basename(working_dir)
-        if current_customs != os.environ['CUSTOMS']:
-            _askcontinue("""Caution: current customs is {} but you are in another customs directory: {}
-Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
-                         )
-
-
-def _askcontinue(msg=None):
-    if msg:
-        print(msg)
-    if options.force or os.getenv("FORCE_CONTINUE", "0") == "1":
-        return
-    raw_input("Continue? (Ctrl+C to break)")
-
-def _file2env(filepath):
-    if not os.path.exists(filepath):
-        return
-    config = MyConfigParser(filepath)
-    for k in config.keys():
-        os.environ[k] = config[k]
-
-def _collect_settings_files():
-    files = []
-    files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
-    for root, _, filenames in os.walk(dirs['machines']):
-        for filename in filenames:
-            if filename == 'default.settings':
-                files.append(os.path.join(root, filename))
-    customs_dir = odoo_config.customs_dir()
-    if os.path.exists(os.path.join(customs_dir, 'settings')):
-        files.append(os.path.join(customs_dir, 'settings'))
-    if os.path.exists('/etc_host/odoo/settings'):
-        files.append('/etc_host/odoo/settings')
-    if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
-        files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
-    if os.path.isdir(dirs['settings.d']):
-        for filename in os.listdir(dirs['settings.d']):
-            filepath = os.path.join(dirs['settings.d'], filename)
-            if os.path.exists(filepath):
-                files.append(filepath)
-    return files
-
-def _make_settings_file(outfile, setting_files):
-    """
-    Puts all settings into one settings file
-    """
-    c = MyConfigParser(outfile)
-    for file in setting_files:
-        if not file:
-            continue
-        c2 = MyConfigParser(file)
-        c.apply(c2)
-    c.write()
-
-def _export_settings():
-    if args and args[0] == 'compose':
-        if len(args) > 1:
-            customs = args[1]
-            if os.path.isfile(files['settings']):
-                os.unlink(files['settings'])
-            config = MyConfigParser(files['settings'])
-            config['CUSTOMS'] = customs
-            config.write()
-    _file2env(files['settings'])
-
-    if not os.path.exists(files['settings']):
-        raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
-
-    # get odoo version
-    ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
-    os.environ['ODOO_VERSION'] = ODOO_VERSION
-    if ODOO_VERSION in ["6.0", "6.1", "7.0", "8.0", "9.0"]:
-        os.environ['ODOO_PYTHON_VERSION'] = '2'
-        os.environ['ODOO_EXECUTABLE'] = 'openerp-server'
-    elif ODOO_VERSION in ["10.0"]:
-        os.environ['ODOO_PYTHON_VERSION'] = '2'
-        os.environ['ODOO_EXECUTABLE'] = 'odoo-bin'
-    elif ODOO_VERSION in ['11.0']:
-        os.environ['ODOO_PYTHON_VERSION'] = '3'
-        os.environ['ODOO_EXECUTABLE'] = 'odoo-bin'
-    else:
-        raise Exception("not impl: {}".format(ODOO_VERSION))
-
-    setting_files = _collect_settings_files()
-    _make_settings_file(files['settings'], setting_files)
-    config = MyConfigParser(files['settings'])
-    if "DBNAME" not in config.keys():
-        config['DBNAME'] = config['CUSTOMS']
-        config.write()
-    # store the host root folder
-    config['HOST_ODOO_HOME'] = E("ODOO_HOME")
-    _file2env(files['settings'])
-
-def docommand(cmd):
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
-    return out
-
-def dcexec(cmd):
-    cmd = [commands['dc'], 'exec', '-T'] + cmd
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
-    return out
-
-def dc(cmd):
-    cmd = [commands['dc']] + cmd
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
-    return out
-
-def dcrun(cmd):
-    cmd = [commands['dc'], 'run', '--rm', '-T', '-e ODOO_HOME=/opt/odoo'] + cmd
-    return dc(cmd)
-
-def _remember_customs_and_cry_if_changed():
-    # if customs changed, then restart is required
-
-    out = dcexec(['odoo env'])
-    out = [x for x in out.split('\n') if "CUSTOMS="]
-    if out:
-        current_customs = out[0].split("=")[-1]
-        if current_customs != os.environ['CUSTOMS']:
-            print("Customs changed - you need to restart and/or rebuild!")
-            docommand(commands['manage'], 'kill')
-
-def __restore_check(filepath):
-    dumpname = os.path.basename(filepath)
-
-    if E("DBNAME") not in dumpname or options.force:
-        raise Exception("The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't.")
-
-def __exists_db():
-    sql = "select count(*) from pg_database where datname='{}'".format(E("DBNAME"))
-    record = __execute_sql(sql, fetchone=True)
-    if not record or not record[0]:
-        return False
-    return True
-
-def __reset_postgres_container():
-    # remove the postgres volume and reinit
-    if E("RUN_POSTGRES") == "1":
-        print "Resettings postgres - killing data - not reversible"
-        do_command("kill")
-        dc(["rm", "-f"]) # set volume free
-        VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
-        docker_client = docker.from_env()
-        from pudb import set_trace
-        set_trace()
-        for volume in docker_client.volumes.list():
-            if volume == VOLUMENAME:
-                volume.remove()
-        do_command("reset-db")
-        __start_postgres_and_wait()
-
-def __remove_postgres_connections(DBNAME=None):
-    DBNAME = DBNAME or E("DBNAME")
-    print "Removing all current connections"
-    if __exists_db():
-        SQL = """
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '{}'
-            AND pid <> pg_backend_pid();
-        """.format(DBNAME)
-        __execute_sql(SQL, 'template1')
-
-def __print_env(vars):
-    for x in [vars]:
-        print "{}: {}".format(x, E(x))
-
-def __get_dump_type(filepath):
-    temp = tempfile.mktemp(suffix='.check')
-    os.system('gunzip -c "{}" | head > "{}"'.format(filepath, temp))
-    MARKER = "PostgreSQL database dump"
-    with open(filepath, 'r') as f:
-        for i, line in enumerate(f):
-            if i > 50:
-                return
-            if MARKER in line:
-                return "plain_text"
-
-    if os.path.exists(temp):
-        content = __read_file(temp)
-        if MARKER in content:
-            return 'zipped_sql'
-    return 'pgdump'
-
 def __assert_file_exists(path, isdir=False):
     if not os.path.exists(path):
         raise Exception("{} {} not found!".format(
@@ -373,187 +174,63 @@ def __do_restore_db_on_postgres(filename, dbname):
     print "Restoring $DBNAME using $method..."
     os.system('{} -d "{}" < ""'.format(method, E("DBNAME"), pipe))
 
-def __rename_db_drop_target(from_db, to_db):
-    if 'to_db' == 'template1':
-        raise Exception("Invalid: {}".format(to_db))
-    __remove_postgres_connections(from_db)
-    __remove_postgres_connections(to_db)
-    sql = ("""
-        SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{to_db}'
-        AND pid <> pg_backend_pid();
+def __do_restore_files(filepath):
+    # remove the postgres volume and reinit
+    dcrun(['odoo', '/bin/restore_files.sh', os.path.basename(filepath)])
 
-        drop database if exists {to_db};
-        alter database {from_db} rename to {to_db};
-        """.format(**locals()))
-    __execute_sql(sql, "template1")
-    __remove_postgres_connections(to_db)
+def __empty_dir(dir):
+    if os.path.isdir(dir):
+        for f in os.listdir(dir):
+            filepath = os.path.join(dir, f)
+            if os.path.isdir(filepath):
+                __rmtree(filepath)
+            else:
+                os.unlink(filepath)
 
-def _showhelp():
-    print "Management of odoo instance"
-    print ""
-    print "./odoo sanity-check"
-    print "Reinit fresh db:"
-    print './odoo reset-db'
-    print ""
-    print "Update:"
-    print './odoo update [module]'
-    print 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
-    print 'Minimal downtime - but there is a downtime, even for phones'
-    print ""
-    print "Please call odoo springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
-    print ""
-    print "abort-upgrade"
-    print ""
-    print "attach <machine> - attaches to running machine"
-    print ""
-    print "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
-    print ""
-    print "backup-db <backup-dir>"
-    print ""
-    print "backup-files <backup-dir>"
-    print ""
-    print "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
-    print ""
-    print "dev - starts developing in the odoo container"
-    print ""
-    print "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
-    print ""
-    print "link - links all modules into ./links"
-    print ""
-    print "telegram-setup- helps creating a permanent chatid"
-    print ""
-    print "kill - kills running machines"
-    print ""
-    print "logs - show log output; use parameter to specify machine"
-    print ""
-    print "logall - shows log til now; use parameter to specify machine"
-    print ""
-    print "springclean - remove dead containers, untagged images, delete unwanted volums"
-    print ""
-    print "rm - command"
-    print ""
-    print "compose - just build the big docker-compose file"
-    print ""
-    print "rebuild - rebuilds docker-machines - data not deleted"
-    print ""
-    print "restart - restarts docker-machine(s) - parameter name"
-    print ""
-    print "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
-    print ""
-    print "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
-    print ""
-    print "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
-    print ""
-    print "setup-startup makes skript in /etc/init/${CUSTOMS}"
-    print ""
-    print "stop - like docker-compose stop"
-    print ""
-    print "quickpull - fetch latest source, oeln - good for mako templates"
-    print ""
-    print "turn-into-dev - applies scripts to make the database a dev database"
-    print ""
-    print "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
-    print ""
-    print "up - starts all machines equivalent to service <service> start "
-    print ""
-    print "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
-    print ""
-    print "fix-permissions - sets user 1000 for odoo and odoo_files"
-    print ""
-    print "show-install-state "
-    print ""
-    print "make-customs"
-    print
-    print "patch - run without arguments for help"
-    print ""
-    print "version - run without arguments for help"
-    print ""
+def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False):
+    if not dbname:
+        dbname = E("DBNAME")
+    conn = psycopg2.connect(
+        dbname=dbname,
+        user=E("DB_USER"),
+        password=E("DB_PWD"),
+        host=E("DB_HOST"),
+        port=E("DB_PORT")
+    )
+    result = None
+    cr = conn.cursor()
+    try:
+        cr.execute(sql)
+        if fetchone:
+            result = cr.fetchone()
+        elif fetchall:
+            result = cr.fetchall()
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cr.close()
+        conn.close()
+    return result
 
-
-def _display_machine_tips(machine_name):
-    dir = os.path.join(dirs['machines'], machine_name)
-    if not os.path.isdir(dir):
-        return
-
-    for root, _dirs, files in os.walk(dirs['machines']):
-        for filename in files:
-            if filename == 'tips.txt':
-                content = __read_file(os.path.join(root, filename))
-                print ""
-                print "Please note:"
-                print "---------------"
-                print ""
-                print content
-                print ""
-                print ""
-
-def E(name):
-    if name.startswith("$"):
-        name = name[1:]
-    return os.getenv(name, "")
-
-def __read_file(path):
-    with open(path, 'r') as f:
-        return f.read()
+def __exists_db():
+    sql = "select count(*) from pg_database where datname='{}'".format(E("DBNAME"))
+    record = __execute_sql(sql, fetchone=True)
+    if not record or not record[0]:
+        return False
+    return True
 
 def __file_default_content(path, default_content):
     if not os.path.exists(path):
         with open(path, 'w') as f:
             f.write(default_content)
 
-def _remove_temp_directories():
-    for dir in os.listdir(dirs['odoo_home']):
-        if dir.startswith("tmp") and len(dir) == len('tmp......'):
-            __rmtree(os.path.join(dirs['odoo_home'], dir))
+def __file_get_lines(path):
+    with open(path) as f:
+        return f.readlines()
 
-def __makedirs(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-def _prepare_filesystem():
-    __makedirs(dirs['settings.d'])
-    for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
-        __makedirs(os.path.join(dirs['odoo_home'], 'run', 'subdir'))
-    subprocess.check_call(['sudo', '-E', 'chown', "{uid}:{uid}".format(uid=E("UID")), "-R", dirs['run']])
-
-    __file_default_content(files['odoo_instances'], "default default\n")
-
-def _prepare_yml_files_from_template_files():
-    # replace params in configuration file
-    # replace variables in docker-compose;
-
-    if E("ODOO_MANAGER_STARTED_ONCE") != "1":
-        for name in ['CUSTOMS', 'DB', 'ODOO_VERSION', 'ODOO_FILES']:
-            print("{}: {}".format(name, E(name)))
-
-    # python: find all configuration files from machines folder; extract sort
-    # by manage-sort flag and put file into run directory
-    # only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
-    #
-    # - also replace all environment variables
-    def find_files(dir):
-        PATTERN = r'docker-compose*.yml'
-        for root, _, filenames in os.walk(dirs['machines']):
-            for filename in filenames:
-                if re.findall(PATTERN, filename):
-                    yield os.path.join(root, filename)
-    _files = []
-    _files += find_files(dirs['machines'])
-    _files += find_files(odoo_config.customs_dir())
-
-    __prepare_docker_compose_files(files['docker_compose'], _files)
-
-def __get_docker_image():
-    hostname = os.environ['HOSTNAME']
-    result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
-    if result:
-        result = result[0].split("sha256:")[-1].split('"')[0]
-        return result[:12]
-    raise Exception("Image not determined")
-
-def get_run_command():
+def __get_docker_compose_run_command():
     """
     Returns bash ready command to call simplebash self by run.
 
@@ -694,10 +371,9 @@ def __prepare_docker_compose_files(dest_file, paths):
 
         return yml
 
-
-# call docker compose config to get the complete config
+    # call docker compose config to get the complete config
     files = sorted(temp_files, key=lambda x: float(x.split("/")[-1].replace("-", ".")))
-    cmdline = get_run_command()
+    cmdline = __get_docker_compose_run_command()
     cmdline.append("/usr/local/bin/docker-compose")
     for file in files:
         cmdline.append('-f')
@@ -733,15 +409,6 @@ def __prepare_docker_compose_files(dest_file, paths):
             f.write(conf)
     finally:
         __rmtree(tempdir)
-
-def __empty_dir(dir):
-    if os.path.isdir(dir):
-        for f in os.listdir(dir):
-            filepath = os.path.join(dir, f)
-            if os.path.isdir(filepath):
-                __rmtree(filepath)
-            else:
-                os.unlink(filepath)
 
 def _reset_proxy_configs():
     __empty_dir(dirs['run/proxy'])
@@ -795,9 +462,76 @@ def _setup_proxy():
             CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
             f_add_upstream(LOCATION, UPSTREAM, CONFIG_PATH)
 
-def __file_get_lines(path):
-    with open(path) as f:
-        return f.readlines()
+def __get_docker_image():
+    hostname = os.environ['HOSTNAME']
+    result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
+    if result:
+        result = result[0].split("sha256:")[-1].split('"')[0]
+        return result[:12]
+    raise Exception("Image not determined")
+
+def __get_dump_type(filepath):
+    temp = tempfile.mktemp(suffix='.check')
+    os.system('gunzip -c "{}" | head > "{}"'.format(filepath, temp))
+    MARKER = "PostgreSQL database dump"
+    with open(filepath, 'r') as f:
+        for i, line in enumerate(f):
+            if i > 50:
+                return
+            if MARKER in line:
+                return "plain_text"
+
+    if os.path.exists(temp):
+        content = __read_file(temp)
+        if MARKER in content:
+            return 'zipped_sql'
+    return 'pgdump'
+
+def __is_container_running(machine_name):
+    out = dc(['ps', '-q', machine_name])
+    return machine_name in out
+
+
+def __makedirs(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+def __print_env(vars):
+    for x in [vars]:
+        print "{}: {}".format(x, E(x))
+
+def __read_file(path):
+    with open(path, 'r') as f:
+        return f.read()
+
+def __remove_postgres_connections(DBNAME=None):
+    DBNAME = DBNAME or E("DBNAME")
+    print "Removing all current connections"
+    if __exists_db():
+        SQL = """
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '{}'
+            AND pid <> pg_backend_pid();
+        """.format(DBNAME)
+        __execute_sql(SQL, 'template1')
+
+def __rename_db_drop_target(from_db, to_db):
+    if 'to_db' == 'template1':
+        raise Exception("Invalid: {}".format(to_db))
+    __remove_postgres_connections(from_db)
+    __remove_postgres_connections(to_db)
+    sql = ("""
+        SELECT pg_terminate_backend(pg_stat_activity.pid)
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '{to_db}'
+        AND pid <> pg_backend_pid();
+
+        drop database if exists {to_db};
+        alter database {from_db} rename to {to_db};
+        """.format(**locals()))
+    __execute_sql(sql, "template1")
+    __remove_postgres_connections(to_db)
 
 def __replace_in_file(filepath, text, replacewith):
     with open(filepath, 'r') as f:
@@ -806,35 +540,255 @@ def __replace_in_file(filepath, text, replacewith):
     with open(filepath, 'w') as f:
         f.write(content)
 
-def _setup_odoo_instances():
-    if os.path.exists(files['odoo_instances']):
-        __empty_dir(dirs['proxy_configs_dir'])
+def __reset_postgres_container():
+    # remove the postgres volume and reinit
+    if E("RUN_POSTGRES") == "1":
+        print "Resettings postgres - killing data - not reversible"
+        do_command("kill")
+        dc(["rm", "-f"]) # set volume free
+        VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
+        docker_client = docker.from_env()
+        from pudb import set_trace
+        set_trace()
+        for volume in docker_client.volumes.list():
+            if volume == VOLUMENAME:
+                volume.remove()
+        do_command("reset-db")
+        __start_postgres_and_wait()
 
-        if os.path.exists(files['odoo_instances']):
-            for line in __file_get_lines(files['odoo_instances']):
-                name, domain = line.strip().split(" ")
-                config_path = os.path.join(dirs['proxy_configs_dir'], "{}.host".format(name))
-                shutil.copy(files['machines/proxy/odoo_instance.conf'], config_path)
-                if domain == "default":
-                    __replace_in_file(config_path, "__DOMAIN__", "*")
-                else:
-                    if domain:
-                        __replace_in_file(config_path, "__DOMAIN__", domain)
-            if name:
-                __replace_in_file(config_path, "__CONTAINERNAME__", name)
+def __restore_check(filepath):
+    dumpname = os.path.basename(filepath)
 
-            if name != "default":
-                # adapt the one yml file and duplicate the odoo service there;
-                # removing any ports
-                with open(files['docker_compose_file']) as f:
-                    j = yaml.load(f.read())
-                odoo = deepcopy(j['services']['odoo'])
-                if 'ports' in odoo:
-                    del odoo['ports']
-                odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
-                j['services']['odoo_{}'.format(name)] = odoo
-                with open(files['docker_compose_file'], 'w') as f:
-                    f.write(yaml.dump(j, default_flow_style=False))
+    if E("DBNAME") not in dumpname or options.force:
+        raise Exception("The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't.")
+
+def __rm_file_if_exists(path):
+    if os.path.exists(path):
+        os.unlink(path)
+
+def __rmtree(path):
+    if not path or path == '/':
+        raise Exception("Not allowed: {}".format(path))
+    if not path.startswith("/"):
+        raise Exception("Not allowed: {}".format(path))
+    if not any(path.startswith(dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
+        raise Exception('not allowed')
+    shutil.rmtree(path)
+
+def __safeget(array, index, exception_on_missing):
+    if len(array) < index + 1:
+        raise Exception(exception_on_missing)
+
+def __start_postgres_and_wait():
+    if E("RUN_POSTGRES") == "1":
+        dc(["up", "-d", "postgres"])
+        __wait_for_port('postgres', 5432)
+
+def __set_db_ownership():
+    # in development environments it is safe to set ownership, so
+    # that accidently accessing the db fails
+    if E("DEVMODE") == "1":
+        if E("RUN_POSTGRES") == "1":
+            __start_postgres_and_wait()
+        set_ownership_exclusive()
+
+def __try_to_set_owner(UID, path, recursive=False):
+    if os.path.isdir(path):
+        uid = os.stat(path).st_uid
+        if str(uid) != str(UID):
+            print("Trying to set correct permissions on $dir")
+            options = ""
+            if recursive:
+                options += " -r "
+            os.system("chown {} {} '{}'".format(UID, options, path))
+
+def __turn_into_devdb(dbname):
+    SQLFILE = files['machines/postgres/turndb2dev.sql']
+    sql = __read_file(SQLFILE)
+    __execute_sql(sql, dbname=dbname)
+
+def __wait_for_port(host, port, timeout=None):
+    res = wait(port, host=host, timeout=timeout)
+    if not res and timeout:
+        raise Exception("Timeout elapsed waiting for {}:{}".format(host, port))
+
+def _askcontinue(msg=None):
+    if msg:
+        print(msg)
+    if options.force or os.getenv("FORCE_CONTINUE", "0") == "1":
+        return
+    raw_input("Continue? (Ctrl+C to break)")
+
+def _check_working_dir_customs_mismatch():
+    # Checks wether the current working is in a customs directory, but
+    # is not matching the correct customs. Avoid creating wrong tickets
+    # in the wrong customizations.
+
+    working_dir = dirs['host_working_dir']
+    while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
+        try:
+            working_dir = os.path.dirname(working_dir)
+        except Exception:
+            break
+        if not working_dir.replace("/", ""):
+            break
+
+    if os.path.isfile(os.path.join(working_dir, '.customsroot')):
+        current_customs = os.path.basename(working_dir)
+        if current_customs != os.environ['CUSTOMS']:
+            _askcontinue("""Caution: current customs is {} but you are in another customs directory: {}
+Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
+                         )
+
+
+def _cleanup():
+    __rm_file_if_exists(files['config/docker-compose.yml'])
+    _remove_temp_directories
+
+def _collect_settings_files():
+    files = []
+    files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
+    for root, _, filenames in os.walk(dirs['machines']):
+        for filename in filenames:
+            if filename == 'default.settings':
+                files.append(os.path.join(root, filename))
+    customs_dir = odoo_config.customs_dir()
+    if os.path.exists(os.path.join(customs_dir, 'settings')):
+        files.append(os.path.join(customs_dir, 'settings'))
+    if os.path.exists('/etc_host/odoo/settings'):
+        files.append('/etc_host/odoo/settings')
+    if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
+        files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
+    if os.path.isdir(dirs['settings.d']):
+        for filename in os.listdir(dirs['settings.d']):
+            filepath = os.path.join(dirs['settings.d'], filename)
+            if os.path.exists(filepath):
+                files.append(filepath)
+    return files
+
+def _display_machine_tips(machine_name):
+    dir = os.path.join(dirs['machines'], machine_name)
+    if not os.path.isdir(dir):
+        return
+
+    for root, _dirs, files in os.walk(dirs['machines']):
+        for filename in files:
+            if filename == 'tips.txt':
+                content = __read_file(os.path.join(root, filename))
+                print ""
+                print "Please note:"
+                print "---------------"
+                print ""
+                print content
+                print ""
+                print ""
+
+def _export_settings():
+    if args and args[0] == 'compose':
+        if len(args) > 1:
+            customs = args[1]
+            if os.path.isfile(files['settings']):
+                os.unlink(files['settings'])
+            config = MyConfigParser(files['settings'])
+            config['CUSTOMS'] = customs
+            config.write()
+    _file2env(files['settings'])
+
+    if not os.path.exists(files['settings']):
+        raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
+
+    # get odoo version
+    ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
+    os.environ['ODOO_VERSION'] = ODOO_VERSION
+    if ODOO_VERSION in ["6.0", "6.1", "7.0", "8.0", "9.0"]:
+        os.environ['ODOO_PYTHON_VERSION'] = '2'
+        os.environ['ODOO_EXECUTABLE'] = 'openerp-server'
+    elif ODOO_VERSION in ["10.0"]:
+        os.environ['ODOO_PYTHON_VERSION'] = '2'
+        os.environ['ODOO_EXECUTABLE'] = 'odoo-bin'
+    elif ODOO_VERSION in ['11.0']:
+        os.environ['ODOO_PYTHON_VERSION'] = '3'
+        os.environ['ODOO_EXECUTABLE'] = 'odoo-bin'
+    else:
+        raise Exception("not impl: {}".format(ODOO_VERSION))
+
+    setting_files = _collect_settings_files()
+    _make_settings_file(files['settings'], setting_files)
+    config = MyConfigParser(files['settings'])
+    if "DBNAME" not in config.keys():
+        config['DBNAME'] = config['CUSTOMS']
+        config.write()
+    # store the host root folder
+    config['HOST_ODOO_HOME'] = E("ODOO_HOME")
+    _file2env(files['settings'])
+
+def _file2env(filepath):
+    if not os.path.exists(filepath):
+        return
+    config = MyConfigParser(filepath)
+    for k in config.keys():
+        os.environ[k] = config[k]
+
+def _make_settings_file(outfile, setting_files):
+    """
+    Puts all settings into one settings file
+    """
+    c = MyConfigParser(outfile)
+    for file in setting_files:
+        if not file:
+            continue
+        c2 = MyConfigParser(file)
+        c.apply(c2)
+    c.write()
+
+def _prepare_yml_files_from_template_files():
+    # replace params in configuration file
+    # replace variables in docker-compose;
+
+    if E("ODOO_MANAGER_STARTED_ONCE") != "1":
+        for name in ['CUSTOMS', 'DB', 'ODOO_VERSION', 'ODOO_FILES']:
+            print("{}: {}".format(name, E(name)))
+
+    # python: find all configuration files from machines folder; extract sort
+    # by manage-sort flag and put file into run directory
+    # only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
+    #
+    # - also replace all environment variables
+    def find_files(dir):
+        PATTERN = r'docker-compose*.yml'
+        for root, _, filenames in os.walk(dirs['machines']):
+            for filename in filenames:
+                if re.findall(PATTERN, filename):
+                    yield os.path.join(root, filename)
+    _files = []
+    _files += find_files(dirs['machines'])
+    _files += find_files(odoo_config.customs_dir())
+
+    __prepare_docker_compose_files(files['docker_compose'], _files)
+
+def _remember_customs_and_cry_if_changed():
+    # if customs changed, then restart is required
+
+    out = dcexec(['odoo env'])
+    out = [x for x in out.split('\n') if "CUSTOMS="]
+    if out:
+        current_customs = out[0].split("=")[-1]
+        if current_customs != os.environ['CUSTOMS']:
+            print("Customs changed - you need to restart and/or rebuild!")
+            do_command('kill')
+
+def _remove_temp_directories():
+    for dir in os.listdir(dirs['odoo_home']):
+        if dir.startswith("tmp") and len(dir) == len('tmp......'):
+            __rmtree(os.path.join(dirs['odoo_home'], dir))
+
+def _prepare_filesystem():
+    __makedirs(dirs['settings.d'])
+    for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
+        __makedirs(os.path.join(dirs['odoo_home'], 'run', 'subdir'))
+    subprocess.check_call(['sudo', '-E', 'chown', "{uid}:{uid}".format(uid=E("UID")), "-R", dirs['run']])
+
+    __file_default_content(files['odoo_instances'], "default default\n")
 
 def _sanity_check():
     if not E("RUN_POSTGRES"):
@@ -866,77 +820,136 @@ def _sanity_check():
         time.sleep(2)
 
 
-def __rm_file_if_exists(path):
-    if os.path.exists(path):
-        os.unlink(path)
+def _setup_odoo_instances():
+    if os.path.exists(files['odoo_instances']):
+        __empty_dir(dirs['proxy_configs_dir'])
 
-def _cleanup():
-    __rm_file_if_exists(files['config/docker-compose.yml'])
-    _remove_temp_directories
+        if os.path.exists(files['odoo_instances']):
+            for line in __file_get_lines(files['odoo_instances']):
+                name, domain = line.strip().split(" ")
+                config_path = os.path.join(dirs['proxy_configs_dir'], "{}.host".format(name))
+                shutil.copy(files['machines/proxy/odoo_instance.conf'], config_path)
+                if domain == "default":
+                    __replace_in_file(config_path, "__DOMAIN__", "*")
+                else:
+                    if domain:
+                        __replace_in_file(config_path, "__DOMAIN__", domain)
+            if name:
+                __replace_in_file(config_path, "__CONTAINERNAME__", name)
 
-def __try_to_set_owner(UID, path, recursive=False):
-    if os.path.isdir(path):
-        uid = os.stat(path).st_uid
-        if str(uid) != str(UID):
-            print("Trying to set correct permissions on $dir")
-            options = ""
-            if recursive:
-                options += " -r "
-            os.system("chown {} {} '{}'".format(UID, options, path))
+            if name != "default":
+                # adapt the one yml file and duplicate the odoo service there;
+                # removing any ports
+                with open(files['docker_compose_file']) as f:
+                    j = yaml.load(f.read())
+                odoo = deepcopy(j['services']['odoo'])
+                if 'ports' in odoo:
+                    del odoo['ports']
+                odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
+                j['services']['odoo_{}'.format(name)] = odoo
+                with open(files['docker_compose_file'], 'w') as f:
+                    f.write(yaml.dump(j, default_flow_style=False))
 
-def __start_postgres_and_wait():
-    if E("RUN_POSTGRES") == "1":
-        dc(["up", "-d", "postgres"])
-        __wait_for_port('postgres', 5432)
+def _showhelp():
+    print "Management of odoo instance"
+    print ""
+    print "./odoo sanity-check"
+    print "Reinit fresh db:"
+    print './odoo reset-db'
+    print ""
+    print "Update:"
+    print './odoo update [module]'
+    print 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
+    print 'Minimal downtime - but there is a downtime, even for phones'
+    print ""
+    print "Please call odoo springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
+    print ""
+    print "abort-upgrade"
+    print ""
+    print "attach <machine> - attaches to running machine"
+    print ""
+    print "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
+    print ""
+    print "backup-db <backup-dir>"
+    print ""
+    print "backup-files <backup-dir>"
+    print ""
+    print "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
+    print ""
+    print "dev - starts developing in the odoo container"
+    print ""
+    print "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
+    print ""
+    print "link - links all modules into ./links"
+    print ""
+    print "telegram-setup- helps creating a permanent chatid"
+    print ""
+    print "kill - kills running machines"
+    print ""
+    print "logs - show log output; use parameter to specify machine"
+    print ""
+    print "logall - shows log til now; use parameter to specify machine"
+    print ""
+    print "springclean - remove dead containers, untagged images, delete unwanted volums"
+    print ""
+    print "rm - command"
+    print ""
+    print "compose - just build the big docker-compose file"
+    print ""
+    print "rebuild - rebuilds docker-machines - data not deleted"
+    print ""
+    print "restart - restarts docker-machine(s) - parameter name"
+    print ""
+    print "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
+    print ""
+    print "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
+    print ""
+    print "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
+    print ""
+    print "setup-startup makes skript in /etc/init/${CUSTOMS}"
+    print ""
+    print "stop - like docker-compose stop"
+    print ""
+    print "quickpull - fetch latest source, oeln - good for mako templates"
+    print ""
+    print "turn-into-dev - applies scripts to make the database a dev database"
+    print ""
+    print "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
+    print ""
+    print "up - starts all machines equivalent to service <service> start "
+    print ""
+    print "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
+    print ""
+    print "fix-permissions - sets user 1000 for odoo and odoo_files"
+    print ""
+    print "show-install-state "
+    print ""
+    print "make-customs"
+    print
+    print "patch - run without arguments for help"
+    print ""
+    print "version - run without arguments for help"
+    print ""
 
-def __set_db_ownership():
-    # in development environments it is safe to set ownership, so
-    # that accidently accessing the db fails
-    if E("DEVMODE") == "1":
-        if E("RUN_POSTGRES") == "1":
-            __start_postgres_and_wait()
-        set_ownership_exclusive()
 
-def __wait_for_port(host, port, timeout=None):
-    res = wait(port, host=host, timeout=timeout)
-    if not res and timeout:
-        raise Exception("Timeout elapsed waiting for {}:{}".format(host, port))
+def dcexec(cmd):
+    cmd = [commands['dc'], 'exec', '-T'] + cmd
+    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
+    return out
 
-def __rmtree(path):
-    if not path or path == '/':
-        raise Exception("Not allowed: {}".format(path))
-    if not path.startswith("/"):
-        raise Exception("Not allowed: {}".format(path))
-    if not any(path.startswith(dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
-        raise Exception('not allowed')
-    shutil.rmtree(path)
+def dc(cmd):
+    cmd = [commands['dc']] + cmd
+    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
+    return out
 
-def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False):
-    if not dbname:
-        dbname = E("DBNAME")
-    conn = psycopg2.connect(
-        dbname=dbname,
-        user=E("DB_USER"),
-        password=E("DB_PWD"),
-        host=E("DB_HOST"),
-        port=E("DB_PORT")
-    )
-    result = None
-    cr = conn.cursor()
-    try:
-        cr.execute(sql)
-        if fetchone:
-            result = cr.fetchone()
-        elif fetchall:
-            result = cr.fetchall()
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        cr.close()
-        conn.close()
-    return result
+def dcrun(cmd):
+    cmd = [commands['dc'], 'run', '--rm', '-T', '-e ODOO_HOME=/opt/odoo'] + cmd
+    return dc(cmd)
+
+def E(name):
+    if name.startswith("$"):
+        name = name[1:]
+    return os.getenv(name, "")
 
 def do_command(command, command_parameters=[], options={}):
     RETURN = None
@@ -949,6 +962,12 @@ def do_command(command, command_parameters=[], options={}):
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
         __execute_sql(SQL)
+    elif command == "dump_type":
+        from pudb import set_trace
+        set_trace()
+        dump_file = __safeget(command_parameters, 0, "Please provide the dump name")
+        dump_file = os.path.join(BACKUPDIR, dump_file)
+        print __get_dump_type(dump_file)
 
     elif command == "setup-startup":
         if os.path.exists("/sbin_host/initctl"):
@@ -1494,24 +1513,6 @@ docker-compose run -it telegrambat /setup.sh
         raise Exception("Unknown Command: {} {}".format(command, " ".join(command_parameters)))
 
     return RETURN
-
-def __do_restore_files(filepath):
-    # remove the postgres volume and reinit
-    dcrun(['odoo', '/bin/restore_files.sh', os.path.basename(filepath)])
-
-def __turn_into_devdb(dbname):
-    SQLFILE = files['machines/postgres/turndb2dev.sql']
-    sql = __read_file(SQLFILE)
-    __execute_sql(sql, dbname=dbname)
-
-def __safeget(array, index, exception_on_missing):
-    if len(array) < index + 1:
-        raise Exception(exception_on_missing)
-
-def __is_container_running(machine_name):
-    out = dc(['ps', '-q', machine_name])
-    return machine_name in out
-
 
 if __name__ == '__main__':
     _startup()
