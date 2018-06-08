@@ -114,9 +114,9 @@ def _startup():
     os.environ['ODOO_MANAGER_STARTED_ONCE'] = '1'
     os.environ['ODOO_COMPOSE_VERSION'] = "3.3"
     os.environ['PGPASSFILE'] = "/tmp/.pgpass" # must match the executing script
-    os.environ['PGHOST'] = "$DB_HOST"
-    os.environ['PGPORT'] = "$DB_PORT"
-    os.environ['PGUSER'] = "$DB_USER"
+    os.environ['PGHOST'] = os.path.expandvars("$DB_HOST")
+    os.environ['PGPORT'] = os.path.expandvars("$DB_PORT")
+    os.environ['PGUSER'] = os.path.expandvars("$DB_USER")
     os.environ['LOCAL_WORKING_DIR'] = "{}/{}".format(os.getenv("EXTERNAL_ROOT"), os.getenv("WORKING_DIR"))  # the working directory accessible from container of this script.
     dirs['host_working_dir'] = os.environ['LOCAL_WORKING_DIR']
     commands['dc'] = [x.replace("$docker_compose_file", files['docker_compose']) for x in commands['dc']]
@@ -1551,6 +1551,12 @@ docker-compose run -it telegrambat /setup.sh
         from_version = __safeget(command_parameters, 0, "Provide from version!")
         to_version = __safeget(command_parameters, 1, "Provide to version!")
         do_migrate(LOGFILE, from_version, to_version, do_command)
+
+    elif command == "psql":
+        if not command_parameters:
+            command_parameters = [E("DBNAME")]
+        params = " ".join(command_parameters)
+        os.system("psql " + params)
 
     else:
         raise Exception("Unknown Command: {} {}".format(command, " ".join(command_parameters)))
