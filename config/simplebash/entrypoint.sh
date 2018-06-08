@@ -17,6 +17,11 @@ if [[ "$USER" != "root" && "$USER" != "" ]]; then
 	echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers
 fi
 
+#copy pudb
+mkdir -p /home/$USER/.config/pudb
+cp /root/.config/pudb/pudb.cfg /home/$USER/.config/pudb/pudb.cfg
+chown "$USER":"$USER" /home/$USER/.config -R
+
 
 PGPASSFILE=/tmp/.pgpass
 echo "$DB_HOST:$DB_PORT:$DBNAME:$DB_USER:$DB_PWD" > "$PGPASSFILE"

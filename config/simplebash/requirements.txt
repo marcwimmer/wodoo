@@ -9,4 +9,3 @@ graphviz
 jsonpickle
 rst2pdf
 docker-compose
-python-wait

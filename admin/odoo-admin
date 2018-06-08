@@ -432,7 +432,7 @@ def __safeget(array, index, exception_on_missing, file_options=None):
 def __start_postgres_and_wait():
     if E("RUN_POSTGRES") == "1":
         dc(["up", "-d", "postgres"])
-        __wait_for_port('postgres', 5432)
+        __wait_for_port(E("DB_HOST"), long(E("DB_PORT")), timeout=30)
 
 def __set_db_ownership():
     # in development environments it is safe to set ownership, so
@@ -487,7 +487,7 @@ def __turn_into_devdb(dbname):
     __execute_sql(sql, dbname=dbname)
 
 def __wait_for_port(host, port, timeout=None):
-    res = wait(port, host=host, timeout=timeout)
+    res = wait.tcp.open(port, host=host, timeout=timeout)
     if not res and timeout:
         raise Exception("Timeout elapsed waiting for {}:{}".format(host, port))
 
@@ -1033,8 +1033,6 @@ def do_command(command, command_parameters=[], options={}):
         dcexec(command_parameters)
 
     elif command == "backup-db":
-        from pudb import set_trace
-        set_trace()
         if command_parameters:
             filename = command_parameters[0]
         else:
@@ -1050,9 +1048,14 @@ def do_command(command, command_parameters=[], options={}):
         __start_postgres_and_wait()
         os.system('pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "{}"'.format(filepath))
         if E("NO_BACKUP_SYMBOLIC_LINK_DUMP") != "1":
-            if os.path.exists(LINKPATH):
+            if os.path.islink(LINKPATH) or os.path.exists(LINKPATH):
                 os.unlink(LINKPATH)
-            os.symlink(filepath, LINKPATH)
+            __system([
+                'ln',
+                '-s',
+                os.path.basename(filepath),
+                os.path.basename(LINKPATH)
+            ], cwd=os.path.dirname(filepath))
         print "Dumped to ", filepath
         do_command('telegram-send', ["Database Backup $DBNAME done to $filepath"])
 
