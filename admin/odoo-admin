@@ -241,7 +241,7 @@ def dcexec(cmd):
 
 def dc(cmd):
     cmd = [commands['dc']] + cmd
-    out = subprocess.check_output(c, cwd=dirs['odoo_home'])
+    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
     return out
 
 def dcrun(cmd):
@@ -284,7 +284,7 @@ def __reset_postgres_container():
         set_trace()
         for volume in docker_client.volumes.list():
             if volume == VOLUMENAME:
-                v.remove()
+                volume.remove()
         do_command("reset-db")
         __start_postgres_and_wait()
 
@@ -332,7 +332,7 @@ def __do_restore_db_on_postgres(filename, dbname):
     from pudb import set_trace
     set_trace()
 
-    os.environ['DBNAME'] = DBNAME
+    os.environ['DBNAME'] = dbname
     dump_file = os.path.join(BACKUPDIR, filename)
 
     __assert_file_exists(dump_file)
@@ -346,8 +346,8 @@ def __do_restore_db_on_postgres(filename, dbname):
     PGRESTORE = "pg_restore --no-owner --no-privileges --no-acl  --single-transaction --exit-on-error " + args
     PSQL = "psql " + args
 
-    subprocess.check_call([DROPDB, DBNAME])
-    subprocess.check_call([CREATEDB, DBNAME])
+    subprocess.check_call([DROPDB, dbname])
+    subprocess.check_call([CREATEDB, dbname])
 
     method = PGRESTORE
     needs_unzip = True
@@ -371,27 +371,24 @@ def __do_restore_db_on_postgres(filename, dbname):
     else:
         pipe = dump_file
     print "Restoring $DBNAME using $method..."
-    os.system('{} -d "{}" < ""'.format(method, DBNAME, pipe))
+    os.system('{} -d "{}" < ""'.format(method, E("DBNAME"), pipe))
 
 def __rename_db_drop_target(from_db, to_db):
     if 'to_db' == 'template1':
         raise Exception("Invalid: {}".format(to_db))
-    __remove_postgres_connections(DBNAME)
-    __remove_postgres_connections(DBNAME_TARGET)
+    __remove_postgres_connections(from_db)
+    __remove_postgres_connections(to_db)
     sql = ("""
         SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{DBNAME_TARGET}'
+        WHERE pg_stat_activity.datname = '{to_db}'
         AND pid <> pg_backend_pid();
 
-        drop database if exists {DBNAME_TARGET};
-        alter database {DBNAME} rename to {DBNAME_TARGET};
-        """.format(DBNAME=DBNAME, DBNAME_TARGET=DBNAME_TARGET))
+        drop database if exists {to_db};
+        alter database {from_db} rename to {to_db};
+        """.format(**locals()))
     __execute_sql(sql, "template1")
-
-    DBNAME = DBNAME_TARGET
-    os.environ['DBNAME'] = DBNAME
-    __remove_postgres_connections(DBNAME)
+    __remove_postgres_connections(to_db)
 
 def _showhelp():
     print "Management of odoo instance"
@@ -483,7 +480,7 @@ def _display_machine_tips(machine_name):
     for root, _dirs, files in os.walk(dirs['machines']):
         for filename in files:
             if filename == 'tips.txt':
-                content == __read_file(os.path.join(root, filename))
+                content = __read_file(os.path.join(root, filename))
                 print ""
                 print "Please note:"
                 print "---------------"
@@ -496,6 +493,10 @@ def E(name):
     if name.startswith("$"):
         name = name[1:]
     return os.getenv(name, "")
+
+def __read_file(path):
+    with open(path, 'r') as f:
+        return f.read()
 
 def __file_default_content(path, default_content):
     if not os.path.exists(path):
@@ -995,24 +996,24 @@ def do_command(command, command_parameters=[], options={}):
                 os.unlink(LINKPATH)
             os.symlink(filepath, LINKPATH)
         print "Dumped to ", filepath
-        __telegram_send("Database Backup $DBNAME done to $filepath")
+        do_command('telegram-send', ["Database Backup $DBNAME done to $filepath"])
 
     elif command == "backup-files":
         if command_parameters:
             raise Exception("No parameters allowed")
         BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=E("CUSTOMS"))
 
-        if os.path.exists(BACKUP_FILEPATH):
-            second = BACKUP_FILEPATH + ".bak"
+        if os.path.exists(BACKUP_FILENAME):
+            second = BACKUP_FILENAME + ".bak"
             if os.path.exists(second):
                 os.unlink(second)
-            shutil.move(BACKUP_FILEPATH, second)
+            shutil.move(BACKUP_FILENAME, second)
         dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
         print "Backup files done to {}".format(BACKUP_FILENAME)
 
-    elif command == backup:
-        manage(["backup-db"])
-        manage(["backup-files"])
+    elif command == 'backup':
+        do_command("backup-db")
+        do_command("backup-files")
 
     elif command == 'reset-db':
         _askcontinue("Delete database {}".format(E("DBNAME")))
@@ -1047,7 +1048,7 @@ def do_command(command, command_parameters=[], options={}):
         DBNAME_RESTORING = E("DBNAME") + "_restoring"
         os.environ['DBNAME'] = DBNAME_RESTORING
 
-        config = MyConfigParser(files['settings'])
+        config = MyConfigParser(file['settings'])
         dbname = config['DBNAME']
 
         __reset_postgres_container()
@@ -1057,7 +1058,7 @@ def do_command(command, command_parameters=[], options={}):
         __rename_db_drop_target(DBNAME_RESTORING, dbname)
         __remove_postgres_connections(dbname)
         __set_db_ownership()
-        __telegram_send("Database Restore $DBNAME done.")
+        do_command('telegramsend', "Database Restore $DBNAME done.")
 
     elif command == "set_db_ownership":
         __set_db_ownership()
@@ -1075,7 +1076,7 @@ def do_command(command, command_parameters=[], options={}):
         def exec_sql(dbname):
             __turn_into_devdb(dbname)
 
-        dbname_restoring = do_command("restore-db", command_parameters, options={
+        do_command("restore-db", command_parameters, options={
             'exec_before_rename': exec_sql
         })
 
@@ -1104,25 +1105,24 @@ Please set DEVMODE=1 to allow this""")
     elif command == "debug":
         # puts endless loop into container command and then attaches to it;
         # by this, name resolution to the container still works
-        machine_name == __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
+        machine_name = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         __set_db_ownership()
         _askcontinue("Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine_name))
         # shutdown current machine and start via run and port-mappings the replacement machine
         do_command("kill", [machine_name])
-        shutil.copy(files['debugging_template'], files['debugging_composer'])
-        __replace_in_file(files['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
-        __replace_in_file(files['debugging_composer'], "${NAME}", machine_name)
-        commands['dc'] += ['-f', files['debugging_composer']]
+        shutil.copy(file['debugging_template'], file['debugging_composer'])
+        __replace_in_file(file['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
+        __replace_in_file(file['debugging_composer'], "${NAME}", machine_name)
+        commands['dc'] += ['-f', file['debugging_composer']]
 
         # execute self
         dc(['up', '-d', machine_name])
         dcexec([machine_name, 'bash'])
 
     elif command == "attach":
-        if not command_parameters:
-            raise Exception("Please give machine name as second parameter e.g. postgres, odoo")
+        machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         machine == command_parameters[0]
-        __display_machine_tips(machine)
+        _display_machine_tips(machine)
         dcexec([machine, "bash"])
 
     elif command == "run":
@@ -1130,10 +1130,9 @@ Please set DEVMODE=1 to allow this""")
         dcrun(command_parameters)
 
     elif command == "runbash":
-        if not command_parameters:
-            raise Exception("Please give machine name as second parameter e.g. postgres, odoo")
+        machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         __set_db_ownership()
-        __display_machine_tips(machine)
+        _display_machine_tips(machine)
         dcrun(['--rm', machine, 'bash'])
 
     elif command == "rebuild":
@@ -1251,7 +1250,7 @@ docker-compose run -it telegrambat /setup.sh
         if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
             with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
                 f.write("0")
-        do_command('telegram-send', "Update done")
+        do_command('telegram-send', ["Update done"])
 
     elif command == "show-install-state":
         rows = __execute_sql(
@@ -1277,7 +1276,7 @@ docker-compose run -it telegrambat /setup.sh
 
     elif command in ["export-i18n", "export_i18n"]:
         LANG = __safeget(command_parameters, 0, "Please provide lang")
-        MODULE = __safeget(command_parameters, 1, "Please provide module")
+        MODULES = __safeget(command_parameters, 1, "Please provide module")
         dcrun(['odoo', '/export_i18n.sh', LANG, MODULES])
         # file now is in $DIR/run/i18n/export.po
 
@@ -1295,11 +1294,12 @@ docker-compose run -it telegrambat /setup.sh
 
     elif command == "make_customs":
         _askcontinue()
+        admin_dir = dirs['admin']
         do_command('kill')
         CUSTOMS = __safeget(command_parameters, 0, 'Please provide customs')
         VERSION = __safeget(command_parameters, 1, "Please provide version")
         subprocess.check_output([
-            files['make_customs'],
+            file['make_customs'],
             CUSTOMS,
             VERSION
         ])
@@ -1479,7 +1479,6 @@ docker-compose run -it telegrambat /setup.sh
             print
             print
             sys.exit(2)
-        fi
         started = datetime.now()
         print "Updating ast - can take about one minute; slow on OSX due to share"
         update_cache()
@@ -1502,7 +1501,7 @@ def __do_restore_files(filepath):
 
 def __turn_into_devdb(dbname):
     SQLFILE = files['machines/postgres/turndb2dev.sql']
-    sql == __read_file(SQLFILE)
+    sql = __read_file(SQLFILE)
     __execute_sql(sql, dbname=dbname)
 
 def __safeget(array, index, exception_on_missing):
@@ -1533,7 +1532,7 @@ if __name__ == '__main__':
         _setup_proxy()
         _setup_odoo_instances()
     elif not args:
-        _show_help()
+        _showhelp()
     _sanity_check()
 
     try:
