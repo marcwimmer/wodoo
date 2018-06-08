@@ -65,15 +65,19 @@ dirs = {
     'machines': 'machines',
     'machines/proxy': 'machines/proxy',
     'customs': '',
+    'telegrambot': 'config/telegrambat',
 }
 
 files = {
     'docker_compose': 'run/docker-compose.yml',
+    'debugging_template': 'config/debugging/template.yml',
+    'debugging_composer': 'run/debugging.yml',
     'settings': 'run/settings',
     'odoo_instances': 'run/odoo_instances',
     'config/docker-compose.yml': 'config/docker-compose.yml',
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
     'machines/proxy/odoo_instance.conf': 'machines/proxy/odoo_instance.conf',
+    'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
 }
 commands = {
     'manage': 'admin/odoo-admin',
@@ -231,7 +235,7 @@ def dcexec(cmd):
 
 def dc(cmd):
     cmd = [commands['dc']] + cmd
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
+    out = subprocess.check_output(c, cwd=dirs['odoo_home'])
     return out
 
 def dcrun(cmd):
@@ -262,7 +266,7 @@ def __exists_db():
         return False
     return True
 
-def reset_postgres_container():
+def __reset_postgres_container():
     # remove the postgres volume and reinit
     if E("RUN_POSTGRES") == "1":
         print "Resettings postgres - killing data - not reversible"
@@ -278,7 +282,8 @@ def reset_postgres_container():
         do_command("reset-db")
         __start_postgres_and_wait()
 
-def remove_postgres_connections():
+def __remove_postgres_connections(DBNAME=None):
+    DBNAME = DBNAME or E("DBNAME")
     print "Removing all current connections"
     if __exists_db():
         SQL = """
@@ -286,75 +291,101 @@ def remove_postgres_connections():
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '{}'
             AND pid <> pg_backend_pid();
-        """.format(E("DBNAME"))
-        __execute_sql(SQL)
+        """.format(DBNAME)
+        __execute_sql(SQL, 'template1')
 
+def __asert_file_exists(filepath):
+    if not os.path.exists(filepath):
+        raise Exception("File {} not found!".format(filepath))
 
-def do_restore_db_on_postgres():
-    SUFFIX="_restoring"
-    DBNAME_TARGET="$DBNAME"
-    DBNAME="${DBNAME}${SUFFIX}"
-    export DBNAME="$DBNAME"
-    dump_file=/host/dumps/$1
-    set -e
+def __print_env(vars):
+    for x in [vars]:
+        print "{}: {}".format(x, E(x))
 
-    if [[ ! -e "$dump_file" ]]; then
-        echo "File $dump_file not found!"
-        exit 1
-    fi
+def __get_dump_type(filepath):
+    temp = tempfile.mktemp(suffix='.check')
+    os.system('gunzip -c "{}" | head > "{}"'.format(filepath, temp))
+    MARKER = "PostgreSQL database dump"
+    with open(filepath, 'r') as f:
+        for i, line in enumerate(f):
+            if i > 50:
+                return
+            if MARKER in line:
+                return "plain_text"
 
-    echo "Restoring dump on $DB_HOST"
-    echo "Using Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, ...."
-    export PGPASSWORD=$DB_PWD
-    local args="-h $DB_HOST -p $DB_PORT -U $DB_USER"
-    DROPDB="dropdb $args"
-    CREATEDB="createdb $args"
-    PGRESTORE="pg_restore --no-owner --no-privileges --no-acl  --single-transaction --exit-on-error $args"
-    PSQL="psql $args"
+    if os.path.exists(temp):
+        content = __read_file(temp)
+        if MARKER in content:
+            return 'zipped_sql'
+    return 'pgdump'
 
-    eval "$DROPDB --if-exists $DBNAME" || echo "Failed to drop $DBNAME"
-    eval "$CREATEDB $DBNAME"
+def __do_restore_db_on_postgres(filename, dbname):
+    from pudb import set_trace
+    set_trace()
 
-    method="$PGRESTORE"
-    needs_unzip=1
-    gunzip -c "$dump_file" | head | grep -q PostgreSQL.database.dump && {
-        method="$PSQL"
-    }
-    if [[ "$method" != "psql" ]]; then
-        head "$dump_file" | grep -q PostgreSQL.database.dump && {
-            needs_unzip=0
-            method="$PSQL"
-        }
-    fi
+    os.environ['DBNAME'] = DBNAME
+    dump_file = os.path.join(BACKUPDIR, filename)
 
-    if [[ "$needs_unzip" == "1" ]]; then
-        pipe=$(mktemp -u)
-        mkfifo "$pipe"
-        gunzip -c  "$dump_file" > "$pipe" &
-    else
-        pipe="$dump_file"
-    fi
-	echo "Restoring $DBNAME using $method..."
-	$method -d "$DBNAME" < "$pipe"
+    __assert_file_exists(dump_file)
 
-    remove_postgres_connections
-    sql=("
+    print("Restoring dump on {}".format(E("DB_HOST")))
+    __print_env(['DB_HOST', 'DB_PORT', 'DB_USER'])
+    os.environ['PGPASSWORD'] = E("DB_PWD")
+    args = "-h $DB_HOST -p $DB_PORT -U $DB_USER"
+    DROPDB = "dropdb --if-exists " + args
+    CREATEDB = "createdb " + args
+    PGRESTORE = "pg_restore --no-owner --no-privileges --no-acl  --single-transaction --exit-on-error " + args
+    PSQL = "psql " + args
+
+    subprocess.check_call([DROPDB, DBNAME])
+    subprocess.check_call([CREATEDB, DBNAME])
+
+    method = PGRESTORE
+    needs_unzip = True
+
+    dump_type = __get_dump_type(dump_file)
+    if dump_type == 'plain_text':
+        needs_unzip = False
+        method = PSQL
+    elif dump_type == 'zipped_sql':
+        method = PSQL
+        needs_unzip = True
+    elif dump_type == "pgdump":
+        pass
+    else:
+        raise Exception("not impl: {}".format(dump_type))
+
+    if needs_unzip:
+        pipe = tempfile.mktemp(suffix='.pipe')
+        os.system('mkfifo "{}"'.format(pipe))
+        os.system('gunzip -c  "{}" > "" &'.format(dump_file, pipe))
+    else:
+        pipe = dump_file
+    print "Restoring $DBNAME using $method..."
+    os.system('{} -d "{}" < ""'.format(method, DBNAME, pipe))
+
+def __rename_db_drop_target(from_db, to_db):
+    if 'to_db' == 'template1':
+        raise Exception("Invalid: {}".format(to_db))
+    __remove_postgres_connections(DBNAME)
+    __remove_postgres_connections(DBNAME_TARGET)
+    sql = ("""
         SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity 
-        WHERE pg_stat_activity.datname = '$DBNAME_TARGET' 
-        AND pid <> pg_backend_pid(); 
+        FROM pg_stat_activity
+        WHERE pg_stat_activity.datname = '{DBNAME_TARGET}'
+        AND pid <> pg_backend_pid();
 
-        drop database if exists $DBNAME_TARGET;
-        alter database $DBNAME rename to $DBNAME_TARGET;
-        ")
-    echo "${sql[0]}"| $MANAGE psql template1
+        drop database if exists {DBNAME_TARGET};
+        alter database {DBNAME} rename to {DBNAME_TARGET};
+        """.format(DBNAME=DBNAME, DBNAME_TARGET=DBNAME_TARGET))
+    __execute_sql(sql, "template1")
 
-    DBNAME="$DBNAME_TARGET"
-    export DBNAME="$DBNAME"
-    remove_postgres_connections
+    DBNAME = DBNAME_TARGET
+    os.environ['DBNAME'] = DBNAME
+    __remove_postgres_connections(DBNAME)
 
 def _showhelp():
-    print Management of odoo instance
+    print "Management of odoo instance"
     print ""
     print "./odoo sanity-check"
     print "Reinit fresh db:"
@@ -434,20 +465,23 @@ def _showhelp():
     print "version - run without arguments for help"
     print ""
 
-def display_machine_tips():
-    cd "$DIR"
-    tipfile=$(find "machines" -name 'tips.txt' | grep -P "\/$1\/" | while read -r file; do
-        echo "$DIR/$file"
-    done)
-    if [[ -f "$tipfile" ]]; then
-        echo 
-        echo Please note:
-        echo ---------------
-        echo
-        cat "$tipfile"
-        echo 
-        echo
-    fi
+
+def _display_machine_tips(machine_name):
+    dir = os.path.join(dirs['machines'], machine_name)
+    if not os.path.isdir(dir):
+        return
+
+    for root, _dirs, files in os.walk(dirs['machines']):
+        for filename in files:
+            if filename == 'tips.txt':
+                content == __read_file(os.path.join(root, filename))
+                print ""
+                print "Please note:"
+                print "---------------"
+                print ""
+                print content
+                print ""
+                print ""
 
 def E(name):
     if name.startswith("$"):
@@ -830,12 +864,15 @@ def _cleanup():
     __rm_file_if_exists(files['config/docker-compose.yml'])
     _remove_temp_directories
 
-def __try_to_set_owner(UID, path):
+def __try_to_set_owner(UID, path, recursive=False):
     if os.path.isdir(path):
         uid = os.stat(path).st_uid
         if str(uid) != str(UID):
             print("Trying to set correct permissions on $dir")
-            os.system("chown {} '{}'".format(UID, path))
+            options = ""
+            if recursive:
+                options += " -r "
+            os.system("chown {} {} '{}'".format(UID, options, path))
 
 def __start_postgres_and_wait():
     if E("RUN_POSTGRES") == "1":
@@ -889,9 +926,10 @@ def __execute_sql(sql, dbname=None, fetchone=False):
         conn.close()
     return result
 
-def do_command(command, command_parameters=[]):
+def do_command(command, command_parameters=[], options={}):
+    RETURN = None
     if not command:
-        return
+        return RETURN
 
     if command == "abort-upgrade":
         SQL = """
@@ -989,123 +1027,86 @@ def do_command(command, command_parameters=[]):
         if dumpfile.startswith("/"):
             raise Exception("No path in dump file allowed")
         __restore_check(dumpfile)
-        if [[ "$DEVMODE" == "1" && "$RESTORE_DEV_DB" != "1" ]]; then
+        if E("DEVMODE") == "1" and E("RESTORE_DEV_DB") != "1":
             _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 
         if not options.force:
             _askcontinue("Deletes database {}!".format(E("DBNAME")))
-        }
+
+        DBNAME_RESTORING = E("DBNAME") + "_restoring"
+        os.environ['DBNAME'] = DBNAME_RESTORING
+
+        config = MyConfigParser(files['settings'])
+        dbname = config['DBNAME']
 
         __reset_postgres_container()
-        do_restore_db_on_postgres "$dumpfile"
+        __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING)
+        if options.get("exec_before_rename", False):
+            options['exec_before_rename'](DBNAME_RESTORING)
+        __rename_db_drop_target(DBNAME_RESTORING, dbname)
+        __remove_postgres_connections(dbname)
+        __set_db_ownership()
+        __telegram_send("Database Restore $DBNAME done.")
 
-		remove_postgres_connections
-		__set_db_ownership
-		$MANAGE telegram-send "Database Restore $DBNAME done."
-
-		;;
     elif command == "set_db_ownership":
         __set_db_ownership()
-		;;
 
     elif command == "proxy-reload":
-        local ok
-        ok=xxxx
-        [$dc ps -q proxy ] && {
-            dcexec proxy /opt/bin/hot_reload.sh
-        } || {
-            :
-        }
-		;;
+        if __is_container_running('proxy'):
+            dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
     elif command == "restore-dev-db":
-        if [[ "$ALLOW_RESTORE_DEV" ]]; then
-                echo "ALLOW_RESTORE_DEV must be explicitly allowed."
-                exit -1
-        fi
-        echo "Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs"
-		export RESTORE_DEV_DB=1
-		set +e
-		$MANAGE restore-db "${ALL_PARAMS[@]}" || true # ignore restore errors like not found user and so
-		$MANAGE turn-into-dev "${ALL_PARAMS[@]}"
+        if E("ALLOW_RESTORE_DEV") != "1":
+            raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
 
-        ;;
-    elif command == "turn-into-dev"
-		if [[ "$DEVMODE" != "1" ]]; then
-			echo "When applying this sql scripts, the database is not usable anymore for production environments. "
-			echo "Please set DEVMODE=1 to allow this"
-			exit -1
-		fi
-        SQLFILE=machines/postgres/turndb2dev.sql
-		$MANAGE psql "$DBNAME" < $SQLFILE
-		
-		;;
-    elif command == "psql":
-		# gets sql query from pipe
-		# check if there is a pipe argument
-		local query=""
-		if [[ ! -t 0 ]]; then  # checks if there is pipe data https://unix.stackexchange.com/questions/33049/check-if-pipe-is-empty-and-run-a-command-on-the-data-if-it-isnt
-			query="$(cat /dev/stdin)"
-		fi	
+        print("Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs")
 
-		if [[ "$RUN_POSTGRES" == "1" ]]; then
-			$dc up -d postgres
-			$MANAGE wait_for_container_postgres
-            SQLFILE="$DIR/run/sqlscripts/script.sql"
-            echo "$query" | tee "$SQLFILE"
+        def exec_sql(dbname):
+            __turn_into_devdb(dbname)
 
-            dcexec postgres gosu postgres psql "${ALL_PARAMS[*]}" -U "$DB_USER" -f "/opt/sqlscripts/$(basename "$SQLFILE")"
-            rm "$SQLFILE"
-		else
-			export PGPASSWORD=$DB_PWD
-			echo "$query" | psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -w "${ALL_PARAMS[@]}"
-		fi 
-		;;
+        dbname_restoring = do_command("restore-db", command_parameters, options={
+            'exec_before_rename': exec_sql
+        })
+
+    elif command == "turn-into-dev":
+        if E("DEVMODE") != "1":
+            raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
+Please set DEVMODE=1 to allow this""")
+        __turn_into_devdb(E("DBNAME"))
 
     elif command == "springclean":
-        docker system prune
+        os.system("docker system prune")
+        print("removing dead containers")
+        os.system('docker ps -a -q | while read -r id; do docker rm "$id"; done')
 
-        echo removing dead containers
-		docker ps -a -q | while read -r id; do
-			docker rm "$id"
-		done
+        print("Remove untagged images")
+        os.system('docker images | grep "<none>" | awk \'{ print "docker rmi " $3 }\' | bash')
 
-        echo Remove untagged images
-        docker images | grep "<none>" | awk '{ print "docker rmi " $3 }' | bash
+        print("delete unwanted volumes (can pass -dry-run)")
+        os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
 
-        echo "delete unwanted volumes (can pass -dry-run)"
-		docker images -q -f='dangling=true' | while read -r id; do
-			docker rmi "$id"
-		done
-        ;;
     elif command == "up":
         __set_db_ownership()
-        $dc up "${ALL_PARAMS[@]}"
-		$MANAGE proxy-reload
-        ;;
+        dc(['up'] + command_parameters)
+        do_command("proxy_reload")
+
     elif command == "debug":
-		# puts endless loop into container command and then attaches to it;
-		# by this, name resolution to the container still works
-        if [[ -z "$2" ]]; then
-            echo "Please give machine name as second parameter e.g. postgres, odoo"
-            exit -1
-        fi
-		set_db_ownership
-        echo "Current machine $2 is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then."
-        askcontinue
+        # puts endless loop into container command and then attaches to it;
+        # by this, name resolution to the container still works
+        machine_name == __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
+        __set_db_ownership()
+        _askcontinue("Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine_name))
         # shutdown current machine and start via run and port-mappings the replacement machine
-		$MANAGE kill "$2"
-        cd "$DIR"
-		DEBUGGING_COMPOSER=$DIR/run/debugging.yml
-		cp "$DIR/config/debugging/template.yml" "$DEBUGGING_COMPOSER"
-		sed -i -e "s/\${CUSTOMS}/$CUSTOMS/" -e "s/\${NAME}/$2/" "$DEBUGGING_COMPOSER"
-		dc="$dc -f $DEBUGGING_COMPOSER"  # command now has while loop
+        do_command("kill", [machine_name])
+        shutil.copy(files['debugging_template'], files['debugging_composer'])
+        __replace_in_file(files['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
+        __replace_in_file(files['debugging_composer'], "${NAME}", machine_name)
+        commands['dc'] += ['-f', files['debugging_composer']]
 
-        #execute self
-		$dc up -d "$2"
-		$MANAGE attach "$2"
+        # execute self
+        dc(['up', '-d', machine_name])
+        dcexec([machine_name, 'bash'])
 
-        ;;
     elif command == "attach":
         if not command_parameters:
             raise Exception("Please give machine name as second parameter e.g. postgres, odoo")
@@ -1125,116 +1126,100 @@ def do_command(command, command_parameters=[]):
         dcrun(['--rm', machine, 'bash'])
 
     elif command == "rebuild":
-        cd "$DIR"
-        $dc build --no-cache "${ALL_PARAMS[@]}"
-        ;;
+        dc(['build', '--no-cache'] + command_parameters)
+
     elif command == "build":
-        cd "$DIR"
-        $dc build "${ALL_PARAMS[@]}"
-        ;;
-	force-kill)
-		if [[ -z "$2" ]]; then
-			echo "Please provide machine name."
-			exit 1
-		fi
-        eval "$dc kill $2"
-		;;
+        dc(['build'] + command_parameters)
+
+    elif command == "force-kill":
+        machine_name = __safeget(command_parameters, 0, "Please provide machine name")
+        dc(['kill', machine_name])
+
     elif command == "kill":
-        cd "$DIR"
-		if [[ -z "$2" ]]; then
-			eval "$dc stop -t 20 redis"  # persist data
-			if [[ "$RUN_POSTGRES" == "1" ]]; then
-				eval "$dc stop -t 20 postgres"
-			fi
-		fi
-		eval "$dc stop -t 10 $2 $3 $4 $5 $6 $7 $8 $9"
-        ;;
-    elif command == "stop"
-        cd "$DIR"
-        eval "$dc stop $2 $3 $4"
-        ;;
+        # TODO check if exists
+        machine_name = command_parameters[0] if command_parameters else None
+        if not machine_name or machine_name == 'redis':
+            if __is_container_running('redis'):
+                dc(["stop", "-t 20", "redis"])  # persist data
+
+        if not command_parameters:
+            dc(["stop", "-t 20", "postgres"])  # persist data
+        dc(['stop', '-t 10'] + command_parameters)
+
+    elif command == "stop":
+        dc(['stop'] + command_parameters)
+
     elif command == "logsn":
-        cd "$DIR"
-        eval "$dc logs --tail=$2 -f -t $3 $4"
-        ;;
+        dc(['logs', '--tail=' + command_parameters[0], '-f', '-t'] + command_parameters[1:])
+
     elif command == "logs":
-        cd "$DIR"
-        lines="${ARGS[-1]}"
-        if [[ -n ${lines//[0-9]/} ]]; then
-            lines="5000"
-        else
-            echo "Showing last $lines lines"
-        fi
-        eval "$dc logs --tail=$lines -f -t $2 "
-        ;;
+        lines = 0
+        if len(command_parameters) >= 2:
+            lines = long(command_parameters[1])
+        machine_name = command_parameters[0] if command_parameters else None
+        if lines:
+            print "Showing last {}lines".format(lines)
+
+        cmd = ['logs', '-f', '-t']
+        if lines:
+            cmd += ['--tail={}'.format(lines)]
+        if machine_name:
+            cmd += [machine_name]
+        dc(cmd)
+
     elif command == "logall":
-        cd "$DIR"
-        eval "$dc logs -f -t $2 $3"
-        ;;
+        dc(['logs', '-f', '-t'] + command_parameters)
+
     elif command == "rm":
-        cd "$DIR"
-        $dc rm "${ALL_PARAMS[@]}"
-        ;;
+        dc(['rm'] + command_parameters)
+
     elif command == "restart":
-        cd "$DIR"
-        eval "$dc stop $2"
-        eval "$dc rm -f $2"
-        eval "$dc up --force-recreate -d $2"
-        $MANAGE proxy-reload
-        ;;
+        dc(['stop'] + command_parameters)
+        dc(['rm', '-f'] + command_parameters)
+        dc(['up', '--force-recreate'] + command_parameters)
+        do_command('proxy_reload')
 
     elif command == "dev":
-        if [[ -n "${ALL_PARAMS[0]}" ]]; then
-            $MANAGE compose "${ALL_PARAMS[@]}"
-        fi
-        $MANAGE kill
-        $MANAGE rm -f
-        $MANAGE build
-        $MANAGE up -d
-        $MANAGE attach odoo
-        ;;
+        if command_parameters:
+            do_command('compose', command_parameters)
+        do_command('kill')
+        do_command('rm', ['-f'])
+        do_command('build')
+        do_command('up', ['-d'])
+        do_command('attach', ['odoo'])
 
     elif command == "telegram-setup":
-        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
-            export DIR="$DIR"
-            cd "$DIR"/config/telegrambot
-            docker-compose run telegrambot /setup.sh
-        fi
-        ;;
+        if E("TELEGRAM_ENABLED") == "1":
+            os.system("""
+cd "{dir}"
+docker-compose run -it telegrambat /setup.sh
+""".format(dir=dirs['telegrambot']))
 
     elif command == "telegram-send":
-        if [[ "$TELEGRAM_ENABLED" == "1" ]]; then
-            export DIR="$DIR"
-            cd "$DIR"/config/telegrambot
-            docker-compose run telegrambot /send.py "$2"
-        fi
-        ;;
+        if E("TELEGRAM_ENABLED") == "1":
+            os.system("""
+cd "{dir}"
+docker-compose run telegrambat /send.py "{}"
+""".format(dir=dirs['telegrambot'], __safeget(command_parameters, 0, "Please define message to send")))
+
     elif command == "fix-permissions":
-        if [[ -d "$ODOO_FILES" && -n "$ODOO_FILES" ]]; then
-            chown "1000" -R "$ODOO_FILES"
-        fi
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        if [[ -d "$CUSTOMS_DIR" && -n "$CUSTOMS_DIR" ]]; then
-            chown "$USER" -R "$CUSTOMS_DIR"
-        fi
+        if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
+            __try_to_set_owner(E("OWNER_UID", E("ODOO_FILES"), recursive=True))
+        customs_dir = odoo_config.customs_dir()
+        __try_to_set_owner(E("USER"), customs_dir, recursive=True)
 
-        ;;
     elif command == "update":
+        do_command('abort-upgrade')
+        print("Run module update")
+        if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
+            with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
+                f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-        $MANAGE abort-upgrade
-
-        echo "Run module update"
-        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
-            date +%s > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
-        fi
         # running duplicate updates is really a problem;
-        $dc kill
-        $dc rm -f
-        $dc create --force-recreate
-        if [[ "$RUN_POSTGRES" == "1" ]]; then
-            $dc up -d postgres
-            $MANAGE wait_for_container_postgres
-        fi
+        do_command('kill')
+        dc(['rm', '-f'])
+        dc(['create', '--force-recreate'])
+        __start_postgres_and_wait()
 
         dcrun odoo_update /update_modules.sh "$2" || {
             res="$?"
@@ -1526,9 +1511,24 @@ EOF
     else:
         raise Exception("Unknown Command: {} {}".format(command, " ".join(command_parameters)))
 
+    return RETURN
+
 def __do_restore_files(filepath):
     # remove the postgres volume and reinit
     dcrun(['odoo', '/bin/restore_files.sh', os.path.basename(filepath)])
+
+def __turn_into_devdb(dbname):
+    SQLFILE = files['machines/postgres/turndb2dev.sql']
+    sql == __read_file(SQLFILE)
+    __execute_sql(sql, dbname=dbname)
+
+def __safeget(array, index, exception_on_missing):
+    if len(array) < index + 1:
+        raise Exception(exception_on_missing)
+
+def __is_container_running(machine_name):
+    out = dc(['ps', '-q', machine_name])
+    return machine_name in out
 
 if __name__ == '__main__':
     _startup()
