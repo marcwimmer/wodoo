@@ -21,6 +21,10 @@ import psycopg2
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
 from module_tools.module_tools import set_ownership_exclusive
+from module_tools.module_tools import remove_webassets
+from module_tools import odoo_versioning as versioning
+from module_tools.odoo_parser import update_cache
+from migrate import do_migrate
 
 try:
     from pudb import set_trace
@@ -55,6 +59,7 @@ if options.verbose and options.no_verbose:
     sys.exit(1)
 
 dirs = {
+    'admin': 'admin',
     'odoo_home': '',
     'proxy_configs_dir': 'run/proxy',
     'settings.d': 'run/settings.d',
@@ -69,6 +74,7 @@ dirs = {
 }
 
 files = {
+    'make_customs': 'admin/module_tools/make_customs',
     'docker_compose': 'run/docker-compose.yml',
     'debugging_template': 'config/debugging/template.yml',
     'debugging_composer': 'run/debugging.yml',
@@ -294,10 +300,6 @@ def __remove_postgres_connections(DBNAME=None):
         """.format(DBNAME)
         __execute_sql(SQL, 'template1')
 
-def __asert_file_exists(filepath):
-    if not os.path.exists(filepath):
-        raise Exception("File {} not found!".format(filepath))
-
 def __print_env(vars):
     for x in [vars]:
         print "{}: {}".format(x, E(x))
@@ -318,6 +320,13 @@ def __get_dump_type(filepath):
         if MARKER in content:
             return 'zipped_sql'
     return 'pgdump'
+
+def __assert_file_exists(path, isdir=False):
+    if not os.path.exists(path):
+        raise Exception("{} {} not found!".format(
+            'Directory' if isdir else 'File',
+            path
+        ))
 
 def __do_restore_db_on_postgres(filename, dbname):
     from pudb import set_trace
@@ -901,7 +910,7 @@ def __rmtree(path):
         raise Exception('not allowed')
     shutil.rmtree(path)
 
-def __execute_sql(sql, dbname=None, fetchone=False):
+def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False):
     if not dbname:
         dbname = E("DBNAME")
     conn = psycopg2.connect(
@@ -917,6 +926,8 @@ def __execute_sql(sql, dbname=None, fetchone=False):
         cr.execute(sql)
         if fetchone:
             result = cr.fetchone()
+        elif fetchall:
+            result = cr.fetchall()
         conn.commit()
     except Exception:
         conn.rollback()
@@ -1198,9 +1209,12 @@ docker-compose run -it telegrambat /setup.sh
     elif command == "telegram-send":
         if E("TELEGRAM_ENABLED") == "1":
             os.system("""
-cd "{dir}"
-docker-compose run telegrambat /send.py "{}"
-""".format(dir=dirs['telegrambot'], __safeget(command_parameters, 0, "Please define message to send")))
+                cd "{dir}"
+                docker-compose run telegrambat /send.py "{message}"
+            """.format(
+                dir=dirs['telegrambot'],
+                message=__safeget(command_parameters, 0, "Please define message to send")
+            ))
 
     elif command == "fix-permissions":
         if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
@@ -1221,152 +1235,142 @@ docker-compose run telegrambat /send.py "{}"
         dc(['create', '--force-recreate'])
         __start_postgres_and_wait()
 
-        dcrun odoo_update /update_modules.sh "$2" || {
-            res="$?"
-            echo "Error at /update_modules.sh - aborting update process."
-            exit $res
-        }
-        $MANAGE show-install-state || exit 34
+        module = command_parameters[0] if command_parameters else ""
+        try:
+            dcrun(['odoo_update', '/update_modules.sh', module])
+        except Exception:
+            raise Exception("Error at /update_modules.sh - aborting update process.")
+        do_command('show-install-state')
 
-        for i in $(seq 5);
-        do
-            $dc up -d
-            $MANAGE proxy-reload
-            sleep 2
-        done
+        for i in range(5):
+            dc(['up', '-d'])
+            do_command('proxy-reload')
+            time.sleep(2)
 
-        df -h / # case: after update disk / was full
-        if [[ -n "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER" ]]; then
-            echo '0' > "$ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"
-        fi
-        $MANAGE telegram-send "Update done" # &> /dev/null
-
-       ;;
+        os.system('df -h /') # case: after update disk / was full
+        if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
+            with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
+                f.write("0")
+        do_command('telegram-send', "Update done")
 
     elif command == "show-install-state":
-        SQL=$(cat <<-EOF
-            SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');
-EOF
-            )
-        echo "Displaying dangling modules:"
-        echo "$SQL" | $MANAGE psql "$DBNAME"
+        rows = __execute_sql(
+            "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
+            fetchall=True
+        )
+        print("Displaying dangling modules:")
+        for row in rows:
+            print("{}: {}".format(row[0], row[1]))
 
-        has_dangling=$(echo "$SQL" | $MANAGE psql "$DBNAME" | grep "(0 rows)")
-        if [[ -z "$has_dangling" ]]; then
-            echo "Dangling modules detected - please fix installation problems and retry!"
-            exit -32
-        fi
-        ;;
+        if len(rows):
+            raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
     elif command == "get_all_langs":
-        SQL="select code from res_lang;"
-        langs=$(echo "$SQL" | $MANAGE psql --tuples-only "$DBNAME")
-        echo $langs
-        ;;
+        langs = [x[0] for x in __execute_sql(
+            "select code from res_lang;",
+            fetchall=True
+        )]
+        RETURN = langs
+        SQL = "select code from res_lang;"
+        for lang in langs:
+            print(lang)
 
     elif command in ["export-i18n", "export_i18n"]:
-        LANG=$2
-        MODULES=$3
-        if [[ -z "$MODULES" ]]; then
-            echo "Syntax: export-i18n LANG MODULES"
-            exit -1
-        fi
-        dcrun odoo /export_i18n.sh "$LANG" "$MODULES"
+        LANG = __safeget(command_parameters, 0, "Please provide lang")
+        MODULE = __safeget(command_parameters, 1, "Please provide module")
+        dcrun(['odoo', '/export_i18n.sh', LANG, MODULES])
         # file now is in $DIR/run/i18n/export.po
-        ;;
 
     elif command == "import-i18n":
-        dcrun odoo /import_i18n.sh "${ALL_PARAMS[@]}"
-        ;;
+        dcrun(['odoo', '/import_i18n.sh'] + command_parameters)
 
     elif command == "remove-web-assets":
-        askcontinue
-        dcrun odoo bash -c "cd ./admin/module_tools; python -c'from module_tools import remove_webassets; remove_webassets()'"
-        echo
-        echo
-        echo "Please login as admin, so that assets are recreated."
-        echo
-        echo
-        echo
-        ;;
+        _askcontinue()
+        remove_webassets()
+        if float(E("ODOO_VERSION")) <= 10.0:
+            print("Please login as admin, so that assets are recreated.")
+
     elif command == "sanity_check":
-        sanity_check
-        ;;
+        _sanity_check()
+
     elif command == "make_customs":
-        set -e
-        askcontinue
-        $MANAGE kill
-        CUSTOMS=$2
-        VERSION=$3
-        "$DIR/admin/module_tools/make_customs" "$2" "$3"
-        cd "$DIR/admin/module_tools"
-        python <<- END
-import odoo_config
-odoo_config.set_customs("$2")
-END
+        _askcontinue()
+        do_command('kill')
+        CUSTOMS = __safeget(command_parameters, 0, 'Please provide customs')
+        VERSION = __safeget(command_parameters, 1, "Please provide version")
+        subprocess.check_output([
+            files['make_customs'],
+            CUSTOMS,
+            VERSION
+        ])
+        os.environ['CUSTOMS'] = CUSTOMS
+        cwd = os.path.join(dirs['odoo_home'], 'customs', CUSTOMS)
+        subprocess.check_call([
+            "git",
+            "submodule",
+            "add",
+            "https://github.com/odoo/odoo odoo"
+        ], cwd=cwd)
+        odoo_dir = os.path.join(cwd, 'odoo')
+        subprocess.check_call([
+            'git', 'checkout', str(VERSION)
+        ], cwd=odoo_dir)
+        subprocess.check_call([
+            'git', 'checkout', str(VERSION)
+        ], cwd=admin_dir)
+        subprocess.check_call([
+            "OCA-all"
+        ], cwd=admin_dir)
+        subprocess.check_call([
+            "odoo-submodule",
+            'tools,web_modulesroduct_modules,calendar_ics',
+        ], cwd=admin_dir)
+        do_command('kill')
+        do_command('compose', [CUSTOMS])
+        do_command('up', ['-d'])
 
-        cd "$DIR/customs/$2"
-        git submodule add https://github.com/odoo/odoo odoo
-        cd odoo
-        git checkout "$VERSION"
-        "$DIR/admin/OCA-all"
-        "$DIR/admin/odoo-submodule tools,web_modulesroduct_modules,calendar_ics"
-        "$DIR/$MANAGE" up -d
-        chromium-browser http://localhost
-
-        ;;
     elif command == "OCA":
-        "$DIR/admin/OCA" "${ALL_PARAMS[@]}"
-        ;;
-    elif command == "compose":
-        echo "Built the docker-compose file."
-        ;;
-    elif command == "simplebash":
-        if [[ "${#ALL_PARAMS[@]}" == "0" ]]; then
-            bash --noprofile
-        else
-            bash --noprofile -c "${ALL_PARAMS[*]}"
-        fi
-        ;;
-    elif command == "test":
-        echo 'reached the command area'
-        echo "DIR is: $DIR"
-        echo "CUSTOMS is: $CUSTOMS"
-        sudo echo "This was sudoed"
-        echo "Here is pgpassfile: $PGPASSFILE"
-        echo "Now calling simple psql"
-        SQL=$(cat <<-'            EOF'
-            select state, count(*) from ir_module_module group by state;
-            EOF
-            )
-        echo "$SQL" | $MANAGE psql "$DBNAME"
-        ;;
-    elif command == "test_make_error"
-        echo "now throwing exit code"
-        exit -123
-        ;;
-    elif command == "progress":
-        SQL=$(cat <<-EOF
-            select state, count(*) from ir_module_module group by state;
-EOF
-            )
-        echo "$SQL" | $MANAGE psql "$DBNAME"
+        subprocess.check_call([
+            "OCA-all"
+        ] + command_parameters, cwd=dirs['admin'])
 
-        ;;
+    elif command == "compose":
+        print "Built the docker-compose file."
+    elif command == "simplebash":
+        if not command_parameters:
+            os.system("bash --noprofile")
+        else:
+            os.system("bash --noprofile -c {}".format(" ".join(command_parameters)))
+
+    elif command == "test":
+        print 'reached the command area'
+        print os.path.expandvars("CUSTOMS is: $CUSTOMS")
+        print os.path.expandvars("Here is pgpassfile: $PGPASSFILE")
+        print "Now calling simple psql"
+        __execute_sql("select state, count(*) from ir_module_module group by state;")
+
+    elif command == "test_make_error":
+        print("now throwing exit code")
+        sys.exit(123)
+    elif command == "progress":
+        for row in __execute_sql("select state, count(*) from ir_module_module group by state;", fetchall=True):
+            print "{}: {}".format(row[0], row[1])
+
     elif command == "prepare":
-        echo "All configurations prepared."
-        ;;
+        print "All configurations prepared."
     elif command == "link":
-        python "$DIR/admin/link_modules"
-        ;;
+        subprocess.check_call([
+            'python',
+            os.path.join(dirs['admin'], 'link_modules')
+        ])
 
     elif command == "patch":
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR/odoo" || exit 1
-        cmd=("$DIR/admin/odoo-patch")
-        cmd+=("${ALL_PARAMS[@]}")
-        eval "${cmd[@]@Q}"
-        ;;
+        customs_dir = dirs['customs']
+        odoo_dir = os.path.join(customs_dir, 'odoo')
+        __assert_file_exists(odoo_dir, dir=True)
+        subprocess.check_call([
+            'admin/odoo-patch'
+        ] + command_parameters, cwd=dirs['odoo_home'])
     elif command == "wait_for_port":
         host = command_parameters[0]
         port = long(command_parameters[1])
@@ -1376,137 +1380,116 @@ EOF
         __start_postgres_and_wait()
 
     elif command == "dirty":
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("dirty")
-        eval "${cmd[@]@Q}"
-        ;;
+        versioning.dirty()
     elif command == "stage":
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("stage-ticket")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
+        versioning.action_stage_ticket()
     elif command == "deploy":
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("deploy-ticket")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
+        versioning.action_deploy_ticket()
     elif command == "versioning":
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
-    elif command in ["new-ticket","switch-ticket","mergeto","deploy-ticket","stage-ticket","commit","incversions","current-ticket","open-tickets"]
-        cmd=("$DIR/admin/module_tools/odoo-versioning")
-        cmd+=("$1")
-        cmd+=( "${ALL_PARAMS[@]}" )
-        eval "${cmd[@]@Q}"
-        ;;
+        versioning.actions[command_parameters[0]](*command_parameters[1:])
+    elif command in [
+        "new-ticket",
+        "switch-ticket",
+        "mergeto",
+        "deploy-ticket",
+        "stage-ticket",
+        "commit",
+        "incversions",
+        "current-ticket",
+        "open-tickets"
+    ]:
+        versioning.actions[command](*command_parameters)
 
     elif command == "pull":
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
+        submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
+        __assert_file_exists(os.path.join(dirs['customs'], '.git'))
+        subprocess.check_call([
+            'git',
+            'subtree',
+            'pull',
+            '--message',
+            'SUBTREE-PULL {}'.format(submodule_name),
+            '--prefix'
+            'common/{}'.format(submodule_name),
+            '--squash',
+            'git.mt-software.de:"/git/openerp/modules/{}'.format(submodule_name),
+            'master'
+        ], cwd=dirs['customs'])
 
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-        if [[ ! -d ".git" ]]; then
-            echo "No local git repo - where are you?"
-            exit -1
-        fi
-
-        module="${ALL_PARAMS[0]}"
-        git subtree pull --message "SUBTREE-PULL $module" --prefix="common/$module" --squash git.mt-software.de:"/git/openerp/modules/$module" master
-        ;;
-
-    elif command == "pull-all"
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
-
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-        if [[ ! -d ".git" ]]; then
-            echo "No local git repo - where are you?"
-            exit -1
-        fi
-
-        all_trees=$(git log | grep git-subtree-dir | awk '{ print $2 }') # | awk '{ split($0,a,"/"); print a[2]}')
-        readarray -t all_tres <<<"$all_trees"
-
-        for tree in "${all_tres[@]}"; do
-            git subtree pull --message "SUBTREE-PULL $tree" --prefix="$tree" --squash # git.mt-software.de:"/git/openerp/modules/$1" master
-        done
-
-        ;;
+    elif command == "pull-all":
+        submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
+        __assert_file_exists(os.path.join(dirs['customs'], '.git'))
+        out = subprocess.check_output([
+            'git',
+            'log',
+        ]).split('\n')
+        out = filter(lambda line: 'git-subtree-dir:', out)
+        out = map(lambda line: out.strip().split(": ")[1].strip(), out)
+        for tree in out:
+            subprocess.check_call([
+                'git',
+                'subtree',
+                'pull',
+                '-message',
+                'SUBTREE-PULL {}'.format(tree),
+                '--prefix="{}"'.format(tree),
+                '--squash',
+            ], cwd=dirs['customs'])
 
     elif command == "push":
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
+        submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
+        __assert_file_exists(os.path.join(dirs['customs'], '.git'))
 
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-
-        cd "$CUSTOMS_DIR"
-        module="${ALL_PARAMS[0]}"
-        git subtree push --prefix="common/$module" git.mt-software.de:"/git/openerp/modules/$module" master
-
-        ;;
+        subprocess.check_call([
+            'git',
+            'subtree',
+            'push',
+            '--prefix="common/{}"'.format(submodule_name),
+            'git.mt-software.de:"/git/odoo/modules/{}"'.format(submodule_name),
+            'master'
+        ], cwd=dirs['customs'])
 
     elif command == "rmpyc":
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
-        cd "$CUSTOMS_DIR" || exit -1
-        find . -name *.pyc -delete
-        ;;
-
+        for root, _, files in os.walk(dirs['customs']):
+            for filename in files:
+                if filename.endswith(".pyc"):
+                    os.unlink(os.path.join(root, filename))
 
     elif command == "submodule":
-        CUSTOMS_DIR=$(get_CUSTOMS_DIR)
+        __assert_file_exists(os.path.join(dirs['customs'], '.git'))
+        __assert_file_exists(os.path.join(dirs['customs'], 'common'))
 
-        if [[ -z "${ALL_PARAMS[0]}" ]]; then
-            echo "Please provide the submodule name."
-            exit -1
-        fi
-
-        cd "$CUSTOMS_DIR"
-        if [[ ! -d common ]]; then
-            echo "Directory common not found - are you in root?"
-            exit 1
-        fi
-
-        if [[ ! -d ".git" ]]; then
-            git init .
-        fi
-
-        for i in ${ALL_PARAMS[0]//,/ };
-        do
-            git subtree add --prefix="common/$i" --squash git.mt-software.de:"/git/openerp/modules/$i" master
-        done
-        ;;
+        for submodule in command_parameters:
+            subprocess.check_call([
+                'git',
+                'subtree',
+                'add',
+                '--prefix="common/{}"'.format(submodule),
+                '--squash',
+                'git.mt-software.de:"/git/openerp/modules/{}"'.format(submodule),
+                'master',
+            ], cwd=dirs['customs'])
 
     elif command == "update-ast":
-        if [[ "$PLATFORM" == "OSX" ]]; then
-            echo "Update is extreme slow on osx due to share performance. Please use following command natively:"
-            echo
-            echo
-            echo 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
-            echo
-            echo
-            exit 2
+        if _get_platform() == PLATFORM_OSX:
+            print "Update is extreme slow on osx due to share performance. Please use following command natively:"
+            print
+            print
+            print 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
+            print
+            print
+            sys.exit(2)
         fi
-        cd admin/module_tools
-        echo "Updating ast - can take about one minute; slow on OSX due to share"
-        time python -c'from odoo_parser import update_cache; update_cache()'
-        ;;
+        started = datetime.now()
+        print "Updating ast - can take about one minute; slow on OSX due to share"
+        update_cache()
+        print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
 
     elif command == "migrate":
         LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
-        python migrate.py --log-file "$LOGFILE" --manage-command "$MANAGE" "${ALL_PARAMS[@]}"
+        from_version = __safeget(command_parameters, 0, "Provide from version!")
+        to_version = __safeget(command_parameters, 1, "Provide to version!")
+        do_migrate(LOGFILE, from_version, to_version, do_command)
 
     else:
         raise Exception("Unknown Command: {} {}".format(command, " ".join(command_parameters)))
@@ -1529,6 +1512,7 @@ def __safeget(array, index, exception_on_missing):
 def __is_container_running(machine_name):
     out = dc(['ps', '-q', machine_name])
     return machine_name in out
+
 
 if __name__ == '__main__':
     _startup()
