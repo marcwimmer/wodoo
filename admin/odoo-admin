@@ -146,8 +146,8 @@ def __do_restore_db_on_postgres(filename, dbname):
     PGRESTORE = "pg_restore --no-owner --no-privileges --no-acl  --single-transaction --exit-on-error " + args
     PSQL = "psql " + args
 
-    subprocess.check_call([DROPDB, dbname])
-    subprocess.check_call([CREATEDB, dbname])
+    __system([DROPDB, dbname])
+    __system([CREATEDB, dbname])
 
     method = PGRESTORE
     needs_unzip = True
@@ -306,7 +306,7 @@ def _setup_proxy():
 
 def __get_docker_image():
     hostname = os.environ['HOSTNAME']
-    result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
+    result = [x for x in __system(["/opt/docker/docker", "inspect", hostname], suppress_out=True).split("\n") if "\"Image\"" in x]
     if result:
         result = result[0].split("sha256:")[-1].split('"')[0]
         return result[:12]
@@ -442,6 +442,35 @@ def __set_db_ownership():
         if E("RUN_POSTGRES") == "1":
             __start_postgres_and_wait()
         set_ownership_exclusive()
+
+def __system(cmd, cwd=None, suppress_out=False):
+    assert isinstance(cmd, list)
+
+    proc = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, cwd=cwd)
+    err = proc.stderr
+    out = ""
+
+    def reader(pipe, q):
+        try:
+            with pipe:
+                for line in iter(pipe.readline, ''):
+                    q.put((pipe, line))
+        finally:
+            q.put(None)
+    q = Queue()
+    Thread(target=reader, args=[proc.stdout, q]).start()
+    Thread(target=reader, args=[proc.stderr, q]).start()
+    for source, line in iter(q.get, None):
+        if source != err:
+            out += line
+        if not suppress_out:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+    proc.wait()
+    if proc.returncode:
+        raise Exception("Error executing: {}".format(" ".join(cmd)))
+    return out
 
 def __try_to_set_owner(UID, path, recursive=False):
     if os.path.isdir(path):
@@ -718,25 +747,14 @@ def _prepare_docker_compose_files(dest_file, paths):
         cmdline.append(os.path.join(os.path.basename(tempdir), file))
     cmdline.append('config')
 
-# annotation: per symlink all subfiles/folders are linked to a path,
-# that matches the host system path
+    # annotation: per symlink all subfiles/folders are linked to a path,
+    # that matches the host system path
     shutil.move(tempdir, local_odoo_home)
     tempdir = os.path.join(local_odoo_home, os.path.basename(tempdir))
 
     try:
-        proc = subprocess.Popen(cmdline, cwd=local_odoo_home, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        conf, err = proc.communicate()
-        if err:
-            print "==================================================================="
-            print "command line: "
-            for x in cmdline:
-                print x
-            print "==================================================================="
-            print err
-            print "==================================================================="
-            raise Exception(err)
+        conf = __system(cmdline, cwd=local_odoo_home, suppress_out=True)
     except Exception:
-        print cmdline
         raise
     else:
         # post-process config config
@@ -796,7 +814,7 @@ def _prepare_filesystem():
     __makedirs(dirs['settings.d'])
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
         __makedirs(os.path.join(dirs['odoo_home'], 'run', 'subdir'))
-    subprocess.check_call(['sudo', '-E', 'chown', "{uid}:{uid}".format(uid=E("UID")), "-R", dirs['run']])
+    __system(['sudo', '-E', 'chown', "{uid}:{uid}".format(uid=E("UID")), "-R", dirs['run']])
 
     __file_default_content(files['odoo_instances'], "default default\n")
 
@@ -950,12 +968,12 @@ def __get_cmd():
 def dcexec(cmd):
     c = __get_cmd()
     c = c + ['exec', '-T'] + cmd
-    out = subprocess.check_output(c, cwd=dirs['odoo_home'])
+    out = __system(c, cwd=dirs['odoo_home'])
     return out
 
 def dc(cmd):
     c = __get_cmd() + cmd
-    out = subprocess.check_output(c, cwd=dirs['odoo_home'])
+    out = __system(c, cwd=dirs['odoo_home'])
     return out
 
 def dcrun(cmd):
@@ -1332,30 +1350,31 @@ docker-compose run -it telegrambat /setup.sh
         do_command('kill')
         CUSTOMS = __safeget(command_parameters, 0, 'Please provide customs')
         VERSION = __safeget(command_parameters, 1, "Please provide version")
-        subprocess.check_output([
+        __system([
             file['make_customs'],
             CUSTOMS,
             VERSION
         ])
         os.environ['CUSTOMS'] = CUSTOMS
         cwd = os.path.join(dirs['odoo_home'], 'customs', CUSTOMS)
-        subprocess.check_call([
+        __system([
+            file['make_customs'],
             "git",
             "submodule",
             "add",
             "https://github.com/odoo/odoo odoo"
         ], cwd=cwd)
         odoo_dir = os.path.join(cwd, 'odoo')
-        subprocess.check_call([
+        __system([
             'git', 'checkout', str(VERSION)
         ], cwd=odoo_dir)
-        subprocess.check_call([
+        __system([
             'git', 'checkout', str(VERSION)
         ], cwd=admin_dir)
-        subprocess.check_call([
+        __system([
             "OCA-all"
         ], cwd=admin_dir)
-        subprocess.check_call([
+        __system([
             "odoo-submodule",
             'tools,web_modulesroduct_modules,calendar_ics',
         ], cwd=admin_dir)
@@ -1364,7 +1383,8 @@ docker-compose run -it telegrambat /setup.sh
         do_command('up', ['-d'])
 
     elif command == "OCA":
-        subprocess.check_call([
+        __system([
+            file['make_customs'],
             "OCA-all"
         ] + command_parameters, cwd=dirs['admin'])
 
@@ -1393,7 +1413,7 @@ docker-compose run -it telegrambat /setup.sh
     elif command == "prepare":
         print "All configurations prepared."
     elif command == "link":
-        subprocess.check_call([
+        __system([
             'python',
             os.path.join(dirs['admin'], 'link_modules')
         ])
@@ -1402,7 +1422,7 @@ docker-compose run -it telegrambat /setup.sh
         customs_dir = dirs['customs']
         odoo_dir = os.path.join(customs_dir, 'odoo')
         __assert_file_exists(odoo_dir, dir=True)
-        subprocess.check_call([
+        __system([
             'admin/odoo-patch'
         ] + command_parameters, cwd=dirs['odoo_home'])
     elif command == "wait_for_port":
@@ -1437,7 +1457,7 @@ docker-compose run -it telegrambat /setup.sh
     elif command == "pull":
         submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
         __assert_file_exists(os.path.join(dirs['customs'], '.git'))
-        subprocess.check_call([
+        __system([
             'git',
             'subtree',
             'pull',
@@ -1453,14 +1473,14 @@ docker-compose run -it telegrambat /setup.sh
     elif command == "pull-all":
         submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
         __assert_file_exists(os.path.join(dirs['customs'], '.git'))
-        out = subprocess.check_output([
+        out = __system([
             'git',
             'log',
         ]).split('\n')
         out = filter(lambda line: 'git-subtree-dir:', out)
         out = map(lambda line: out.strip().split(": ")[1].strip(), out)
         for tree in out:
-            subprocess.check_call([
+            __system([
                 'git',
                 'subtree',
                 'pull',
@@ -1474,7 +1494,7 @@ docker-compose run -it telegrambat /setup.sh
         submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
         __assert_file_exists(os.path.join(dirs['customs'], '.git'))
 
-        subprocess.check_call([
+        __system([
             'git',
             'subtree',
             'push',
@@ -1494,7 +1514,7 @@ docker-compose run -it telegrambat /setup.sh
         __assert_file_exists(os.path.join(dirs['customs'], 'common'))
 
         for submodule in command_parameters:
-            subprocess.check_call([
+            __system([
                 'git',
                 'subtree',
                 'add',
