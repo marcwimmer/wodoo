@@ -554,14 +554,15 @@ def _display_machine_tips(machine_name):
     for root, _dirs, files in os.walk(dirs['machines']):
         for filename in files:
             if filename == 'tips.txt':
-                content = __read_file(os.path.join(root, filename))
-                print ""
-                print "Please note:"
-                print "---------------"
-                print ""
-                print content
-                print ""
-                print ""
+                if os.path.basename(root) == 'machine_name':
+                    content = __read_file(os.path.join(root, filename))
+                    print ""
+                    print "Please note:"
+                    print "---------------"
+                    print ""
+                    print content
+                    print ""
+                    print ""
 
 def _export_settings():
     if args and args[0] == 'compose':
@@ -976,9 +977,13 @@ def dc(cmd):
     out = __system(c, cwd=dirs['odoo_home'])
     return out
 
-def dcrun(cmd):
+def dcrun(cmd, interactive=False):
     cmd = [os.path.expandvars(x) for x in cmd]
-    cmd = ['run', '--rm', '-T', '-e ODOO_HOME=/opt/odoo'] + cmd
+    if interactive:
+        options = ''
+    else:
+        options = '-T'
+    cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
     return dc(cmd)
 
 def E(name):
@@ -1185,7 +1190,8 @@ Please set DEVMODE=1 to allow this""")
         machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         __set_db_ownership()
         _display_machine_tips(machine)
-        dcrun(['--rm', machine, 'bash'])
+        cmd = __get_cmd() + ['run', machine, 'bash']
+        os.system(" ".join(cmd))
 
     elif command == "rebuild":
         dc(['build', '--no-cache'] + command_parameters)
@@ -1390,6 +1396,7 @@ docker-compose run -it telegrambat /setup.sh
 
     elif command == "compose":
         print "Built the docker-compose file."
+
     elif command == "simplebash":
         if not command_parameters:
             os.system("bash --noprofile")
