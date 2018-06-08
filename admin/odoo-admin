@@ -1033,6 +1033,8 @@ def do_command(command, command_parameters=[], options={}):
         dcexec(command_parameters)
 
     elif command == "backup-db":
+        from pudb import set_trace
+        set_trace()
         if command_parameters:
             filename = command_parameters[0]
         else:
