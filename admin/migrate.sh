@@ -21,11 +21,10 @@ fi
 BRANCH="$1"
 CMD="$2"
 
-env
-
 cd "$ODOO_REPOS_DIRECTORY/OpenUpgrade" || exit 4
 set -e
 set -x
 git checkout "$BRANCH"
-pip install openupgradelib
-eval sudo -E -H -u "$ODOO_USER" "./$CMD"
+#pip install openupgradelib
+pip install git+https://github.com/OCA/openupgradelib.git@master --upgrade
+eval sudo -E -H -u "$ODOO_USER" "./$CMD" 
