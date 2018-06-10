@@ -449,6 +449,11 @@ def __start_postgres_and_wait():
     if E("RUN_POSTGRES") == "1":
         dc(["up", "-d", "postgres"])
         __wait_for_port(E("DB_HOST"), long(E("DB_PORT")), timeout=30)
+        __execute_sql("""
+        SELECT table_schema,table_name
+        FROM information_schema.tables
+        ORDER BY table_schema,table_name;
+        """, dbname='template1')
 
 def __set_db_ownership():
     # in development environments it is safe to set ownership, so
