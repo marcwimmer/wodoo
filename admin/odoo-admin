@@ -11,6 +11,7 @@ import yaml
 import shutil
 import tempfile
 import docker
+from retrying import retry
 from datetime import datetime
 from copy import deepcopy
 from threading import Thread
@@ -195,9 +196,17 @@ def __empty_dir(dir):
             else:
                 os.unlink(filepath)
 
-def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransaction=False):
+def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransaction=False, no_try=False):
     if not dbname:
         dbname = E("DBNAME")
+
+    # try to connecto to postgres; could startup:
+    @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
+    def try_connect():
+        __execute_sql("SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
+    if not no_try:
+        try_connect()
+
     conn = psycopg2.connect(
         dbname=dbname,
         user=E("DB_USER"),
@@ -223,9 +232,10 @@ def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransactio
         conn.close()
     return result
 
-def __exists_db():
-    sql = "select count(*) from pg_database where datname='{}'".format(E("DBNAME"))
-    record = __execute_sql(sql, fetchone=True)
+def __exists_db(dbname):
+    dbname = dbname or E("DBNAME")
+    sql = "select count(*) from pg_database where datname='{}'".format(dbname)
+    record = __execute_sql(sql, fetchone=True, dbname='template1')
     if not record or not record[0]:
         return False
     return True
@@ -360,7 +370,7 @@ def __read_file(path):
 def __remove_postgres_connections(DBNAME=None):
     DBNAME = DBNAME or E("DBNAME")
     print "Removing all current connections"
-    if __exists_db():
+    if __exists_db(DBNAME):
         SQL = """
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
@@ -374,16 +384,8 @@ def __rename_db_drop_target(from_db, to_db):
         raise Exception("Invalid: {}".format(to_db))
     __remove_postgres_connections(from_db)
     __remove_postgres_connections(to_db)
-    sql = ("""
-        SELECT pg_terminate_backend(pg_stat_activity.pid)
-        FROM pg_stat_activity
-        WHERE pg_stat_activity.datname = '{to_db}'
-        AND pid <> pg_backend_pid();
-
-        drop database if exists {to_db};
-        alter database {from_db} rename to {to_db};
-        """.format(**locals()))
-    __execute_sql(sql, "template1", notransaction=True)
+    __execute_sql("drop database if exists {to_db}".format(**locals()), "template1", notransaction=True)
+    __execute_sql("alter database {from_db} rename to {to_db};".format(**locals()), "template1", notransaction=True)
     __remove_postgres_connections(to_db)
 
 def __replace_in_file(filepath, text, replacewith):
@@ -401,16 +403,14 @@ def __reset_postgres_container():
         dc(["rm", "-f"]) # set volume free
         VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
         docker_client = docker.from_env()
-        for volume in docker_client.volumes.list():
-            if volume.name == VOLUMENAME:
-                started = datetime.now()
-                while (datetime.now() - started).seconds < 10:
-                    try:
-                        volume.remove()
-                    except Exception:
-                        time.sleep(0.5)
-                    else:
-                        break
+
+        @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
+        def remove_volume():
+            for volume in docker_client.volumes.list():
+                if volume.name == VOLUMENAME:
+                    volume.remove()
+            return True
+        remove_volume()
         dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])
         __start_postgres_and_wait()
 
@@ -1088,6 +1088,8 @@ def do_command(command, command_parameters=[], command_options={}):
         do_command('telegram-send', ["Database Backup $DBNAME done to $filepath"])
 
     elif command == "backup-files":
+        from pudb import set_trace
+        set_trace()
         if command_parameters:
             raise Exception("No parameters allowed")
         BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=E("CUSTOMS"))
@@ -1148,7 +1150,7 @@ def do_command(command, command_parameters=[], command_options={}):
         __rename_db_drop_target(DBNAME_RESTORING, dbname)
         __remove_postgres_connections(dbname)
         __set_db_ownership()
-        do_command('telegramsend', "Database Restore $DBNAME done.")
+        do_command('telegram-send', ["Database Restore $DBNAME done."])
 
     elif command == "set_db_ownership":
         __set_db_ownership()
@@ -1158,7 +1160,7 @@ def do_command(command, command_parameters=[], command_options={}):
             dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
     elif command == "restore-dev-db":
-        if E("ALLOW_RESTORE_DEV") != "1":
+        if E("ALLOW_RESTORE_DEV") != "1" and not options.force:
             raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
 
         print("Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs")
@@ -1214,7 +1216,11 @@ Please set DEVMODE=1 to allow this""")
         machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         machine == command_parameters[0]
         _display_machine_tips(machine)
-        dcexec([machine, "bash"])
+        if machine == 'postgres':
+            cmd = __get_cmd() + ['exec', machine, 'gosu postgres bash']
+        else:
+            cmd = __get_cmd() + ['exec', machine, 'bash']
+        os.system(" ".join(cmd))
 
     elif command == "run":
         __set_db_ownership()
@@ -1462,10 +1468,10 @@ docker-compose run -it telegrambat /setup.sh
     elif command == "patch":
         customs_dir = dirs['customs']
         odoo_dir = os.path.join(customs_dir, 'odoo')
-        __assert_file_exists(odoo_dir, dir=True)
+        __assert_file_exists(odoo_dir, isdir=True)
         __system([
             'admin/odoo-patch'
-        ] + command_parameters, cwd=dirs['odoo_home'])
+        ] + command_parameters, cwd=dirs['odoo_home'], raise_exception=bool(command_parameters))  # otherwise show help
     elif command == "wait_for_port":
         host = command_parameters[0]
         port = long(command_parameters[1])
