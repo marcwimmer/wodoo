@@ -19,24 +19,18 @@ if [[ "$INIT" != "1" ]]; then
 			echo "include '$FILE'" >> $PGDATA/postgresql.conf
 		}
 	fi
+else
+    echo "Init set"
+
+    rm -Rf $PGDATA/* || true
+    ASPOSTGRES="gosu postgres"
+    $ASPOSTGRES /docker-entrypoint.sh postgres | grep -m 1 "database system is ready to accept connections"
+    $ASPOSTGRES psql template1 -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PWD' superuser;" 
+    $ASPOSTGRES psql template1 -c "CREATE DATABASE $DBNAME;"
+    $ASPOSTGRES psql template1 -c "ALTER DATABASE $DBNAME OWNER TO $DB_USER"
+    $ASPOSTGRES pg_ctl -D "$PGDATA" -m fast -w stop
+    exit 0
 fi
 
 echo 'Normal postgres start...'
-
-if [[ "$INIT" == "1" ]]; then
-
-	if [ "$(id -u)" = '0' ]; then
-		rm -Rf $PGDATA/* || true
-		/docker-entrypoint.sh postgres | grep -m 1 "database system is ready to accept connections"
-		exec gosu postgres "$BASH_SOURCE" "$@"  #restart self (like they do in entry point)
-	else
-		psql template1 -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PWD' superuser;" 
-		psql template1 -c "CREATE DATABASE $DBNAME;"
-		psql template1 -c "ALTER DATABASE $DBNAME OWNER TO $DB_USER"
-		pg_ctl -D "$PGDATA" -m fast -w stop
-	fi
-
-
-else
-    /docker-entrypoint.sh postgres
-fi
+/docker-entrypoint.sh postgres

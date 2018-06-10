@@ -263,8 +263,8 @@ def _setup_proxy():
     from add_upstream import add_upstream as f_add_upstream
 
     def get_rules():
-        for root, _, filenames in os.walk(dirs['machines']):
-            for filename in filenames:
+        for root, _, _filenames in os.walk(dirs['machines']):
+            for filename in _filenames:
                 if filename == 'upstream.path':
                     filepath = os.path.join(root, filename)
                     with open(filepath, 'r') as f:
@@ -393,19 +393,27 @@ def __reset_postgres_container():
         dc(["rm", "-f"]) # set volume free
         VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
         docker_client = docker.from_env()
-        from pudb import set_trace
-        set_trace()
         for volume in docker_client.volumes.list():
-            if volume == VOLUMENAME:
-                volume.remove()
-        do_command("reset-db")
+            if volume.name == VOLUMENAME:
+                started = datetime.now()
+                while (datetime.now() - started).seconds < 10:
+                    try:
+                        volume.remove()
+                    except Exception:
+                        time.sleep(0.5)
+                    else:
+                        break
+        dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])
         __start_postgres_and_wait()
 
 def __restore_check(filepath):
     dumpname = os.path.basename(filepath)
 
-    if E("DBNAME") not in dumpname or options.force:
-        raise Exception("The dump-name \"$dumpname\" should somehow match the current database \"$DBNAME\", which isn't.")
+    if E("DBNAME") not in dumpname and not options.force:
+        raise Exception("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
+            dumpname,
+            E("DBNAME"),
+        ))
 
 def __rm_file_if_exists(path):
     if os.path.exists(path):
@@ -442,12 +450,13 @@ def __set_db_ownership():
             __start_postgres_and_wait()
         set_ownership_exclusive()
 
-def __system(cmd, cwd=None, suppress_out=False, raise_exception=True):
+def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True):
     assert isinstance(cmd, list)
 
-    proc = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, cwd=cwd)
-    err = proc.stderr
-    out = ""
+    STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
+    if not wait_finished:
+        STDPIPE, ERRPIPE, bufsize = None, None, -1
+    proc = subprocess.Popen(cmd, shell=False, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd)
 
     def reader(pipe, q):
         try:
@@ -456,16 +465,21 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True):
                     q.put((pipe, line))
         finally:
             q.put(None)
-    q = Queue()
-    Thread(target=reader, args=[proc.stdout, q]).start()
-    Thread(target=reader, args=[proc.stderr, q]).start()
-    for source, line in iter(q.get, None):
-        if source != err:
-            out += line
-        if not suppress_out:
-            sys.stdout.write(line)
-            sys.stdout.flush()
+    if wait_finished:
+        err = proc.stderr
+        out = ""
+        q = Queue()
+        Thread(target=reader, args=[proc.stdout, q]).start()
+        Thread(target=reader, args=[proc.stderr, q]).start()
+        for source, line in iter(q.get, None):
+            if source != err:
+                out += line
+            if not suppress_out:
+                sys.stdout.write(line)
+                sys.stdout.flush()
 
+    if not wait_finished:
+        return
     proc.wait()
     if proc.returncode and raise_exception:
         raise Exception("Error executing: {}".format(" ".join(cmd)))
@@ -525,33 +539,33 @@ def _cleanup():
     _remove_temp_directories
 
 def _collect_settings_files():
-    files = []
-    files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
-    for root, _, filenames in os.walk(dirs['machines']):
-        for filename in filenames:
+    _files = []
+    _files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
+    for root, _, _filenames in os.walk(dirs['machines']):
+        for filename in _filenames:
             if filename == 'default.settings':
-                files.append(os.path.join(root, filename))
+                _files.append(os.path.join(root, filename))
     customs_dir = odoo_config.customs_dir()
     if os.path.exists(os.path.join(customs_dir, 'settings')):
-        files.append(os.path.join(customs_dir, 'settings'))
+        _files.append(os.path.join(customs_dir, 'settings'))
     if os.path.exists('/etc_host/odoo/settings'):
-        files.append('/etc_host/odoo/settings')
+        _files.append('/etc_host/odoo/settings')
     if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
-        files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
+        _files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
     if os.path.isdir(dirs['settings.d']):
         for filename in os.listdir(dirs['settings.d']):
             filepath = os.path.join(dirs['settings.d'], filename)
             if os.path.exists(filepath):
-                files.append(filepath)
-    return files
+                _files.append(filepath)
+    return _files
 
 def _display_machine_tips(machine_name):
     dir = os.path.join(dirs['machines'], machine_name)
     if not os.path.isdir(dir):
         return
 
-    for root, _dirs, files in os.walk(dirs['machines']):
-        for filename in files:
+    for root, _dirs, _files in os.walk(dirs['machines']):
+        for filename in _files:
             if filename == 'tips.txt':
                 if os.path.basename(root) == 'machine_name':
                     content = __read_file(os.path.join(root, filename))
@@ -781,8 +795,8 @@ def _prepare_yml_files_from_template_files():
     # - also replace all environment variables
     def find_files(dir):
         PATTERN = r'docker-compose*.yml'
-        for root, _, filenames in os.walk(dirs['machines']):
-            for filename in filenames:
+        for root, _, _filenames in os.walk(dirs['machines']):
+            for filename in _filenames:
                 if re.findall(PATTERN, filename):
                     yield os.path.join(root, filename)
     _files = []
@@ -971,26 +985,32 @@ def dcexec(cmd):
     out = __system(c, cwd=dirs['odoo_home'])
     return out
 
-def dc(cmd, suppress_out=False, raise_exception=True):
+def dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True):
     c = __get_cmd() + cmd
-    out = __system(c, cwd=dirs['odoo_home'], suppress_out=suppress_out, raise_exception=raise_exception)
+    out = __system(
+        c,
+        cwd=dirs['odoo_home'],
+        suppress_out=suppress_out,
+        raise_exception=raise_exception,
+        wait_finished=wait_finished,
+    )
     return out
 
-def dcrun(cmd, interactive=False):
+def dcrun(cmd, interactive=False, wait_finished=True):
     cmd = [os.path.expandvars(x) for x in cmd]
     if interactive:
         options = ''
     else:
         options = '-T'
     cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
-    return dc(cmd)
+    return dc(cmd, wait_finished=wait_finished)
 
 def E(name):
     if name.startswith("$"):
         name = name[1:]
     return os.getenv(name, "")
 
-def do_command(command, command_parameters=[], options={}):
+def do_command(command, command_parameters=[], command_options={}):
     RETURN = None
     if not command:
         return RETURN
@@ -1078,13 +1098,13 @@ def do_command(command, command_parameters=[], options={}):
 
     elif command == 'reset-db':
         _askcontinue("Delete database {}".format(E("DBNAME")))
-        if E("RUN_POSTGERS") != "1":
+        if E("RUN_POSTGRES") != "1":
             print "Postgres container is disabled; cannot reset external database"
             return
         print "Stopping all services and creating new database"
         print "After creation the database container is stopped. You have to start the system up then."
         dc(['kill'])
-        dcrun(['-e INIT=1', 'postgres', '/entrypoint2.sh'])
+        __reset_postgres_container()
         print "Database initialized."
 
     elif command == "restore-files":
@@ -1096,11 +1116,12 @@ def do_command(command, command_parameters=[], options={}):
     elif command == "restore-db":
         for x in ["DB_HOST", "DB_PORT"]:
             print("{}: {}".format(x, E(x)))
-        dumpfile = command_parameters[1]
+        dumpfile = __safeget(command_parameters, 0, "Please provide dump-file name", file_options=BACKUPDIR)
+        dumpfile == os.path.join(BACKUPDIR, dumpfile)
         if dumpfile.startswith("/"):
             raise Exception("No path in dump file allowed")
         __restore_check(dumpfile)
-        if E("DEVMODE") == "1" and E("RESTORE_DEV_DB") != "1":
+        if E("DEVMODE") == "1" and not command_options.get('restore_as_dev_db', False):
             _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 
         if not options.force:
@@ -1109,13 +1130,13 @@ def do_command(command, command_parameters=[], options={}):
         DBNAME_RESTORING = E("DBNAME") + "_restoring"
         os.environ['DBNAME'] = DBNAME_RESTORING
 
-        config = MyConfigParser(file['settings'])
+        config = MyConfigParser(files['settings'])
         dbname = config['DBNAME']
 
-        __reset_postgres_container()
+        do_command('reset-db')
         __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING)
-        if options.get("exec_before_rename", False):
-            options['exec_before_rename'](DBNAME_RESTORING)
+        if command_options.get("exec_before_rename", False):
+            command_options['exec_before_rename'](DBNAME_RESTORING)
         __rename_db_drop_target(DBNAME_RESTORING, dbname)
         __remove_postgres_connections(dbname)
         __set_db_ownership()
@@ -1137,8 +1158,9 @@ def do_command(command, command_parameters=[], options={}):
         def exec_sql(dbname):
             __turn_into_devdb(dbname)
 
-        do_command("restore-db", command_parameters, options={
-            'exec_before_rename': exec_sql
+        do_command("restore-db", command_parameters, command_options={
+            'exec_before_rename': exec_sql,
+            'restore_as_dev_db': True,
         })
 
     elif command == "turn-into-dev":
@@ -1515,8 +1537,8 @@ docker-compose run -it telegrambat /setup.sh
         ], cwd=dirs['customs'])
 
     elif command == "rmpyc":
-        for root, _, files in os.walk(dirs['customs']):
-            for filename in files:
+        for root, _, _files in os.walk(dirs['customs']):
+            for filename in _files:
                 if filename.endswith(".pyc"):
                     os.unlink(os.path.join(root, filename))
 
