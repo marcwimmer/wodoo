@@ -18,6 +18,7 @@ from Queue import Queue
 from logging import FileHandler
 from optparse import OptionParser
 import psycopg2
+from subprocess import PIPE
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
 from module_tools.module_tools import set_ownership_exclusive
@@ -129,9 +130,6 @@ def __assert_file_exists(path, isdir=False):
         ))
 
 def __do_restore_db_on_postgres(filename, dbname):
-    from pudb import set_trace
-    set_trace()
-
     os.environ['DBNAME'] = dbname
     dump_file = os.path.join(BACKUPDIR, filename)
 
@@ -140,14 +138,18 @@ def __do_restore_db_on_postgres(filename, dbname):
     print("Restoring dump on {}".format(E("DB_HOST")))
     __print_env(['DB_HOST', 'DB_PORT', 'DB_USER'])
     os.environ['PGPASSWORD'] = E("DB_PWD")
-    args = "-h $DB_HOST -p $DB_PORT -U $DB_USER"
-    DROPDB = "dropdb --if-exists " + args
-    CREATEDB = "createdb " + args
-    PGRESTORE = "pg_restore --no-owner --no-privileges --no-acl  --single-transaction --exit-on-error " + args
-    PSQL = "psql " + args
+    args = ["-h", "$DB_HOST", "-p", "$DB_PORT", "-U", "$DB_USER"]
+    args = [os.path.expandvars(x) for x in args]
+    PGRESTORE = [
+        "pg_restore",
+        "--no-owner",
+        "--no-privileges",
+        "--no-acl",
+    ] + args
+    PSQL = ["psql"] + args
 
-    __system([DROPDB, dbname])
-    __system([CREATEDB, dbname])
+    __execute_sql("drop database if exists {}".format(dbname), 'template1', notransaction=True)
+    __execute_sql("create database {}".format(dbname), 'template1', notransaction=True)
 
     method = PGRESTORE
     needs_unzip = True
@@ -167,13 +169,18 @@ def __do_restore_db_on_postgres(filename, dbname):
         raise Exception("not impl: {}".format(dump_type))
 
     if needs_unzip:
-        pipe = tempfile.mktemp(suffix='.pipe')
-        os.system('mkfifo "{}"'.format(pipe))
-        os.system('gunzip -c  "{}" > "" &'.format(dump_file, pipe))
+        unzipper = subprocess.Popen(["/bin/gunzip", "-c", dump_file], stdout=PIPE)
+        stdin = unzipper.stdout
     else:
-        pipe = dump_file
-    print "Restoring $DBNAME using $method..."
-    os.system('{} -d "{}" < ""'.format(method, E("DBNAME"), pipe))
+        catter = subprocess.Popen(["/bin/cat", dump_file], stdout=PIPE)
+        stdin = catter.stdout
+    started = datetime.now()
+    print "Restoring DB..."
+    subprocess.check_call(method + [
+        '-d',
+        E("DBNAME"),
+    ], stdin=stdin, env=os.environ),
+    print "Restore took {} seconds".format((datetime.now() - started).seconds)
 
 def __do_restore_files(filepath):
     # remove the postgres volume and reinit
@@ -188,7 +195,7 @@ def __empty_dir(dir):
             else:
                 os.unlink(filepath)
 
-def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False):
+def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransaction=False):
     if not dbname:
         dbname = E("DBNAME")
     conn = psycopg2.connect(
@@ -196,8 +203,9 @@ def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False):
         user=E("DB_USER"),
         password=E("DB_PWD"),
         host=E("DB_HOST"),
-        port=E("DB_PORT")
+        port=E("DB_PORT"),
     )
+    conn.autocommit = notransaction
     result = None
     cr = conn.cursor()
     try:
@@ -342,7 +350,7 @@ def __makedirs(path):
         os.makedirs(path)
 
 def __print_env(vars):
-    for x in [vars]:
+    for x in vars:
         print "{}: {}".format(x, E(x))
 
 def __read_file(path):
@@ -359,7 +367,7 @@ def __remove_postgres_connections(DBNAME=None):
             WHERE pg_stat_activity.datname = '{}'
             AND pid <> pg_backend_pid();
         """.format(DBNAME)
-        __execute_sql(SQL, 'template1')
+        __execute_sql(SQL, 'template1', notransaction=True)
 
 def __rename_db_drop_target(from_db, to_db):
     if 'to_db' == 'template1':
@@ -375,7 +383,7 @@ def __rename_db_drop_target(from_db, to_db):
         drop database if exists {to_db};
         alter database {from_db} rename to {to_db};
         """.format(**locals()))
-    __execute_sql(sql, "template1")
+    __execute_sql(sql, "template1", notransaction=True)
     __remove_postgres_connections(to_db)
 
 def __replace_in_file(filepath, text, replacewith):
@@ -450,13 +458,13 @@ def __set_db_ownership():
             __start_postgres_and_wait()
         set_ownership_exclusive()
 
-def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True):
+def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True, shell=False):
     assert isinstance(cmd, list)
 
     STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
     if not wait_finished:
         STDPIPE, ERRPIPE, bufsize = None, None, -1
-    proc = subprocess.Popen(cmd, shell=False, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd)
+    proc = subprocess.Popen(cmd, shell=shell, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd)
 
     def reader(pipe, q):
         try:
