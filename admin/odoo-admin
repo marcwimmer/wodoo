@@ -631,6 +631,12 @@ def _file2env(filepath):
     for k in config.keys():
         os.environ[k] = config[k]
 
+def _get_bash_for_machine(machine):
+    if machine == 'postgres':
+        return 'gosu postgres bash'
+    else:
+        return 'bash'
+
 def _make_settings_file(outfile, setting_files):
     """
     Puts all settings into one settings file
@@ -1216,10 +1222,8 @@ Please set DEVMODE=1 to allow this""")
         machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         machine == command_parameters[0]
         _display_machine_tips(machine)
-        if machine == 'postgres':
-            cmd = __get_cmd() + ['exec', machine, 'gosu postgres bash']
-        else:
-            cmd = __get_cmd() + ['exec', machine, 'bash']
+        bash = _get_bash_for_machine(machine)
+        cmd = __get_cmd() + ['exec', machine, bash]
         os.system(" ".join(cmd))
 
     elif command == "run":
@@ -1230,7 +1234,8 @@ Please set DEVMODE=1 to allow this""")
         machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
         __set_db_ownership()
         _display_machine_tips(machine)
-        cmd = __get_cmd() + ['run', machine, 'bash']
+        bash = _get_bash_for_machine(machine)
+        cmd = __get_cmd() + ['run', machine, bash]
         os.system(" ".join(cmd))
 
     elif command == "rebuild":

@@ -40,6 +40,8 @@ def run(cr):
 )
 
 def do_migrate(log_file, from_version, to_version, do_command, no_auto_backup=False):
+    from pudb import set_trace
+    set_trace()
     from_version = str(float(from_version))
     to_version = str(float(to_version))
 
