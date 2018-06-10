@@ -500,12 +500,17 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finis
 def __try_to_set_owner(UID, path, recursive=False):
     if os.path.isdir(path):
         uid = os.stat(path).st_uid
-        if str(uid) != str(UID):
+        if str(uid) != str(UID) or recursive:
             print("Trying to set correct permissions on {}".format(path))
             options = ""
             if recursive:
-                options += " -r "
-            os.system("chown {} {} '{}'".format(UID, options, path))
+                options += "-R"
+            __system([
+                'chown',
+                options,
+                UID,
+                path
+            ])
 
 def __turn_into_devdb(dbname):
     SQLFILE = files['machines/postgres/turndb2dev.sql']
@@ -1331,7 +1336,9 @@ docker-compose run -it telegrambat /setup.sh
         if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
             __try_to_set_owner(E("OWNER_UID", E("ODOO_FILES"), recursive=True))
         customs_dir = odoo_config.customs_dir()
-        __try_to_set_owner(E("USER"), customs_dir, recursive=True)
+        from pudb import set_trace
+        set_trace()
+        __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
     elif command == "update":
         do_command('abort-upgrade')
@@ -1610,6 +1617,7 @@ docker-compose run -it telegrambat /setup.sh
         LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
         from_version = __safeget(command_parameters, 0, "Provide from version!")
         to_version = __safeget(command_parameters, 1, "Provide to version!")
+        do_command("fix-permissions")
         do_migrate(
             LOGFILE,
             from_version,

@@ -5,6 +5,7 @@ services:
       volumes:
           - $ODOO_HOME/.git/modules/repos:/opt/odoo_home/.git/modules/repos
           - $ODOO_HOME/repos:/opt/odoo_home/repos
+          - $ODOO_HOME/admin/migrate.sh:/opt/migrate.sh
       environment:
           - ODOO_HOME_DIRECTORY=/opt/odoo_home:ro
           - ODOO_REPOS_DIRECTORY=/opt/odoo_home/repos

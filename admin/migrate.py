@@ -128,17 +128,18 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     ========================================================================""".format(version)
                     )
 
-        do_command('build')
+        #do_command('build')
         # make sure postgres is available
-        do_command("wait_for_container_postgres")
+        #do_command("wait_for_container_postgres")
+        # do_command('run', [
+            # "odoo",
+            # "/run_migration.sh",
+            # 'before',
+        # ])
         do_command('run', [
             "odoo",
-            "/run_migration.sh",
-            'before',
-        ])
-        do_command('run', [
-            "odoo",
-            "/run_openupgradelib.sh",
+            "/bin/bash",
+            "/opt/migrate.sh",
             migrations[version]['branch'],
             migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
         ])
