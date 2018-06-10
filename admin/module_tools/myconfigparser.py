@@ -5,21 +5,27 @@ import os
 import sys
 
 class MyConfigParser:
-    name = 'MyConfigParser'
-    debug = False
-    fileName = None
-    fileContents = None
-    configOptions = dict()
-    quoteOptions = dict()
 
     def __init__(self, fileName, debug=False):
         self.fileName = fileName
         self.debug = debug
-        self._open()
+        self.debug = debug
+        self.fileName = fileName
+        self.fileContents = None
+        self.configOptions = dict()
+        self.quoteOptions = dict()
+        if os.path.exists(fileName):
+            self._open()
 
     def apply(self, other):
         for k in other.keys():
             self[k] = other[k]
+
+    def clear(self):
+        self.quoteOptions.clear()
+        self.configOptions.clear()
+        with open(self.fileName, 'w') as f:
+            f.write("")
 
     def keys(self):
         return self.quoteOptions.keys()
@@ -66,11 +72,12 @@ class MyConfigParser:
                     if not line.startswith("#") and len(line) > 1:
                         (key, val) = line.rstrip('\n').split('=')
                         key = key.strip()
-                        newVal = self.configOptions[key]
+                        if key in self.configOptions:
+                            newVal = self.configOptions[key]
 
-                        # Only update if the variable value has changed
-                        if val != newVal:
-                            line = write_line(key, newVal)
+                            # Only update if the variable value has changed
+                            if val != newVal:
+                                line = write_line(key, newVal)
                         handled_keys.add(key)
                     file.write(line)
                 for key in self.configOptions.keys():

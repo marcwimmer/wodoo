@@ -16,7 +16,6 @@ from module_tools.odoo_config import customs_dir
 from module_tools.myconfigparser import MyConfigParser
 
 CONFIG_FILE = '/home/odoo/config_migration'
-SETTINGS_D_FILE = os.path.join(os.environ['ODOO_HOME'], 'settings.d/migration')
 
 parser = OptionParser(
     description="""Migration from odoo x to odoo y
@@ -39,14 +38,14 @@ def run(cr):
 """
 )
 
-def do_migrate(log_file, from_version, to_version, do_command, no_auto_backup=False):
-    from pudb import set_trace
-    set_trace()
+
+def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
     from_version = str(float(from_version))
     to_version = str(float(to_version))
 
     # Make sure that RUN_MIGRATION is temporarily set to 1
     settings = MyConfigParser(SETTINGS_D_FILE)
+    settings.clear()
     settings['RUN_MIGRATION'] = '1'
     settings.write()
 
@@ -129,12 +128,16 @@ def do_migrate(log_file, from_version, to_version, do_command, no_auto_backup=Fa
     ========================================================================""".format(version)
                     )
 
+        from pudb import set_trace
+        set_trace()
         do_command('build')
         do_command('run', [
             "odoo",
             "/run_migration.sh",
             'before',
         ])
+        from pudb import set_trace
+        set_trace()
         do_command('run', [
             "odoo",
             "/run_openupgradelib.sh",

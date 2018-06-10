@@ -1094,8 +1094,6 @@ def do_command(command, command_parameters=[], command_options={}):
         do_command('telegram-send', ["Database Backup $DBNAME done to $filepath"])
 
     elif command == "backup-files":
-        from pudb import set_trace
-        set_trace()
         if command_parameters:
             raise Exception("No parameters allowed")
         BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=E("CUSTOMS"))
@@ -1594,7 +1592,13 @@ docker-compose run -it telegrambat /setup.sh
         LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
         from_version = __safeget(command_parameters, 0, "Provide from version!")
         to_version = __safeget(command_parameters, 1, "Provide to version!")
-        do_migrate(LOGFILE, from_version, to_version, do_command)
+        do_migrate(
+            LOGFILE,
+            from_version,
+            to_version,
+            do_command,
+            SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
+        )
 
     elif command == "psql":
         if not command_parameters:
