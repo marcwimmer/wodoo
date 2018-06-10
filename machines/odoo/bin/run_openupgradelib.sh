@@ -17,8 +17,9 @@ fi
 BRANCH="$1"
 CMD="$2"
 
-cd "$ODOO_REPOS_DIRECTORY" || exit 4
+cd "$ODOO_REPOS_DIRECTORY/OpenUpgrade" || exit 4
 set -e
 set -x
 git checkout "$BRANCH"
-eval "$CMD"
+pip install openupgradelib
+eval "./$CMD"

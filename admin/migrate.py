@@ -65,27 +65,27 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     migrations = {
         '11.0': {
             'branch': '11.0',
-            'cmd': 'odoo-bin --update=all --database={db} '
+            'cmd': './odoo-bin --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '10.0': {
             'branch': '10.0',
-            'cmd': 'odoo-bin --update=all --database={db} '
+            'cmd': './odoo-bin --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '9.0': {
             'branch': '9.0',
-            'cmd': 'openerp-server --update=all --database={db} '
+            'cmd': './openerp-server --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '8.0': {
             'branch': '8.0',
-            'cmd': 'openerp-server --update=all --database={db} '
+            'cmd': './openerp-server --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '7.0': {
             'branch': '7.0',
-            'cmd': 'openerp-server --update=all --database={db} '
+            'cmd': './openerp-server --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc '
                    '--no-netrpc',
         },
@@ -94,9 +94,9 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     if from_version not in migrations:
         print "Invalid from version: {}".format(from_version)
 
-    def run_cmd(cmd):
+    def run_cmd(cmd, cwd=None):
         logger.info("Executing:\n{}".format(" ".join(cmd)))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, cwd=cwd)
 
         def reader(pipe, q):
             try:
@@ -128,8 +128,6 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     ========================================================================""".format(version)
                     )
 
-        from pudb import set_trace
-        set_trace()
         do_command('build')
         # make sure postgres is available
         do_command("wait_for_container_postgres")
@@ -138,8 +136,6 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
             "/run_migration.sh",
             'before',
         ])
-        from pudb import set_trace
-        set_trace()
         do_command('run', [
             "odoo",
             "/run_openupgradelib.sh",

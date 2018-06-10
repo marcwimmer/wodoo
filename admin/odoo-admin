@@ -22,8 +22,6 @@ import psycopg2
 from subprocess import PIPE
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
-from module_tools.module_tools import set_ownership_exclusive
-from module_tools.module_tools import remove_webassets
 from module_tools import odoo_versioning as versioning
 from module_tools.odoo_parser import update_cache
 from migrate import do_migrate
@@ -461,6 +459,7 @@ def __set_db_ownership():
     if E("DEVMODE") == "1":
         if E("RUN_POSTGRES") == "1":
             __start_postgres_and_wait()
+        from module_tools.module_tools import set_ownership_exclusive
         set_ownership_exclusive()
 
 def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True, shell=False):
@@ -502,7 +501,7 @@ def __try_to_set_owner(UID, path, recursive=False):
     if os.path.isdir(path):
         uid = os.stat(path).st_uid
         if str(uid) != str(UID):
-            print("Trying to set correct permissions on $dir")
+            print("Trying to set correct permissions on {}".format(path))
             options = ""
             if recursive:
                 options += " -r "
@@ -813,7 +812,7 @@ def _prepare_yml_files_from_template_files():
     #
     # - also replace all environment variables
     def find_files(dir):
-        PATTERN = r'docker-compose*.yml'
+        PATTERN = r'docker-compose.*.yml'
         for root, _, _filenames in os.walk(dirs['machines']):
             for filename in _filenames:
                 if re.findall(PATTERN, filename):
@@ -1202,7 +1201,7 @@ Please set DEVMODE=1 to allow this""")
     elif command == "up":
         __set_db_ownership()
         dc(['up'] + command_parameters)
-        do_command("proxy_reload")
+        do_command("proxy-reload")
 
     elif command == "debug":
         # puts endless loop into container command and then attaches to it;
@@ -1231,6 +1230,11 @@ Please set DEVMODE=1 to allow this""")
 
     elif command == "run":
         __set_db_ownership()
+        machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
+        if len(command_parameters) == 2:
+            if command_parameters[1] == 'bash':
+                do_command("runbash")
+                return
         dcrun(command_parameters)
 
     elif command == "runbash":
@@ -1242,9 +1246,11 @@ Please set DEVMODE=1 to allow this""")
         os.system(" ".join(cmd))
 
     elif command == "rebuild":
+        do_command("compose")
         dc(['build', '--no-cache'] + command_parameters)
 
     elif command == "build":
+        do_command("compose")
         dc(['build'] + command_parameters)
 
     elif command == "force-kill":
@@ -1391,6 +1397,7 @@ docker-compose run -it telegrambat /setup.sh
 
     elif command == "remove-web-assets":
         _askcontinue()
+        from module_tools.module_tools import remove_webassets
         remove_webassets()
         if float(E("ODOO_VERSION")) <= 10.0:
             print("Please login as admin, so that assets are recreated.")
@@ -1443,6 +1450,12 @@ docker-compose run -it telegrambat /setup.sh
         ] + command_parameters, cwd=dirs['admin'])
 
     elif command == "compose":
+        _remove_temp_directories()
+        _prepare_filesystem()
+        _prepare_yml_files_from_template_files()
+        _reset_proxy_configs()
+        _setup_proxy()
+        _setup_odoo_instances()
         print "Built the docker-compose file."
 
     elif command == "simplebash":
@@ -1628,14 +1641,7 @@ if __name__ == '__main__':
 
     _export_settings()
     _remember_customs_and_cry_if_changed
-    if args and args[0] in ['build', 'compose']:
-        _remove_temp_directories()
-        _prepare_filesystem()
-        _prepare_yml_files_from_template_files()
-        _reset_proxy_configs()
-        _setup_proxy()
-        _setup_odoo_instances()
-    elif not args:
+    if not args:
         _showhelp()
     _sanity_check()
 

@@ -3,4 +3,8 @@ version: '3.3'
 services:
   odoo_base:
       volumes:
-          - $ODOO_HOME/repos:${ODOO_REPOS_DIRECTORY}:ro
+          - $ODOO_HOME/.git/modules/repos:/opt/odoo_home/.git/modules/repos
+          - $ODOO_HOME/repos:/opt/odoo_home/repos
+      environment:
+          - ODOO_HOME_DIRECTORY=/opt/odoo_home:ro
+          - ODOO_REPOS_DIRECTORY=/opt/odoo_home/repos
