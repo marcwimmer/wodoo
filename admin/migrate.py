@@ -77,7 +77,7 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
         '10.0': {
             'branch': '10.0',
             'addons_paths': [
-                'openerp/addons',
+                'odoo/addons',
                 'addons',
             ],
             'cmd': './odoo-bin --update=all --database={db} '
