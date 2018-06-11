@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import sys
 import re
+import signal
 import os
 import logging
 import importlib
@@ -980,7 +981,9 @@ def command_attach(command_parameters, command_options):
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
     cmd = __get_cmd() + ['exec', machine, bash]
-    os.system(" ".join(cmd))
+
+    proc = subprocess.Popen(cmd)
+    proc.wait()
 
 def command_backup(command_parameters, command_options):
     """"
@@ -1456,7 +1459,8 @@ def command_runbash(command_parameters, command_options):
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
     cmd = __get_cmd() + ['run', machine, bash]
-    os.system(" ".join(cmd))
+    proc = subprocess.Popen(cmd)
+    proc.wait()
 
 def command_sanity_check(command_parameters, command_options):
     _sanity_check()
