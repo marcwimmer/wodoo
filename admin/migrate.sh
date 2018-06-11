@@ -3,6 +3,12 @@
 #This file lies in odoo
 ###
 set -x
+BRANCH="$1"
+CMD="$2"
+ADDONS_PATH="3"
+CONFIG_FILE=/home/odoo/config_migration
+
+sed -i "s|__ADDONS_PATH__|$3|" "$CONFIG_FILE"
 /apply-env-to-config.sh
 
 if [[ "$RUN_MIGRATION" != "1" ]]; then
@@ -18,8 +24,6 @@ if [[ -z "$2" ]]; then
     echo "Please provide command"
     exit 1
 fi
-BRANCH="$1"
-CMD="$2"
 
 cd "$ODOO_REPOS_DIRECTORY/OpenUpgrade" || exit 4
 set -e
@@ -27,4 +31,5 @@ set -x
 git checkout "$BRANCH"
 #pip install openupgradelib
 pip install git+https://github.com/OCA/openupgradelib.git@master --upgrade
+cat "$CONFIG_FILE"
 eval sudo -E -H -u "$ODOO_USER" "./$CMD" 

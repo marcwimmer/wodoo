@@ -38,6 +38,8 @@ def run(cr):
 """
 )
 
+BASE_PATH = "/opt/odoo_home/repos/OpenUpgrade/" # must match in container
+
 
 def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
     from_version = str(float(from_version))
@@ -65,21 +67,37 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     migrations = {
         '11.0': {
             'branch': '11.0',
+            'addons_paths': [
+                'odoo/addons',
+                'addons',
+            ],
             'cmd': './odoo-bin --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '10.0': {
             'branch': '10.0',
+            'addons_paths': [
+                'openerp/addons',
+                'addons',
+            ],
             'cmd': './odoo-bin --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '9.0': {
             'branch': '9.0',
+            'addons_paths': [
+                'openerp/addons',
+                'addons',
+            ],
             'cmd': './openerp-server --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
         '8.0': {
             'branch': '8.0',
+            'addons_paths': [
+                'openerp/addons',
+                'addons',
+            ],
             'cmd': './openerp-server --update=all --database={db} '
                    '--config={configfile} --stop-after-init --no-xmlrpc',
         },
@@ -128,22 +146,21 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     ========================================================================""".format(version)
                     )
 
-        from pudb import set_trace
-        set_trace()
-        do_command('build')
-        # make sure postgres is available
-        do_command("wait_for_container_postgres")
-        do_command('run', [
-            "odoo",
-            "/run_migration.sh",
-            'before',
-        ])
+        # do_command('build')
+        # # make sure postgres is available
+        # do_command("wait_for_container_postgres")
+        # do_command('run', [
+            # "odoo",
+            # "/run_migration.sh",
+            # 'before',
+        # ])
         do_command('run', [
             "odoo",
             "/bin/bash",
             "/opt/migrate.sh",
             migrations[version]['branch'],
-            migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME'])
+            migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME']),
+            ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
         ])
         do_command('run', [
             "odoo",

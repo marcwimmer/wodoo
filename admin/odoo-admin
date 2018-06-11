@@ -626,9 +626,14 @@ def _export_settings():
     setting_files = _collect_settings_files()
     _make_settings_file(files['settings'], setting_files)
     config = MyConfigParser(files['settings'])
+
     if "DBNAME" not in config.keys():
         config['DBNAME'] = config['CUSTOMS']
         config.write()
+    if "ODOO_VERSION" not in config or config['ODOO_VERSION'] != ODOO_VERSION:
+        config['ODOO_VERSION'] = ODOO_VERSION
+        config.write()
+
     # store the host root folder
     config['HOST_ODOO_HOME'] = E("ODOO_HOME")
     _file2env(files['settings'])
@@ -868,10 +873,6 @@ def _sanity_check():
     if E("OWNER_UID") == "0":
         print("Advise: you should set OWNER_UID so that dump files are marked as the correct owner")
         time.sleep(3)
-
-    if E("RUN_POSTGRES") == "1":
-        if os.path.isdir(dirs['run/restore']):
-            __try_to_set_owner(E("OWNER_UID"), dirs['run/restore'])
 
     if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")):
         # checking directory permissions of session files and filestorage
@@ -1336,8 +1337,6 @@ docker-compose run -it telegrambat /setup.sh
         if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
             __try_to_set_owner(E("OWNER_UID", E("ODOO_FILES"), recursive=True))
         customs_dir = odoo_config.customs_dir()
-        from pudb import set_trace
-        set_trace()
         __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
     elif command == "update":
@@ -1643,8 +1642,6 @@ if __name__ == '__main__':
     _check_working_dir_customs_mismatch
     if args:
         if args[0] == 'tool':
-            from module_tools.tools import run
-            run(*args)
             sys.exit(0)
 
     _export_settings()
