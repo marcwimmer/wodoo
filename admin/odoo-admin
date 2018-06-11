@@ -1162,7 +1162,13 @@ def command_kill(command_parameters, command_options):
     dc(['stop', '-t 10'] + command_parameters)
 
 def command_image_import(command_parameters, command_options):
-    raise Exception("TODO")
+    image_name = __safeget(command_parameters, 0, "Please provide the image tar name!")
+    dump_path = os.path.join(BACKUPDIR, os.path.basename(image_name))
+    __system([
+        "docker",
+        "load",
+        dump_path
+    ])
 
 def command_image_export(command_parameters, command_options):
     """
@@ -1175,7 +1181,10 @@ def command_image_export(command_parameters, command_options):
         'images',
         '-q',
     ], suppress_out=True).split("\n")
+    filesize = 0
     for image in image_ids:
+        if not image:
+            continue
         filepath = os.path.join(folder, image)
         print "Storing {} to {}".format(image, filepath)
         __system([
@@ -1185,6 +1194,10 @@ def command_image_export(command_parameters, command_options):
             '-o',
             filepath,
         ], suppress_out=True)
+        filesize += os.stat(filepath).st_size
+        print "File size currently:", humanize.naturalsize(filesize)
+    if not filesize:
+        raise Exception("No images found!")
     __system([
         "tar",
         "cfz",
@@ -1192,7 +1205,9 @@ def command_image_export(command_parameters, command_options):
         '.',
     ], cwd=folder)
     print os.path.basename(dump_path)
-    print humanize.naturalsize(os.stat(dump_path).st_size)
+    compressed_size = os.stat(dump_path).st_size
+    ratio = round(float(compressed_size) / float(filesize) * 100.0, 1)
+    print "Compressed:", humanize.naturalsize(compressed_size), "Uncompress:", humanize.naturalsize(filesize), "Ratio:", ratio
 
 def command_incversions(command_parameters, command_options):
     versioning.actions["incversions"](*command_parameters)
