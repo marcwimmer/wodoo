@@ -324,7 +324,7 @@ def __get_docker_image():
 
 def __get_dump_type(filepath):
     temp = tempfile.mktemp(suffix='.check')
-    os.system('gunzip -c "{}" | head > "{}" 2>/dev/null'.format(filepath, temp))
+    os.system('gunzip -c "{}" | head > "{}" 1>/dev/null 2>/dev/null'.format(filepath, temp))
     MARKER = "PostgreSQL database dump"
 
     if os.path.exists(temp):
