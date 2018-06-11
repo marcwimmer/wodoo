@@ -2,7 +2,7 @@
 ###
 #This file lies in odoo
 ###
-set -x
+set +x
 BRANCH="$1"
 CMD="$2"
 ADDONS_PATH="3"
@@ -29,7 +29,6 @@ cd "$ODOO_REPOS_DIRECTORY/OpenUpgrade" || exit 4
 set -e
 set -x
 git checkout "$BRANCH"
-#pip install openupgradelib
 pip install git+https://github.com/OCA/openupgradelib.git@master --upgrade
 cat "$CONFIG_FILE"
 eval sudo -E -H -u "$ODOO_USER" "./$CMD" 

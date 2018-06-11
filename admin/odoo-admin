@@ -1386,8 +1386,6 @@ def command_rmpyc(command_parameters, command_options):
                 os.unlink(os.path.join(root, filename))
 
 def command_run(command_parameters, command_options):
-    from pudb import set_trace
-    set_trace()
     __set_db_ownership()
     if len(command_parameters) == 2:
         if command_parameters[1] == 'bash':
