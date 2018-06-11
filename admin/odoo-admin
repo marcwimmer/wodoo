@@ -39,25 +39,8 @@ PLATFORM_LINUX = "Linux"
 YAML_VERSION = '3.3'
 BACKUPDIR = "/host/dumps"
 COMMANDS = []
-
-parser = OptionParser(
-    description="""Odoo Administration Script
-"""
-)
-parser.add_option(
-    '-f', '--force', action='store_true', default=False, help="Force actions if asked"
-)
-parser.add_option(
-    '--verbose', action='store_true', default=False,
-)
-parser.add_option(
-    '--no-verbose', action='store_true', default=False,
-)
-(options, args) = parser.parse_args()
-
-if options.verbose and options.no_verbose:
-    print("Please set either verbose or not verbose.")
-    sys.exit(1)
+FORCE = any(x == '-f' or x == '--force' for x in sys.argv[1:])
+args = sys.argv[1:]
 
 dirs = {
     'admin': 'admin',
@@ -418,7 +401,7 @@ def __reset_postgres_container():
 def __restore_check(filepath):
     dumpname = os.path.basename(filepath)
 
-    if E("DBNAME") not in dumpname and not options.force:
+    if E("DBNAME") not in dumpname and not FORCE:
         raise Exception("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
             dumpname,
             E("DBNAME"),
@@ -528,7 +511,7 @@ def __wait_for_port(host, port, timeout=None):
 def _askcontinue(msg=None):
     if msg:
         print(msg)
-    if options.force or os.getenv("FORCE_CONTINUE", "0") == "1":
+    if FORCE or os.getenv("FORCE_CONTINUE", "0") == "1":
         return
     raw_input("Continue? (Ctrl+C to break)")
 
@@ -1148,7 +1131,7 @@ def command_restore_db(command_parameters, command_options):
     if E("DEVMODE") == "1" and not command_options.get('restore_as_dev_db', False):
         _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 
-    if not options.force:
+    if not FORCE:
         _askcontinue("Deletes database {}!".format(E("DBNAME")))
 
     DBNAME_RESTORING = E("DBNAME") + "_restoring"
@@ -1174,7 +1157,7 @@ def command_proxy_reload(command_parameters, command_options):
         dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
 def command_restore_dev_db(command_parameters, command_options):
-    if E("ALLOW_RESTORE_DEV") != "1" and not options.force:
+    if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
 
     print("Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs")
