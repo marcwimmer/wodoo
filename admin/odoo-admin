@@ -4,6 +4,7 @@ import re
 import os
 import logging
 import importlib
+import humanize
 import subprocess
 import time
 import inspect
@@ -1021,7 +1022,7 @@ def command_build(command_parameters, command_options):
     do_command("compose")
     dc(['build'] + command_parameters)
 
-def command_commit(comman_parameters, command_options):
+def command_commit(command_parameters, command_options):
     versioning.actions["commit"](*command_parameters)
 
 def command_compose(command_parameters, command_options):
@@ -1046,7 +1047,7 @@ def command_compose(command_parameters, command_options):
     _setup_odoo_instances()
     print "Built the docker-compose file."
 
-def command_current_ticket(comman_parameters, command_options):
+def command_current_ticket(command_parameters, command_options):
     versioning.actions["current-ticket"](*command_parameters)
 
 def command_debug(command_parameters, command_options):
@@ -1073,7 +1074,7 @@ def command_debug(command_parameters, command_options):
 def command_deploy(command_parameters, command_options):
     versioning.action_deploy_ticket()
 
-def command_deploy_ticket(comman_parameters, command_options):
+def command_deploy_ticket(command_parameters, command_options):
     versioning.actions["deploy-ticket"](*command_parameters)
 
 def command_dev(command_parameters, command_options):
@@ -1133,7 +1134,40 @@ def command_kill(command_parameters, command_options):
             dc(["stop", "-t 20", "postgres"])  # persist data
     dc(['stop', '-t 10'] + command_parameters)
 
-def command_incversions(comman_parameters, command_options):
+def command_image_import(command_parameters, command_options):
+    raise Exception("TODO")
+
+def command_image_export(command_parameters, command_options):
+    """
+    Exports all images of the customizations to one file.
+    Can be imported via image-import.
+    """
+    dump_path = os.path.join(BACKUPDIR, E("CUSTOMS") + '.docker.images.tar')
+    folder = tempfile.mkdtemp()
+    image_ids = dc([
+        'images',
+        '-q',
+    ], suppress_out=True).split("\n")
+    for image in image_ids:
+        filepath = os.path.join(folder, image)
+        print "Storing {} to {}".format(image, filepath)
+        __system([
+            'docker',
+            'save',
+            image,
+            '-o',
+            filepath,
+        ], suppress_out=True)
+    __system([
+        "tar",
+        "cfz",
+        dump_path,
+        '.',
+    ], cwd=folder)
+    print os.path.basename(dump_path)
+    print humanize.naturalsize(os.stat(dump_path).st_size)
+
+def command_incversions(command_parameters, command_options):
     versioning.actions["incversions"](*command_parameters)
 
 def command_link(command_parameters, command_options):
@@ -1216,7 +1250,7 @@ def command_OCA(command_parameters, command_options):
         "OCA-all"
     ] + command_parameters, cwd=dirs['admin'])
 
-def command_mergeto(comman_parameters, command_options):
+def command_mergeto(command_parameters, command_options):
     versioning.actions["mergeto"](*command_parameters)
 
 def command_migrate(command_parameters, command_options):
@@ -1235,7 +1269,7 @@ def command_migrate(command_parameters, command_options):
 def command_new_ticket(command_parameters, command_options):
     versioning.actions['new-ticket'](*command_parameters)
 
-def command_open_tickets(comman_parameters, command_options):
+def command_open_tickets(command_parameters, command_options):
     versioning.actions["open-tickets"](*command_parameters)
 
 def command_patch(command_parameters, command_options):
@@ -1471,7 +1505,7 @@ def command_springclean(command_parameters, command_options):
 def command_stage(command_parameters, command_options):
     versioning.action_stage_ticket()
 
-def command_stage_ticket(comman_parameters, command_options):
+def command_stage_ticket(command_parameters, command_options):
     versioning.actions["stage-ticket"](*command_parameters)
 
 def command_stop(command_parameters, command_options):
@@ -1492,7 +1526,7 @@ def command_submodule(command_parameters, command_options):
             'master',
         ], cwd=dirs['customs'])
 
-def command_switch_ticket(comman_parameters, command_options):
+def command_switch_ticket(command_parameters, command_options):
     versioning.actions["switch-ticket"](*command_parameters)
 
 def command_telegram_setup(command_parameters, command_options):
