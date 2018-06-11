@@ -390,8 +390,6 @@ def __reset_postgres_container():
     # remove the postgres volume and reinit
     if E("RUN_POSTGRES") == "1":
         print "Resettings postgres - killing data - not reversible"
-        do_command("kill")
-        dc(["rm", "-f"]) # set volume free
         VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
         docker_client = docker.from_env()
 
@@ -399,7 +397,19 @@ def __reset_postgres_container():
         def remove_volume():
             for volume in docker_client.volumes.list():
                 if volume.name == VOLUMENAME:
-                    volume.remove()
+                    try:
+                        do_command("kill")
+                        dc(["rm", "-f"]) # set volume free
+                        volume.remove()
+                    except Exception as e:
+                        print e
+                        if hasattr(e, 'explanation'):
+                            exp = e.explanation
+
+                            if 'volume is in use' in e:
+                                container_id = re.findall(r'\[([^\]]*)\]', exp)[0]
+                                __system(["docker", "rm", container_id])
+                        return None
             return True
         remove_volume()
         dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])

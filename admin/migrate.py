@@ -120,6 +120,8 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     ========================================================================""".format(version)
                     )
 
+        from pudb import set_trace
+        set_trace()
         do_command('build')
         # make sure postgres is available
         do_command("wait_for_container_postgres")
