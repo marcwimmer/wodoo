@@ -903,86 +903,14 @@ def _setup_odoo_instances():
                     f.write(yaml.dump(j, default_flow_style=False))
 
 def _showhelp():
-    print "Management of odoo instance"
-    print ""
-    print "./odoo sanity-check"
-    print "Reinit fresh db:"
-    print './odoo reset-db'
-    print ""
-    print "Update:"
-    print './odoo update [module]'
-    print 'Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)'
-    print 'Minimal downtime - but there is a downtime, even for phones'
-    print ""
-    print "Please call odoo springclean|update|backup|run_standalone|upall|attach_running|rebuild|restart"
-    print ""
-    print "abort-upgrade"
-    print ""
-    print "attach <machine> - attaches to running machine"
-    print ""
-    print "backup <backup-dir> - backup database and/or files to the given location with timestamp; if not directory given, backup to dumps is done "
-    print ""
-    print "backup-db <backup-dir>"
-    print ""
-    print "backup-files <backup-dir>"
-    print ""
-    print "debug <machine-name> - starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
-    print ""
-    print "dev - starts developing in the odoo container"
-    print ""
-    print "build - no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
-    print ""
-    print "link - links all modules into ./links"
-    print ""
-    print "telegram-setup- helps creating a permanent chatid"
-    print ""
-    print "kill - kills running machines"
-    print ""
-    print "logs - show log output; use parameter to specify machine"
-    print ""
-    print "logall - shows log til now; use parameter to specify machine"
-    print ""
-    print "springclean - remove dead containers, untagged images, delete unwanted volums"
-    print ""
-    print "rm - command"
-    print ""
-    print "compose - just build the big docker-compose file"
-    print ""
-    print "rebuild - rebuilds docker-machines - data not deleted"
-    print ""
-    print "restart - restarts docker-machine(s) - parameter name"
-    print ""
-    print "restore <filepathdb> <filepath_tarfiles> [-force] - restores the given dump as odoo database"
-    print ""
-    print "restore-dev-db - Restores database dump regularly and then applies scripts to modify it, so it can be used for development (adapting mailserver, disable cronjobs)"
-    print ""
-    print "runbash <machine name> - starts bash in NOT RUNNING container (a separate one)"
-    print ""
-    print "setup-startup makes skript in /etc/init/${CUSTOMS}"
-    print ""
-    print "stop - like docker-compose stop"
-    print ""
-    print "quickpull - fetch latest source, oeln - good for mako templates"
-    print ""
-    print "turn-into-dev - applies scripts to make the database a dev database"
-    print ""
-    print "update <machine name>- fetch latest source code of modules and run update of just custom modules; machines are restarted after that"
-    print ""
-    print "up - starts all machines equivalent to service <service> start "
-    print ""
-    print "remove-web-assets - if odoo-web interface is broken (css, js) then purging the web-assets helps; they are recreated on odoo restart"
-    print ""
-    print "fix-permissions - sets user 1000 for odoo and odoo_files"
-    print ""
-    print "show-install-state "
-    print ""
-    print "make-customs"
-    print
-    print "patch - run without arguments for help"
-    print ""
-    print "version - run without arguments for help"
-    print ""
 
+    print "Available Commands:"
+    for command in sorted(commands):
+        C = commands[command]
+        print command
+        if C.__doc__:
+            print C.__doc__
+    return
 
 def __get_cmd():
     cmd = commands['dc']
@@ -1027,50 +955,23 @@ def command_abort_upgrade(command_parameters, command_options):
     """
     __execute_sql(SQL)
 
-def command_backup_files(command_parameters, command_options):
-    if command_parameters:
-        raise Exception("No parameters allowed")
-    BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=E("CUSTOMS"))
+def command_attach(command_parameters, command_options):
+    """
+    attaches to running machine
+    """
+    machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
+    machine == command_parameters[0]
+    _display_machine_tips(machine)
+    bash = _get_bash_for_machine(machine)
+    cmd = __get_cmd() + ['exec', machine, bash]
+    os.system(" ".join(cmd))
 
-    if os.path.exists(BACKUP_FILENAME):
-        second = BACKUP_FILENAME + ".bak"
-        if os.path.exists(second):
-            os.unlink(second)
-        shutil.move(BACKUP_FILENAME, second)
-    dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
-    print "Backup files done to {}".format(BACKUP_FILENAME)
-
-def command_setup_startup(command_parameters, command_options):
-    if os.path.exists("/sbin_host/initctl"):
-        raise Exception("Not impl")
-    else:
-        print "Setting up systemd script for startup"
-        servicename = os.path.expandvars("${CUSTOMS}_odoo.service")
-        file = os.path.join("/tmp_host, servicename")
-
-        # echo "Setting up upstart script in $file"
-        shutil.copy(os.path.join(dirs['odoo_home'], 'config', 'systemd'), file)
-        __replace_in_file(file, "${CUSTOMS}", E("CUSTOMS"))
-        __replace_in_file(file, "${PATH}", E("HOST_ODOO_HOME"))
-
-        print("Please execute on host now (perhaps as sudo):")
-        print("""cp /tmp/{servicename} /etc/systemd/system")
-        systemctl stop {servicename}
-        systemctl disable {servicename}
-        systemctl daemon-reload
-        systemctl reset-failed
-        systemctl enable {servicename}
-        systemctl start {servicename}
-        """.format(servicename=servicename)
-              )
-
-def command_exec(command_parameters, command_options):
-    dcexec(command_parameters)
-
-def command_type(command_parameters, command_options):
-    dump_file = __safeget(command_parameters, 0, "Please provide the dump name", file_options=BACKUPDIR)
-    dump_file = os.path.join(BACKUPDIR, dump_file)
-    print __get_dump_type(dump_file)
+def command_backup(command_parameters, command_options):
+    """"
+    Runs backup-db and backup-files
+    """
+    do_command("backup-db")
+    do_command("backup-files")
 
 def command_backup_db(command_parameters, command_options):
     if command_parameters:
@@ -1099,100 +1000,52 @@ def command_backup_db(command_parameters, command_options):
     print "Dumped to ", filepath
     do_command('telegram-send', ["Database Backup $DBNAME done to $filepath"])
 
-def command_backup(command_parameters, command_options):
-    do_command("backup-db")
-    do_command("backup-files")
 
-def command_reset_db(command_parameters, command_options):
-    _askcontinue("Delete database {}".format(E("DBNAME")))
-    if E("RUN_POSTGRES") != "1":
-        print "Postgres container is disabled; cannot reset external database"
-        return
-    print "Stopping all services and creating new database"
-    print "After creation the database container is stopped. You have to start the system up then."
-    dc(['kill'])
-    __reset_postgres_container()
-    print "Database initialized."
+def command_backup_files(command_parameters, command_options):
+    if command_parameters:
+        raise Exception("No parameters allowed")
+    BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=E("CUSTOMS"))
 
-def command_restore_files(command_parameters, command_options):
-    dumpfile = __safeget(command_parameters, 0, "Please provide dumpfile")
-    if not command_parameters:
-        raise Exception("Please provide the tar file-name.")
-    __do_restore_files(dumpfile)
+    if os.path.exists(BACKUP_FILENAME):
+        second = BACKUP_FILENAME + ".bak"
+        if os.path.exists(second):
+            os.unlink(second)
+        shutil.move(BACKUP_FILENAME, second)
+    dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
+    print "Backup files done to {}".format(BACKUP_FILENAME)
 
-def command_restore_db(command_parameters, command_options):
-    for x in ["DB_HOST", "DB_PORT"]:
-        print("{}: {}".format(x, E(x)))
-    dumpfile = __safeget(command_parameters, 0, "Please provide dump-file name", file_options=BACKUPDIR)
-    dumpfile == os.path.join(BACKUPDIR, dumpfile)
-    if dumpfile.startswith("/"):
-        raise Exception("No path in dump file allowed")
-    __restore_check(dumpfile)
-    if E("DEVMODE") == "1" and not command_options.get('restore_as_dev_db', False):
-        _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
+def command_build(command_parameters, command_options):
+    """
+    no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
+    """
+    do_command("compose")
+    dc(['build'] + command_parameters)
 
-    if not FORCE:
-        _askcontinue("Deletes database {}!".format(E("DBNAME")))
+def command_commit(comman_parameters, command_options):
+    versioning.actions["commit"](*command_parameters)
 
-    DBNAME_RESTORING = E("DBNAME") + "_restoring"
-    os.environ['DBNAME'] = DBNAME_RESTORING
+def command_compose(command_parameters, command_options):
+    """
+    - builds docker compose
+    - builds proxy settings
+    - setups odoo instances
+    """
+    _remove_temp_directories()
+    _prepare_filesystem()
+    _prepare_yml_files_from_template_files()
+    _reset_proxy_configs()
+    _setup_proxy()
+    _setup_odoo_instances()
+    print "Built the docker-compose file."
 
-    config = MyConfigParser(files['settings'])
-    dbname = config['DBNAME']
-
-    do_command('reset-db')
-    __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING)
-    if command_options.get("exec_before_rename", False):
-        command_options['exec_before_rename'](DBNAME_RESTORING)
-    __rename_db_drop_target(DBNAME_RESTORING, dbname)
-    __remove_postgres_connections(dbname)
-    __set_db_ownership()
-    do_command('telegram-send', ["Database Restore $DBNAME done."])
-
-def command_set_db_ownership(command_parameters, command_options):
-    __set_db_ownership()
-
-def command_proxy_reload(command_parameters, command_options):
-    if __is_container_running('proxy'):
-        dcexec(['proxy', '/opt/bin/hot_reload.sh'])
-
-def command_restore_dev_db(command_parameters, command_options):
-    if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
-        raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
-
-    print("Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs")
-
-    def exec_sql(dbname):
-        __turn_into_devdb(dbname)
-
-    do_command("restore-db", command_parameters, command_options={
-        'exec_before_rename': exec_sql,
-        'restore_as_dev_db': True,
-    })
-
-def command_turn_into_dev(command_parameters, command_options):
-    if E("DEVMODE") != "1":
-        raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
-Please set DEVMODE=1 to allow this""")
-    __turn_into_devdb(E("DBNAME"))
-
-def command_springclean(command_parameters, command_options):
-    os.system("docker system prune")
-    print("removing dead containers")
-    os.system('docker ps -a -q | while read -r id; do docker rm "$id"; done')
-
-    print("Remove untagged images")
-    os.system('docker images | grep "<none>" | awk \'{ print "docker rmi " $3 }\' | bash')
-
-    print("delete unwanted volumes (can pass -dry-run)")
-    os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
-
-def command_up(command_parameters, command_options):
-    __set_db_ownership()
-    dc(['up'] + command_parameters)
-    do_command("proxy-reload")
+def command_current_ticket(comman_parameters, command_options):
+    versioning.actions["current-ticket"](*command_parameters)
 
 def command_debug(command_parameters, command_options):
+    """
+    starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
+    """
+
     # puts endless loop into container command and then attaches to it;
     # by this, name resolution to the container still works
     machine_name = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
@@ -1209,43 +1062,59 @@ def command_debug(command_parameters, command_options):
     dc(['up', '-d', machine_name])
     dcexec([machine_name, 'bash'])
 
-def command_attach(command_parameters, command_options):
-    machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
-    machine == command_parameters[0]
-    _display_machine_tips(machine)
-    bash = _get_bash_for_machine(machine)
-    cmd = __get_cmd() + ['exec', machine, bash]
-    os.system(" ".join(cmd))
+def command_deploy(command_parameters, command_options):
+    versioning.action_deploy_ticket()
 
-def command_run(command_parameters, command_options):
-    __set_db_ownership()
-    if len(command_parameters) == 2:
-        if command_parameters[1] == 'bash':
-            do_command("runbash")
-            return
-    dcrun(command_parameters)
+def command_deploy_ticket(comman_parameters, command_options):
+    versioning.actions["deploy-ticket"](*command_parameters)
 
-def command_runbash(command_parameters, command_options):
-    machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
-    __set_db_ownership()
-    _display_machine_tips(machine)
-    bash = _get_bash_for_machine(machine)
-    cmd = __get_cmd() + ['run', machine, bash]
-    os.system(" ".join(cmd))
+def command_dev(command_parameters, command_options):
+    """
+    starts developing in the odoo container
+    """
+    if command_parameters:
+        do_command('compose', command_parameters)
+    do_command('kill')
+    do_command('rm', ['-f'])
+    do_command('build')
+    do_command('up', ['-d'])
+    do_command('attach', ['odoo'])
 
-def command_rebuild(command_parameters, command_options):
-    do_command("compose")
-    dc(['build', '--no-cache'] + command_parameters)
+def command_dirty(command_parameters, command_options):
+    versioning.dirty()
+def command_exec(command_parameters, command_options):
+    dcexec(command_parameters)
 
-def command_build(command_parameters, command_options):
-    do_command("compose")
-    dc(['build'] + command_parameters)
+def command_export_i18n(command_parameters, command_options):
+    LANG = __safeget(command_parameters, 0, "Please provide lang")
+    MODULES = __safeget(command_parameters, 1, "Please provide module")
+    dcrun(['odoo', '/export_i18n.sh', LANG, MODULES])
+    # file now is in $DIR/run/i18n/export.po
+
+def command_fix_permissions(command_parameters, command_options):
+    if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
+        __try_to_set_owner(E("OWNER_UID", E("ODOO_FILES"), recursive=True))
+    customs_dir = odoo_config.customs_dir()
+    __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
 def command_force_kill(command_parameters, command_options):
     machine_name = __safeget(command_parameters, 0, "Please provide machine name")
     dc(['kill', machine_name])
 
+def command_get_all_langs(command_parameters, command_options):
+    langs = [x[0] for x in __execute_sql(
+        "select code from res_lang;",
+        fetchall=True
+    )]
+    for lang in langs:
+        print(lang)
+    return langs
+
 def command_kill(command_parameters, command_options):
+    """
+    kills running machine
+    safely shutdowns postgres and redis
+    """
     machine_name = command_parameters[0] if command_parameters else None
     if not machine_name or machine_name == 'redis':
         if __is_container_running('redis'):
@@ -1256,10 +1125,22 @@ def command_kill(command_parameters, command_options):
             dc(["stop", "-t 20", "postgres"])  # persist data
     dc(['stop', '-t 10'] + command_parameters)
 
-def command_stop(command_parameters, command_options):
-    dc(['stop'] + command_parameters)
+def command_incversions(comman_parameters, command_options):
+    versioning.actions["incversions"](*command_parameters)
+
+def command_link(command_parameters, command_options):
+    """
+    links all modules into ./links
+    """
+    __system([
+        'python',
+        os.path.join(dirs['admin'], 'link_modules')
+    ])
 
 def command_logsn(command_parameters, command_options):
+    """
+    logoutput of machine; use parameter for machine
+    """
     dc(['logs', '--tail=' + command_parameters[0], '-f', '-t'] + command_parameters[1:])
 
 def command_logs(command_parameters, command_options):
@@ -1280,117 +1161,8 @@ def command_logs(command_parameters, command_options):
 def command_logall(command_parameters, command_options):
     dc(['logs', '-f', '-t'] + command_parameters)
 
-def command_rm(command_parameters, command_options):
-    dc(['rm'] + command_parameters)
-
-def command_restart(command_parameters, command_options):
-    dc(['stop'] + command_parameters)
-    dc(['rm', '-f'] + command_parameters)
-    dc(['up', '--force-recreate'] + command_parameters)
-    do_command('proxy_reload')
-
-def command_dev(command_parameters, command_options):
-    if command_parameters:
-        do_command('compose', command_parameters)
-    do_command('kill')
-    do_command('rm', ['-f'])
-    do_command('build')
-    do_command('up', ['-d'])
-    do_command('attach', ['odoo'])
-
-def command_telegram_setup(command_parameters, command_options):
-    if E("TELEGRAM_ENABLED") == "1":
-        os.system("""
-cd "{dir}"
-docker-compose run -it telegrambat /setup.sh
-""".format(dir=dirs['telegrambot']))
-
-def command_telegram_send(command_parameters, command_options):
-    if E("TELEGRAM_ENABLED") == "1":
-        os.system("""
-            cd "{dir}"
-            docker-compose run telegrambat /send.py "{message}"
-        """.format(
-            dir=dirs['telegrambot'],
-            message=__safeget(command_parameters, 0, "Please define message to send")
-        ))
-
-def command_fix_permissions(command_parameters, command_options):
-    if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
-        __try_to_set_owner(E("OWNER_UID", E("ODOO_FILES"), recursive=True))
-    customs_dir = odoo_config.customs_dir()
-    __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
-
-def command_update(command_parameters, command_options):
-    do_command('abort-upgrade')
-    print("Run module update")
-    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
-        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
-            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-    # running duplicate updates is really a problem;
-    do_command('kill')
-    dc(['rm', '-f'])
-    dc(['create', '--force-recreate'])
-    __start_postgres_and_wait()
-
-    module = command_parameters[0] if command_parameters else ""
-    try:
-        dcrun(['odoo_update', '/update_modules.sh', module])
-    except Exception:
-        raise Exception("Error at /update_modules.sh - aborting update process.")
-    do_command('show-install-state')
-
-    for i in range(5):
-        dc(['up', '-d'])
-        do_command('proxy-reload')
-        time.sleep(2)
-
-    os.system('df -h /') # case: after update disk / was full
-    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
-        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
-            f.write("0")
-    do_command('telegram-send', ["Update done"])
-
-def command_show_install_state(command_parameters, command_options):
-    rows = __execute_sql(
-        "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
-        fetchall=True
-    )
-    print("Displaying dangling modules:")
-    for row in rows:
-        print("{}: {}".format(row[0], row[1]))
-
-    if len(rows):
-        raise Exception("Dangling modules detected - please fix installation problems and retry!")
-
-def command_get_all_langs(command_parameters, command_options):
-    langs = [x[0] for x in __execute_sql(
-        "select code from res_lang;",
-        fetchall=True
-    )]
-    for lang in langs:
-        print(lang)
-    return langs
-
-def command_export_i18n(command_parameters, command_options):
-    LANG = __safeget(command_parameters, 0, "Please provide lang")
-    MODULES = __safeget(command_parameters, 1, "Please provide module")
-    dcrun(['odoo', '/export_i18n.sh', LANG, MODULES])
-    # file now is in $DIR/run/i18n/export.po
-
 def command_import_i18n(command_parameters, command_options):
     dcrun(['odoo', '/import_i18n.sh'] + command_parameters)
-
-def command_remove_web_assets(command_parameters, command_options):
-    _askcontinue()
-    from module_tools.module_tools import remove_webassets
-    remove_webassets()
-    if float(E("ODOO_VERSION")) <= 10.0:
-        print("Please login as admin, so that assets are recreated.")
-
-def command_sanity_check(command_parameters, command_options):
-    _sanity_check()
 
 def command_make_customs(command_parameters, command_options):
     _askcontinue()
@@ -1436,42 +1208,27 @@ def command_OCA(command_parameters, command_options):
         "OCA-all"
     ] + command_parameters, cwd=dirs['admin'])
 
-def command_compose(command_parameters, command_options):
-    _remove_temp_directories()
-    _prepare_filesystem()
-    _prepare_yml_files_from_template_files()
-    _reset_proxy_configs()
-    _setup_proxy()
-    _setup_odoo_instances()
-    print "Built the docker-compose file."
+def command_mergeto(comman_parameters, command_options):
+    versioning.actions["mergeto"](*command_parameters)
 
-def command_simplebash(command_parameters, command_options):
-    if not command_parameters:
-        os.system("bash --noprofile")
-    else:
-        os.system("bash --noprofile -c {}".format(" ".join(command_parameters)))
+def command_migrate(command_parameters, command_options):
+    LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
+    from_version = __safeget(command_parameters, 0, "Provide from version!")
+    to_version = __safeget(command_parameters, 1, "Provide to version!")
+    do_command("fix-permissions")
+    do_migrate(
+        LOGFILE,
+        from_version,
+        to_version,
+        do_command,
+        SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
+    )
 
-def command_test(command_parameters, command_options):
-    print 'reached the command area'
-    print os.path.expandvars("CUSTOMS is: $CUSTOMS")
-    print os.path.expandvars("Here is pgpassfile: $PGPASSFILE")
-    print "Now calling simple psql"
-    __execute_sql("select state, count(*) from ir_module_module group by state;")
+def command_new_ticket(command_parameters, command_options):
+    versioning.actions['new-ticket'](*command_parameters)
 
-def command_test_make_error(command_parameters, command_options):
-    print("now throwing exit code")
-    sys.exit(123)
-def command_progress(command_parameters, command_options):
-    for row in __execute_sql("select state, count(*) from ir_module_module group by state;", fetchall=True):
-        print "{}: {}".format(row[0], row[1])
-
-def command_prepare(command_parameters, command_options):
-    print "All configurations prepared."
-def command_link(command_parameters, command_options):
-    __system([
-        'python',
-        os.path.join(dirs['admin'], 'link_modules')
-    ])
+def command_open_tickets(comman_parameters, command_options):
+    versioning.actions["open-tickets"](*command_parameters)
 
 def command_patch(command_parameters, command_options):
     customs_dir = dirs['customs']
@@ -1480,51 +1237,15 @@ def command_patch(command_parameters, command_options):
     __system([
         'admin/odoo-patch'
     ] + command_parameters, cwd=dirs['odoo_home'], raise_exception=bool(command_parameters))  # otherwise show help
-def command_wait_for_port(command_parameters, command_options):
-    host = command_parameters[0]
-    port = long(command_parameters[1])
-    __wait_for_port(host=host, port=port)
+def command_prepare(command_parameters, command_options):
+    print "All configurations prepared."
+def command_progress(command_parameters, command_options):
+    for row in __execute_sql("select state, count(*) from ir_module_module group by state;", fetchall=True):
+        print "{}: {}".format(row[0], row[1])
 
-def command_wait_for_container_postgres(command_parameters, command_options):
-    __start_postgres_and_wait()
-
-def command_dirty(command_parameters, command_options):
-    versioning.dirty()
-def command_stage(command_parameters, command_options):
-    versioning.action_stage_ticket()
-
-def command_deploy(command_parameters, command_options):
-    versioning.action_deploy_ticket()
-
-def command_versioning(command_parameters, command_options):
-    versioning.actions[command_parameters[0]](*command_parameters[1:])
-
-def command_new_ticket(command_parameters, command_options):
-    versioning.actions['new-ticket'](*command_parameters)
-
-def command_switch_ticket(comman_parameters, command_options):
-    versioning.actions["switch-ticket"](*command_parameters)
-
-def command_mergeto(comman_parameters, command_options):
-    versioning.actions["mergeto"](*command_parameters)
-
-def command_deploy_ticket(comman_parameters, command_options):
-    versioning.actions["deploy-ticket"](*command_parameters)
-
-def command_stage_ticket(comman_parameters, command_options):
-    versioning.actions["stage-ticket"](*command_parameters)
-
-def command_commit(comman_parameters, command_options):
-    versioning.actions["commit"](*command_parameters)
-
-def command_incversions(comman_parameters, command_options):
-    versioning.actions["incversions"](*command_parameters)
-
-def command_current_ticket(comman_parameters, command_options):
-    versioning.actions["current-ticket"](*command_parameters)
-
-def command_open_tickets(comman_parameters, command_options):
-    versioning.actions["open-tickets"](*command_parameters)
+def command_proxy_reload(command_parameters, command_options):
+    if __is_container_running('proxy'):
+        dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
 def command_pull(command_parameters, command_options):
     submodule_name = __safeget(command_parameters, 0, "Please provide submodule name")
@@ -1574,11 +1295,179 @@ def command_push(command_parameters, command_options):
         'master'
     ], cwd=dirs['customs'])
 
+def command_rebuild(command_parameters, command_options):
+    do_command("compose")
+    dc(['build', '--no-cache'] + command_parameters)
+
+def command_remove_web_assets(command_parameters, command_options):
+    """
+    if odoo-web interface is broken (css, js) then purging the web-assets helps;
+    they are usually recreated when admin login
+    """
+    _askcontinue()
+    from module_tools.module_tools import remove_webassets
+    remove_webassets()
+    if float(E("ODOO_VERSION")) <= 10.0:
+        print("Please login as admin, so that assets are recreated.")
+
+def command_reset_db(command_parameters, command_options):
+    _askcontinue("Delete database {}".format(E("DBNAME")))
+    if E("RUN_POSTGRES") != "1":
+        print "Postgres container is disabled; cannot reset external database"
+        return
+    print "Stopping all services and creating new database"
+    print "After creation the database container is stopped. You have to start the system up then."
+    dc(['kill'])
+    __reset_postgres_container()
+    print "Database initialized."
+
+def command_restart(command_parameters, command_options):
+    dc(['stop'] + command_parameters)
+    dc(['rm', '-f'] + command_parameters)
+    dc(['up', '--force-recreate'] + command_parameters)
+    do_command('proxy_reload')
+
+def command_restore_dev_db(command_parameters, command_options):
+    if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
+        raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
+
+    print("Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs")
+
+    def exec_sql(dbname):
+        __turn_into_devdb(dbname)
+
+    do_command("restore-db", command_parameters, command_options={
+        'exec_before_rename': exec_sql,
+        'restore_as_dev_db': True,
+    })
+
+def command_restore_files(command_parameters, command_options):
+    dumpfile = __safeget(command_parameters, 0, "Please provide dumpfile")
+    if not command_parameters:
+        raise Exception("Please provide the tar file-name.")
+    __do_restore_files(dumpfile)
+
+def command_restore_db(command_parameters, command_options):
+    for x in ["DB_HOST", "DB_PORT"]:
+        print("{}: {}".format(x, E(x)))
+    dumpfile = __safeget(command_parameters, 0, "Please provide dump-file name", file_options=BACKUPDIR)
+    dumpfile == os.path.join(BACKUPDIR, dumpfile)
+    if dumpfile.startswith("/"):
+        raise Exception("No path in dump file allowed")
+    __restore_check(dumpfile)
+    if E("DEVMODE") == "1" and not command_options.get('restore_as_dev_db', False):
+        _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
+
+    if not FORCE:
+        _askcontinue("Deletes database {}!".format(E("DBNAME")))
+
+    DBNAME_RESTORING = E("DBNAME") + "_restoring"
+    os.environ['DBNAME'] = DBNAME_RESTORING
+
+    config = MyConfigParser(files['settings'])
+    dbname = config['DBNAME']
+
+    do_command('reset-db')
+    __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING)
+    if command_options.get("exec_before_rename", False):
+        command_options['exec_before_rename'](DBNAME_RESTORING)
+    __rename_db_drop_target(DBNAME_RESTORING, dbname)
+    __remove_postgres_connections(dbname)
+    __set_db_ownership()
+    do_command('telegram-send', ["Database Restore $DBNAME done."])
+
+def command_rm(command_parameters, command_options):
+    dc(['rm'] + command_parameters)
+
 def command_rmpyc(command_parameters, command_options):
     for root, _, _files in os.walk(dirs['customs']):
         for filename in _files:
             if filename.endswith(".pyc"):
                 os.unlink(os.path.join(root, filename))
+
+def command_run(command_parameters, command_options):
+    __set_db_ownership()
+    if len(command_parameters) == 2:
+        if command_parameters[1] == 'bash':
+            do_command("runbash")
+            return
+    dcrun(command_parameters)
+
+def command_runbash(command_parameters, command_options):
+    machine = __safeget(command_parameters, 0, "Please give machine name as second parameter e.g. postgres, odoo")
+    __set_db_ownership()
+    _display_machine_tips(machine)
+    bash = _get_bash_for_machine(machine)
+    cmd = __get_cmd() + ['run', machine, bash]
+    os.system(" ".join(cmd))
+
+def command_sanity_check(command_parameters, command_options):
+    _sanity_check()
+
+def command_set_db_ownership(command_parameters, command_options):
+    __set_db_ownership()
+
+def command_setup_startup(command_parameters, command_options):
+    if os.path.exists("/sbin_host/initctl"):
+        raise Exception("Not impl")
+    else:
+        print "Setting up systemd script for startup"
+        servicename = os.path.expandvars("${CUSTOMS}_odoo.service")
+        file = os.path.join("/tmp_host, servicename")
+
+        # echo "Setting up upstart script in $file"
+        shutil.copy(os.path.join(dirs['odoo_home'], 'config', 'systemd'), file)
+        __replace_in_file(file, "${CUSTOMS}", E("CUSTOMS"))
+        __replace_in_file(file, "${PATH}", E("HOST_ODOO_HOME"))
+
+        print("Please execute on host now (perhaps as sudo):")
+        print("""cp /tmp/{servicename} /etc/systemd/system")
+        systemctl stop {servicename}
+        systemctl disable {servicename}
+        systemctl daemon-reload
+        systemctl reset-failed
+        systemctl enable {servicename}
+        systemctl start {servicename}
+        """.format(servicename=servicename)
+              )
+
+def command_show_install_state(command_parameters, command_options):
+    rows = __execute_sql(
+        "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
+        fetchall=True
+    )
+    print("Displaying dangling modules:")
+    for row in rows:
+        print("{}: {}".format(row[0], row[1]))
+
+    if len(rows):
+        raise Exception("Dangling modules detected - please fix installation problems and retry!")
+
+def command_simplebash(command_parameters, command_options):
+    if not command_parameters:
+        os.system("bash --noprofile")
+    else:
+        os.system("bash --noprofile -c {}".format(" ".join(command_parameters)))
+
+def command_springclean(command_parameters, command_options):
+    os.system("docker system prune")
+    print("removing dead containers")
+    os.system('docker ps -a -q | while read -r id; do docker rm "$id"; done')
+
+    print("Remove untagged images")
+    os.system('docker images | grep "<none>" | awk \'{ print "docker rmi " $3 }\' | bash')
+
+    print("delete unwanted volumes (can pass -dry-run)")
+    os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
+
+def command_stage(command_parameters, command_options):
+    versioning.action_stage_ticket()
+
+def command_stage_ticket(comman_parameters, command_options):
+    versioning.actions["stage-ticket"](*command_parameters)
+
+def command_stop(command_parameters, command_options):
+    dc(['stop'] + command_parameters)
 
 def command_submodule(command_parameters, command_options):
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
@@ -1595,6 +1484,50 @@ def command_submodule(command_parameters, command_options):
             'master',
         ], cwd=dirs['customs'])
 
+def command_switch_ticket(comman_parameters, command_options):
+    versioning.actions["switch-ticket"](*command_parameters)
+
+def command_telegram_setup(command_parameters, command_options):
+    """
+    helps creating a permanent chatid
+    """
+    if E("TELEGRAM_ENABLED") == "1":
+        os.system("""
+cd "{dir}"
+docker-compose run -it telegrambat /setup.sh
+""".format(dir=dirs['telegrambot']))
+
+def command_telegram_send(command_parameters, command_options):
+    if E("TELEGRAM_ENABLED") == "1":
+        os.system("""
+            cd "{dir}"
+            docker-compose run telegrambat /send.py "{message}"
+        """.format(
+            dir=dirs['telegrambot'],
+            message=__safeget(command_parameters, 0, "Please define message to send")
+        ))
+
+def command_test(command_parameters, command_options):
+    print 'reached the command area'
+    print os.path.expandvars("CUSTOMS is: $CUSTOMS")
+    print os.path.expandvars("Here is pgpassfile: $PGPASSFILE")
+    print "Now calling simple psql"
+    __execute_sql("select state, count(*) from ir_module_module group by state;")
+
+def command_test_make_error(command_parameters, command_options):
+    print("now throwing exit code")
+    sys.exit(123)
+def command_turn_into_dev(command_parameters, command_options):
+    if E("DEVMODE") != "1":
+        raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
+Please set DEVMODE=1 to allow this""")
+    __turn_into_devdb(E("DBNAME"))
+
+def command_type(command_parameters, command_options):
+    dump_file = __safeget(command_parameters, 0, "Please provide the dump name", file_options=BACKUPDIR)
+    dump_file = os.path.join(BACKUPDIR, dump_file)
+    print __get_dump_type(dump_file)
+
 def command_update_ast(command_parameters, command_options):
     if _get_platform() == PLATFORM_OSX:
         print "Update is extreme slow on osx due to share performance. Please use following command natively:"
@@ -1609,18 +1542,56 @@ def command_update_ast(command_parameters, command_options):
     update_cache()
     print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
 
-def command_migrate(command_parameters, command_options):
-    LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
-    from_version = __safeget(command_parameters, 0, "Provide from version!")
-    to_version = __safeget(command_parameters, 1, "Provide to version!")
-    do_command("fix-permissions")
-    do_migrate(
-        LOGFILE,
-        from_version,
-        to_version,
-        do_command,
-        SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
-    )
+def command_up(command_parameters, command_options):
+    __set_db_ownership()
+    dc(['up'] + command_parameters)
+    do_command("proxy-reload")
+
+def command_update(command_parameters, command_options):
+    """
+    Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
+    Minimal downtime - but there is a downtime, even for phones
+    """
+    do_command('abort-upgrade')
+    print("Run module update")
+    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
+        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
+            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    # running duplicate updates is really a problem;
+    do_command('kill')
+    dc(['rm', '-f'])
+    dc(['create', '--force-recreate'])
+    __start_postgres_and_wait()
+
+    module = command_parameters[0] if command_parameters else ""
+    try:
+        dcrun(['odoo_update', '/update_modules.sh', module])
+    except Exception:
+        raise Exception("Error at /update_modules.sh - aborting update process.")
+    do_command('show-install-state')
+
+    for i in range(5):
+        dc(['up', '-d'])
+        do_command('proxy-reload')
+        time.sleep(2)
+
+    os.system('df -h /') # case: after update disk / was full
+    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
+        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
+            f.write("0")
+    do_command('telegram-send', ["Update done"])
+
+def command_versioning(command_parameters, command_options):
+    versioning.actions[command_parameters[0]](*command_parameters[1:])
+
+def command_wait_for_container_postgres(command_parameters, command_options):
+    __start_postgres_and_wait()
+
+def command_wait_for_port(command_parameters, command_options):
+    host = command_parameters[0]
+    port = long(command_parameters[1])
+    __wait_for_port(host=host, port=port)
 
 def do_command(command, command_parameters=[], command_options={}):
     command = command.replace("-", "_")
@@ -1652,6 +1623,7 @@ if __name__ == '__main__':
     _remember_customs_and_cry_if_changed
     if not args:
         _showhelp()
+        sys.exit(0)
     _sanity_check()
 
     try:
