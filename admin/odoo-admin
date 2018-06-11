@@ -308,13 +308,18 @@ def _setup_proxy():
             CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
             f_add_upstream(LOCATION, UPSTREAM, CONFIG_PATH)
 
+@retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
 def __get_docker_image():
+    """
+    Sometimes this command fails; checked with pudb behind call, hostname matches
+    container id; seems to be race condition or so
+    """
     hostname = os.environ['HOSTNAME']
     result = [x for x in __system(["/opt/docker/docker", "inspect", hostname], suppress_out=True).split("\n") if "\"Image\"" in x]
     if result:
         result = result[0].split("sha256:")[-1].split('"')[0]
         return result[:12]
-    raise Exception("Image not determined")
+    return None
 
 def __get_dump_type(filepath):
     temp = tempfile.mktemp(suffix='.check')
@@ -1038,7 +1043,7 @@ def command_compose(command_parameters, command_options):
             config.clear()
             config['CUSTOMS'] = customs
             config.write()
-
+    _export_settings()
     _remove_temp_directories()
     _prepare_filesystem()
     _prepare_yml_files_from_template_files()
