@@ -112,38 +112,6 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
     if from_version not in migrations:
         print "Invalid from version: {}".format(from_version)
 
-    def run_cmd(cmd, cwd=None, raise_error=True):
-        logger.info("Executing:\n{}".format(" ".join(cmd)))
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, cwd=cwd)
-
-        def reader(pipe, q):
-            try:
-                with pipe:
-                    for line in iter(pipe.readline, ''):
-                        q.put((pipe, line))
-            finally:
-                q.put(None)
-
-        q = Queue()
-        has_errors = False
-        Thread(target=reader, args=[proc.stdout, q]).start()
-        Thread(target=reader, args=[proc.stderr, q]).start()
-        for source, line in iter(q.get, None):
-            line = (line or '').strip()
-            if source == proc.stderr:
-                logger.error(line)
-                has_errors = True
-            else:
-                logger.info(line)
-
-        proc.wait()
-        if proc.returncode:
-            raise Exception("Error executing command, out put is above; command is:\n{}".format(" ".join(cmd)))
-
-        if has_errors:
-            if raise_error:
-                raise Exception("Errors occured for {}".format(" ".join(cmd)))
-
     for version in sorted(filter(lambda v: float(v) > float(from_version) and float(v) <= float(to_version), migrations), key=lambda x: float(x)):
         with open(os.path.join(customs_dir(), '.version'), 'w') as f:
             f.write(version)
@@ -159,7 +127,7 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
             "odoo",
             "/run_migration.sh",
             'before',
-        ], raise_error=True)
+        ])
         do_command('run', [
             "odoo",
             "/bin/bash",
@@ -167,7 +135,7 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
             migrations[version]['branch'],
             migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME']),
             ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
-        ], raise_error=False)
+        ])
         do_command('run', [
             "odoo",
             "/run_migration.sh",

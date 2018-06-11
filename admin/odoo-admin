@@ -934,14 +934,14 @@ def dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True):
     )
     return out
 
-def dcrun(cmd, interactive=False, wait_finished=True):
+def dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True):
     cmd = [os.path.expandvars(x) for x in cmd]
     if interactive:
         options = ''
     else:
         options = '-T'
     cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
-    return dc(cmd, wait_finished=wait_finished)
+    return dc(cmd, wait_finished=wait_finished, raise_exception=True)
 
 def E(name):
     if name.startswith("$"):
@@ -1386,6 +1386,8 @@ def command_rmpyc(command_parameters, command_options):
                 os.unlink(os.path.join(root, filename))
 
 def command_run(command_parameters, command_options):
+    from pudb import set_trace
+    set_trace()
     __set_db_ownership()
     if len(command_parameters) == 2:
         if command_parameters[1] == 'bash':
@@ -1631,4 +1633,4 @@ if __name__ == '__main__':
         do_command(args[0], command_parameters)
         pass
     finally:
-        _cleanup
+        _cleanup()
