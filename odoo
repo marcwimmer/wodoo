@@ -136,7 +136,8 @@ def build_command():
     command += ["/opt/odoo/admin/odoo-admin"]
     if len(sys.argv) > 1:
         command += sys.argv[1:]
-    subprocess.Popen(command, cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'))
+    proc = subprocess.Popen(command, cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'))
+    proc.wait()
 
 def start_background_sync_from_host():
     if E("NO_SYNC") == "1" or E("DOCKER_MACHINE") == "1":
