@@ -1,172 +1,164 @@
-#!/bin/bash
-set +x
-ARGS=( "$@" )
+#!/usr/bin/python
+import uuid
+import sys
+import os
+import inspect
+import subprocess
+import time
+from admin.module_tools.myconfigparser import MyConfigParser
 
-function file2env() {
-	if [[ ! -f "$1" ]]; then
-		return 0
-	fi
+def E(name):
+    if name.startswith("$"):
+        name = name[1:]
+    return os.getenv(name, "")
+LOCAL_ODOO_HOME = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
-    # set variables from settings
-    while read -r line; do
-        # reads KEY1=A GmbH and makes export KEY1="A GmbH" basically
-        [[ "$line" == '#*' ]] && continue
-        [[ "$line" == '' ]] && continue
-        var="${line%=*}"
-        value="${line##*=}"
-        eval "$var=\"$value\""
-		export "$var" # export local variable to environment
-    done <"$1"
+WORKING_DIR = E("WORKING_DIR")
+SETTINGS_FILE = os.path.join(LOCAL_ODOO_HOME, 'run/settings')
 
-	return 0
-}
+if not WORKING_DIR:
+    WORKING_DIR = os.getcwd()
 
+if not E("ODOO_HOME") and E("DOCKER_MACHINE") != "1":
+    ODOO_HOME = LOCAL_ODOO_HOME
+else:
+    ODOO_HOME = E("ODOO_HOME")
 
-function startup() {
-	set -e
-	WORKING_DIR=${WORKING_DIR}
-	LOCAL_ODOO_HOME=$( cd "$( /usr/bin/dirname "${BASH_SOURCE[0]}" )" && pwd )
-    SETTINGS_FILE="$LOCAL_ODOO_HOME/run/settings"
+os.environ['ODOO_HOME'] = ODOO_HOME
+os.environ['WORKING_DIR'] = WORKING_DIR
 
-	if [[ -z "$WORKING_DIR" ]]; then
-		WORKING_DIR=$(realpath "$(pwd)")
-	fi
+config = MyConfigParser(SETTINGS_FILE)
+if not os.path.exists(SETTINGS_FILE):
+    config.write()
 
-	if [[ -z "$ODOO_HOME" || "$DOCKER_MACHINE" != "1" ]]; then
-		ODOO_HOME="$LOCAL_ODOO_HOME"
-	fi
+for k in config.keys():
+    os.environ[k] = config[k]
 
-	export ODOO_HOME="$ODOO_HOME"
-	export WORKING_DIR="$WORKING_DIR"
+os.environ['HOSTNAME_TO_USE'] = E("HOST")
 
-    if [[ ! -e "$SETTINGS_FILE" ]]; then
-        touch "$SETTINGS_FILE"
-    fi
+if not E("CUSTOMS"):
+    os.environ['CUSTOMS'] = config.get("CUSTOMS", "")
 
-	file2env "$SETTINGS_FILE"
-	export HOSTNAME_TO_USE="$HOST"
-
-}
-
-function show_help() {
-	if [[ "$1" == '--help' ]]; then
-		echo "If you experience problems, try to call"
-		echo ""
-		echo "$ODOO_HOME/odoo --update"
-		echo ""
-		echo "- docker-container admin bash is updated by that"
-		exit 0
-	fi
-}
-
-function update() {
-	if [[ "$1" == '--update' ]]; then
-		cd "$ODOO_HOME/config/simplebash"
-		./rebuild.sh
-
-		cd "$ODOO_HOME/config/telegrambot"
-		/usr/local/bin/docker-compose build
-		exit 0
-	fi
-}
-
-function check_customs() {
-    if [[ "$CUSTOMS" == "" ]]; then
-        if [[ "${ARGS[0]}" == 'compose' && -n "${ARGS[1]}" ]]; then
-            mkdir -p "$(dirname "$SETTINGS_FILE")"
-            echo "CUSTOMS=${ARGS[1]}" > $LOCAL_ODOO_HOME/run/settings
-            file2env "$SETTINGS_FILE"
-        else
-            echo "Please define customs with:"
-            echo "./odoo compose <CUSTOMS>"
-            exit 1
-        fi
-    fi
-
-}
-
-#function remove_old_bash() {
-#	cd "$LOCAL_ODOO_HOME/config/simplebash" || exit -1
-#	/usr/local/bin/docker-compose rm -f simplebash 1>/dev/null 2>&1
-#}
+def get_platform():
+    if not E("PLATFORM"):
+        if "Darwin" in subprocess.check_output(["uname"]):
+            os.environ['PLATFORM'] = 'macos'
+        else:
+            os.environ['PLATFORM'] = 'linux'
+    return E("PLATFORM")
 
 
-function build_command() {
-	# using absolute path, to work in crontab
-	cd "$LOCAL_ODOO_HOME/config/simplebash" || exit -1
-	if [[ -n "$DISPLAY" ]]; then
-		xhost +local:"$HOSTNAME_TO_USE"  >/dev/null
-	fi
-	export WORKING_DIR="$WORKING_DIR"
-	if [[ "$(uname)" == "Darwin" ]]; then
-		docker_group_id="$(cut -d : -f3 <(dscl . -read /Groups/staff | awk '($1 == "PrimaryGroupID:") { print $2 }'))"
-		host_type='macos'
-	else
-	    docker_group_id="$(cut -d : -f3 <(getent group docker))"
-		host_type='linux'
-	fi
+def show_help():
+    if any(x == '--help' for x in sys.argv):
+        print("If you experience problems, try to call")
+        print("")
+        print(os.path.expandvars("$ODOO_HOME/odoo --update"))
+        print("")
+        print("- docker-container admin bash is updated by that")
+        sys.exit(0)
+
+def update():
+    if len(sys.argv) > 1 and sys.argv[1] == '--update':
+        subprocess.Popen([
+            "/bin/bash",
+            "rebuild.sh"
+        ], cwd=os.path.expandvars("$ODOO_HOME/config/simplebash"))
+
+        subprocess.Popen([
+            "/usr/local/bin/docker-compose",
+            "build"
+        ], cwd=os.path.expandvars("$ODOO_HOME/config/telegrambot"))
+
+        sys.exit(0)
+
+def check_customs():
+    if not E("CUSTOMS"):
+        if len(sys.argv) > 1:
+            if sys.argv[1] == 'compose' and len(sys.argv) == 3:
+                os.makedirs(os.path.dirname(SETTINGS_FILE))
+                with open(SETTINGS_FILE, 'w') as f:
+                    f.write("CUSTOMS={}".format(sys.argv[2]))
+                os.environ['CUSTOMS'] = sys.argv[2]
+        else:
+            print "Please define customs with:"
+            print "./odoo compose <CUSTOMS>"
+            sys.exit(1)
+
+def build_command():
+    # using absolute path, to work in crontab
+
+    if E("DISPLAY"):
+        subprocess.check_call([
+            'xhost',
+            '+local:{}'.format(E("HOSTNAME_TO_USE")),
+        ])
+
+    if get_platform() == "macos":
+        out = subprocess.check_output([
+            'dscl',
+            '.',
+            '-read',
+            '/Groups/staff',
+        ])
+        out = filter(lambda line: "PrimaryGroupID:" in line, out.split("\n"))
+        if out:
+            docker_group_id = out[0].split(":")[-1].strip()  # PrimaryGroupID: 20
+    else:
+        # getent group docker docker:x:999:marc
+        out = subprocess.check_output([
+            'getent',
+            'group',
+            'docker',
+        ])
+        docker_group_id = out.split(":")[2]
+
+    command = ['/usr/local/bin/docker-compose']
+    command += ['run']
+    command += ['--rm']
+    command += ['--service-ports']
+    command += ['--name', "odoo_bash_{}".format(str(uuid.uuid4()))]
+    command += ['-e', 'ODOO_HOME={}'.format(E("ODOO_HOME"))]
+    command += ['-e', 'UID='.format(E("UID"))]
+    command += ['-e', 'USER='.format(E("USER"))]
+    command += ['-e', 'WORKING_DIR='.format(E("WORKING_DIR"))]
+    command += ['-e', 'DOCKER_GROUP_ID='.format(docker_group_id)]
+    command += ['-e', 'HOST_TYPE='.format(E("host_type"))]
+    command += ['-e', 'PLATFORM='.format(get_platform())]
+    if E("DOCKER_MACHINE") != "1":
+        if E("DUMPS_PATH"):
+            command += ['-v', "{}:/host/dumps".format(E("DUMPS_PATH"))]
+        command += ['-v', '/etc:/etc_host']
+        command += ['-v', '/sbin:/sbin_host']
+        command += ['-v', '/tmp:/tmp_host']
+    command += ['simplebash']
+    command += ["/opt/odoo/admin/odoo-admin"]
+    if len(sys.argv) > 1:
+        command += sys.argv[1:]
+    subprocess.Popen(command, cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'))
+
+def start_background_sync_from_host():
+    if E("NO_SYNC") == "1" or E("DOCKER_MACHINE") == "1":
+        return
+    if "Darwin" in subprocess.check_output(["uname"]):
+        if E("RUN_RSYNCED") != "1":
+            print
+            print "Warning: on macos you should turn on RUN_RSYNCED in settings."
+            print
+            print
+            time.sleep(3)
+
+    if E("RUN_RSYNCED") == "1":
+        if len(sys.argv) > 1 and sys.argv[1] == 'dev':
+            subprocess.Popen([
+                os.path.join(LOCAL_ODOO_HOME, 'admin/sync_source.sh'),
+                E("CUSTOMS"),
+            ], stdout=None)
 
 
+if __name__ == '__main__':
+    show_help()
+    update()
 
-	command=(/usr/local/bin/docker-compose)
-	command+=(run)
-	command+=(--rm)
-	command+=(--service-ports)
-	command+=(--name "odoo_bash_$(/usr/bin/uuidgen)")
-	command+=(-e ODOO_HOME="$ODOO_HOME")
-	command+=(-e UID="$UID")
-	command+=(-e USER="$USER")
-	command+=(-e WORKING_DIR="$WORKING_DIR")
-	command+=(-e DOCKER_GROUP_ID="$docker_group_id")
-	command+=(-e HOST_TYPE="$host_type")
-	command+=(-e PLATFORM="$(uname)")
-	if [[ -n "${extra_volumes[*]}" ]]; then
-		command+=( "${extra_volumes[@]}" )
-	fi
-    if [[ "$DOCKER_MACHINE" != "1" ]]; then
-        if [[ -n "$DUMPS_PATH" ]]; then
-            command+=(-v "${DUMPS_PATH}:/host/dumps")
-        fi
-        command+=(-v /etc:/etc_host)
-        command+=(-v /sbin:/sbin_host)
-        command+=(-v /tmp:/tmp_host)
-    fi
-	command+=(simplebash)
-	command+=("/opt/odoo/admin/odoo-admin")
-	command+=( "${ARGS[@]}" )
-}
-
-function run_command() {
-	eval "${command[@]@Q}"
-}
-
-function start_background_sync_from_host() {
-	if [[ "$NO_SYNC" == "1" || "$DOCKER_MACHINE" == "1" ]]; then
-		return
-	fi
-	if [[ "$(uname)" == "Darwin" ]]; then
-		if [[ "$RUN_RSYNCED" != "1" ]]; then
-			echo
-			echo "Warning: on macos you should turn on RUN_RSYNCED in settings."
-			echo
-			echo
-			sleep 3
-			return
-		fi
-	fi
-	if [[ "$RUN_RSYNCED" == "1" ]]; then
-		if [[ "${ARGS[0]}" == "dev" ]]; then
-			"$LOCAL_ODOO_HOME/admin/sync_source.sh" "$CUSTOMS" > /dev/null & disown
-		fi
-	fi
-}
-
-
-startup
-show_help "${ARGS[@]}"
-update "${ARGS[@]}"
-
-check_customs
-build_command
-start_background_sync_from_host
-run_command
+    check_customs()
+    build_command()
+    start_background_sync_from_host()
