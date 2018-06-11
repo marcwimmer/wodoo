@@ -59,15 +59,17 @@ def show_help():
 
 def update():
     if len(sys.argv) > 1 and sys.argv[1] == '--update':
-        subprocess.Popen([
+        proc = subprocess.Popen([
             "/bin/bash",
             "rebuild.sh"
         ], cwd=os.path.expandvars("$ODOO_HOME/config/simplebash"))
+        proc.wait()
 
-        subprocess.Popen([
+        proc = subprocess.Popen([
             "/usr/local/bin/docker-compose",
             "build"
         ], cwd=os.path.expandvars("$ODOO_HOME/config/telegrambot"))
+        proc.wait()
 
         sys.exit(0)
 
