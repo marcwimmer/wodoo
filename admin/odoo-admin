@@ -259,6 +259,7 @@ def __get_docker_compose_run_command():
 
 def _setup_proxy():
     CONFIG_DIR = dirs['run/proxy']
+    __empty_dir(dirs['proxy_configs_dir'])
 
     sys.path.append(dirs['machines/proxy'])
     importlib.import_module("add_upstream")
@@ -874,7 +875,6 @@ def _sanity_check():
 
 def _setup_odoo_instances():
     if os.path.exists(files['odoo_instances']):
-        __empty_dir(dirs['proxy_configs_dir'])
 
         if os.path.exists(files['odoo_instances']):
             for line in __file_get_lines(files['odoo_instances']):
@@ -1030,6 +1030,14 @@ def command_compose(command_parameters, command_options):
     - builds proxy settings
     - setups odoo instances
     """
+    if command_parameters:
+        customs = command_parameters[0]
+        config = MyConfigParser(files['settings'])
+        if config['CUSTOMS'] != customs:
+            config.clear()
+            config['CUSTOMS'] = customs
+            config.write()
+
     _remove_temp_directories()
     _prepare_filesystem()
     _prepare_yml_files_from_template_files()
@@ -1072,10 +1080,10 @@ def command_dev(command_parameters, command_options):
     """
     starts developing in the odoo container
     """
-    if command_parameters:
-        do_command('compose', command_parameters)
     do_command('kill')
     do_command('rm', ['-f'])
+    if command_parameters:
+        do_command('compose', command_parameters)
     do_command('build')
     do_command('up', ['-d'])
     do_command('attach', ['odoo'])
