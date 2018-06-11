@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 /apply-env-to-config.sh
 # Runs a migration script either SQL or PY

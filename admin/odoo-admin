@@ -509,12 +509,21 @@ def __try_to_set_owner(UID, path, recursive=False):
             options = ""
             if recursive:
                 options += "-R"
+
             __system([
-                'chown',
-                options,
+                'find',
+                '-not',
+                '-type',
+                'l',
+                '-not',
+                '-user',
                 UID,
-                path
-            ])
+                '-exec',
+                'chown',
+                UID,
+                '{}',
+                '+'
+            ], cwd=path)
 
 def __turn_into_devdb(dbname):
     SQLFILE = files['machines/postgres/turndb2dev.sql']
@@ -1465,8 +1474,17 @@ def command_runbash(command_parameters, command_options):
 def command_sanity_check(command_parameters, command_options):
     _sanity_check()
 
+def command_set_db(command_parameters, command_options):
+    do_command("set_settings", ["DBNAME", __safeget(command_parameters, 0, "Please provide the DBNAME!")])
+
+def command_set_settings(command_parameters, command_options):
+    config = MyConfigParser(files['settings'])
+    config[command_parameters[0].upper()] = command_parameters[1]
+    config.write()
+
 def command_set_db_ownership(command_parameters, command_options):
     __set_db_ownership()
+    _export_settings()
 
 def command_setup_startup(command_parameters, command_options):
     if os.path.exists("/sbin_host/initctl"):
@@ -1656,6 +1674,15 @@ def command_wait_for_port(command_parameters, command_options):
 
 def do_command(command, command_parameters=[], command_options={}):
     command = command.replace("-", "_")
+
+    def graceful(command):
+        if command in commands:
+            return command
+        if command.endswith('s'):
+            if command[:-1] in commands:
+                command = command[:-1]
+        return command
+    command = graceful(command)
     if command in commands:
         return commands[command](command_parameters, command_options)
     else:
