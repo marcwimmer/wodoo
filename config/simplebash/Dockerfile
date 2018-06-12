@@ -28,7 +28,7 @@ ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 # install docker cli
-RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-17.09.0-ce.tgz -o /tmp/docker.tgz
+RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz -o /tmp/docker.tgz
 WORKDIR /opt
 RUN tar xfz /tmp/docker.tgz
 RUN rsync /opt/docker/ /usr/local/bin/ -arP

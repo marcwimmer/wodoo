@@ -29,4 +29,7 @@ echo "$DB_HOST:$DB_PORT:template1:$DB_USER:$DB_PWD" >> "$PGPASSFILE"
 chmod 600 "$PGPASSFILE"
 chown "$USER" "$PGPASSFILE"
 
+# fix docker problem (otherwise logging fails)
+chmod a+w /dev/stdout
+
 exec gosu "$USER" "$@"

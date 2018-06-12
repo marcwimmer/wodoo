@@ -324,7 +324,7 @@ def __get_docker_image():
 
 def __get_dump_type(filepath):
     temp = tempfile.mktemp(suffix='.check')
-    os.system('gunzip -c "{}" | head > "{}" 2>/dev/null'.format(filepath, temp))
+    os.system('gunzip -c "{}" | head > "{}" 1>/dev/null 2>/dev/null'.format(filepath, temp))
     MARKER = "PostgreSQL database dump"
 
     if os.path.exists(temp):
@@ -509,12 +509,21 @@ def __try_to_set_owner(UID, path, recursive=False):
             options = ""
             if recursive:
                 options += "-R"
+
             __system([
-                'chown',
-                options,
+                'find',
+                '-not',
+                '-type',
+                'l',
+                '-not',
+                '-user',
                 UID,
-                path
-            ])
+                '-exec',
+                'chown',
+                UID,
+                '{}',
+                '+'
+            ], cwd=path)
 
 def __turn_into_devdb(dbname):
     SQLFILE = files['machines/postgres/turndb2dev.sql']
@@ -1153,7 +1162,13 @@ def command_kill(command_parameters, command_options):
     dc(['stop', '-t 10'] + command_parameters)
 
 def command_image_import(command_parameters, command_options):
-    raise Exception("TODO")
+    image_name = __safeget(command_parameters, 0, "Please provide the image tar name!")
+    dump_path = os.path.join(BACKUPDIR, os.path.basename(image_name))
+    __system([
+        "docker",
+        "load",
+        dump_path
+    ])
 
 def command_image_export(command_parameters, command_options):
     """
@@ -1166,7 +1181,10 @@ def command_image_export(command_parameters, command_options):
         'images',
         '-q',
     ], suppress_out=True).split("\n")
+    filesize = 0
     for image in image_ids:
+        if not image:
+            continue
         filepath = os.path.join(folder, image)
         print "Storing {} to {}".format(image, filepath)
         __system([
@@ -1176,6 +1194,10 @@ def command_image_export(command_parameters, command_options):
             '-o',
             filepath,
         ], suppress_out=True)
+        filesize += os.stat(filepath).st_size
+        print "File size currently:", humanize.naturalsize(filesize)
+    if not filesize:
+        raise Exception("No images found!")
     __system([
         "tar",
         "cfz",
@@ -1183,7 +1205,9 @@ def command_image_export(command_parameters, command_options):
         '.',
     ], cwd=folder)
     print os.path.basename(dump_path)
-    print humanize.naturalsize(os.stat(dump_path).st_size)
+    compressed_size = os.stat(dump_path).st_size
+    ratio = round(float(compressed_size) / float(filesize) * 100.0, 1)
+    print "Compressed:", humanize.naturalsize(compressed_size), "Uncompress:", humanize.naturalsize(filesize), "Ratio:", ratio
 
 def command_incversions(command_parameters, command_options):
     versioning.actions["incversions"](*command_parameters)
@@ -1465,8 +1489,17 @@ def command_runbash(command_parameters, command_options):
 def command_sanity_check(command_parameters, command_options):
     _sanity_check()
 
+def command_set_db(command_parameters, command_options):
+    do_command("set_settings", ["DBNAME", __safeget(command_parameters, 0, "Please provide the DBNAME!")])
+
+def command_set_settings(command_parameters, command_options):
+    config = MyConfigParser(files['settings'])
+    config[command_parameters[0].upper()] = command_parameters[1]
+    config.write()
+
 def command_set_db_ownership(command_parameters, command_options):
     __set_db_ownership()
+    _export_settings()
 
 def command_setup_startup(command_parameters, command_options):
     if os.path.exists("/sbin_host/initctl"):
@@ -1656,6 +1689,15 @@ def command_wait_for_port(command_parameters, command_options):
 
 def do_command(command, command_parameters=[], command_options={}):
     command = command.replace("-", "_")
+
+    def graceful(command):
+        if command in commands:
+            return command
+        if command.endswith('s'):
+            if command[:-1] in commands:
+                command = command[:-1]
+        return command
+    command = graceful(command)
     if command in commands:
         return commands[command](command_parameters, command_options)
     else:
