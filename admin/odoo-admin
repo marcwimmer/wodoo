@@ -1525,6 +1525,11 @@ def command_setup_startup(command_parameters, command_options):
         """.format(servicename=servicename)
               )
 
+def command_shell(command_parameters, command_options):
+    cmd = __get_cmd() + ['run', 'odoo', '/bin/bash', '/shell.sh']
+    proc = subprocess.Popen(cmd)
+    proc.wait()
+
 def command_show_install_state(command_parameters, command_options):
     rows = __execute_sql(
         "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
