@@ -6,6 +6,8 @@ Migration Script
 """
 import os
 import sys
+import pickle
+import base64
 import logging
 import subprocess
 from threading import Thread
@@ -40,6 +42,16 @@ def run(cr):
 
 BASE_PATH = "/opt/odoo_home/repos/OpenUpgrade/" # must match in container
 
+def prepareCommand(cmd):
+    def repl(s):
+        s = s.format(
+            configfile=CONFIG_FILE,
+            db=os.environ['DBNAME'])
+        return s
+    cmd = [repl(x) for x in cmd]
+    cmd = pickle.dumps(cmd)
+    cmd = base64.b64encode(cmd)
+    return cmd
 
 def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
     from_version = str(float(from_version))
@@ -71,8 +83,14 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
                 'odoo/addons',
                 'addons',
             ],
-            'cmd': './odoo-bin --update=all --database={db} '
-                   '--config={configfile} --stop-after-init --no-xmlrpc',
+            'cmd': [
+                './odoo-bin',
+                '--update=all',
+                '--database={db}',
+                '--config={configfile}',
+                '--stop-after-init',
+                '--no-xmlrpc'
+            ],
         },
         '10.0': {
             'branch': '10.0',
@@ -80,8 +98,14 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
                 'odoo/addons',
                 'addons',
             ],
-            'cmd': './odoo-bin --update=all --database={db} '
-                   '--config={configfile} --stop-after-init --no-xmlrpc',
+            'cmd': [
+                './odoo-bin',
+                '--update=all',
+                '--database={db}',
+                '--config={configfile}',
+                '--stop-after-init',
+                '--no-xmlrpc',
+            ],
         },
         '9.0': {
             'branch': '9.0',
@@ -89,8 +113,14 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
                 'openerp/addons',
                 'addons',
             ],
-            'cmd': './openerp-server --update=all --database={db} '
-                   '--config={configfile} --stop-after-init --no-xmlrpc',
+            'cmd': [
+                './openerp-server',
+                '--update=all',
+                '--database={db}',
+                '--config={configfile}',
+                '--stop-after-init',
+                '--no-xmlrpc',
+            ],
         },
         '8.0': {
             'branch': '8.0',
@@ -98,14 +128,26 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
                 'openerp/addons',
                 'addons',
             ],
-            'cmd': './openerp-server --update=all --database={db} '
-                   '--config={configfile} --stop-after-init --no-xmlrpc',
+            'cmd': [
+                './openerp-server',
+                '--update=all',
+                '--database={db}',
+                '--config={configfile}',
+                '--stop-after-init',
+                '--no-xmlrpc',
+            ],
         },
         '7.0': {
             'branch': '7.0',
-            'cmd': './openerp-server --update=all --database={db} '
-                   '--config={configfile} --stop-after-init --no-xmlrpc '
-                   '--no-netrpc',
+            'cmd': [
+                './openerp-server',
+                '--update=all',
+                '--database={db}',
+                '--config={configfile}',
+                '--stop-after-init',
+                '--no-xmlrpc',
+                '--no-netrpc',
+            ]
         },
     }
 
@@ -116,28 +158,28 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
         with open(os.path.join(customs_dir(), '.version'), 'w') as f:
             f.write(version)
         logger.info("""\n========================================================================
-    Migration to Version {}
-    ========================================================================""".format(version)
+Migration to Version {}
+========================================================================""".format(version)
                     )
 
-        from pudb import set_trace
-        set_trace()
         do_command('build')
-        # make sure postgres is available
         do_command("wait_for_container_postgres")
         do_command('run', [
             "odoo",
             "/run_migration.sh",
             'before',
         ])
+        print("Starting Openupgrade Migration to {}".format(version))
         do_command('run', [
             "odoo",
-            "/bin/bash",
+            "/usr/bin/python",
             "/opt/migrate.sh",
             migrations[version]['branch'],
-            migrations[version]['cmd'].format(configfile=CONFIG_FILE, db=os.environ['DBNAME']),
+            prepareCommand(migrations[version]['cmd']),
             ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
+            version,
         ])
+        print("Running after processes {}".format(version))
         do_command('run', [
             "odoo",
             "/run_migration.sh",
@@ -145,6 +187,7 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
         ])
 
         if not no_auto_backup:
+            print "Backup of database Version {}".format(version)
             do_command('backup-db', [
                 "{dbname}_{version}".format(version=version, dbname=os.environ['DBNAME'])
             ])
@@ -154,3 +197,4 @@ def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, 
 
     os.unlink(SETTINGS_D_FILE)
     do_command('build')
+    print("Migration process finished - reached end without external exception.")
