@@ -598,7 +598,7 @@ def _display_machine_tips(machine_name):
     for root, _dirs, _files in os.walk(dirs['machines']):
         for filename in _files:
             if filename == 'tips.txt':
-                if os.path.basename(root) == 'machine_name':
+                if os.path.basename(root) == machine_name:
                     content = __read_file(os.path.join(root, filename))
                     print ""
                     print "Please note:"
@@ -1095,9 +1095,8 @@ def command_debug(command_parameters, command_options):
     __replace_in_file(files['debugging_composer'], "${NAME}", machine_name)
     commands['dc'] += ['-f', files['debugging_composer']]
 
-    # execute self
     dc(['up', '-d', machine_name])
-    dcexec([machine_name, 'bash'])
+    command_attach([machine_name], {})
 
 def command_deploy(command_parameters, command_options):
     versioning.action_deploy_ticket()
@@ -1119,6 +1118,7 @@ def command_dev(command_parameters, command_options):
 
 def command_dirty(command_parameters, command_options):
     versioning.dirty()
+
 def command_exec(command_parameters, command_options):
     dcexec(command_parameters)
 
