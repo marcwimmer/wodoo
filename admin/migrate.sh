@@ -1,34 +1,40 @@
-#!/bin/bash
-###
-#This file lies in odoo
-###
-set +x
-BRANCH="$1"
-CMD="$2"
-ADDONS_PATH="3"
-CONFIG_FILE=/home/odoo/config_migration
+#!/usr/bin/python
+import sys
+import os
+import pickle
+import subprocess
+import base64
+_, BRANCH, CMD, ADDONS_PATH, VERSION = sys.argv
+CMD = base64.b64decode(CMD)
+CMD = pickle.loads(CMD)
+CONFIG_FILE = "/home/odoo/config_migration"
+OpenupgradeDir = os.path.join(os.environ["ODOO_REPOS_DIRECTORY"], "OpenUpgrade")
+assert BRANCH and CMD and ADDONS_PATH and VERSION
 
-sed -i "s|__ADDONS_PATH__|$3|" "$CONFIG_FILE"
-/apply-env-to-config.sh
+def set_addons_path():
+    with open(CONFIG_FILE, 'r') as f:
+        content = f.read()
+    content = content.replace("__ADDONS_PATH__", ADDONS_PATH)
+    with open(CONFIG_FILE, 'w') as f:
+        f.write(content)
+    subprocess.check_call(["/apply-env-to-config.sh"])
+set_addons_path()
 
-if [[ "$RUN_MIGRATION" != "1" ]]; then
-    echo "RUN_MIGRATION not set!"
-    exit 1
-fi
-
-if [[ -z "$1" ]]; then
-    echo "Please provide branch"
-    exit 1
-fi
-if [[ -z "$2" ]]; then
-    echo "Please provide command"
-    exit 1
-fi
-
-cd "$ODOO_REPOS_DIRECTORY/OpenUpgrade" || exit 4
-set -e
-set -x
-git checkout "$BRANCH"
-pip install git+https://github.com/OCA/openupgradelib.git@master --upgrade
-cat "$CONFIG_FILE"
-eval sudo -E -H -u "$ODOO_USER" "./$CMD" 
+if not subprocess.check_output(["git", "diff", "--stat"], cwd=OpenupgradeDir):
+    # clean
+    subprocess.check_call(["git", "checkout", "-f", BRANCH], cwd=OpenupgradeDir)
+    # apply patches
+    root = os.path.join(os.environ['ACTIVE_CUSTOMS'], 'migration', VERSION)
+    for file in os.listdir(root):
+        if file.endswith(".patch"):
+            subprocess.check_call(["git", "apply", os.path.join(root, file)], cwd=OpenupgradeDir)
+subprocess.check_call(["pip", "install", "git+https://github.com/OCA/openupgradelib.git@master", "--upgrade"])
+proc = subprocess.Popen([
+    'sudo',
+    '-E',
+    '-H',
+    '-u',
+    os.environ["ODOO_USER"]
+    ] + CMD, cwd=OpenupgradeDir
+)
+proc.wait()

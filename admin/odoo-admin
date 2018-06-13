@@ -661,7 +661,7 @@ def _file2env(filepath):
 
 def _get_bash_for_machine(machine):
     if machine == 'postgres':
-        return 'gosu postgres bash'
+        return 'bash'
     else:
         return 'bash'
 
