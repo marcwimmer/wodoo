@@ -579,10 +579,10 @@ def _collect_settings_files():
     if os.path.exists(os.path.join(customs_dir, 'settings')):
         for filename in os.listdir(os.path.join(customs_dir, 'settings')):
             _files.append(os.path.join(customs_dir, 'settings', filename))
-    if os.path.exists('/etc_host/odoo/settings'):
-        _files.append('/etc_host/odoo/settings')
     if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
         _files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
+    if os.path.exists('/etc_host/odoo/settings'):
+        _files.append('/etc_host/odoo/settings')
     if os.path.isdir(dirs['settings.d']):
         for filename in os.listdir(dirs['settings.d']):
             filepath = os.path.join(dirs['settings.d'], filename)
