@@ -77,7 +77,8 @@ def check_customs():
     if not E("CUSTOMS"):
         if len(sys.argv) > 1:
             if sys.argv[1] == 'compose' and len(sys.argv) == 3:
-                os.makedirs(os.path.dirname(SETTINGS_FILE))
+                if not os.path.isdir(os.path.dirname(SETTINGS_FILE)):
+                    os.makedirs(os.path.dirname(SETTINGS_FILE))
                 with open(SETTINGS_FILE, 'w') as f:
                     f.write("CUSTOMS={}".format(sys.argv[2]))
                 os.environ['CUSTOMS'] = sys.argv[2]
