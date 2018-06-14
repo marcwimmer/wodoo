@@ -11,6 +11,8 @@ def E(name):
     if name.startswith("$"):
         name = name[1:]
     return os.getenv(name, "")
+
+
 LOCAL_ODOO_HOME = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 
 WORKING_DIR = E("WORKING_DIR")
@@ -18,6 +20,9 @@ SETTINGS_FILE = os.path.join(LOCAL_ODOO_HOME, 'run/settings')
 
 if not WORKING_DIR:
     WORKING_DIR = os.getcwd()
+
+if E("DOCKER_MACHINE") != "1":
+    os.environ['ODOO_HOME'] = LOCAL_ODOO_HOME
 
 if not E("ODOO_HOME") and E("DOCKER_MACHINE") != "1":
     ODOO_HOME = LOCAL_ODOO_HOME

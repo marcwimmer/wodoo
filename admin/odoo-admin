@@ -577,11 +577,12 @@ def _collect_settings_files():
                 _files.append(os.path.join(root, filename))
     customs_dir = odoo_config.customs_dir()
     if os.path.exists(os.path.join(customs_dir, 'settings')):
-        _files.append(os.path.join(customs_dir, 'settings'))
-    if os.path.exists('/etc_host/odoo/settings'):
-        _files.append('/etc_host/odoo/settings')
+        for filename in os.listdir(os.path.join(customs_dir, 'settings')):
+            _files.append(os.path.join(customs_dir, 'settings', filename))
     if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
         _files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
+    if os.path.exists('/etc_host/odoo/settings'):
+        _files.append('/etc_host/odoo/settings')
     if os.path.isdir(dirs['settings.d']):
         for filename in os.listdir(dirs['settings.d']):
             filepath = os.path.join(dirs['settings.d'], filename)
@@ -597,7 +598,7 @@ def _display_machine_tips(machine_name):
     for root, _dirs, _files in os.walk(dirs['machines']):
         for filename in _files:
             if filename == 'tips.txt':
-                if os.path.basename(root) == 'machine_name':
+                if os.path.basename(root) == machine_name:
                     content = __read_file(os.path.join(root, filename))
                     print ""
                     print "Please note:"
@@ -660,7 +661,7 @@ def _file2env(filepath):
 
 def _get_bash_for_machine(machine):
     if machine == 'postgres':
-        return 'gosu postgres bash'
+        return 'bash'
     else:
         return 'bash'
 
@@ -1089,14 +1090,13 @@ def command_debug(command_parameters, command_options):
     _askcontinue("Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine_name))
     # shutdown current machine and start via run and port-mappings the replacement machine
     do_command("kill", [machine_name])
-    shutil.copy(file['debugging_template'], file['debugging_composer'])
-    __replace_in_file(file['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
-    __replace_in_file(file['debugging_composer'], "${NAME}", machine_name)
-    commands['dc'] += ['-f', file['debugging_composer']]
+    shutil.copy(files['debugging_template'], files['debugging_composer'])
+    __replace_in_file(files['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
+    __replace_in_file(files['debugging_composer'], "${NAME}", machine_name)
+    commands['dc'] += ['-f', files['debugging_composer']]
 
-    # execute self
     dc(['up', '-d', machine_name])
-    dcexec([machine_name, 'bash'])
+    command_attach([machine_name], {})
 
 def command_deploy(command_parameters, command_options):
     versioning.action_deploy_ticket()
@@ -1118,6 +1118,7 @@ def command_dev(command_parameters, command_options):
 
 def command_dirty(command_parameters, command_options):
     versioning.dirty()
+
 def command_exec(command_parameters, command_options):
     dcexec(command_parameters)
 
@@ -1255,14 +1256,14 @@ def command_make_customs(command_parameters, command_options):
     CUSTOMS = __safeget(command_parameters, 0, 'Please provide customs')
     VERSION = __safeget(command_parameters, 1, "Please provide version")
     __system([
-        file['make_customs'],
+        files['make_customs'],
         CUSTOMS,
         VERSION
     ])
     os.environ['CUSTOMS'] = CUSTOMS
     cwd = os.path.join(dirs['odoo_home'], 'customs', CUSTOMS)
     __system([
-        file['make_customs'],
+        files['make_customs'],
         "git",
         "submodule",
         "add",
@@ -1288,7 +1289,7 @@ def command_make_customs(command_parameters, command_options):
 
 def command_OCA(command_parameters, command_options):
     __system([
-        file['make_customs'],
+        files['make_customs'],
         "OCA-all"
     ] + command_parameters, cwd=dirs['admin'])
 
@@ -1524,6 +1525,11 @@ def command_setup_startup(command_parameters, command_options):
         systemctl start {servicename}
         """.format(servicename=servicename)
               )
+
+def command_shell(command_parameters, command_options):
+    cmd = __get_cmd() + ['run', 'odoo', '/bin/bash', '/shell.sh']
+    proc = subprocess.Popen(cmd)
+    proc.wait()
 
 def command_show_install_state(command_parameters, command_options):
     rows = __execute_sql(
