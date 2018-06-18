@@ -53,7 +53,7 @@ def prepareCommand(cmd):
     cmd = base64.b64encode(cmd)
     return cmd
 
-def do_migrate(log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
+def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
     from_version = str(float(from_version))
     to_version = str(float(to_version))
 
@@ -162,15 +162,18 @@ Migration to Version {}
 ========================================================================""".format(version)
                     )
 
+        do_command('compose', customs)
         do_command('build')
         do_command("wait_for_container_postgres")
-        do_command('run', [
+        do_command(
+            'run',
             "odoo",
             "/run_migration.sh",
             'before',
-        ])
+        )
         print("Starting Openupgrade Migration to {}".format(version))
-        do_command('run', [
+        do_command(
+            'run',
             "odoo",
             "/usr/bin/python",
             "/opt/migrate.sh",
@@ -178,19 +181,21 @@ Migration to Version {}
             prepareCommand(migrations[version]['cmd']),
             ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
             version,
-        ])
+        )
         print("Running after processes {}".format(version))
-        do_command('run', [
+        do_command(
+            'run',
             "odoo",
             "/run_migration.sh",
             'after',
-        ])
+        )
 
         if not no_auto_backup:
             print "Backup of database Version {}".format(version)
-            do_command('backup-db', [
+            do_command(
+                'backup-db',
                 "{dbname}_{version}".format(version=version, dbname=os.environ['DBNAME'])
-            ])
+            )
 
     with open(os.path.join(customs_dir(), '.version'), 'w') as f:
         f.write(to_version)
