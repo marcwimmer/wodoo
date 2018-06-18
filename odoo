@@ -14,7 +14,10 @@ def E(name):
 
 
 LOCAL_ODOO_HOME = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
+PROJECT_NAME = LOCAL_ODOO_HOME.replace("/", "_").lstrip("_")
+NETWORK_NAME = "{}_default".format(PROJECT_NAME)
 
+os.environ['NETWORK_NAME'] = NETWORK_NAME
 WORKING_DIR = E("WORKING_DIR")
 SETTINGS_FILE = os.path.join(LOCAL_ODOO_HOME, 'run/settings')
 
@@ -133,8 +136,8 @@ def build_command():
     command += ['-e', 'PLATFORM={}'.format(get_platform())]
     if E("DOCKER_MACHINE") != "1":
         # on host
-        PROJECT_NAME = LOCAL_ODOO_HOME.replace("/", "_").lstrip("_")
         command += ['-e', 'PROJECT_NAME={}'.format(PROJECT_NAME)]
+        command += ['-e', 'NETWORK_NAME={}'.format(NETWORK_NAME)]
         command += ['-e', 'HOST_HOME={}'.format(os.environ['HOME'])]
         if E("DUMPS_PATH"):
             command += ['-v', "{}:/host/dumps".format(E("DUMPS_PATH"))]
@@ -178,10 +181,6 @@ def check_docker_network():
         'network',
         'ls'
     ]).split("\n")
-    CUSTOMS = os.environ['CUSTOMS']
-    if not CUSTOMS:
-        return
-    NETWORK_NAME = "{}_default".format(CUSTOMS)
     if not any(NETWORK_NAME in line for line in networks):
         networks = subprocess.check_call([
             'docker',

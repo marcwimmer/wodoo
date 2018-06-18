@@ -5,6 +5,7 @@ set +x
 echo "Executing postgres entrypoint2.sh"
 echo "DBNAME: $DBNAME"
 export POSTGRES_DB=$DBNAME
+ASPOSTGRES="gosu postgres"
 
 if [[ -z "$PGDATA" ]]; then
     echo "Please define pgdata"
@@ -19,12 +20,14 @@ if [[ "$INIT" != "1" ]]; then
 			echo "include '$FILE'" >> $PGDATA/postgresql.conf
 		}
 	fi
+    echo 'Normal postgres start...'
+    $ASPOSTGRES /docker-entrypoint.sh postgres
 else
     echo "Init set"
 
     rm -Rf $PGDATA/* || true
-    ASPOSTGRES="gosu postgres"
     $ASPOSTGRES /docker-entrypoint.sh postgres | grep -m 1 "database system is ready to accept connections"
+    $ASPOSTGRES psql template1 -c "CREATE USER root WITH superuser;" 
     $ASPOSTGRES psql template1 -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PWD' superuser;" 
     $ASPOSTGRES psql template1 -c "CREATE DATABASE $DBNAME;"
     $ASPOSTGRES psql template1 -c "ALTER DATABASE $DBNAME OWNER TO $DB_USER"
@@ -32,5 +35,3 @@ else
     exit 0
 fi
 
-echo 'Normal postgres start...'
-/docker-entrypoint.sh postgres

@@ -71,7 +71,7 @@ files = {
     'debugging_composer': 'run/debugging.yml',
     'settings': 'run/settings',
     'odoo_instances': 'run/odoo_instances',
-    'config/docker-compose.yml': 'config/docker-compose.yml',
+    'config/default_network': 'config/default_network',
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
     'machines/proxy/odoo_instance.conf': 'machines/proxy/odoo_instance.conf',
     'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
@@ -613,7 +613,6 @@ def __find_files(cwd, *options):
     return files
 
 def _cleanup():
-    __rm_file_if_exists(files['config/docker-compose.yml'])
     _remove_temp_directories
 
 def _collect_settings_files():
@@ -792,6 +791,10 @@ def _prepare_docker_compose_files(dest_file, paths):
             counter += 1
             temp_path = os.path.join(tempdir, '{}-{}'.format(order, str(counter).zfill(5)))
 
+        # add static yaml content to each machine
+        with open(files['config/default_network'], 'r') as f:
+            default_network = yaml.load(f.read())
+
         with open(temp_path, 'w') as dest:
             with open(path, 'r') as source:
                 j = yaml.load(source.read())
@@ -812,6 +815,7 @@ def _prepare_docker_compose_files(dest_file, paths):
 
                                 if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
                                     service['env_file'].append('$ODOO_HOME/{}'.format(file))
+                    j['networks'] = copy.deepcopy(default_network['networks'])
 
                 dest.write(yaml.dump(j, default_flow_style=False))
                 dest.write("\n")
@@ -848,10 +852,10 @@ def _prepare_docker_compose_files(dest_file, paths):
         return yml
 
     # call docker compose config to get the complete config
-    files = sorted(temp_files, key=lambda x: float(x.split("/")[-1].replace("-", ".")))
+    _files = sorted(temp_files, key=lambda x: float(x.split("/")[-1].replace("-", ".")))
     cmdline = __get_docker_compose_run_command()
     cmdline.append("/usr/local/bin/docker-compose")
-    for file in files:
+    for file in _files:
         cmdline.append('-f')
         cmdline.append(os.path.join(os.path.basename(tempdir), file))
     cmdline.append('config')
@@ -1172,7 +1176,7 @@ def fix_permissions():
     __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
 def force_kill(machine):
-    __dc(['kill', machine])
+    kill(machine, brutal=True)
 
 def get_all_langs():
     langs = [x[0] for x in __execute_sql(
@@ -1183,19 +1187,14 @@ def get_all_langs():
         print(lang)
     return langs
 
-def kill(*machines, **kwargs):
+def kill(machines="", brutal=False):
     """
     kills running machine
     safely shutdowns postgres and redis
 
     if not brutal it means softly
     """
-    if kwargs:
-        for k in kwargs.keys():
-            if k not in ['brutal']:
-                raise Exception("Invalid parameter: {}".format(kwargs))
-    brutal = kwargs.get('brutal', False)
-
+    machines = __splitcomma(machines)
     if not brutal:
         safe_stop = []
         for machine in SAFE_KILL:
@@ -1600,8 +1599,8 @@ def springclean():
 def stage():
     versioning.action_stage_ticket()
 
-def stop(*machines):
-    kill(*machines)
+def stop(machines):
+    kill(machines)
 
 def submodule(*submodules):
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
@@ -1735,7 +1734,7 @@ def _setupArgs():
     for member in getmembers(module, inspect.isfunction):
         name, member = member
         if isinstance(member, types.FunctionType):
-            if not name.startswith('_') and len(name) > 2:
+            if not name.startswith('_') and (len(name) > 2 or name in ['up']):
                 commands.append(member)
 
     parser.add_commands(commands)

@@ -26,4 +26,4 @@ services:
 networks:
     default:
         external:
-            name: ${CUSTOMS}_default
+            name: ${NETWORK_NAME}
