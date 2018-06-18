@@ -77,7 +77,7 @@ files = {
     'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
 }
 commands = {
-    'dc': ["/usr/local/bin/docker-compose", "-p", "$CUSTOMS", "-f",  "$docker_compose_file"],
+    'dc': ["/usr/local/bin/docker-compose", "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
 }
 
 

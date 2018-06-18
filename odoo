@@ -133,6 +133,8 @@ def build_command():
     command += ['-e', 'PLATFORM={}'.format(get_platform())]
     if E("DOCKER_MACHINE") != "1":
         # on host
+        PROJECT_NAME = LOCAL_ODOO_HOME.replace("/", "_").lstrip("_")
+        command += ['-e', 'PROJECT_NAME={}'.format(PROJECT_NAME)]
         command += ['-e', 'HOST_HOME={}'.format(os.environ['HOME'])]
         if E("DUMPS_PATH"):
             command += ['-v', "{}:/host/dumps".format(E("DUMPS_PATH"))]
