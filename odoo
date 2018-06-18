@@ -12,7 +12,7 @@ def E(name):
         name = name[1:]
     return os.getenv(name, "")
 
-
+FNULL = open(os.devnull, 'w') 
 LOCAL_ODOO_HOME = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 PROJECT_NAME = LOCAL_ODOO_HOME.replace("/", "_").lstrip("_")
 NETWORK_NAME = "{}_default".format(PROJECT_NAME)
@@ -102,7 +102,7 @@ def build_command():
         subprocess.check_call([
             'xhost',
             '+local:{}'.format(E("HOSTNAME_TO_USE")),
-        ])
+        ], stdout=FNULL)
 
     if get_platform() == "macos":
         out = subprocess.check_output([
@@ -166,7 +166,7 @@ def start_background_sync_from_host():
             print("")
             time.sleep(3)
 
-    if E("RUN_RSYNCED") == "1":
+    if get_platform() == 'macos' or E("RUN_RSYNCED") == "1":
         if len(sys.argv) > 1 and sys.argv[1] == 'dev':
             subprocess.Popen([
                 os.path.join(LOCAL_ODOO_HOME, 'admin/sync_source.sh'),

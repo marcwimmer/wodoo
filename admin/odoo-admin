@@ -86,7 +86,7 @@ def trace():
         set_trace()
 
 def _get_platform():
-    if os.getenv("PLATFORM", "") in ['Darwin', 'OSX']:
+    if os.getenv("PLATFORM", "") in ['Darwin', 'OSX', 'macos']:
         return PLATFORM_OSX
     else:
         return PLATFORM_LINUX
@@ -727,6 +727,8 @@ def _make_settings_file(outfile, setting_files):
                 c2[key] = value
 
         c.apply(c2)
+    if _get_platform() == PLATFORM_OSX:
+        c['RUN_RSYNCED'] = '1'
     c.write()
 
 def _prepare_docker_compose_files(dest_file, paths):
@@ -1153,7 +1155,7 @@ def dev(customs):
     rm()
     compose(customs)
     build()
-    up()
+    up(daemonized=True)
     attach('odoo')
 
 def dirty():
@@ -1668,11 +1670,12 @@ def update_ast():
     update_cache()
     print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
 
-def up(machines=''):
+def up(machines='', daemonized=False):
     __set_db_ownership()
     options = [
-        '-d',
     ]
+    if daemonized:
+        options += ['-d']
     __dc(['up'] + options + __splitcomma(machines))
     proxy_reload()
 
