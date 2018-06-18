@@ -1050,14 +1050,15 @@ def backup_files():
     __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
     print "Backup files done to {}".format(BACKUP_FILENAME)
 
-def build(*machines):
+def build(pull=False, machines=''):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """
-    options = [
-        '--pull',
-    ]
-    __dc(['build'] + options + list(machines))
+    options = []
+    if pull:
+        options += ['--pull']
+
+    __dc(['build'] + options + (machines.split(',') if machines else []))
 
 def commit(*parameters):
     versioning.actions["commit"](*parameters)
