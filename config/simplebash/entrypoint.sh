@@ -3,7 +3,7 @@ set +x
 set -e
 
 if [[ "$USER" != "root" && "$USER" != "" ]]; then
-	if [[ "$HOST_TYPE" == "macos" ]]; then
+	if [[ "$PLATFORM" == "macos" ]]; then
 		useradd --uid "$UID" "$USER"
 		chown "$USER" /var/run/docker.sock
 		usermod -aG daemon "$USER"

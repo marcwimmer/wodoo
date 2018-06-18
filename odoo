@@ -126,13 +126,14 @@ def build_command():
     command += ['--service-ports']
     command += ['--name', "odoo_bash_{}".format(str(uuid.uuid4()))]
     command += ['-e', 'ODOO_HOME={}'.format(E("ODOO_HOME"))]
-    command += ['-e', 'UID='.format(E("UID"))]
-    command += ['-e', 'USER='.format(E("USER"))]
-    command += ['-e', 'WORKING_DIR='.format(E("WORKING_DIR"))]
-    command += ['-e', 'DOCKER_GROUP_ID='.format(docker_group_id)]
-    command += ['-e', 'HOST_TYPE='.format(E("host_type"))]
-    command += ['-e', 'PLATFORM='.format(get_platform())]
+    command += ['-e', 'UID={}'.format(os.getuid())]
+    command += ['-e', 'USER={}'.format(E("USER"))]
+    command += ['-e', 'WORKING_DIR={}'.format(E("WORKING_DIR"))]
+    command += ['-e', 'DOCKER_GROUP_ID={}'.format(docker_group_id)]
+    command += ['-e', 'PLATFORM={}'.format(get_platform())]
     if E("DOCKER_MACHINE") != "1":
+        # on host
+        command += ['-e', 'HOST_HOME={}'.format(os.environ['HOME'])]
         if E("DUMPS_PATH"):
             command += ['-v', "{}:/host/dumps".format(E("DUMPS_PATH"))]
         command += ['-v', '/etc:/etc_host']
