@@ -685,8 +685,6 @@ def _make_settings_file(outfile, setting_files):
         for key in c2.keys():
             value = c2[key]
             if '~' in value:
-                from pudb import set_trace
-                set_trace()
                 value = value.replace('~', os.environ['HOST_HOME'])
                 c2[key] = value
 
