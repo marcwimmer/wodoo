@@ -570,6 +570,15 @@ def _check_working_dir_customs_mismatch():
 Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
                          )
 
+def __find_files(cwd, *options):
+    """
+    :param options: ["-name", "default.settings"]
+    """
+    files = subprocess.check_output(["find"] + list(options), cwd=cwd)
+    files = files.split("\n")
+    files = [x for x in files if x and not x.endswith('/.')]
+    files = [os.path.normpath(os.path.join(cwd, x)) for x in files]
+    return files
 
 def _cleanup():
     __rm_file_if_exists(files['config/docker-compose.yml'])
@@ -578,10 +587,9 @@ def _cleanup():
 def _collect_settings_files():
     _files = []
     _files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
-    for root, _, _filenames in os.walk(dirs['machines']):
-        for filename in _filenames:
-            if filename == 'default.settings':
-                _files.append(os.path.join(root, filename))
+    # optimize
+    for filename in __find_files(dirs['machines'], "-name", "default.settings"):
+        _files.append(os.path.join(dirs['machines'], filename))
     customs_dir = odoo_config.customs_dir()
     if os.path.exists(os.path.join(customs_dir, 'settings')):
         for filename in os.listdir(os.path.join(customs_dir, 'settings')):
@@ -602,18 +610,17 @@ def _display_machine_tips(machine_name):
     if not os.path.isdir(dir):
         return
 
-    for root, _dirs, _files in os.walk(dirs['machines']):
-        for filename in _files:
-            if filename == 'tips.txt':
-                if os.path.basename(root) == machine_name:
-                    content = __read_file(os.path.join(root, filename))
-                    print ""
-                    print "Please note:"
-                    print "---------------"
-                    print ""
-                    print content
-                    print ""
-                    print ""
+    for filename in __find_files(dirs['machines'], '-name', 'tips.txt'):
+        filepath = os.path.join(dirs['machines'], filename)
+        if os.path.basename(os.path.dirname(filepath)) == machine_name:
+            content = __read_file(os.path.join(dirs['machines'], filename))
+            print ""
+            print "Please note:"
+            print "---------------"
+            print ""
+            print content
+            print ""
+            print ""
 
 def _export_settings():
     if args and args[0] == 'compose':

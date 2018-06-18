@@ -136,7 +136,11 @@ def build_command():
         command += ['-e', 'HOST_HOME={}'.format(os.environ['HOME'])]
         if E("DUMPS_PATH"):
             command += ['-v', "{}:/host/dumps".format(E("DUMPS_PATH"))]
-        command += ['-v', '/etc:/etc_host']
+        if get_platform() == 'macos':
+            command += ['-v', '/private/etc:/etc_host']
+            command += ['-v', '/private:/private'] # otherwise cd /etc_host/odoo does not work
+        else:
+            command += ['-v', '/etc:/etc_host']
         command += ['-v', '/sbin:/sbin_host']
         command += ['-v', '/tmp:/tmp_host']
     command += ['simplebash']
