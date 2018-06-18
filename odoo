@@ -88,8 +88,8 @@ def check_customs():
                     f.write("CUSTOMS={}".format(sys.argv[2]))
                 os.environ['CUSTOMS'] = sys.argv[2]
         else:
-            print "Please define customs with:"
-            print "./odoo compose <CUSTOMS>"
+            print("Please define customs with:")
+            print("./odoo compose <CUSTOMS>")
             sys.exit(1)
 
 def build_command():
@@ -143,17 +143,17 @@ def build_command():
     if len(sys.argv) > 1:
         command += sys.argv[1:]
     proc = subprocess.Popen(command, cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'))
-    proc.wait()
+    return proc
 
 def start_background_sync_from_host():
     if E("NO_SYNC") == "1" or E("DOCKER_MACHINE") == "1":
         return
     if "Darwin" in subprocess.check_output(["uname"]):
         if E("RUN_RSYNCED") != "1":
-            print
-            print "Warning: on macos you should turn on RUN_RSYNCED in settings."
-            print
-            print
+            print("")
+            print("Warning: on macos you should turn on RUN_RSYNCED in settings.")
+            print("")
+            print("")
             time.sleep(3)
 
     if E("RUN_RSYNCED") == "1":
@@ -164,10 +164,32 @@ def start_background_sync_from_host():
             ], stdout=None)
 
 
+def check_docker_network():
+    # makes sure, that docker network CUSTOMS_default really exists
+    networks = subprocess.check_output([
+        'docker',
+        'network',
+        'ls'
+    ]).split("\n")
+    CUSTOMS = os.environ['CUSTOMS']
+    if not CUSTOMS:
+        return
+    NETWORK_NAME = "{}_default".format(CUSTOMS)
+    if not any(NETWORK_NAME in line for line in networks):
+        networks = subprocess.check_call([
+            'docker',
+            'network',
+            'create',
+            NETWORK_NAME,
+        ])
+
+
 if __name__ == '__main__':
     show_help()
     update()
 
     check_customs()
-    build_command()
+    check_docker_network()
+    proc = build_command()
     start_background_sync_from_host()
+    proc.wait()
