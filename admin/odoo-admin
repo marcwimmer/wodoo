@@ -121,6 +121,11 @@ def __assert_file_exists(path, isdir=False):
             path
         ))
 
+def get_dump_type(filename):
+    dump_file = os.path.join(BACKUPDIR, filename)
+    dump_type = __get_dump_type(dump_file)
+    print dump_type
+
 def __do_restore_db_on_postgres(filename, dbname):
     os.environ['DBNAME'] = dbname
     dump_file = os.path.join(BACKUPDIR, filename)
@@ -331,8 +336,26 @@ def __get_docker_image():
 
 def __get_dump_type(filepath):
     temp = tempfile.mktemp(suffix='.check')
-    os.system('gunzip -c "{}" | head > "{}" 1>/dev/null 2>/dev/null'.format(filepath, temp))
     MARKER = "PostgreSQL database dump"
+    FNULL = open(os.devnull, 'w')
+    proc = subprocess.Popen(['gunzip', '-c', filepath], stdout=subprocess.PIPE, stderr=FNULL, bufsize=1)
+
+    def reader(proc, pipe):
+        try:
+            lines = 0
+            with pipe:
+                for line in iter(pipe.readline, ''):
+                    with open(temp, 'a') as f:
+                        f.write(line)
+                        lines += 1
+                        if lines > 20:
+                            break
+        finally:
+            if not proc.returncode:
+                proc.kill()
+
+    Thread(target=reader, args=[proc, proc.stdout]).start()
+    proc.wait()
 
     if os.path.exists(temp):
         content = __read_file(temp)
@@ -1436,7 +1459,9 @@ def restore_dev_db(filename):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
 
-    print("Restores dump to $DB_HOST and executes to scripts to adapt user passwords, mailservers and cronjobs")
+    print("Restores dump to {DB_HOST} and executes to scripts to adapt user passwords, mailservers and cronjobs".format(
+        DB_HOST=E("DB_HOST"),
+    ))
 
     def exec_sql(dbname):
         __turn_into_devdb(dbname)
