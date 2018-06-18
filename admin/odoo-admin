@@ -454,6 +454,15 @@ def __safeget(array, index, exception_on_missing, file_options=None):
         raise Exception(exception_on_missing + file_options)
     return array[index]
 
+def __splitcomma(param):
+    if isinstance(param, (str, unicode)):
+        if not param:
+            return []
+        return [x.strip() for x in param.split(',') if x.strip()]
+    elif isinstance(param, (tuple, list)):
+        return list(param)
+    raise Exception("not impl")
+
 def __start_postgres_and_wait():
     if E("RUN_POSTGRES") == "1":
         __dc(["up", "-d", "postgres"])
@@ -1058,7 +1067,7 @@ def build(pull=False, machines=''):
     if pull:
         options += ['--pull']
 
-    __dc(['build'] + options + (machines.split(',') if machines else []))
+    __dc(['build'] + options + __splitcomma(machines))
 
 def commit(*parameters):
     versioning.actions["commit"](*parameters)
@@ -1109,13 +1118,13 @@ def debug(machine_name):
 def deploy():
     versioning.action_deploy_ticket()
 
-def dev(CUSTOMS=None):
+def dev(customs):
     """
     starts developing in the odoo container
     """
     kill()
     rm()
-    compose(CUSTOMS)
+    compose(customs)
     build()
     up()
     attach('odoo')
@@ -1174,7 +1183,7 @@ def kill(*machines, **kwargs):
         if safe_stop:
             __dc(["stop", "-t 20"] + safe_stop)  # persist data
 
-    __dc(['stop', '-t 2'] + machines)
+    __dc(['stop', '-t 2'] + list(machines))
 
 def image_import(image_filename):
     dump_path = os.path.join(BACKUPDIR, os.path.basename(image_filename))
@@ -1254,7 +1263,7 @@ def logs(machine=None, lines=None):
     __dc(cmd)
 
 def logall(*machines):
-    __dc(['logs', '-f', '-t'] + machines)
+    __dc(['logs', '-f', '-t'] + list(machines))
 
 def import_i18n(lang, po_file_path):
     __dcrun(['odoo', '/import_i18n.sh', lang, po_file_path])
@@ -1329,7 +1338,7 @@ def patch(*parameters):
     __assert_file_exists(odoo_dir, isdir=True)
     __system([
         'admin/odoo-patch'
-    ] + parameters, cwd=dirs['odoo_home'], raise_exception=bool(parameters))  # otherwise show help
+    ] + list(parameters), cwd=dirs['odoo_home'], raise_exception=bool(parameters))  # otherwise show help
 
 def prepare():
     print "All configurations prepared."
@@ -1388,7 +1397,7 @@ def push(submodule_name):
         'master'
     ], cwd=dirs['customs'])
 
-def rebuild(*machines):
+def rebuild(machines):
     compose()
     build(machines)
 
@@ -1414,14 +1423,14 @@ def reset_db():
     __reset_postgres_container()
     print "Database initialized."
 
-def restart(*machines):
-    kill(*machines)
-    rm(*machines)
-    __dc(['up', '--force-recreate'] + machines)
+def restart(machines):
+    kill(machines)
+    rm(machines)
+    __dc(['up', '--force-recreate'] + __splitcomma(machines))
     proxy_reload()
 
-def rm(*machines):
-    __dc(['rm', '-f'] + machines)
+def rm(machines=''):
+    __dc(['rm', '-f'] + __splitcomma(machines))
 
 def restore_dev_db(filename):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
@@ -1638,12 +1647,12 @@ def update_ast():
     update_cache()
     print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
 
-def up(*machines):
+def up(machines=''):
     __set_db_ownership()
     options = [
         '-d',
     ]
-    __dc(['up'] + options + machines)
+    __dc(['up'] + options + __splitcomma(machines))
     proxy_reload()
 
 def update(module=""):
@@ -1701,7 +1710,7 @@ def _setupArgs():
     for member in getmembers(module, inspect.isfunction):
         name, member = member
         if isinstance(member, types.FunctionType):
-            if not name.startswith('_') and len(name) > 3:
+            if not name.startswith('_') and len(name) > 2:
                 commands.append(member)
 
     parser.add_commands(commands)
