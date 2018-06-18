@@ -1054,11 +1054,10 @@ def build(*machines):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """
-    compose()
     options = [
         '--pull',
     ]
-    __dc(['build'] + options + machines)
+    __dc(['build'] + options + list(machines))
 
 def commit(*parameters):
     versioning.actions["commit"](*parameters)
