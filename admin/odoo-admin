@@ -1697,6 +1697,7 @@ def update(module=""):
     __dc(['rm', '-f'])
     __dc(['create', '--force-recreate'])
     __start_postgres_and_wait()
+    kill('proxy')
 
     try:
         __dcrun(['odoo_update', '/update_modules.sh', module])
