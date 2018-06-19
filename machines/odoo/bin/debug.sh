@@ -1,5 +1,6 @@
 #!/bin/bash
 [[ "$VERBOSE" == "1" ]] && set -x
+source /eval_odoo_settings.sh
 
 echo "$*" |grep -q '[-]quick' || {
 	/apply-env-to-config.sh

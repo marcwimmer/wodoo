@@ -8,8 +8,6 @@ services:
         context: $ODOO_HOME/machines/odoo
         args:
           ODOO_VERSION: ${ODOO_VERSION}
-          ODOO_PYTHON_VERSION: ${ODOO_PYTHON_VERSION}
-          ODOO_EXECUTABLE: ${ODOO_EXECUTABLE}
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined

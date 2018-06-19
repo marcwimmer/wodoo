@@ -1,7 +1,5 @@
 FROM ubuntu:16.04
 ARG ODOO_VERSION
-ARG ODOO_PYTHON_VERSION
-ARG ODOO_EXECUTABLE
 MAINTAINER marc@itewimmer.de
 
 RUN apt-get update --fix-missing && \
@@ -85,10 +83,10 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
 ADD requirements/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
+ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh
 ADD install_python_packages.sh /install_python_packages.sh
-
-RUN chmod a+x /install_python_packages.sh
-RUN /bin/bash /install_python_packages.sh "${ODOO_VERSION}" "${ODOO_PYTHON_VERSION}"
+RUN chmod a+x /install_python_packages.sh /eval_odoo_settings.sh
+RUN /bin/bash /install_python_packages.sh
 
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/

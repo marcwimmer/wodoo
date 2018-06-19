@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
 set -x
-ODOO_VERSION="$1"
-ODOO_PYTHON_VERSION="$2"
+source /eval_odoo_settings.sh
 
 [[ "$VERBOSE" == "1" ]] && set -x
 
@@ -58,6 +57,8 @@ elif [ "$ODOO_PYTHON_VERSION" == "3" ]; then
 	apt install -y libcups2-dev
 	pip3 install pycups
 	PIP=pip3
+else
+    exit 1
 fi
 
 
@@ -74,7 +75,7 @@ case "$ODOO_VERSION" in
 	*)
 		echo "Installing version $1 requirements"
 		wget https://raw.githubusercontent.com/odoo/odoo/$ODOO_VERSION/requirements.txt -O /root/requirements_$ODOO_VERSION.txt
-		$PIP install -r /root/requirements_$1.txt
+		$PIP install -r /root/requirements_$ODOO_VERSION.txt
 	;;
 
 esac

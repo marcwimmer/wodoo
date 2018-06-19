@@ -6,6 +6,7 @@ if [[ -z "$DB_HOST" || -z "$DB_USER" ]]; then
     exit -1
 fi
 
+source /eval_odoo_settings.sh
 
 cd $ADMIN_DIR/module_tools
 ADDONS_PATHS=$(python <<EOF

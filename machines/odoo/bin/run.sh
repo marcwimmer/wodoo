@@ -1,9 +1,10 @@
 #!/bin/bash
 set -e
-[[ "$VERBOSE" == "1" ]] && set +x
+[[ "$VERBOSE" == "1" ]] && set -x
 
 # sync source is done by extra machine
 
+source /eval_odoo_settings.sh
 /apply-env-to-config.sh
 
 echo "Executing autosetup..."
@@ -26,11 +27,14 @@ if [[ "$ENDLESS_LOOP" == "1" ]]; then
     exit 0
 fi
 
+set -x
 if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
     echo 'Starting odoo cronjobs'
     CONFIG=config_openerp
+    EXEC="$ODOO_EXECUTABLE_CRONJOBS"
 else
     echo 'Starting odoo gevent'
     CONFIG=config_gevent
+    EXEC="$ODOO_EXECUTABLE_GEVENT"
 fi
-sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$ODOO_EXECUTABLE" -c "$CONFIG_DIR/$CONFIG"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
+sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$EXEC" -c "$CONFIG_DIR/$CONFIG"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"

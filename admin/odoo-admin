@@ -73,7 +73,7 @@ files = {
     'odoo_instances': 'run/odoo_instances',
     'config/default_network': 'config/default_network',
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
-    'machines/proxy/odoo_instance.conf': 'machines/proxy/odoo_instance.conf',
+    'machines/proxy/instance.conf': 'machines/proxy/instance.conf',
     'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
 }
 commands = {
@@ -284,49 +284,35 @@ def _setup_proxy():
             for filename in _filenames:
                 if filename == 'upstream.path':
                     filepath = os.path.join(root, filename)
+                    machine = None
+                    p = filepath
+                    while os.path.basename(p) != "machines":
+                        machine = os.path.basename(p)
+                        p = os.path.dirname(p)
+                    del p
+
                     try:
                         version = float(os.path.basename(os.path.dirname(filepath)))
                     except Exception:
-                        pass
+                        version = None
                     else:
                         if str(version) != str(odoo_config.get_version_from_customs(os.environ['CUSTOMS'])):
                             continue
                     with open(filepath, 'r') as f:
-                        for l in f.readlines():
-                            if l:
-                                yield filepath, l
+                        content = f.readlines()
+                        for line in content:
+                            LOCATION, UPSTREAM = line.strip().split(" ")
+                            if not LOCATION or not UPSTREAM:
+                                raise Exception("Invalid rule: {}".format(line))
+                            yield filepath, LOCATION, UPSTREAM, machine
 
-    for filepath, rule in get_rules():
-        rule = os.path.expandvars(rule)
-
-        LOCATION, UPSTREAM = rule.strip().split(" ")
-
-        if not LOCATION or not UPSTREAM:
-            raise Exception("Invalid rule: {}".format(rule))
-
-        parent_dir = os.path.dirname(filepath)
-        if os.path.basename(parent_dir) == "odoo":
-            subdir = "odoo"
-            __makedirs(os.path.join(CONFIG_DIR, subdir))
-
-            if os.path.exists(files['odoo_instances']):
-                for line in __file_get_lines(files['odoo_instances']):
-                    name, domain = line.strip().split(" ")
-                    filename = "{}.location".format(name)
-                    CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
-                    if name == "default":
-                        UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
-                    else:
-                        UPSTREAM_INSTANCE = UPSTREAM.replace("odoo", "odoo_{}".format(name))
-                    f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
-
-        else:
-            subdir = "default"
-            __makedirs(os.path.join(CONFIG_DIR, subdir))
-            safe_location = LOCATION.replace("\\", "_").replace("/", "")
-            filename = "{location}_{location}.location".format(location=safe_location)
-            CONFIG_PATH = os.path.join(CONFIG_DIR, subdir, filename)
-            f_add_upstream(LOCATION, UPSTREAM, CONFIG_PATH)
+    for filepath, LOCATION, UPSTREAM, machine in get_rules():
+        __makedirs(os.path.join(CONFIG_DIR, machine))
+        location_friendly_name = LOCATION.replace("/", "_")
+        filename = "{}.location".format(location_friendly_name)
+        CONFIG_PATH = os.path.join(CONFIG_DIR, machine, filename)
+        UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
+        f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
 @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
 def __get_docker_image():
@@ -383,6 +369,14 @@ def __get_dump_type(filepath):
 def __is_container_running(machine_name):
     out = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True)
     return bool(out)
+
+def __isfloat(x):
+    try:
+        float(x)
+    except Exception:
+        return False
+    else:
+        return True
 
 def __makedirs(path):
     if not os.path.exists(path):
@@ -677,18 +671,6 @@ def _export_settings():
     # get odoo version
     ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
     os.environ['ODOO_VERSION'] = ODOO_VERSION
-    if ODOO_VERSION in ["6.0", "6.1", "7.0", "8.0", "9.0"]:
-        os.environ['ODOO_PYTHON_VERSION'] = '2'
-        os.environ['ODOO_EXECUTABLE'] = 'openerp-server'
-    elif ODOO_VERSION in ["10.0"]:
-        os.environ['ODOO_PYTHON_VERSION'] = '2'
-        os.environ['ODOO_EXECUTABLE'] = 'odoo-bin'
-    elif ODOO_VERSION in ['11.0']:
-        os.environ['ODOO_PYTHON_VERSION'] = '3'
-        os.environ['ODOO_EXECUTABLE'] = 'odoo-bin'
-    else:
-        raise Exception("not impl: {}".format(ODOO_VERSION))
-
     setting_files = _collect_settings_files()
     _make_settings_file(files['settings'], setting_files)
     config = MyConfigParser(files['settings'])
@@ -967,33 +949,46 @@ def _sanity_check():
 
 
 def _setup_odoo_instances():
+    def __add_location_files(config_path, dir):
+        lines = []
+        for subdir in os.listdir(dir):
+            if os.path.isdir(os.path.join(dir, subdir)):
+                for file in os.listdir(os.path.join(dir, subdir)):
+                    lines.append("\tInclude " + os.path.join("/etc/proxy", os.path.basename(subdir), file))
+        __replace_in_file(config_path, "__INCLUDES__", '\n'.join(lines))
+
     if os.path.exists(files['odoo_instances']):
 
         if os.path.exists(files['odoo_instances']):
             for line in __file_get_lines(files['odoo_instances']):
                 name, domain = line.strip().split(" ")
                 config_path = os.path.join(dirs['proxy_configs_dir'], "{}.host".format(name))
-                shutil.copy(files['machines/proxy/odoo_instance.conf'], config_path)
+                shutil.copy(files['machines/proxy/instance.conf'], config_path)
+
                 if domain == "default":
-                    __replace_in_file(config_path, "__DOMAIN__", "*")
+                    __replace_in_file(config_path, "__DOMAIN__", '*')
                 else:
                     if domain:
                         __replace_in_file(config_path, "__DOMAIN__", domain)
-            if name:
-                __replace_in_file(config_path, "__CONTAINERNAME__", name)
+                if name != "default":
+                    # adapt the one yml file and duplicate the odoo service there;
+                    # removing any ports
+                    with open(files['docker_compose_file']) as f:
+                        j = yaml.load(f.read())
+                    odoo = copy.deepcopy(j['services']['odoo'])
+                    if 'ports' in odoo:
+                        del odoo['ports']
+                    odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
+                    j['services']['odoo_{}'.format(name)] = odoo
+                    with open(files['docker_compose_file'], 'w') as f:
+                        f.write(yaml.dump(j, default_flow_style=False))
 
-            if name != "default":
-                # adapt the one yml file and duplicate the odoo service there;
-                # removing any ports
-                with open(files['docker_compose_file']) as f:
-                    j = yaml.load(f.read())
-                odoo = copy.deepcopy(j['services']['odoo'])
-                if 'ports' in odoo:
-                    del odoo['ports']
-                odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
-                j['services']['odoo_{}'.format(name)] = odoo
-                with open(files['docker_compose_file'], 'w') as f:
-                    f.write(yaml.dump(j, default_flow_style=False))
+    for file in os.listdir(dirs['run/proxy']):
+        if not file.endswith('.host'):
+            continue
+        config_path = os.path.join(dirs['run/proxy'], file)
+        __add_location_files(config_path, dirs['run/proxy'])
+
 
 def __get_cmd():
     cmd = commands['dc']
