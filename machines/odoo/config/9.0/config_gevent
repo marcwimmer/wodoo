@@ -59,4 +59,5 @@ timezone = False
 translate_modules = ['all']
 unaccent = False
 without_demo = False
+xmlrpc_port = 8069
 workers = 0
