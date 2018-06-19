@@ -284,6 +284,13 @@ def _setup_proxy():
             for filename in _filenames:
                 if filename == 'upstream.path':
                     filepath = os.path.join(root, filename)
+                    try:
+                        version = float(os.path.basename(os.path.dirname(filepath)))
+                    except Exception:
+                        pass
+                    else:
+                        if str(version) != str(odoo_config.get_version_from_customs(os.environ['CUSTOMS'])):
+                            continue
                     with open(filepath, 'r') as f:
                         for l in f.readlines():
                             if l:
@@ -896,7 +903,7 @@ def _prepare_yml_files_from_template_files():
     # - also replace all environment variables
     def find_files(dir):
         PATTERN = r'docker-compose.*.yml'
-        for root, _, _filenames in os.walk(dirs['machines']):
+        for root, _, _filenames in os.walk(dir):
             for filename in _filenames:
                 if re.findall(PATTERN, filename):
                     yield os.path.join(root, filename)
@@ -1443,10 +1450,10 @@ def reset_db():
     __reset_postgres_container()
     print "Database initialized."
 
-def restart(machines):
+def restart(machines=""):
     kill(machines)
     rm(machines)
-    __dc(['up', '--force-recreate'] + __splitcomma(machines))
+    __dc(['up', '-d', '--force-recreate'] + __splitcomma(machines))
     proxy_reload()
 
 def rm(machines=''):
