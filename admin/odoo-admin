@@ -1136,13 +1136,14 @@ def debug(machine_name):
     _askcontinue("Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine_name))
     # shutdown current machine and start via run and port-mappings the replacement machine
     kill(machine_name)
+    rm(machine_name)
     shutil.copy(files['debugging_template'], files['debugging_composer'])
     __replace_in_file(files['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
     __replace_in_file(files['debugging_composer'], "${NAME}", machine_name)
     commands['dc'] += ['-f', files['debugging_composer']]
 
     __dc(['up', '-d', machine_name])
-    attach([machine_name], {})
+    attach(machine_name)
 
 def deploy():
     versioning.action_deploy_ticket()
