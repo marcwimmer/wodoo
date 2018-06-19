@@ -1162,6 +1162,7 @@ def dirty():
     versioning.dirty()
 
 def do_command(cmd, *params):
+    cmd = cmd.replace('-', '_')
     return globals()[cmd](*params)
 
 def execute(*parameters):
