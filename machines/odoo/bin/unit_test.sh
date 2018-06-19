@@ -6,6 +6,7 @@ if [[ -z "$1" ]]; then
 fi
 
 reset
+source /eval_odoo_settings.sh
 /apply-env-to-config.sh
 
 cd "$ADMIN_DIR/module_tools" || exit -1

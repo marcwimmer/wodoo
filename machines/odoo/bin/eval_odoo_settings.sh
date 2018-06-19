@@ -20,3 +20,5 @@ case "$ODOO_VERSION" in
         ;;
 
 esac
+
+export ODOO_EXECUTABLE="$ODOO_EXECUTABLE_GEVENT"

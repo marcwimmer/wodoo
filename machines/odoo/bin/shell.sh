@@ -1,6 +1,7 @@
 #!/bin/bash
 [[ "$VERBOSE" == "1" ]] && set -x
 
+source /eval_odoo_settings.sh
 /apply-env-to-config.sh
 
 OPTIONS=""
@@ -12,4 +13,4 @@ case "$ODOO_VERSION" in
         OPTIONS="--shell-interface=ipython"
         ;;
 esac
-sudo -E -H -u $ODOO_USER $SERVER_DIR/$ODOO_EXECUTABLE shell -d $DBNAME -c $CONFIG_DIR/config_shell $OPTIONS
+sudo -E -H -u $ODOO_USER $SERVER_DIR/$ODOO_EXECUTABLE_GEVENT shell -d $DBNAME -c $CONFIG_DIR/config_shell $OPTIONS

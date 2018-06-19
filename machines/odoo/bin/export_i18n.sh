@@ -10,6 +10,7 @@ fi
 LANG="$1"
 MODULES="$2"
 
+source /eval_odoo_settings.sh
 /apply-env-to-config.sh
 
 export_dir="${ADDONS_CUSTOMS}/$MODULES"
