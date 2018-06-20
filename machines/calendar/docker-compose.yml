@@ -30,7 +30,7 @@ services:
         DBPORT: 5432
         DBAOPTS: --dbhost calendar_db --dbuser davical
         SRC_DIR: /opt/src_filemodeupdated
-  ${CALENDAR_DB_HOST}:
+  calendar_db:
     container_name: ${CUSTOMS}_calendar_db
     image: postgres:9.6.6
     volumes:
