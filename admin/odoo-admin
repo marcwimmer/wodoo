@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import argh
+import pexpect
 import types
 from argh import arg
 import sys
@@ -133,7 +134,7 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     __assert_file_exists(dump_file)
 
     print("Restoring dump on {}:{} as {}".format(host, port, user))
-    # os.environ['PGPASSWORD'] = password done by .pgpass file
+    os.environ['PGPASSWORD'] = password
     args = ["-h", host, "-p", port, "-U", user]
     PGRESTORE = [
         "pg_restore",
@@ -504,15 +505,19 @@ def __set_db_ownership():
         from module_tools.module_tools import set_ownership_exclusive
         set_ownership_exclusive()
 
-def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, 
+def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
              wait_finished=True, shell=False, logger=None, stdin=None,
              pipeout=None, redirect_std_out_to_file=None,
+             progress=False, progress_every_seconds=1, 
              ):
     assert isinstance(cmd, list)
 
     STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
     if (not wait_finished and pipeout is None) or pipeout is False:
         STDPIPE, ERRPIPE, bufsize = None, None, -1
+    if pipeout:
+        bufsize = 4096
+        suppress_out = True
     proc = subprocess.Popen(cmd, shell=shell, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd, stdin=stdin)
     collected_errors = []
 
@@ -521,44 +526,74 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
             with pipe:
                 for line in iter(pipe.readline, ''):
                     q.put((pipe, line))
+        except Exception as e:
+            print e
         finally:
             q.put(None)
 
+    data = {
+        'size_written': 0,
+    }
+    size_written = out_file = 0
     if redirect_std_out_to_file:
         out_file = open(redirect_std_out_to_file, 'w')
+    out = []
 
-    if wait_finished:
-        err = proc.stderr
-        out = ""
-        q = Queue()
-        Thread(target=reader, args=[proc.stdout, q]).start()
-        Thread(target=reader, args=[proc.stderr, q]).start()
-        for source, line in iter(q.get, None):
-            if source != err:
-                out += line
-            else:
-                collected_errors.append(line.strip())
-            if not suppress_out:
-                sys.stdout.write(line)
-                sys.stdout.flush()
-            if redirect_std_out_to_file:
-                out_file.write(line)
+    def heartbeat():
+        while proc.returncode is None:
+            time.sleep(progress_every_seconds)
+            print("{} processed".format(humanize.naturalsize(data['size_written'])))
 
-            if logger:
-                if source == err:
-                    logger.error(line.strip())
+    def handle_output():
+        try:
+            err = proc.stderr
+            q = Queue()
+            Thread(target=reader, args=[proc.stdout, q]).start()
+            Thread(target=reader, args=[proc.stderr, q]).start()
+            for source, line in iter(q.get, None):
+                if source != err:
+                    out.append(line)
                 else:
-                    logger.info(line.strip())
+                    collected_errors.append(line.strip())
+                if source == err or not suppress_out:
+                    sys.stdout.write(line)
+                    sys.stdout.flush()
+                if source != err:
+                    data['size_written'] += len(line)
+                if redirect_std_out_to_file:
+                    if source != err:
+                        out_file.write(line)
+
+                if logger:
+                    if source == err:
+                        logger.error(line.strip())
+                    else:
+                        logger.info(line.strip())
+        except Exception as e:
+            print e
+    if progress:
+        t = Thread(target=heartbeat)
+        t.daemonized = True
+        t.start()
+
+    if wait_finished or progress or redirect_std_out_to_file:
+        t = Thread(target=handle_output)
+        t.daemonized = True
+        t.start()
+        if wait_finished:
+            t.join()
 
     if not wait_finished:
         return proc
     proc.wait()
     if out_file:
         out_file.close()
+        print("{} Size: {}".format(redirect_std_out_to_file, humanize.naturalsize(size_written)))
+
     if proc.returncode and raise_exception:
         print '\n'.join(collected_errors)
         raise Exception("Error executing: {}".format(" ".join(cmd)))
-    return out
+    return "".join(out)
 
 def __try_to_set_owner(UID, path, recursive=False):
     if os.path.isdir(path):
@@ -1091,24 +1126,8 @@ def backup_calendar(filename=None):
 
 
 def __backup_postgres(filepath, dbname, host, port, user, password):
-    proc = __system([
-        "pg_dump",
-        "-h",
-        host,
-        "-p",
-        str(port),
-        '-U',
-        user,
-        '-Z0',
-        '-Fc',
-        dbname
-    ], wait_finished=False, suppress_out=True, pipeout=True)
-    __system([
-        'pigz',
-        '--rsyncable',
-    ], stdin=proc.stdout, suppress_out=True, redirect_std_out_to_file=filepath)
-    proc.wait()
-
+    os.environ['PGPASSWORD'] = password
+    os.system('pg_dump -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pigz --rsyncable > {filepath}'.format(**locals()))
 
 def backup_db(filename=None):
     filename = filename or datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(E("CUSTOMS")))
@@ -1122,7 +1141,7 @@ def backup_db(filename=None):
     LINKPATH = os.path.join(BACKUPDIR, 'latest_dump')
     __start_postgres_and_wait()
 
-    __backup_postgres(filepath, E("DBNAME"), E("DB_HOST"), E("DB_PORT"))
+    __backup_postgres(filepath, E("DBNAME"), E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
 
     if E("NO_BACKUP_SYMBOLIC_LINK_DUMP") != "1":
         if os.path.islink(LINKPATH) or os.path.exists(LINKPATH):
