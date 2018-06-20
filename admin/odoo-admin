@@ -127,17 +127,14 @@ def get_dump_type(filename):
     dump_type = __get_dump_type(dump_file)
     print dump_type
 
-def __do_restore_db_on_postgres(filename, dbname):
-    os.environ['DBNAME'] = dbname
+def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     dump_file = os.path.join(BACKUPDIR, filename)
 
     __assert_file_exists(dump_file)
 
-    print("Restoring dump on {}".format(E("DB_HOST")))
-    __print_env(['DB_HOST', 'DB_PORT', 'DB_USER'])
-    os.environ['PGPASSWORD'] = E("DB_PWD")
-    args = ["-h", "$DB_HOST", "-p", "$DB_PORT", "-U", "$DB_USER"]
-    args = [os.path.expandvars(x) for x in args]
+    print("Restoring dump on {}:{} as {}".format(host, port, user))
+    # os.environ['PGPASSWORD'] = password done by .pgpass file
+    args = ["-h", host, "-p", port, "-U", user]
     PGRESTORE = [
         "pg_restore",
         "--no-owner",
@@ -176,8 +173,8 @@ def __do_restore_db_on_postgres(filename, dbname):
     print "Restoring DB..."
     subprocess.check_call(method + [
         '-d',
-        E("DBNAME"),
-    ], stdin=stdin, env=os.environ),
+        dbname,
+    ], stdin=stdin),
     print "Restore took {} seconds".format((datetime.now() - started).seconds)
 
 def __do_restore_files(filepath):
@@ -536,7 +533,7 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finis
                 sys.stdout.flush()
 
     if not wait_finished:
-        return
+        return proc
     proc.wait()
     if proc.returncode and raise_exception:
         raise Exception("Error executing: {}".format(" ".join(cmd)))
@@ -1056,6 +1053,40 @@ def backup(filename=None):
     t1.join()
     t2.join()
 
+def backup_calendar(filename=None):
+    filename = filename or datetime.now().strftime("{} %Y-%m-%d_%H%M%S.dump.gz".format(E("CUSTOMS")))
+    filepath = os.path.join(BACKUPDIR, filename)
+    os.system('pg_dump -h "{host}" -p "{port}" -U "{user}" -Z0 -Fc "{dbname}" | pigz --rsyncable > "{filepath}"'.format(
+        host=E("CALENDAR_DB_HOST"),
+        port=E("CALENDAR_DB_PORT"),
+        user=E("CALENDAR_DB_USER"),
+        dbname=E("CALENDAR_DB_NAME"),
+        filepath=filepath
+    ))
+
+
+def __backup_postgres(filepath, dbname, host, port, user, password):
+    from pudb import set_trace
+    set_trace()
+
+    proc = __system([
+        "pg_dump",
+        "-h",
+        host,
+        "-p",
+        str(port),
+        '-U',
+        user,
+        '-Z0',
+        '-Fc',
+        dbname
+    ], wait_finished=False)
+    __system([
+        'pigz',
+        '--rsyncable',
+    ], pipe_in=proc.stdout)
+
+
 def backup_db(filename=None):
     filename = filename or datetime.now().strftime("{} %Y-%m-%d_%H%M%S.dump.gz".format(E("CUSTOMS")))
 
@@ -1067,7 +1098,9 @@ def backup_db(filename=None):
         os.unlink(filepath)
     LINKPATH = os.path.join(BACKUPDIR, 'latest_dump')
     __start_postgres_and_wait()
-    os.system('pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -Z0 -Fc "$DBNAME" | pigz --rsyncable > "{}"'.format(filepath))
+
+    __backup_postgres(filepath, E("DBNAME"), E("DB_HOST"), E("DB_PORT"))
+
     if E("NO_BACKUP_SYMBOLIC_LINK_DUMP") != "1":
         if os.path.islink(LINKPATH) or os.path.exists(LINKPATH):
             os.unlink(LINKPATH)
@@ -1497,7 +1530,7 @@ def restore_db(dumpfile, exec_before_rename=None, restore_as_dev_db=False):
     dbname = config['DBNAME']
 
     reset_db()
-    __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING)
+    __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING, E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
     if exec_before_rename:
         exec_before_rename(DBNAME_RESTORING)
     __rename_db_drop_target(DBNAME_RESTORING, dbname)

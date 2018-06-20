@@ -169,7 +169,7 @@ def start_background_sync_from_host():
     if get_platform() == 'macos' or E("RUN_RSYNCED") == "1":
         if len(sys.argv) > 1 and sys.argv[1] == 'dev':
             subprocess.Popen([
-                os.path.join(LOCAL_ODOO_HOME, 'admin/sync_source.sh'),
+                os.path.join(LOCAL_ODOO_HOME, 'admin/sync_source.py'),
                 E("CUSTOMS"),
             ], stdout=None)
 

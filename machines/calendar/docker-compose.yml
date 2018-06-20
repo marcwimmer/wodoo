@@ -30,14 +30,14 @@ services:
         DBPORT: 5432
         DBAOPTS: --dbhost calendar_db --dbuser davical
         SRC_DIR: /opt/src_filemodeupdated
-  calendar_db:
+  ${CALENDAR_DB_HOST}:
     container_name: ${CUSTOMS}_calendar_db
     image: postgres:9.6.6
     volumes:
         - calendar_db:/data
         - $ODOO_HOME/machines/calendar/add_users.sql:/docker-entrypoint-initdb.d/add_users.sql
     environment:
-        POSTGRES_PASSWORD: davical
-        POSTGRES_USER: davical
-        POSTGRES_DB: postgres
+        POSTGRES_PASSWORD: ${CALENDAR_DB_PWD}
+        POSTGRES_USER: ${CALENDAR_DB_USER}
+        POSTGRES_DB: ${CALENDAR_DB_NAME}
         PGDATA: /data
