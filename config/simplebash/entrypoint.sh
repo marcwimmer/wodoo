@@ -26,11 +26,12 @@ chown "$USER":"$USER" /home/$USER/.config -R
 for file in .gitconfig .ssh; do
     if [[ -d "/opt/external_home/$file" ]]; then
         rsync "/opt/external_home/$file/" "/home/$USER/$file" -ar
+        chown -R "$USER" /home/$USER/$file
 
     elif [[ -f "/opt/external_home/$file" ]]; then
          cp "/opt/external_home/$file" "/home/$USER/$file"
+         chown -R "$USER" /home/$USER/$file
     fi
-    chown -R "$USER" /home/$USER/$file
 done
 
 PGPASSFILE=/tmp/.pgpass
