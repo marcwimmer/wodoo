@@ -507,7 +507,7 @@ def __set_db_ownership():
         from module_tools.module_tools import set_ownership_exclusive
         set_ownership_exclusive()
 
-def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True, shell=False):
+def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True, shell=False, logger=None):
     assert isinstance(cmd, list)
 
     STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
@@ -534,6 +534,11 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finis
             if not suppress_out:
                 sys.stdout.write(line)
                 sys.stdout.flush()
+            if logger:
+                if source == err:
+                    logger.error(line.strip())
+                else:
+                    logger.info(line.strip())
 
     if not wait_finished:
         return
@@ -1002,7 +1007,7 @@ def __dcexec(cmd):
     out = __system(c, cwd=dirs['odoo_home'])
     return out
 
-def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True):
+def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True, logger=None):
     c = __get_cmd() + cmd
     out = __system(
         c,
@@ -1010,17 +1015,18 @@ def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True):
         suppress_out=suppress_out,
         raise_exception=raise_exception,
         wait_finished=wait_finished,
+        logger=logger,
     )
     return out
 
-def __dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True):
+def __dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True, logger=None):
     cmd = [os.path.expandvars(x) for x in cmd]
     if interactive:
         options = ''
     else:
         options = '-T'
     cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
-    return __dc(cmd, wait_finished=wait_finished, raise_exception=True)
+    return __dc(cmd, wait_finished=wait_finished, raise_exception=True, logger=logger)
 
 def E(name):
     if name.startswith("$"):
@@ -1165,9 +1171,9 @@ def dev(customs):
 def dirty():
     versioning.dirty()
 
-def do_command(cmd, *params):
+def do_command(cmd, *params, **kwparams):
     cmd = cmd.replace('-', '_')
-    return globals()[cmd](*params)
+    return globals()[cmd](*params, **kwparams)
 
 def execute(*parameters):
     __dcexec(*parameters)
@@ -1511,13 +1517,14 @@ def rmpyc():
             if filename.endswith(".pyc"):
                 os.unlink(os.path.join(root, filename))
 
-def run(machine, *params):
+def run(machine, *params, **kwparams):
     __set_db_ownership()
     params = list(params)
     if params and params[0] == 'bash' and len(params) == 1:
         runbash(machine)
         return
-    __dcrun([machine] + params)
+    
+    __dcrun([machine] + params, **kwparams)
 
 def runbash(machine):
     __set_db_ownership()
