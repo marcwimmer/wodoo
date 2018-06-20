@@ -6,6 +6,7 @@ Migration Script
 """
 import os
 import sys
+import psycopg2
 import pickle
 import base64
 import logging
@@ -52,6 +53,16 @@ def prepareCommand(cmd):
     cmd = pickle.dumps(cmd)
     cmd = base64.b64encode(cmd)
     return cmd
+
+def connect_db():
+    return psycopg2.connect(
+        dbname=os.environ['DBNAME'],
+        user=os.environ['DB_USER'],
+        host=os.environ['DB_HOST'],
+        port=long(os.environ['DB_PORT']),
+        password=os.environ['DB_PWD'],
+    )
+
 
 def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
     from_version = str(float(from_version))
@@ -192,6 +203,13 @@ Migration to Version {}
             'after',
             logger=logger,
         )
+        conn = connect_db()
+        cr = conn.cursor()
+        cr.execute("select count(*) from ir_module_module where state like 'to %'")
+        if cr.fetchone()[0]:
+            do_command('progress')
+            raise Exception("Found dangling modules!")
+        conn.close()
 
         if not no_auto_backup:
             print "Backup of database Version {}".format(version)
