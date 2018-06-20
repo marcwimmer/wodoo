@@ -1465,10 +1465,10 @@ def pull(submodule):
         'pull',
         '--message',
         'SUBTREE-PULL {}'.format(submodule),
-        '--prefix'
+        '--prefix',
         'common/{}'.format(submodule),
         '--squash',
-        'git.mt-software.de:"/git/openerp/modules/{}'.format(submodule),
+        'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
         'master'
     ], cwd=dirs['customs'])
 
@@ -1477,9 +1477,9 @@ def pull_all():
     out = __system([
         'git',
         'log',
-    ]).split('\n')
-    out = filter(lambda line: 'git-subtree-dir:', out)
-    out = map(lambda line: out.strip().split(": ")[1].strip(), out)
+    ], cwd=dirs['customs'], suppress_out=True).split('\n')
+    out = filter(lambda line: 'git-subtree-dir:' in line, out)
+    out = map(lambda line: line.strip().split(": ")[1].strip(), out)
     for tree in out:
         __system([
             'git',
@@ -1487,7 +1487,7 @@ def pull_all():
             'pull',
             '-message',
             'SUBTREE-PULL {}'.format(tree),
-            '--prefix="{}"'.format(tree),
+            '--prefix={}'.format(tree),
             '--squash',
         ], cwd=dirs['customs'])
 
