@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# executed in odoo container
 import sys
 import os
 import pickle

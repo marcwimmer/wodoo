@@ -63,7 +63,7 @@ def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS
     settings['RUN_MIGRATION'] = '1'
     settings.write()
 
-    FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s\n%(message)s'
+    FORMAT = '[%(levelname)s] %(asctime)s\t%(message)s'
     logging.basicConfig(filename="/dev/stdout", format=FORMAT)
     logging.getLogger().setLevel(logging.DEBUG)
     logger = logging.getLogger('')  # root handler
@@ -170,6 +170,7 @@ Migration to Version {}
             "odoo",
             "/run_migration.sh",
             'before',
+            logger=logger,
         )
         print("Starting Openupgrade Migration to {}".format(version))
         do_command(
@@ -181,6 +182,7 @@ Migration to Version {}
             prepareCommand(migrations[version]['cmd']),
             ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
             version,
+            logger=logger,
         )
         print("Running after processes {}".format(version))
         do_command(
@@ -188,6 +190,7 @@ Migration to Version {}
             "odoo",
             "/run_migration.sh",
             'after',
+            logger=logger,
         )
 
         if not no_auto_backup:
