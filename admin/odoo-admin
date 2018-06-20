@@ -1483,8 +1483,6 @@ def pull_all():
     for tree in out:
         if tree.startswith('common/'):
             tree # = tree[len('common/'):]
-            from pudb import set_trace
-            set_trace()
             __system([
                 'git',
                 'subtree',
