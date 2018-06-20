@@ -35,6 +35,10 @@ else:
 os.environ['ODOO_HOME'] = ODOO_HOME
 os.environ['WORKING_DIR'] = WORKING_DIR
 
+if len(sys.argv) > 1 and sys.argv[1] == 'compose':
+    if os.path.exists(SETTINGS_FILE):
+        os.unlink(SETTINGS_FILE)
+
 config = MyConfigParser(SETTINGS_FILE)
 if not os.path.exists(SETTINGS_FILE):
     config.write()

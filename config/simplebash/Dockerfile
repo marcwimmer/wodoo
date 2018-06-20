@@ -42,10 +42,3 @@ RUN \
 git config --global user.email admin && \
 git config --global user.name admin
 WORKDIR /opt/odoo
-
-
-# install postgres 10 client
-#RUN add-apt-repository 'deb http://apt.postgresql.org/pub/repos/apt/ zesty-pgdg main'
-#RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - ; \
-#apt-get update
-#RUN apt install postgresql-10

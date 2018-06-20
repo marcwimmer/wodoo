@@ -504,13 +504,17 @@ def __set_db_ownership():
         from module_tools.module_tools import set_ownership_exclusive
         set_ownership_exclusive()
 
-def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finished=True, shell=False, logger=None):
+def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, 
+             wait_finished=True, shell=False, logger=None, stdin=None,
+             pipeout=None, redirect_std_out_to_file=None,
+             ):
     assert isinstance(cmd, list)
 
     STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
-    if not wait_finished:
+    if (not wait_finished and pipeout is None) or pipeout is False:
         STDPIPE, ERRPIPE, bufsize = None, None, -1
-    proc = subprocess.Popen(cmd, shell=shell, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd)
+    proc = subprocess.Popen(cmd, shell=shell, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd, stdin=stdin)
+    collected_errors = []
 
     def reader(pipe, q):
         try:
@@ -519,6 +523,10 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finis
                     q.put((pipe, line))
         finally:
             q.put(None)
+
+    if redirect_std_out_to_file:
+        out_file = open(redirect_std_out_to_file, 'w')
+
     if wait_finished:
         err = proc.stderr
         out = ""
@@ -528,9 +536,14 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finis
         for source, line in iter(q.get, None):
             if source != err:
                 out += line
+            else:
+                collected_errors.append(line.strip())
             if not suppress_out:
                 sys.stdout.write(line)
                 sys.stdout.flush()
+            if redirect_std_out_to_file:
+                out_file.write(line)
+
             if logger:
                 if source == err:
                     logger.error(line.strip())
@@ -540,7 +553,10 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True, wait_finis
     if not wait_finished:
         return proc
     proc.wait()
+    if out_file:
+        out_file.close()
     if proc.returncode and raise_exception:
+        print '\n'.join(collected_errors)
         raise Exception("Error executing: {}".format(" ".join(cmd)))
     return out
 
@@ -1060,21 +1076,21 @@ def backup(filename=None):
     t2.join()
 
 def backup_calendar(filename=None):
-    filename = filename or datetime.now().strftime("{} %Y-%m-%d_%H%M%S.dump.gz".format(E("CUSTOMS")))
+    if E("RUN_CALENDAR") != "1":
+        return
+    filename = filename or datetime.now().strftime("{}.calendar.%Y%m%d%H%M%S.dump.gz".format(E("CUSTOMS")))
     filepath = os.path.join(BACKUPDIR, filename)
-    os.system('pg_dump -h "{host}" -p "{port}" -U "{user}" -Z0 -Fc "{dbname}" | pigz --rsyncable > "{filepath}"'.format(
+    __backup_postgres(
+        filepath,
+        dbname=E("CALENDAR_DB_NAME"),
         host=E("CALENDAR_DB_HOST"),
         port=E("CALENDAR_DB_PORT"),
         user=E("CALENDAR_DB_USER"),
-        dbname=E("CALENDAR_DB_NAME"),
-        filepath=filepath
-    ))
+        password=E("CALENDAR_DB_PWD"),
+    )
 
 
 def __backup_postgres(filepath, dbname, host, port, user, password):
-    from pudb import set_trace
-    set_trace()
-
     proc = __system([
         "pg_dump",
         "-h",
@@ -1086,15 +1102,16 @@ def __backup_postgres(filepath, dbname, host, port, user, password):
         '-Z0',
         '-Fc',
         dbname
-    ], wait_finished=False)
+    ], wait_finished=False, suppress_out=True, pipeout=True)
     __system([
         'pigz',
         '--rsyncable',
-    ], pipe_in=proc.stdout)
+    ], stdin=proc.stdout, suppress_out=True, redirect_std_out_to_file=filepath)
+    proc.wait()
 
 
 def backup_db(filename=None):
-    filename = filename or datetime.now().strftime("{} %Y-%m-%d_%H%M%S.dump.gz".format(E("CUSTOMS")))
+    filename = filename or datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(E("CUSTOMS")))
 
     if filename.startswith("/"):
         raise Exception("No slash for backup filename allowed")
@@ -1655,9 +1672,9 @@ def submodule(*submodules):
             'git',
             'subtree',
             'add',
-            '--prefix="common/{}"'.format(submodule),
+            '--prefix=common/{}'.format(submodule),
             '--squash',
-            'git.mt-software.de:"/git/openerp/modules/{}"'.format(submodule),
+            'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
             'master',
         ], cwd=dirs['customs'])
 
