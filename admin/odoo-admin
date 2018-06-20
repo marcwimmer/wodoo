@@ -1363,10 +1363,7 @@ def link():
     """
     links all modules into ./links
     """
-    __system([
-        'python',
-        os.path.join(dirs['admin'], 'link_modules')
-    ])
+    os.system("python " + os.path.join(dirs['admin'], 'link_modules'))
 
 def logsn(lines, machine):
     """
