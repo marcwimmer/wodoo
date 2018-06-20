@@ -1481,15 +1481,20 @@ def pull_all():
     out = filter(lambda line: 'git-subtree-dir:' in line, out)
     out = map(lambda line: line.strip().split(": ")[1].strip(), out)
     for tree in out:
-        __system([
-            'git',
-            'subtree',
-            'pull',
-            '-message',
-            'SUBTREE-PULL {}'.format(tree),
-            '--prefix={}'.format(tree),
-            '--squash',
-        ], cwd=dirs['customs'])
+        if tree.startswith('common/'):
+            tree # = tree[len('common/'):]
+            from pudb import set_trace
+            set_trace()
+            __system([
+                'git',
+                'subtree',
+                'pull',
+                '-message SUBTREE-PULL {}'.format(tree),
+                '--prefix={}'.format(tree),
+                '--squash',
+                'git.mt-software.de:/git/openerp/modules/{}'.format(os.path.basename(tree)),
+                'master',
+            ], cwd=dirs['customs'])
 
 def push(submodule_name):
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
