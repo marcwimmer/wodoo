@@ -86,36 +86,6 @@ def trace():
     if set_trace:
         set_trace()
 
-def _get_platform():
-    if os.getenv("PLATFORM", "") in ['Darwin', 'OSX', 'macos']:
-        return PLATFORM_OSX
-    else:
-        return PLATFORM_LINUX
-
-def _startup():
-    if os.path.isfile(files['settings']):
-        _file2env(files['settings'])
-    dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
-    dir = os.path.dirname(dir)
-    dirs['odoo_home'] = dir
-
-    def make_absolute(d):
-        for k, v in d.items():
-            if not v.startswith('/'):
-                d[k] = os.path.join(dir, v)
-    make_absolute(dirs)
-    dirs['customs'] = odoo_config.customs_dir()
-    make_absolute(files)
-    os.environ['ODOO_MANAGER_STARTED_ONCE'] = '1'
-    os.environ['ODOO_COMPOSE_VERSION'] = "3.3"
-    os.environ['PGPASSFILE'] = "/tmp/.pgpass" # must match the executing script
-    os.environ['PGHOST'] = os.path.expandvars("$DB_HOST")
-    os.environ['PGPORT'] = os.path.expandvars("$DB_PORT")
-    os.environ['PGUSER'] = os.path.expandvars("$DB_USER")
-    os.environ['LOCAL_WORKING_DIR'] = "{}/{}".format(os.getenv("EXTERNAL_ROOT"), os.getenv("WORKING_DIR"))  # the working directory accessible from container of this script.
-    dirs['host_working_dir'] = os.environ['LOCAL_WORKING_DIR']
-    commands['dc'] = [x.replace("$docker_compose_file", files['docker_compose']) for x in commands['dc']]
-
 def __assert_file_exists(path, isdir=False):
     if not os.path.exists(path):
         raise Exception("{} {} not found!".format(
@@ -123,10 +93,32 @@ def __assert_file_exists(path, isdir=False):
             path
         ))
 
-def get_dump_type(filename):
-    dump_file = os.path.join(BACKUPDIR, filename)
-    dump_type = __get_dump_type(dump_file)
-    print dump_type
+def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True, logger=None):
+    c = __get_cmd() + cmd
+    out = __system(
+        c,
+        cwd=dirs['odoo_home'],
+        suppress_out=suppress_out,
+        raise_exception=raise_exception,
+        wait_finished=wait_finished,
+        logger=logger,
+    )
+    return out
+
+def __dcexec(cmd):
+    c = __get_cmd()
+    c = c + ['exec', '-T'] + cmd
+    out = __system(c, cwd=dirs['odoo_home'])
+    return out
+
+def __dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True, logger=None):
+    cmd = [os.path.expandvars(x) for x in cmd]
+    if interactive:
+        options = ''
+    else:
+        options = '-T'
+    cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
+    return __dc(cmd, wait_finished=wait_finished, raise_exception=True, logger=logger)
 
 def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     dump_file = os.path.join(BACKUPDIR, filename)
@@ -246,6 +238,16 @@ def __file_get_lines(path):
     with open(path) as f:
         return f.readlines()
 
+def __find_files(cwd, *options):
+    """
+    :param options: ["-name", "default.settings"]
+    """
+    files = subprocess.check_output(["find"] + list(options), cwd=cwd)
+    files = files.split("\n")
+    files = [x for x in files if x and not x.endswith('/.')]
+    files = [os.path.normpath(os.path.join(cwd, x)) for x in files]
+    return files
+
 def __get_docker_compose_run_command():
     """
     Returns bash ready command to call simplebash self by run.
@@ -269,49 +271,6 @@ def __get_docker_compose_run_command():
     cmdline.append(host_odoo_home)
     cmdline.append(__get_docker_image())
     return cmdline
-
-def _setup_proxy():
-    CONFIG_DIR = dirs['run/proxy']
-    __empty_dir(dirs['proxy_configs_dir'])
-
-    sys.path.append(dirs['machines/proxy'])
-    importlib.import_module("add_upstream")
-    from add_upstream import add_upstream as f_add_upstream
-
-    def get_rules():
-        for root, _, _filenames in os.walk(dirs['machines']):
-            for filename in _filenames:
-                if filename == 'upstream.path':
-                    filepath = os.path.join(root, filename)
-                    machine = None
-                    p = filepath
-                    while os.path.basename(p) != "machines":
-                        machine = os.path.basename(p)
-                        p = os.path.dirname(p)
-                    del p
-
-                    try:
-                        version = float(os.path.basename(os.path.dirname(filepath)))
-                    except Exception:
-                        version = None
-                    else:
-                        if str(version) != str(odoo_config.get_version_from_customs(os.environ['CUSTOMS'])):
-                            continue
-                    with open(filepath, 'r') as f:
-                        content = f.readlines()
-                        for line in content:
-                            LOCATION, UPSTREAM = line.strip().split(" ")
-                            if not LOCATION or not UPSTREAM:
-                                raise Exception("Invalid rule: {}".format(line))
-                            yield filepath, LOCATION, UPSTREAM, machine
-
-    for filepath, LOCATION, UPSTREAM, machine in get_rules():
-        __makedirs(os.path.join(CONFIG_DIR, machine))
-        location_friendly_name = LOCATION.replace("/", "_")
-        filename = "{}.location".format(location_friendly_name)
-        CONFIG_PATH = os.path.join(CONFIG_DIR, machine, filename)
-        UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
-        f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
 @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
 def __get_docker_image():
@@ -364,6 +323,11 @@ def __get_dump_type(filepath):
             if MARKER in line:
                 return "plain_text"
     return 'unzipped_pgdump'
+
+def __get_cmd():
+    cmd = commands['dc']
+    cmd = [os.path.expandvars(x) for x in cmd]
+    return cmd
 
 def __is_container_running(machine_name):
     out = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True)
@@ -486,16 +450,6 @@ def __splitcomma(param):
         return list(param)
     raise Exception("not impl")
 
-def __start_postgres_and_wait():
-    if E("RUN_POSTGRES") == "1":
-        __dc(["up", "-d", "postgres"])
-        __wait_for_port(E("DB_HOST"), long(E("DB_PORT")), timeout=30)
-        __execute_sql("""
-        SELECT table_schema,table_name
-        FROM information_schema.tables
-        ORDER BY table_schema,table_name;
-        """, dbname='template1')
-
 def __set_db_ownership():
     # in development environments it is safe to set ownership, so
     # that accidently accessing the db fails
@@ -508,7 +462,7 @@ def __set_db_ownership():
 def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
              wait_finished=True, shell=False, logger=None, stdin=None,
              pipeout=None, redirect_std_out_to_file=None,
-             progress=False, progress_every_seconds=1, 
+             progress=False, progress_every_seconds=1,
              ):
     assert isinstance(cmd, list)
 
@@ -657,16 +611,6 @@ def _check_working_dir_customs_mismatch():
 Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
                          )
 
-def __find_files(cwd, *options):
-    """
-    :param options: ["-name", "default.settings"]
-    """
-    files = subprocess.check_output(["find"] + list(options), cwd=cwd)
-    files = files.split("\n")
-    files = [x for x in files if x and not x.endswith('/.')]
-    files = [os.path.normpath(os.path.join(cwd, x)) for x in files]
-    return files
-
 def _cleanup():
     _remove_temp_directories
 
@@ -752,6 +696,12 @@ def _get_bash_for_machine(machine):
         return 'bash'
     else:
         return 'bash'
+
+def _get_platform():
+    if os.getenv("PLATFORM", "") in ['Darwin', 'OSX', 'macos']:
+        return PLATFORM_OSX
+    else:
+        return PLATFORM_LINUX
 
 def _make_settings_file(outfile, setting_files):
     """
@@ -1002,6 +952,20 @@ def _sanity_check():
         time.sleep(2)
 
 
+def _setupArgs():
+    parser = argh.ArghParser()
+    commands = []
+    module = sys.modules[__name__]
+    for member in getmembers(module, inspect.isfunction):
+        name, member = member
+        if isinstance(member, types.FunctionType):
+            if not name.startswith('_') and (len(name) > 2 or name in ['up']):
+                commands.append(member)
+
+    parser.add_commands(commands)
+
+    return parser
+
 def _setup_odoo_instances():
     def __add_location_files(config_path, dir):
         lines = []
@@ -1044,42 +1008,82 @@ def _setup_odoo_instances():
         __add_location_files(config_path, dirs['run/proxy'])
 
 
-def __get_cmd():
-    cmd = commands['dc']
-    cmd = [os.path.expandvars(x) for x in cmd]
-    return cmd
+def _setup_proxy():
+    CONFIG_DIR = dirs['run/proxy']
+    __empty_dir(dirs['proxy_configs_dir'])
 
-def __dcexec(cmd):
-    c = __get_cmd()
-    c = c + ['exec', '-T'] + cmd
-    out = __system(c, cwd=dirs['odoo_home'])
-    return out
+    sys.path.append(dirs['machines/proxy'])
+    importlib.import_module("add_upstream")
+    from add_upstream import add_upstream as f_add_upstream
 
-def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True, logger=None):
-    c = __get_cmd() + cmd
-    out = __system(
-        c,
-        cwd=dirs['odoo_home'],
-        suppress_out=suppress_out,
-        raise_exception=raise_exception,
-        wait_finished=wait_finished,
-        logger=logger,
-    )
-    return out
+    def get_rules():
+        for root, _, _filenames in os.walk(dirs['machines']):
+            for filename in _filenames:
+                if filename == 'upstream.path':
+                    filepath = os.path.join(root, filename)
+                    machine = None
+                    p = filepath
+                    while os.path.basename(p) != "machines":
+                        machine = os.path.basename(p)
+                        p = os.path.dirname(p)
+                    del p
 
-def __dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True, logger=None):
-    cmd = [os.path.expandvars(x) for x in cmd]
-    if interactive:
-        options = ''
-    else:
-        options = '-T'
-    cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
-    return __dc(cmd, wait_finished=wait_finished, raise_exception=True, logger=logger)
+                    try:
+                        version = float(os.path.basename(os.path.dirname(filepath)))
+                    except Exception:
+                        version = None
+                    else:
+                        if str(version) != str(odoo_config.get_version_from_customs(os.environ['CUSTOMS'])):
+                            continue
+                    with open(filepath, 'r') as f:
+                        content = f.readlines()
+                        for line in content:
+                            LOCATION, UPSTREAM = line.strip().split(" ")
+                            if not LOCATION or not UPSTREAM:
+                                raise Exception("Invalid rule: {}".format(line))
+                            yield filepath, LOCATION, UPSTREAM, machine
 
-def E(name):
-    if name.startswith("$"):
-        name = name[1:]
-    return os.getenv(name, "")
+    for filepath, LOCATION, UPSTREAM, machine in get_rules():
+        __makedirs(os.path.join(CONFIG_DIR, machine))
+        location_friendly_name = LOCATION.replace("/", "_")
+        filename = "{}.location".format(location_friendly_name)
+        CONFIG_PATH = os.path.join(CONFIG_DIR, machine, filename)
+        UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
+        f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
+
+def __start_postgres_and_wait():
+    if E("RUN_POSTGRES") == "1":
+        __dc(["up", "-d", "postgres"])
+        __wait_for_port(E("DB_HOST"), long(E("DB_PORT")), timeout=30)
+        __execute_sql("""
+        SELECT table_schema,table_name
+        FROM information_schema.tables
+        ORDER BY table_schema,table_name;
+        """, dbname='template1')
+
+def _startup():
+    if os.path.isfile(files['settings']):
+        _file2env(files['settings'])
+    dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
+    dir = os.path.dirname(dir)
+    dirs['odoo_home'] = dir
+
+    def make_absolute(d):
+        for k, v in d.items():
+            if not v.startswith('/'):
+                d[k] = os.path.join(dir, v)
+    make_absolute(dirs)
+    dirs['customs'] = odoo_config.customs_dir()
+    make_absolute(files)
+    os.environ['ODOO_MANAGER_STARTED_ONCE'] = '1'
+    os.environ['ODOO_COMPOSE_VERSION'] = "3.3"
+    os.environ['PGPASSFILE'] = "/tmp/.pgpass" # must match the executing script
+    os.environ['PGHOST'] = os.path.expandvars("$DB_HOST")
+    os.environ['PGPORT'] = os.path.expandvars("$DB_PORT")
+    os.environ['PGUSER'] = os.path.expandvars("$DB_USER")
+    os.environ['LOCAL_WORKING_DIR'] = "{}/{}".format(os.getenv("EXTERNAL_ROOT"), os.getenv("WORKING_DIR"))  # the working directory accessible from container of this script.
+    dirs['host_working_dir'] = os.environ['LOCAL_WORKING_DIR']
+    commands['dc'] = [x.replace("$docker_compose_file", files['docker_compose']) for x in commands['dc']]
 
 def abort_upgrade():
     SQL = """
@@ -1087,6 +1091,11 @@ def abort_upgrade():
         UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
     """
     __execute_sql(SQL)
+
+def E(name):
+    if name.startswith("$"):
+        name = name[1:]
+    return os.getenv(name, "")
 
 def attach(machine):
     """
@@ -1274,6 +1283,11 @@ def get_all_langs():
     for lang in langs:
         print(lang)
     return langs
+
+def get_dump_type(filename):
+    dump_file = os.path.join(BACKUPDIR, filename)
+    dump_type = __get_dump_type(dump_file)
+    print dump_type
 
 def kill(machines="", brutal=False):
     """
@@ -1687,6 +1701,10 @@ def springclean():
 def stage():
     versioning.action_stage_ticket()
 
+def status():
+    __print_env(["CUSTOMS", "DBNAME", "DB_HOST"])
+    os.system("df -h")
+
 def stop(machines):
     kill(machines)
 
@@ -1838,20 +1856,6 @@ def psql(dbname=None, *params):
         dbname = E("DBNAME")
     params = " ".join(params)
     os.system("psql {} ".format(dbname) + params)
-
-def _setupArgs():
-    parser = argh.ArghParser()
-    commands = []
-    module = sys.modules[__name__]
-    for member in getmembers(module, inspect.isfunction):
-        name, member = member
-        if isinstance(member, types.FunctionType):
-            if not name.startswith('_') and (len(name) > 2 or name in ['up']):
-                commands.append(member)
-
-    parser.add_commands(commands)
-
-    return parser
 
 
 if __name__ == '__main__':
