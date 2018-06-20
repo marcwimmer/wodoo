@@ -21,7 +21,8 @@ apt install -y \
 	vim \
 	gosu \
 	net-tools \ 
-	iputils-ping
+	iputils-ping \
+    pv
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt

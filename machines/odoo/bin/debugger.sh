@@ -1,8 +1,12 @@
 #!/bin/bash
 set -x
 
-rm /opt/odoo/active_customs
-ln -s /opt/odoo/active_customs_rsynced /opt/odoo/active_customs
+if [[ "$RUN_RSYNCED" == "1" ]]; then
+    if [[ -L /opt/odoo/active_customs ]]; then
+        rm /opt/odoo/active_customs || true
+    fi
+    ln -s /opt/odoo/active_customs_rsynced /opt/odoo/active_customs
+fi
 
 
 # append configuration option to run old odoo on port 8072

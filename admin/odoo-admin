@@ -1127,7 +1127,13 @@ def backup_calendar(filename=None):
 
 def __backup_postgres(filepath, dbname, host, port, user, password):
     os.environ['PGPASSWORD'] = password
-    os.system('pg_dump -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pigz --rsyncable > {filepath}'.format(**locals()))
+    conn = psycopg2.connect(dbname=dbname, host=host, port=long(port), user=user, password=password)
+    cr = conn.cursor()
+    cr.execute("SELECT (pg_database_size(current_database())) FROM pg_database")
+    size = cr.fetchone()[0] * 0.7 # ct
+    bytes = str(float(size)).split(".")[0]
+    conn.close()
+    os.system('pg_dump -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(**locals()))
 
 def backup_db(filename=None):
     filename = filename or datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(E("CUSTOMS")))
