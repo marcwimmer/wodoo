@@ -136,6 +136,7 @@ function main() {
 		MODULE=""
 	fi
 
+    source /eval_odoo_settings.sh
 	/apply-env-to-config.sh
 
 	summary=()

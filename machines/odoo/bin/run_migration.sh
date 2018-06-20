@@ -2,6 +2,7 @@
 set -e
 set -x
 
+source /eval_odoo_settings.sh
 /apply-env-to-config.sh
 # Runs a migration script either SQL or PY
 

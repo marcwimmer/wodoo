@@ -1498,8 +1498,8 @@ def push(submodule_name):
         'git',
         'subtree',
         'push',
-        '--prefix="common/{}"'.format(submodule_name),
-        'git.mt-software.de:"/git/odoo/modules/{}"'.format(submodule_name),
+        '--prefix=common/{}'.format(submodule_name),
+        'git.mt-software.de:/git/odoo/modules/{}'.format(submodule_name),
         'master'
     ], cwd=dirs['customs'])
 
