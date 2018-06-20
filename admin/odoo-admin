@@ -133,7 +133,7 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     __assert_file_exists(dump_file)
 
     print("Restoring dump on {}:{} as {}".format(host, port, user))
-    # os.environ['PGPASSWORD'] = password done by .pgpass file
+    os.environ['PGPASSWORD'] = password
     args = ["-h", host, "-p", port, "-U", user]
     PGRESTORE = [
         "pg_restore",
@@ -1556,7 +1556,6 @@ def run(machine, *params, **kwparams):
     if params and params[0] == 'bash' and len(params) == 1:
         runbash(machine)
         return
-    
     __dcrun([machine] + params, **kwparams)
 
 def runbash(machine):
