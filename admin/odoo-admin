@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import argh
-import pexpect
 import types
 from argh import arg
 import sys
