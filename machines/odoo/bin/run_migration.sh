@@ -42,7 +42,7 @@ EOF
 fi
 
 if [[ -e "$beforeafter.python" ]]; then
-    pyfile="$beforeafter.sql"
+    pyfile="$beforeafter.py"
     python <<EOF
 import os
 import psycopg2

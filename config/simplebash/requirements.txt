@@ -12,4 +12,3 @@ rst2pdf
 docker-compose
 humanize
 argh
-pexpect
