@@ -13,4 +13,4 @@ case "$ODOO_VERSION" in
         OPTIONS="--shell-interface=ipython"
         ;;
 esac
-sudo -E -H -u $ODOO_USER $SERVER_DIR/$ODOO_EXECUTABLE_GEVENT shell -d $DBNAME -c $CONFIG_DIR/config_shell $OPTIONS
+sudo -E -H -u $ODOO_USER $SERVER_DIR/$ODOO_EXECUTABLE_CRONJOBS shell -d $DBNAME -c $CONFIG_DIR/config_shell $OPTIONS
