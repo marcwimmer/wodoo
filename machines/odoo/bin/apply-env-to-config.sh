@@ -17,10 +17,11 @@ for file in os.listdir("/home/odoo"):
 
         content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
 
-        if os.getenv("ODOO_DEMO", "") == "1":
-            content = content + "\nwithout_demo=False"
-        else:
-            content = content + "\nwithout_demo=all"
+        if 'without_demo=' not in content:
+            if os.getenv("ODOO_DEMO", "") == "1":
+                content = content + "\nwithout_demo=False"
+            else:
+                content = content + "\nwithout_demo=all"
 
         for key in ["DB_USER", "DB_PWD", "DB_MAXCONN", "DB_PORT", "DB_HOST"]:
             content = content.replace("__{}__".format(key), os.getenv(key, ""))
