@@ -1,32 +1,29 @@
-#!/bin/bash
-[[ "$VERBOSE" == "1" ]] && set -x
+#!/usr/bin/python
+import os
 
-if [[ -z "$DB_HOST" || -z "$DB_USER" ]]; then
-    echo "Please define all DB Env Variables!"
-    exit -1
-fi
+if not os.getenv("DB_HOST") or not os.getenv("DB_USER"):
+    raise Exception("Please define all DB Env Variables!")
 
-source /eval_odoo_settings.sh
-
-cd $ADMIN_DIR/module_tools
-ADDONS_PATHS=$(python <<EOF
+import sys
+sys.path.append(os.path.join(os.environ['ADMIN_DIR'], 'module_tools'))
 import odoo_config
-paths = odoo_config.get_odoo_addons_paths()
-print ','.join(paths)
-EOF
-)
-ADDONS_PATHS=$ADDONS_PATHS,$ADDONS_CUSTOMS
+ADDONS_PATHS = ','.join(filter(lambda t: t, odoo_config.get_odoo_addons_paths() + [os.getenv('ADDONS_CUSTOMS')] + [os.getenv("ADDONS_PATHS")]))
 
+for file in os.listdir("/home/odoo"):
+    if file.startswith("config_"):
+        filepath = os.path.join('/home/odoo', file)
+        with open(filepath, 'r') as f:
+            content = f.read()
 
-cd /home/odoo
-ls config_* | while read f
-do
-    f=/home/odoo/$f
-    sed -i "s|__DB_USER__|$DB_USER|g" $f
-    sed -i "s|__DB_PWD__|$DB_PWD|g" $f
-    sed -i "s|__DB_MAXCONN__|$DB_MAXCONN|g" $f
-    sed -i "s|__DB_PORT__|$DB_PORT|g" $f
-    sed -i "s|__DB_HOST__|$DB_HOST|g" $f
-    sed -i "s|__DB_HOST__|$DB_HOST|g" $f
-    sed -i "s|__ADDONS_PATH__|$ADDONS_PATHS|g" $f
-done
+        content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
+
+        if os.getenv("ODOO_DEMO", "") != "1":
+            content = content + "\nwithout_demo=False"
+        else:
+            content = content + "\nwithout_demo=all"
+
+        for key in ["DB_USER", "DB_PWD", "DB_MAXCONN", "DB_PORT", "DB_HOST"]:
+            content = content.replace("__{}__".format(key), os.getenv(key, ""))
+
+        with open(filepath, 'w') as f:
+            f.write(content)

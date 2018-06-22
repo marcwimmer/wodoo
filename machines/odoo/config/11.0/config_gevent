@@ -59,5 +59,4 @@ test_report_directory = False
 timezone = False
 translate_modules = ['all']
 unaccent = False
-without_demo = False
 workers = 0
