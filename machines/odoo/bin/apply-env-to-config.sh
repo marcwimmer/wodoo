@@ -17,7 +17,7 @@ for file in os.listdir("/home/odoo"):
 
         content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
 
-        if os.getenv("ODOO_DEMO", "") != "1":
+        if os.getenv("ODOO_DEMO", "") == "1":
             content = content + "\nwithout_demo=False"
         else:
             content = content + "\nwithout_demo=all"

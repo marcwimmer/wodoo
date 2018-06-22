@@ -13,7 +13,6 @@ db_template = template1
 db_user = __DB_USER__
 dbfilter = .*
 debug_mode = False
-demo = {}
 email_from = False
 geoip_database = /usr/share/GeoIP/GeoLiteCity.dat
 import_partial = 
