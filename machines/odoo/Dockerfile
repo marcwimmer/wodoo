@@ -62,7 +62,8 @@ apt-get install \
             libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
             locales \
             pdftk \
-			libmagickwand-dev
+			libmagickwand-dev \
+            libreoffice
 
 WORKDIR /tmp
 

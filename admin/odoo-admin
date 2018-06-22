@@ -1232,6 +1232,13 @@ def debug(machine_name):
     shutil.copy(files['debugging_template'], files['debugging_composer'])
     __replace_in_file(files['debugging_composer'], "${CUSTOMS}", E("CUSTOMS"))
     __replace_in_file(files['debugging_composer'], "${NAME}", machine_name)
+
+    # TODO make configurable in machines
+    PORT = str({
+        'odoo': 8072,
+        'odoo_debug': 8072
+    }.get(machine_name, 80))
+    __replace_in_file(files['debugging_composer'], "{machine_main_port}", PORT)
     commands['dc'] += ['-f', files['debugging_composer']]
 
     __dc(['up', '-d', machine_name])
@@ -1362,10 +1369,7 @@ def link():
     """
     links all modules into ./links
     """
-    __system([
-        'python',
-        os.path.join(dirs['admin'], 'link_modules')
-    ])
+    os.system("python " + os.path.join(dirs['admin'], 'link_modules'))
 
 def logsn(lines, machine):
     """

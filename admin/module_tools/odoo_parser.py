@@ -110,7 +110,7 @@ def manifest2dict(manifest_path):
     return info
 
 def is_module_of_version(path):
-    if VERSION >= 11.0:
+    if float(VERSION) >= 11.0:
         p = path
         while p and p != '/':
             if os.path.exists(os.path.join(os.path.abspath(p), MANIFEST_FILE)):
