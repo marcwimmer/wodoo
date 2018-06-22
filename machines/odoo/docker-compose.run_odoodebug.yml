@@ -1,0 +1,6 @@
+# manage-order 1001
+version: '3.3'
+services:
+  odoo_debug:
+    ports:
+       - "33284:8072"

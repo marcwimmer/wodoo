@@ -10,9 +10,6 @@ services:
     build: $ODOO_HOME/machines/calendar
     depends_on:
       - calendar_db
-    ports:
-      - "8200:80"
-      - "3333:3333"
     volumes:
         - $ODOO_HOME/machines/calendar/conf:/config
         - calendar:/var/www/html

@@ -67,5 +67,3 @@ services:
     <<: *odoo_base
     container_name: ${CUSTOMS}_odoo_source_syncer
     command: rsync --daemon --no-detach
-    ports:
-      - "10874:873"
