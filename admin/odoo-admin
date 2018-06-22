@@ -329,8 +329,16 @@ def __get_cmd():
     return cmd
 
 def __is_container_running(machine_name):
-    out = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True)
-    return bool(out)
+    container_id = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True).strip()
+    if container_id:
+        container = filter(lambda container: container.id == container_id, docker.from_env().containers.list())
+        if container:
+            return container[0].status == 'running'
+    return False
+
+def is_up(*machine_name):
+    assert len(machine_name) == 1
+    print 'Running' if __is_container_running(machine_name[0]) else 'Not Running', machine_name[0]
 
 def __isfloat(x):
     try:
