@@ -206,7 +206,7 @@ Migration to Version {}
         )
         conn = connect_db()
         cr = conn.cursor()
-        cr.execute("select count(*) from ir_module_module where state like 'to %'")
+        cr.execute("select count(*) from ir_module_module where state like 'to install'")  # to upgrade seems to be ok
         if cr.fetchone()[0]:
             do_command('progress')
             raise Exception("Found dangling modules!")
