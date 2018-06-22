@@ -5,7 +5,7 @@ import os
 import pickle
 import subprocess
 import base64
-_, BRANCH, CMD, ADDONS_PATH, VERSION = sys.argv
+_, BRANCH, CMD, ADDONS_PATH, VERSION, MAKE_GIT_CLEAN = sys.argv
 CMD = base64.b64decode(CMD)
 CMD = pickle.loads(CMD)
 CONFIG_FILE = "/home/odoo/config_migration"
@@ -21,7 +21,7 @@ def set_addons_path():
     subprocess.check_call(["/apply-env-to-config.sh"])
 set_addons_path()
 
-if not subprocess.check_output(["git", "diff", "--stat"], cwd=OpenupgradeDir):
+if MAKE_GIT_CLEAN == "1":
     # clean
     subprocess.check_call(["git", "checkout", "-f", BRANCH], cwd=OpenupgradeDir)
     # apply patches

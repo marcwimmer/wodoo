@@ -41,7 +41,7 @@ finally:
 EOF
 fi
 
-if [[ -e "$beforeafter.python" ]]; then
+if [[ -e "$beforeafter.py" ]]; then
     pyfile="$beforeafter.py"
     python <<EOF
 import os
@@ -50,8 +50,8 @@ conn = psycopg2.connect(dbname=os.environ['DBNAME'], user=os.environ['DB_USER'],
 cr = conn.cursor()
 try:
     print "Executing $pyfile"
-    import $pyfile
-    $pyfile.run(cr)
+    from $beforeafter import run
+    run(cr)
     conn.commit()
 except:
     conn.rollback()
@@ -60,5 +60,4 @@ finally:
     cr.close()
     conn.close()
 EOF
-    python -c "import $pyfile; $pyfile.run"
 fi

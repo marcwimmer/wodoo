@@ -64,7 +64,7 @@ def connect_db():
     )
 
 
-def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False):
+def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True):
     from_version = str(float(from_version))
     to_version = str(float(to_version))
 
@@ -193,6 +193,7 @@ Migration to Version {}
             prepareCommand(migrations[version]['cmd']),
             ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
             version,
+            '1' if git_clean else '0',
             logger=logger,
         )
         print("Running after processes {}".format(version))
