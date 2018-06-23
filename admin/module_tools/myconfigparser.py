@@ -65,7 +65,7 @@ class MyConfigParser:
                 file.truncate()
 
                 def write_line(key, val):
-                    return key + "=" + val + "\n"
+                    return key + "=" + val
 
                 # Loop through the file to change with new values in dict
                 for line in lines:
@@ -79,10 +79,10 @@ class MyConfigParser:
                             if val != newVal:
                                 line = write_line(key, newVal)
                         handled_keys.add(key)
-                    file.write(line)
+                    file.write(line.strip() + "\n")
                 for key in self.configOptions.keys():
                     if key not in handled_keys:
-                        file.write(write_line(key, self.configOptions[key]))
+                        file.write(write_line(key, self.configOptions[key]).strip() + "\n")
         except IOError as e:
                 print "ERROR opening file " + self.fileName + ": " + e.strerror + "\n"
 
