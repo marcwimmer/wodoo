@@ -38,7 +38,7 @@ except Exception:
     set_trace = None
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 sys.path.append(os.path.join(current_dir, 'python_wait'))
-import wait
+import wait  # NOQA
 
 PLATFORM_OSX = "OSX"
 PLATFORM_LINUX = "Linux"
@@ -895,15 +895,15 @@ def _prepare_yml_files_from_template_files():
     #
     # - also replace all environment variables
     def find_files(dir):
-        PATTERN = r'docker-compose.*.yml'
-        for root, _, _filenames in os.walk(dir):
-            for filename in _filenames:
-                if re.findall(PATTERN, filename):
-                    yield os.path.join(root, filename)
+        for filepath in __find_files(
+                dir,
+                '-regex',
+                '.*\/docker-compose.*.yml'
+        ):
+            yield filepath
     _files = []
     _files += find_files(dirs['machines'])
     _files += find_files(odoo_config.customs_dir())
-
     _prepare_docker_compose_files(files['docker_compose'], _files)
 
 def _remember_customs_and_cry_if_changed():
@@ -1259,10 +1259,11 @@ def dev(customs):
     """
     starts developing in the odoo container
     """
-    kill()
-    rm()
-    compose(customs)
-    build()
+    if E("CUSTOMS") != customs:
+        kill()
+        rm()
+        compose(customs)
+        build()
     up(daemonized=True)
     attach('odoo')
 
