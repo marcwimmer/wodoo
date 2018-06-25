@@ -1188,13 +1188,15 @@ def backup_files():
     __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
     print "Backup files done to {}".format(BACKUP_FILENAME)
 
-def build(pull=False, machines=''):
+def build(pull=False, machines='', nocache=False):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """
     options = []
     if pull:
         options += ['--pull']
+    if nocache:
+        options += ['--no-cache']
 
     __dc(['build'] + options + __splitcomma(machines))
 
@@ -1532,9 +1534,9 @@ def push(submodule_name):
         'master'
     ], cwd=dirs['customs'])
 
-def rebuild(machines):
-    compose()
-    build(machines)
+def rebuild(machines=""):
+    compose(E("CUSTOMS"))
+    build(machines=machines, nocache=True)
 
 def remove_web_assets():
     """
