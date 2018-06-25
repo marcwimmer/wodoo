@@ -1835,7 +1835,7 @@ def update(module=""):
 
     # running duplicate updates is really a problem;
     kill()
-    __dc(['rm', '-f'])
+    rm()
     __dc(['create', '--force-recreate'])
     __start_postgres_and_wait()
     kill('proxy')
@@ -1847,11 +1847,11 @@ def update(module=""):
     show_install_state()
 
     for i in range(5):
-        __dc(['up', '-d'])
+        up(daemonized=True)
         proxy_reload()
         time.sleep(2)
 
-    os.system('df -h /') # case: after update disk / was full
+    status()
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
         with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
             f.write("0")
