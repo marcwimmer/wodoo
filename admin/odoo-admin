@@ -1841,9 +1841,9 @@ def update(module=""):
     kill('proxy')
 
     try:
-        __dcrun(['odoo_update', '/update_modules.sh', module])
+        __dcrun(['odoo_update', '/update_modules.py', module])
     except Exception:
-        raise Exception("Error at /update_modules.sh - aborting update process.")
+        raise Exception("Error at /update_modules.py - aborting update process.")
     show_install_state()
 
     for i in range(5):

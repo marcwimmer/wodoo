@@ -22,6 +22,7 @@ services:
       - ${ODOO_HOME}/data/src/customs/${CUSTOMS}:/opt/odoo/active_customs
       - ${ODOO_HOME}/data/src/customs/${CUSTOMS}/links:/opt/odoo/addons_customs
       - ${ODOO_HOME}/run/debug:/tmp/debug
+      - ${ODOO_HOME}/machines/odoo/bin/update_modules.py:/update_modules.py
     env_file:
       - $ODOO_HOME/run/settings
       - $ODOO_HOME/machines/odoo/docker-env

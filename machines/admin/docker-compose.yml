@@ -15,7 +15,7 @@ services:
       - $ODOO_HOME/machines/admin/src:/opt/src
       - /var/run/docker.sock:/var/run/docker.sock
       - $ODOO_HOME:/opt/odoo
-      - $ODOO_HOME/machines/odoo/bin/update_modules.sh:/update_modules.sh
+      - $ODOO_HOME/machines/odoo/bin/update_modules.py:/update_modules.py
     environment:
         DBNAME: admin
         LOGLEVEL: info

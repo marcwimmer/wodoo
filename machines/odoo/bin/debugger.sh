@@ -130,7 +130,7 @@ while true; do
 					PARAM_FAST="-fast"
 				fi
 				module=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-				/update_modules.sh "$module" "$PARAM_FAST" && {
+				/update_modules.py "$module" "$PARAM_FAST" && {
 					/debug.sh -quick
 				}
 

@@ -89,7 +89,10 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
 ADD requirements/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
+ADD bin/utils.py /
 ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh
+RUN chmod a+x /eval_odoo_settings.sh
+RUN /eval_odoo_settings.sh
 ADD install_python_packages.sh /install_python_packages.sh
 RUN chmod a+x /install_python_packages.sh /eval_odoo_settings.sh
 RUN /bin/bash /install_python_packages.sh
