@@ -12,6 +12,7 @@ from utils import get_env
 
 PARAMS = [x for x in sys.argv[1:] if x not in ['-fast']]
 FASTMODE = any(x =='-fast' for x in sys.argv)
+FASTMODE = False
 DANGLING = False
 
 def get_modules():
@@ -49,6 +50,7 @@ def update(mode, module):
     else:
         TESTS = ''
 
+    print mode, module
     params = [
         '/usr/bin/sudo',
         '-H',
@@ -72,7 +74,7 @@ def update(mode, module):
 
 def update_module_list():
     MOD = "update_module_list"
-    if is_module_installed(MOD):
+    if not is_module_installed(MOD):
         print "Update Module List is not installed - installing it..."
         update('i', MOD)
 
@@ -150,7 +152,6 @@ def main():
     print("--------------------------------------------------------------------------------")
     for line in summary:
         print line
-    print("UPDATE {}".format(MODULE))
 
     if not FASTMODE:
         module_tools.check_if_all_modules_from_instal_are_installed()
