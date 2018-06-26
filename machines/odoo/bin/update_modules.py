@@ -128,7 +128,7 @@ def main():
     # could be, that a new version is triggered
     check_for_dangling_modules()
 
-    if DANGLING or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
+    if DANGLING or (',' not in MODULE and not module_tools.is_module_listed(MODULE)) or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
         update_module_list()
 
     if not MODULE:

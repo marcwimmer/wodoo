@@ -487,6 +487,15 @@ def get_module_state(module):
         cr.close()
         conn.close()
 
+def is_module_listed(module):
+    conn, cr = get_conn()
+    try:
+        cr.execute("select count(*) from ir_module_module where name = %s", (module,))
+        return bool(cr.fetchone()[0])
+    finally:
+        cr.close()
+        conn.close()
+
 def is_module_installed(module):
     conn, cr = get_conn()
     try:
