@@ -1261,11 +1261,10 @@ def dev(customs):
     """
     starts developing in the odoo container
     """
-    if E("CUSTOMS") != customs:
-        kill()
-        rm()
-        compose(customs)
-        build()
+    kill()
+    rm()
+    compose(customs)
+    build()
     up(daemonized=True)
     attach('odoo')
 

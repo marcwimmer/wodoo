@@ -7,8 +7,11 @@ import subprocess
 from time import sleep
 sys.path.append("/opt/odoo/admin/module_tools")
 sys.path.append("/")
-import module_tools
-from utils import get_env
+import module_tools # NOQA
+import odoo_config # NOQA
+import odoo_parser # NOQA
+from odoo_parser import manifest2dict # NOQA
+from utils import get_env # NOQA
 
 PARAMS = [x for x in sys.argv[1:] if x not in ['-fast']]
 DANGLING = False
@@ -99,14 +102,10 @@ def check_for_dangling_modules():
     print dangling
 
 def all_dependencies_installed(module):
-    from pudb import set_trace
-    set_trace()
-    from odoo_parser import manifest2dict
-    dir = odoo_config.customs_dir()
-
-
-    module_name = get_module_of_file(man)
-    assert ',' not in module and isinstance(module, (str, unicode))
+    dir = odoo_config.module_dir(module)
+    manifest_path = odoo_parser.get_manifest_file(dir)
+    manifest = manifest2dict(manifest_path)
+    return all(is_module_installed(mod) for mod in manifest.get('depends', []))
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
@@ -129,9 +128,7 @@ def main():
     # could be, that a new version is triggered
     check_for_dangling_modules()
 
-    from pudb import set_trace
-    set_trace()
-    if not DANGLING or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
+    if DANGLING or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
         update_module_list()
 
     if not MODULE:

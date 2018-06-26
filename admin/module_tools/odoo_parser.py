@@ -109,6 +109,12 @@ def manifest2dict(manifest_path):
         raise
     return info
 
+def get_manifest_file(module_dir):
+    for x in MANIFESTS:
+        if os.path.exists(os.path.join(module_dir, x)):
+            return os.path.join(module_dir, x)
+    return None
+
 def is_module_of_version(path):
     if float(VERSION) >= 11.0:
         p = path
@@ -191,12 +197,16 @@ def walk_files(on_match, pattern):
             return
 
         for path, dirs, files in os.walk(os.path.abspath(module_path), followlinks=False):
+            if '.git' in dirs:
+                dirs.remove('.git')
             handle(path, dirs, files)
 
     else:
         root = os.path.join(customs_dir()) # everything linked here...
 
         for path, dirs, files in os.walk(os.path.abspath(root), followlinks=False):
+            if '.git' in dirs:
+                dirs.remove('.git')
             handle(path, dirs, files)
 
 def _get_methods():
@@ -581,6 +591,8 @@ def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()
     pattern = "*.xml"
     for path, dirs, files in os.walk(os.path.abspath(root_path), followlinks=True):
+        if '.git' in dirs:
+            dirs.remove('.git')
         for filename in fnmatch.filter(files, pattern):
             filename = os.path.join(path, filename)
             if "/static/" not in filename:
