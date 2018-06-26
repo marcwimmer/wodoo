@@ -11,8 +11,6 @@ import module_tools
 from utils import get_env
 
 PARAMS = [x for x in sys.argv[1:] if x not in ['-fast']]
-FASTMODE = any(x =='-fast' for x in sys.argv)
-FASTMODE = False
 DANGLING = False
 
 def get_modules():
@@ -68,8 +66,13 @@ def update(mode, module):
     ]
     if TESTS:
         params += [TESTS]
-    proc = subprocess.Popen(params)
-    proc.wait()
+    subprocess.check_call(params)
+
+    if mode == 'i':
+        for module in module.split(','):
+            if not is_module_installed(module):
+                print "{} is not installed - but it was tried to be installed.".format(module)
+                sys.exit(1)
     print mode, module, 'done'
 
 def update_module_list():
@@ -95,8 +98,19 @@ def check_for_dangling_modules():
     dangling = module_tools.dangling_modules()
     print dangling
 
+def all_dependencies_installed(module):
+    from pudb import set_trace
+    set_trace()
+    from odoo_parser import manifest2dict
+    dir = odoo_config.customs_dir()
+
+
+    module_name = get_module_of_file(man)
+    assert ',' not in module and isinstance(module, (str, unicode))
+
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
+    single_module = MODULE and ',' not in MODULE
 
     print("--------------------------------------------------------------------------")
     print("Updating Module {}".format(MODULE))
@@ -113,10 +127,11 @@ def main():
 
     summary = []
     # could be, that a new version is triggered
-    if not FASTMODE:
-        check_for_dangling_modules()
+    check_for_dangling_modules()
 
-    if not FASTMODE and not DANGLING:
+    from pudb import set_trace
+    set_trace()
+    if not DANGLING or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
         update_module_list()
 
     if not MODULE:
@@ -135,7 +150,7 @@ def main():
         summary.append("UPDATE " + module)
 
     # check if at auto installed modules all predecessors are now installed; then install them
-    if not FASTMODE:
+    if not single_module:
         auto_install_modules = ','.join(get_uninstalled_modules_that_are_auto_install_and_should_be_installed())
         if auto_install_modules:
             print("Going to install following modules, that are auto installable modules")
@@ -153,7 +168,7 @@ def main():
     for line in summary:
         print line
 
-    if not FASTMODE:
+    if not single_module:
         module_tools.check_if_all_modules_from_instal_are_installed()
 
 
