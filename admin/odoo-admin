@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import pipes
 import argh
 import types
 from argh import arg
@@ -16,6 +17,7 @@ import yaml
 import shutil
 import tempfile
 import docker
+import shlex
 from inspect import getmembers, isfunction
 from retrying import retry
 from datetime import datetime
@@ -155,18 +157,24 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     else:
         raise Exception("not impl: {}".format(dump_type))
 
+    PREFIX = []
     if needs_unzip:
-        unzipper = subprocess.Popen(["/bin/gunzip", "-c", dump_file], stdout=PIPE)
-        stdin = unzipper.stdout
+        PREFIX = ["/bin/gunzip"]
     else:
-        catter = subprocess.Popen(["/bin/cat", dump_file], stdout=PIPE)
-        stdin = catter.stdout
+        PREFIX = []
     started = datetime.now()
-    print "Restoring DB..."
-    subprocess.check_call(method + [
+    print("Restoring DB...")
+    CMD = " " .join(pipes.quote(s) for s in ['pv', dump_file])
+    CMD += " | "
+    CMD += " ".join(pipes.quote(s) for s in PREFIX)
+    CMD += " | "
+    CMD += " ".join(pipes.quote(s) for s in method)
+    CMD += " "
+    CMD += " ".join(pipes.quote(s) for s in [
         '-d',
         dbname,
-    ], stdin=stdin),
+    ])
+    os.system(CMD)
     print "Restore took {} seconds".format((datetime.now() - started).seconds)
 
 def __do_restore_files(filepath):
@@ -1588,13 +1596,19 @@ def restore_dev_db(filename):
 def restore_files(dumpfile):
     __do_restore_files(dumpfile)
 
-def restore_db(dumpfile, exec_before_rename=None, restore_as_dev_db=False):
+def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False):
     for x in ["DB_HOST", "DB_PORT"]:
         print("{}: {}".format(x, E(x)))
-    dumpfile == os.path.join(BACKUPDIR, dumpfile)
-    if dumpfile.startswith("/"):
+    if not filename:
+        _files = os.listdir(BACKUPDIR)
+        for file in sorted(_files, reverse=False, key=lambda f: os.path.getctime(os.path.join(BACKUPDIR, f))):
+            filepath = os.path.join(BACKUPDIR, file)
+            print file, '\t', time.ctime(os.path.getmtime(filepath)), '\t', humanize.naturalsize(os.stat(filepath).st_size)
+        sys.exit(1)
+    filename == os.path.join(BACKUPDIR, filename)
+    if filename.startswith("/"):
         raise Exception("No path in dump file allowed")
-    __restore_check(dumpfile)
+    __restore_check(filename)
     if E("DEVMODE") == "1" and not restore_as_dev_db:
         _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 
@@ -1608,7 +1622,7 @@ def restore_db(dumpfile, exec_before_rename=None, restore_as_dev_db=False):
     dbname = config['DBNAME']
 
     reset_db()
-    __do_restore_db_on_postgres(dumpfile, DBNAME_RESTORING, E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
+    __do_restore_db_on_postgres(filename, DBNAME_RESTORING, E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
     if exec_before_rename:
         exec_before_rename(DBNAME_RESTORING)
     __rename_db_drop_target(DBNAME_RESTORING, dbname)
