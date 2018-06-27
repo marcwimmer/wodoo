@@ -141,6 +141,7 @@ def main():
 
     if os.getenv("DEVMODE", "") == "1":
         for module in MODULE.split(','):
+            print "Deleting qweb of module {}".format(module)
             delete_qweb(module)
     update('u', module)
     for module in module.split(","):

@@ -875,19 +875,24 @@ def _prepare_docker_compose_files(dest_file, paths):
     shutil.move(tempdir, local_odoo_home)
     tempdir = os.path.join(local_odoo_home, os.path.basename(tempdir))
 
-    try:
-        conf = __system(cmdline, cwd=local_odoo_home, suppress_out=True)
-    except Exception:
-        raise
-    else:
-        # post-process config config
-        conf = post_process_complete_yaml_config(yaml.load(conf))
-        conf = yaml.dump(conf, default_flow_style=False)
+    attempts = 0
+    while True:
+        try:
+            conf = __system(cmdline, cwd=local_odoo_home, suppress_out=True)
+        except Exception:
+            # stupid conversion from guid to int, if characters missing
+            attempts += 1
+            if attempts > 5:
+                raise
+        else:
+            # post-process config config
+            conf = post_process_complete_yaml_config(yaml.load(conf))
+            conf = yaml.dump(conf, default_flow_style=False)
 
-        with open(dest_file, 'w') as f:
-            f.write(conf)
-    finally:
-        __rmtree(tempdir)
+            with open(dest_file, 'w') as f:
+                f.write(conf)
+        finally:
+            __rmtree(tempdir)
 
 def _prepare_yml_files_from_template_files():
     # replace params in configuration file
