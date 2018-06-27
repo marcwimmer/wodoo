@@ -891,6 +891,7 @@ def _prepare_docker_compose_files(dest_file, paths):
 
             with open(dest_file, 'w') as f:
                 f.write(conf)
+            break
         finally:
             __rmtree(tempdir)
 
