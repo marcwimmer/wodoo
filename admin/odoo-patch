@@ -192,8 +192,6 @@ def preview():
     os.system('cat "{}" | colordiff'.format(filename))
 
 def create(name):
-    from pudb import set_trace
-    set_trace()
     if not os.path.exists(PATCHDIR):
         os.makedirs(PATCHDIR)
     PATCHFILE = os.path.join(PATCHDIR, __safe_filename(name) + ".patch")
