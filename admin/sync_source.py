@@ -1,4 +1,7 @@
 #!/usr/bin/python
+"""
+Used on macos to quickly sync source within docker container src.
+"""
 import os
 import subprocess
 import inspect

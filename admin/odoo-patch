@@ -1,248 +1,253 @@
-#!/bin/bash
+#!/usr/bin/env python
 # CALL THIS SCRIPT BY THE MAIN ODOO SCRIPT
-set -e
-set +x
+import tempfile
+import os
+import sys
+import argh
+import shutil
+import inspect
+import types
+from argh import arg
+from module_tools import odoo_config
+from module_tools.module_tools import remove_module_install_notifications
+from inspect import getmembers, isfunction
+from tools import __system
+from tools import __find_files
+from tools import __safe_filename
 
-if [[ -z "$ODOO_MANAGER_STARTED_ONCE" ]]; then
-	echo "Please use odoo patch <ARGS> to use this script."
-	exit -1
-fi
-
-CUSTOMSDIR="$(cd "$ODOO_HOME/admin/module_tools"; python -c "from odoo_config import customs_dir; print customs_dir()")"
-COMMIT_FILE="$CUSTOMSDIR/odoo.commit"
-ODOO_GIT="$ODOO_HOME/repos/odoo"
-ODOO_LOCAL_DIR=odoo
-ODOO_LOCAL="$CUSTOMSDIR/$ODOO_LOCAL_DIR"
-IGNORE_FILE="$CUSTOMSDIR/.gitignore"
-PATCHDIR="$CUSTOMSDIR/common/patches/$ODOO_VERSION"
-
-function how_to_use {
-	echo
-	echo "Prerequisites:"
-	echo "--------------------------------------------"
-	echo ""
-	echo "- odoo commit defined in $COMMIT_FILE"
-	echo "- odoo repo cloned at $ODOO_HOME/odoo.git"
-	echo
-	echo "Commands"
-	echo "--------------------------------------------"
-	echo
-	echo " odoo patch reset: resets odoo to commit version"
-	echo ""
-	echo " odoo patch prepare: makes git repo at odoo and applies default patches like remove install notifications"
-	echo ""
-	echo " odoo patch apply: applies patch-file from parameter 2"
-	echo ""
-	echo " odoo patch list: lists all patches"
-	echo ""
-	echo " odoo patch apply_all: applies all patches; no git repo after-wards"
-	echo ""
-	echo " odoo patch create: creates the patch"
-	echo ""
-	echo " odoo patch preview: shows what is patched"
-	echo
-	echo 
-	echo "Workflow new patch"
-	echo "--------------------------------------------"
-	echo ""
-	echo   "cd odoo"
-	echo   "../odoo patch prepare"
-	echo   "<adapt odoo>"
-	echo   "../odoo patch preview"
-	echo   "../odoo create <name to describe>"
-	echo
-	echo "Workflow - reset - apply all patches and remove git"
-	echo "--------------------------------------------"
-	echo
-	echo "  odoo patch apply_all "
-	echo
-	echo
-    exit -1
-}
+def check_started_by_odoo_script():
+    if not os.getenv("ODOO_MANAGER_STARTED_ONCE", ""):
+        print("Please use odoo patch <ARGS> to use this script.")
+        sys.exit(1)
 
 
-if [[ "$*" == "" ]]; then
-	how_to_use
-	exit -1
-fi
+current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
+CUSTOMSDIR = odoo_config.customs_dir()
+COMMIT_FILE = os.path.join(CUSTOMSDIR, 'odoo.commit')
+ODOO_GIT = os.path.join(os.getenv("ODOO_HOME"), 'repos/odoo')
+ODOO_LOCAL_DIR = "odoo"
+ODOO_LOCAL = os.path.join(CUSTOMSDIR, "odoo")
+IGNORE_FILE = os.path.join(CUSTOMSDIR, '.gitignore')
+PATCHDIR = os.path.join(CUSTOMSDIR, "common/patches", os.getenv("ODOO_VERSION"))
+SUB_GIT = os.path.join(ODOO_LOCAL, '.git')
 
-function exists_odoo_commit() {
-	if [[ ! -f "$COMMIT_FILE" ]]; then
-		echo "Commit file $COMMIT_FILE not found!"
-		exit -1
-	fi
-}
+def help():
+    print("Prerequisites:")
+    print("--------------------------------------------")
+    print("")
+    print("- odoo commit defined in $COMMIT_FILE")
+    print("- odoo repo cloned at $ODOO_HOME/odoo.git")
+    print("Commands")
+    print("--------------------------------------------")
+    print(" odoo patch reset: resets odoo to commit version")
+    print("")
+    print(" odoo patch prepare: makes git repo at odoo and applies default patches like remove install notifications")
+    print("")
+    print(" odoo patch apply: applies patch-file from parameter 2")
+    print("")
+    print(" odoo patch list: lists all patches")
+    print("")
+    print(" odoo patch apply-all: applies all patches; no git repo after-wards")
+    print("")
+    print(" odoo patch preview: shows what is patched")
+    print("")
+    print(" odoo patch create: creates the patch")
+    print("")
+    print("Workflow new patch")
+    print("--------------------------------------------")
+    print("")
+    print("cd odoo")
+    print("../odoo patch prepare")
+    print("<adapt odoo>")
+    print("../odoo patch preview")
+    print("../odoo create <name to describe>")
+    print("Workflow - reset - apply all patches and remove git")
+    print("--------------------------------------------")
+    print("  odoo patch apply-all ")
 
-case $1 in
-	reset)
-		set -e
+def exists_odoo_commit():
+    if not os.path.exists(COMMIT_FILE):
+        print("Commit file $COMMIT_FILE not found!")
+        sys.exit(1)
 
-		cd "$ODOO_GIT" || exit -1
+def get_odoo_commit():
+    with open(COMMIT_FILE, 'r') as f:
+        content = f.read()
+    return content.strip()
 
-		exists_odoo_commit
+def reset():
+    exists_odoo_commit()
+    print("Setting repo to commit {}".format(get_odoo_commit()))
+    __system([
+        "git",
+        "checkout",
+        "-f",
+        get_odoo_commit()
+    ], cwd=ODOO_GIT)
+    print("Cleaning odoo repo...")
+    __system([
+        "git",
+        "clean",
+        "-xdff",
+    ], cwd=ODOO_GIT)
+    print("Rsyncing odoo-repo...")
+    __system([
+        "rsync",
+        ODOO_GIT + "/",
+        ODOO_LOCAL + "/",
+        '-ar',
+        '--delete-after',
+    ], cwd=ODOO_GIT, suppress_out=False)
+    print("CHOWN odoo-repo...")
+    __system([
+        'chown',
+        '-R',
+        os.getenv("OWNER_UID"),
+        ODOO_LOCAL,
+    ], cwd=ODOO_GIT)
+    print("Cutting off local git")
+    __system([
+        'rm',
+        '-Rf',
+        SUB_GIT,
+    ], cwd=ODOO_LOCAL)
 
-		git checkout -f "$(cat "$COMMIT_FILE")"
-		git clean -xdff
+def __read_file(path, error=True):
+    if not os.path.exists(path):
+        if not error:
+            return ""
+    with open(path, 'r') as f:
+        return f.read()
 
-		rsync "$ODOO_GIT/" "${ODOO_LOCAL:?}/" -ar --delete --info=progress2
-		chown -R "$DEFAULT_USER" "${ODOO_LOCAL:?}" 
-		rm -Rf "${ODOO_LOCAL:?}/.git" || true
+def __write_file(path, content):
+    with open(path, 'w') as f:
+        f.write(content)
 
-		;;
+def __append_line(path, line):
+    if not os.path.exists(path):
+        content = ""
+    else:
+        with open(path, 'r') as f:
+            content = f.read().strip()
+    content += "\n" + line
+    with open(path, 'w') as f:
+        f.write(content)
 
-	gitify)
-		#needed for applying patches
+def _gitify():
+    if ODOO_LOCAL_DIR not in __read_file(IGNORE_FILE):
+        __append_line(IGNORE_FILE, ODOO_LOCAL_DIR)
 
-		cd "$ODOO_HOME" || exit -1
-		grep -q "$ODOO_LOCAL_DIR/.git" "$IGNORE_FILE" || {
-			echo "$ODOO_LOCAL_DIR/.git" >> "$IGNORE_FILE"
-		}
+    if os.path.exists(SUB_GIT):
+        shutil.rmtree(SUB_GIT)
 
-		cd "$ODOO_LOCAL" || exit -1
+    print("Making local git repo... in {}".format(ODOO_LOCAL))
+    __system(["git", "init", "."], cwd=ODOO_LOCAL)
+    print("Adding files...")
+    __system(["git", "add", "."], cwd=ODOO_LOCAL)
+    __system(["git", "config", "user.email", os.getenv("USER")], cwd=ODOO_LOCAL)
+    __system(["git", "commit", "-qam", "initial"], cwd=ODOO_LOCAL)
+    print("Done")
 
-		if [[ -f .git || -d .git ]]; then
-			rm -Rf .git
-		fi
+def _gitify_on_need():
+    if not os.path.exists(SUB_GIT):
+        _gitify()
 
-		git init .
-		git add .
-		git config --global user.email 'odoo'
-		git commit -qam 'initial' 
+def _ungitify():
+    if os.path.exists(SUB_GIT):
+        shutil.rmtree(SUB_GIT)
 
-		;;
+def _default_patches():
+    print("Applying default patches")
+    print("-remove module install notfications")
 
-	gitify_on_need)
+    remove_module_install_notifications(CUSTOMSDIR)
+    print("Apply default patches DONE")
 
-		cd "$ODOO_LOCAL" || exit -1
+def prepare():
+    reset()
+    _gitify()
+    _default_patches()
 
-		if [[ ! -d .git && ! -f .git ]]; then
-			"$0" gitify
-		fi
+    __system(["git", "add", "."], cwd=ODOO_LOCAL)
+    try:
+        __system(["git", "commit", "-qam", "removed install notifications"], cwd=ODOO_LOCAL)
+    except Exception:
+        print("Perhaps no install notifications")
+    for filepath in _list():
+        apply(filepath)
+    __system(["git", "add", "."], cwd=ODOO_LOCAL)
+    __system(["git", "commit", "-qam", "applied all current patches"], cwd=ODOO_LOCAL)
+    print("You can now do changes; use odoo patch preview to display your changes.")
 
-		;;
+def _get_diff():
+    __system(["git", "add", "--intent-to-add", "."], cwd=ODOO_LOCAL)
+    diff = __system(["git", "diff", "-w", "--binary"], cwd=ODOO_LOCAL, suppress_out=True)
+    return diff
 
-	ungitify)
+def preview():
+    diff = _get_diff()
+    filename = tempfile.mktemp(suffix='.')
+    with open(filename, 'w') as f:
+        f.write(diff)
+    os.system('cat "{}" | colordiff'.format(filename))
 
-		cd "$ODOO_LOCAL" || exit -1
-		rm .git -Rf || exit -1
+def create(name):
+    from pudb import set_trace
+    set_trace()
+    if not os.path.exists(PATCHDIR):
+        os.makedirs(PATCHDIR)
+    PATCHFILE = os.path.join(PATCHDIR, __safe_filename(name) + ".patch")
 
-		;;
+    diff = _get_diff()
+    if diff:
+        with open(PATCHFILE, 'w') as f:
+            f.write(diff)
+    _ungitify()
+    print("Created patch file: " + PATCHFILE)
 
-	default_patches)
-		echo ""
-		echo ""
-		echo "Applying default patches"
-		echo "-remove module install notfications"
-		echo ""
-		echo ""
+def apply(filepath):
+    _gitify_on_need()
+    __system(["git", "apply", filepath], cwd=ODOO_LOCAL)
 
-		cd "$ODOO_HOME/admin/module_tools" || exit -1
-		python <<-EOF
-			import module_tools
-			module_tools.remove_module_install_notifications("$CUSTOMSDIR")
-		EOF
-		echo ""
-		echo "Apply default patches DONE"
-		echo ""
-		echo ""
-		echo ""
-		;;
+def _list(absolute_path=True):
+    V = os.getenv("ODOO_VERSION")
+    for filename in __find_files(CUSTOMSDIR, "-name", "*.patch"):
+        if V in filename:
+            if not absolute_path:
+                filename = os.path.relpath(filename, CUSTOMSDIR)
+            yield filename
+def list():
+    for filename in _list(absolute_path=False):
+        print(filename)
 
-	prepare)
-		set -e
+def apply_all():
+    reset()
+    _default_patches()
+    for filepath in _list():
+        print "Applying patch " + filepath
+        apply(filepath)
+    _ungitify()
+    print("Successfully applied all patches and cleand .git directory.")
 
-		"$0" reset
-		"$0" gitify
+def _setupArgs():
+    parser = argh.ArghParser()
+    commands = []
+    module = sys.modules[__name__]
+    for member in getmembers(module, inspect.isfunction):
+        name, member = member
+        if isinstance(member, types.FunctionType):
+            if not name.startswith('_') and (len(name) > 2 or name in ['up']):
+                commands.append(member)
 
-		"$0" default_patches
+    parser.add_commands(commands)
 
-		cd "$ODOO_LOCAL" || exit -1
-		git add .
-		git commit -qam "removed install notifications"
-		"$0" list | while read -r file
-		do
-			"$0" apply "$file" || exit -1
-		done
-		git add .
-		git commit -qam "applied all current patches"
+    return parser
 
-		echo
-		echo
-		echo "You can now do changes; use odoo patch preview to display your changes."
 
-		;;
-
-	preview)
-
-		cd "$ODOO_LOCAL" || exit -1
-
-		git add --intent-to-add .
-		git diff --binary
-
-		;;
-
-	create)
-
-		if [[ -z "$2" ]]; then
-			echo "Please provide a name"
-			exit -1
-		fi
-
-		mkdir -p "$PATCHDIR"
-		PATCHFILE="$PATCHDIR/${2// /_}.patch"
-
-		"$0" preview > "$PATCHFILE"
-
-		rm -Rf "$ODOO_LOCAL/.git"
-
-		echo 
-		echo 
-		echo "Created patch file: $PATCHFILE"
-
-		;;
-
-	apply)
-
-		"$0" gitify_on_need
-
-		cd "$ODOO_LOCAL" || exit -1
-
-		git apply "$2" || {
-			echo
-			echo
-			echo "PATCH NOT APPLIED: $2"
-			echo 
-			echo 
-			exit -1
-		}
-
-		;;
-
-	list)
-		find "$CUSTOMSDIR" -name '*.patch' |grep "\/$ODOO_VERSION\/" | while read -r f
-		do
-			echo "$f"
-		done
-		;;
-
-	apply_all)
-		"$0" reset
-		"$0" default_patches
-		"$0" list | while read -r file
-		do
-			echo "Applying patch $file"
-			"$0" apply "$file" || exit -1
-		done
-		"$0" ungitify
-		echo 
-		echo "Successfully applied all patches and cleand .git directory."
-		echo 
-
-		;;
-
-	*)
-		echo "Invalid command: $1"
-		exit -1
-		;;
-
-esac
+if __name__ == "__main__":
+    parser = _setupArgs()
+    check_started_by_odoo_script()
+    try:
+        parser.dispatch()
+    finally:
+        pass

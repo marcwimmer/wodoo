@@ -609,7 +609,7 @@ def remove_module_install_notifications(path):
 
             matched = False
             for n in tree.findall("//record[@model='mail.message']"):
-                if n.get("id") == "module_install_notification":
+                if "module_install_notification" in n.get('id'):
                     n.getparent().remove(n)
                     matched = True
             if matched:

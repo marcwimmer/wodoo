@@ -22,7 +22,8 @@ apt install -y \
 	gosu \
 	net-tools \ 
 	iputils-ping \
-    pv
+    pv \
+    colordiff
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt
