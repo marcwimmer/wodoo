@@ -109,6 +109,6 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
 
 def __safe_filename(name):
     name = name or ''
-    for c in [':\\/+?*;\'"']:
+    for c in [':\\/+?*;\'" ']:
         name = name.replace(c, "_")
     return name
