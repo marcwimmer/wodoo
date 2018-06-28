@@ -189,7 +189,6 @@ def preview():
     filename = tempfile.mktemp(suffix='.')
     with open(filename, 'w') as f:
         f.write(diff)
-    os.chdir(ODOO_LOCAL)
     os.system('cat "{}" | colordiff'.format(filename))
 
 def create(name):
