@@ -13,19 +13,30 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN \
   apt-get update -y && \
   apt-get install -y apt-utils wget openssh-server \
-  xfce4 xfce4-goodies x11vnc xvfb \
   gconf-service libnspr4 libnss3 fonts-liberation \
-  libappindicator1 libcurl3 fonts-wqy-microhei tightvncserver && \
-  mkdir -p /var/run/sshd && \
-  sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && \
-  sed -ri 's/#Port 22/Port 5800/g' /etc/ssh/sshd_config && \
+  libappindicator1 libcurl3 fonts-wqy-microhei tightvncserver 
+RUN apt install -y gnupg2
+RUN \
   wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-  echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
+  echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list
+RUN \
   apt-get update -y && \
-  apt-get install -y google-chrome-stable && \
-  rm -rf /var/lib/apt/lists/* && \
+  apt-get install -y google-chrome-stable 
+
+RUN \
   groupadd -g 1000 user1 && \
   useradd -u 1000 -g 1000 -m -d /data user1 
+
+RUN \
+  mkdir -p /var/run/sshd && \
+  sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config && \
+  sed -ri 's/#Port 22/Port 5800/g' /etc/ssh/sshd_config 
+
+#RUN apt install -y xfce4 xfce4-goodies x11vnc xvfb
+RUN apt install -y fluxbox
+
+
+#RUN rm -rf /var/lib/apt/lists/* 
 
 USER root
 
@@ -33,13 +44,12 @@ USER root
 #VOLUME /data
 
 RUN mkdir /root/.vnc
-ADD xstartup /root/.vnc/xstartup
+
 # password is odoo2000
-ADD passwd /root/.vnc/passwd
+ADD vncconfig/ /root/.vnc/
+ADD fluxbox/ /root/.fluxbox/
 RUN chmod a+x /root/.vnc/xstartup
 ENV USER=root
-
-WORKDIR /data
 
 # Define default command.
 ADD cmd.sh /root/cmd.sh
