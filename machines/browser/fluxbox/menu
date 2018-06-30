@@ -1,3 +1,4 @@
 [begin] (Click Below)
-[exec] (Browse proxy) {google-chrome --no-sandbox --start-maximized http://proxy/}
+[exec] (Browse proxy) {google-chrome --start-maximized http://proxy/}
+[exec] (Browse proxy/web/login) {google-chrome --start-maximized http://proxy/web/login}
 [end]

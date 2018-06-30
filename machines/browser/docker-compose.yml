@@ -12,4 +12,6 @@ services:
         environment:
             # 8 places
             - "PASSWORD=odoo3000"
-            - "GEOMETRY=1440x960"
+              #- "GEOMETRY=1440x960"
+            - "GEOMETRY=1900x1200"
+            - "DEPTH=24"
