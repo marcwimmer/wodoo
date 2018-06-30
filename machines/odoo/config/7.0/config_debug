@@ -23,6 +23,7 @@ smtp_password = False
 smtp_port = 25
 smtp_server = localhost
 workers = 1
+xmlrpc = 8072
 xmlrpcs = False
 netrpc = False
 proxy_mode = True

@@ -1758,7 +1758,7 @@ def update(module=""):
     # running duplicate updates is really a problem;
     kill()
     rm()
-    __dc(['create', '--force-recreate'])
+    __dc(['up', '--no-start-', '--force-recreate'])
     __start_postgres_and_wait()
     kill('proxy')
 

@@ -1,0 +1,9 @@
+# manage-order 1000
+version: '3.3'
+
+services:
+    browser:
+        container_name: ${CUSTOMS}_browser
+        image: siomiz/chrome
+        ports:
+            - "5900:5900"
