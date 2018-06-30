@@ -38,20 +38,20 @@ RUN apt install -y fluxbox
 
 #RUN rm -rf /var/lib/apt/lists/* 
 
-USER root
-
-#RUN mkdir /data
-#VOLUME /data
-
-RUN mkdir /root/.vnc
+WORKDIR /data
 
 # password is odoo2000
-ADD vncconfig/ /root/.vnc/
-ADD fluxbox/ /root/.fluxbox/
-RUN chmod a+x /root/.vnc/xstartup
-ENV USER=root
+RUN mkdir .vnc
+ADD vncconfig/ .vnc/
+ADD fluxbox/ .fluxbox/
+ADD cmd.sh cmd.sh
+ENV USER=user1
 
 # Define default command.
-ADD cmd.sh /root/cmd.sh
-RUN chmod a+x /root/cmd.sh
-CMD /root/cmd.sh
+RUN \
+chmod a+x cmd.sh && \
+chmod a+x .vnc/xstartup && \
+chown user1 . -R
+
+USER user1
+CMD ./cmd.sh

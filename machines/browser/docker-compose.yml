@@ -11,4 +11,5 @@ services:
             - SYS_ADMIN
         environment:
             # 8 places
-            - PASSWORD=odoo3000
+            - "PASSWORD=odoo3000"
+            - "GEOMETRY=1440x960"
