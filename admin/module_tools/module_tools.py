@@ -574,9 +574,9 @@ def restart(quick):
         else:
             f.write('restart')
 
-def remove_webassets():
+def remove_webassets(dbname=None):
     print "Removing web assets for {}".format(current_customs())
-    conn, cr = get_conn()
+    conn, cr = get_conn(db=dbname)
     try:
         cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
         cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
