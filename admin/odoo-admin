@@ -168,8 +168,9 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     print("Restoring DB...")
     CMD = " " .join(pipes.quote(s) for s in ['pv', dump_file])
     CMD += " | "
-    CMD += " ".join(pipes.quote(s) for s in PREFIX)
-    CMD += " | "
+    if PREFIX:
+        CMD += " ".join(pipes.quote(s) for s in PREFIX)
+        CMD += " | "
     CMD += " ".join(pipes.quote(s) for s in method)
     CMD += " "
     CMD += " ".join(pipes.quote(s) for s in [
