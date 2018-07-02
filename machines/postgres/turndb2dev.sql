@@ -19,16 +19,27 @@ delete from ir_attachment_access_rights where attachment_id in (select id from d
 end if;
 
 alter table if exists ir_attachment_access_rights drop constraint ir_attachment_access_rights_attachment_id_fkey;
-alter table project_task drop constraint project_task_displayed_image_id_fkey;
-delete from ir_attachment_version where attachment_id in (select id from delete_attachments);
+IF EXISTS (SELECT 1 FROM   information_schema.tables WHERE  table_schema = 'public' AND    table_name = 'ir_attachment_version')
+    THEN
+        delete from ir_attachment_version where attachment_id in (select id from delete_attachments);
+    END IF;
 delete from ir_attachment where id in (select id from delete_attachments);
 
 alter table if exists ir_attachment_access_rights add constraint ir_attachment_access_rights_attachment_id_fkey foreign key(attachment_id) references ir_attachment(id);
-alter table project_task add constraint project_task_displayed_image_id_fkey foreign key(displayed_image_id) references ir_attachment(id);
 
-update asterisk_sipaccount set enabled = false;
+--alter table project_task drop constraint project_task_displayed_image_id_fkey;
+--alter table project_task add constraint project_task_displayed_image_id_fkey foreign key(displayed_image_id) references ir_attachment(id);
+
+IF EXISTS (SELECT 1 FROM   information_schema.tables WHERE  table_schema = 'public' AND    table_name = 'asterisk_sipaccount')
+THEN
+    update asterisk_sipaccount set enabled = false;
+END IF;
 
 update fetchmail_server set server='mail', "user"='postmaster', password='postmaster', type='imap';
-update caldav_cal set password = '1';
+
+IF EXISTS (SELECT 1 FROM   information_schema.tables WHERE  table_schema = 'public' AND    table_name = 'caldav_cal')
+THEN
+    update caldav_cal set password = '1';
+END IF;
 
 end$$;

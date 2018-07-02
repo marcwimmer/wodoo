@@ -46,7 +46,7 @@ import wait  # NOQA
 
 PLATFORM_OSX = "OSX"
 PLATFORM_LINUX = "Linux"
-YAML_VERSION = '3.3'
+YAML_VERSION = '3.5'
 BACKUPDIR = "/host/dumps"
 FORCE = any(x == '-f' or x == '--force' for x in sys.argv[1:])
 SAFE_KILL = ['postgres', 'redis']
@@ -1485,7 +1485,7 @@ def restart(machines=""):
 def rm(machines=''):
     __dc(['rm', '-f'] + __splitcomma(machines))
 
-def restore_dev_db(filename):
+def restore_dev_db(filename, force=False, ignore_filename_match_dbname=False):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
 
@@ -1499,13 +1499,14 @@ def restore_dev_db(filename):
     restore_db(
         filename,
         exec_before_rename=exec_sql,
-        restore_as_dev_db=True
+        restore_as_dev_db=True,
+        ignore_filename_match_dbname=ignore_filename_match_dbname,
     )
 
 def restore_files(dumpfile):
     __do_restore_files(dumpfile)
 
-def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False):
+def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False):
     for x in ["DB_HOST", "DB_PORT"]:
         print("{}: {}".format(x, E(x)))
     if not filename:
@@ -1517,7 +1518,8 @@ def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False):
     filename == os.path.join(BACKUPDIR, filename)
     if filename.startswith("/"):
         raise Exception("No path in dump file allowed")
-    __restore_check(filename)
+    if not ignore_filename_match_dbname:
+        __restore_check(filename)
     if E("DEVMODE") == "1" and not restore_as_dev_db:
         _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 

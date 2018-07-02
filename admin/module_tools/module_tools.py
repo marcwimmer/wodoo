@@ -38,10 +38,15 @@ import threading
 
 
 ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
-if current_version() == 7.0:
+try:
+    current_version()
+except Exception:
     LANG = 'de'
 else:
-    LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
+    if current_version() == 7.0:
+        LANG = 'de'
+    else:
+        LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
 host = "http://localhost:8069"
 
 username = "admin"

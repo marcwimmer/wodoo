@@ -1,5 +1,5 @@
 # manage-order 1000
-version: '3.3'
+version: '3.5'
 
 services:
     browser:
@@ -9,9 +9,10 @@ services:
             - "5900:5901"
         cap_add:
             - SYS_ADMIN
+        shm_size: 4gb
         environment:
             # 8 places
-            - "PASSWORD=odoo3000"
+            - "PASSWORD=${BROWSER_PWD}"
               #- "GEOMETRY=1440x960"
-            - "GEOMETRY=1900x1200"
-            - "DEPTH=24"
+            - "GEOMETRY=${BROWSER_GEOMETRY}"
+            - "DEPTH=${BROWSER_DEPTH}"
