@@ -538,7 +538,7 @@ def _collect_settings_files():
     for filename in __find_files(dirs['machines'], "-name", "default.settings"):
         _files.append(os.path.join(dirs['machines'], filename))
     customs_dir = odoo_config.customs_dir()
-    if os.path.exists(os.path.join(customs_dir, 'settings')):
+    if os.path.isdir(os.path.join(customs_dir, 'settings')):
         for filename in os.listdir(os.path.join(customs_dir, 'settings')):
             _files.append(os.path.join(customs_dir, 'settings', filename))
     if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
@@ -1009,6 +1009,7 @@ def _startup():
     commands['dc'] = [x.replace("$docker_compose_file", files['docker_compose']) for x in commands['dc']]
 
 def abort_upgrade():
+    print "Aborting upgrade..."
     SQL = """
         UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
         UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
