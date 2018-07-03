@@ -1365,7 +1365,7 @@ def OCA(module):
         module,
     ], cwd=dirs['admin'])
 
-def migrate(from_version, to_version):
+def migrate(from_version, to_version, git_clean=True):
     LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
     fix_permissions()
     do_migrate(
@@ -1375,6 +1375,7 @@ def migrate(from_version, to_version):
         to_version,
         do_command,
         SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
+        git_clean=git_clean
     )
 
 def new_ticket(ticket_name):

@@ -24,6 +24,7 @@ set_addons_path()
 if MAKE_GIT_CLEAN == "1":
     # clean
     subprocess.check_call(["git", "checkout", "-f", BRANCH], cwd=OpenupgradeDir)
+    subprocess.check_call(["git", "clean", "-xdff", BRANCH], cwd=OpenupgradeDir)  # remove old pyc files
     # apply patches
     root = os.path.join(os.environ['ACTIVE_CUSTOMS'], 'migration', VERSION)
     for file in os.listdir(root):
