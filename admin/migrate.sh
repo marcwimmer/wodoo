@@ -1,11 +1,12 @@
 #!/usr/bin/python
 # executed in odoo container
+import pipes
 import sys
 import os
 import pickle
 import subprocess
 import base64
-_, BRANCH, CMD, ADDONS_PATH, VERSION, MAKE_GIT_CLEAN = sys.argv
+e, BRANCH, CMD, ADDONS_PATH, VERSION, MAKE_GIT_CLEAN = sys.argv
 CMD = base64.b64decode(CMD)
 CMD = pickle.loads(CMD)
 CONFIG_FILE = "/home/odoo/config_migration"
@@ -31,12 +32,11 @@ if MAKE_GIT_CLEAN == "1":
         if file.endswith(".patch"):
             subprocess.check_call(["git", "apply", os.path.join(root, file)], cwd=OpenupgradeDir)
 subprocess.check_call(["pip", "install", "git+https://github.com/OCA/openupgradelib.git@master", "--upgrade"])
-proc = subprocess.Popen([
+os.chdir(OpenupgradeDir)
+os.system(" ".join([pipes.quote(s) for s in [
     'sudo',
     '-E',
     '-H',
     '-u',
     os.environ["ODOO_USER"]
-    ] + CMD, cwd=OpenupgradeDir
-)
-proc.wait()
+    ]] + CMD))

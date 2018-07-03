@@ -115,12 +115,11 @@ def __dcexec(cmd):
     return out
 
 def __dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True, logger=None):
-    cmd = [os.path.expandvars(x) for x in cmd]
-    if interactive:
-        options = ''
-    else:
-        options = '-T'
-    cmd = ['run', '--rm', options, '-e ODOO_HOME=/opt/odoo'] + cmd
+    cmd2 = [os.path.expandvars(x) for x in cmd]
+    cmd = ['run']
+    if not interactive:
+        cmd += ['-T']
+    cmd += ['--rm', '-e ODOO_HOME=/opt/odoo'] + cmd2
     return __dc(cmd, wait_finished=wait_finished, raise_exception=True, logger=logger)
 
 def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
@@ -1365,8 +1364,10 @@ def OCA(module):
         module,
     ], cwd=dirs['admin'])
 
-def migrate(from_version, to_version, git_clean=True):
-    LOGFILE = os.path.join(odoo_config.customs_dir(), "migration.log")
+def migrate(from_version, to_version, no_git_clean=False, debug=False):
+    git_clean = not no_git_clean
+    del no_git_clean
+    LOGFILE = os.path.join(odoo_config.customs_dir(), "migration_{}_{}.log".format(E("CUSTOMS"), datetime.now().strftime("%Y-%m-%dT%H%M%S")))
     fix_permissions()
     do_migrate(
         E("CUSTOMS"),
@@ -1375,7 +1376,8 @@ def migrate(from_version, to_version, git_clean=True):
         to_version,
         do_command,
         SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
-        git_clean=git_clean
+        git_clean=git_clean,
+        debug=debug,
     )
 
 def new_ticket(ticket_name):
