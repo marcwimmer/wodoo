@@ -1397,7 +1397,10 @@ def OCA(module):
         module,
     ], cwd=dirs['admin'])
 
-def migrate(from_version, to_version, no_git_clean=False, debug=False):
+def migrate(from_version, to_version, no_git_clean=False, debug=False, module='all'):
+    """
+    For debugging migration of certain module provide module parameter.
+    """
     git_clean = not no_git_clean
     del no_git_clean
     LOGFILE = os.path.join(odoo_config.customs_dir(), "migration_{}_{}.log".format(E("CUSTOMS"), datetime.now().strftime("%Y-%m-%dT%H%M%S")))
@@ -1411,6 +1414,7 @@ def migrate(from_version, to_version, no_git_clean=False, debug=False):
         SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
         git_clean=git_clean,
         debug=debug,
+        module=module,
     )
 
 def new_ticket(ticket_name):

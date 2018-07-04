@@ -45,11 +45,13 @@ def run(cr):
 
 BASE_PATH = "/opt/odoo_home/repos/OpenUpgrade/" # must match in container
 
-def prepareCommand(cmd):
+def prepareCommand(cmd, module):
     def repl(s):
         s = s.format(
             configfile=CONFIG_FILE,
-            db=os.environ['DBNAME'])
+            db=os.environ['DBNAME'],
+            module=module,
+        )
         return s
     cmd = [repl(x) for x in cmd]
     cmd = pickle.dumps(cmd)
@@ -66,7 +68,7 @@ def connect_db():
     )
 
 
-def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False):
+def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False, module='all'):
     from_version = str(float(from_version))
     to_version = str(float(to_version))
 
@@ -98,7 +100,7 @@ def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS
             ],
             'cmd': [
                 './odoo-bin',
-                '--update=all',
+                '--update={module}',
                 '--database={db}',
                 '--config={configfile}',
                 '--stop-after-init',
@@ -113,7 +115,7 @@ def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS
             ],
             'cmd': [
                 './odoo-bin',
-                '--update=all',
+                '--update={module}',
                 '--database={db}',
                 '--config={configfile}',
                 '--stop-after-init',
@@ -128,7 +130,7 @@ def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS
             ],
             'cmd': [
                 './openerp-server',
-                '--update=all',
+                '--update={module}',
                 '--database={db}',
                 '--config={configfile}',
                 '--stop-after-init',
@@ -143,7 +145,7 @@ def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS
             ],
             'cmd': [
                 './openerp-server',
-                '--update=all',
+                '--update={module}',
                 '--database={db}',
                 '--config={configfile}',
                 '--stop-after-init',
@@ -154,7 +156,7 @@ def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS
             'branch': '7.0',
             'cmd': [
                 './openerp-server',
-                '--update=all',
+                '--update={module}',
                 '--database={db}',
                 '--config={configfile}',
                 '--stop-after-init',
@@ -175,16 +177,18 @@ Migration to Version {}
 ========================================================================""".format(version)
                     )
 
-        do_command('compose', customs)
-        do_command('build')
+        if module == 'all':
+            do_command('compose', customs)
+            do_command('build')
         do_command("wait_for_container_postgres")
-        do_command(
-            'run',
-            "odoo",
-            "/run_migration.sh",
-            'before',
-            logger=logger,
-        )
+        if module == 'all':
+            do_command(
+                'run',
+                "odoo",
+                "/run_migration.sh",
+                'before',
+                logger=logger,
+            )
         print("Starting Openupgrade Migration to {}".format(version))
         cmd = [
             'run',
@@ -192,7 +196,7 @@ Migration to Version {}
             "/usr/bin/python",
             "/opt/migrate.sh",
             migrations[version]['branch'],
-            prepareCommand(migrations[version]['cmd']),
+            prepareCommand(migrations[version]['cmd'], module=module),
             ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
             version,
             '1' if git_clean else '0',
@@ -207,13 +211,14 @@ Migration to Version {}
             do_command(*cmd, logger=logger, interactive=True)
 
         print("Running after processes {}".format(version))
-        do_command(
-            'run',
-            "odoo",
-            "/run_migration.sh",
-            'after',
-            logger=logger,
-        )
+        if module == 'all':
+            do_command(
+                'run',
+                "odoo",
+                "/run_migration.sh",
+                'after',
+                logger=logger,
+            )
         conn = connect_db()
         cr = conn.cursor()
         cr.execute("select count(*) from ir_module_module where state like 'to install'")  # to upgrade seems to be ok
