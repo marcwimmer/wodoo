@@ -32,12 +32,16 @@ if MAKE_GIT_CLEAN == "1":
         if file.endswith(".patch"):
             subprocess.check_call(["git", "apply", os.path.join(root, file)], cwd=OpenupgradeDir)
 os.chdir("/opt/odoo_home/repos/openupgradelib")
-os.system("python setup.py install")
+if float(os.getenv("ODOO_VERSION", "")) >= 11.0:
+    os.system("python3 setup.py install")
+else:
+    os.system("python setup.py install")
+
 os.chdir(OpenupgradeDir)
-os.system(" ".join([pipes.quote(s) for s in [
+subprocess.Popen([
     'sudo',
     '-E',
     '-H',
     '-u',
     os.environ["ODOO_USER"]
-    ]] + CMD))
+    ] + CMD, cwd=OpenupgradeDir).wait()
