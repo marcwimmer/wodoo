@@ -20,3 +20,6 @@
 [submodule "admin/python_wait"]
 	path = admin/python_wait
 	url = https://github.com/shawnsi/python-wait
+[submodule "repos/openupgradelib"]
+	path = repos/openupgradelib
+	url = https://github.com/OCA/openupgradelib.git
