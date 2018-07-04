@@ -31,7 +31,8 @@ if MAKE_GIT_CLEAN == "1":
     for file in os.listdir(root):
         if file.endswith(".patch"):
             subprocess.check_call(["git", "apply", os.path.join(root, file)], cwd=OpenupgradeDir)
-subprocess.check_call(["pip", "install", "git+https://github.com/OCA/openupgradelib.git@master", "--upgrade"])
+os.chdir("/opt/odoo_home/repos/openupgradelib")
+os.system("python setup.py install")
 os.chdir(OpenupgradeDir)
 os.system(" ".join([pipes.quote(s) for s in [
     'sudo',
