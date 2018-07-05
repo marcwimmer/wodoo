@@ -22,7 +22,6 @@ gtts==1.1.6
 openpyxl==2.4.1
 validate_email==1.3
 pymssql==2.1.3
-pyPdf==1.13
 PyPDF2==1.26.0
 html2text==2018.1.9
 filemagic==1.6
