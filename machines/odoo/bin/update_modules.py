@@ -102,10 +102,13 @@ def check_for_dangling_modules():
     print dangling
 
 def all_dependencies_installed(module):
-    dir = odoo_config.module_dir(module)
-    manifest_path = odoo_parser.get_manifest_file(dir)
-    manifest = manifest2dict(manifest_path)
-    return all(is_module_installed(mod) for mod in manifest.get('depends', []))
+    try:
+        dir = odoo_config.module_dir(module)
+        manifest_path = odoo_parser.get_manifest_file(dir)
+        manifest = manifest2dict(manifest_path)
+        return all(is_module_installed(mod) for mod in manifest.get('depends', []))
+    except:
+        return all_dependencies_installed(module)
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
@@ -149,7 +152,7 @@ def main():
 
     # check if at auto installed modules all predecessors are now installed; then install them
     if not single_module:
-        auto_install_modules = ','.join(get_uninstalled_modules_that_are_auto_install_and_should_be_installed())
+        auto_install_modules = get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
         if auto_install_modules:
             print("Going to install following modules, that are auto installable modules")
             sleep(5)
@@ -158,7 +161,7 @@ def main():
             sleep(2)
             print("You should press Ctrl+C NOW to abort")
             sleep(8)
-            update('i', auto_install_modules)
+            update('i', ','.join(auto_install_modules))
 
     print("--------------------------------------------------------------------------------")
     print("Summary of update module")

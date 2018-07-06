@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import docker
 import shlex
+import traceback
 from inspect import getmembers, isfunction
 from retrying import retry
 from datetime import datetime
@@ -96,6 +97,11 @@ def __assert_file_exists(path, isdir=False):
             'Directory' if isdir else 'File',
             path
         ))
+
+def __cmd_interactive(*params):
+    cmd = __get_cmd() + list(params)
+    proc = subprocess.Popen(cmd)
+    proc.wait()
 
 def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True, logger=None):
     c = __get_cmd() + cmd
@@ -1074,10 +1080,7 @@ def attach(machine):
     """
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
-    cmd = __get_cmd() + ['exec', machine, bash]
-
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    __cmd_interactive('exec', machine, bash)
 
 def backup(filename=None):
     """"
@@ -1618,9 +1621,7 @@ def runbash(machine):
     __set_db_ownership()
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
-    cmd = __get_cmd() + ['run', machine, bash]
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    __cmd_interactive('run', machine, bash)
 
 def sanity_check():
     _sanity_check()
@@ -1662,9 +1663,7 @@ def setup_startup():
               )
 
 def shell():
-    cmd = __get_cmd() + ['run', 'odoo', '/bin/bash', '/shell.sh']
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    __cmd_interactive('run', 'odoo', '/bin/bash', '/shell.sh')
 
 def show_install_state(suppress_error=False):
     print("Displaying dangling modules:")
@@ -1779,20 +1778,6 @@ def turn_into_dev():
 Please set DEVMODE=1 to allow this""")
     __turn_into_devdb(E("DBNAME"))
 
-def update_ast():
-    if _get_platform() == PLATFORM_OSX:
-        print "Update is extreme slow on osx due to share performance. Please use following command natively:"
-        print
-        print
-        print 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
-        print
-        print
-        sys.exit(2)
-    started = datetime.now()
-    print "Updating ast - can take about one minute; slow on OSX due to share"
-    update_cache()
-    print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
-
 def up(machines='', daemonized=False):
     __set_db_ownership()
     options = [
@@ -1802,35 +1787,42 @@ def up(machines='', daemonized=False):
     __dc(['up'] + options + __splitcomma(machines))
     proxy_reload()
 
-def update(module="", upgrade_installed_modules=False):
+def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=False, keep_containers=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime - but there is a downtime, even for phones
 
     :upgrade_installed_modules: run after migration:
     """
+    module = module.split(',')
     __start_postgres_and_wait()
-    if __get_dangling_modules():
+    if __get_dangling_modules() and not upgrade_dangling_modules:
         show_install_state(suppress_error=True)
         raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
-    abort_upgrade()
+        abort_upgrade()
     if upgrade_installed_modules:
-        module = ','.join(__get_installed_modules())
+        module += __get_installed_modules()
+    if upgrade_dangling_modules:
+        module += [x[0] for x in __get_dangling_modules()]
+    module = ','.join(filter(lambda x: x, module))
+
     print("Run module update")
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
         with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     # running duplicate updates is really a problem;
-    kill()
-    rm()
-    __dc(['up', '--no-start', '--force-recreate'])
-    __start_postgres_and_wait()
-    kill('proxy')
+    if not keep_containers:
+        kill()
+        rm()
+        __dc(['up', '--no-start', '--force-recreate'])
+        __start_postgres_and_wait()
+        kill('proxy')
 
     try:
-        __dcrun(['odoo_update', '/update_modules.py', module])
+        __cmd_interactive('run', 'odoo_update', '/update_modules.py', module)
     except Exception:
+        print(traceback.format_exc())
         show_install_state(suppress_error=True)
         raise Exception("Error at /update_modules.py - aborting update process.")
     show_install_state()
@@ -1845,6 +1837,21 @@ def update(module="", upgrade_installed_modules=False):
         with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
             f.write("0")
     telegram_send("Update done")
+
+def update_ast():
+    if _get_platform() == PLATFORM_OSX:
+        print "Update is extreme slow on osx due to share performance. Please use following command natively:"
+        print
+        print
+        print 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
+        print
+        print
+        sys.exit(2)
+    started = datetime.now()
+    print "Updating ast - can take about one minute; slow on OSX due to share"
+    update_cache()
+    print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
+
 
 def wait_for_container_postgres():
     __start_postgres_and_wait()
