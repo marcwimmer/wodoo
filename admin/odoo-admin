@@ -198,7 +198,6 @@ def __empty_dir(dir):
 def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransaction=False, no_try=False):
     if not dbname:
         dbname = E("DBNAME")
-
     # try to connecto to postgres; could startup:
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect():
@@ -247,6 +246,13 @@ def __file_default_content(path, default_content):
 def __file_get_lines(path):
     with open(path) as f:
         return f.readlines()
+
+def __get_dangling_modules():
+    rows = __execute_sql(
+        "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
+        fetchall=True
+    )
+    return rows
 
 def __get_docker_compose_run_command():
     """
@@ -1648,16 +1654,13 @@ def shell():
     proc = subprocess.Popen(cmd)
     proc.wait()
 
-def show_install_state():
-    rows = __execute_sql(
-        "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
-        fetchall=True
-    )
+def show_install_state(suppress_error=False):
     print("Displaying dangling modules:")
-    for row in rows:
+    dangling = __get_dangling_modules()
+    for row in dangling:
         print("{}: {}".format(row[0], row[1]))
 
-    if len(rows):
+    if dangling and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
 def simplebash(*parameters):
@@ -1792,6 +1795,10 @@ def update(module=""):
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime - but there is a downtime, even for phones
     """
+    __start_postgres_and_wait()
+    if __get_dangling_modules():
+        show_install_state(suppress_error=True)
+        raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
     abort_upgrade()
     print("Run module update")
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
@@ -1801,13 +1808,14 @@ def update(module=""):
     # running duplicate updates is really a problem;
     kill()
     rm()
-    __dc(['up', '--no-start-', '--force-recreate'])
+    __dc(['up', '--no-start', '--force-recreate'])
     __start_postgres_and_wait()
     kill('proxy')
 
     try:
         __dcrun(['odoo_update', '/update_modules.py', module])
     except Exception:
+        show_install_state(suppress_error=True)
         raise Exception("Error at /update_modules.py - aborting update process.")
     show_install_state()
 
