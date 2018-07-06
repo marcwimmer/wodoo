@@ -1225,9 +1225,14 @@ def do_command(cmd, *params, **kwparams):
     cmd = cmd.replace('-', '_')
     return globals()[cmd](*params, **kwparams)
 
-def drop_db(dbname):
+def drop_db(dbname, force=False):
+
+    if E("DEVMODE") != "1" and not force:
+        print("Either DEVMODE or force required")
+        sys.exit(-1)
     __remove_postgres_connections(dbname)
     __execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
+    print("Database {} dropped.".format(dbname))
 
 def execute(*parameters):
     __dcexec(*parameters)
