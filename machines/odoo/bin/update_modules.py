@@ -15,6 +15,7 @@ from utils import get_env # NOQA
 
 PARAMS = [x for x in sys.argv[1:] if x not in ['-fast']]
 DANGLING = False
+INTERACTIVE = not any(x == '--non-interactive' for x in PARAMS)
 
 def get_modules():
     modules = []
@@ -100,6 +101,7 @@ def update_module_list():
 def check_for_dangling_modules():
     dangling = module_tools.dangling_modules()
     print dangling
+    return bool(dangling)
 
 def all_dependencies_installed(module):
     try:
@@ -107,7 +109,7 @@ def all_dependencies_installed(module):
         manifest_path = odoo_parser.get_manifest_file(dir)
         manifest = manifest2dict(manifest_path)
         return all(is_module_installed(mod) for mod in manifest.get('depends', []))
-    except:
+    except Exception:
         return all_dependencies_installed(module)
 
 def main():
@@ -129,7 +131,7 @@ def main():
 
     summary = []
     # could be, that a new version is triggered
-    check_for_dangling_modules()
+    DANGLING = check_for_dangling_modules()
 
     if DANGLING or (',' not in MODULE and not module_tools.is_module_listed(MODULE)) or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
         update_module_list()
@@ -146,8 +148,8 @@ def main():
         for module in MODULE.split(','):
             print "Deleting qweb of module {}".format(module)
             delete_qweb(module)
-    update('u', module)
-    for module in module.split(","):
+    update('u', MODULE)
+    for module in MODULE.split(","):
         summary.append("UPDATE " + module)
 
     # check if at auto installed modules all predecessors are now installed; then install them
@@ -155,12 +157,10 @@ def main():
         auto_install_modules = get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
         if auto_install_modules:
             print("Going to install following modules, that are auto installable modules")
-            sleep(5)
             print ','.join(auto_install_modules)
             print("")
-            sleep(2)
-            print("You should press Ctrl+C NOW to abort")
-            sleep(8)
+            if INTERACTIVE:
+                raw_input("You should press Ctrl+C NOW to abort")
             update('i', ','.join(auto_install_modules))
 
     print("--------------------------------------------------------------------------------")

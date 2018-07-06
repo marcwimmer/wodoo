@@ -1787,7 +1787,7 @@ def up(machines='', daemonized=False):
     __dc(['up'] + options + __splitcomma(machines))
     proxy_reload()
 
-def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=False, keep_containers=False):
+def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=False, keep_containers=False, non_interactive=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime - but there is a downtime, even for phones
@@ -1820,7 +1820,10 @@ def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=
         kill('proxy')
 
     try:
-        __cmd_interactive('run', 'odoo_update', '/update_modules.py', module)
+        params = ['run', 'odoo_update', '/update_modules.py', module]
+        if non_interactive:
+            params += ['--non-interactive']
+        __cmd_interactive(*params)
     except Exception:
         print(traceback.format_exc())
         show_install_state(suppress_error=True)
