@@ -1231,6 +1231,10 @@ def do_command(cmd, *params, **kwparams):
     cmd = cmd.replace('-', '_')
     return globals()[cmd](*params, **kwparams)
 
+def drop_db(dbname):
+    __remove_postgres_connections(dbname)
+    __execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
+
 def execute(*parameters):
     __dcexec(*parameters)
 
