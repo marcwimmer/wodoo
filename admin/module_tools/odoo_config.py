@@ -40,8 +40,11 @@ def customs_dir(customs=None):
     c = customs or current_customs()
     return os.path.join(customs_root(), c)
 
+def get_links_dir():
+    return os.path.join(customs_dir(), 'links')
+
 def module_dir(modulename):
-    path = os.path.join(customs_dir(), 'links', modulename)
+    path = os.path.join(get_links_dir(), modulename)
     return path
 
 def get_version_from_customs(customs=None):

@@ -18,6 +18,7 @@ import shutil
 import tempfile
 import docker
 import shlex
+import traceback
 from inspect import getmembers, isfunction
 from retrying import retry
 from datetime import datetime
@@ -28,11 +29,14 @@ from logging import FileHandler
 from optparse import OptionParser
 import psycopg2
 from subprocess import PIPE
+from module_tools.module_tools import get_manifest_path_of_module_path
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
 from module_tools import odoo_versioning as versioning
 from module_tools.odoo_parser import update_cache
 from module_tools.module_tools import remove_webassets
+from module_tools.odoo_config import get_odoo_addons_paths
+from module_tools.odoo_config import get_links_dir
 from migrate import do_migrate
 from tools import __system
 from tools import __find_files
@@ -96,6 +100,11 @@ def __assert_file_exists(path, isdir=False):
             'Directory' if isdir else 'File',
             path
         ))
+
+def __cmd_interactive(*params):
+    cmd = __get_cmd() + list(params)
+    proc = subprocess.Popen(cmd)
+    proc.wait()
 
 def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True, logger=None):
     c = __get_cmd() + cmd
@@ -198,7 +207,6 @@ def __empty_dir(dir):
 def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransaction=False, no_try=False):
     if not dbname:
         dbname = E("DBNAME")
-
     # try to connecto to postgres; could startup:
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect():
@@ -247,6 +255,19 @@ def __file_default_content(path, default_content):
 def __file_get_lines(path):
     with open(path) as f:
         return f.readlines()
+
+def __get_cmd():
+    cmd = commands['dc']
+    cmd = [os.path.expandvars(x) for x in cmd]
+    return cmd
+
+def __get_dangling_modules():
+    rows = __execute_sql(
+        "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
+        fetchall=True
+    )
+    return rows
+
 
 def __get_docker_compose_run_command():
     """
@@ -324,10 +345,12 @@ def __get_dump_type(filepath):
                 return "plain_text"
     return 'unzipped_pgdump'
 
-def __get_cmd():
-    cmd = commands['dc']
-    cmd = [os.path.expandvars(x) for x in cmd]
-    return cmd
+def __get_installed_modules():
+    rows = __execute_sql(
+        "SELECT name, state from ir_module_module where state in ('installed', 'to upgrade');",
+        fetchall=True
+    )
+    return [x[0] for x in rows]
 
 def __is_container_running(machine_name):
     container_id = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True).strip()
@@ -1072,10 +1095,7 @@ def attach(machine):
     """
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
-    cmd = __get_cmd() + ['exec', machine, bash]
-
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    __cmd_interactive('exec', machine, bash)
 
 def backup(filename=None):
     """"
@@ -1188,6 +1208,32 @@ def compose(customs):
 
 def current_ticket():
     versioning.actions["current-ticket"]()
+
+def deactivate_old_modules():
+    """
+    Sets modules to 'uninstalled', that have no module dir anymore.
+    """
+    print("Analyzing which modules to remove...")
+    wait_for_container_postgres()
+    mods = sorted(map(lambda x: x[0], __execute_sql("select name from ir_module_module where state in ('installed', 'to install', 'to upgrade');", fetchall=True)))
+    mods = filter(lambda x: x not in ('base'), mods)
+    to_remove = []
+    for mod in mods:
+        for path in get_odoo_addons_paths() + [get_links_dir()]:
+            if get_manifest_path_of_module_path(os.path.join(path, mod)):
+                break
+        else:
+            to_remove.append(mod)
+    if not to_remove:
+        print("Nothing found to remove")
+        sys.exit(0)
+    print("Following modules are set to uninstalled:")
+    for mod in to_remove:
+        print(mod)
+    raw_input("Continue? (Ctrl+c otherwise)")
+    for mod in to_remove:
+        __execute_sql("update ir_module_module set state = 'uninstalled' where name = '{}'".format(mod))
+        print("Set module {} to uninstalled.".format(mod))
 
 def debug(machine_name):
     """
@@ -1621,9 +1667,7 @@ def runbash(machine):
     __set_db_ownership()
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
-    cmd = __get_cmd() + ['run', machine, bash]
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    __cmd_interactive('run', machine, bash)
 
 def sanity_check():
     _sanity_check()
@@ -1665,20 +1709,15 @@ def setup_startup():
               )
 
 def shell():
-    cmd = __get_cmd() + ['run', 'odoo', '/bin/bash', '/shell.sh']
-    proc = subprocess.Popen(cmd)
-    proc.wait()
+    __cmd_interactive('run', 'odoo', '/bin/bash', '/shell.sh')
 
-def show_install_state():
-    rows = __execute_sql(
-        "SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
-        fetchall=True
-    )
+def show_install_state(suppress_error=False):
     print("Displaying dangling modules:")
-    for row in rows:
+    dangling = __get_dangling_modules()
+    for row in dangling:
         print("{}: {}".format(row[0], row[1]))
 
-    if len(rows):
+    if dangling and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
 def simplebash(*parameters):
@@ -1785,6 +1824,69 @@ def turn_into_dev():
 Please set DEVMODE=1 to allow this""")
     __turn_into_devdb(E("DBNAME"))
 
+def up(machines='', daemonized=False):
+    __set_db_ownership()
+    options = [
+    ]
+    if daemonized:
+        options += ['-d']
+    __dc(['up'] + options + __splitcomma(machines))
+    proxy_reload()
+
+def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=False, keep_containers=False, non_interactive=False):
+    """
+    Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
+    Minimal downtime - but there is a downtime, even for phones
+
+    :upgrade_installed_modules: run after migration:
+    """
+    module = module.split(',')
+    __start_postgres_and_wait()
+    if __get_dangling_modules() and not upgrade_dangling_modules:
+        show_install_state(suppress_error=True)
+        raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
+        abort_upgrade()
+    if upgrade_installed_modules:
+        module += __get_installed_modules()
+    if upgrade_dangling_modules:
+        module += [x[0] for x in __get_dangling_modules()]
+    module = ','.join(filter(lambda x: x, module))
+
+    print("Run module update")
+    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
+        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
+            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    # running duplicate updates is really a problem;
+    if not keep_containers:
+        kill()
+        rm()
+        __dc(['up', '--no-start', '--force-recreate'])
+        __start_postgres_and_wait()
+        kill('proxy')
+
+    try:
+        params = ['run', 'odoo_update', '/update_modules.py', module]
+        if non_interactive:
+            params += ['--non-interactive']
+        __cmd_interactive(*params)
+    except Exception:
+        print(traceback.format_exc())
+        show_install_state(suppress_error=True)
+        raise Exception("Error at /update_modules.py - aborting update process.")
+    show_install_state()
+
+    for i in range(5):
+        up(daemonized=True)
+        proxy_reload()
+        time.sleep(2)
+
+    status()
+    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
+        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
+            f.write("0")
+    telegram_send("Update done")
+
 def update_ast():
     if _get_platform() == PLATFORM_OSX:
         print "Update is extreme slow on osx due to share performance. Please use following command natively:"
@@ -1799,49 +1901,6 @@ def update_ast():
     update_cache()
     print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
 
-def up(machines='', daemonized=False):
-    __set_db_ownership()
-    options = [
-    ]
-    if daemonized:
-        options += ['-d']
-    __dc(['up'] + options + __splitcomma(machines))
-    proxy_reload()
-
-def update(module=""):
-    """
-    Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
-    Minimal downtime - but there is a downtime, even for phones
-    """
-    abort_upgrade()
-    print("Run module update")
-    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
-        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
-            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-    # running duplicate updates is really a problem;
-    kill()
-    rm()
-    __dc(['up', '--no-start-', '--force-recreate'])
-    __start_postgres_and_wait()
-    kill('proxy')
-
-    try:
-        __dcrun(['odoo_update', '/update_modules.py', module])
-    except Exception:
-        raise Exception("Error at /update_modules.py - aborting update process.")
-    show_install_state()
-
-    for i in range(5):
-        up(daemonized=True)
-        proxy_reload()
-        time.sleep(2)
-
-    status()
-    if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
-        with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
-            f.write("0")
-    telegram_send("Update done")
 
 def wait_for_container_postgres():
     __start_postgres_and_wait()

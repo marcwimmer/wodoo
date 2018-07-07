@@ -9,6 +9,7 @@ import sys
 import tempfile
 import shutil
 import time
+import traceback
 from datetime import datetime
 from odoo_config import odoo_root
 from odoo_config import customs_dir
@@ -100,6 +101,9 @@ def get_view(inherit_id):
     return None, None
 
 def manifest2dict(manifest_path):
+    if not manifest_path:
+        print traceback.format_stack()
+        raise Exception('stop')
     with open(manifest_path, 'r') as f:
         content = f.read()
     try:
