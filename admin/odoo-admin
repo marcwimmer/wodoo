@@ -654,6 +654,18 @@ def _export_settings():
         config['ODOO_VERSION'] = ODOO_VERSION
         config.write()
 
+    if 'RUN_POSTGRES' in config.keys() and config['RUN_POSTGRES'] == '1':
+        default_values = {
+            "DB_HOST": "postgres",
+            "DB_PORT": "5432",
+            "DB_USER": "odoo",
+            "DB_PWD": "odoo"
+        }
+        for k, v in default_values.items():
+            if config.get(k, "") != v:
+                config[k] = v
+                config.write()
+
     # store the host root folder
     config['HOST_ODOO_HOME'] = E("ODOO_HOME")
     _file2env(files['settings'])
@@ -1272,9 +1284,14 @@ def do_command(cmd, *params, **kwparams):
     cmd = cmd.replace('-', '_')
     return globals()[cmd](*params, **kwparams)
 
-def drop_db(dbname):
+def drop_db(dbname, force=False):
+
+    if E("DEVMODE") != "1" and not force:
+        print("Either DEVMODE or force required")
+        sys.exit(-1)
     __remove_postgres_connections(dbname)
     __execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
+    print("Database {} dropped.".format(dbname))
 
 def execute(*parameters):
     __dcexec(*parameters)
@@ -1563,10 +1580,10 @@ def remove_web_assets():
         print("Please login as admin, so that assets are recreated.")
 
 def reset_db():
-    _askcontinue("Delete database {}".format(E("DBNAME")))
     if E("RUN_POSTGRES") != "1":
         print "Postgres container is disabled; cannot reset external database"
         return
+    _askcontinue("Delete database {}".format(E("DBNAME")))
     print "Stopping all services and creating new database"
     print "After creation the database container is stopped. You have to start the system up then."
     kill()
@@ -1900,6 +1917,10 @@ def wait_for_port(host, port):
 
 # @arg('beta', default='hello world', nargs='*', help='The message')
 def psql(dbname=None, *params):
+    if not dbname and len(params) == 1:
+        if params[0] in ['template1', E("DBNAME")]:
+            dbname = params[0]
+            params = []
     if not dbname:
         dbname = E("DBNAME")
     params = " ".join(params)
