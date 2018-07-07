@@ -104,13 +104,10 @@ def check_for_dangling_modules():
     return bool(dangling)
 
 def all_dependencies_installed(module):
-    try:
-        dir = odoo_config.module_dir(module)
-        manifest_path = odoo_parser.get_manifest_file(dir)
-        manifest = manifest2dict(manifest_path)
-        return all(is_module_installed(mod) for mod in manifest.get('depends', []))
-    except Exception:
-        return all_dependencies_installed(module)
+    dir = odoo_config.module_dir(module)
+    manifest_path = odoo_parser.get_manifest_file(dir)
+    manifest = manifest2dict(manifest_path)
+    return all(is_module_installed(mod) for mod in manifest.get('depends', []))
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""

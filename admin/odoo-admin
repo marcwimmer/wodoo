@@ -208,6 +208,7 @@ def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransactio
     if not dbname:
         dbname = E("DBNAME")
     # try to connecto to postgres; could startup:
+
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect():
         __execute_sql("SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
@@ -1466,6 +1467,11 @@ def migrate(from_version, to_version, no_git_clean=False, debug=False, module='a
         debug=debug,
         module=module,
     )
+    print("Suggestion to run after migration:")
+    print("./odoo deactivate-old-modules")
+    print("./odoo update -d")
+    print("./odoo update -i")
+    print("./odoo update")
 
 def new_ticket(ticket_name):
     versioning.actions['new-ticket'](*[ticket_name])
@@ -1816,7 +1822,7 @@ def up(machines='', daemonized=False):
     __dc(['up'] + options + __splitcomma(machines))
     proxy_reload()
 
-def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=False, keep_containers=False, non_interactive=False):
+def update(module="", dangling_modules=False, installed_modules=False, keep_containers=False, non_interactive=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime - but there is a downtime, even for phones
@@ -1825,13 +1831,13 @@ def update(module="", upgrade_dangling_modules=False, upgrade_installed_modules=
     """
     module = module.split(',')
     __start_postgres_and_wait()
-    if __get_dangling_modules() and not upgrade_dangling_modules:
+    if __get_dangling_modules() and not dangling_modules:
         show_install_state(suppress_error=True)
         raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
         abort_upgrade()
-    if upgrade_installed_modules:
+    if installed_modules:
         module += __get_installed_modules()
-    if upgrade_dangling_modules:
+    if dangling_modules:
         module += [x[0] for x in __get_dangling_modules()]
     module = ','.join(filter(lambda x: x, module))
 

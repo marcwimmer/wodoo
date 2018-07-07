@@ -2,6 +2,8 @@
 import os
 import codecs
 import shutil
+import uuid
+from psycopg2 import IntegrityError
 from Queue import Queue
 from unidecode import unidecode
 from odoo_config import admin_dir
@@ -98,9 +100,16 @@ def delete_qweb(modules):
             for data_id in data_ids:
                 cr.execute("delete from ir_model_data where id = %s", (data_id,))
 
-            cr.execute("""
-               delete from ir_ui_view where id = %s;
-            """, [view_id])
+            sp = 'sp' + uuid.uuid4().hex
+            cr.execute("savepoint {}".format(sp))
+            try:
+                cr.execute("""
+                   delete from ir_ui_view where id = %s;
+                """, [view_id])
+                cr.execute("release savepoint {}".format(sp))
+
+            except IntegrityError:
+                cr.execute("rollback to savepoint {}".format(sp))
 
         for module in cr.fetchall():
             if not is_module_installed(module):

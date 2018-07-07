@@ -25,3 +25,4 @@ settings.customs
 settings.override
 *.override.bak
 ./tmp*
+.agignore

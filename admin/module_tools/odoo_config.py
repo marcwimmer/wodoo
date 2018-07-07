@@ -45,6 +45,10 @@ def get_links_dir():
 
 def module_dir(modulename):
     path = os.path.join(get_links_dir(), modulename)
+    if not os.path.exists(path):
+        for path in get_odoo_addons_paths():
+            if os.path.exists(os.path.join(path, modulename)):
+                path = os.path.join(path, modulename)
     return path
 
 def get_version_from_customs(customs=None):
