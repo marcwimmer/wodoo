@@ -1197,13 +1197,14 @@ def compose(customs):
 def current_ticket():
     versioning.actions["current-ticket"]()
 
-def deactivate_unlinked_modules():
+def deactivate_old_modules():
     """
     Sets modules to 'uninstalled', that have no module dir anymore.
     """
     print("Analyzing which modules to remove...")
     wait_for_container_postgres()
     mods = sorted(map(lambda x: x[0], __execute_sql("select name from ir_module_module where state in ('installed', 'to install', 'to upgrade');", fetchall=True)))
+    mods = filter(lambda x: x not in ('base'), mods)
     to_remove = []
     for mod in mods:
         for path in get_odoo_addons_paths() + [get_links_dir()]:
@@ -1219,7 +1220,7 @@ def deactivate_unlinked_modules():
         print(mod)
     raw_input("Continue? (Ctrl+c otherwise)")
     for mod in to_remove:
-        __execute_sql("udpate ir_module_module set state = 'uninstalled' where name = '{}'".format(mod))
+        __execute_sql("update ir_module_module set state = 'uninstalled' where name = '{}'".format(mod))
         print("Set module {} to uninstalled.".format(mod))
 
 def debug(machine_name):
