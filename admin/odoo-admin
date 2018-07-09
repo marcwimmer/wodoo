@@ -1192,27 +1192,33 @@ def build(pull=False, machines='', nocache=False):
 def commit(*parameters):
     versioning.actions["commit"](*parameters)
 
-def compose(customs='', db=''):
+def prep(customs='', db='', demo=False):
+    return compose(customs=customs, db=db, demo=demo)
+
+def compose(customs='', db='', demo=False):
     """
     - builds docker compose
     - builds proxy settings
     - setups odoo instances
     """
+    config = MyConfigParser(files['settings'])
     if customs:
-        config = MyConfigParser(files['settings'])
-        vals = {
-            'CUSTOMS': customs,
-            'DBNAME': db or customs,
-        }
         if config.get('CUSTOMS', '') != customs:
             config.clear()
             config['CUSTOMS'] = customs
             config.write()
+    vals = {}
+    if customs:
+        vals['CUSTOMS'] = customs
+    if db:
+        vals['DBNAME'] = db
+    if demo:
+        vals['RUN_DEMO'] = "1" if demo else "0"
 
-        for k, v in vals.items():
-            if config.get(k, '') != v:
-                config[k] = v
-                config.write()
+    for k, v in vals.items():
+        if config.get(k, '') != v:
+            config[k] = v
+            config.write()
     _export_settings()
     _remove_temp_directories()
     _prepare_filesystem()
@@ -1281,13 +1287,12 @@ def debug(machine_name):
 def deploy():
     versioning.action_deploy_ticket()
 
-def dev(customs, db=''):
+def dev():
     """
     starts developing in the odoo container
     """
     kill()
     rm()
-    compose(customs, db=db)
     build()
     up(daemonized=True)
     attach('odoo')
