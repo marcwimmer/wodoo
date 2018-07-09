@@ -1201,24 +1201,32 @@ def compose(customs='', db='', demo=False):
     - builds proxy settings
     - setups odoo instances
     """
-    config = MyConfigParser(files['settings'])
-    if customs:
-        if config.get('CUSTOMS', '') != customs:
-            config.clear()
-            config['CUSTOMS'] = customs
-            config.write()
-    vals = {}
-    if customs:
-        vals['CUSTOMS'] = customs
-    if db:
-        vals['DBNAME'] = db
-    if demo:
-        vals['ODOO_DEMO'] = "1" if demo else "0"
+    def setup_settings_file():
+        """
+        Cleans run/settings and sets minimal settings;
+        Puts default values in settings.d to override any values
+        """
+        config = MyConfigParser(files['settings'])
+        if customs:
+            if config.get('CUSTOMS', '') != customs:
+                config.clear()
+                config['CUSTOMS'] = customs
+                config.write()
+        vals = {}
+        if customs:
+            vals['CUSTOMS'] = customs
+        if db:
+            vals['DBNAME'] = db
+        if demo:
+            vals['ODOO_DEMO'] = "1" if demo else "0"
 
-    for k, v in vals.items():
-        if config.get(k, '') != v:
-            config[k] = v
-            config.write()
+        for k, v in vals.items():
+            if config.get(k, '') != v:
+                config[k] = v
+                config.write()
+        shutil.copy(files['settings'], os.path.join(dirs['settings.d'], 'compose'))
+    setup_settings_file()
+
     _export_settings()
     _remove_temp_directories()
     _prepare_filesystem()
