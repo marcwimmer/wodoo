@@ -86,21 +86,21 @@ def update():
 
         sys.exit(0)
 
-def check_customs():
-    if not E("CUSTOMS"):
-        if len(sys.argv) > 1:
-            if sys.argv[1] == 'compose' and len(sys.argv) == 3:
-                if not os.path.isdir(os.path.dirname(SETTINGS_FILE)):
-                    os.makedirs(os.path.dirname(SETTINGS_FILE))
-                customs = sys.argv[2]
-                with open(SETTINGS_FILE, 'w') as f:
-                    f.write("CUSTOMS={}".format(customs))
-                os.environ['CUSTOMS'] = customs
-                del customs
-        else:
-            print("Please define customs with:")
-            print("./odoo compose <CUSTOMS>")
-            sys.exit(1)
+# def check_customs():
+    # if not E("CUSTOMS"):
+        # if len(sys.argv) > 1:
+            # if sys.argv[1] == 'compose' and len(sys.argv) == 3:
+                # if not os.path.isdir(os.path.dirname(SETTINGS_FILE)):
+                    # os.makedirs(os.path.dirname(SETTINGS_FILE))
+                # customs = sys.argv[2]
+                # with open(SETTINGS_FILE, 'w') as f:
+                    # f.write("CUSTOMS={}".format(customs))
+                # os.environ['CUSTOMS'] = customs
+                # del customs
+        # else:
+            # print("Please define customs with:")
+            # print("./odoo compose <CUSTOMS>")
+            # sys.exit(1)
 
 def build_command():
     # using absolute path, to work in crontab
@@ -219,7 +219,6 @@ if __name__ == '__main__':
     show_help()
     update()
 
-    check_customs()
     turn_on_rsynced_on_macos()
     check_docker_network()
     proc = build_command()

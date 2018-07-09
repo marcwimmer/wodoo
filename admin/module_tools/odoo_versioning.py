@@ -13,6 +13,7 @@ from module_tools import write_manifest
 from module_tools import manifest2dict
 from module_tools import get_manifest_path_of_module_path
 from odoo_config import translate_path_relative_to_customs_root
+from odoo_config import customs_dir
 import odoo_config
 import shutil
 import datetime
@@ -44,8 +45,6 @@ if len(sys.argv) >= 2:
 else:
     action = None
 
-customs_dir = odoo_config.customs_dir()
-
 def display_help():
     print "How to use:"
     print ""
@@ -65,7 +64,7 @@ def check_dirty(repo, ignore_untracked=False):
 
     if dirty:
         print "Please clean-up before - it is dirty here:"
-        os.chdir(customs_dir)
+        os.chdir(customs_dir())
         os.system("git status")
         sys.exit(13)
 
@@ -76,11 +75,11 @@ def rungitcola(customs_dir):
     os.system('git-cola >/dev/null 2>&1')
 
 def userinteractive_stage():
-    os.chdir(customs_dir)
+    os.chdir(customs_dir())
     subprocess.check_call(['/usr/bin/tig', 'status'])
 
 def userinteractive_history(path):
-    os.chdir(os.path.join(customs_dir, path))
+    os.chdir(os.path.join(customs_dir(), path))
     try:
         subprocess.check_call(['/usr/bin/git', 'log', '-p', path])
     except Exception:
@@ -90,7 +89,7 @@ def action_commit():
     """
     Makes sure, that commits are made by affected odoo module
     """
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
     active_branch = repo.active_branch.name
 
     if not active_branch.endswith(BRANCH_WORK.split("_")[-1]):
@@ -116,7 +115,7 @@ def action_commit():
         manifest_path = get_manifest_path_of_module_path(module_path)
 
         for file in get_staged_files(repo):
-            filepath_complete = os.path.join(customs_dir, file)
+            filepath_complete = os.path.join(customs_dir(), file)
             if not os.path.isfile(filepath_complete) and not os.path.islink(filepath_complete):
                 repo.git.reset("HEAD", file)
             else:
@@ -180,8 +179,8 @@ def action_commit():
             )
             insert_changelog(README_PATH, format_msg)
             repo.git.add(README_PATH)
-        subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir)
-        put_latest_commit_in_update_log(customs_dir=customs_dir, version=os.getenv("VERSION"), module=module, module_path=module_path)
+        subprocess.check_call(['/usr/bin/git', 'commit', '-m', text], cwd=customs_dir())
+        put_latest_commit_in_update_log(customs_dir=customs_dir(), version=os.getenv("VERSION"), module=module, module_path=module_path)
 
         for x in files_of_module:
             if x in staged_files:
@@ -206,7 +205,7 @@ def get_affected_modules_of_files(files):
     modules = []
     for file in files:
         try:
-            module, module_path = get_module_of_file(os.path.join(customs_dir, file), return_path=True)
+            module, module_path = get_module_of_file(os.path.join(customs_dir(), file), return_path=True)
         except Exception:
             module, module_path = "", './'
         if not filter(lambda x: x['module'] == module, modules):
@@ -218,34 +217,34 @@ def get_affected_modules_of_files(files):
     return modules
 
 def show_open_tickets():
-    repo = Repo(customs_dir)
-    os.chdir(customs_dir)
-    merged = subprocess.check_output(['/usr/bin/git', 'branch', '--merged', 'deploy'], cwd=customs_dir).split("\n")
+    repo = Repo(customs_dir())
+    os.chdir(customs_dir())
+    merged = subprocess.check_output(['/usr/bin/git', 'branch', '--merged', 'deploy'], cwd=customs_dir()).split("\n")
     for branch in repo.branches:
         if branch.name.endswith("_release"):
             if branch.name not in merged:
                 print branch.name.replace("_release", "")
 
 def show_current_ticket():
-    repo = Repo(customs_dir)
-    os.chdir(customs_dir)
+    repo = Repo(customs_dir())
+    os.chdir(customs_dir())
     print "You are on:\t", repo.active_branch.name.replace("_work", "")
 
 def action_switch_ticket():
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
     check_dirty(repo, ignore_untracked=True)
     if len(sys.argv) < 3:
         print "Please provide ticket name!"
         sys.exit(-1)
 
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
     branch = sys.argv[2]
-    os.chdir(customs_dir)
+    os.chdir(customs_dir())
     branch_work = BRANCH_WORK.format(branch)
     existing_branches = [x for x in repo.branches if x.name == branch_work]
     if not existing_branches:
         print "Branch not found: {}".format(branch_work)
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_work], cwd=customs_dir)
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', branch_work], cwd=customs_dir())
 
 def verify_stage_files(repo, allow_traces=False):
 
@@ -276,15 +275,15 @@ def simple_release_ticket(dest=None):
     Puts ticket branch on master;
     """
     assert dest in ['master', 'deploy']
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
     if not repo.active_branch.name.endswith("_work"):
         print "Please switch to a ticket"
     check_dirty(repo, ignore_untracked=True)
     original_branch = repo.active_branch.name
-    subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', original_branch, ], cwd=customs_dir)
-    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir)
+    subprocess.check_call(['/usr/bin/git', 'push', '--set-upstream', 'origin', original_branch, ], cwd=customs_dir())
+    subprocess.check_call(['/usr/bin/git', 'checkout', '-f', dest], cwd=customs_dir())
     try:
-        subprocess.check_call(['/usr/bin/git', 'merge', '--log=3', '-m', "merge {} to {}".format(original_branch, dest), original_branch, ], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'merge', '--log=3', '-m', "merge {} to {}".format(original_branch, dest), original_branch, ], cwd=customs_dir())
     except Exception:
         print "Automatic merge failed into {} - please edit by hand".format(dest)
         print "Afterwards do:"
@@ -295,8 +294,8 @@ def simple_release_ticket(dest=None):
             if not user or user.lower() in ['y', 'n']:
                 break
         if user.upper() == 'Y':
-            subprocess.check_call(['/usr/bin/git', 'push'], cwd=customs_dir)
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch, ], cwd=customs_dir)
+            subprocess.check_call(['/usr/bin/git', 'push'], cwd=customs_dir())
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', original_branch, ], cwd=customs_dir())
 
 def get_affected_modules_of_commits(repo, shas):
     """
@@ -316,7 +315,7 @@ def get_affected_modules_of_commits(repo, shas):
             continue
         for file in commit.stats.files:
             try:
-                module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir, file), return_manifest=True)
+                module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir(), file), return_manifest=True)
             except Exception:
                 module_name, module_path = None, None
             commits.setdefault(module_name, {
@@ -334,19 +333,19 @@ def get_affected_modules_of_commits(repo, shas):
         })
         for commit in commits[module_name]['commits']:
             result[module_name]['changed_files'] += commit.stats.files.keys()
-            changed_files = subprocess.check_output(['/usr/bin/git', 'show', commit.hexsha], cwd=customs_dir)
+            changed_files = subprocess.check_output(['/usr/bin/git', 'show', commit.hexsha], cwd=customs_dir())
             result[module_name]['changed_contents'] += [changed_files]
 
     return result
 
 def action_new_ticket():
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
     check_dirty(repo, ignore_untracked=True)
     if action in ['new-ticket'] and len(sys.argv) < 3:
         print "Please provide ticket name!"
         sys.exit(-1)
 
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
 
     branch = sys.argv[2]
     branch_work = BRANCH_WORK.format(branch)
@@ -356,9 +355,9 @@ def action_new_ticket():
         print "Branch already exists - use switch command"
         sys.exit(49)
     else:
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir)
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_release], cwd=customs_dir)
-        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_work], cwd=customs_dir)
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-f', 'deploy'], cwd=customs_dir())
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_release], cwd=customs_dir())
+        subprocess.check_call(['/usr/bin/git', 'checkout', '-b', branch_work], cwd=customs_dir())
 
 def get_text_user_input(prompt, default_text=None):
     filename = tempfile.mktemp(suffix='.txt')
@@ -405,7 +404,7 @@ def insert_changelog(readme_path, changelog, new_version=None):
         f.write('\n'.join(content))
 
 def dirty(doprint=True, interactive=True):
-    repo = Repo(customs_dir)
+    repo = Repo(customs_dir())
     bool(repo.is_dirty() or repo.untracked_files)
 
     def unstage():
@@ -450,7 +449,7 @@ def dirty(doprint=True, interactive=True):
             repo.git.add(x)
         print "Changed files detected, i put them on stage; please select/deselect for stage"
         print "Just close git-cola - DO NOT COMMIT YET"
-        rungitcola(customs_dir)
+        rungitcola(customs_dir())
         files = get_staged_files(repo)
         if not files:
             user = raw_input("No files staged - try again? Otherwise abort. [y]/[N]")
@@ -478,14 +477,14 @@ def dirty(doprint=True, interactive=True):
 
         format_msg = "{}@{}\n\n{}".format(
             'BUGFIX' if type == 'B' else 'FEATURE',
-            get_module_of_file(os.path.join(customs_dir, manifest_path)) if manifest_path else "",
+            get_module_of_file(os.path.join(customs_dir(), manifest_path)) if manifest_path else "",
             text
         )
 
         # on module update increment the version:
         if manifest_path:
-            d = manifest2dict(os.path.join(customs_dir, manifest_path))
-            module_name, module_path = get_module_of_file(os.path.join(customs_dir, manifest_path), return_path=True)
+            d = manifest2dict(os.path.join(customs_dir(), manifest_path))
+            module_name, module_path = get_module_of_file(os.path.join(customs_dir(), manifest_path), return_path=True)
 
             v = d['version']
             v = v.split('.')
@@ -499,7 +498,7 @@ def dirty(doprint=True, interactive=True):
                 raise Exception("Not implemented: {}".format(type))
             v = '.'.join(str(x) for x in v)
             d['version'] = v
-            write_manifest(os.path.join(customs_dir, manifest_path), d)
+            write_manifest(os.path.join(customs_dir(), manifest_path), d)
 
             README_PATH = os.path.join(module_path, 'README.rst')
             if os.path.isfile(README_PATH):
@@ -539,7 +538,7 @@ def dirty(doprint=True, interactive=True):
             if not changed_files:
                 continue
             while changed_files:
-                module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir, changed_files[0]), return_manifest=True)
+                module_name, module_path, manifest_path = get_module_of_file(os.path.join(customs_dir(), changed_files[0]), return_manifest=True)
                 manifest_path = translate_path_relative_to_customs_root(manifest_path)
                 changed_files = do_interactive_commit(changed_files, manifest_path=manifest_path)
 
@@ -645,8 +644,7 @@ def unit_tests():
     # make new customs
     customs = 'vunittest'
 
-    customs_dir = os.path.join(odoo_config.customs_root(), customs)
-    assert '/' + customs in customs_dir, customs_dir
+    assert '/' + customs in customs_dir(), customs_dir()
 
     def make_module(parent_path, modulename):
         os.chdir(parent_path)
@@ -656,10 +654,10 @@ def unit_tests():
                 f.write("{'version': '1.0'}")
 
     def make_demo_customs(path):
-        if os.path.exists(customs_dir):
-            shutil.rmtree(customs_dir)
-        os.makedirs(customs_dir)
-        os.chdir(customs_dir)
+        if os.path.exists(customs_dir()):
+            shutil.rmtree(customs_dir())
+        os.makedirs(customs_dir())
+        os.chdir(customs_dir())
         os.system("git init .")
         os.system('mkdir -p common')
         os.system('mkdir -p modules')
@@ -675,19 +673,19 @@ def unit_tests():
         make_module(path_modules1, 'submodule1_1')
         make_module(path_modules1, 'submodule1_2')
         make_module(path_modules1, 'submodule1_3')
-        make_module(os.path.join(customs_dir, 'modules'), 'module1')
+        make_module(os.path.join(customs_dir(), 'modules'), 'module1')
         subprocess.check_call("git init .", cwd=path_modules1, shell=True)
         subprocess.check_call("git add .; git commit -am .", cwd=path_modules1, shell=True)
 
         # clone submodules into common
-        os.chdir(customs_dir)
-        subprocess.check_call('git clone "{}" common/submodule1'.format(path_modules1), cwd=customs_dir, shell=True)
+        os.chdir(customs_dir())
+        subprocess.check_call('git clone "{}" common/submodule1'.format(path_modules1), cwd=customs_dir(), shell=True)
 
     def v(*params):
         cmd = [current_file] + list(params)
-        subprocess.check_call(cmd, cwd=customs_dir)
+        subprocess.check_call(cmd, cwd=customs_dir())
 
-    make_demo_customs(customs_dir)
+    make_demo_customs(customs_dir())
     odoo_config.set_customs(customs)
     # make demo customs
 

@@ -353,6 +353,18 @@ def __get_installed_modules():
     )
     return [x[0] for x in rows]
 
+def _get_settings_directories():
+    """
+    Returns list of paths or files
+    """
+    customs_dir = odoo_config.customs_dir()
+    yield os.path.join(customs_dir, 'settings')
+    if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
+        yield '/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])
+    if os.path.exists('/etc_host/odoo/settings'):
+        yield '/etc_host/odoo/settings'
+    yield dirs['settings.d']
+
 def __is_container_running(machine_name):
     container_id = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True).strip()
     if container_id:
@@ -588,18 +600,6 @@ Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
 def _cleanup():
     _remove_temp_directories
 
-def _get_settings_directories():
-    """
-    Returns list of paths or files
-    """
-    customs_dir = odoo_config.customs_dir()
-    yield os.path.join(customs_dir, 'settings')
-    if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
-        yield '/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])
-    if os.path.exists('/etc_host/odoo/settings'):
-        yield '/etc_host/odoo/settings'
-    yield dirs['settings.d']
-
 def _collect_settings_files():
     _files = []
     _files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
@@ -633,21 +633,14 @@ def _display_machine_tips(machine_name):
             print ""
 
 def _export_settings():
-    if args and args[0] == 'compose':
-        if len(args) > 1:
-            customs = args[1]
-            if os.path.isfile(files['settings']):
-                os.unlink(files['settings'])
-            config = MyConfigParser(files['settings'])
-            config['CUSTOMS'] = customs
-            config.write()
     _file2env(files['settings'])
 
     if not os.path.exists(files['settings']):
         raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
 
     # get odoo version
-    ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
+    if os.getenv("CUSTOMS"):
+        ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
     os.environ['ODOO_VERSION'] = ODOO_VERSION
     setting_files = _collect_settings_files()
     _make_settings_file(files['settings'], setting_files)
@@ -1071,7 +1064,12 @@ def _startup():
             if not v.startswith('/'):
                 d[k] = os.path.join(dir, v)
     make_absolute(dirs)
-    dirs['customs'] = odoo_config.customs_dir()
+    try:
+        odoo_config.current_customs()
+    except:
+        pass
+    else:
+        dirs['customs'] = odoo_config.customs_dir()
     make_absolute(files)
     os.environ['ODOO_MANAGER_STARTED_ONCE'] = '1'
     os.environ['ODOO_COMPOSE_VERSION'] = "3.3"
@@ -1192,7 +1190,7 @@ def build(pull=False, machines='', nocache=False):
 def commit(*parameters):
     versioning.actions["commit"](*parameters)
 
-def compose(customs):
+def compose(customs='', db=''):
     """
     - builds docker compose
     - builds proxy settings
@@ -1200,10 +1198,19 @@ def compose(customs):
     """
     if customs:
         config = MyConfigParser(files['settings'])
-        if config['CUSTOMS'] != customs:
+        vals = {
+            'CUSTOMS': customs,
+            'DBNAME': db or customs,
+        }
+        if config.get('CUSTOMS', '') != customs:
             config.clear()
             config['CUSTOMS'] = customs
             config.write()
+
+        for k, v in vals.items():
+            if config.get(k, '') != v:
+                config[k] = v
+                config.write()
     _export_settings()
     _remove_temp_directories()
     _prepare_filesystem()
@@ -1272,13 +1279,13 @@ def debug(machine_name):
 def deploy():
     versioning.action_deploy_ticket()
 
-def dev(customs):
+def dev(customs, db=''):
     """
     starts developing in the odoo container
     """
     kill()
     rm()
-    compose(customs)
+    compose(customs, db=db)
     build()
     up(daemonized=True)
     attach('odoo')
@@ -1756,7 +1763,7 @@ def status():
     __print_env(["CUSTOMS", "DBNAME", "DB_HOST"])
     print("Configuration files:")
     for dir in _collect_settings_files():
-        print dir
+        print dir, '(dir)' if os.path.isdir(dir) else ''
     os.system("df -h")
 
 def stop(machines):
