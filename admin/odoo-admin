@@ -1213,7 +1213,7 @@ def compose(customs='', db='', demo=False):
     if db:
         vals['DBNAME'] = db
     if demo:
-        vals['RUN_DEMO'] = "1" if demo else "0"
+        vals['ODOO_DEMO'] = "1" if demo else "0"
 
     for k, v in vals.items():
         if config.get(k, '') != v:
