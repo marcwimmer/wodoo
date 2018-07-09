@@ -580,7 +580,6 @@ def make_module(parent_path, module_name):
             f.write("\n".join(content))
 
 def restart(quick):
-    print ODOO_DEBUG_FILE
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         if quick:
             f.write('quick_restart')
