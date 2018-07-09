@@ -588,25 +588,31 @@ Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
 def _cleanup():
     _remove_temp_directories
 
+def _get_settings_directories():
+    """
+    Returns list of paths or files
+    """
+    customs_dir = odoo_config.customs_dir()
+    yield os.path.join(customs_dir, 'settings')
+    if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
+        yield '/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])
+    if os.path.exists('/etc_host/odoo/settings'):
+        yield '/etc_host/odoo/settings'
+    yield dirs['settings.d']
+
 def _collect_settings_files():
     _files = []
     _files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
     # optimize
     for filename in __find_files(dirs['machines'], "-name", "default.settings"):
         _files.append(os.path.join(dirs['machines'], filename))
-    customs_dir = odoo_config.customs_dir()
-    if os.path.isdir(os.path.join(customs_dir, 'settings')):
-        for filename in os.listdir(os.path.join(customs_dir, 'settings')):
-            _files.append(os.path.join(customs_dir, 'settings', filename))
-    if os.path.exists('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS'])):
-        _files.append('/etc_host/odoo/{}/settings'.format(os.environ['CUSTOMS']))
-    if os.path.exists('/etc_host/odoo/settings'):
-        _files.append('/etc_host/odoo/settings')
-    if os.path.isdir(dirs['settings.d']):
-        for filename in os.listdir(dirs['settings.d']):
-            filepath = os.path.join(dirs['settings.d'], filename)
-            if os.path.exists(filepath):
-                _files.append(filepath)
+
+    for dir in _get_settings_directories():
+        if os.path.isfile(dir):
+            _files.append(dir)
+        elif os.path.isdir(dir):
+            for filename in os.listdir(dir):
+                _files.append(os.path.join(dir, filename))
     return _files
 
 def _display_machine_tips(machine_name):
@@ -1748,6 +1754,9 @@ def stage():
 
 def status():
     __print_env(["CUSTOMS", "DBNAME", "DB_HOST"])
+    print("Configuration files:")
+    for dir in _collect_settings_files():
+        print dir
     os.system("df -h")
 
 def stop(machines):
