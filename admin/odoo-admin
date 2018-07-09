@@ -397,17 +397,19 @@ def __read_file(path):
     with open(path, 'r') as f:
         return f.read()
 
-def __remove_postgres_connections(DBNAME=None):
+def __remove_postgres_connections(DBNAME=None, sql_afterwards=""):
     DBNAME = DBNAME or E("DBNAME")
-    print "Removing all current connections"
+    print "Removing all current connections from {}".format(DBNAME)
     if __exists_db(DBNAME):
         SQL = """
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '{}'
             AND pid <> pg_backend_pid();
-        """.format(DBNAME)
+        """.format(DBNAME, sql_afterwards)
         __execute_sql(SQL, 'template1', notransaction=True)
+        if sql_afterwards:
+            __execute_sql(sql_afterwards, 'template1', notransaction=True)
 
 def __rename_db_drop_target(from_db, to_db):
     if 'to_db' == 'template1':
@@ -1593,14 +1595,15 @@ def remove_web_assets():
         print("Please login as admin, so that assets are recreated.")
 
 def reset_db():
-    if E("RUN_POSTGRES") != "1":
-        print "Postgres container is disabled; cannot reset external database"
-        return
     _askcontinue("Delete database {}".format(E("DBNAME")))
     print "Stopping all services and creating new database"
     print "After creation the database container is stopped. You have to start the system up then."
-    kill()
-    __reset_postgres_container()
+    if E("RUN_POSTGRES") == "1":
+        kill(machines='postgres')
+        __reset_postgres_container()
+    else:
+        __remove_postgres_connections(E("DBNAME"), 'drop database {};'.format(E("DBNAME")))
+
     print "Database initialized."
 
 def restart(machines=""):
