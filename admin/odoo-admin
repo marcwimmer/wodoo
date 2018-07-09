@@ -1291,7 +1291,7 @@ def dev():
     """
     starts developing in the odoo container
     """
-    kill()
+    kill(brutal=True)
     rm()
     build()
     up(daemonized=True)
