@@ -641,6 +641,7 @@ def _export_settings():
         raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
 
     # get odoo version
+    ODOO_VERSION = ""
     if os.getenv("CUSTOMS"):
         ODOO_VERSION = str(odoo_config.get_version_from_customs(os.environ['CUSTOMS']))
     os.environ['ODOO_VERSION'] = ODOO_VERSION
@@ -1786,6 +1787,9 @@ def stop(machines):
     kill(machines)
 
 def submodule(*submodules):
+    if not submodules:
+        print("Please provide some modules!")
+        sys.exit(-1)
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
     __assert_file_exists(os.path.join(dirs['customs'], 'common'))
 

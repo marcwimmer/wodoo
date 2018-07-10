@@ -26,7 +26,7 @@ def get_env():
     elif V >= 11.0:
         return {
             "ODOO_PYTHON_VERSION": "3",
-            "ODOO_EXECUTABLE_GEVENT": "odoo-bin",
+            "ODOO_EXECUTABLE_GEVENT": "odoo-bin gevent",
             "ODOO_EXECUTABLE_CRONJOBS": "odoo-bin",
             "ODOO_EXECUTABLE": 'odoo-bin',
         }
