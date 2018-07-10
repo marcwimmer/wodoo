@@ -1982,7 +1982,7 @@ def __get_project_config():
 def project_list():
     projects = __get_project_config()['projects']
     for i, project in enumerate(projects):
-        print "{}:".format(i + 1), project['name'], "\t\t", "Customs: {}".format(project['customs']), "DB: {}".format(project['db']),
+        print "{}:".format(i + 1), project['name'], "\t\t", "Customs: {}".format(project['customs']), "DB: {}".format(project['db'])
     print("")
 
 def add_project(name, customs, db, demo):
@@ -1995,6 +1995,7 @@ def add_project(name, customs, db, demo):
         'demo': demo,
     })
     __set_project_config(config)
+    project_list()
 
 def project():
     project_list()
