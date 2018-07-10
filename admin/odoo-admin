@@ -476,7 +476,10 @@ def __rmtree(path):
     if not path.startswith("/"):
         raise Exception("Not allowed: {}".format(path))
     if not any(path.startswith(dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
-        raise Exception('not allowed')
+        if "/tmp" in path:
+            pass
+        else:
+            raise Exception('not allowed')
     shutil.rmtree(path)
 
 def __safeget(array, index, exception_on_missing, file_options=None):
