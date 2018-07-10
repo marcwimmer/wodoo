@@ -28,6 +28,6 @@ def get_env():
             "ODOO_PYTHON_VERSION": "3",
             "ODOO_EXECUTABLE_GEVENT": "odoo-bin gevent",
             "ODOO_EXECUTABLE_CRONJOBS": "odoo-bin",
-            "ODOO_EXECUTABLE": 'odoo-bin',
+            "ODOO_EXECUTABLE": 'odoo-bin gevent',
         }
     raise Exception("Unhandled: {}".format(V))

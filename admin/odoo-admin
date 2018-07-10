@@ -19,6 +19,7 @@ import tempfile
 import docker
 import shlex
 import traceback
+import json
 from inspect import getmembers, isfunction
 from retrying import retry
 from datetime import datetime
@@ -1594,6 +1595,16 @@ def push(submodule_name):
         'master'
     ], cwd=dirs['customs'])
 
+def psql(dbname=None, *params):
+    if not dbname and len(params) == 1:
+        if params[0] in ['template1', E("DBNAME")]:
+            dbname = params[0]
+            params = []
+    if not dbname:
+        dbname = E("DBNAME")
+    params = " ".join(params)
+    os.system("psql {} ".format(dbname) + params)
+
 def rebuild(machines=""):
     compose(E("CUSTOMS"))
     build(machines=machines, nocache=True)
@@ -1951,16 +1962,51 @@ def wait_for_port(host, port):
     port = long(port)
     __wait_for_port(host=host, port=port)
 
-# @arg('beta', default='hello world', nargs='*', help='The message')
-def psql(dbname=None, *params):
-    if not dbname and len(params) == 1:
-        if params[0] in ['template1', E("DBNAME")]:
-            dbname = params[0]
-            params = []
-    if not dbname:
-        dbname = E("DBNAME")
-    params = " ".join(params)
-    os.system("psql {} ".format(dbname) + params)
+def __set_project_config(content):
+    path = os.path.expandvars("/opt/external_home/.odoodev/conf.json")
+    with open(path, 'w') as f:
+        f.write(json.dumps(content))
+
+def __get_project_config():
+    path = os.path.expanduser("/opt/external_home/.odoodev/conf.json")
+    if not os.path.isdir(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
+    if not os.path.isfile(path):
+        with open(path, 'w') as f:
+            f.write("{}")
+    with open(path, 'r') as f:
+        res = json.loads(f.read())
+        res.setdefault('projects', [])
+    return res
+
+def project_list():
+    projects = __get_project_config()['projects']
+    for i, project in enumerate(projects):
+        print "{}:".format(i + 1), project['name'], "\t\t", "Customs: {}".format(project['customs']), "DB: {}".format(project['db']),
+    print("")
+
+def add_project(name, customs, db, demo):
+    config = __get_project_config()
+    demo = demo in ['1', 'true', 'True', 'y', 'Y']
+    config['projects'].append({
+        'name': name,
+        'customs': customs,
+        'db': db,
+        'demo': demo,
+    })
+    __set_project_config(config)
+
+def project():
+    project_list()
+    input = raw_input("Type number and enter.")
+    try:
+        index = int(input)
+    except Exception:
+        index = 0
+    if index:
+        project = __get_project_config()['projects'][int(index) - 1]
+        compose(customs=project['customs'], db=project['db'], demo=project['demo'])
+        dev()
 
 
 if __name__ == '__main__':
