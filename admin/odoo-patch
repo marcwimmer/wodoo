@@ -210,6 +210,8 @@ def apply(filepath):
 def _list(absolute_path=True):
     V = os.getenv("ODOO_VERSION")
     for filename in __find_files(CUSTOMSDIR, "-name", "*.patch"):
+        if '/migration/' in filename:
+            continue
         if V in filename:
             if not absolute_path:
                 filename = os.path.relpath(filename, CUSTOMSDIR)
