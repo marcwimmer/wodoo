@@ -181,7 +181,7 @@ def prepare():
 
 def _get_diff():
     __system(["git", "add", "--intent-to-add", "."], cwd=ODOO_LOCAL)
-    diff = __system(["git", "diff", "-w", "--binary"], cwd=ODOO_LOCAL, suppress_out=True)
+    diff = __system(["git", "diff", "--binary"], cwd=ODOO_LOCAL, suppress_out=True)
     return diff
 
 def preview():
