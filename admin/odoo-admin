@@ -1900,6 +1900,11 @@ def update(module="", dangling_modules=False, installed_modules=False, keep_cont
     """
     module = module.split(',')
     __start_postgres_and_wait()
+    if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
+        for x in __get_dangling_modules():
+            print("{}: {}".format(*x[:2]))
+        if raw_input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+            __execute_sql("update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
     if __get_dangling_modules() and not dangling_modules:
         show_install_state(suppress_error=True)
         raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
@@ -1990,28 +1995,45 @@ def project_list():
         print "{}:".format(i + 1), "{}/{}".format(project['customs'], project['db'])
     print("")
 
-def add_project(customs, db, demo):
-    config = __get_project_config()
-    demo = demo in ['1', 'true', 'True', 'y', 'Y']
-    config['projects'].append({
-        'customs': customs,
-        'db': db,
-        'demo': demo,
-    })
-    __set_project_config(config)
-    project_list()
-
 def project():
     project_list()
+    print("n: new project")
+    print("d: delete project")
     input = raw_input("Type number and enter.")
-    try:
-        index = int(input)
-    except Exception:
-        index = 0
-    if index:
-        project = __get_project_config()['projects'][int(index) - 1]
+
+    def goto_index(index):
+        project = __get_project_config()['projects'][index]
         compose(customs=project['customs'], db=project['db'], demo=project['demo'])
         dev()
+
+    config = __get_project_config()
+    if input == 'n':
+        customs = raw_input("Customs:")
+        if not customs:
+            return
+        db = raw_input("DB[{}]".format(customs))
+        demo = not (raw_input("use demo? [Y/n]") == 'n')
+        demo = demo in ['1', 'true', 'True', 'y', 'Y']
+        config['projects'].append({
+            'customs': customs,
+            'db': db,
+            'demo': demo,
+        })
+        __set_project_config(config)
+
+        index = len(config['projects']) - 1
+        goto_index(index)
+    elif input == 'd':
+        index = int(raw_input("Which index?")) - 1
+        config['projects'].remove(config['projects'][index])
+        __set_project_config(config)
+
+    try:
+        index = int(input) - 1
+    except Exception:
+        index = 0
+    else:
+        goto_index(index)
 
 
 if __name__ == '__main__':
