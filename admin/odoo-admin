@@ -1073,7 +1073,7 @@ def _startup():
     make_absolute(dirs)
     try:
         odoo_config.current_customs()
-    except:
+    except Exception:
         pass
     else:
         dirs['customs'] = odoo_config.customs_dir()
@@ -1229,6 +1229,8 @@ def compose(customs='', db='', demo=False):
             if config.get(k, '') != v:
                 config[k] = v
                 config.write()
+        if not os.path.isdir(dirs['settings.d']):
+            os.makedirs(dirs['settings.d'])
         shutil.copy(files['settings'], os.path.join(dirs['settings.d'], 'compose'))
     setup_settings_file()
 
@@ -1344,7 +1346,7 @@ def force_kill(machine):
 
 def get_all_langs():
     langs = [x[0] for x in __execute_sql(
-        "select code from res_lang;",
+        "select distinct code from res_lang;",
         fetchall=True
     )]
     for lang in langs:
@@ -1985,14 +1987,13 @@ def __get_project_config():
 def project_list():
     projects = __get_project_config()['projects']
     for i, project in enumerate(projects):
-        print "{}:".format(i + 1), project['name'], "\t\t", "Customs: {}".format(project['customs']), "DB: {}".format(project['db'])
+        print "{}:".format(i + 1), "{}/{}".format(project['customs'], project['db'])
     print("")
 
-def add_project(name, customs, db, demo):
+def add_project(customs, db, demo):
     config = __get_project_config()
     demo = demo in ['1', 'true', 'True', 'y', 'Y']
     config['projects'].append({
-        'name': name,
         'customs': customs,
         'db': db,
         'demo': demo,

@@ -154,7 +154,9 @@ while true; do
 				# import_i18n:lang:filepath
 				lang=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
 				filepath=$(awk '{split($0, a, ":"); print a[3]}' < "$DEBUGGER_WATCH")
-				/import_i18n.sh "$lang" "$filepath"
+				/import_i18n.sh "$lang" "$filepath" && {
+                    /debug.sh -quick
+                }
 
 			fi
 

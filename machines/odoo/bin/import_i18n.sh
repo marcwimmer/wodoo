@@ -18,6 +18,7 @@ if [ -z "$FILEPATH" ]; then
     exit -1
 fi
 
+echo "Importing lang file $FILEPATH"
 sudo -E -H -u "$ODOO_USER" \
 	"$SERVER_DIR/$ODOO_EXECUTABLE" \
 	-c "$CONFIG_DIR/config_openerp" \
