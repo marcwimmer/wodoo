@@ -173,10 +173,12 @@ def prepare():
         __system(["git", "commit", "-qam", "removed install notifications"], cwd=ODOO_LOCAL)
     except Exception:
         print("Perhaps no install notifications")
-    for filepath in _list():
+    patches = [x for x in _list()]
+    for filepath in patches:
         apply(filepath)
     __system(["git", "add", "."], cwd=ODOO_LOCAL)
-    __system(["git", "commit", "-qam", "applied all current patches"], cwd=ODOO_LOCAL)
+    if patches:
+        __system(["git", "commit", "-qam", "applied all current patches"], cwd=ODOO_LOCAL)
     print("You can now do changes; use odoo patch preview to display your changes.")
 
 def _get_diff():
