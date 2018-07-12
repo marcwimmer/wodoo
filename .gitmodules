@@ -23,3 +23,6 @@
 [submodule "repos/openupgradelib"]
 	path = repos/openupgradelib
 	url = https://github.com/OCA/openupgradelib.git
+[submodule "repos/vide"]
+	path = repos/vide
+	url = git.itewimmer.de:/git/vide
