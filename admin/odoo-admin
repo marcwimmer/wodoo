@@ -989,14 +989,14 @@ def _setup_odoo_instances():
                 if name != "default":
                     # adapt the one yml file and duplicate the odoo service there;
                     # removing any ports
-                    with open(files['docker_compose_file']) as f:
+                    with open(files['docker_compose']) as f:
                         j = yaml.load(f.read())
                     odoo = copy.deepcopy(j['services']['odoo'])
                     if 'ports' in odoo:
                         del odoo['ports']
                     odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
                     j['services']['odoo_{}'.format(name)] = odoo
-                    with open(files['docker_compose_file'], 'w') as f:
+                    with open(files['docker_compose'], 'w') as f:
                         f.write(yaml.dump(j, default_flow_style=False))
 
     for file in os.listdir(dirs['run/proxy']):
