@@ -1817,7 +1817,7 @@ def submodule(*submodules):
             '--prefix=common/{}'.format(submodule),
             '--squash',
             'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
-            'master',
+            E("ODOO_VERSION"),
         ], cwd=dirs['customs'])
 
 def subtree_odoo():
@@ -2034,6 +2034,11 @@ def project():
         index = 0
     else:
         goto_index(index)
+
+
+def make_module(name):
+    cwd = E("WORKING_DIR")
+    subprocess.Popen([os.path.join(E("ODOO_HOME"), "admin/module_tools/make_module"), name], cwd=cwd).wait()
 
 
 if __name__ == '__main__':
