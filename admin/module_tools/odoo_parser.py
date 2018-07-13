@@ -102,6 +102,8 @@ def get_view(inherit_id):
 
 def manifest2dict(manifest_path):
     if not manifest_path:
+        from pudb import set_trace
+        set_trace()
         print traceback.format_stack()
         raise Exception('Missing manifest path')
     with open(manifest_path, 'r') as f:

@@ -105,6 +105,8 @@ def check_for_dangling_modules():
 
 def all_dependencies_installed(module):
     dir = odoo_config.module_dir(module)
+    if not dir:
+        raise Exception("Path to {} does not exist. Perhaps ./odoo link required?")
     manifest_path = odoo_parser.get_manifest_file(dir)
     manifest = manifest2dict(manifest_path)
     return all(is_module_installed(mod) for mod in manifest.get('depends', []))
