@@ -10,6 +10,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME:/opt/external_home
+      - /root:/root
       - /etc:/etc_host:ro
     working_dir: $HOME
     env_file:
