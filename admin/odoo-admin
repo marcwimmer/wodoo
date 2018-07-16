@@ -38,6 +38,8 @@ from module_tools.odoo_parser import update_cache
 from module_tools.module_tools import remove_webassets
 from module_tools.odoo_config import get_odoo_addons_paths
 from module_tools.odoo_config import get_links_dir
+from module_tools.module_tools import make_customs as _tools_make_customs
+from module_tools.module_tools import make_module as _tools_make_module
 from migrate import do_migrate
 from tools import __system
 from tools import __find_files
@@ -74,7 +76,6 @@ dirs = {
 }
 
 files = {
-    'make_customs': 'admin/module_tools/make_customs',
     'OCA': 'admin/OCA',
     'docker_compose': 'run/docker-compose.yml',
     'debugging_template': 'config/debugging/template.yml',
@@ -1459,23 +1460,17 @@ def import_i18n(lang, po_file_path):
     __dcrun(['odoo', '/import_i18n.sh', lang, po_file_path])
 
 def make_customs(customs, version):
+    raise Exception("rework - add fetch sha")
     _askcontinue()
     admin_dir = dirs['admin']
     kill()
-    __system([
-        files['make_customs'],
-        customs,
-        version
-    ])
+    _tools_make_customs(
+        customs=customs,
+        version=version,
+    )
     os.environ['CUSTOMS'] = customs
     cwd = os.path.join(dirs['odoo_home'], 'customs', customs)
-    __system([
-        files['make_customs'],
-        "git",
-        "submodule",
-        "add",
-        "https://github.com/odoo/odoo odoo"
-    ], cwd=cwd)
+    subtree_odoo()
     odoo_dir = os.path.join(cwd, 'odoo')
     __system([
         'git', 'checkout', str(version)
@@ -2044,7 +2039,12 @@ def project():
 
 def make_module(name):
     cwd = E("WORKING_DIR")
-    subprocess.Popen([os.path.join(E("ODOO_HOME"), "admin/module_tools/make_module"), name], cwd=cwd).wait()
+    _tools_make_module(
+        cwd,
+        name,
+        E("ODOO_HOME"),
+        E("ODOO_VERSION"),
+    )
 
 
 if __name__ == '__main__':
