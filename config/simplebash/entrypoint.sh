@@ -18,8 +18,11 @@ if [[ "$USER" != "root" && "$USER" != "" ]]; then
 fi
 
 #copy pudb
-mkdir -p /home/$USER/.config/pudb
-cp /root/.config/pudb/pudb.cfg /home/$USER/.config/pudb/pudb.cfg
+mkdir -p /home/$USER/.config
+if [[ -e /root/.config/pudb/pudb.cfg ]]; then
+    mkdir -p /home/$USER/.config/pudb
+    cp /root/.config/pudb/pudb.cfg /home/$USER/.config/pudb/pudb.cfg
+fi
 chown "$USER":"$USER" /home/$USER/.config -R
 
 # transfer git settings
