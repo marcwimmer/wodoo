@@ -1,0 +1,6 @@
+# manage-order 1001
+version: '3.3'
+services:
+  odoo:
+    environment:
+        LOCAL_ODOO_HOST: http://localhost:8069

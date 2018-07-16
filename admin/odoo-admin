@@ -747,6 +747,8 @@ def _prepare_docker_compose_files(dest_file, paths):
         filename = os.path.basename(path)
 
         def use_file():
+            if "run_odoo_version.{}.yml".format(E("ODOO_VERSION")) in filename:
+                return True
             if 'run_' in filename:
                 run = re.findall(r'run_[^\.]*', filename)
                 if run:
