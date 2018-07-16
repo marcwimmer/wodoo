@@ -1581,7 +1581,7 @@ def pull(submodule):
         'common/{}'.format(submodule),
         '--squash',
         'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
-        'master'
+        E("ODOO_VERSION"),
     ], cwd=dirs['customs'])
 
 def pull_all():
@@ -1603,7 +1603,7 @@ def pull_all():
                 '--prefix={}'.format(tree),
                 '--squash',
                 'git.mt-software.de:/git/openerp/modules/{}'.format(os.path.basename(tree)),
-                'master',
+		E("ODOO_VERSION"),
             ], cwd=dirs['customs'])
 
 def push(submodule_name):
@@ -1615,7 +1615,7 @@ def push(submodule_name):
         'push',
         '--prefix=common/{}'.format(submodule_name),
         'git.mt-software.de:/git/odoo/modules/{}'.format(submodule_name),
-        'master'
+	E("ODOO_VERSION"),
     ], cwd=dirs['customs'])
 
 def psql(dbname=None, *params):
