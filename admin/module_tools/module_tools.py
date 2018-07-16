@@ -663,6 +663,7 @@ def link_modules():
             link_module(path)
 
     search_dir_for_modules(customs_dir())
+    return data['counter']
 
 def make_module(parent_path, module_name):
     """

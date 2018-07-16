@@ -214,10 +214,10 @@ def _list(absolute_path=True):
     for filename in __find_files(CUSTOMSDIR, "-name", "*.patch"):
         if '/migration/' in filename:
             continue
-        if V in filename:
-            if not absolute_path:
-                filename = os.path.relpath(filename, CUSTOMSDIR)
-            yield filename
+        if not absolute_path:
+            filename = os.path.relpath(filename, CUSTOMSDIR)
+        yield filename
+
 def list():
     for filename in _list(absolute_path=False):
         print(filename)
