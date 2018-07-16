@@ -1551,6 +1551,24 @@ def proxy_reload():
     if __is_container_running('proxy'):
         __dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
+def __get_all_subtrees():
+    res = __system([
+        'git',
+        'log',
+    ], cwd=dirs['customs'], suppress_out=True)
+    for line in res.split("\n"):
+        if 'git-subtree-dir' in line:
+            path = line.split(":")[-1].strip()
+            yield path # e.g. common/module1
+
+def pull_all():
+    for mod in __get_all_subtrees():
+        pull(mod)
+
+def push_all():
+    for mod in __get_all_subtrees():
+        push(mod)
+
 def pull(submodule):
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
     __system([
