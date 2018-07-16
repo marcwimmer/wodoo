@@ -553,8 +553,6 @@ def is_module_listed_in_install_file_or_in_dependency_tree(module, all_manifests
     return check_module(module)
 
 def make_customs(customs, version):
-    from pudb import set_trace
-    set_trace()
     complete_path = os.path.join(odoo_root(), 'data/src/customs', customs)
     if os.path.exists(complete_path):
         raise Exception("Customs already exists.")
@@ -578,7 +576,7 @@ def make_module(parent_path, module_name):
             filepath = os.path.join(root, filepath)
             with open(filepath, 'r') as f:
                 content = f.read()
-            content = content.replace("__module_name__", sys.argv[1])
+            content = content.replace("__module_name__", module_name)
             with open(filepath, 'w') as f:
                 f.write(content)
 
