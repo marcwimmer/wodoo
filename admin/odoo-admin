@@ -1561,15 +1561,25 @@ def __get_all_subtrees():
             path = line.split(":")[-1].strip()
             yield path # e.g. common/module1
 
+def list_subtrees():
+    for x in __get_all_subtrees():
+        print(x)
+
 def pull_all():
     for mod in __get_all_subtrees():
-        pull(mod)
+        if mod.startswith("common/"):
+            path = os.path.join(dirs['customs'], mod)
+            if os.path.isdir(path):
+                mod = mod[len("common/"):]
+                pull(mod)
 
 def push_all():
     for mod in __get_all_subtrees():
         push(mod)
 
 def pull(submodule):
+    branch = E("ODOO_VERSION")
+    print("Pulling latest version of {} branch {}".format(submodule, branch))
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
     __system([
         'git',
@@ -1581,30 +1591,8 @@ def pull(submodule):
         'common/{}'.format(submodule),
         '--squash',
         'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
-        E("ODOO_VERSION"),
+        branch,
     ], cwd=dirs['customs'])
-
-def pull_all():
-    __assert_file_exists(os.path.join(dirs['customs'], '.git'))
-    out = __system([
-        'git',
-        'log',
-    ], cwd=dirs['customs'], suppress_out=True).split('\n')
-    out = filter(lambda line: 'git-subtree-dir:' in line, out)
-    out = map(lambda line: line.strip().split(": ")[1].strip(), out)
-    for tree in out:
-        if tree.startswith('common/'):
-            tree # = tree[len('common/'):]
-            __system([
-                'git',
-                'subtree',
-                'pull',
-                '-message SUBTREE-PULL {}'.format(tree),
-                '--prefix={}'.format(tree),
-                '--squash',
-                'git.mt-software.de:/git/openerp/modules/{}'.format(os.path.basename(tree)),
-		E("ODOO_VERSION"),
-            ], cwd=dirs['customs'])
 
 def push(submodule_name):
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
