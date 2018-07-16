@@ -5,7 +5,7 @@ import shutil
 import uuid
 try:
     from psycopg2 import IntegrityError
-except:
+except Exception:
     pass
 from Queue import Queue
 from unidecode import unidecode
@@ -40,6 +40,7 @@ import xmlrpclib
 import inspect
 import sys
 import threading
+import glob
 
 
 ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
@@ -558,6 +559,111 @@ def make_customs(customs, version):
         raise Exception("Customs already exists.")
     shutil.copytree(os.path.join(odoo_root(), 'admin/customs_template', str(version)), complete_path)
 
+def link_modules():
+    LN_DIR = os.path.join(customs_dir(), 'links')
+    IGNORE_PATHS = ['odoo/addons', 'odoo/odoo/test']
+
+    if not os.path.isdir(LN_DIR):
+        os.mkdir(LN_DIR)
+
+    data = {'counter': 0}
+    version = current_version()
+    print "Linking all modules into: \n{}".format(LN_DIR)
+    all_valid_module_paths = []
+
+    for link in os.listdir(LN_DIR):
+        os.unlink(os.path.join(LN_DIR, link))
+
+    os.system("chown $ODOO_USER:$ODOO_USER \"{}\"".format(LN_DIR))
+
+    def search_dir_for_modules(base_dir):
+
+        def link_module(complete_module_dir):
+            if version >= 11.0:
+                if not os.path.exists(os.path.join(complete_module_dir, '__manifest__.py')):
+                    return
+                abs_root = os.path.abspath(base_dir)
+                dir = os.path.abspath(complete_module_dir)
+                module_name = get_module_of_file(complete_module_dir)
+                target = os.path.join(LN_DIR, module_name)
+                if os.path.exists(target):
+                    if os.path.realpath(target) != complete_module_dir:
+                        # let override OCA modules
+                        if "/OCA/" in os.path.realpath(target):
+                            os.unlink(target)
+                        elif "/OCA/" in complete_module_dir:
+                            os.unlink(target)
+                        else:
+                            raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
+                rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
+                os.symlink(rel_path, target)
+                data['counter'] += 1
+
+            else:
+                # prüfen, obs nicht zu den verbotenen pfaden gehört:
+                abs_root = os.path.abspath(base_dir)
+                dir = os.path.abspath(complete_module_dir)
+                while dir != abs_root:
+                    dir = os.path.abspath(os.path.join(dir, ".."))
+
+                try:
+                    module_name = get_module_of_file(complete_module_dir)
+                except Exception:
+                    return
+
+                if not os.path.exists(os.path.join(complete_module_dir, "__openerp__.py")):
+                    return
+
+                target = os.path.join(LN_DIR, module_name)
+
+                if os.path.exists(target):
+                    if os.path.realpath(target) != complete_module_dir:
+                        # let override OCA modules
+                        if "/OCA/" in os.path.realpath(target):
+                            os.unlink(target)
+                        elif "/OCA/" in complete_module_dir:
+                            os.unlink(target)
+                        else:
+                            raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
+
+                # if there are versions under the module e.g. 6.1, 7.0 then take name from parent
+                try:
+                    float(os.path.basename(target))
+                    target = os.path.dirname(target)
+                    target += "/%s" % os.path.basename(os.path.dirname(complete_module_dir))
+                except Exception:
+                    pass
+
+                while os.path.islink(target):
+                    os.unlink(target)
+
+                rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
+                os.symlink(rel_path, target)
+                data['counter'] += 1
+
+        def visit(root, dir, files):
+            if '/.git/' in dir:
+                return
+            if '__pycache__' in dir:
+                return
+            if any(x in dir for x in IGNORE_PATHS):
+                return
+            if not is_module_of_version(dir):
+                return
+            all_valid_module_paths.append(dir)
+
+        os.path.walk(base_dir, visit, False)
+
+        def sort_paths(x):
+            if '/OCA/' in x:
+                return "0000_" + x
+            return "1000_" + x
+
+        for path in sorted(all_valid_module_paths, key=sort_paths):
+            link_module(path)
+
+    search_dir_for_modules(customs_dir())
+
 def make_module(parent_path, module_name):
     """
     Creates a new odoo module based on a provided template.
@@ -588,6 +694,8 @@ def make_module(parent_path, module_name):
             content = [x for x in sorted(content[1:], key=lambda line: line.replace("#", "")) if x]
         with open(install_file(), 'w') as f:
             f.write("\n".join(content))
+
+    link_modules()
 
 def restart(quick):
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:

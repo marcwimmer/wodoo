@@ -2042,8 +2042,6 @@ def make_module(name):
     _tools_make_module(
         cwd,
         name,
-        E("ODOO_HOME"),
-        E("ODOO_VERSION"),
     )
 
 
