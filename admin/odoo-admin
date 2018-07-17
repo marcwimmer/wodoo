@@ -1724,11 +1724,16 @@ def run(machine, *params, **kwparams):
         return
     __dcrun([machine] + params, **kwparams)
 
-def runbash(machine):
+def runbash(machine, *args):
     __set_db_ownership()
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
-    __cmd_interactive('run', machine, bash)
+    cmd = ['run', machine]
+    if args:
+        cmd += args
+    else:
+        cmd += [bash]
+    __cmd_interactive(*tuple(cmd))
 
 def sanity_check():
     _sanity_check()

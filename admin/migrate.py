@@ -181,7 +181,7 @@ Migration to Version {}
             do_command('compose', customs)
             do_command('build')
         do_command("wait_for_container_postgres")
-        if module == 'all':
+        if module == 'all' and not debug:
             do_command(
                 'run',
                 "odoo",
@@ -189,6 +189,9 @@ Migration to Version {}
                 'before',
                 logger=logger,
             )
+        elif debug:
+            print("Leaving out before.sql because debug mode set")
+            time.sleep(2)
         print("Starting Openupgrade Migration to {}".format(version))
         cmd = [
             'run',
@@ -203,8 +206,7 @@ Migration to Version {}
         ]
         if debug:
             print "Execute command:"
-            print "./odoo runbash odoo"
-            print " ".join(pipes.quote(s) for s in cmd[2:])
+            print "./odoo runbash odoo " +  " ".join(pipes.quote(s) for s in cmd[2:])
             time.sleep(2)
             raw_input("Then press any key to continue or Ctrl+C to abort.")
         else:
