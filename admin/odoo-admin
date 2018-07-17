@@ -520,6 +520,7 @@ def __try_to_set_owner(UID, path, recursive=False):
                 options += "-R"
 
             __system([
+                'sudo',
                 'find',
                 '-not',
                 '-type',
@@ -1234,7 +1235,12 @@ def compose(customs='', db='', demo=False):
                 config.write()
         if not os.path.isdir(dirs['settings.d']):
             os.makedirs(dirs['settings.d'])
-        shutil.copy(files['settings'], os.path.join(dirs['settings.d'], 'compose'))
+        config_compose_minimum = MyConfigParser(os.path.join(dirs['settings.d'], 'compose'))
+        config_compose_minimum.clear()
+        for k in ['CUSTOMS', 'DBNAME', 'ODOO_DEMO']:
+            if k in vals:
+                config_compose_minimum[k] = vals[k]
+        config_compose_minimum.write()
     setup_settings_file()
 
     _export_settings()
