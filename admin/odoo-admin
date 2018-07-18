@@ -1250,6 +1250,12 @@ def compose(customs='', db='', demo=False):
     _reset_proxy_configs()
     _setup_proxy()
     _setup_odoo_instances()
+    # ln path ./src to customs
+    SRC_PATH = os.path.join(os.environ['LOCAL_ODOO_HOME'], 'src')
+    if os.path.islink(SRC_PATH):
+        os.unlink(SRC_PATH)
+    os.symlink('data/src/customs/{}'.format(E("CUSTOMS")), SRC_PATH)
+
     print "Built the docker-compose file."
 
 def current_ticket():
