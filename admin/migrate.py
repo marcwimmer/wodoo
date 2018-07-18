@@ -2,6 +2,9 @@
 
 Migration Script
 
+For Debugging OCA Migration script walk into /repos/Openupgrade and edit code.
+Provide parameter --no-git-clean then, otherwise traces/changes are removed.
+
 
 """
 import pipes
@@ -67,6 +70,51 @@ def connect_db():
         password=os.environ['DB_PWD'],
     )
 
+def __check_for_dangling_modules(do_command):
+    conn = connect_db()
+    cr = conn.cursor()
+    cr.execute("select count(*) from ir_module_module where state like 'to install'")  # to upgrade seems to be ok
+    if cr.fetchone()[0]:
+        do_command('progress')
+        raise Exception("Found dangling modules!")
+    conn.close()
+
+def __run_before_after(type, version, debug, module, do_command, logger):
+    print("Running {} processes {}".format(type, version))
+    cmd = [
+        "odoo",
+        "/usr/bin/python",
+        "/run_migration.py",
+        type,
+    ]
+    if module == 'all' and not debug:
+        cmd.insert(0, 'run')
+        do_command(*tuple(cmd), logger=logger)
+    elif debug:
+        answer = raw_input("Run before sql/py? [Y/n]")
+        if not answer or answer in ['Y', 'y']:
+            cmd.insert(0, 'runbash')
+            do_command(*tuple(cmd))
+
+def __run_migration(migrations, git_clean, version, debug, module, do_command, logger):
+    print("Starting Openupgrade Migration to {}".format(version))
+    cmd = [
+        'run or runbash see below',
+        "odoo",
+        "/usr/bin/python",
+        "/opt/migrate.sh",
+        migrations[version]['branch'],
+        prepareCommand(migrations[version]['cmd'], module=module),
+        ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
+        version,
+        '1' if git_clean else '0',
+    ]
+    if debug:
+        cmd[0] = 'runbash'
+        do_command(*cmd)
+    else:
+        cmd[0] = 'run'
+        do_command(*cmd, logger=logger, interactive=False)
 
 def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False, module='all'):
     from_version = str(float(from_version))
@@ -181,53 +229,11 @@ Migration to Version {}
             do_command('compose', customs)
             do_command('build')
         do_command("wait_for_container_postgres")
-        if module == 'all' and not debug:
-            do_command(
-                'run',
-                "odoo",
-                "/run_migration.sh",
-                'before',
-                logger=logger,
-            )
-        elif debug:
-            print("Leaving out before.sql because debug mode set")
-            time.sleep(2)
-        print("Starting Openupgrade Migration to {}".format(version))
-        cmd = [
-            'run',
-            "odoo",
-            "/usr/bin/python",
-            "/opt/migrate.sh",
-            migrations[version]['branch'],
-            prepareCommand(migrations[version]['cmd'], module=module),
-            ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
-            version,
-            '1' if git_clean else '0',
-        ]
-        if debug:
-            print "Execute command:"
-            print "./odoo runbash odoo " +  " ".join(pipes.quote(s) for s in cmd[2:])
-            time.sleep(2)
-            raw_input("Then press any key to continue or Ctrl+C to abort.")
-        else:
-            do_command(*cmd, logger=logger, interactive=True)
 
-        print("Running after processes {}".format(version))
-        if module == 'all':
-            do_command(
-                'run',
-                "odoo",
-                "/run_migration.sh",
-                'after',
-                logger=logger,
-            )
-        conn = connect_db()
-        cr = conn.cursor()
-        cr.execute("select count(*) from ir_module_module where state like 'to install'")  # to upgrade seems to be ok
-        if cr.fetchone()[0]:
-            do_command('progress')
-            raise Exception("Found dangling modules!")
-        conn.close()
+        __run_before_after('before', version, debug, module, do_command, logger)
+        __run_migration(migrations, git_clean, version, debug, module, do_command, logger)
+        __run_before_after('after', version, debug, module, do_command, logger)
+        __check_for_dangling_modules(do_command)
 
         if not no_auto_backup:
             print "Backup of database Version {}".format(version)
