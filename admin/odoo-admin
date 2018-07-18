@@ -1612,7 +1612,7 @@ def push(submodule_name):
         'push',
         '--prefix=common/{}'.format(submodule_name),
         'git.mt-software.de:/git/odoo/modules/{}'.format(submodule_name),
-	E("ODOO_VERSION"),
+        E("ODOO_VERSION"),
     ], cwd=dirs['customs'])
 
 def psql(dbname=None, *params):
