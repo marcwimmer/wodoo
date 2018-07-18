@@ -4,6 +4,7 @@ import subprocess
 import os
 import sys
 import psycopg2
+import importlib
 
 subprocess.check_call([
     'bash',
@@ -33,8 +34,8 @@ try:
 
     if os.path.exists(pyfile):
         print("Executing " + pyfile)
-        eval("from {} import run".format(beforeafter))
-        run(cr)
+        sys.path.append(os.path.dirname(pyfile))
+        importlib.import_module(beforeafter).run(cr)
     conn.commit()
 except Exception:
     conn.rollback()
