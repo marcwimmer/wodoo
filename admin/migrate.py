@@ -233,7 +233,7 @@ Migration to Version {}
 
         if module == 'all':
             do_command('compose', customs)
-            do_command('build', 'odoo')
+            do_command('build', machines='odoo')
         do_command("wait_for_container_postgres")
 
         __run_before_after('before', version, debug, module, do_command, logger)
