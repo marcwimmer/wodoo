@@ -1659,7 +1659,6 @@ def remove_web_assets():
 def reset_db():
     _askcontinue("Delete database {}".format(E("DBNAME")))
     print "Stopping all services and creating new database"
-    print "After creation the database container is stopped. You have to start the system up then."
     if E("RUN_POSTGRES") == "1":
         __reset_postgres_container()
     else:
