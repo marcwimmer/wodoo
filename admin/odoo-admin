@@ -1533,23 +1533,36 @@ def migrate(from_version, to_version, no_git_clean=False, debug=False, module='a
     del no_git_clean
     LOGFILE = os.path.join(odoo_config.customs_dir(), "migration_{}_{}.log".format(E("CUSTOMS"), datetime.now().strftime("%Y-%m-%dT%H%M%S")))
     fix_permissions()
-    do_migrate(
-        E("CUSTOMS"),
-        LOGFILE,
-        from_version,
-        to_version,
-        do_command,
-        SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
-        git_clean=git_clean,
-        debug=debug,
-        module=module,
-        pull_latest=pull_latest,
-    )
-    print("Suggestion to run after migration:")
-    print("./odoo deactivate-old-modules")
-    print("./odoo update -d")
-    print("./odoo update -i")
-    print("./odoo update")
+    try:
+        do_migrate(
+            E("CUSTOMS"),
+            LOGFILE,
+            from_version,
+            to_version,
+            do_command,
+            SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
+            git_clean=git_clean,
+            debug=debug,
+            module=module,
+            pull_latest=pull_latest,
+        )
+    except Exception:
+        import traceback
+        msg = traceback.format_exc()
+        with open(LOGFILE, 'a') as f:
+            f.write("\n")
+            f.write(msg)
+        print(msg)
+        print("Error occurred during migration, suggestions:")
+        print("")
+        print("1. Run odoo version and startup frontend, use ./odoo checkout odoo -f -v xx.xx to set odoo")
+    finally:
+        print("Suggestion to run after migration:")
+        print("=====================================")
+        print("./odoo deactivate-old-modules")
+        print("./odoo update -d")
+        print("./odoo update -i")
+        print("./odoo update")
 
 def new_ticket(ticket_name):
     versioning.actions['new-ticket'](*[ticket_name])
