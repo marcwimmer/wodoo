@@ -87,7 +87,7 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
-ADD requirements/$ODOO_VERSION/requirements.txt /root/requirements.txt
+ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
 ADD bin/utils.py /
 ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh

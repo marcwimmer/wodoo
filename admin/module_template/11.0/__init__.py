@@ -5,4 +5,4 @@
     # pass
 
 from .models import *
-#from .tests import *
+from .tests import *
