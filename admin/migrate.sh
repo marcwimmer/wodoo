@@ -25,7 +25,6 @@ set_addons_path()
 
 path_shas = os.path.join(os.environ['ACTIVE_CUSTOMS'], 'migration.sha')
 
-import pudb;pudb.set_trace()
 if MAKE_GIT_CLEAN == "1":
     # clean
     subprocess.check_call(["git", "checkout", "-f", BRANCH], cwd=OpenupgradeDir)
