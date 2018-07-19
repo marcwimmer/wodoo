@@ -970,7 +970,7 @@ def _setupArgs():
     for member in getmembers(module, inspect.isfunction):
         name, member = member
         if isinstance(member, types.FunctionType):
-            if not name.startswith('_') and (len(name) > 2 or name in ['up']):
+            if not name.startswith('_') and (len(name) > 2 or name in ['up', 'rm']):
                 commands.append(member)
 
     parser.add_commands(commands)
@@ -1406,7 +1406,6 @@ def kill(machines="", brutal=False):
 
         if safe_stop:
             __dc(["stop", "-t 20"] + safe_stop)  # persist data
-
     __dc(['stop', '-t 2'] + list(machines))
 
 def image_import(image_filename):
@@ -1500,7 +1499,7 @@ def make_customs(customs, version):
     )
     os.environ['CUSTOMS'] = customs
     cwd = os.path.join(dirs['odoo_home'], 'customs', customs)
-    subtree_odoo()
+    checkout_odoo()
     odoo_dir = os.path.join(cwd, 'odoo')
     __system([
         'git', 'checkout', str(version)
@@ -1698,7 +1697,7 @@ def restore_files(dumpfile):
     __do_restore_files(dumpfile)
 
 def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False):
-    for x in ['CUSTOMS', "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
+    for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
         print("{}: {}".format(x, E(x)))
     if not filename:
         _files = os.listdir(BACKUPDIR)
