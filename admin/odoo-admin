@@ -1709,16 +1709,21 @@ def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ig
             except Exception:
                 return 0
         rows = []
-        for file in sorted(filter(lambda x: _get_ctime(x), _files), reverse=False, key=_get_ctime):
+        for i, file in enumerate(sorted(filter(lambda x: _get_ctime(x), _files), reverse=False, key=_get_ctime)):
             filepath = os.path.join(BACKUPDIR, file)
             delta = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filepath))
             rows.append((
+                i + 1,
                 file,
                 humanize.naturaltime(delta),
                 humanize.naturalsize(os.stat(filepath).st_size)
             ))
-        print tabulate(rows, ['Filename', 'Age', 'Size'])
-        sys.exit(1)
+        print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
+
+        nr = raw_input("Restore which one?")
+        if nr:
+            nr = int(nr)
+            filename = rows[nr - 1][1]
     filename == os.path.join(BACKUPDIR, filename)
     if filename.startswith("/"):
         raise Exception("No path in dump file allowed")
