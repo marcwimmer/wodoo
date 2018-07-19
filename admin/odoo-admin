@@ -432,30 +432,34 @@ def __replace_in_file(filepath, text, replacewith):
 def __reset_postgres_container():
     # remove the postgres volume and reinit
     if E("RUN_POSTGRES") == "1":
-        print "Resettings postgres - killing data - not reversible"
-        VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
-        docker_client = docker.from_env()
+        kill(machines='postgres', brutal=True)
+        if E("RUN_POSTGRES_IN_RAM") == "1":
+            pass
+        else:
+            print "Resettings postgres - killing data - not reversible"
+            VOLUMENAME = "{}_postgresdata".format(E("CUSTOMS"))
+            docker_client = docker.from_env()
 
-        @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
-        def remove_volume():
-            for volume in docker_client.volumes.list():
-                if volume.name == VOLUMENAME:
-                    try:
-                        kill(brutal=True)
-                        __dc(["rm", "-f"]) # set volume free
-                        volume.remove()
-                    except Exception as e:
-                        print e
-                        if hasattr(e, 'explanation'):
-                            exp = e.explanation
+            @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
+            def remove_volume():
+                for volume in docker_client.volumes.list():
+                    if volume.name == VOLUMENAME:
+                        try:
+                            kill(brutal=True)
+                            __dc(["rm", "-f"]) # set volume free
+                            volume.remove()
+                        except Exception as e:
+                            print e
+                            if hasattr(e, 'explanation'):
+                                exp = e.explanation
 
-                            if 'volume is in use' in e:
-                                container_id = re.findall(r'\[([^\]]*)\]', exp)[0]
-                                __system(["docker", "rm", container_id])
-                        return None
-            return True
-        remove_volume()
-        __dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])
+                                if 'volume is in use' in e:
+                                    container_id = re.findall(r'\[([^\]]*)\]', exp)[0]
+                                    __system(["docker", "rm", container_id])
+                            return None
+                return True
+            remove_volume()
+            __dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])
         __start_postgres_and_wait()
 
 def __restore_check(filepath):
@@ -753,8 +757,12 @@ def _prepare_docker_compose_files(dest_file, paths):
             if 'run_' in filename:
                 run = re.findall(r'run_[^\.]*', filename)
                 if run:
-                    if os.getenv(run[0].upper(), "1") == "1":
-                        return True
+                    if '!run' in filename:
+                        if os.getenv(run[0].upper(), "0") == "0":
+                            return True
+                    else:
+                        if os.getenv(run[0].upper(), "1") == "1":
+                            return True
                 return False
             else:
                 return True
@@ -1204,6 +1212,13 @@ def commit(*parameters):
 def prep(customs='', db='', demo=False):
     return compose(customs=customs, db=db, demo=demo)
 
+def reload():
+    """
+    After settings change call this def to update all settings.
+    """
+    config = MyConfigParser(files['settings'])
+    compose(customs=config['CUSTOMS'], db=config['DBNAME'], demo=config['ODOO_DEMO'] == "1")
+
 def compose(customs='', db='', demo=False):
     """
     - builds docker compose
@@ -1645,7 +1660,6 @@ def reset_db():
     print "Stopping all services and creating new database"
     print "After creation the database container is stopped. You have to start the system up then."
     if E("RUN_POSTGRES") == "1":
-        kill(machines='postgres')
         __reset_postgres_container()
     else:
         __remove_postgres_connections(E("DBNAME"), 'drop database {};'.format(E("DBNAME")))
@@ -1904,7 +1918,8 @@ Please set DEVMODE=1 to allow this""")
     __turn_into_devdb(E("DBNAME"))
 
 def up(machines='', daemonized=False):
-    __set_db_ownership()
+    if machines and 'postgres' not in machines:
+        __set_db_ownership()
     options = [
     ]
     if daemonized:
@@ -1987,6 +2002,8 @@ def update_ast():
 
 
 def wait_for_container_postgres():
+    from pudb import set_trace
+    set_trace()
     __start_postgres_and_wait()
 
 def wait_for_port(host, port):
