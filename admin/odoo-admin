@@ -1528,6 +1528,7 @@ def migrate(from_version, to_version, no_git_clean=False, debug=False, module='a
     """
     For debugging migration of certain module provide module parameter.
     """
+    kill(brutal=True)
     git_clean = not no_git_clean
     del no_git_clean
     LOGFILE = os.path.join(odoo_config.customs_dir(), "migration_{}_{}.log".format(E("CUSTOMS"), datetime.now().strftime("%Y-%m-%dT%H%M%S")))
