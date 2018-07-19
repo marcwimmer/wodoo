@@ -1698,7 +1698,7 @@ def restore_files(dumpfile):
     __do_restore_files(dumpfile)
 
 def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False):
-    for x in ["DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
+    for x in ['CUSTOMS', "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
         print("{}: {}".format(x, E(x)))
     if not filename:
         _files = os.listdir(BACKUPDIR)
