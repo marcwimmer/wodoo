@@ -1828,7 +1828,7 @@ def stage():
     versioning.action_stage_ticket()
 
 def status():
-    __print_env(["CUSTOMS", "DBNAME", "DB_HOST"])
+    __print_env(["CUSTOMS", "DBNAME", "DB_HOST", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"])
     print("Configuration files:")
     for dir in _collect_settings_files():
         print dir, '(dir)' if os.path.isdir(dir) else ''
