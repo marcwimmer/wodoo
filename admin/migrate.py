@@ -96,7 +96,7 @@ def __run_before_after(type, version, debug, module, do_command, logger):
             cmd.insert(0, 'runbash')
             do_command(*tuple(cmd))
 
-def __run_migration(migrations, git_clean, version, debug, module, do_command, logger):
+def __run_migration(migrations, git_clean, version, debug, module, do_command, logger, pull_latest):
     print("Starting Openupgrade Migration to {}".format(version))
     cmd = [
         'run or runbash see below',
@@ -108,6 +108,7 @@ def __run_migration(migrations, git_clean, version, debug, module, do_command, l
         ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
         version,
         '1' if git_clean else '0',
+        '1' if pull_latest else '0',
     ]
     if debug:
         cmd[0] = 'runbash'
@@ -116,7 +117,12 @@ def __run_migration(migrations, git_clean, version, debug, module, do_command, l
         cmd[0] = 'run'
         do_command(*cmd, logger=logger, interactive=False)
 
-def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False, module='all'):
+def do_migrate(customs, log_file, from_version, to_version, do_command, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False, module='all', pull_latest=False):
+    """
+
+    :param pull_latest: if true, then git pull is done in OpenUpgrade
+
+    """
     from_version = str(float(from_version))
     to_version = str(float(to_version))
 
@@ -231,7 +237,7 @@ Migration to Version {}
         do_command("wait_for_container_postgres")
 
         __run_before_after('before', version, debug, module, do_command, logger)
-        __run_migration(migrations, git_clean, version, debug, module, do_command, logger)
+        __run_migration(migrations, git_clean, version, debug, module, do_command, logger, pull_latest)
         __run_before_after('after', version, debug, module, do_command, logger)
         __check_for_dangling_modules(do_command)
 
