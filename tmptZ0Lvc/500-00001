@@ -1,0 +1,26 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  postgres:
+    build: $ODOO_HOME/machines/postgres
+    container_name: caetec11_postgres
+    env_file:
+    - $ODOO_HOME/run/settings
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
+    healthcheck:
+      interval: 30s
+      retries: 3
+      test:
+      - CMD-SHELL
+      - pg_isready
+      timeout: 30s
+    volumes:
+    - $DUMPS_PATH:/opt/dumps
+    - $ODOO_HOME/run/sqlscripts:/opt/sqlscripts
+    - $ODOO_HOME/machines/postgres/init:/docker-entrypoint-initdb.d/
+version: '3.5'
+

@@ -1,0 +1,22 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  mosquitto:
+    build: $ODOO_HOME/machines/mosquitto
+    container_name: caetec11_mosquitto
+    env_file:
+    - $ODOO_HOME/run/settings
+    ports:
+    - 1883:1883
+    - 9001:9001
+    volumes:
+    - $ODOO_HOME/machines/mosquitto/config:/mqtt/config
+    - mosquitto_logs:/mqtt/logs
+    - mosquitto_data:/mqtt/data
+version: '3.5'
+volumes:
+  mosquitto_data: null
+  mosquitto_logs: null
+

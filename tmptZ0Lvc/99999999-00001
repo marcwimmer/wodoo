@@ -1,0 +1,47 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  calendar:
+    build: $ODOO_HOME/machines/calendar
+    container_name: caetec11_calendar
+    depends_on:
+    - calendar_db
+    env_file:
+    - $ODOO_HOME/run/settings
+    environment:
+      AWL_APPUSER: davical
+      AWL_DBAUSER: davical
+      AWL_DBNAME: davical
+      DBAOPTS: --dbhost calendar_db --dbuser davical
+      DBHOST: calendar_db
+      DBPORT: 5432
+      INITIAL_ADMIN_PASSWORD: admin!!
+      PGPASSWORD: davical
+      PHP_VERSION: 7.0.10
+      PSQLOPTS: -h calendar_db -U davical
+      SRC_DIR: /opt/src_filemodeupdated
+    volumes:
+    - $ODOO_HOME/machines/calendar/conf:/config
+    - calendar:/var/www/html
+    - $ODOO_HOME/machines/calendar/src:/opt/src
+    - $ODOO_HOME/machines/calendar/admin.py:/opt/admin.py
+  calendar_db:
+    container_name: caetec11_calendar_db
+    env_file:
+    - $ODOO_HOME/run/settings
+    environment:
+      PGDATA: /data
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: davical
+      POSTGRES_USER: davical
+    image: postgres:9.6.6
+    volumes:
+    - calendar_db:/data
+    - $ODOO_HOME/machines/calendar/add_users.sql:/docker-entrypoint-initdb.d/add_users.sql
+version: '3.5'
+volumes:
+  calendar: null
+  calendar_db: null
+

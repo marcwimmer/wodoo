@@ -1,0 +1,12 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  tools:
+    build: $ODOO_HOME/machines/tools
+    container_name: caetec11_tools
+    env_file:
+    - $ODOO_HOME/run/settings
+version: '3.5'
+

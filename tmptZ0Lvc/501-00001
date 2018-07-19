@@ -1,0 +1,17 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  postgres:
+    command: postgres -c logging_collector=off -c max_connections=1000 -c shared_buffers=128kB
+      -c wal_buffers=32kB -c maintenance_work_mem=1024kB -c work_mem=64kB -c temp_buffers=800kB
+      -c fsync=off -c seq_page_cost=0.01 -c random_page_cost=0.01 -c effective_cache_size=64kB
+    env_file:
+    - $ODOO_HOME/run/settings
+    environment:
+      INRAM: 1
+    tmpfs:
+    - /var/lib/postgresql/data
+version: '3.5'
+

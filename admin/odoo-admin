@@ -1847,11 +1847,11 @@ def stage():
     versioning.action_stage_ticket()
 
 def status():
-    __print_env(["CUSTOMS", "DBNAME", "DB_HOST", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"])
-    print("Configuration files:")
-    for dir in _collect_settings_files():
-        print dir, '(dir)' if os.path.isdir(dir) else ''
-    os.system("df -h")
+    __print_env(["CUSTOMS", "DBNAME", "DB_HOST", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM", "ODOO_VERSION"])
+    # print("Configuration files:")
+    # for dir in _collect_settings_files():
+        # print dir, '(dir)' if os.path.isdir(dir) else ''
+    # os.system("df -h")
 
 def stop(machines):
     kill(machines)
@@ -1874,27 +1874,66 @@ def submodule(*submodules):
             E("ODOO_VERSION"),
         ], cwd=dirs['customs'])
 
-def subtree_odoo():
+def checkout_odoo(version='', not_use_local_repo=True, commit_changes=False, force=False):
+    """
+    Can used for migration tests:
+     - temporary switch to odoo version
+
+    """
     __assert_file_exists(os.path.join(dirs['customs'], '.version'))
 
-    if os.path.isdir(os.path.join(dirs['customs'], 'odoo')):
+    if os.path.isdir(os.path.join(dirs['customs'], 'odoo')) and not force:
         raise Exception("Odoo already exists")
 
-    version = __read_file(os.path.join(dirs['customs'], '.version')).strip()
+    if not version:
+        version = __read_file(os.path.join(dirs['customs'], '.version')).strip()
+    version = float(version)
 
     __system([
         'git',
         'status',
     ], cwd=dirs['customs'])
+    odoo_path = os.path.join(dirs['customs'], 'odoo')
+    if os.path.exists(odoo_path):
+        shutil.rmtree(odoo_path)
+        if commit_changes:
+            __system([
+                'git',
+                'add',
+                '.'
+            ], cwd=dirs['customs'])
+            __system([
+                'git',
+                'commit',
+                '-am "removed current odoo"'
+            ], cwd=dirs['customs'])
+
+    if not_use_local_repo:
+        url = '/opt/odoo/repos/odoo'
+    else:
+        url = 'https://github.com/odoo/odoo'
     __system([
         'git',
-        'subtree',
-        'add',
-        '--prefix=odoo',
-        '--squash',
-        'https://github.com/odoo/odoo',
-        version,
+        'clone',
+        url,
+        '--branch',
+        str(version),
+        '--single-branch',
+        'odoo',
     ], cwd=dirs['customs'])
+    sha = __system([
+        'git',
+        'rev-parse',
+        "HEAD",
+    ], cwd=odoo_path).strip()
+
+    shutil.rmtree(os.path.join(dirs['customs'], 'odoo/.git'))
+    with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
+        f.write(str(version))
+    with open(os.path.join(dirs['customs'], 'odoo.commit'), 'w') as f:
+        f.write(sha.strip())
+    reload() # apply new version
+    status()
 
 def switch_ticket(ticket):
     versioning.actions["switch-ticket"](*[ticket])
