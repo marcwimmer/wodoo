@@ -5,8 +5,6 @@ services:
   postgres:
     environment:
       INRAM: 0
-    tmpfs:
-      - /var/lib/postgresql/data
     volumes:
       - POSTGRES_VOLUME_${CUSTOMS}_${DBNAME}:/var/lib/postgresql/data
     command: postgres -c max_connections=1000
