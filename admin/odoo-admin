@@ -20,6 +20,7 @@ import docker
 import shlex
 import traceback
 import json
+from tabulate import tabulate
 from inspect import getmembers, isfunction
 from retrying import retry
 from datetime import datetime
@@ -1675,7 +1676,7 @@ def restart(machines=""):
 def rm(machines=''):
     __dc(['rm', '-f'] + __splitcomma(machines))
 
-def restore_dev_db(filename, force=False, ignore_filename_match_dbname=False):
+def restore_dev_db(filename='', force=False, ignore_filename_match_dbname=False):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
 
@@ -1697,13 +1698,26 @@ def restore_files(dumpfile):
     __do_restore_files(dumpfile)
 
 def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False):
-    for x in ["DB_HOST", "DB_PORT"]:
+    for x in ["DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
         print("{}: {}".format(x, E(x)))
     if not filename:
         _files = os.listdir(BACKUPDIR)
-        for file in sorted(_files, reverse=False, key=lambda f: os.path.getctime(os.path.join(BACKUPDIR, f))):
+
+        def _get_ctime(filepath):
+            try:
+                return os.path.getctime(os.path.join(BACKUPDIR, filepath))
+            except Exception:
+                return 0
+        rows = []
+        for file in sorted(filter(lambda x: _get_ctime(x), _files), reverse=False, key=_get_ctime):
             filepath = os.path.join(BACKUPDIR, file)
-            print file, '\t', time.ctime(os.path.getmtime(filepath)), '\t', humanize.naturalsize(os.stat(filepath).st_size)
+            delta = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filepath))
+            rows.append((
+                file,
+                humanize.naturaltime(delta),
+                humanize.naturalsize(os.stat(filepath).st_size)
+            ))
+        print tabulate(rows, ['Filename', 'Age', 'Size'])
         sys.exit(1)
     filename == os.path.join(BACKUPDIR, filename)
     if filename.startswith("/"):
