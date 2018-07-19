@@ -1,6 +1,0 @@
-networks:
-  default:
-    external:
-      name: home_marc_odoo_default
-version: '3.5'
-
