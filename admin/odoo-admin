@@ -1672,15 +1672,13 @@ def remove_web_assets():
     if float(E("ODOO_VERSION")) <= 10.0:
         print("Please login as admin, so that assets are recreated.")
 
-def reset_db():
+def reset_db(dbname):
     _askcontinue("Delete database {}".format(E("DBNAME")))
     print "Stopping all services and creating new database"
-    if E("RUN_POSTGRES") == "1":
-        __reset_postgres_container()
-    else:
-        __remove_postgres_connections(E("DBNAME"), 'drop database {};'.format(E("DBNAME")))
+    dbname = dbname or E("DBNAME")
+    __remove_postgres_connections(dbname, 'drop database {};'.format(dbname))
 
-    print "Database initialized."
+    print "Database dropped {}".format(dbname)
 
 def restart(machines=""):
     kill(machines)
@@ -1692,11 +1690,21 @@ def rm(machines=''):
     __dc(['rm', '-f'] + __splitcomma(machines))
 
 def dumps():
+    options_names = {
+        # 'n': 'override db name on restore',
+    }
+    options = {
+        # 'n': False,
+    }
     while True:
         os.system('reset')
         for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
             print("{}: {}".format(x, E(x)))
         _files = os.listdir(BACKUPDIR)
+
+        print "Options:"
+        for k, v in options_names.items():
+            print k, ':', v, 'SET' if options.get(k, False) else ''
 
         def _get_ctime(filepath):
             try:
@@ -1715,28 +1723,46 @@ def dumps():
             ))
         print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
 
-        nr = raw_input("Choose action: [b]ackup [d]elete, [r]restore, [R]estore as development db and nr: e.g. d2, r8: ")
+        nr = raw_input("Choose action: [o]ption [b]ackup [d]elete, [r]restore  nr: e.g. d2, r8: ")
         if not nr:
             return
-        if not any(nr.startswith(x) for x in 'bdrR'):
+        if not any(nr.startswith(x) for x in 'bdrRo'):
             print("Invalid action {}".format(nr))
             return
         action = nr[0]
-        if len(nr) > 1:
+        if len(nr) > 1 and action in 'rd':
             nr = nr[1:]
             nr = int(nr)
             filename = rows[nr - 1][1]
+        elif action == 'o':
+            option = nr[1]
+            if option not in options_names:
+                print("Invalid option {}".format(option))
+                time.sleep(2)
+                continue
+            options[option] = not options.get(option, False)
+            continue
+
         if action == 'd':
             os.unlink(os.path.join(BACKUPDIR, filename))
             print("Deleted {}".format(filename))
-        elif action == 'r':
+        elif action in 'r':
+            dbname = ''
+            if options.get('n', False):
+                dbname = raw_input("Enter database-name: ")
+                if not dbname:
+                    print("Aborted")
+                    time.sleep(2)
+                    continue
+
+            dev = False
+            if E("ALLOW_RESTORE_DEV") == "1":
+                if raw_input("Restore as dev-db? [Y/n]") in ['', 'Y', 'y']:
+                    dev = True
+                dbname = raw_input("Destination name: [{}]".format(E("DBNAME"))) or E("DBNAME")
             print("Restoring {} ...".format(filename))
-            restore_db(filename=filename)
-            break
-        elif action == 'R':
-            print("Restoring {} as development db...".format(filename))
-            restore_dev_db(filename=filename, force=True, ignore_filename_match_dbname=True)
-            break
+            restore_db(filename=filename, dbname=dbname, restore_as_dev_db=dev, printinfos=False, force=True)
+
         elif action == 'b':
             filename = __get_default_backup_filename()
             filename = raw_input("Please enter a filename, otherwise {} is used: ".format(filename)) or filename
@@ -1754,12 +1780,8 @@ def restore_dev_db(filename='', force=False, ignore_filename_match_dbname=False)
         DB_HOST=E("DB_HOST"),
     ))
 
-    def exec_sql(dbname):
-        __turn_into_devdb(dbname)
-
     restore_db(
         filename,
-        exec_before_rename=exec_sql,
         restore_as_dev_db=True,
         ignore_filename_match_dbname=ignore_filename_match_dbname,
     )
@@ -1767,9 +1789,10 @@ def restore_dev_db(filename='', force=False, ignore_filename_match_dbname=False)
 def restore_files(dumpfile):
     __do_restore_files(dumpfile)
 
-def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False):
-    for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
-        print("{}: {}".format(x, E(x)))
+def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False, dbname='', printinfos=True, force=False):
+    if printinfos:
+        for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
+            print("{}: {}".format(x, E(x)))
     filename == os.path.join(BACKUPDIR, filename)
     if filename.startswith("/"):
         raise Exception("No path in dump file allowed")
@@ -1778,22 +1801,25 @@ def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ig
     if E("DEVMODE") == "1" and not restore_as_dev_db:
         _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 
-    if not FORCE:
-        _askcontinue("Deletes database {}!".format(E("DBNAME")))
+    if not FORCE and not force:
+        _askcontinue("Deletes database {}!".format(dbname or E("DBNAME")))
 
-    DBNAME_RESTORING = E("DBNAME") + "_restoring"
+    DBNAME_RESTORING = (dbname or E("DBNAME")) + "_restoring"
     os.environ['DBNAME'] = DBNAME_RESTORING
 
     config = MyConfigParser(files['settings'])
-    dbname = config['DBNAME']
+    dbname = dbname or config['DBNAME']
 
-    reset_db()
+    reset_db(dbname=dbname)
     __do_restore_db_on_postgres(filename, DBNAME_RESTORING, E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
     if exec_before_rename:
         exec_before_rename(DBNAME_RESTORING)
+    if restore_as_dev_db:
+        __turn_into_devdb(DBNAME_RESTORING)
     __rename_db_drop_target(DBNAME_RESTORING, dbname)
     __remove_postgres_connections(dbname)
-    __set_db_ownership()
+    if dbname == E("DBNAME"):
+        __set_db_ownership()
     telegram_send("Database Restore $DBNAME done.")
 
 def rmpyc():
