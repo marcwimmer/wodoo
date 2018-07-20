@@ -1715,7 +1715,7 @@ def dumps():
             ))
         print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
 
-        nr = raw_input("Choose action: [b]ackup [d]elete, [r]restore, [R]estore as development db and nr: e.g. d2, r8?")
+        nr = raw_input("Choose action: [b]ackup [d]elete, [r]restore, [R]estore as development db and nr: e.g. d2, r8: ")
         if not nr:
             return
         if not any(nr.startswith(x) for x in 'bdrR'):
@@ -1739,7 +1739,7 @@ def dumps():
             break
         elif action == 'b':
             filename = __get_default_backup_filename()
-            filename = raw_input("Please enter a filename, otherwise {} is used.".format(filename)) or filename
+            filename = raw_input("Please enter a filename, otherwise {} is used: ".format(filename)) or filename
             backup_db(filename=filename)
         else:
             if not action:
