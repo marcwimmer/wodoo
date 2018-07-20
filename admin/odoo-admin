@@ -1791,7 +1791,7 @@ def sanity_check():
     _sanity_check()
 
 def set_db(DBNAME):
-    set_settings(DBNAME)
+    set_settings('DBNAME', DBNAME)
 
 def set_settings(key, value):
     config = MyConfigParser(files['settings'])
@@ -2148,6 +2148,10 @@ def make_module(name):
         cwd,
         name,
     )
+
+def pgactivity():
+    if E("RUN_POSTGRES") == "1":
+        __dcexec(["postgres", 'pg_activity'])
 
 
 if __name__ == '__main__':

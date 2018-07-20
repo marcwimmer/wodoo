@@ -1,1 +1,9 @@
 FROM postgres:10
+RUN apt-get update && \
+apt-get install -y python-pip python-dev build-essential git && \
+pip install psycopg2  && \
+pip install psutil && \
+pip install setuptools && \
+git clone https://github.com/julmon/pg_activity.git  && \
+cd pg_activity/ && \
+python setup.py install --with-man
