@@ -1555,7 +1555,7 @@ def migrate(from_version, to_version, no_git_clean=False, debug=False, module='a
         print(msg)
         print("Error occurred during migration, suggestions:")
         print("")
-        print("1. Run odoo version and startup frontend, use ./odoo checkout odoo -f -v xx.xx to set odoo")
+        print("1. Run odoo version and startup frontend, use ./odoo checkout-odoo -f -v xx.xx to set odoo")
     finally:
         print("Suggestion to run after migration:")
         print("=====================================")
