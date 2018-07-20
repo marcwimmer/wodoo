@@ -1688,6 +1688,49 @@ def restart(machines=""):
 def rm(machines=''):
     __dc(['rm', '-f'] + __splitcomma(machines))
 
+def dumps():
+    while True:
+        os.system('reset')
+        _files = os.listdir(BACKUPDIR)
+
+        def _get_ctime(filepath):
+            try:
+                return os.path.getctime(os.path.join(BACKUPDIR, filepath))
+            except Exception:
+                return 0
+        rows = []
+        for i, file in enumerate(sorted(filter(lambda x: _get_ctime(x), _files), reverse=False, key=_get_ctime)):
+            filepath = os.path.join(BACKUPDIR, file)
+            delta = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filepath))
+            rows.append((
+                i + 1,
+                file,
+                humanize.naturaltime(delta),
+                humanize.naturalsize(os.stat(filepath).st_size)
+            ))
+        print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
+
+        nr = raw_input("Choose action: [d]elete, [r]restore, [R]estore as development db and nr: e.g. d2, r8?")
+        if not nr:
+            return
+        if not any(nr.startswith(x) for x in 'drR'):
+            return
+        action = nr[0]
+        nr = nr[1:]
+        nr = int(nr)
+        filename = rows[nr - 1][1]
+        if action == 'd':
+            os.unlink(os.path.join(BACKUPDIR, filename))
+            print("Deleted {}".format(filename))
+        elif action == 'r':
+            print("Restoring {} ...".format(filename))
+            restore_db(filename=filename)
+            break
+        elif action == 'R':
+            print("Restoring {} as development db...".format(filename))
+            restore_dev_db(filename=filename, force=True, ignore_filename_match_dbname=True)
+            break
+
 def restore_dev_db(filename='', force=False, ignore_filename_match_dbname=False):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
@@ -1712,30 +1755,6 @@ def restore_files(dumpfile):
 def restore_db(filename="", exec_before_rename=None, restore_as_dev_db=False, ignore_filename_match_dbname=False):
     for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
         print("{}: {}".format(x, E(x)))
-    if not filename:
-        _files = os.listdir(BACKUPDIR)
-
-        def _get_ctime(filepath):
-            try:
-                return os.path.getctime(os.path.join(BACKUPDIR, filepath))
-            except Exception:
-                return 0
-        rows = []
-        for i, file in enumerate(sorted(filter(lambda x: _get_ctime(x), _files), reverse=False, key=_get_ctime)):
-            filepath = os.path.join(BACKUPDIR, file)
-            delta = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filepath))
-            rows.append((
-                i + 1,
-                file,
-                humanize.naturaltime(delta),
-                humanize.naturalsize(os.stat(filepath).st_size)
-            ))
-        print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
-
-        nr = raw_input("Restore which one?")
-        if nr:
-            nr = int(nr)
-            filename = rows[nr - 1][1]
     filename == os.path.join(BACKUPDIR, filename)
     if filename.startswith("/"):
         raise Exception("No path in dump file allowed")

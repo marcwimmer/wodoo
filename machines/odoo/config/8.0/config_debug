@@ -26,3 +26,4 @@ workers = 1
 xmlrpcs = False
 netrpc = False
 proxy_mode = True
+xmlrpc = 8072
