@@ -1158,8 +1158,11 @@ def __backup_postgres(filepath, dbname, host, port, user, password):
     conn.close()
     os.system('pg_dump -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(**locals()))
 
+def __get_default_backup_filename():
+    return datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(E("CUSTOMS")))
+
 def backup_db(filename=None):
-    filename = filename or datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(E("CUSTOMS")))
+    filename = filename or __get_default_backup_filename()
 
     if filename.startswith("/"):
         raise Exception("No slash for backup filename allowed")
@@ -1691,6 +1694,8 @@ def rm(machines=''):
 def dumps():
     while True:
         os.system('reset')
+        for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
+            print("{}: {}".format(x, E(x)))
         _files = os.listdir(BACKUPDIR)
 
         def _get_ctime(filepath):
@@ -1710,15 +1715,17 @@ def dumps():
             ))
         print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
 
-        nr = raw_input("Choose action: [d]elete, [r]restore, [R]estore as development db and nr: e.g. d2, r8?")
+        nr = raw_input("Choose action: [b]ackup [d]elete, [r]restore, [R]estore as development db and nr: e.g. d2, r8?")
         if not nr:
             return
-        if not any(nr.startswith(x) for x in 'drR'):
+        if not any(nr.startswith(x) for x in 'bdrR'):
+            print("Invalid action {}".format(nr))
             return
         action = nr[0]
-        nr = nr[1:]
-        nr = int(nr)
-        filename = rows[nr - 1][1]
+        if len(nr) > 1:
+            nr = nr[1:]
+            nr = int(nr)
+            filename = rows[nr - 1][1]
         if action == 'd':
             os.unlink(os.path.join(BACKUPDIR, filename))
             print("Deleted {}".format(filename))
@@ -1730,6 +1737,14 @@ def dumps():
             print("Restoring {} as development db...".format(filename))
             restore_dev_db(filename=filename, force=True, ignore_filename_match_dbname=True)
             break
+        elif action == 'b':
+            filename = __get_default_backup_filename()
+            filename = raw_input("Please enter a filename, otherwise {} is used.".format(filename)) or filename
+            backup_db(filename=filename)
+        else:
+            if not action:
+                return
+            print("Invalid action")
 
 def restore_dev_db(filename='', force=False, ignore_filename_match_dbname=False):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
