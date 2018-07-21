@@ -696,6 +696,15 @@ def _get_bash_for_machine(machine):
     else:
         return 'bash'
 
+def _get_machines():
+    cmd = commands['dc'] + ['ps', '--services']
+    out = __system(cmd, cwd=dirs['odoo_home'])
+    out = set(filter(lambda x: x, out.split("\n")))
+    return out
+
+def test1():
+    return _get_machines()
+
 def _get_platform():
     if os.getenv("PLATFORM", "") in ['Darwin', 'OSX', 'macos']:
         return PLATFORM_OSX
@@ -1064,7 +1073,11 @@ def _setup_proxy():
 
 def __start_postgres_and_wait():
     if E("RUN_POSTGRES") == "1":
-        __dc(["up", "-d", "postgres"])
+        if E("RUN_POSTGRES_IN_RAM") == "1" and __is_container_running('postgres'):
+            # avoid recreate
+            pass
+        else:
+            __dc(["up", "-d", "postgres"])
         __wait_for_port(E("DB_HOST"), long(E("DB_PORT")), timeout=30)
         __execute_sql("""
         SELECT table_schema,table_name
@@ -1399,6 +1412,8 @@ def kill(machines="", brutal=False):
 
     if not brutal it means softly
     """
+    if E("RUN_POSTGRES_IN_RAM") == "1" and not machines:
+        machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
     machines = __splitcomma(machines)
     if not brutal:
         safe_stop = []

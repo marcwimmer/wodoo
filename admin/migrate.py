@@ -91,7 +91,7 @@ def __run_before_after(type, version, debug, module, do_command, logger):
         cmd.insert(0, 'run')
         do_command(*tuple(cmd), logger=logger)
     elif debug:
-        answer = raw_input("Run before sql/py? [Y/n]")
+        answer = raw_input("Run {} sql/py? [Y/n]".format(type))
         if not answer or answer in ['Y', 'y']:
             cmd.insert(0, 'runbash')
             do_command(*tuple(cmd))
