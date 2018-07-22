@@ -1,4 +1,6 @@
 #!/usr/bin/python
+from cursesmenu import CursesMenu
+from cursesmenu.items import FunctionItem, SubmenuItem
 import pipes
 import argh
 import types
@@ -698,7 +700,7 @@ def _get_bash_for_machine(machine):
 
 def _get_machines():
     cmd = commands['dc'] + ['ps', '--services']
-    out = __system(cmd, cwd=dirs['odoo_home'])
+    out = __system(cmd, cwd=dirs['odoo_home'], suppress_out=True)
     out = set(filter(lambda x: x, out.split("\n")))
     return out
 
@@ -1696,12 +1698,19 @@ def reset_db(dbname):
     print "Database dropped {}".format(dbname)
 
 def restart(machines=""):
+    if not machines and 'postgres' not in machines.split(","):
+        if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
+            machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
+
     kill(machines)
     rm(machines)
-    __dc(['up', '-d', '--force-recreate'] + __splitcomma(machines))
+    recreate(machines)
     proxy_reload()
 
 def rm(machines=''):
+    if not machines and 'postgres' not in machines.split(","):
+        if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
+            machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
     __dc(['rm', '-f'] + __splitcomma(machines))
 
 def dumps():
@@ -2105,7 +2114,7 @@ def update(module="", dangling_modules=False, installed_modules=False, keep_cont
     if not keep_containers:
         kill()
         rm()
-        __dc(['up', '--no-start', '--force-recreate'])
+        recreate()
         __start_postgres_and_wait()
         kill('proxy')
 
@@ -2130,6 +2139,15 @@ def update(module="", dangling_modules=False, installed_modules=False, keep_cont
         with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
             f.write("0")
     telegram_send("Update done")
+
+def recreate(machines=''):
+    if not machines and 'postgres' not in machines.split(","):
+        if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
+            machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
+    if machines:
+        __dc(['up', '--no-start', '--force-recreate'] + __splitcomma(machines))
+    else:
+        __dc(['up', '--no-start', '--force-recreate'])
 
 def update_ast():
     if _get_platform() == PLATFORM_OSX:
@@ -2228,6 +2246,26 @@ def pgactivity():
     if E("RUN_POSTGRES") == "1":
         __dcexec(["postgres", 'pg_activity'])
 
+
+# def menu():
+    # #import signal
+    # import atexit
+
+    # signal.signal(signal.SIGINT, signal.SIG_IGN)
+    # menu = CursesMenu("Odoo", "Administration")
+    # submenu_db = CursesMenu("Database")
+    # submenu_settings = CursesMenu("Settings")
+    # submenu = CursesMenu("Database")
+    # submenuitem_db = SubmenuItem("Database", submenu_db, menu)
+    # submenuitem_settings = FunctionItem("Settings", submenu_settings, menu)
+
+    # fi = FunctionItem("Status", status)
+    # menu.append_item(submenuitem_db)
+    # menu.append_item(submenuitem_settings)
+    # submenu.append_item(fi)
+    # menu.show()
+
+    # #atexit.register(self.cleanup)
 
 if __name__ == '__main__':
     parser = _setupArgs()
