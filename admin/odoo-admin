@@ -1478,6 +1478,14 @@ def image_export():
 def incversions():
     versioning.actions["incversions"]()
 
+def unlink():
+    from pudb import set_trace
+    set_trace()
+    for file in os.listdir(os.path.join(dirs['customs'], 'links')):
+        path = os.path.join(dirs['customs'], file)
+        if os.path.islink(path):
+            os.unlink(path)
+
 def link():
     """
     links all modules into ./links
@@ -1583,6 +1591,14 @@ def migrate(from_version, to_version, no_git_clean=False, debug=False, module='a
         print("./odoo update -d")
         print("./odoo update -i")
         print("./odoo update")
+        print("")
+        print("To debug an intermediate version, run:")
+        print("=====================================")
+        print("./odoo unlink [to remove links folder of modules]")
+        print("./odoo deactivate-old-modules")
+        print("./odoo update --no-update-module-list -m base")
+        print("./odoo checkout-odoo -f -v xx.xx")
+        print("./odoo dev")
 
 def new_ticket(ticket_name):
     versioning.actions['new-ticket'](*[ticket_name])
@@ -2088,7 +2104,7 @@ def up(machines='', daemonized=False):
     __dc(['up'] + options + __splitcomma(machines))
     proxy_reload()
 
-def update(module="", dangling_modules=False, installed_modules=False, keep_containers=False, non_interactive=False):
+def update(module="", dangling_modules=False, installed_modules=False, keep_containers=False, non_interactive=False, no_update_module_list=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime - but there is a downtime, even for phones
@@ -2129,6 +2145,8 @@ def update(module="", dangling_modules=False, installed_modules=False, keep_cont
         params = ['run', 'odoo_update', '/update_modules.py', module]
         if non_interactive:
             params += ['--non-interactive']
+        if not no_update_module_list:
+            params += ['--no-update-modulelist']
         __cmd_interactive(*params)
     except Exception:
         print(traceback.format_exc())

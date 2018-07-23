@@ -21,10 +21,10 @@ def get_env():
     elif V == 10.0:
         return {
             "ODOO_PYTHON_VERSION": "2",
-            "ODOO_EXECUTABLE_GEVENT": "openerp-gevent",
-            "ODOO_EXECUTABLE_CRONJOBS": "openerp-server",
-            "ODOO_EXECUTABLE_DEBUG": "openerp-server",
-            "ODOO_EXECUTABLE": 'openerp-server',
+            "ODOO_EXECUTABLE_GEVENT": "odoo-bin",
+            "ODOO_EXECUTABLE_CRONJOBS": "odoo-bin",
+            "ODOO_EXECUTABLE_DEBUG": "odoo-bin",
+            "ODOO_EXECUTABLE": 'odoo-bin',
         }
     elif V >= 11.0:
         return {

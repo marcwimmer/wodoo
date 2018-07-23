@@ -13,9 +13,9 @@ import odoo_parser # NOQA
 from odoo_parser import manifest2dict # NOQA
 from utils import get_env # NOQA
 
-PARAMS = [x for x in sys.argv[1:] if x not in ['-fast']]
-DANGLING = False
-INTERACTIVE = not any(x == '--non-interactive' for x in PARAMS)
+INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
+NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
+PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
 
 def get_modules():
     modules = []
@@ -129,11 +129,9 @@ def main():
     ])
 
     summary = []
-    # could be, that a new version is triggered
-    DANGLING = check_for_dangling_modules()
 
-    if DANGLING or (',' not in MODULE and not module_tools.is_module_listed(MODULE)) or (MODULE and ',' not in MODULE and not all_dependencies_installed(MODULE)):
-        update_module_list()
+    # could be, that a new version is triggered
+    # DANGLING = check_for_dangling_modules()
 
     if not MODULE:
         MODULE = ','.join(get_modules() + module_tools.get_uninstalled_modules_where_others_depend_on())
