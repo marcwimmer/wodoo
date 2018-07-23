@@ -1698,7 +1698,7 @@ def reset_db(dbname):
     print "Database dropped {}".format(dbname)
 
 def restart(machines=""):
-    if not machines and 'postgres' not in machines.split(","):
+    if not machines and 'postgres' not in __splitcomma(machines):
         if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
             machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
 
@@ -1708,7 +1708,7 @@ def restart(machines=""):
     proxy_reload()
 
 def rm(machines=''):
-    if not machines and 'postgres' not in machines.split(","):
+    if not machines and 'postgres' not in __splitcomma(machines):
         if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
             machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
     __dc(['rm', '-f'] + __splitcomma(machines))
@@ -2074,6 +2074,11 @@ Please set DEVMODE=1 to allow this""")
 def up(machines='', daemonized=False):
     if machines and 'postgres' not in machines:
         __set_db_ownership()
+
+    if not machines and 'postgres' not in __splitcomma(machines):
+        if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
+            machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
+
     options = [
     ]
     if daemonized:
@@ -2141,7 +2146,7 @@ def update(module="", dangling_modules=False, installed_modules=False, keep_cont
     telegram_send("Update done")
 
 def recreate(machines=''):
-    if not machines and 'postgres' not in machines.split(","):
+    if not machines and 'postgres' not in __splitcomma(machines):
         if E("RUN_POSTGRES") == "1" and E("RUN_POSTGRES_IN_RAM") == "1":
             machines = ','.join(filter(lambda x: x != 'postgres', _get_machines()))
     if machines:
