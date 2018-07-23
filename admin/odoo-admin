@@ -1,6 +1,7 @@
 #!/usr/bin/python
-from cursesmenu import CursesMenu
+from cursesmenu import CursesMenu, SelectionMenu
 from cursesmenu.items import FunctionItem, SubmenuItem
+import inquirer
 import pipes
 import argh
 import types
@@ -84,6 +85,7 @@ files = {
     'debugging_template': 'config/debugging/template.yml',
     'debugging_composer': 'run/debugging.yml',
     'settings': 'run/settings',
+    'settings_local': 'run/settings.d/local',
     'odoo_instances': 'run/odoo_instances',
     'config/default_network': 'config/default_network',
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
@@ -1730,21 +1732,11 @@ def rm(machines=''):
     __dc(['rm', '-f'] + __splitcomma(machines))
 
 def dumps():
-    options_names = {
-        # 'n': 'override db name on restore',
-    }
-    options = {
-        # 'n': False,
-    }
     while True:
-        os.system('reset')
         for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
             print("{}: {}".format(x, E(x)))
         _files = os.listdir(BACKUPDIR)
 
-        print "Options:"
-        for k, v in options_names.items():
-            print k, ':', v, 'SET' if options.get(k, False) else ''
 
         def _get_ctime(filepath):
             try:
@@ -1752,6 +1744,7 @@ def dumps():
             except Exception:
                 return 0
         rows = []
+        dumps = []
         for i, file in enumerate(sorted(filter(lambda x: _get_ctime(x), _files), reverse=False, key=_get_ctime)):
             filepath = os.path.join(BACKUPDIR, file)
             delta = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filepath))
@@ -1761,58 +1754,38 @@ def dumps():
                 humanize.naturaltime(delta),
                 humanize.naturalsize(os.stat(filepath).st_size)
             ))
+            dumps.append(file)
         print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
+        action = inquirer.prompt([inquirer.List('action', "Choose action", choices=['List', 'Backup', 'Restore', 'Delete', 'Exit'])])['action']
 
-        nr = raw_input("Choose action: [o]ption [b]ackup [d]elete, [r]restore  nr: e.g. d2, r8: ")
-        if not nr:
-            return
-        if not any(nr.startswith(x) for x in 'bdrRo'):
-            print("Invalid action {}".format(nr))
-            return
-        action = nr[0]
-        if len(nr) > 1 and action in 'rd':
-            nr = nr[1:]
-            nr = int(nr)
-            filename = rows[nr - 1][1]
-        elif action == 'o':
-            option = nr[1]
-            if option not in options_names:
-                print("Invalid option {}".format(option))
-                time.sleep(2)
-                continue
-            options[option] = not options.get(option, False)
+        if action == 'Exit':
+            break
+        elif action == 'List':
             continue
-
-        if action == 'd':
-            os.unlink(os.path.join(BACKUPDIR, filename))
-            print("Deleted {}".format(filename))
-        elif action in 'r':
-            dbname = ''
-            if options.get('n', False):
-                dbname = raw_input("Enter database-name: ")
+        elif action == 'Backup':
+            filename = __get_default_backup_filename()
+            filename = inquirer.prompt([inquirer.Text('filename', message="Please enter a filename", default=filename)])['filename']
+            if filename:
+                backup_db(filename=filename)
+        elif action in ['Delete', 'Restore']:
+            filename = inquirer.prompt([inquirer.List('filename', "Choose filename to {}".format(action), choices=dumps)])['filename']
+            if not filename:
+                continue
+            if action == "Delete":
+                os.unlink(os.path.join(BACKUPDIR, filename))
+                print("Deleted {}".format(filename))
+            elif action == "Restore":
+                dbname = inquirer.prompt([inquirer.Text('dbname', message="Enter Databasename", default=E("DBNAME"))])['dbname']
                 if not dbname:
-                    print("Aborted")
-                    time.sleep(2)
                     continue
 
-            dev = False
-            if E("ALLOW_RESTORE_DEV") == "1":
-                if raw_input("Restore as dev-db? [Y/n]") in ['', 'Y', 'y']:
-                    dev = True
-                dbname = raw_input("Destination name: [{}]".format(E("DBNAME"))) or E("DBNAME")
-            print("Restoring {} ...".format(filename))
-            restore_db(filename=filename, dbname=dbname, restore_as_dev_db=dev, printinfos=False, force=True)
-            break
-
-        elif action == 'b':
-            filename = __get_default_backup_filename()
-            filename = raw_input("Please enter a filename, otherwise {} is used: ".format(filename)) or filename
-            backup_db(filename=filename)
-            break
-        else:
-            if not action:
-                return
-            print("Invalid action")
+                dev = False
+                if E("ALLOW_RESTORE_DEV") == "1":
+                    dev = inquirer.prompt([inquirer.Confirm('dev', message="Restore as dev-db?", default=False)])['dev']
+                print("Restoring {} ...".format(filename))
+                from pudb import set_trace
+                set_trace()
+                restore_db(filename=filename, dbname=dbname, restore_as_dev_db=dev, printinfos=False, force=True)
 
 def restore_dev_db(filename='', force=False, ignore_filename_match_dbname=False):
     if E("ALLOW_RESTORE_DEV") != "1" and not FORCE:
@@ -2272,25 +2245,33 @@ def pgactivity():
         __dcexec(["postgres", 'pg_activity'])
 
 
-# def menu():
-    # #import signal
-    # import atexit
+def toggle():
+    config = MyConfigParser(files['settings'])
+    config_local = MyConfigParser(files['settings_local'])
 
-    # signal.signal(signal.SIGINT, signal.SIG_IGN)
-    # menu = CursesMenu("Odoo", "Administration")
-    # submenu_db = CursesMenu("Database")
-    # submenu_settings = CursesMenu("Settings")
-    # submenu = CursesMenu("Database")
-    # submenuitem_db = SubmenuItem("Database", submenu_db, menu)
-    # submenuitem_settings = FunctionItem("Settings", submenu_settings, menu)
+    choices = []
+    default = []
+    for key in sorted(config.keys()):
+        if key.startswith("RUN_"):
+            choices.append(key)
+            if config[key] == '1':
+                default.append(key)
 
-    # fi = FunctionItem("Status", status)
-    # menu.append_item(submenuitem_db)
-    # menu.append_item(submenuitem_settings)
-    # submenu.append_item(fi)
-    # menu.show()
+    questions = [
+        inquirer.Checkbox(
+            'run',
+            message="What services to run? {}/{}".format(E("CUSTOMS"), E("DBNAME")),
+            choices=choices,
+            default=default,
+        )
+    ]
+    answers = inquirer.prompt(questions)
 
-    # #atexit.register(self.cleanup)
+    for option in choices:
+        config_local[option] = '1' if option in answers['run'] else '0'
+    config_local.write()
+    reload()
+
 
 if __name__ == '__main__':
     parser = _setupArgs()
