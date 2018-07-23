@@ -1786,11 +1786,13 @@ def dumps():
                 dbname = raw_input("Destination name: [{}]".format(E("DBNAME"))) or E("DBNAME")
             print("Restoring {} ...".format(filename))
             restore_db(filename=filename, dbname=dbname, restore_as_dev_db=dev, printinfos=False, force=True)
+            break
 
         elif action == 'b':
             filename = __get_default_backup_filename()
             filename = raw_input("Please enter a filename, otherwise {} is used: ".format(filename)) or filename
             backup_db(filename=filename)
+            break
         else:
             if not action:
                 return
