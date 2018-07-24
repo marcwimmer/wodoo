@@ -1,7 +1,9 @@
 #!/usr/bin/python
+import pendulum as datetime
 import click
 import pickle
 import base64
+import copy
 import inquirer
 import pipes
 import types
@@ -25,31 +27,25 @@ import json
 from tabulate import tabulate
 from inspect import getmembers, isfunction
 from retrying import retry
-from datetime import datetime
-import copy
 from threading import Thread
-from Queue import Queue
 from logging import FileHandler
-from optparse import OptionParser
-import psycopg2
 from subprocess import PIPE
-from module_tools.module_tools import get_manifest_path_of_module_path
 from module_tools.myconfigparser import MyConfigParser
 from module_tools import odoo_config
-from module_tools import odoo_versioning as versioning
-from module_tools.odoo_parser import update_cache
-from module_tools.module_tools import remove_webassets
-from module_tools.odoo_config import get_odoo_addons_paths
-from module_tools.odoo_config import get_links_dir
-from module_tools.module_tools import make_customs as _tools_make_customs
-from module_tools.module_tools import make_module as _tools_make_module
-from module_tools.module_tools import remove_module_install_notifications
 from tools import __system
 from tools import __find_files
 from tools import __read_file
 from tools import __write_file
 from tools import __append_line
 from tools import __safe_filename
+
+def patch_inquirer_to_vim():
+    from readchar import key
+    key.UP = 'k'
+    key.DOWN = 'j'
+
+
+patch_inquirer_to_vim()
 
 try:
     from pudb import set_trace
@@ -349,6 +345,7 @@ def __execute_sql(sql, dbname=None, fetchone=False, fetchall=False, notransactio
     if not no_try:
         try_connect()
 
+    import psycopg2
     conn = psycopg2.connect(
         dbname=dbname,
         user=E("DB_USER"),
@@ -554,6 +551,7 @@ def _patch_default_patches(config):
     print("Applying default patches")
     print("-remove module install notfications")
 
+    from module_tools.module_tools import remove_module_install_notifications
     remove_module_install_notifications(dirs['customs'])
     print("Apply default patches DONE")
 
@@ -833,6 +831,7 @@ def __turn_into_devdb(dbname):
                 raise
             print("failed un-critical sql:", str(e))
 
+    from module_tools.module_tools import remove_webassets
     remove_webassets(dbname=dbname)
 
 def __wait_for_port(host, port, timeout=None):
@@ -1411,6 +1410,7 @@ def backup_calendar(config, filename=None):
 
 def __backup_postgres(filepath, dbname, host, port, user, password):
     os.environ['PGPASSWORD'] = password
+    import psycopg2
     conn = psycopg2.connect(dbname=dbname, host=host, port=long(port), user=user, password=password)
     cr = conn.cursor()
     cr.execute("SELECT (pg_database_size(current_database())) FROM pg_database")
@@ -1490,6 +1490,7 @@ def build(config, machines, pull=False, no_cache=False):
 
 @ticket.command()
 def commit(*parameters):
+    from module_tools import odoo_versioning as versioning
     versioning.actions["commit"](*parameters)
 
 @control.command()
@@ -1562,6 +1563,7 @@ def compose(config, customs='', db='', demo=False):
 
 @ticket.command()
 def current_ticket():
+    from module_tools import odoo_versioning as versioning
     versioning.actions["current-ticket"]()
 
 @module.command(name='remove-old')
@@ -1571,6 +1573,9 @@ def remove_old_modules(ctx, config):
     """
     Sets modules to 'uninstalled', that have no module dir anymore.
     """
+    from module_tools.module_tools import get_manifest_path_of_module_path
+    from module_tools.odoo_config import get_odoo_addons_paths
+    from module_tools.odoo_config import get_links_dir
     print("Analyzing which modules to remove...")
     ctx.invoke(wait_for_container_postgres)
     mods = sorted(map(lambda x: x[0], __execute_sql("select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
@@ -1626,6 +1631,7 @@ def debug(ctx, config, machine):
 
 @ticket.command()
 def deploy():
+    from module_tools import odoo_versioning as versioning
     versioning.action_deploy_ticket()
 
 @control.command()
@@ -1643,6 +1649,7 @@ def dev(ctx):
 
 @ticket.command()
 def dirty():
+    from module_tools import odoo_versioning as versioning
     versioning.dirty()
 
 def __do_command(cmd, *params, **kwparams):
@@ -1795,6 +1802,7 @@ def image_export(filename):
 
 @ticket.command(name='inc-version')
 def ticket_incversions():
+    from module_tools import odoo_versioning as versioning
     versioning.actions["incversions"]()
 
 @module.command(name='unlink')
@@ -1829,18 +1837,20 @@ def lang_import_i18n(lang, po_file_path):
     __dcrun(['odoo', '/import_i18n.sh', lang, po_file_path])
 
 @src.command(name='make-customs')
-def src_make_customs(customs, version):
+@click.pass_context
+def src_make_customs(ctx, customs, version):
     raise Exception("rework - add fetch sha")
     _askcontinue()
     admin_dir = dirs['admin']
-    kill()
+    ctx.invoke(kill)
+    from module_tools.module_tools import make_customs as _tools_make_customs
     _tools_make_customs(
         customs=customs,
         version=version,
     )
     os.environ['CUSTOMS'] = customs
     cwd = os.path.join(dirs['odoo_home'], 'customs', customs)
-    checkout_odoo()
+    ctx.invoke(checkout_odoo)
     odoo_dir = os.path.join(cwd, 'odoo')
     __system([
         'git', 'checkout', str(version)
@@ -1855,9 +1865,9 @@ def src_make_customs(customs, version):
         "odoo-submodule",
         'tools,web_modulesroduct_modules,calendar_ics',
     ], cwd=admin_dir)
-    kill()
-    compose(customs)
-    up()
+    ctx.invoke(kill)
+    ctx.invoke(compose, customs=customs)
+    ctx.invoke(up)
 
 @module.command()
 def OCA(module):
@@ -1897,6 +1907,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         return cmd
 
     def connect_db():
+        import psycopg2
         return psycopg2.connect(
             dbname=os.environ['DBNAME'],
             user=os.environ['DB_USER'],
@@ -2140,10 +2151,12 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
 
 @ticket.command()
 def new_ticket(ticket_name):
+    from module_tools import odoo_versioning as versioning
     versioning.actions['new-ticket'](*[ticket_name])
 
 @ticket.command()
 def open_tickets(command_options):
+    from module_tools import odoo_versioning as versioning
     versioning.actions["open-tickets"]()
 
 def __exists_odoo_commit():
@@ -2546,6 +2559,7 @@ def springclean():
 
 @ticket.command()
 def stage():
+    from module_tools import odoo_versioning as versioning
     versioning.action_stage_ticket()
 
 @admin.command()
@@ -2644,6 +2658,7 @@ def checkout_odoo(version='', not_use_local_repo=True, commit_changes=False, for
 
 @ticket.command(name='switch')
 def switch_ticket(ticket):
+    from module_tools import odoo_versioning as versioning
     versioning.actions["switch-ticket"](*[ticket])
 
 @telegram.command()
@@ -2783,6 +2798,7 @@ def recreate(ctx, config, machines):
 
 @src.command()
 def update_ast():
+    from module_tools.odoo_parser import update_cache
     if _get_platform() == PLATFORM_OSX:
         print "Update is extreme slow on osx due to share performance. Please use following command natively:"
         print
@@ -2888,6 +2904,7 @@ def project(ctx):
 @src.command()
 def make_module(name):
     cwd = E("WORKING_DIR")
+    from module_tools.module_tools import make_module as _tools_make_module
     _tools_make_module(
         cwd,
         name,

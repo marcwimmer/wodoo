@@ -16,3 +16,4 @@ argh
 tabulate
 curses-menu
 Click
+pendulum
