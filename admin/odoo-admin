@@ -198,6 +198,7 @@ def db(config):
     """
     Database related actions.
     """
+    click.echo("database-name: {}, in ram: {}".format(config.dbname, config.run_postgres_in_ram))
     pass
 
 @cli.group()
@@ -2478,14 +2479,16 @@ def runbash(ctx, config, machine, args):
 def sanity_check():
     _sanity_check()
 
-@db.command(name='set')
+@db.command(name='setname')
 @click.argument("DBNAME", required=True)
 @click.pass_context
-def set_db(ctx, DBNAME):
-    ctx.invoke(set_settings, key='DBNAME', value=DBNAME)
+def set_db_name(ctx, DBNAME):
+    ctx.invoke(set_setting, key='DBNAME', value=DBNAME)
 
-@admin.command()
-def set_settings(key, value):
+@admin.command(name='set-setting')
+@click.argument('key', required=True)
+@click.argument('value', required=True)
+def set_setting(key, value):
     config = MyConfigParser(files['settings'])
     config[key.upper()] = value
     config.write()
@@ -2915,9 +2918,9 @@ def pgactivity():
     if E("RUN_POSTGRES") == "1":
         __dcexec(["postgres", 'pg_activity'])
 
-@admin.command()
+@admin.command(name='toggle-settings')
 @click.pass_context
-def settings(ctx):
+def toggle_settings(ctx):
     config = MyConfigParser(files['settings'])
     config_local = MyConfigParser(files['settings_local'])
 
