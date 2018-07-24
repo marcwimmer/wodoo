@@ -2525,7 +2525,7 @@ def show_install_state(suppress_error=False):
     if dangling and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
-@cli.command()
+@cli.command(name='bash')
 def simplebash(*parameters):
     if not parameters:
         os.system("bash --noprofile")
