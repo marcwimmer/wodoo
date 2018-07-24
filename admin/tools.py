@@ -112,3 +112,25 @@ def __safe_filename(name):
     for c in [':\\/+?*;\'" ']:
         name = name.replace(c, "_")
     return name
+
+def __write_file(path, content):
+    with open(path, 'w') as f:
+        f.write(content)
+
+def __append_line(path, line):
+    if not os.path.exists(path):
+        content = ""
+    else:
+        with open(path, 'r') as f:
+            content = f.read().strip()
+    content += "\n" + line
+    with open(path, 'w') as f:
+        f.write(content)
+
+def __read_file(path, error=True):
+    try:
+        with open(path, 'r') as f:
+            return f.read()
+    except Exception:
+        if not error:
+            return""

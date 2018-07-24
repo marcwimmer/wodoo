@@ -216,7 +216,7 @@ def turn_on_rsynced_on_macos():
 
 
 if __name__ == '__main__':
-    show_help()
+    #show_help()
     update()
 
     turn_on_rsynced_on_macos()
