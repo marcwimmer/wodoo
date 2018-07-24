@@ -1,6 +1,6 @@
 #!/usr/bin/python
-import pendulum as datetime
 import click
+from datetime import datetime
 import pickle
 import base64
 import copy
@@ -1870,7 +1870,7 @@ def src_make_customs(ctx, customs, version):
     ctx.invoke(compose, customs=customs)
     ctx.invoke(up)
 
-@module.command()
+@module.command(name='OCA')
 def OCA(module):
     """
     Adds module from OCA - provide the repository name like 'web_modules'
