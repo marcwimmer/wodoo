@@ -2860,9 +2860,10 @@ def project_delete():
     answer = inquirer.prompt([inquirer.List("project", "Choose a project", choices=choices)])
     if not answer:
         return
-    index = int(raw_input("Which index?")) - 1
+    customs, db = answer['project'].split("/")
     config = __get_project_config()
-    config['projects'].remove(config['projects'][index])
+    project = filter(lambda x: x['customs'] == customs and x['db'] == db, config['projects'])
+    config['projects'].remove(project)
     __set_project_config(config)
 
 @project.command(name='admin')
@@ -2875,7 +2876,6 @@ def project(ctx):
         return
 
     customs, db = answer['project'].split("/")
-
     project = filter(lambda x: x['customs'] == customs and x['db'] == db, projects)
     ctx.invoke(project_activate, project)
 
