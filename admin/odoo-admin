@@ -1661,8 +1661,12 @@ def drop_db(config, dbname):
     __execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
     print("Database {} dropped.".format(dbname))
 
-def execute(*parameters):
-    __dcexec(*parameters)
+@control.command(name='exec')
+@click.argument('machine', required=True)
+@click.argument('args', nargs=-1)
+def execute(machine, args):
+    args = [machine] + list(args)
+    __dcexec(args)
 
 @lang.command(name='export')
 @click.argument('lang', required=True)
