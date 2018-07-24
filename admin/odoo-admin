@@ -1729,10 +1729,10 @@ def kill(ctx, config, machines, brutal=False):
     __dc(['stop', '-t 2'] + list(machines))
 
 @cli.group()
-def docker_image():
+def image():
     pass
 
-@docker_image.command(name='import')
+@image.command(name='import')
 @click.argument('filename', required=True)
 def image_import(filename):
     """
@@ -1748,7 +1748,7 @@ def image_import(filename):
         dump_path
     ])
 
-@docker_image.command(name='export')
+@image.command(name='export')
 @click.argument('filename', required=False)
 def image_export(filename):
     """
@@ -2823,48 +2823,61 @@ def project_list():
     projects = __get_project_config()['projects']
     for i, project in enumerate(projects):
         print "{}:".format(i + 1), "{}/{}".format(project['customs'], project['db'])
-    print("")
+
+@click.pass_context
+def project_activate(ctx, project):
+    ctx.invoke(
+        compose,
+        customs=project['customs'],
+        db=project['db'],
+        demo=project['demo'],
+    )
+    ctx.invoke(dev)
+
+@project.command(name='new')
+@click.pass_context
+def project_new(ctx, customs, dbname):
+    ans = inquirer.prompt([
+        inquirer.Text('customs', "Customs"),
+        inquirer.Text('db', "DB (if empty same as customs then)", ),
+        inquirer.Confirm('demo', "Activate demo ata?"),
+    ])
+    if not ans:
+        return
+    config = __get_project_config()
+    project = {
+        'customs': ans['customs'],
+        'db': ans['db'],
+        'demo': ans['demo'],
+    }
+    config['projects'].append(project)
+    __set_project_config(config)
+    ctx.invoke(project_activate, project=project)
+
+@project.command(name='delete')
+def project_delete():
+    choices = map(lambda p: "/".join(p['customs'], p['db']))
+    answer = inquirer.prompt([inquirer.List("project", "Choose a project", choices=choices)])
+    if not answer:
+        return
+    index = int(raw_input("Which index?")) - 1
+    config = __get_project_config()
+    config['projects'].remove(config['projects'][index])
+    __set_project_config(config)
 
 @project.command(name='admin')
-def project():
-    project_list()
-    print("n: new project")
-    print("d: delete project")
-    input = raw_input("Type number and enter.")
+@click.pass_context
+def project(ctx):
+    projects = __get_project_config()['projects']
+    choices = map(lambda p: "/".join(p['customs'], p['db']), projects)
+    answer = inquirer.prompt([inquirer.List("project", "Choose a project", choices=choices)])
+    if not answer:
+        return
 
-    def goto_index(index):
-        project = __get_project_config()['projects'][index]
-        compose(customs=project['customs'], db=project['db'], demo=project['demo'])
-        dev()
+    customs, db = answer['project'].split("/")
 
-    config = __get_project_config()
-    if input == 'n':
-        customs = raw_input("Customs:")
-        if not customs:
-            return
-        db = raw_input("DB[{}]".format(customs))
-        demo = not (raw_input("use demo? [Y/n]") == 'n')
-        demo = demo in ['1', 'true', 'True', 'y', 'Y']
-        config['projects'].append({
-            'customs': customs,
-            'db': db,
-            'demo': demo,
-        })
-        __set_project_config(config)
-
-        index = len(config['projects']) - 1
-        goto_index(index)
-    elif input == 'd':
-        index = int(raw_input("Which index?")) - 1
-        config['projects'].remove(config['projects'][index])
-        __set_project_config(config)
-
-    try:
-        index = int(input) - 1
-    except Exception:
-        index = 0
-    else:
-        goto_index(index)
+    project = filter(lambda x: x['customs'] == customs and x['db'] == db, projects)
+    ctx.invoke(project_activate, project)
 
 @src.command()
 def make_module(name):
