@@ -1,0 +1,19 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  odoo:
+    command: bash -c 'echo "entering endless loop"; while true; do sleep 1; done'
+    env_file:
+    - $ODOO_HOME/run/settings
+    ports:
+    - 8072:8072
+    - 8069:8069
+  odoo_base:
+    env_file:
+    - $ODOO_HOME/run/settings
+    volumes:
+    - /home/marc/odoo/run/odoo_outdir:/opt/out_dir
+version: '3.5'
+

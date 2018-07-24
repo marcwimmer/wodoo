@@ -1,0 +1,17 @@
+networks:
+  default:
+    external:
+      name: home_marc_odoo_default
+services:
+  proxy:
+    build: $ODOO_HOME/machines/proxy
+    container_name: caetec11_proxy
+    env_file:
+    - $ODOO_HOME/run/settings
+    ports:
+    - 80:80
+    volumes:
+    - $ODOO_HOME/run/proxy:/etc/proxy
+    - $ODOO_HOME/machines/proxy/bin:/opt/bin
+version: '3.5'
+
