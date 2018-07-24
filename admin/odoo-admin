@@ -2461,9 +2461,11 @@ def runbash(ctx, config, machine, args):
 def sanity_check():
     _sanity_check()
 
-@db.command()
-def set_db(DBNAME):
-    set_settings('DBNAME', DBNAME)
+@db.command(name='set')
+@click.argument("DBNAME", required=True)
+@click.pass_context
+def set_db(ctx, DBNAME):
+    ctx.invoke(set_settings, key='DBNAME', value=DBNAME)
 
 @admin.command()
 def set_settings(key, value):
