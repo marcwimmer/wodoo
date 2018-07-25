@@ -143,12 +143,12 @@ def cli(config, force, devmode):
         config.run_postgres_in_ram = E("RUN_POSTGRES_IN_RAM") == "1"
     config.dbname = E("DBNAME")
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def admin(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def patch(config):
     """
@@ -174,37 +174,37 @@ def patch(config):
     odoo_dir = os.path.join(dirs['customs'], 'odoo')
     __assert_file_exists(odoo_dir, isdir=True)
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def backup(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def restore(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def setup(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def telegram(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def src(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def project(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def db(config):
     """
@@ -213,22 +213,22 @@ def db(config):
     click.echo("database-name: {}, in ram: {}".format(config.dbname, config.run_postgres_in_ram))
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def module(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def lang(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def control(config):
     pass
 
-@cli.group()
+@cli.group(cls=AliasedGroup)
 @pass_config
 def ticket(config):
     pass
