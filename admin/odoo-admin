@@ -174,11 +174,6 @@ def setup(config):
 
 @cli.group()
 @pass_config
-def log(config):
-    pass
-
-@cli.group()
-@pass_config
 def telegram(config):
     pass
 
@@ -1820,9 +1815,9 @@ def module_link():
     """
     os.system("python " + os.path.join(dirs['admin'], 'link_modules'))
 
-@cli.command(name='all')
+@cli.command(name='log')
 @click.argument('machines', nargs=-1)
-@click.argument('tail', required=False, type=int)
+@click.argument('tail', required=False, type=int, default=200)
 @click.option('-f', '--follow', is_flag=True)
 def logall(machines, follow, tail):
     cmd = ['logs']
@@ -2461,7 +2456,7 @@ def run(ctx, config, machine, args, **kwparams):
 
 @cli.command()
 @click.argument('machine', required=True)
-@click.argument('args', nargs='-1')
+@click.argument('args', nargs=-1)
 @pass_config
 @click.pass_context
 def runbash(ctx, config, machine, args):
