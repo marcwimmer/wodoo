@@ -280,7 +280,7 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
 
     __assert_file_exists(dump_file)
 
-    print("Restoring dump on {}:{} as {}".format(host, port, user))
+    click.echo("Restoring dump on {}:{} as {}".format(host, port, user))
     os.environ['PGPASSWORD'] = password
     args = ["-h", host, "-p", port, "-U", user]
     PGRESTORE = [
@@ -2324,6 +2324,7 @@ def remove_web_assets():
     they are usually recreated when admin login
     """
     _askcontinue()
+    from module_tools.module_tools import remove_webassets
     remove_webassets()
     if float(E("ODOO_VERSION")) <= 10.0:
         print("Please login as admin, so that assets are recreated.")
@@ -2441,7 +2442,7 @@ def restore_db(ctx, config, filename, restore_as_dev_db=False, dbname=''):
     dbname = dbname or config.dbname
 
     ctx.invoke(wait_for_container_postgres)
-    _reset_db(config=config, dbname=dbname)
+    _reset_db(config=config, dbname=DBNAME_RESTORING)
     __do_restore_db_on_postgres(filename, DBNAME_RESTORING, E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
     if restore_as_dev_db:
         __turn_into_devdb(DBNAME_RESTORING)
