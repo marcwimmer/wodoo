@@ -109,7 +109,24 @@ class Config(object):
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
-@click.group()
+class AliasedGroup(click.Group):
+    """
+    Uses startswith to match command
+    """
+
+    def get_command(self, ctx, cmd_name):
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+        matches = [x for x in self.list_commands(ctx)
+                   if x.startswith(cmd_name)]
+        if not matches:
+            return None
+        elif len(matches) == 1:
+            return click.Group.get_command(self, ctx, matches[0])
+        ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
+
+@click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
 @click.option("--dev", "--devmode", is_flag=True, default=False)
 @pass_config
@@ -1817,7 +1834,7 @@ def module_link():
 
 @cli.command(name='log')
 @click.argument('machines', nargs=-1)
-@click.argument('tail', required=False, type=int, default=200)
+@click.option('-t', '--tail', required=False, type=int, default=200)
 @click.option('-f', '--follow', is_flag=True)
 def logall(machines, follow, tail):
     cmd = ['logs']
