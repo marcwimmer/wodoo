@@ -970,6 +970,8 @@ def _export_settings():
     setting_files = _collect_settings_files()
     _make_settings_file(files['settings'], setting_files)
     config = MyConfigParser(files['settings'])
+    if ODOO_VERSION:
+        config['ODOO_VERSION'] = ODOO_VERSION
 
     __postprocess_config(config)
     # store the host root folder
