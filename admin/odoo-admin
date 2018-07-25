@@ -1384,6 +1384,7 @@ def E(name):
     return os.getenv(name, "")
 
 @control.command()
+@click.argument('machine', required=True)
 def attach(machine):
     """
     attaches to running machine
