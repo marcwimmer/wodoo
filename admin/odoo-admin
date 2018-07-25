@@ -121,8 +121,16 @@ class AliasedGroup(click.Group):
         matches = [x for x in self.list_commands(ctx)
                    if x.startswith(cmd_name)]
         if not matches:
+            # search recursivley
+            for cmd in self.list_commands(ctx):
+                cmd = click.Group.get_command(self, ctx, cmd)
+                if type(cmd) == type(self):
+                    matches += map(lambda cmd_name: cmd.get_command(ctx, cmd_name), filter(lambda cmd: cmd.startswith(cmd_name), cmd.list_commands(ctx)))
+            if len(matches) == 1:
+                return matches[0]
             return None
-        elif len(matches) == 1:
+
+        if len(matches) == 1:
             return click.Group.get_command(self, ctx, matches[0])
         ctx.fail('Too many matches: %s' % ', '.join(sorted(matches)))
 
@@ -1213,7 +1221,7 @@ def _remember_customs_and_cry_if_changed():
             current_customs = out[0].split("=")[-1]
             if current_customs != os.environ['CUSTOMS']:
                 print("Customs changed - you need to restart and/or rebuild!")
-                kill()
+                __dc(['stop', '-t 2'])
 
 def _remove_temp_directories():
     for dir in os.listdir(dirs['odoo_home']):
