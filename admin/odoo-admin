@@ -2897,9 +2897,9 @@ def project_activate(ctx, config, project):
 @click.pass_context
 def project_new(ctx, config):
     ans = inquirer.prompt([
-        inquirer.Text('customs', "Customs"),
-        inquirer.Text('db', "DB (if empty same as customs then)", ),
-        inquirer.Confirm('demo', "Activate demo ata?"),
+        inquirer.Text('customs', message="Customs"),
+        inquirer.Text('db', message="DB (if empty same as customs then)", ),
+        inquirer.Confirm('demo', message="Activate demo data?"),
     ])
     if not ans:
         return
