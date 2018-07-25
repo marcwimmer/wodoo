@@ -1507,7 +1507,7 @@ def commit(*parameters):
     from module_tools import odoo_versioning as versioning
     versioning.actions["commit"](*parameters)
 
-@control.command()
+@admin.command()
 @click.pass_context
 def reload(ctx):
     """
