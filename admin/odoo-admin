@@ -915,6 +915,39 @@ def _display_machine_tips(machine_name):
             print ""
             print ""
 
+def __postprocess_config(config):
+    """
+    keep if xxx in config queries for the toggle command. It sets
+    a sub config file which does not contain all keys.
+    """
+
+    if "DBNAME" not in config.keys() and "CUSTOMS" in config:
+        config['DBNAME'] = config['CUSTOMS']
+    if config.get("ODOO_VERSION", "") != E("ODOO_VERSION") and "ODOO_VERSION" in config:
+        config['ODOO_VERSION'] = E("ODOO_VERSION")
+
+    if 'RUN_POSTGRES' in config.keys() and config['RUN_POSTGRES'] == '1':
+        default_values = {
+            "DB_HOST": "postgres",
+            "DB_PORT": "5432",
+            "DB_USER": "odoo",
+            "DB_PWD": "odoo"
+        }
+        for k, v in default_values.items():
+            if config.get(k, "") != v:
+                config[k] = v
+
+    if "RUN_POSTGRES" in config.keys() and config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
+        config['RUN_POSTGRES_IN_RAM'] = "1"
+
+    if "DEVMODE" in config.keys() and config.get("DEVMODE", "0") == "1":
+        config['RUN_ODOODEV'] = "1"
+    else:
+        config['RUN_ODOODEV'] = "0"
+
+    if "RUN_CALENDAR" in config.keys() and config.get("RUN_CALENDAR", "") == "1":
+        config['RUN_CALENDAR_DB'] = "1"
+
 def _export_settings():
     _file2env(files['settings'])
 
@@ -930,38 +963,11 @@ def _export_settings():
     _make_settings_file(files['settings'], setting_files)
     config = MyConfigParser(files['settings'])
 
-    if "DBNAME" not in config.keys():
-        config['DBNAME'] = config['CUSTOMS']
-        config.write()
-    if "ODOO_VERSION" not in config or config['ODOO_VERSION'] != ODOO_VERSION:
-        config['ODOO_VERSION'] = ODOO_VERSION
-        config.write()
-
-    if 'RUN_POSTGRES' in config.keys() and config['RUN_POSTGRES'] == '1':
-        default_values = {
-            "DB_HOST": "postgres",
-            "DB_PORT": "5432",
-            "DB_USER": "odoo",
-            "DB_PWD": "odoo"
-        }
-        for k, v in default_values.items():
-            if config.get(k, "") != v:
-                config[k] = v
-                config.write()
-
-    if config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
-        config['RUN_POSTGRES_IN_RAM'] = "1"
-
-    if config.get("DEVMODE", "0") == "1":
-        config['RUN_ODOODEV'] = "1"
-    else:
-        config['RUN_ODOODEV'] = "0"
-
-    if config.get("RUN_CALENDAR", "") == "1":
-        config['RUN_CALENDAR_DB'] = "1"
-
+    __postprocess_config(config)
     # store the host root folder
     config['HOST_ODOO_HOME'] = E("ODOO_HOME")
+    config.write()
+
     _file2env(files['settings'])
 
 def _file2env(filepath):
@@ -2967,8 +2973,10 @@ def toggle_settings(ctx):
     for key in sorted(config.keys()):
         if key.startswith("RUN_"):
             choices.append(key)
-            if config[key] == '1':
-                default.append(key)
+
+    for choice in choices:
+        if config[choice] == '1':
+            default.append(choice)
 
     questions = [
         inquirer.Checkbox(
@@ -2984,6 +2992,7 @@ def toggle_settings(ctx):
         return
     for option in choices:
         config_local[option] = '1' if option in answers['run'] else '0'
+    __postprocess_config(config_local)
     config_local.write()
     ctx.invoke(reload)
 
