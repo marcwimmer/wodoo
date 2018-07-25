@@ -949,6 +949,17 @@ def _export_settings():
                 config[k] = v
                 config.write()
 
+    if config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
+        config['RUN_POSTGRES_IN_RAM'] = "1"
+
+    if config.get("DEVMODE", "0") == "1":
+        config['RUN_ODOODEV'] = "1"
+    else:
+        config['RUN_ODOODEV'] = "0"
+
+    if config.get("RUN_CALENDAR", "") == "1":
+        config['RUN_CALENDAR_DB'] = "1"
+
     # store the host root folder
     config['HOST_ODOO_HOME'] = E("ODOO_HOME")
     _file2env(files['settings'])
@@ -2948,8 +2959,11 @@ def toggle_settings(ctx):
     config = MyConfigParser(files['settings'])
     config_local = MyConfigParser(files['settings_local'])
 
-    choices = []
+    choices = [
+        "DEVMODE",
+    ]
     default = []
+
     for key in sorted(config.keys()):
         if key.startswith("RUN_"):
             choices.append(key)
