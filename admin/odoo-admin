@@ -2883,7 +2883,7 @@ def project_activate(ctx, config, project):
 @project.command(name='new')
 @pass_config
 @click.pass_context
-def project_new(ctx, config, customs, dbname):
+def project_new(ctx, config):
     ans = inquirer.prompt([
         inquirer.Text('customs', "Customs"),
         inquirer.Text('db', "DB (if empty same as customs then)", ),
