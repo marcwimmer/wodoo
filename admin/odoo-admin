@@ -122,12 +122,21 @@ class AliasedGroup(click.Group):
                    if x.startswith(cmd_name)]
         if not matches:
             # search recursivley
-            for cmd in self.list_commands(ctx):
-                cmd = click.Group.get_command(self, ctx, cmd)
+            for _cmd_name in self.list_commands(ctx):
+                cmd = click.Group.get_command(self, ctx, _cmd_name)
                 if type(cmd) == type(self):
-                    matches += map(lambda cmd_name: cmd.get_command(ctx, cmd_name), filter(lambda cmd: cmd.startswith(cmd_name), cmd.list_commands(ctx)))
+                    filtered = filter(lambda cmd: cmd.startswith(cmd_name), cmd.list_commands(ctx))
+                    matches += map(lambda cmd_name: (cmd.get_command(ctx, cmd_name), _cmd_name), filtered)
+            if len(matches) > 1:
+                # try to reduce to exact match
+                try_matches = filter(lambda match: match[0].name == cmd_name, matches)
+                if try_matches:
+                    matches = try_matches
+
             if len(matches) == 1:
-                return matches[0]
+                return matches[0][0]
+            elif len(matches) > 1:
+                click.echo("Not unique command: {}\n\n".format('\n\t'.join(x[1] + '/' + x[0].name for x in matches)))
             return None
 
         if len(matches) == 1:
