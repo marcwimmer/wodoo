@@ -2290,22 +2290,24 @@ def list_subtrees():
     for x in __get_all_subtrees():
         print(x)
 
-@src.command()
-def pull_all():
+def pull_push_all(ctx, mode):
     for mod in __get_all_subtrees():
         if mod.startswith("common/"):
             path = os.path.join(dirs['customs'], mod)
             if os.path.isdir(path):
                 mod = mod[len("common/"):]
-                pull(mod)
+                if mode == 'pull':
+                    ctx.invoke(pull, submodule=mod)
+                else:
+                    ctx.invoke(push, submodule=mod)
+
 
 @src.command()
-def push_all():
-    for mod in __get_all_subtrees():
-        push(mod)
-
-@src.command()
-def pull(submodule):
+@click.argument("submodule", required=False)
+@click.pass_context
+def pull(ctx, submodule):
+    if not submodule:
+        pull_push_all(ctx, 'pull')
     branch = E("ODOO_VERSION")
     print("Pulling latest version of {} branch {}".format(submodule, branch))
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
@@ -2321,9 +2323,14 @@ def pull(submodule):
         'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
         branch,
     ], cwd=dirs['customs'])
+    ctx.invoke(link)
 
 @src.command()
-def push(submodule_name):
+@click.argument("submodule", required=False)
+@click.pass_context
+def push(ctx, submodule):
+    if not submodule:
+        pull_push_all(ctx, 'push')
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
 
     __system([
