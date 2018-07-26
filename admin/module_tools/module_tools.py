@@ -806,6 +806,62 @@ def update_module(filepath, full=False):
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
         f.write('update_module{}:{}'.format('_full' if full else '', module))
 
+
+def update_assets_file(module_path):
+    assets_template = """
+<odoo><data>
+<template id="assets_backend" inherit_id="web.assets_backend" name="">
+    <xpath expr="." position="inside">
+    </xpath>
+</template>
+</data>
+</odoo>
+"""
+    doc = etree.XML(assets_template)
+    doc.xpath("//template")[0].set('name', os.path.basename(module_path) + " backend assets")
+    parent = doc.xpath('//xpath')[0]
+    all_files = get_all_files_of_module(module_path)
+    any = False
+    for file in all_files:
+        if not file.startswith("static/"):
+            continue
+        if file.endswith('.less') or file.endswith('.css'):
+            etree.SubElement(parent, 'link', {
+                'rel': 'stylesheet',
+                'href': '/' + file,
+            })
+            any = True
+        elif file.endswith('.js'):
+            etree.SubElement(parent, 'script', {
+                'type': 'text/javascript',
+                'src': '/' + file,
+            })
+            any = True
+    filepath = os.path.join(module_path, 'views/assets.xml')
+    if not any and os.path.exists(filepath):
+        os.unlink(filepath)
+    else:
+        if not os.path.exists(os.path.dirname(filepath)):
+            os.mkdir(os.path.dirname(filepath))
+        with open(filepath, 'w') as f:
+            f.write(etree.tostring(doc, pretty_print=True))
+
+def get_all_files_of_module(module_path):
+    all_files = [
+        os.path.join(root, name)
+        for root, dirs, files in os.walk(module_path)
+        for name in files
+    ]
+    for i in range(len(all_files)):
+        file = all_files[i]
+        common_prefix = os.path.commonprefix([file, module_path])
+        if common_prefix != "/":
+            f = all_files[i][len(common_prefix):]
+            if f.startswith('/'):
+                f = f[1:]
+            all_files[i] = f
+    return all_files
+
 def update_module_file(current_file):
     if not current_file:
         return
@@ -813,23 +869,14 @@ def update_module_file(current_file):
     # except if there is a directory test; those files are ignored;
     file_path = get_path_to_current_odoo_module(current_file)
     module_path = os.path.dirname(file_path)
+    update_assets_file(module_path)
 
     file = open(file_path, "rb")
     mod = eval(file.read())
     file.close()
 
+    all_files = get_all_files_of_module()
     # first collect all xml files and ignore test and static
-    all_files = [
-        os.path.join(root, name)
-        for root, dirs, files in os.walk(os.path.dirname(file_path))
-        for name in files
-    ]
-    for i in range(len(all_files)):
-        file = all_files[i]
-        common_prefix = os.path.commonprefix([file, file_path])
-        if common_prefix != "/":
-            all_files[i] = all_files[i][len(common_prefix):]
-
     DATA_NAME = 'data'
     if get_version_from_customs() <= 7.0:
         DATA_NAME = 'update_xml'

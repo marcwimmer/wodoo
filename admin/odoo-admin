@@ -3040,6 +3040,10 @@ def toggle_settings(ctx):
     config_local.write()
     ctx.invoke(reload)
 
+@module.command(name='update-assets-file')
+def update_assets_file():
+    from module_tools.module_tools import update_assets_file
+    update_assets_file("/opt/odoo/data/src/customs/caetec11/common/asterisk_ari/phonebox")
 
 if __name__ == '__main__':
     _startup()
