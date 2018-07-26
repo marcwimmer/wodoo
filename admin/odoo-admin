@@ -2301,29 +2301,44 @@ def pull_push_all(ctx, mode):
                 else:
                     ctx.invoke(push, submodule=mod)
 
-
 @src.command()
 @click.argument("submodule", required=False)
 @click.pass_context
 def pull(ctx, submodule):
     if not submodule:
         pull_push_all(ctx, 'pull')
+        return
+
+    from module_tools import odoo_versioning as versioning
+    if not versioning.dirty():
+        # Following https://stackoverflow.com/questions/3623351/git-subtree-pull-says-that-the-working-tree-has-modifications-but-git-status-sa
+        try:
+            __system(['git', 'commit'], cwd=dirs['customs'], suppress_out=True)
+        except Exception: pass
+
     branch = E("ODOO_VERSION")
-    print("Pulling latest version of {} branch {}".format(submodule, branch))
+    click.echo("Pulling latest version of {} branch {}".format(submodule, branch))
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
-    __system([
-        'git',
-        'subtree',
-        'pull',
-        '--message',
-        'SUBTREE-PULL {}'.format(submodule),
-        '--prefix',
-        'common/{}'.format(submodule),
-        '--squash',
-        'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
-        branch,
-    ], cwd=dirs['customs'])
-    ctx.invoke(link)
+    try:
+        __system([
+            'git',
+            'subtree',
+            'pull',
+            '--message',
+            'SUBTREE-PULL {}'.format(submodule),
+            '--prefix',
+            'common/{}'.format(submodule),
+            '--squash',
+            'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
+            branch,
+        ], cwd=dirs['customs'], suppress_out=False)
+    except Exception:
+        click.echo("""Following https://stackoverflow.com/questions/3623351/git-subtree-pull-says-that-the-working-tree-has-modifications-but-git-status-sa
+an error can occur 'working tree has modifications'
+
+                   Just try: git commmit or git checkout <branch> or git reset --hard
+    ctx.invoke(module_link)
+    """)
 
 @src.command()
 @click.argument("submodule", required=False)
@@ -2331,19 +2346,22 @@ def pull(ctx, submodule):
 def push(ctx, submodule):
     if not submodule:
         pull_push_all(ctx, 'push')
+        return
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
 
     __system([
         'git',
         'subtree',
         'push',
-        '--prefix=common/{}'.format(submodule_name),
-        'git.mt-software.de:/git/odoo/modules/{}'.format(submodule_name),
+        '--prefix=common/{}'.format(submodule),
+        'git.mt-software.de:/git/odoo/modules/{}'.format(submodule),
         E("ODOO_VERSION"),
     ], cwd=dirs['customs'])
 
 @db.command()
-def psql(dbname=None, *params):
+@click.argument('dbname', required=False)
+@click.argument('params', nargs=-1)
+def psql(dbname, params):
     if not dbname and len(params) == 1:
         if params[0] in ['template1', E("DBNAME")]:
             dbname = params[0]
