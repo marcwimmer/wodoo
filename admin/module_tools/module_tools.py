@@ -823,18 +823,19 @@ def update_assets_file(module_path):
     all_files = get_all_files_of_module(module_path)
     any = False
     for file in all_files:
+        local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
         if not file.startswith("static/"):
             continue
         if file.endswith('.less') or file.endswith('.css'):
             etree.SubElement(parent, 'link', {
                 'rel': 'stylesheet',
-                'href': '/' + file,
+                'href': local_file_path,
             })
             any = True
         elif file.endswith('.js'):
             etree.SubElement(parent, 'script', {
                 'type': 'text/javascript',
-                'src': '/{}/'.format(os.path.basename(module_path)) + file,
+                'src': local_file_path,
             })
             any = True
     filepath = os.path.join(module_path, 'views/assets.xml')
