@@ -255,15 +255,15 @@ def _get_fields():
             if "#" in line:
                 line = line.split("#")[0]
 
-            match = re.search(r"[\'\"]([^\'^\"]*)[\'\"].*fields\.", line)
+            match = re.search(r".*=.*fields\..*\(", line)
             if match:
-                fieldname = match.group(1)
-            if not match:
+                fieldname = match.group(0).split("=")[0].strip()
+            else:
                 # V8
-                match = re.search(r".*=.*fields\..*\(", line)
+                match = re.search(r"[\'\"]([^\'^\"]*)[\'\"].*fields\.", line)
                 if not match:
                     continue
-                fieldname = match.group(0).split("=")[0].strip()
+                fieldname = match.group(1)
             if filename in cache_models and 'lines' in cache_models[filename]:
                 linenums = filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys())
                 linenums.sort(lambda a, b: cmp(b, a))
