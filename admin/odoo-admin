@@ -2183,13 +2183,14 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         print("Error occurred during migration, suggestions:")
         print("")
         print("1. Run odoo version and startup frontend, use ./odoo checkout-odoo -f -v xx.xx to set odoo")
+    else:
+        click.echo("Running migration after processes (basically module update)")
+        ctx.invoke(remove_old_modules)
+        ctx.invoke(update, module=[], dangling_modules=True, installed_modules=True)
+        ctx.invoke(update, module=['base'])
+        ctx.invoke(update, module=[])
+
     finally:
-        print("Suggestion to run after migration:")
-        print("=====================================")
-        print("./odoo module remove-old")
-        print("./odoo update -d -i")
-        print("./odoo update")
-        print("")
         print("To debug an intermediate version, run:")
         print("=====================================")
         print("./odoo unlink [to remove links folder of modules]")
@@ -3041,10 +3042,6 @@ def toggle_settings(ctx):
     config_local.write()
     ctx.invoke(reload)
 
-@module.command(name='update-assets-file')
-def update_assets_file():
-    from module_tools.module_tools import update_assets_file
-    update_assets_file("/opt/odoo/data/src/customs/caetec11/common/followup/mail_activity_tree")
 
 if __name__ == '__main__':
     _startup()
