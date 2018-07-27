@@ -1577,8 +1577,7 @@ def compose(config, customs='', db='', demo=False):
         vals = {}
         if customs:
             vals['CUSTOMS'] = customs
-        if db:
-            vals['DBNAME'] = db
+        vals['DBNAME'] = db or customs
         if demo:
             vals['ODOO_DEMO'] = "1" if demo else "0"
 
@@ -2502,6 +2501,8 @@ def restore_db(ctx, config, filename, restore_as_dev_db=False, dbname=''):
     os.environ['DBNAME'] = DBNAME_RESTORING
 
     dbname = dbname or config.dbname
+    if not dbname:
+        raise Exception("somehow dbname is missing")
 
     ctx.invoke(wait_for_container_postgres)
     _reset_db(config=config, dbname=DBNAME_RESTORING)
