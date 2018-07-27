@@ -834,7 +834,7 @@ def update_assets_file(module_path):
         elif file.endswith('.js'):
             etree.SubElement(parent, 'script', {
                 'type': 'text/javascript',
-                'src': '/' + file,
+                'src': '/{}/'.format(os.path.basename(module_path)) + file,
             })
             any = True
     filepath = os.path.join(module_path, 'views/assets.xml')
@@ -875,7 +875,7 @@ def update_module_file(current_file):
     mod = eval(file.read())
     file.close()
 
-    all_files = get_all_files_of_module()
+    all_files = get_all_files_of_module(module_path)
     # first collect all xml files and ignore test and static
     DATA_NAME = 'data'
     if get_version_from_customs() <= 7.0:
