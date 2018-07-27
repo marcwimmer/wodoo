@@ -1230,9 +1230,10 @@ def _remember_customs_and_cry_if_changed():
         out = [x for x in out.split('\n') if x.startswith("CUSTOMS=")]
         if out:
             current_customs = out[0].split("=")[-1]
-            if current_customs != os.environ['CUSTOMS']:
-                print("Customs changed - you need to restart and/or rebuild!")
-                __dc(['stop', '-t 2'])
+            if os.getenv("CUSTOMS"):
+                if current_customs != os.getenv('CUSTOMS'):
+                    print("Customs changed - you need to restart and/or rebuild!")
+                    __dc(['stop', '-t 2'])
 
 def _remove_temp_directories():
     for dir in os.listdir(dirs['odoo_home']):
