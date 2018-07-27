@@ -821,7 +821,7 @@ def update_assets_file(module_path):
     doc.xpath("//template")[0].set('name', os.path.basename(module_path) + " backend assets")
     parent = doc.xpath('//xpath')[0]
     all_files = get_all_files_of_module(module_path)
-    any = False
+    _any = False
     for file in all_files:
         local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
         if not file.startswith("static/"):
@@ -831,16 +831,17 @@ def update_assets_file(module_path):
                 'rel': 'stylesheet',
                 'href': local_file_path,
             })
-            any = True
+            _any = True
         elif file.endswith('.js'):
             etree.SubElement(parent, 'script', {
                 'type': 'text/javascript',
                 'src': local_file_path,
             })
-            any = True
+            _any = True
     filepath = os.path.join(module_path, 'views/assets.xml')
-    if not any and os.path.exists(filepath):
-        os.unlink(filepath)
+    if not _any:
+        if os.path.exists(filepath):
+            os.unlink(filepath)
     else:
         if not os.path.exists(os.path.dirname(filepath)):
             os.mkdir(os.path.dirname(filepath))
