@@ -2815,9 +2815,9 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
         if raw_input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
             __execute_sql("update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
     if __get_dangling_modules() and not dangling_modules:
-        show_install_state(suppress_error=True)
+        ctx.invoke(show_install_state, suppress_error=True)
         raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
-        abort_upgrade()
+        ctx.invoke(abort_upgrade)
     if installed_modules:
         module += __get_installed_modules()
     if dangling_modules:
