@@ -1617,9 +1617,10 @@ def current_ticket():
     versioning.actions["current-ticket"]()
 
 @module.command(name='remove-old')
+@click.option("--ask-confirm", default=True, is_flag=True)
 @pass_config
 @click.pass_context
-def remove_old_modules(ctx, config):
+def remove_old_modules(ctx, config, ask_confirm=True):
     """
     Sets modules to 'uninstalled', that have no module dir anymore.
     """
@@ -1643,7 +1644,10 @@ def remove_old_modules(ctx, config):
     print("Following modules are set to uninstalled:")
     for mod in to_remove:
         print(mod)
-    raw_input("Continue? (Ctrl+c otherwise)")
+    if ask_confirm:
+        answer = inquirer.prompt([inquirer.Confirm('confirm', message="Continue?", default=True)])
+        if not answer or not answer['confirm']:
+            return
     for mod in to_remove:
         __execute_sql("update ir_module_module set auto_install=false, state = 'uninstalled' where name = '{}'".format(mod))
         print("Set module {} to uninstalled.".format(mod))
@@ -2155,6 +2159,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
     """
     assert float(to_version) > float(from_version)
     ctx.invoke(kill, machines=["proxy", "odoo"], brutal=True)
+    ctx.invoke(kill, brutal=True)
     git_clean = not no_git_clean
     del no_git_clean
     LOGFILE = os.path.join(odoo_config.customs_dir(), "migration_{}_{}.log".format(E("CUSTOMS"), datetime.now().strftime("%Y-%m-%dT%H%M%S")))
@@ -2174,7 +2179,6 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         )
 
     except Exception:
-        import traceback
         msg = traceback.format_exc()
         with open(LOGFILE, 'a') as f:
             f.write("\n")
@@ -2185,10 +2189,10 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         print("1. Run odoo version and startup frontend, use ./odoo checkout-odoo -f -v xx.xx to set odoo")
     else:
         click.echo("Running migration after processes (basically module update)")
-        ctx.invoke(remove_old_modules)
-        ctx.invoke(update, module=[], dangling_modules=True, installed_modules=True)
-        ctx.invoke(update, module=['base'])
-        ctx.invoke(update, module=[])
+        ctx.invoke(remove_old_modules, ask_confirm=False)
+        ctx.invoke(update, module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart_machines=True)
+        ctx.invoke(update, module=['base'], check_install_state=False, no_restart_machines=True, no_dangling_check=True)
+        ctx.invoke(update, module=[], no_restart_machines=True)
 
     finally:
         print("To debug an intermediate version, run:")
@@ -2798,9 +2802,11 @@ def up(ctx, config, machines, daemon):
 @click.option('--dangling-modules', '-d', default=False, is_flag=True, help="Updates only dangling modules")
 @click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
 @click.option('--non-interactive', '-I', default=True, is_flag=True, help="Not interactive")
+@click.option('--check-install-state', default=True, is_flag=True, help="Check for dangling modules afterwards")
+@click.option('--no-restart-machines', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list):
+def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart_machines=True):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
@@ -2815,9 +2821,10 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
         if raw_input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
             __execute_sql("update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
     if __get_dangling_modules() and not dangling_modules:
-        ctx.invoke(show_install_state, suppress_error=True)
-        raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
-        ctx.invoke(abort_upgrade)
+        if not no_dangling_check:
+            ctx.invoke(show_install_state, suppress_error=True)
+            raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
+            ctx.invoke(abort_upgrade)
     if installed_modules:
         module += __get_installed_modules()
     if dangling_modules:
@@ -2843,17 +2850,22 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
             params += ['--non-interactive']
         if not no_update_module_list:
             params += ['--no-update-modulelist']
+        if no_dangling_check:
+            params += ['no-dangling-check']
         __cmd_interactive(*params)
     except Exception:
         print(traceback.format_exc())
         ctx.invoke(show_install_state, suppress_error=True)
         raise Exception("Error at /update_modules.py - aborting update process.")
-    ctx.invoke(show_install_state)
 
-    for i in range(5):
-        ctx.invoke(up, daemon=True)
-        ctx.invoke(proxy_reload)
-        time.sleep(2)
+    if check_install_state:
+        ctx.invoke(show_install_state)
+
+    if not no_restart_machines:
+        for i in range(5):
+            ctx.invoke(up, daemon=True)
+            ctx.invoke(proxy_reload)
+            time.sleep(2)
 
     ctx.invoke(status)
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":

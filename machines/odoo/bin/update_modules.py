@@ -98,11 +98,6 @@ def update_module_list():
     update('u', MOD)
 
 
-def check_for_dangling_modules():
-    dangling = module_tools.dangling_modules()
-    print dangling
-    return bool(dangling)
-
 def all_dependencies_installed(module):
     dir = odoo_config.module_dir(module)
     if not dir:
@@ -129,9 +124,6 @@ def main():
     ])
 
     summary = []
-
-    # could be, that a new version is triggered
-    # DANGLING = check_for_dangling_modules()
 
     if not MODULE:
         MODULE = ','.join(get_modules() + module_tools.get_uninstalled_modules_where_others_depend_on())
