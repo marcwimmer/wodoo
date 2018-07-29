@@ -2888,7 +2888,7 @@ def recreate(ctx, config, machines):
     else:
         __dc(['up', '--no-start', '--force-recreate'])
 
-@src.command()
+@src.command(name='update-ast')
 def update_ast():
     from module_tools.odoo_parser import update_cache
     if _get_platform() == PLATFORM_OSX:
@@ -2903,7 +2903,6 @@ def update_ast():
     print "Updating ast - can take about one minute; slow on OSX due to share"
     update_cache()
     print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
-
 
 @control.command()
 @pass_config
