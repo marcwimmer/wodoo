@@ -571,7 +571,7 @@ def _patch_gitify(config):
 
 def _patch_gitify_on_need(config):
     if not os.path.exists(config.sub_git):
-        _patch_gitify()
+        _patch_gitify(config)
 
 def _patch_ungitify(config):
     if os.path.exists(config.sub_git):
@@ -615,7 +615,7 @@ def patch_preview(config):
     """
     shows what is patched
     """
-    diff = _patch_get_diff()
+    diff = _patch_get_diff(config)
     filename = tempfile.mktemp(suffix='.')
     with open(filename, 'w') as f:
         f.write(diff)
@@ -676,10 +676,9 @@ def apply_all(ctx, config):
     _patch_default_patches(config)
     for filepath in _patch_list():
         print "Applying patch " + filepath
-        apply(filepath)
+        ctx.invoke(patch_apply, filepath=filepath)
     _patch_ungitify(config)
     print("Successfully applied all patches and cleand .git directory.")
-
 
 def _patch_get_diff(config):
     __system(["git", "add", "--intent-to-add", "."], cwd=config.odoo_local)
