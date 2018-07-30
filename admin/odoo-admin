@@ -2306,10 +2306,23 @@ def pull_push_all(ctx, mode):
                 else:
                     ctx.invoke(push, submodule=mod)
 
+def __get_subtree_url(type, submodule):
+    assert type in ['common', 'extra_install']
+    if type == 'common':
+        url = 'git.mt-software.de:/git/openerp/modules/{}'.format(submodule)
+    elif type == 'extra_install':
+        with open('extra_install/modules', 'r') as f:
+            data = eval(f.read())
+        url = data[submodule]['url']
+    else:
+        raise Exception("impl")
+    return url
+
 @src.command()
 @click.argument("submodule", required=False)
+@click.option("-x", "--is-extra-install", is_flag=True, default=False)
 @click.pass_context
-def pull(ctx, submodule):
+def pull(ctx, submodule, is_extra_install):
     if not submodule:
         pull_push_all(ctx, 'pull')
         return
@@ -2321,7 +2334,16 @@ def pull(ctx, submodule):
             __system(['git', 'commit'], cwd=dirs['customs'], suppress_out=True)
         except Exception: pass
 
-    branch = E("ODOO_VERSION")
+    if not is_extra_install:
+        branch = E("ODOO_VERSION")
+        path = 'common/'
+        url = __get_subtree_url('common', submodule)
+    elif is_extra_install:
+        branch = 'master'
+        path = 'extra_install'
+        url = __get_subtree_url('extra_install', submodule)
+    else:
+        raise Exception('not impl')
     click.echo("Pulling latest version of {} branch {}".format(submodule, branch))
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
     try:
@@ -2332,9 +2354,9 @@ def pull(ctx, submodule):
             '--message',
             'SUBTREE-PULL {}'.format(submodule),
             '--prefix',
-            'common/{}'.format(submodule),
+            '{}/{}'.format(path, submodule),
             '--squash',
-            'git.mt-software.de:/git/openerp/modules/{}'.format(submodule),
+            url,
             branch,
         ], cwd=dirs['customs'], suppress_out=False)
     except Exception:
