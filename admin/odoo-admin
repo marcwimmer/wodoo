@@ -2336,11 +2336,11 @@ def pull(ctx, submodule, is_extra_install):
 
     if not is_extra_install:
         branch = E("ODOO_VERSION")
-        path = 'common/'
+        path = 'common/{}'.format(submodule)
         url = __get_subtree_url('common', submodule)
     elif is_extra_install:
         branch = 'master'
-        path = 'extra_install'
+        path = 'extra_install/{}'.format(submodule)
         url = __get_subtree_url('extra_install', submodule)
     else:
         raise Exception('not impl')
@@ -2354,7 +2354,7 @@ def pull(ctx, submodule, is_extra_install):
             '--message',
             'SUBTREE-PULL {}'.format(submodule),
             '--prefix',
-            '{}/{}'.format(path, submodule),
+            '{}'.format(path),
             '--squash',
             url,
             branch,
@@ -2369,20 +2369,32 @@ an error can occur 'working tree has modifications'
 
 @src.command()
 @click.argument("submodule", required=False)
+@click.option("-x", "--is-extra-install", is_flag=True, default=False)
 @click.pass_context
-def push(ctx, submodule):
+def push(ctx, submodule, is_extra_install):
     if not submodule:
         pull_push_all(ctx, 'push')
         return
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
 
+    if not is_extra_install:
+        branch = E("ODOO_VERSION")
+        path = 'common/{}'.format(submodule)
+        url = __get_subtree_url('common', submodule)
+    elif is_extra_install:
+        branch = 'master'
+        path = 'extra_install/{}'.format(submodule)
+        url = __get_subtree_url('extra_install', submodule)
+    else:
+        raise Exception('not impl')
+
     __system([
         'git',
         'subtree',
         'push',
-        '--prefix=common/{}'.format(submodule),
-        'git.mt-software.de:/git/odoo/modules/{}'.format(submodule),
-        E("ODOO_VERSION"),
+        '--prefix={}'.format(path),
+        url,
+        branch,
     ], cwd=dirs['customs'])
 
 @db.command()
