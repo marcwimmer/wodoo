@@ -1,5 +1,5 @@
 Anpassungen notwendig zur Funktion:
-- AMI Interface:
+- AMI Interface: test
 
   - User admin benoetigt permit des Docker-Netzwerks:
 
