@@ -1,14 +1,12 @@
 FROM phusion/baseimage:0.9.22
-ENV apache_version=2.4.29
+RUN apt update && apt install -y build-essential libpcre3-dev zlib1g-dev libexpat1-dev wget libnghttp2-dev libxml2-dev
+ENV apache_version=2.4.34
 ENV apr_version=1.6.3
 ENV apr_util_version=1.6.1
 ENV URL=http://www-eu.apache.org/dist/
 ENV URL=http://mirrors.ae-online.de/apache/
+ENV URL=ftp://ftp.fu-berlin.de/unix/www/apache
 
-RUN \
-apt update
-
-RUN apt install -y build-essential libpcre3-dev zlib1g-dev libexpat1-dev wget libnghttp2-dev libxml2-dev
 WORKDIR /tmp
 RUN wget -O apache.tar.gz $URL/httpd/httpd-$apache_version.tar.gz
 RUN wget -O apr.tar.gz $URL/apr/apr-$apr_version.tar.gz

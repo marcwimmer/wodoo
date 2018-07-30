@@ -2475,7 +2475,7 @@ def _inquirer_dump_file(message):
         filename = filename['filename'][1]
         return filename
 
-@restore.command(name='db')
+@restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
 @click.option('--dev', '--restore-as-dev-db', is_flag=True, help="If true, then sql clean ups are done, before renaming database to destination", default=E("ALLOW_RESTORE_DEV") == "1")
 @pass_config
