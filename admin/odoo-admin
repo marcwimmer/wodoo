@@ -2296,15 +2296,22 @@ def list_subtrees():
         print(x)
 
 def pull_push_all(ctx, mode):
+    if mode == 'pull':
+        todo = pull
+    else:
+        todo = push
     for mod in __get_all_subtrees():
         if mod.startswith("common/"):
             path = os.path.join(dirs['customs'], mod)
             if os.path.isdir(path):
                 mod = mod[len("common/"):]
-                if mode == 'pull':
-                    ctx.invoke(pull, submodule=mod)
-                else:
-                    ctx.invoke(push, submodule=mod)
+                ctx.invoke(todo, submodule=mod)
+    extra_installs = os.path.join(dirs['odoo_home'], 'extra_install', 'module')
+    if os.path.exists(extra_installs):
+        with open(extra_installs, 'r') as f:
+            data = eval(f.read())
+        for mod in data.keys():
+            ctx.invoke(todo, submodule=mod, is_extra_install=True)
 
 def __get_subtree_url(type, submodule):
     assert type in ['common', 'extra_install']
@@ -2327,17 +2334,17 @@ def pull(ctx, submodule, is_extra_install):
         pull_push_all(ctx, 'pull')
         return
 
-    from module_tools import odoo_versioning as versioning
-    if not versioning.dirty():
-        # Following https://stackoverflow.com/questions/3623351/git-subtree-pull-says-that-the-working-tree-has-modifications-but-git-status-sa
-        try:
-            __system(['git', 'commit'], cwd=dirs['customs'], suppress_out=True)
-        except Exception: pass
-
     if not is_extra_install:
         branch = E("ODOO_VERSION")
         path = 'common/{}'.format(submodule)
         url = __get_subtree_url('common', submodule)
+
+        from module_tools import odoo_versioning as versioning
+        if not versioning.dirty():
+            # Following https://stackoverflow.com/questions/3623351/git-subtree-pull-says-that-the-working-tree-has-modifications-but-git-status-sa
+            try:
+                __system(['git', 'commit'], cwd=dirs['customs'], suppress_out=True)
+            except Exception: pass
     elif is_extra_install:
         branch = 'master'
         path = 'extra_install/{}'.format(submodule)
