@@ -1080,7 +1080,7 @@ def update_view_in_db(filepath, lineno):
                 conn.close()
 
 
-def check_if_all_modules_from_instal_are_installed():
+def check_if_all_modules_from_install_are_installed():
     for module in get_modules_from_install_file():
         if not is_module_installed(module):
             print "Module {} not installed!".format(module)

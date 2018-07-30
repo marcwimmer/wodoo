@@ -251,8 +251,9 @@ def ticket(config):
     pass
 
 def trace():
-    if set_trace:
-        set_trace()
+    if os.getenv("DEVMODE", "") == "1":
+        if set_trace:
+            set_trace()
 
 def __assert_file_exists(path, isdir=False):
     if not os.path.exists(path):
@@ -2664,12 +2665,12 @@ def setup_startup():
 def shell():
     __cmd_interactive('run', 'odoo', '/bin/bash', '/shell.sh')
 
-@module.command()
+@module.command(name='show-install-state')
 def show_install_state(suppress_error=False):
     print("Displaying dangling modules:")
     dangling = __get_dangling_modules()
     for row in dangling:
-        print("{}: {}".format(row[0], row[1]))
+        click.echo("{}: {}".format(row[0], row[1]))
 
     if dangling and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
@@ -2867,7 +2868,15 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
 
     To update all (custom) modules set "all" here
     """
-    module = list(module)
+    from module_tools import module_tools
+
+    module = filter(lambda x: x, sum(map(lambda x: x.split(','), module), []))  # '1,2 3' --> ['1', '2', '3']
+
+    if not module:
+        module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
+        module += module_tools.get_uninstalled_modules_where_others_depend_on()
+        module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+
     __start_postgres_and_wait(config)
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
         for x in __get_dangling_modules():
@@ -2884,6 +2893,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if dangling_modules:
         module += [x[0] for x in __get_dangling_modules()]
     module = filter(lambda x: x, module)
+    if not module:
+        raise Exception("no modules to update")
 
     print("Run module update")
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
