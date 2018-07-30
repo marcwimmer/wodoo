@@ -2333,12 +2333,15 @@ def __get_subtree_url(type, submodule):
 
 @src.command()
 @click.argument("submodule", required=False)
-@click.option("-x", "--is-extra-install", is_flag=True, default=False)
 @click.pass_context
-def pull(ctx, submodule, is_extra_install):
+def pull(ctx, submodule, is_extra_install=False):
     if not submodule:
         pull_push_all(ctx, 'pull')
         return
+
+    extra_modules = __get_extra_install_modules()
+    if submodule in extra_modules.keys():
+        is_extra_install = True
 
     if not is_extra_install:
         branch = E("ODOO_VERSION")
@@ -2382,13 +2385,16 @@ an error can occur 'working tree has modifications'
 
 @src.command()
 @click.argument("submodule", required=False)
-@click.option("-x", "--is-extra-install", is_flag=True, default=False)
 @click.pass_context
-def push(ctx, submodule, is_extra_install):
+def push(ctx, submodule, is_extra_install=True):
     if not submodule:
         pull_push_all(ctx, 'push')
         return
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
+
+    extra_modules = __get_extra_install_modules()
+    if submodule in extra_modules.keys():
+        is_extra_install = True
 
     if not is_extra_install:
         branch = E("ODOO_VERSION")
@@ -2705,7 +2711,8 @@ def status():
 def stop(machines):
     kill(machines)
 
-@src.command('modules', nargs=-1, required=True)
+@src.command()
+@click.argument('modules', nargs=-1, required=True)
 def submodule(modules):
     if not modules:
         click.echo("Please provide some modules!")
