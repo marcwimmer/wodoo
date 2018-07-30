@@ -2705,7 +2705,7 @@ def status():
 def stop(machines):
     kill(machines)
 
-@src.command(modules, nargs=-1, required=True)
+@src.command('modules', nargs=-1, required=True)
 def submodule(modules):
     if not modules:
         click.echo("Please provide some modules!")
