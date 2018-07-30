@@ -17,11 +17,6 @@ INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
 PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
 
-def get_modules():
-    modules = []
-    modules += module_tools.get_customs_modules("/opt/odoo/active_customs", "to_update")
-    return sorted(list(set(modules)))
-
 def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
     modules += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
@@ -117,6 +112,9 @@ def main():
     if MODULE == 'all':
         MODULE = ''
 
+    if not MODULE:
+        raise Exception("requires module!")
+
     subprocess.check_call([
         'bash',
         '-c',
@@ -124,9 +122,6 @@ def main():
     ])
 
     summary = []
-
-    if not MODULE:
-        MODULE = ','.join(get_modules() + module_tools.get_uninstalled_modules_where_others_depend_on())
 
     for module in MODULE.split(','):
         if not is_module_installed(module):
@@ -159,7 +154,7 @@ def main():
         print line
 
     if not single_module:
-        module_tools.check_if_all_modules_from_instal_are_installed()
+        module_tools.check_if_all_modules_from_install_are_installed()
 
 
 if __name__ == '__main__':

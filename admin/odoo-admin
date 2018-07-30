@@ -2869,14 +2869,14 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
 
     To update all (custom) modules set "all" here
     """
-    trace()
+    from module_tools import module_tools
+
     module = filter(lambda x: x, sum(map(lambda x: x.split(','), module), []))  # '1,2 3' --> ['1', '2', '3']
 
     if not module:
-        install_file_path = os.path.join(dirs['customs'], 'install')
-        if os.path.exists(install_file_path):
-            with open(install_file_path) as f:
-                module = filter(lambda x: x and not x.strip().startswith("#"), map(lambda x: x.strip(), f.read().split("\n")))
+        module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
+        module += module_tools.get_uninstalled_modules_where_others_depend_on()
+        module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
 
     __start_postgres_and_wait(config)
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
@@ -2894,6 +2894,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if dangling_modules:
         module += [x[0] for x in __get_dangling_modules()]
     module = filter(lambda x: x, module)
+    if not module:
+        raise Exception("no modules to update")
 
     print("Run module update")
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
