@@ -2314,8 +2314,6 @@ def pull_push_all(ctx, mode):
             ctx.invoke(todo, submodule=mod, is_extra_install=True)
 
 def __get_extra_install_modules():
-    from pudb import set_trace
-    set_trace()
     path = os.path.join(dirs['odoo_home'], 'extra_install/modules')
     if not os.path.exists(path):
         return {}
@@ -2355,8 +2353,6 @@ def pull(ctx, submodule, is_extra_install):
             except Exception: pass
     elif is_extra_install:
         branch = 'master'
-        from pudb import set_trace
-        set_trace()
         path = os.path.join(dirs['odoo_home'], 'extra_install/{}'.format(submodule))
         url = __get_subtree_url('extra_install', submodule)
     else:
