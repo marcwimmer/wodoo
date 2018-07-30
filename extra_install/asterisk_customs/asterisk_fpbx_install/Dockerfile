@@ -60,7 +60,7 @@ make && \
 make install
 
 WORKDIR /usr/src
-RUN git clone RUN git clone -b 14.7 --depth 1 https://github.com/asterisk/asterisk.git asterisk
+RUN git clone -b 14.7 --depth 1 https://github.com/asterisk/asterisk.git asterisk
 
 WORKDIR /usr/src/asterisk
 # Configure
