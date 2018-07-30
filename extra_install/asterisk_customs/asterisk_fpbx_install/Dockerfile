@@ -66,8 +66,9 @@ RUN ln -s asterisk-14* /usr/src/asterisk
 
 WORKDIR /usr/src/asterisk
 # Configure
-RUN ./configure --libdir=/usr/lib64
+RUN ./configure --libdir=/usr/lib64 --with-pjproject-bundled
 RUN make menuselect.makeopts
+RUN contrib/scripts/get_mp3_source.sh
 RUN menuselect/menuselect \
   --disable BUILD_NATIVE \
   --enable cdr_csv \
@@ -143,22 +144,18 @@ RUN menuselect/menuselect \
   --enable res_timing_timerfd \
   menuselect.makeopts
 
-RUN \
-make && \
-make install && \
-make samples 
+RUN make
+RUN make install
+RUN make samples
+
+# Update max number of open files.
+RUN sed -i -e 's/# MAXFILES=/MAXFILES=/' /usr/sbin/safe_asterisk
+
+# This is weird huh? I'd shell into the container and get errors about en_US.UTF-8 file not found
+# found @ https://github.com/CentOS/sig-cloud-instance-images/issues/71
+RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 
 
-# Compile and install Asterisk && \
-RUN \
-cd /usr/src && \
-tar xvfz asterisk-14-current.tar.gz && \
-rm -f asterisk-14-current.tar.gz && \
-cd asterisk-* && \
-contrib/scripts/install_prereq install && \
-./configure --libdir=/usr/lib64 --with-pjproject-bundled && \
-contrib/scripts/get_mp3_source.sh && \
-make menuselect 
 
 RUN \
 make && \
