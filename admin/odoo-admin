@@ -251,8 +251,9 @@ def ticket(config):
     pass
 
 def trace():
-    if set_trace:
-        set_trace()
+    if os.getenv("DEVMODE", "") == "1":
+        if set_trace:
+            set_trace()
 
 def __assert_file_exists(path, isdir=False):
     if not os.path.exists(path):
@@ -2868,7 +2869,14 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
 
     To update all (custom) modules set "all" here
     """
+    trace()
     module = filter(lambda x: x, sum(map(lambda x: x.split(','), module), []))  # '1,2 3' --> ['1', '2', '3']
+
+    if not module:
+        install_file_path = os.path.join(dirs['customs'], 'install')
+        if os.path.exists(install_file_path):
+            with open(install_file_path) as f:
+                module = filter(lambda x: x and not x.strip().startswith("#"), map(lambda x: x.strip(), f.read().split("\n")))
 
     __start_postgres_and_wait(config)
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
