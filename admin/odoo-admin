@@ -2368,7 +2368,6 @@ def pull(ctx, submodule, is_extra_install):
             'SUBTREE-PULL {}'.format(submodule),
             '--prefix',
             '{}'.format(path),
-            '--squash',
             url,
             branch,
         ], cwd=dirs['customs'], suppress_out=False)
