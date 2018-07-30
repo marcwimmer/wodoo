@@ -2665,12 +2665,12 @@ def setup_startup():
 def shell():
     __cmd_interactive('run', 'odoo', '/bin/bash', '/shell.sh')
 
-@module.command()
+@module.command(name='show-install-state')
 def show_install_state(suppress_error=False):
     print("Displaying dangling modules:")
     dangling = __get_dangling_modules()
     for row in dangling:
-        print("{}: {}".format(row[0], row[1]))
+        click.echo("{}: {}".format(row[0], row[1]))
 
     if dangling and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
