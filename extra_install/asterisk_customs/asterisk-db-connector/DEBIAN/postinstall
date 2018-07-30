@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+#systemctl enable asterisk_db_connector
+
+echo "To start asterisk_db_connector, just run "
+echo "service asterisk_db_connector start"
+
