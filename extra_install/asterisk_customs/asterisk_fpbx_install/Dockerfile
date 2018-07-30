@@ -46,7 +46,6 @@ make install
 # Install and Configure Asterisk
 RUN \
 cd /usr/src && \
-wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-14-current.tar.gz && \
 wget -O jansson.tar.gz https://github.com/akheron/jansson/archive/v2.10.tar.gz
 
 #Compile and Install jansson
@@ -61,8 +60,7 @@ make && \
 make install
 
 WORKDIR /usr/src
-RUN tar xfz asterisk-14-current.tar.gz && rm asterisk-14-current.tar.gz
-RUN ln -s asterisk-14* /usr/src/asterisk
+RUN git clone RUN git clone -b 14.7 --depth 1 https://github.com/asterisk/asterisk.git asterisk
 
 WORKDIR /usr/src/asterisk
 # Configure
@@ -143,6 +141,35 @@ RUN menuselect/menuselect \
   --enable res_statsd \
   --enable res_timing_timerfd \
   menuselect.makeopts
+RUN yum update -y && \
+    yum install -y epel-release && \
+    yum install \
+        git \
+        kernel-headers \
+        gcc \
+        gcc-c++ \
+        cpp \
+        ncurses \
+        ncurses-devel \
+        libxml2 \
+        libxml2-devel \
+        sqlite \
+        sqlite-devel \
+        openssl-devel \
+        newt-devel \
+        kernel-devel \
+        libuuid-devel \
+        net-snmp-devel \
+        xinetd \
+        tar \
+        jansson-devel \
+        make \
+        bzip2 \
+        pjproject-devel \
+        libsrtp-devel \
+        gsm-devel \
+        speex-devel \
+        -y
 
 RUN make
 RUN make install
