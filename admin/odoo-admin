@@ -2192,7 +2192,8 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         ctx.invoke(remove_old_modules, ask_confirm=False)
         ctx.invoke(update, module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart_machines=True)
         ctx.invoke(update, module=['base'], check_install_state=False, no_restart_machines=True, no_dangling_check=True)
-        ctx.invoke(update, module=[], no_restart_machines=True)
+        ctx.invoke(update, module=[], no_restart_machines=True, no_dangling_check=True)
+        ctx.invoke(show_install_state, suppress_error=True)
 
     finally:
         print("To debug an intermediate version, run:")
@@ -2804,6 +2805,7 @@ def up(ctx, config, machines, daemon):
 @click.option('--non-interactive', '-I', default=True, is_flag=True, help="Not interactive")
 @click.option('--check-install-state', default=True, is_flag=True, help="Check for dangling modules afterwards")
 @click.option('--no-restart-machines', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
+@click.option('--no-dangling-check', default=False, is_flag=True, help="Not checking for dangling modules")
 @pass_config
 @click.pass_context
 def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart_machines=True):
