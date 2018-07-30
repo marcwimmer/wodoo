@@ -1,19 +1,35 @@
-Anpassungen notwendig zur Funktion:
-- AMI Interface: test
+EINLEITUNG
+===============
 
-  - User admin benoetigt permit des Docker-Netzwerks:
+In diesem Repo befinden sich Tools, um odoo mit einem asterisk-server
+per MQTT zu verbinden.
+Ausserdem sind Beschreibungen vorhanden, um einen Test-Asterisk per Docker
+aufzusetzen.
 
-manager_custom.conf
-[admin]
-permit=172.18.0.2/255.255.255.0
+
+Module
+==============
+
+Module sind eigenstaendig zu sehen, damit diese ggf. auf einer 
+eigenen Freepbx-Maschine losgeloest von odoo installiert werden koennen.
 
 
 asterisk-connector
+------------------------------------
+
 - ARI/AMI Interface zu MQTT
 - Build Asterisk_ari_connector docker
 - start asterisk_ari_connector docker
+- benoetigt einen MQTT Broker
+Anpassungen notwendig zur Funktion:
+- AMI Interface: test
+  - User admin benoetigt permit des Docker-Netzwerks:
+    manager_custom.conf
+    [admin]
+    permit=172.18.0.2/255.255.255.0
 
 asterisk-db-connector
+--------------------------------------
 - MQTT Interface zur asterisk datenbank manipulation
 - Aktuell keine Dockerversion da direkt Zugriff auf Datenbank nicht konfiguriert wurde
 - DockerFiles wurden erstellt aber noch nicht verwendet.
@@ -28,12 +44,25 @@ asterisk-db-connector
 - /opt/asterisk_db_connector/src/fpbxconnector.py
 
 asterisk_db_connector.py:
+----------------------------------------
 	Meldet sich in MQTT an, reicht Messages an FPBXConnector Klasse weiter.
 
 fpbxdb_connector.py:
+-----------------------------------------
 	Enthält die Funktionalitäten zum Zugriff und zur Manipulation der Datenbank.
 	Gibt das Ergebnis für asterisk_db_connector.py optimiert zurück.
+
 
 starten der Applikation:
 	sudo service asterisk_db_connector start
 
+
+Aufsetzen eines Test-Asterisks
+============================================
+
+Schritt fuer Schritt:
+
+  1. cd docker-freepbx
+  2. docker-compose pull
+  3. docker-compose up 
+  4. open http://<host>:8880 to test admin interface
