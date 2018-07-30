@@ -1,0 +1,8 @@
+version: "3.3"
+
+services:
+  asterisk_connector:
+    build: .
+    volumes:
+        - ./app.py:/app.py:ro
+    env_file: .env

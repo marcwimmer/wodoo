@@ -1,0 +1,3 @@
+Host *
+	stricthostkeychecking no                                                                                   
+    userknownhostsfile /dev/null         
