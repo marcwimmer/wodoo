@@ -8,4 +8,4 @@ ADD ssh /root/.ssh
 RUN chown root /root/.ssh
 RUN chmod 400 /root/.ssh/*
 WORKDIR /opt/src
-CMD ["python", "app.py"]
+CMD ["python", "asterisk_db_connector.py"]
