@@ -2290,7 +2290,7 @@ def __get_all_subtrees():
             path = line.split(":")[-1].strip()
             yield path # e.g. common/module1
 
-@src.command()
+@src.command(name='list-subtrees')
 def list_subtrees():
     for x in __get_all_subtrees():
         print(x)
