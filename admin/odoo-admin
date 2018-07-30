@@ -2705,15 +2705,15 @@ def status():
 def stop(machines):
     kill(machines)
 
-@src.command()
-def submodule(*submodules):
-    if not submodules:
-        print("Please provide some modules!")
+@src.command(modules, nargs=-1, required=True)
+def submodule(modules):
+    if not modules:
+        click.echo("Please provide some modules!")
         sys.exit(-1)
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
     __assert_file_exists(os.path.join(dirs['customs'], 'common'))
 
-    for submodule in submodules:
+    for submodule in modules:
         __system([
             'git',
             'subtree',
