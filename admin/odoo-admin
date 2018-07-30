@@ -2868,7 +2868,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
 
     To update all (custom) modules set "all" here
     """
-    module = list(module)
+    module = filter(lambda x: x, sum(map(lambda x: x.split(','), module), []))  # '1,2 3' --> ['1', '2', '3']
+
     __start_postgres_and_wait(config)
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
         for x in __get_dangling_modules():
