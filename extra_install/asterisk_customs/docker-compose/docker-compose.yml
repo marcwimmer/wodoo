@@ -4,19 +4,23 @@ version: '3.7'
 services:
   freepbx-app:
     container_name: freepbx-app
-    image: ../docker-freepbx
+    build: ../docker-freepbx
     ports:
-      - 80:80
-      - 443:443
+      - 9080:80
       - 5060:5060
       - 5160:5160
       - 18000-18100:18000-18100/udp
       - 4445:4445
-    volumes:
-      - ./certs:/certs
-      - ./data:/data
-      - ./logs:/var/log
-      - ./data/www:/var/www/html
+    #tmpfs:
+      #- /certs:uid=2600,gid=2600
+      #- /data:uid=2600,gid=2600
+      #- /var/log:uid=2600,gid=2600
+      #- /var/www/html:uid=2600,gid=2600
+      #volumes:
+      #- ./certs:/certs
+      #- ./data:/data
+      #- ./logs:/var/log
+      #- ./data/www:/var/www/html
      ### You can drop custom files overtop of the image if you have made modifications to modules/css/whatever - Use with care
      #- ./assets/custom:/assets/custom
 
@@ -62,8 +66,6 @@ services:
     container_name: freepbx-db
     image: tiredofit/mariadb
     restart: always
-    volumes:
-      - ./db:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=asterisk
@@ -72,30 +74,8 @@ services:
     networks:
       - proxy-tier
 
-  #freepbx-db-backup:
-    #container_name: freepbx-db-backup
-    #image: tiredofit/db-backup
-    #links:
-     #- freepbx-db
-    #volumes:
-      #- ./dbbackup:/backup
-    #environment:
-      #- ZABBIX_HOSTNAME=freepbx-db-backup
-      #- DB_HOST=freepbx-db
-      #- DB_TYPE=mariadb
-      #- DB_NAME=asterisk
-      #- DB_USER=asterisk
-      #- DB_PASS=asteriskpass
-      #- DB_DUMP_FREQ=1440
-      #- DB_DUMP_BEGIN=0000
-      #- DB_CLEANUP_TIME=8640
-      #- COMPRESSION=BZ
-      #- MD5=TRUE
-    #networks:
-      #- proxy-tier
-    #restart: always
-
 networks:
   proxy-tier:
     external:
       name: nginx-proxy
+
