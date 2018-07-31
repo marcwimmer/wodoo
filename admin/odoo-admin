@@ -2476,7 +2476,7 @@ def restart(ctx, config, machines):
     ctx.invoke(kill, machines=machines)
     ctx.invoke(rm, machines=machines)
     ctx.invoke(recreate, machines=machines)
-    ctx.inoke(proxy_reload)
+    ctx.invoke(proxy_reload)
 
 @control.command()
 @click.argument('machines', nargs=-1)
