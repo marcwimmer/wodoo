@@ -4,95 +4,63 @@ version: '3.7'
 services:
     connector-mqtt-ariami:
         build: ../connector_mqtt_ariami
-        env_file: ../connector_mqtt
         volumes:
             # better debugging
             - ../connector_mqtt_ariami/app.py:/app.py:ro
         environment:
-            MQTT_BROKER_HOST=mqttbroker_host
-            MQTT_BROKER_PORT=1883
-            ASTERISK_SERVER=freepbx-app
-            ASTERISK_ARI_PORT=8088
-            ASTERISK_ARI_USER=ariuser1
-            ASTERISK_ARI_PASSWORD=password1
-            ASTERISK_AMI_USER=admin
-            ASTERISK_AMI_PASSWORD=0469fb7914d19888210e54e9fa9c4912
-            ASTERISK_AMI_PORT=5038
-  freepbx-app:
-    container_name: freepbx-app
-    build: docker-freepbx
-    ports:
-      - 9080:80
-      - 5060:5060
-      - 5160:5160
-      - 18000-18100:18000-18100/udp
-      - 4445:4445
-    #tmpfs:
-      #- /certs:uid=2600,gid=2600
-      #- /data:uid=2600,gid=2600
-      #- /var/log:uid=2600,gid=2600
-      #- /var/www/html:uid=2600,gid=2600
-      #volumes:
-      #- ./certs:/certs
-      #- ./data:/data
-      #- ./logs:/var/log
-      #- ./data/www:/var/www/html
-     ### You can drop custom files overtop of the image if you have made modifications to modules/css/whatever - Use with care
-     #- ./assets/custom:/assets/custom
+            # must be unique - client id of mqtt client, otherwise no registration
+            - APP_NAME=asterisk_connector_test
+            - MQTT_BROKER_HOST=DOCKER_HOST
+            - MQTT_BROKER_PORT=1883
+            - ASTERISK_SERVER=freepbx-app
+            - ASTERISK_ARI_PORT=8088
+            - ASTERISK_ARI_USER=ariuser1
+            - ASTERISK_ARI_PASSWORD=password1
+            - ASTERISK_AMI_USER=admin
+            - ASTERISK_AMI_PASSWORD=0469fb7914d19888210e54e9fa9c4912
+            - ASTERISK_AMI_PORT=5038
 
-    environment: 
-      - UCP_FIRST=False
-      - VIRTUAL_HOST=hostname.example.com
-      - VIRTUAL_NETWORK=nginx-proxy
-     ### If you want to connect to the SSL Enabled Container 
-     #- VIRTUAL_PORT=443
-     #- VIRTUAL_PROTO=https
-      - VIRTUAL_PORT=80
-      - LETSENCRYPT_HOST=hostname.example.com
-      - LETSENCRYPT_EMAIL=email@example.com
+    freepbx-app:
+        container_name: freepbx-app
+        build: docker-freepbx
+        ports:
+            - 9080:80
+            - 5060:5060
+            - 5160:5160
+            - 18000-18100:18000-18100/udp
+            - 4445:4445
 
-      - ZABBIX_HOSTNAME=freepbx-app
+        environment: 
+            - UCP_FIRST=False
+            - VIRTUAL_HOST=hostname.example.com
+            - VIRTUAL_NETWORK=nginx-proxy
+            - VIRTUAL_PORT=80
+            - LETSENCRYPT_HOST=hostname.example.com
+            - LETSENCRYPT_EMAIL=email@example.com
 
-      - RTP_START=18000
-      - RTP_FINISH=18100
+            - ZABBIX_HOSTNAME=freepbx-app
+
+            - RTP_START=18000
+            - RTP_FINISH=18100
     
-     ## Use for External MySQL Server
-      - DB_EMBEDDED=FALSE
+            - DB_EMBEDDED=FALSE
+            - DB_HOST=freepbx-db
+            - DB_PORT=3306
+            - DB_NAME=asterisk
+            - DB_USER=asterisk
+            - DB_PASS=asteriskpass
 
-     ### These are only necessary if DB_EMBEDDED=FALSE
-      - DB_HOST=freepbx-db
-      - DB_PORT=3306
-      - DB_NAME=asterisk
-      - DB_USER=asterisk
-      - DB_PASS=asteriskpass
+            - ENABLE_FAIL2BAN=FALSE
     
-     ### If you are using TLS Support for Apache to listen on 443 in the container drop them in /certs and set these:
-     #- TLS_CERT=cert.pem
-     #- TLS_KEY=key.pem
-     
-    restart: always
-    networks:
-      - proxy-tier
+        restart: always
+        privileged: true
 
-    ### These final lines are for Fail2ban. If you don't want, comment and also add ENABLE_FAIL2BAN=FALSE to your environment
-    cap_add:
-      - NET_ADMIN
-    privileged: true
-
-  freepbx-db:
-    container_name: freepbx-db
-    image: tiredofit/mariadb
-    restart: always
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_DATABASE=asterisk
-      - MYSQL_USER=asterisk
-      - MYSQL_PASSWORD=asteriskpass
-    networks:
-      - proxy-tier
-
-networks:
-  proxy-tier:
-    external:
-      name: nginx-proxy
-
+    freepbx-db:
+        container_name: freepbx-db
+        image: tiredofit/mariadb
+        restart: always
+        environment:
+          - MYSQL_ROOT_PASSWORD=password
+          - MYSQL_DATABASE=asterisk
+          - MYSQL_USER=asterisk
+          - MYSQL_PASSWORD=asteriskpass
