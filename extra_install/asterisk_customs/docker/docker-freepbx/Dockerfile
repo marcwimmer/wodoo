@@ -92,6 +92,7 @@ LABEL maintainer="Dave Conroy (dave at tiredofit dot ca)"
             wget \
             whois \
             xmlstarlet \
+            subversion \
             ; \
        \
 ### Install MySQL Connector
@@ -109,31 +110,55 @@ LABEL maintainer="Dave Conroy (dave at tiredofit dot ca)"
        autoreconf -i ; \
        ./configure ; \
        make ; \
-       make install ; \
+       make install
        \
 ### Build Asterisk
-       cd /usr/src ; \
-       curl -sSL http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}-current.tar.gz | tar xvfz - -C /usr/src/ ; \
-       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ ; \
-       make distclean ; \
+RUN \
+       cd /usr/src  && \
+       curl -sSL http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}-current.tar.gz | tar xvfz - -C /usr/src/ && \
+       cd /usr/src/asterisk-${ASTERISK_VERSION}*/
+#RUN \
+#       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
+#       contrib/scripts/get_mp3_source.sh 
+RUN \
+
+       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
        contrib/scripts/get_mp3_source.sh ; \
-       ./configure --with-resample --with-pjproject-bundled --with-ssl=ssl --with-srtp ; \
-       make menuselect/menuselect menuselect-tree menuselect.makeopts ; \
+       contrib/scripts/install_prereq install && \
+       ./configure --with-resample --with-pjproject-bundled --with-ssl=ssl --with-srtp && \
+       make menuselect/menuselect menuselect-tree menuselect.makeopts && \
+       menuselect/menuselect --list-options
+RUN \
+       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
        menuselect/menuselect --disable BUILD_NATIVE \
                              --enable format_mp3 \
                              --enable app_fax \
-                             --enable app_ari \
                              --enable app_confbridge \
                              --enable codec_opus \
                              --enable codec_silk \
+                             --enable res_ari \
+                             --enable res_ari_applications \
+                             --enable res_ari_asterisk \
+                             --enable res_ari_bridges \
+                             --enable res_ari_channels \
+                             --enable res_ari_device_states \
+                             --enable res_ari_endpoints \
+                             --enable res_ari_events \
+                             --enable res_ari_mailboxes \
+                             --enable res_ari_model \
+                             --enable res_ari_playbacks \
+                             --enable res_ari_recordings \
+                             --enable res_ari_sounds \
                              #--enable res_config_mysql \
                              --enable BETTER_BACKTRACES \
                              --disable MOH-OPSOUND-WAV \
-                             --enable MOH-OPSOUND-GSM \
-       make ; \
-       make install ; \
-       ldconfig ; \
-       \
+                             --enable MOH-OPSOUND-GSM 
+RUN \
+       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
+       make && \
+       make install && \
+       ldconfig
+RUN \
 #### Add G729 Codecs
        git clone https://github.com/BelledonneCommunications/bcg729 /usr/src/bcg729 ; \
        cd /usr/src/bcg729 ; \
