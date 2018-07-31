@@ -2,15 +2,16 @@ version: "3.6"
 services:
     freepbx:
         build: .
-        #cap_add:
-          #- NET_ADMIN
-        #volumes:
-          #- ./data/ovpn/client:/opt/certs:ro
-        #environment:
-          #VALUE1: 123
-        #networks:
-          #default:
-            #ipv4_address: 5.5.5.205
+        ports:
+            - 80:80
+            - 5060:5060
+            - 5160:5160
+            - 18000-18100:1800-18100/udp
+            # Flash Operator Panel
+            - 4445:4445
+        environment:
+            - RTP_START=18000
+            - RTP_FINISH=18100
     mariadb:
         image: mariadb:10.3-bionic
         environment:
