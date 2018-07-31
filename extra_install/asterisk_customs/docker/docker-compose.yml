@@ -2,6 +2,22 @@
 version: '3.7'
 
 services:
+    connector-mqtt-ariami:
+        build: ../connector_mqtt_ariami
+        env_file: ../connector_mqtt
+        volumes:
+            # better debugging
+            - ../connector_mqtt_ariami/app.py:/app.py:ro
+        environment:
+            MQTT_BROKER_HOST=mqttbroker_host
+            MQTT_BROKER_PORT=1883
+            ASTERISK_SERVER=freepbx-app
+            ASTERISK_ARI_PORT=8088
+            ASTERISK_ARI_USER=ariuser1
+            ASTERISK_ARI_PASSWORD=password1
+            ASTERISK_AMI_USER=admin
+            ASTERISK_AMI_PASSWORD=0469fb7914d19888210e54e9fa9c4912
+            ASTERISK_AMI_PORT=5038
   freepbx-app:
     container_name: freepbx-app
     build: docker-freepbx
