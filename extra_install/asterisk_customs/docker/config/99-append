@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+set -e
+
+DOCKER_NET=$(route -n |sed -n 4p  |awk '{print $1}')
+DOCKER_NET_MASK=$(route -n |sed -n 4p  |awk '{print $3}')
+
+
+
+F=/etc/asterisk/manager_custom.conf
+cat /opt/appendix/manager_custom.conf.appendix >> $F
+sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
+sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
+sed -i "s/__ASTERISK_AMI_USER__/$ASTERISK_AMI_USER/g" $F
+sed -i "s/__ASTERISK_AMI_PASSWORD__/$ASTERISK_AMI_PASSWORD/g" $F
+
+F=/etc/asterisk/ari_additional.conf
+cat /opt/appendix/ari_additional.conf.appendix >> $F
+sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
+sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
+sed -i "s/__ASTERISK_ARI_USER__/$ASTERISK_ARI_USER/g" $F
+sed -i "s/__ASTERISK_ARI_PASSWORD__/$ASTERISK_ARI_PASSWORD/g" $F
+
+
+# set some settings in freepbx
+MYSQL="mysql -u${DB_USER} -p${DB_PASS} -h${DB_HOST} -P${DB_PORT} ${DB_NAME}"
+"update freepbx_settings set value='0' where keyword = 'HTTPENABLED';" | mysql -uasterisk -pasteriskpass -hfreepbx-db asterisk
+
+fwconsole reload 
+touch /appendix.done

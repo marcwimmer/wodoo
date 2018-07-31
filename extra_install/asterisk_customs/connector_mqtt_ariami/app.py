@@ -161,6 +161,8 @@ class Asterisk_ACM(EventListener):
             password=os.environ["ASTERISK_ARI_PASSWORD"],
             app=ARI_APP_NAME,
         )
+        from pudb import set_trace
+        set_trace()
         print(url)
         ws.connect(url, sockopts=socket.SO_KEEPALIVE)
         time.sleep(2)
