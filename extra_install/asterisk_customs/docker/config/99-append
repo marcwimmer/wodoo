@@ -1,5 +1,6 @@
 #!/usr/bin/with-contenv bash
 set -e
+set -x
 
 DOCKER_NET=$(route -n |sed -n 4p  |awk '{print $1}')
 DOCKER_NET_MASK=$(route -n |sed -n 4p  |awk '{print $3}')
@@ -23,7 +24,10 @@ sed -i "s/__ASTERISK_ARI_PASSWORD__/$ASTERISK_ARI_PASSWORD/g" $F
 
 # set some settings in freepbx
 MYSQL="mysql -u${DB_USER} -p${DB_PASS} -h${DB_HOST} -P${DB_PORT} ${DB_NAME}"
-"update freepbx_settings set value='0' where keyword = 'HTTPENABLED';" | mysql -uasterisk -pasteriskpass -hfreepbx-db asterisk
+echo "update freepbx_settings set value='1' where keyword = 'HTTPENABLED';" | $MYSQL
 
+# install restservice
+fwconsole ma downloadinstall manager
+fwconsole ma downloadinstall restapi
 fwconsole reload 
 touch /appendix.done

@@ -122,6 +122,7 @@ LABEL maintainer="Dave Conroy (dave at tiredofit dot ca)"
        menuselect/menuselect --disable BUILD_NATIVE \
                              --enable format_mp3 \
                              --enable app_fax \
+                             --enable app_ari \
                              --enable app_confbridge \
                              --enable codec_opus \
                              --enable codec_silk \
