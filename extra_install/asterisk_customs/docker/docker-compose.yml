@@ -32,7 +32,7 @@ services:
         volumes:
             - ./config/99-append:/etc/cont-init.d/99-append
             - ./config/manager_custom.conf.appendix:/opt/appendix/manager_custom.conf.appendix
-            - ./config/ari_additional.conf.appendix:/opt/appendix/ari_additional.conf.appendix
+            - ./config/ari_additional_custom.conf.appendix:/opt/appendix/ari_additional_custom.conf.appendix
 
         environment: 
             # must match above
