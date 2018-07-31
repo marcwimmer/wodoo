@@ -2707,8 +2707,8 @@ def status():
 @click.argument('machines', nargs=-1)
 @pass_config
 @click.pass_context
-def stop(machines):
-    kill(machines)
+def stop(ctx, config,  machines):
+    context.invoke(kill, machines=machines)
 
 @src.command()
 @click.argument('modules', nargs=-1, required=True)
