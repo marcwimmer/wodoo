@@ -14,55 +14,23 @@ Module sind eigenstaendig zu sehen, damit diese ggf. auf einer
 eigenen Freepbx-Maschine losgeloest von odoo installiert werden koennen.
 
 
-asterisk-connector
+connector_mqtt_ariami
 ------------------------------------
 
-- ARI/AMI Interface zu MQTT
-- Build Asterisk_ari_connector docker
-- start asterisk_ari_connector docker
-- benoetigt einen MQTT Broker
+- ARI/AMI Interface zu MQTT: sends channels events via mqtt and starts calls triggered by mqtt
+
 Anpassungen notwendig zur Funktion:
-- AMI Interface: test
+- AMI Interface:
   - User admin benoetigt permit des Docker-Netzwerks:
     manager_custom.conf
     [admin]
     permit=172.18.0.2/255.255.255.0
 
-asterisk-db-connector
+connector_mqtt_freepbxdb
 --------------------------------------
-- MQTT Interface zur asterisk datenbank manipulation
-- Aktuell keine Dockerversion da direkt Zugriff auf Datenbank nicht konfiguriert wurde
-- DockerFiles wurden erstellt aber noch nicht verwendet.
-- Autostart mit Services für Ubuntu 14.04 und neuer.
-
-- Installation:
-- dpkg -i asterisk-db-connector_1_3_2.deb
-- Installiert die Files:
-- /etc/init/asterisk-db-connector.conf
-- /etc/init/systemd/system/asterisk_db_connector.service
-- /opt/asterisk_db_connector/src/asterisk_db_connector.py
-- /opt/asterisk_db_connector/src/fpbxconnector.py
-
-asterisk_db_connector.py:
-----------------------------------------
-	Meldet sich in MQTT an, reicht Messages an FPBXConnector Klasse weiter.
-
-fpbxdb_connector.py:
------------------------------------------
-	Enthält die Funktionalitäten zum Zugriff und zur Manipulation der Datenbank.
-	Gibt das Ergebnis für asterisk_db_connector.py optimiert zurück.
-
-
-starten der Applikation:
-	sudo service asterisk_db_connector start
+- MQTT Interface zur freepbx mysql datenbank manipulation
 
 
 Aufsetzen eines Test-Asterisks
 ============================================
-
-Schritt fuer Schritt:
-
-  1. cd docker-freepbx
-  2. docker-compose pull
-  3. docker-compose up 
-  4. open http://<host>:8880 to test admin interface
+Beachte README in ./docker
