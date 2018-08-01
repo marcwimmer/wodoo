@@ -253,9 +253,5 @@ RUN \
 ### Files Add
 ADD install /
 RUN mkdir /data
-RUN chmod a+rwx /data
-RUN \
-    bash /09-mariadb && \
-    bash /10-freepbx && \
-    bash /11-default-lang && \
-    bash /99-append 
+RUN chmod a+rwx /data /init/*
+RUN bash /init/*
