@@ -3,4 +3,4 @@ version: '3.3'
 services:
   odoo_debug:
     ports:
-       - "33284:8072"
+       - "33284:8069"

@@ -7,7 +7,12 @@ LABEL maintainer="Dave Conroy (dave at tiredofit dot ca)"
        ENABLE_SMTP=TRUE \
        ASTERISK_VERSION=14 \
        BCG729_VERSION=1.0.4 \
-       UCP_FIRST=TRUE
+       UCP_FIRST=TRUE \
+       ASTERISK_SERVER=freepbx-app \
+       ASTERISK_ARI_USER=ariuser1 \
+       ASTERISK_ARI_PASSWORD=password1 \
+       ASTERISK_AMI_USER=an_ami_user2 \
+       ASTERISK_AMI_PASSWORD=a_password
 
 ### Install Dependencies
    RUN set -x ; \
@@ -117,9 +122,9 @@ RUN \
        cd /usr/src  && \
        curl -sSL http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}-current.tar.gz | tar xvfz - -C /usr/src/ && \
        cd /usr/src/asterisk-${ASTERISK_VERSION}*/
-#RUN \
-#       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
-#       contrib/scripts/get_mp3_source.sh 
+RUN \
+       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
+       contrib/scripts/get_mp3_source.sh 
 RUN \
 
        cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
@@ -130,12 +135,33 @@ RUN \
        menuselect/menuselect --list-options
 RUN \
        cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
+       menuselect/menuselect  --list-options
+
+RUN \
+       cd /usr/src/asterisk-${ASTERISK_VERSION}*/ && \
        menuselect/menuselect --disable BUILD_NATIVE \
                              --enable format_mp3 \
                              --enable app_fax \
                              --enable app_confbridge \
+                             --enable app_originate \
+                             --enable app_playback \
+                             --enable app_chanspy \
+                             --enable app_macro \
+                             --enable app_record \
+                             --enable app_tranfer \
+                             --enable app_record \
+                             --enable app_senddtmf \
+                             --enable app_softhangup \
+                             --enable app_stasis \
                              --enable codec_opus \
                              --enable codec_silk \
+                             --enable chan_sip \
+                             --enable chan_pjsip \
+                             --enable chan_console \
+                             --enable chan_rtp \
+                             --enable bridge_simple \
+                             --enable bridge_softmix \
+                             --enable bridge_holding \
                              --enable res_ari \
                              --enable res_ari_applications \
                              --enable res_ari_asterisk \
@@ -149,7 +175,13 @@ RUN \
                              --enable res_ari_playbacks \
                              --enable res_ari_recordings \
                              --enable res_ari_sounds \
-                             #--enable res_config_mysql \
+                             --enable res_stasis \
+                             --enable res_stasis_answer \
+                             --enable res_stasis_device_state \
+                             --enable res_stasis_mailbox \
+                             --enable res_stasis_playback \
+                             --enable res_stasis_recording \
+                             --enable res_stasis_snoop \
                              --enable BETTER_BACKTRACES \
                              --disable MOH-OPSOUND-WAV \
                              --enable MOH-OPSOUND-GSM 
@@ -219,6 +251,11 @@ RUN \
    EXPOSE 80 443 4445 4569 5060 5160 8001 8003 8008 8009 18000-20000/udp
 
 ### Files Add
-   ADD install /
-   RUN mkdir /data
-   RUN chmod a+rwx /data
+ADD install /
+RUN mkdir /data
+RUN chmod a+rwx /data
+RUN \
+    bash /09-mariadb && \
+    bash /10-freepbx && \
+    bash /11-default-lang && \
+    bash /99-append 

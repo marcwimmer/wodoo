@@ -1672,8 +1672,8 @@ def debug(ctx, config, machine):
 
     # TODO make configurable in machines
     PORT = str({
-        'odoo': 8072,
-        'odoo_debug': 8072
+        'odoo': 8069,
+        'odoo_debug': 8069
     }.get(machine, 80))
     __replace_in_file(files['debugging_composer'], "{machine_main_port}", PORT)
     commands['dc'] += ['-f', files['debugging_composer']]
@@ -2474,7 +2474,7 @@ def restart(ctx, config, machines):
     ctx.invoke(kill, machines=machines)
     ctx.invoke(rm, machines=machines)
     ctx.invoke(recreate, machines=machines)
-    ctx.inoke(proxy_reload)
+    ctx.invoke(proxy_reload)
 
 @control.command()
 @click.argument('machines', nargs=-1)
@@ -2705,8 +2705,8 @@ def status():
 @click.argument('machines', nargs=-1)
 @pass_config
 @click.pass_context
-def stop(machines):
-    kill(machines)
+def stop(ctx, config,  machines):
+    context.invoke(kill, machines=machines)
 
 @src.command()
 @click.argument('modules', nargs=-1, required=True)

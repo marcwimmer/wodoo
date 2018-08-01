@@ -25,15 +25,12 @@ services:
         build: docker-freepbx
         ports:
             - 9080:80
+            - 8088:8088
+            - 5038:5038
             - 5060:5060
             - 5160:5160
             - 18000-18100:18000-18100/udp
             - 4445:4445
-        volumes:
-            - ./config/99-append:/etc/cont-init.d/99-append
-            - ./config/manager_custom.conf.appendix:/opt/appendix/manager_custom.conf.appendix
-            - ./config/ari_additional.conf.appendix:/opt/appendix/ari_additional.conf.appendix
-
         environment: 
             # must match above
             - ASTERISK_ARI_USER=ariuser1
@@ -53,24 +50,5 @@ services:
             - RTP_START=18000
             - RTP_FINISH=18100
     
-            - DB_EMBEDDED=FALSE
-            - DB_HOST=freepbx-db
-            - DB_PORT=3306
-            - DB_NAME=asterisk
-            - DB_USER=asterisk
-            - DB_PASS=asteriskpass
-
-            - ENABLE_FAIL2BAN=FALSE
-    
         restart: always
         privileged: true
-
-    freepbx-db:
-        container_name: freepbx-db
-        image: tiredofit/mariadb
-        restart: always
-        environment:
-          - MYSQL_ROOT_PASSWORD=password
-          - MYSQL_DATABASE=asterisk
-          - MYSQL_USER=asterisk
-          - MYSQL_PASSWORD=asteriskpass

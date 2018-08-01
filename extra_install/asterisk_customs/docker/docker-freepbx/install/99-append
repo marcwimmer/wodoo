@@ -1,0 +1,43 @@
+#!/usr/bin/with-contenv bash
+set -e
+set -x
+
+DOCKER_NET=$(route -n |sed -n 4p  |awk '{print $1}')
+DOCKER_NET_MASK=$(route -n |sed -n 4p  |awk '{print $3}')
+
+F=/etc/asterisk/manager_custom.conf
+cat /config/manager_custom.conf.appendix >> $F
+sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
+sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
+sed -i "s/__ASTERISK_AMI_USER__/$ASTERISK_AMI_USER/g" $F
+sed -i "s/__ASTERISK_AMI_PASSWORD__/$ASTERISK_AMI_PASSWORD/g" $F
+
+F=/etc/asterisk/ari_additional_custom.conf
+cat /config/ari_additional_custom.conf.appendix >> $F
+sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
+sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
+sed -i "s/__ASTERISK_ARI_USER__/$ASTERISK_ARI_USER/g" $F
+sed -i "s/__ASTERISK_ARI_PASSWORD__/$ASTERISK_ARI_PASSWORD/g" $F
+
+service mysql start
+service apache2 restart >/dev/null
+
+# install restservice
+fwconsole ma downloadinstall manager
+fwconsole ma downloadinstall restapi
+fwconsole ma downloadinstall arimanager
+
+# set some settings in freepbx
+MYSQL="mysql asterisk"
+echo "update freepbx_settings set value='1' where keyword = 'HTTPENABLED';" | $MYSQL
+echo "update freepbx_settings set value='1' where keyword = 'ENABLE_ARI';" | $MYSQL
+echo "update freepbx_settings set value='*' where keyword = 'ARI_ALLOWED_ORIGINS';" | $MYSQL
+
+# apply to /etc/asterisk
+echo "fwconsole start settings permissions takes LONG but works"
+fwconsole start || /var/lib/asterisk/bin/retrieve_conf
+fwconsole reload || /var/lib/asterisk/bin/retrieve_conf
+
+# shutdown
+service apache2 stop >/dev/null
+service mysql stop
