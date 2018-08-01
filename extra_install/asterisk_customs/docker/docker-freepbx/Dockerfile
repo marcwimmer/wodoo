@@ -253,5 +253,6 @@ RUN \
 ### Files Add
 ADD install /
 RUN mkdir /data
-RUN chmod a+rwx /data /init/*
-RUN bash /init/*
+RUN chmod a+rwx /data 
+RUN chmod a+x /init/* -R
+RUN for file in $(ls /init/*); do "$file"; done
