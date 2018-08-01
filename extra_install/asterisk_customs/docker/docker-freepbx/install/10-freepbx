@@ -128,6 +128,8 @@ fi
     sed -i -e "s/\$amp_conf\['CDRDBNAME'\] : 'asteriskcdrdb',/\$amp_conf\['CDRDBNAME'\] : '$DB_NAME',/g" /usr/src/freepbx/installlib/installcommand.class.php
     sed -i -e "s/\$amp_conf\['CDRDBNAME'\] : 'asteriskcdrdb',/\$amp_conf\['CDRDBNAME'\] : '$DB_NAME',/g" /usr/src/freepbx/amp_conf/htdocs/admin/bootstrap.php
   fi
+
+  mysql -e "show tables;" asterisk
   
   echo '** [freepbx] Installing FreePBX'
 
@@ -515,7 +517,6 @@ fi
     /usr/local/fop2/fop2_server -d --logdir /var/log/fop
  fi 
 
-service apache2 restart >/dev/null
 
 echo '** [freepbx] Web Server Started - Container Initialization Complete'
 

@@ -161,13 +161,23 @@ class Asterisk_ACM(EventListener):
             password=os.environ["ASTERISK_ARI_PASSWORD"],
             app=ARI_APP_NAME,
         )
-        ws.connect(url, sockopts=socket.SO_KEEPALIVE)
+        while True:
+            try:
+                ws.connect(url, sockopts=socket.SO_KEEPALIVE)
+            except Exception:
+                logger.info('waiting for url to come online: ' + url)
+                time.sleep(1)
+            else:
+                break
         time.sleep(2)
         ariclient = ari.connect('http://{}:{}/'.format(
             os.environ["ASTERISK_SERVER"],
             os.environ["ASTERISK_ARI_PORT"],
         ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
-        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:SIP,bridge:")  # or just endpoint:
+        ariclient.channels.list()
+        #ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="bridge:")  # or just endpoint:
+        # OMG: if freepbx is empty, then registering endpoint:SIP fails (3 hours gone)
+        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:,bridge:")  # or just endpoint:
 
         ariclient.on_channel_event("ChannelCreated", self.onChannelCreated)
         ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)

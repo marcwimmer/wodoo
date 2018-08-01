@@ -1,0 +1,6 @@
+#!/usr/bin/with-contenv bash
+set -x
+
+service mysql start
+service apache2 restart >/dev/null
+fwconsole start

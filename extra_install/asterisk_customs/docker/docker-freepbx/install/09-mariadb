@@ -1,13 +1,14 @@
 #!/usr/bin/with-contenv bash
+set -x
 
  ## Embedded DB Variance
-  if [[ "$DB_EMBEDDED" = "TRUE" ]] || [[ "$DB_EMBEDDED" = "true" ]];  then
+if [[ "$DB_EMBEDDED" = "TRUE" ]] || [[ "$DB_EMBEDDED" = "true" ]];  then
      DB_EMBEDDED=TRUE
-  else
+else
      DB_EMBEDDED=FALSE      
-  fi
+fi
 
-  if [ "$DB_EMBEDDED" = "TRUE" ];  then 
+if [ "$DB_EMBEDDED" = "TRUE" ];  then 
   service mysql stop
   mkdir -p /var/lib/mysql
 
@@ -20,5 +21,5 @@
   service mysql start
 fi
 
-  mkdir -p /tmp/state
-  touch /tmp/state/09-mariadb-init
+mkdir -p /tmp/state
+touch /tmp/state/09-mariadb-init
