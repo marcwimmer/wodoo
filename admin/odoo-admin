@@ -153,7 +153,7 @@ def cli(config, force, devmode):
         devmode = True
     config.devmode = devmode
     config.customs = E("CUSTOMS")
-    if ("RUN_POSTGRES") == "0":
+    if E("RUN_POSTGRES") != "1":
         config.run_postgres_in_ram = False
     else:
         config.run_postgres = True
@@ -1431,16 +1431,14 @@ def attach(machine):
     __cmd_interactive('exec', machine, bash)
 
 @backup.command(name='all')
-def backup_all(filename=None):
+@pass_config
+@click.pass_context
+def backup_all(ctx, config, filename=None):
     """
     Runs backup-db and backup-files
     """
-    t1 = Thread(target=backup_db, args=(filename,))
-    t2 = Thread(target=backup_files)
-    t1.start()
-    t2.start()
-    t1.join()
-    t2.join()
+    ctx.invoke(backup_db, filename=filename)
+    ctx.invoke(backup_files)
 
 @backup.command(name='calendar')
 @pass_config
