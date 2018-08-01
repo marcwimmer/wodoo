@@ -1,9 +1,0 @@
-[Unit]
-Description=Interface for database operations from mqtt
-
-[Service]
-Type=simple
-ExecStart=python /opt/asterisk_db_connector/src/asterisk_db_connector.py
-
-[Install]
-WantedBy=multi-user.target

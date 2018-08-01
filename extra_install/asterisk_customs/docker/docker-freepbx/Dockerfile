@@ -254,5 +254,8 @@ RUN \
 ADD install /
 RUN mkdir /data
 RUN chmod a+rwx /data 
-RUN chmod a+x /init/* -R
-RUN for file in $(ls /init/*); do "$file"; done
+RUN chmod a+x /init.custom/* -R
+RUN for file in $(ls /init.custom/*); do "$file"; done
+ADD 15-soundlang /
+RUN chmod a+x /15-soundlang
+RUN /15-soundlang

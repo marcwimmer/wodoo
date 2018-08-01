@@ -1,9 +1,0 @@
-version: "3.3"
-
-services:
-  asterisk_connector_wadb:
-    build: .
-    volumes:
-        - /etc/freepbx.conf:/freepbx.conf:ro
-        - ./src/:/opt/src/
-    env_file: .env

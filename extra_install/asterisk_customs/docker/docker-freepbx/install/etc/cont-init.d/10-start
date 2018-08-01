@@ -1,6 +1,7 @@
 #!/usr/bin/with-contenv bash
 set -x
 
+bash /11-setup-config-files
 service mysql start
 service apache2 restart >/dev/null
 fwconsole start

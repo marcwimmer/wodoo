@@ -11,3 +11,8 @@ goto http://localhost:9080/admin
 
 Debug ARI Connector:
 ./debug_connector_amiari.sh
+
+
+
+Interessant:
+  * https://github.com/maxpatternman/freepbx-german-conf 
