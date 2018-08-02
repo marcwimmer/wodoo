@@ -29,9 +29,10 @@ services:
             - "9022:22"
             - 8088:8088
             - 5038:5038
-            - 5060:5060
+            - "5060:5060/tcp"
+            - "5060:5060/udp"
             - 5160:5160
-            - 18000-18100:18000-18100/udp
+            - "10000-20000:10000/udp"
             - 4445:4445
         environment: 
             # must match above
@@ -49,8 +50,5 @@ services:
 
             - ZABBIX_HOSTNAME=freepbx-app
 
-            - RTP_START=18000
-            - RTP_FINISH=18100
-    
         restart: always
         privileged: true
