@@ -14,6 +14,9 @@ LABEL maintainer="Dave Conroy (dave at tiredofit dot ca)"
        ASTERISK_AMI_USER=an_ami_user2 \
        ASTERISK_AMI_PASSWORD=a_password
 
+### install ssh access for connector;
+    RUN apt update && apt install -y ssh;
+
 ### Install Dependencies
    RUN set -x ; \
        apt-get update ; \
@@ -255,7 +258,15 @@ ADD install /
 RUN mkdir /data
 RUN chmod a+rwx /data 
 RUN chmod a+x /init.custom/* -R
-RUN for file in $(ls /init.custom/*); do "$file"; done
-ADD 15-soundlang /
-RUN chmod a+x /15-soundlang
-RUN /15-soundlang
+RUN \
+for file in $(ls /init.custom/*); \
+    do \
+    echo "";  \
+    echo "";  \
+    echo "--------------------------------------------------------------";  \
+    echo " Executing $file "; \
+    echo "--------------------------------------------------------------";  \
+    echo "";  \
+    echo "";  \
+    eval "$file"; \
+done

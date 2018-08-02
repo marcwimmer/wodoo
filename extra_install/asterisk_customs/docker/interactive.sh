@@ -1,2 +1,2 @@
 #!/bin/bash
-docker-compose exec freepbx-app bash
+docker-compose exec freepbx bash

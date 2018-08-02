@@ -2,45 +2,31 @@
 version: '3.7'
 
 services:
-    connector-mqtt-ariami:
-        build: ../connector_mqtt_ariami
+    connector-mqtt-asterisk:
+        build: ../connector_mqtt_asterisk
         volumes:
             # better debugging
-            - ../connector_mqtt_ariami/app.py:/app.py:ro
+            - ../connector_mqtt_asterisk/app.py:/app.py:ro
         environment:
             # must be unique - client id of mqtt client, otherwise no registration
             - APP_NAME=asterisk_connector_test
             - MQTT_BROKER_HOST=DOCKER_HOST
             - MQTT_BROKER_PORT=1883
-            - ASTERISK_SERVER=freepbx-app
+            - ASTERISK_SERVER=DOCKER_HOST
             - ASTERISK_ARI_PORT=8088
             - ASTERISK_ARI_USER=ariuser1
             - ASTERISK_ARI_PASSWORD=password1
             - ASTERISK_AMI_USER=an_ami_user2
             - ASTERISK_AMI_PASSWORD=a_password
             - ASTERISK_AMI_PORT=5038
+            - ASTERISK_SSH_PORT=9022
 
-    #connector-mqtt-freepbxdb:
-        #build: .
-        #volumes:
-            #- /etc/freepbx.conf:/freepbx.conf:ro
-            #- ./src/:/opt/src/
-        #environment:
-            #- MQTT_BROKER_HOST:10.10.172.94
-            #- MQTT_BROKER_PORT:1883
-            #- ASTERISK_SERVER:10.10.172.99
-            #- ASTERISK_ARI_PORT:8088
-            #- ASTERISK_ARI_USER:ariuser1
-            #- ASTERISK_ARI_PASSWORD:password1
-            #- ASTERISK_AMI_USER:admin
-            #- ASTERISK_AMI_PASSWORD:0469fb7914d19888210e54e9fa9c4912
-            #- ASTERISK_AMI_PORT:5038
-
-    freepbx-app:
+    freepbx:
         container_name: freepbx-app
         build: docker-freepbx
         ports:
             - 9080:80
+            - "9022:22"
             - 8088:8088
             - 5038:5038
             - 5060:5060

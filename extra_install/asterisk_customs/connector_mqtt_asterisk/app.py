@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os
+import datetime
 import paho.mqtt.client as mqtt
 import subprocess
 import threading
@@ -10,43 +11,84 @@ import websocket
 import socket
 import time
 import ari
+import re
+import requests
 from asterisk.ami import AMIClient, SimpleAction, AutoReconnect, EventListener
+import sqlalchemy
+from sqlalchemy import MetaData, func
+from sqlalchemy.sql import and_
+from hashlib import sha256
+logger = None
 
-ARI_APP_NAME = os.getenv('APP_NAME')
-if not ARI_APP_NAME:
-    raise Exception("Missing app-name: {}".format(ARI_APP_NAME))
-
+# some globals
 DOCKER_HOST = os.environ['DOCKER_HOST']
 
-# apply DOCKER_HOST to host variables
-for f in ("ASTERISK_SERVER", "MQTT_BROKER_HOST"):
-    if os.getenv(f, "") == "DOCKER_HOST":
-        os.environ[f] = DOCKER_HOST
+def setup_logging():
+    FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
+    logging.basicConfig(format=FORMAT)
+    logging.getLogger().setLevel(logging.DEBUG)
+    return logging.getLogger('')  # root handler
 
-FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
-logging.basicConfig(format=FORMAT)
-logging.getLogger().setLevel(logging.DEBUG)
-logger = logging.getLogger('')  # root handler
 
+logger = setup_logging()
 logger.info("Using Asterisk Server on {}".format(DOCKER_HOST))
 
-class Asterisk_ACM(EventListener):
+
+class MQTT_Endpoint(object):
+    """
+    Base class for talking to MQTT.
+    """
     def __init__(self):
         self.mqtt_broker = os.environ["MQTT_BROKER_HOST"]
         self.mqtt_port = int(os.environ.get("MQTT_BROKER_PORT", 1883))
         self.mqtt_user = os.environ.get("MQTT_BROKER_USERNAME", "")
         self.mqtt_pass = os.environ.get("MQTT_BROKER_PASSWORD")
+
+        self.subscriptions = []
+
+        self.mqttclient = mqtt.Client(
+            client_id=os.environ['HOSTNAME'] + type(self).__name__,
+            clean_session=False,
+            userdata=None,
+            protocol=mqtt.MQTTv311
+        )
+
+    def publish(self, topic, payload):
+        print("Sending {} to: {}".format(payload, topic))
+        self.mqttclient.publish(topic, payload, qos=2, retain=True)
+
+    def run(self):
+        def _run(self):
+            self.mqttclient.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
+            for subscription in self.subscriptions:
+                self.mqttclient.subscribe(subscription)
+            # self.mqttclient.username_pw_set(self.mqtt_user,self.mqtt_pass)
+            self.mqttclient.on_message = self.on_message
+            self.mqttclient.loop_forever()
+
+        t = threading.Thread(target=_run, args=(self,))
+        t.daemon = True
+        t.start()
+
+class Asterisk_ACM(MQTT_Endpoint, EventListener):
+    """
+    This class talks to AMI interface and ARI Interface.
+
+    """
+    def __init__(self):
+        super(Asterisk_ACM, self).__init__()
         self.ari_server = os.environ["ASTERISK_SERVER"]
         self.ari_port = int(os.environ.get("ASTERISK_ARI_PORT", "8088"))
         self.ari_user = os.environ["ASTERISK_ARI_USER"]
         self.ari_pass = os.environ["ASTERISK_ARI_PASSWORD"]
 
-        self.mqttclient = mqtt.Client(
-            client_id=os.environ['HOSTNAME'],
-            clean_session=False,
-            userdata=None,
-            protocol=mqtt.MQTTv311
-        )
+        self.subscriptions += [
+            "asterisk/AMI/send",
+            "asterisk/Console/send",
+            "asterisk/Console/send/#",
+            "asterisk/ari/originate",
+        ]
+
         self.connect_ariclient()
         for logger in logging.Logger.manager.loggerDict.keys():
             logging.getLogger(logger).setLevel(logging.INFO)
@@ -61,7 +103,7 @@ class Asterisk_ACM(EventListener):
 
     def run_Console(self, cmd, id=None):
 
-        cmd = "/usr/bin/ssh {} \"/usr/sbin/asterisk -x '{}'\"".format(DOCKER_HOST, cmd)
+        cmd = "/usr/bin/ssh -p {} \"/usr/sbin/asterisk -x '{}'\"".format(os.environ['ASTERISK_SSH_PORT'], DOCKER_HOST, cmd)
         p = subprocess.check_output(cmd, shell=True)
 
         if id:
@@ -92,6 +134,8 @@ class Asterisk_ACM(EventListener):
             return
 
     def on_message(self, client, userdata, message):
+        from pudb import set_trace
+        set_trace()
         try:
             logger.info("New Message %s", message.topic)
             if message.topic.startswith("asterisk/Console/send"):
@@ -124,20 +168,6 @@ class Asterisk_ACM(EventListener):
         except Exception:
             logger.error(traceback.format_exc())
 
-    def publish(self, topic, payload):
-        print("Sending {} auf: {}".format(payload, topic))
-        self.mqttclient.publish(topic, payload, qos=2, retain=True)
-
-    def run(self):
-        # self.mqttclient.username_pw_set(self.mqtt_user,self.mqtt_pass)
-        self.mqttclient.connect(self.mqtt_broker, self.mqtt_port, keepalive=60)
-        self.mqttclient.on_message = self.on_message
-        self.mqttclient.subscribe("asterisk/AMI/send")
-        self.mqttclient.subscribe("asterisk/Console/send")
-        self.mqttclient.subscribe("asterisk/Console/send/#")
-        self.mqttclient.subscribe("asterisk/ari/originate")
-        self.mqttclient.loop_forever()
-
     def on_event(self, event, **kwargs):
         self.publish('asterisk/ami/event/{}'.format(event.name), json.dumps(event.keys))
 
@@ -164,8 +194,9 @@ class Asterisk_ACM(EventListener):
         while True:
             try:
                 ws.connect(url, sockopts=socket.SO_KEEPALIVE)
-            except Exception:
+            except Exception as e:
                 logger.info('waiting for url to come online: ' + url)
+                logger.exception(e)
                 time.sleep(1)
             else:
                 break
@@ -175,7 +206,7 @@ class Asterisk_ACM(EventListener):
             os.environ["ASTERISK_ARI_PORT"],
         ), os.environ["ASTERISK_ARI_USER"], os.environ["ASTERISK_ARI_PASSWORD"])
         ariclient.channels.list()
-        #ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="bridge:")  # or just endpoint:
+        # ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="bridge:")  # or just endpoint:
         # OMG: if freepbx is empty, then registering endpoint:SIP fails (3 hours gone)
         ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:,bridge:")  # or just endpoint:
 
@@ -273,7 +304,61 @@ class Asterisk_ACM(EventListener):
                         break
             time.sleep(1)
 
+class FreepbxConnector(MQTT_Endpoint):
+    def __init__(self, conf_path=None, conf_prefix=None, conf_valpat=None):
+        super(FreepbxConnector, self).__init__()
+        self.subscriptions += [
+            'asterisk/pickupgroup',
+            'asterisk/man_extension',
+        ]
+
+    def on_message(self, client, userdata, message):
+        # Freepbx 15 provides rest api
+        from pudb import set_trace
+        set_trace()
+        logger.info(message.topic)
+        logger.info(message.payload.decode("utf-8"))
+        data = json.loads(message.payload.decode("utf-8"))
+        if message.topic == "asterisk/pickupgroup":
+            if data.get('cmd', None) == "UPDATE":
+                self.update_pickgroup(data)
+            if data.get('cmd', None) == "REMOVE":
+                self.remove_pickupgroup(data)
+            if data.get('cmd', None) == "CREATE":
+                self.create_pickupgroup(data)
+            elif data.get('cmd', None) == "GET":
+                self.get_pickgroup(data)
+
+        elif message.topic == "asterisk/man_extension":
+            logger.debug("Received Message: %r", data)
+            if data.get('cmd', None) == "CREATE":
+                self.create_extension(data.get("ext_data", {}))
+            if data.get('cmd', None) == "UPDATE":
+                self.update_extension(data.get("ext_data", {}))
+            if data.get('cmd', None) == "REMOVE":
+                self.remove_extension(data.get("ext_data", {}))
+            if data.get('cmd', None) == "GET":
+                self.get_extension(data.get("ext_data", {}))
+        else:
+            logger.error("Invalid Topic!")
+
+def setup_docker_host_env_variable():
+
+    # apply DOCKER_HOST to host variables
+    for f in ("ASTERISK_SERVER", "MQTT_BROKER_HOST", "FREEPBX_WEB_HOST"):
+        if os.getenv(f, "") == "DOCKER_HOST":
+            os.environ[f] = DOCKER_HOST
+
 
 if __name__ == "__main__":
-    acm = Asterisk_ACM()
-    acm.run()
+    ARI_APP_NAME = os.getenv('APP_NAME')
+    if not ARI_APP_NAME:
+        raise Exception("Missing app-name: {}".format(ARI_APP_NAME))
+
+    setup_docker_host_env_variable()
+    setup_logging()
+
+    Asterisk_ACM().run()
+    #FreepbxConnector().run()
+    while True:
+        time.sleep(20000)

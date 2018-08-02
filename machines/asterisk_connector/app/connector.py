@@ -539,8 +539,9 @@ def mqtt_thread():
         try:
             mqttclient = mqtt.Client(client_id="asterisk_connector_receiver.{}".format(socket.gethostname()),)
             # mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
-            logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT'])))
-            mqttclient.connect(os.environ['MOSQUITTO_HOST'], long(os.environ['MOSQUITTO_PORT']), keepalive=10)
+            PORT = long(os.getenv('MOSQUITTO_PORT', "1883"))
+            logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], PORT))
+            mqttclient.connect(os.environ['MOSQUITTO_HOST'], PORT, keepalive=10)
             mqttclient.on_connect = on_mqtt_connect
             mqttclient.on_message = on_mqtt_message
             mqttclient.on_disconnect = on_mqtt_disconnect
