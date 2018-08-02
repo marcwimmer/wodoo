@@ -103,7 +103,7 @@ class Asterisk_ACM(MQTT_Endpoint, EventListener):
 
     def run_Console(self, cmd, id=None):
 
-        cmd = "/usr/bin/ssh -p {} \"/usr/sbin/asterisk -x '{}'\"".format(os.environ['ASTERISK_SSH_PORT'], DOCKER_HOST, cmd)
+        cmd = "/usr/bin/ssh -p {} {} \"/usr/sbin/asterisk -x '{}'\"".format(os.environ['ASTERISK_SSH_PORT'], DOCKER_HOST, cmd)
         p = subprocess.check_output(cmd, shell=True)
 
         if id:
@@ -134,8 +134,6 @@ class Asterisk_ACM(MQTT_Endpoint, EventListener):
             return
 
     def on_message(self, client, userdata, message):
-        from pudb import set_trace
-        set_trace()
         try:
             logger.info("New Message %s", message.topic)
             if message.topic.startswith("asterisk/Console/send"):
@@ -208,7 +206,7 @@ class Asterisk_ACM(MQTT_Endpoint, EventListener):
         ariclient.channels.list()
         # ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="bridge:")  # or just endpoint:
         # OMG: if freepbx is empty, then registering endpoint:SIP fails (3 hours gone)
-        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:,bridge:")  # or just endpoint:
+        ariclient.applications.subscribe(applicationName=[ARI_APP_NAME], eventSource="endpoint:,bridge:,channel:")  # or just endpoint:
 
         ariclient.on_channel_event("ChannelCreated", self.onChannelCreated)
         ariclient.on_channel_event("ChannelStateChange", self.onChannelStateChanged)
@@ -314,8 +312,6 @@ class FreepbxConnector(MQTT_Endpoint):
 
     def on_message(self, client, userdata, message):
         # Freepbx 15 provides rest api
-        from pudb import set_trace
-        set_trace()
         logger.info(message.topic)
         logger.info(message.payload.decode("utf-8"))
         data = json.loads(message.payload.decode("utf-8"))
