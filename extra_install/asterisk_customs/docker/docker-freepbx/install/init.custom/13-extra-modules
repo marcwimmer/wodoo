@@ -9,6 +9,7 @@ service apache2 restart >/dev/null
 fwconsole ma downloadinstall manager
 fwconsole ma downloadinstall restapi
 fwconsole ma downloadinstall arimanager
+fwconsole ma downloadinstall bulkhandler
 
 # apply to /etc/asterisk
 fwconsole start || /var/lib/asterisk/bin/retrieve_conf
