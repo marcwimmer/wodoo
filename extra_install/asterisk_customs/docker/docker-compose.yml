@@ -47,8 +47,3 @@ services:
             - EXTERNIP
 
             - UCP_FIRST=False
-
-        restart: always
-        privileged: true
-        volumes: 
-            - ./default_extensions.csv:/default_extensions.csv

@@ -7,7 +7,7 @@ fi
 
 export EXTERNIP="$1"
 
-docker-compose build freepbx
+#docker-compose build freepbx
 docker-compose run --rm --service-ports -e EXTERNIP=$1 freepbx
 
 echo "Now goto http://localhost:9080 and setup username password."
