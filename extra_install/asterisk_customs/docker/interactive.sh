@@ -1,2 +1,2 @@
 #!/bin/bash
-docker-compose exec freepbx bash
+docker exec -it $(docker ps -aqf "name=docker_freepbx") bash

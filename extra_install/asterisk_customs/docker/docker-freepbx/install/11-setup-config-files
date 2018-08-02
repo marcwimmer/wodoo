@@ -20,8 +20,12 @@ sed -i "s/__ASTERISK_ARI_USER__/$ASTERISK_ARI_USER/g" $F
 sed -i "s/__ASTERISK_ARI_PASSWORD__/$ASTERISK_ARI_PASSWORD/g" $F
 
 
-MYSQL="mysql asterisk"
-echo "update freepbx_settings set value='1' where keyword = 'HTTPENABLED';" | $MYSQL
-echo "insert into kvstore_Sipsettings(`key`, val, id) values('externip', '$EXTERNIP', 'noid');" | $MYSQL
-echo "insert into kvstore_Sipsettings(`key`, val, id) values('rtpstart', ’$RTPSTART', 'noid');" | $MYSQL
-echo "insert into kvstore_Sipsettings(`key`, val, id) values('ratend', ’$RTPEND', 'noid');" | $MYSQL
+KEYCOLUMN="\`key\`"
+echo $KEYCOLUMN
+mysql asterisk <<EOF
+update freepbx_settings set value='1' where keyword = 'HTTPENABLED';
+insert into kvstore_Sipsettings($KEYCOLUMN, val, id) values('externip', '$EXTERNIP', 'noid');
+insert into kvstore_Sipsettings($KEYCOLUMN, val, id) values('rtpstart', '$RTPSTART', 'noid');
+insert into kvstore_Sipsettings($KEYCOLUMN, val, id) values('rtpend', '$RTPEND', 'noid');
+EOF
+

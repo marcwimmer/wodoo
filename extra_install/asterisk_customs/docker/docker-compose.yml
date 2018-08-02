@@ -43,12 +43,10 @@ services:
 
             - RTPSTART=10000
             - RTPEND=10200
+            # set by run_freepbx
             - EXTERNIP
 
             - UCP_FIRST=False
-            - VIRTUAL_HOST=hostname.example.com
-            - VIRTUAL_NETWORK=nginx-proxy
-            - VIRTUAL_PORT=80
 
         restart: always
         privileged: true

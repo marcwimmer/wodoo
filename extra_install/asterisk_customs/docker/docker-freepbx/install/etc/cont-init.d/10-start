@@ -1,7 +1,8 @@
 #!/usr/bin/with-contenv bash
 set -x
+set -e
 
-mkdir /run/sshd
+mkdir -p /run/sshd
 /usr/sbin/sshd 
 service mysql start
 bash /11-setup-config-files

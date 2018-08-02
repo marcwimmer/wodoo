@@ -7,10 +7,8 @@ fi
 
 export EXTERNIP="$1"
 
-docker-compose kill freepbx
-docker-compose rm -f freepbx
 docker-compose build freepbx
-docker-compose up -d freepbx
+docker-compose run --rm --service-ports -e EXTERNIP=$1 freepbx
 
 echo "Now goto http://localhost:9080 and setup username password."
 echo "Please create PJSIP extensions, not SIP"
