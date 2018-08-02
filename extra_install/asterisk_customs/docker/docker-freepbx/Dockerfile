@@ -151,14 +151,13 @@ RUN \
                              --enable app_chanspy \
                              --enable app_macro \
                              --enable app_record \
-                             --enable app_tranfer \
                              --enable app_record \
                              --enable app_senddtmf \
                              --enable app_softhangup \
                              --enable app_stasis \
                              --enable codec_opus \
                              --enable codec_silk \
-                             --enable chan_sip \
+                             --disable chan_sip \
                              --enable chan_pjsip \
                              --enable chan_console \
                              --enable chan_rtp \

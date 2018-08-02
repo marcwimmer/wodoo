@@ -18,3 +18,10 @@ sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
 sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
 sed -i "s/__ASTERISK_ARI_USER__/$ASTERISK_ARI_USER/g" $F
 sed -i "s/__ASTERISK_ARI_PASSWORD__/$ASTERISK_ARI_PASSWORD/g" $F
+
+
+MYSQL="mysql asterisk"
+echo "update freepbx_settings set value='1' where keyword = 'HTTPENABLED';" | $MYSQL
+echo "insert into kvstore_Sipsettings(`key`, val, id) values('externip', '$EXTERNIP', 'noid');" | $MYSQL
+echo "insert into kvstore_Sipsettings(`key`, val, id) values('rtpstart', ’$RTPSTART', 'noid');" | $MYSQL
+echo "insert into kvstore_Sipsettings(`key`, val, id) values('ratend', ’$RTPEND', 'noid');" | $MYSQL

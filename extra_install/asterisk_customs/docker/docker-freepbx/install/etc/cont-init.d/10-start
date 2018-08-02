@@ -3,7 +3,7 @@ set -x
 
 mkdir /run/sshd
 /usr/sbin/sshd 
-bash /11-setup-config-files
 service mysql start
+bash /11-setup-config-files
 service apache2 restart >/dev/null
 fwconsole start
