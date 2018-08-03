@@ -1753,8 +1753,8 @@ def get_all_langs():
         "select distinct code from res_lang;",
         fetchall=True
     )]
-    for lang in langs:
-        print(lang)
+    for lang in sorted(langs):
+        click.echo(lang)
     return langs
 
 @restore.command('show-dump-type')

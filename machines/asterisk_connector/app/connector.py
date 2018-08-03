@@ -311,11 +311,12 @@ class Connector(object):
     def originate(self):
         # app=
         # callerId
+        channel_type = clean_number(cp.request.json['channel_type'])
         endpoint = clean_number(cp.request.json['endpoint'])
         extension = clean_number(cp.request.json['extension'])
         if endpoint == extension: # dont allow call self; originated to self, second channel and so on
             return
-        endpoint = "SIP/{}".format(endpoint)
+        endpoint = "{}/{}".format(channel_type, endpoint)
         odoo_instance = cp.request.json.get('odoo_instance', '') or ''
         mqttclient.publish('asterisk/ari/originate', payload=json.dumps(dict(
             endpoint=endpoint,
