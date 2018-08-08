@@ -1871,7 +1871,7 @@ def module_link():
     """
     os.system("python " + os.path.join(dirs['admin'], 'link_modules'))
 
-@cli.command(name='log')
+@cli.command(name='logs')
 @click.argument('machines', nargs=-1)
 @click.option('-t', '--tail', required=False, type=int, default=200)
 @click.option('-f', '--follow', is_flag=True)
