@@ -328,22 +328,20 @@ def get_path_to_current_odoo_module(current_file):
         for f in MANIFESTS:
             test = os.path.join(path, f)
             if os.path.exists(test):
-                return path
+                return test
         return None
 
-    current_path = os.path.dirname(current_file)
+    current_path = os.path.dirname(current_file) if not os.path.isdir(current_file) else current_file
     counter = 0
     while counter < 100 and len(current_path) > 1 and not is_module_path(current_path):
         current_path = os.path.dirname(current_path)
         counter += 1
     if counter > 40:
         pass
-    return is_module_path(current_path)
+    return os.path.dirname(is_module_path(current_path))
 
 def get_relative_path_to_odoo_module(filepath):
     path_to_module = get_path_to_current_odoo_module(filepath)
-    for m in MANIFESTS:
-        path_to_module = path_to_module.replace("/{}".format(m), "")
     filepath = filepath[len(path_to_module):]
     if filepath.startswith("/"):
         filepath = filepath[1:]
@@ -824,7 +822,6 @@ def update_assets_file(module_path):
 """
     DEFAULT_ASSETS = "web.assets_backend"
     module_path = get_path_to_current_odoo_module(module_path)
-    # doc.xpath("//template")[0].set('name', os.path.basename(module_path) + " backend assets")
 
     files_per_assets = {
         'web.assets_backend': {
@@ -869,8 +866,10 @@ def update_assets_file(module_path):
             })
         doc.xpath("/odoo/data")[0].append(parent)
 
-    to_remove = doc.xpath("//template[1]")[0]
-    to_remove.getparent().remove(to_remove)
+    # remove empty assets and the first template template
+    for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
+        to_remove.getparent().remove(to_remove)
+
     filepath = os.path.join(module_path, 'views/assets.xml')
 
     if not doc.xpath("//link| //script"):
@@ -903,8 +902,8 @@ def update_module_file(current_file):
         return
     # updates __openerp__.py the update-section to point to all xml files in the module;
     # except if there is a directory test; those files are ignored;
-    file_path = get_path_to_current_odoo_module(current_file)
-    module_path = os.path.dirname(file_path)
+    module_path = get_path_to_current_odoo_module(current_file)
+    file_path = get_manifest_path_of_module_path(module_path)
     update_assets_file(module_path)
 
     file = open(file_path, "rb")
@@ -1122,4 +1121,5 @@ def check_if_all_modules_from_install_are_installed():
 
 
 if __name__ == '__main__':
-    update_assets_file("/home/marc/odoo/data/src/customs/caetec11/common/holiday/hr_attendance_extended/views/assets.xml")
+    update_assets_file('/home/marc/odoo/data/src/customs/caetec11/modules/caetec_report_design')
+    #update_assets_file("/home/marc/odoo/data/src/customs/caetec11/common/holiday/hr_attendance_extended/views/assets.xml")
