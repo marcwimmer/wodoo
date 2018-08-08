@@ -1471,7 +1471,7 @@ def __backup_postgres(filepath, dbname, host, port, user, password):
 def __get_default_backup_filename(config):
     return datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(config.customs))
 
-@backup.command(name='db')
+@backup.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
 @pass_config
 @click.pass_context
