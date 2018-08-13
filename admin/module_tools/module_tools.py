@@ -595,7 +595,11 @@ def link_modules():
                         else:
                             raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
                 rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
-                os.symlink(rel_path, target)
+                try:
+                    os.symlink(rel_path, target)
+                except Exception:
+                    msg = traceback.format_exc()
+                    raise Exception("Symlink already exists:\n{}\n{}\n".format(rel_path, target, msg))
                 data['counter'] += 1
 
             else:
@@ -731,6 +735,8 @@ def remove_module_install_notifications(path):
 
     for root, dirnames, filenames in os.walk(path):
         filenames = [x for x in filenames if x.endswith(".xml")]
+        if 'migration' in dirnames:
+            dirnames.remove('migration')
 
         for filename in filenames:
             path = os.path.join(root, filename)

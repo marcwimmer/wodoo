@@ -2146,9 +2146,9 @@ Migration to Version {}
 @click.argument('from-version', required=True)
 @click.argument('to-version', required=True)
 @click.option('--module', help="At debugging: to update only the provided module", default='all')
-@click.option("-d", "--debug", help="Interactive mode: stops at breakpoints", default=False)
-@click.option("-p", "--pull", help="Pulls odoo repository before to get latest odoo, otherwise SHA from previous runs are used.", default=False)
-@click.option('-n', '--no-git-clean', help="If true, then the git repo is not touch and you can set break points.")
+@click.option("-d", "--debug", is_flag=True, help="Interactive mode: stops at breakpoints", default=False)
+@click.option("-p", "--pull", is_flag=True, help="Pulls odoo repository before to get latest odoo, otherwise SHA from previous runs are used.", default=False)
+@click.option('-n', '--no-git-clean', is_flag=True, help="If true, then the git repo is not touch and you can set break points.")
 @pass_config
 @click.pass_context
 def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, pull):
