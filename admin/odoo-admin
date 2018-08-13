@@ -1989,7 +1989,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         elif debug:
             answer = raw_input("Run {} sql/py? [Y/n]".format(type))
             if not answer or answer in ['Y', 'y']:
-                ctx.invoke(runbash, *cmd, logger=logger)
+                ctx.invoke(runbash, machine='odoo', args=cmd, logger=logger)
 
     def __run_migration(migrations, git_clean, version, debug, module, logger, pull_latest):
         print("Starting Openupgrade Migration to {}".format(version))
@@ -2098,6 +2098,10 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         },
         '7.0': {
             'branch': '7.0',
+            'addons_paths': [
+                'openerp/addons',
+                'addons',
+            ],
             'cmd': [
                 './openerp-server',
                 '--update={module}',
@@ -2146,9 +2150,9 @@ Migration to Version {}
 @click.argument('from-version', required=True)
 @click.argument('to-version', required=True)
 @click.option('--module', help="At debugging: to update only the provided module", default='all')
-@click.option("-d", "--debug", help="Interactive mode: stops at breakpoints", default=False)
-@click.option("-p", "--pull", help="Pulls odoo repository before to get latest odoo, otherwise SHA from previous runs are used.", default=False)
-@click.option('-n', '--no-git-clean', help="If true, then the git repo is not touch and you can set break points.")
+@click.option("-d", "--debug", is_flag=True, help="Interactive mode: stops at breakpoints", default=False)
+@click.option("-p", "--pull", is_flag=True, help="Pulls odoo repository before to get latest odoo, otherwise SHA from previous runs are used.", default=False)
+@click.option('-n', '--no-git-clean', is_flag=True, help="If true, then the git repo is not touch and you can set break points.")
 @pass_config
 @click.pass_context
 def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, pull):
@@ -2597,7 +2601,7 @@ def run(ctx, config, machine, args, **kwparams):
 @click.argument('args', nargs=-1)
 @pass_config
 @click.pass_context
-def runbash(ctx, config, machine, args):
+def runbash(ctx, config, machine, args, **kwparams):
     __set_db_ownership(config)
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)

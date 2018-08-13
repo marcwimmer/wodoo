@@ -19,4 +19,4 @@
 	url = https://github.com/OCA/openupgradelib.git
 [submodule "repos/vide"]
 	path = repos/vide
-	url = git.itewimmer.de:/git/vide
+	url = ssh://git@git.itewimmer.de:50004/vim/vide.git

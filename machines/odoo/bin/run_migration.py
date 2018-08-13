@@ -30,7 +30,9 @@ try:
         print("Executing " + sqlfile)
         with open(sqlfile) as f:
             sql = f.read()
-        cr.execute(sql)
+        for line in sql.split(";"):
+            print(line)
+            cr.execute(line)
 
     if os.path.exists(pyfile):
         print("Executing " + pyfile)
