@@ -554,7 +554,7 @@ def update_cache(arg_modified_filename=None):
     except Exception:
         module_path = None
 
-    if os.path.isfile(plainfile):
+    if os.path.isfile(plainfile) and arg_modified_filename:
         f = open(plainfile, 'a')
     else:
         if os.path.isdir(os.path.dirname(plainfile)):
@@ -572,6 +572,7 @@ def update_cache(arg_modified_filename=None):
                 name = xmlid['id']
             else:
                 name = u"{}.{}".format(xmlid['module'], xmlid['id'])
+            name += " model:" + xmlid['model']
             f.write(TEMPLATE.format(type="xmlid", module=xmlid['module'], name=name, filepath=translate_path_relative_to_customs_root(xmlid['filepath']), line=xmlid['line']))
             f.write("\n")
         for method in methods:
