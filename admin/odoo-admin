@@ -1471,7 +1471,7 @@ def __backup_postgres(filepath, dbname, host, port, user, password):
 def __get_default_backup_filename(config):
     return datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(config.customs))
 
-@backup.command(name='db')
+@backup.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
 @pass_config
 @click.pass_context
@@ -2336,13 +2336,15 @@ def __get_subtree_url(type, submodule):
 @src.command()
 @click.argument("submodule", required=False)
 @click.pass_context
-def pull(ctx, submodule, is_extra_install=False):
+def pull(ctx, submodule, is_extra_install=None):
     if not submodule:
         pull_push_all(ctx, 'pull')
         return
 
     extra_modules = __get_extra_install_modules()
-    if submodule in extra_modules.keys():
+    if is_extra_install is None:
+        is_extra_install = False
+    elif submodule in extra_modules.keys():
         is_extra_install = True
 
     if not is_extra_install:
@@ -2387,14 +2389,16 @@ an error can occur 'working tree has modifications'
 @src.command()
 @click.argument("submodule", required=False)
 @click.pass_context
-def push(ctx, submodule, is_extra_install=True):
+def push(ctx, submodule, is_extra_install=None):
     if not submodule:
         pull_push_all(ctx, 'push')
         return
     __assert_file_exists(os.path.join(dirs['customs'], '.git'))
 
     extra_modules = __get_extra_install_modules()
-    if submodule in extra_modules.keys():
+    if is_extra_install is None:
+        is_extra_install = False
+    elif submodule in extra_modules.keys():
         is_extra_install = True
 
     if not is_extra_install:
@@ -2711,7 +2715,7 @@ def status():
 @pass_config
 @click.pass_context
 def stop(ctx, config,  machines):
-    context.invoke(kill, machines=machines)
+    ctx.invoke(kill, machines=machines)
 
 @src.command()
 @click.argument('modules', nargs=-1, required=True)

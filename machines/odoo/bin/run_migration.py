@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Runs a migration script either SQL or PY
+import re
 import subprocess
 import os
 import sys
@@ -30,9 +31,15 @@ try:
         print("Executing " + sqlfile)
         with open(sqlfile) as f:
             sql = f.read()
-        for line in sql.split(";"):
-            print(line)
-            cr.execute(line)
+        # remove lines, beginning with comment
+        sql = '\n'.join(filter(lambda line: not line.strip().startswith("--", sql.split("\n"))))
+        for blockcomment in re.compile(r'\/\*.*?\*\/', re.DOTALL):
+            sql = sql.replace(blockcomment, "")
+        for statement in sql.split(";"):
+            if not statement.strip():
+                continue
+            print("Executing {}".format(statement))
+            cr.execute(statement)
 
     if os.path.exists(pyfile):
         print("Executing " + pyfile)

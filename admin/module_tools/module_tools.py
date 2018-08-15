@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from copy import deepcopy
 import os
 import codecs
 import shutil
@@ -330,19 +331,17 @@ def get_path_to_current_odoo_module(current_file):
                 return test
         return None
 
-    current_path = os.path.dirname(current_file)
+    current_path = os.path.dirname(current_file) if not os.path.isdir(current_file) else current_file
     counter = 0
     while counter < 100 and len(current_path) > 1 and not is_module_path(current_path):
         current_path = os.path.dirname(current_path)
         counter += 1
     if counter > 40:
         pass
-    return is_module_path(current_path)
+    return os.path.dirname(is_module_path(current_path))
 
 def get_relative_path_to_odoo_module(filepath):
     path_to_module = get_path_to_current_odoo_module(filepath)
-    for m in MANIFESTS:
-        path_to_module = path_to_module.replace("/{}".format(m), "")
     filepath = filepath[len(path_to_module):]
     if filepath.startswith("/"):
         filepath = filepath[1:]
@@ -596,7 +595,11 @@ def link_modules():
                         else:
                             raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
                 rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
-                os.symlink(rel_path, target)
+                try:
+                    os.symlink(rel_path, target)
+                except Exception:
+                    msg = traceback.format_exc()
+                    raise Exception("Symlink already exists:\n{}\n{}\n".format(rel_path, target, msg))
                 data['counter'] += 1
 
             else:
@@ -732,6 +735,8 @@ def remove_module_install_notifications(path):
 
     for root, dirnames, filenames in os.walk(path):
         filenames = [x for x in filenames if x.endswith(".xml")]
+        if 'migration' in dirnames:
+            dirnames.remove('migration')
 
         for filename in filenames:
             path = os.path.join(root, filename)
@@ -808,38 +813,72 @@ def update_module(filepath, full=False):
 
 
 def update_assets_file(module_path):
+    """
+    Put somewhere in the file: assets: <xmlid>, then
+    asset is put there.
+    """
     assets_template = """
 <odoo><data>
-<template id="assets_backend" inherit_id="web.assets_backend" name="">
+<template id="{id}" inherit_id="{inherit_id}">
     <xpath expr="." position="inside">
     </xpath>
 </template>
 </data>
 </odoo>
 """
-    doc = etree.XML(assets_template)
-    doc.xpath("//template")[0].set('name', os.path.basename(module_path) + " backend assets")
-    parent = doc.xpath('//xpath')[0]
+    DEFAULT_ASSETS = "web.assets_backend"
+    module_path = get_path_to_current_odoo_module(module_path)
+
+    files_per_assets = {
+        'web.assets_backend': {
+            'stylesheets': [],
+            'js': [],
+        },
+        'web.report_assets_common': {
+            'stylesheets': [],
+            'js': [],
+        },
+    }
     all_files = get_all_files_of_module(module_path)
-    _any = False
     for file in all_files:
         local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
-        if not file.startswith("static/"):
+
+        if file.startswith("static/"):
+            parent = DEFAULT_ASSETS
+        elif file.startswith('report/') or file.startswith("reports/"):
+            parent = 'web.report_assets_common'
+        else:
             continue
         if file.endswith('.less') or file.endswith('.css'):
-            etree.SubElement(parent, 'link', {
-                'rel': 'stylesheet',
-                'href': local_file_path,
-            })
-            _any = True
+            files_per_assets[parent]['stylesheets'].append(local_file_path)
         elif file.endswith('.js'):
-            etree.SubElement(parent, 'script', {
-                'type': 'text/javascript',
-                'src': local_file_path,
+            files_per_assets[parent]['js'].append(local_file_path)
+
+    doc = etree.XML(assets_template)
+    for asset_inherit_id, files in files_per_assets.items():
+        parent = deepcopy(doc.xpath("//template")[0])
+        parent.set('inherit_id', asset_inherit_id)
+        parent.set('id', asset_inherit_id.split('.')[-1])
+        parent_xpath = parent.xpath("xpath")[0]
+        for style in files['stylesheets']:
+            etree.SubElement(parent_xpath, 'link', {
+                'rel': 'stylesheet',
+                'href': style,
             })
-            _any = True
+        for js in files['js']:
+            etree.SubElement(parent_xpath, 'script', {
+                'type': 'text/javascript',
+                'src': js,
+            })
+        doc.xpath("/odoo/data")[0].append(parent)
+
+    # remove empty assets and the first template template
+    for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
+        to_remove.getparent().remove(to_remove)
+
     filepath = os.path.join(module_path, 'views/assets.xml')
-    if not _any:
+
+    if not doc.xpath("//link| //script"):
         if os.path.exists(filepath):
             os.unlink(filepath)
     else:
@@ -869,8 +908,8 @@ def update_module_file(current_file):
         return
     # updates __openerp__.py the update-section to point to all xml files in the module;
     # except if there is a directory test; those files are ignored;
-    file_path = get_path_to_current_odoo_module(current_file)
-    module_path = os.path.dirname(file_path)
+    module_path = get_path_to_current_odoo_module(current_file)
+    file_path = get_manifest_path_of_module_path(module_path)
     update_assets_file(module_path)
 
     file = open(file_path, "rb")
@@ -1088,6 +1127,5 @@ def check_if_all_modules_from_install_are_installed():
 
 
 if __name__ == '__main__':
-    mod = get_module_of_file("/home/marc/odoo/data/src/customs/cpb/common/tools/module_tools/__openerp__.py")
-    for x in get_all_non_odoo_modules():
-        print x
+    update_assets_file('/home/marc/odoo/data/src/customs/caetec11/modules/caetec_report_design')
+    #update_assets_file("/home/marc/odoo/data/src/customs/caetec11/common/holiday/hr_attendance_extended/views/assets.xml")
