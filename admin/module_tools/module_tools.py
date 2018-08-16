@@ -347,31 +347,6 @@ def get_relative_path_to_odoo_module(filepath):
         filepath = filepath[1:]
     return filepath
 
-def goto_inherited_view(filepath, line, current_buffer):
-    line -= 1  # line ist einsbasiert
-    sline = current_buffer[line]
-    context = odoo_parser.try_to_get_context(sline, current_buffer[:line + 1], filepath)
-
-    filepath = None
-    goto, filepath = None, None
-
-    if isinstance(context, dict):
-        if context["context"] == "arch" and "inherit_id" in context and context["inherit_id"]:
-            inherit_id = context["inherit_id"]
-            filepath, goto = get_view(inherit_id)
-
-    if not filepath:
-        # could be a qweb template
-        for i in range(line, -1, -1):
-            sline = current_buffer[i]
-            if "t-extend=" in sline:
-                sline = sline.split("t-extend=")[1]
-                sline = sline.replace("\"", "'")
-                template_name = sline.split("'")[1]
-                return search_qweb(template_name)
-
-    return filepath, goto
-
 def is_module_dir_in_version(module_dir):
     version = current_version()
     if version >= 11.0:

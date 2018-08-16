@@ -93,11 +93,11 @@ def get_file_lineno(line):
 
 def get_view(inherit_id):
     with open(plaintextfile(), 'r') as f:
-        token = "\t{}\t".format(inherit_id)
-        content = f.read().split("\n")
-        for line in content:
-            if token in line:
-                return get_file_lineno(line)
+        lines = f.readlines()
+        lines = filter(lambda line: inherit_id in line, lines)
+        lines = filter(lambda line: re.search("\D{}\D".format(inherit_id), line), lines)
+        if lines:
+            return get_file_lineno(lines[0])
     return None, None
 
 def manifest2dict(manifest_path):
@@ -412,6 +412,15 @@ def _get_xml_ids():
                 model = "report"
                 append_result(model, id, r.sourceline, '')
 
+        for r in tree.xpath("//template"):
+            if "id" in r.attrib:
+                id = r.attrib["id"]
+                model = "ir.ui.view"
+                inherit_id = ""
+                if r.get('inherit_id'):
+                    inherit_id = r.get('inherit_id')
+                append_result(model, id, r.sourceline, 'qweb', inherit_id=inherit_id)
+
     walk_files(on_match, "*.xml")
     result.sort(lambda a, b: cmp(a["id"], b["id"]))
 
@@ -611,7 +620,6 @@ def search_qweb(template_name, root_path=None):
                     if "t-name={0}{1}{0}".format(apo, template_name) in line and "t-extend" not in line:
                         return filename, idx + 1
 
-
 def goto_inherited_view(filepath, line, current_buffer):
     line -= 1  # line ist einsbasiert
     sline = current_buffer[line]
@@ -621,7 +629,7 @@ def goto_inherited_view(filepath, line, current_buffer):
     goto, filepath = None, None
 
     if isinstance(context, dict):
-        if context["context"] == "arch" and "inherit_id" in context and context["inherit_id"]:
+        if context["context"] in ["arch", "template"] and context.get('inherit_id', False):
             inherit_id = context["inherit_id"]
             filepath, goto = get_view(inherit_id)
 
@@ -688,6 +696,14 @@ def try_to_get_context(line_content, lines_before, filename):
     inherit_id = None
     for i in range(len(lines_before)):
         line = lines_before[- i - 1]
+        if re.search("<template", line):
+            inherit_id = re.search("\ inherit_id=['\"]([^\"^']*)", line)
+            if inherit_id:
+                inherit_id = inherit_id.group(1)
+                return {
+                    'context': 'template',
+                    'inherit_id': inherit_id,
+                }
         if re.search("<field.*name=['\"]arch['\"]", line):
             is_arch = True
         if re.search("<field.*name=['\"]inherit_id['\"]", line):
