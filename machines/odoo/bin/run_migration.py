@@ -33,8 +33,7 @@ try:
             sql = f.read()
         # remove lines, beginning with comment
         sql = '\n'.join(filter(lambda line: not line.strip().startswith("--"), sql.split("\n")))
-        #prog = re.compile(r'\/\*.*?\*\/', re.DOTALL)
-        for blockcomment in re.match(r'\/\*.*?\*\/', sql) or []:
+        for blockcomment in re.match(r'\/\*.*?\*\/', sql, re.DOTALL) or []:
             sql = sql.replace(blockcomment, "")
         for statement in sql.split(";"):
             if not statement.strip():
