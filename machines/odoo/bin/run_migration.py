@@ -32,8 +32,9 @@ try:
         with open(sqlfile) as f:
             sql = f.read()
         # remove lines, beginning with comment
-        sql = '\n'.join(filter(lambda line: not line.strip().startswith("--", sql.split("\n"))))
-        for blockcomment in re.compile(r'\/\*.*?\*\/', re.DOTALL):
+        sql = '\n'.join(filter(lambda line: not line.strip().startswith("--"), sql.split("\n")))
+        #prog = re.compile(r'\/\*.*?\*\/', re.DOTALL)
+        for blockcomment in re.match(r'\/\*.*?\*\/', sql) or []:
             sql = sql.replace(blockcomment, "")
         for statement in sql.split(";"):
             if not statement.strip():

@@ -1989,7 +1989,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         elif debug:
             answer = raw_input("Run {} sql/py? [Y/n]".format(type))
             if not answer or answer in ['Y', 'y']:
-                ctx.invoke(runbash, *cmd, logger=logger)
+                ctx.invoke(runbash, machine='odoo', args=cmd, logger=logger)
 
     def __run_migration(migrations, git_clean, version, debug, module, logger, pull_latest):
         print("Starting Openupgrade Migration to {}".format(version))
@@ -2098,6 +2098,10 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         },
         '7.0': {
             'branch': '7.0',
+            'addons_paths': [
+                'openerp/addons',
+                'addons',
+            ],
             'cmd': [
                 './openerp-server',
                 '--update={module}',
@@ -2601,7 +2605,7 @@ def run(ctx, config, machine, args, **kwparams):
 @click.argument('args', nargs=-1)
 @pass_config
 @click.pass_context
-def runbash(ctx, config, machine, args):
+def runbash(ctx, config, machine, args, **kwparams):
     __set_db_ownership(config)
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
