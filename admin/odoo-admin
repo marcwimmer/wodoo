@@ -2838,6 +2838,7 @@ Please set DEVMODE=1 to allow this""")
 @pass_config
 @click.pass_context
 def up(ctx, config, machines, daemon):
+    _sanity_check()
     machines = list(machines)
     if machines and 'postgres' not in machines:
         __set_db_ownership(config)
@@ -3125,7 +3126,6 @@ def toggle_settings(ctx):
 
 if __name__ == '__main__':
     _startup()
-    _sanity_check()
     _check_working_dir_customs_mismatch()
     if args:
         if args[0] == 'tool':
