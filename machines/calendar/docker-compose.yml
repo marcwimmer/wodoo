@@ -1,18 +1,18 @@
 version: '3.3'
 
 volumes:
-  calendar:
-  calendar_db:
+  ${PROJECT_NAME}_${CUSTOMS}_calendar:
+  ${PROJECT_NAME}_${CUSTOMS}_calendar_db:
 
 services:
   calendar:
-    container_name: ${CUSTOMS}_calendar
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_calendar
     build: $ODOO_HOME/machines/calendar
     depends_on:
       - calendar_db
     volumes:
         - $ODOO_HOME/machines/calendar/conf:/config
-        - calendar:/var/www/html
+        - ${PROJECT_NAME}_${CUSTOMS}_calendar:/var/www/html
         - $ODOO_HOME/machines/calendar/src:/opt/src
         - $ODOO_HOME/machines/calendar/admin.py:/opt/admin.py
     environment:
@@ -28,10 +28,10 @@ services:
         DBAOPTS: --dbhost calendar_db --dbuser davical
         SRC_DIR: /opt/src_filemodeupdated
   calendar_db:
-    container_name: ${CUSTOMS}_calendar_db
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_calendar_db
     image: postgres:9.6.6
     volumes:
-        - calendar_db:/data
+        - ${PROJECT_NAME}_${CUSTOMS}_calendar_db:/data
         - $ODOO_HOME/machines/calendar/add_users.sql:/docker-entrypoint-initdb.d/add_users.sql
     environment:
         POSTGRES_PASSWORD: ${CALENDAR_DB_PWD}

@@ -1,7 +1,7 @@
 # manage-order: 500
 services:
   postgres:
-    container_name: ${CUSTOMS}_postgres
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_postgres
     build: $ODOO_HOME/machines/postgres
     volumes:
       - $DUMPS_PATH:/opt/dumps

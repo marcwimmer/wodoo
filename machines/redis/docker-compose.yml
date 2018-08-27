@@ -1,10 +1,10 @@
 #manage-order 1500
 version: '3.3'
 volumes:
-    redis_persistent_data:
+    ${PROJECT_NAME}_${CUSTOMS}_redis_persistent_data:
 services:
   redis:
-    container_name: ${CUSTOMS}_redis
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_redis
     image: redis
     volumes: 
-      - redis_persistent_data:/data
+      - ${PROJECT_NAME}_${CUSTOMS}_redis_persistent_data:/data

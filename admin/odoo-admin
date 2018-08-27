@@ -2191,6 +2191,8 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         ctx.invoke(update, module=['base'], check_install_state=False, no_restart_machines=True, no_dangling_check=True)
         ctx.invoke(update, module=[], no_restart_machines=True, no_dangling_check=True)
         ctx.invoke(show_install_state, suppress_error=True)
+        print "Backup of database Version {}".format(to_version)
+        ctx.invoke(backup_db, filename="{dbname}_{version}_final".format(version=to_version, dbname=os.environ['DBNAME']))
 
     finally:
         print("To debug an intermediate version, run:")
