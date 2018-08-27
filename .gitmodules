@@ -18,6 +18,3 @@
 [submodule "repos/openupgradelib"]
 	path = repos/openupgradelib
 	url = https://github.com/OCA/openupgradelib.git
-[submodule "repos/vide"]
-	path = repos/vide
-	url = ssh://git@git.itewimmer.de:50004/vim/vide.git
