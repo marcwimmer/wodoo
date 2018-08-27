@@ -39,14 +39,6 @@ from tools import __write_file
 from tools import __append_line
 from tools import __safe_filename
 
-def patch_inquirer_to_vim():
-    from readchar import key
-    key.UP = 'k'
-    key.DOWN = 'j'
-
-
-patch_inquirer_to_vim()
-
 try:
     from pudb import set_trace
 except Exception:
