@@ -11,6 +11,7 @@
 [submodule "machines/calendar/src/awl"]
 	path = machines/calendar/src/awl
 	url = https://gitlab.com/davical-project/awl.git
+    branch = r0.59
 [submodule "repos/OpenUpgrade"]
 	path = repos/OpenUpgrade
 	url = https://github.com/OCA/OpenUpgrade.git
