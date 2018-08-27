@@ -1266,8 +1266,8 @@ def _sanity_check():
         time.sleep(3)
 
     if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")):
-        # checking directory permissions of session files and filestorage
-        __try_to_set_owner(E("OWNER_UID"), E("$ODOO_FILES"))
+        if E("OWNER_UID") and os.stat(E("ODOO_FILES")).st_uid != int(E("OWNER_UID")):
+            _fix_permissions()
 
     # make sure the odoo_debug.txt exists; otherwise directory is created
     __file_default_content(files['run/odoo_debug.txt'], "")
@@ -1737,6 +1737,9 @@ def export_i18n(lang, modules):
 
 @admin.command()
 def fix_permissions():
+    _fix_permissions()
+
+def _fix_permissions():
     if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")) and E("OWNER_UID") and E("OWNER_UID") != "0":
         __try_to_set_owner(E("OWNER_UID", E("ODOO_FILES"), recursive=True))
     customs_dir = odoo_config.customs_dir()
@@ -3124,6 +3127,7 @@ def toggle_settings(ctx):
 
 if __name__ == '__main__':
     _startup()
+    _sanity_check()
     _check_working_dir_customs_mismatch()
     if args:
         if args[0] == 'tool':
