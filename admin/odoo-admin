@@ -1630,7 +1630,7 @@ def remove_old_modules(ctx, config, ask_confirm=True):
             to_remove.append(mod)
     if not to_remove:
         print("Nothing found to remove")
-        sys.exit(0)
+        return
     print("Following modules are set to uninstalled:")
     for mod in to_remove:
         print(mod)
