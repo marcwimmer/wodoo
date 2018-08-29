@@ -2191,6 +2191,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         ctx.invoke(update, module=['base'], check_install_state=False, no_restart_machines=True, no_dangling_check=True)
         ctx.invoke(update, module=[], no_restart_machines=True, no_dangling_check=True)
         ctx.invoke(show_install_state, suppress_error=True)
+        ctx.invoke(remove_old_modules, ask_confirm=False)
         print "Backup of database Version {}".format(to_version)
         ctx.invoke(backup_db, filename="{dbname}_{version}_final".format(version=to_version, dbname=os.environ['DBNAME']))
 
@@ -2929,7 +2930,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
         raise Exception("Error at /update_modules.py - aborting update process.")
 
     if check_install_state:
-        ctx.invoke(show_install_state)
+        ctx.invoke(show_install_state, suppress_error=no_dangling_check)
 
     if not no_restart_machines:
         for i in range(5):
