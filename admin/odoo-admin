@@ -2128,7 +2128,7 @@ Migration to Version {}
         __run_before_after('before', version, debug, module, logger)
         __run_migration(migrations, git_clean, version, debug, module, logger, pull_latest)
         __run_before_after('after', version, debug, module, logger)
-        __check_for_dangling_modules()
+        # __check_for_dangling_modules()
 
         if not no_auto_backup:
             print "Backup of database Version {}".format(version)
