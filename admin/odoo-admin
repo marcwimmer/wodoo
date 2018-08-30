@@ -1917,14 +1917,16 @@ def src_make_customs(ctx, customs, version):
     ctx.invoke(up)
 
 @module.command(name='OCA')
+@click.argument('module', nargs=-1)
 def OCA(module):
     """
     Adds module from OCA - provide the repository name like 'web_modules'
     """
-    __system([
-        files['OCA'],
-        module,
-    ], cwd=dirs['admin'])
+    for module in module:
+        __system([
+            files['OCA'],
+            module,
+        ], cwd=dirs['admin'])
 
 
 def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False, module='all', pull_latest=False):
@@ -2440,7 +2442,7 @@ def rebuild(ctx, config, machines):
     ctx.invoke(compose, customs=config.customs)
     ctx.invoke(build, machines=machines, no_cache=True)
 
-@control.command()
+@control.command(name="remove-web-assets")
 def remove_web_assets():
     """
     if odoo-web interface is broken (css, js) then purging the web-assets helps;
