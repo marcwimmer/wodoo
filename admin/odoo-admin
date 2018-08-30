@@ -1880,6 +1880,8 @@ def logall(machines, follow, tail):
     __dc(cmd)
 
 @lang.command(name='import')
+@click.argument('lang', required=False)
+@click.argument('po-file-path', required=True)
 def lang_import_i18n(lang, po_file_path):
     __dcrun(['odoo', '/import_i18n.sh', lang, po_file_path])
 
