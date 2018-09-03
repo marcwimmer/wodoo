@@ -95,7 +95,7 @@ def get_view(inherit_id):
     with open(plaintextfile(), 'r') as f:
         lines = f.readlines()
         lines = filter(lambda line: inherit_id in line, lines)
-        lines = filter(lambda line: re.search("\D{}\D".format(inherit_id), line), lines)
+        lines = filter(lambda line: re.search("\D\ {}\ \D".format(inherit_id), line), lines)
         if lines:
             return get_file_lineno(lines[0])
     return None, None
