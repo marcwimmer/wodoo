@@ -1864,7 +1864,9 @@ def module_link():
     """
     links all modules into ./links
     """
-    os.system("python " + os.path.join(dirs['admin'], 'link_modules'))
+    from module_tools.module_tools import link_modules
+    count = link_modules()
+    print "linked {} modules".format(count)
 
 @cli.command(name='logs')
 @click.argument('machines', nargs=-1)
