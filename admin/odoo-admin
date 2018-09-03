@@ -1535,6 +1535,49 @@ def commit(*parameters):
     versioning.actions["commit"](*parameters)
 
 @admin.command()
+def pack():
+    url = "ssh://git@git.itewimmer.de:50004/odoo-deployments/{}".format(E("CUSTOMS"))
+    folder = os.path.join(os.environ['LOCAL_ODOO_HOME'], 'data/src/deployments', E("CUSTOMS"))
+    if not os.path.isdir(os.path.dirname(folder)):
+        os.makedirs(os.path.dirname(folder))
+
+    if not os.path.exists(folder):
+        __system([
+            "git",
+            "clone",
+            url,
+            os.path.basename(folder),
+        ], cwd=os.path.dirname(folder), suppress_out=False)
+
+    __system([
+        "rsync",
+        odoo_config.customs_dir() + "/",
+        folder + "/",
+        '-ar',
+        '--exclude=.git',
+        '--delete-after',
+    ], cwd=odoo_config.customs_dir(), suppress_out=False)
+
+    # sync modules
+
+    # TODO filter out not licensed modules
+    for linkdir in [
+        'common',
+    ]:
+        os.unlink(os.path.join(folder, linkdir))
+        __system([
+            "rsync",
+            os.path.join(odoo_config.customs_dir(), "../../modules", E("ODOO_VERSION")) + "/",
+            folder + "/{}/".format(linkdir),
+            '-ar',
+            '--exclude=.git',
+        ], cwd=odoo_config.customs_dir(), suppress_out=False)
+
+    __system(["git", "add", "."], cwd=folder, suppress_out=False)
+    __system(["git", "commit", "-am 'new deployment'"], cwd=folder, suppress_out=False)
+    __system(["git", "push"], cwd=folder, suppress_out=False)
+
+@admin.command()
 @click.pass_context
 def reload(ctx):
     """
