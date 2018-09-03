@@ -574,7 +574,11 @@ def link_modules():
                     os.symlink(rel_path, target)
                 except Exception:
                     msg = traceback.format_exc()
-                    raise Exception("Symlink already exists:\n{}\n{}\n".format(rel_path, target, msg))
+                    raise Exception("Symlink for module {module} already exists: \n{}\n{}".format(
+                        os.path.basename(dir),
+                        '\n'.join(x for x in all_valid_module_paths if os.path.basename(x) == os.path.basename(dir)),
+                        msg
+                    ))
                 data['counter'] += 1
 
             else:
