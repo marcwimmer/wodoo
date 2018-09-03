@@ -1,7 +1,7 @@
 #manage-order: 5000
 version: '3.3'
 volumes:
-  cupsdatatoprint:
+  ${CUSTOMS}_cupsdatatoprint:
 
 services:
   cups:
@@ -10,7 +10,7 @@ services:
     ports:
       - "${CUPS_PORT}:631"
     volumes:
-      - cupsdatatoprint:/opt/toprint 
+      - ${CUSTOMS}_cupsdatatoprint:/opt/toprint 
       - $ODOO_HOME/data/cups/printed:/opt/printed 
       - $ODOO_HOME/data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
     env_file:
@@ -21,7 +21,7 @@ services:
       CONF_ROOT: /opt/printer_setup
   odoo_base:
     volumes:
-      - cupsdatatoprint:/opt/toprint 
+      - ${CUSTOMS}_cupsdatatoprint:/opt/toprint 
     environment:
       CUPS_TOPRINT: /opt/toprint
 

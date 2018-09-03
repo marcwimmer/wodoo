@@ -1,10 +1,10 @@
 # manage-order 1001
 volumes:
-    odoo_customs_${CUSTOMS}:
+    ${CUSTOMS}_odoo_customs:
 services:
   odoo_base:
       volumes:
-          - odoo_customs_${CUSTOMS}:/opt/odoo/active_customs
+          - ${CUSTOMS}_odoo_customs:/opt/odoo/active_customs
   odoo:
       ports:
           # rsync server

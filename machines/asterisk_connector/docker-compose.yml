@@ -1,17 +1,17 @@
 #manage-order: 5000
 version: '3.3'
 volumes:
-    asterisk_connector_perm:
+    ${CUSTOMS}_asterisk_connector_perm:
 
 services:
   asterisk_connector:
-    container_name: ${CUSTOMS}_asterisk_connector
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_asterisk_connector
     build: $ODOO_HOME/machines/asterisk_connector
     ports:
       - "8500:80"
     volumes:
       - $ODOO_HOME/machines/asterisk_connector/app:/usr/src/app
-      - asterisk_connector_perm:/opt/perm
+      - ${CUSTOMS}_asterisk_connector_perm:/opt/perm
     environment:
         OUTSIDE_PORT: 8500
         ODOO_HOST: proxy

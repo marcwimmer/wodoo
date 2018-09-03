@@ -3,5 +3,5 @@ version: '3.3'
 
 services:
   tools:
-    container_name: ${CUSTOMS}_tools
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_tools
     build: $ODOO_HOME/machines/tools

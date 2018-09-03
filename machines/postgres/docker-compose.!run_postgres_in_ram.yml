@@ -1,10 +1,10 @@
 # manage-order: 501
 volumes:
-    POSTGRES_VOLUME_${CUSTOMS}_${DBNAME}:
+    ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:
 services:
   postgres:
     environment:
       INRAM: 0
     volumes:
-      - POSTGRES_VOLUME_${CUSTOMS}_${DBNAME}:/var/lib/postgresql/data
+      - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:/var/lib/postgresql/data
     command: postgres -c max_connections=1000

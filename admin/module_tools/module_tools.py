@@ -670,7 +670,7 @@ def make_module(parent_path, module_name):
         with open(install_file(), 'r') as f:
             content = f.read().split("\n")
             content += [module_name]
-            content = [x for x in sorted(content[1:], key=lambda line: line.replace("#", "")) if x]
+            content = [x for x in sorted(content[0:], key=lambda line: line.replace("#", "")) if x]
         with open(install_file(), 'w') as f:
             f.write("\n".join(content))
 

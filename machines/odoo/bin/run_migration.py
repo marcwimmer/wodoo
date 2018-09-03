@@ -34,7 +34,7 @@ try:
         # remove lines, beginning with comment
         sql = '\n'.join(filter(lambda line: not line.strip().startswith("--"), sql.split("\n")))
         for blockcomment in re.match(r'\/\*.*?\*\/', sql, re.DOTALL) or []:
-            sql = sql.replace(blockcomment, "")
+            sql = sql.replace(blockcomment, "").strip()
         for statement in sql.split(";"):
             if not statement.strip():
                 continue

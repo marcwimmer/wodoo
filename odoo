@@ -106,10 +106,13 @@ def build_command():
     # using absolute path, to work in crontab
 
     if E("DISPLAY"):
-        subprocess.check_call([
-            'xhost',
-            '+local:{}'.format(E("HOSTNAME_TO_USE")),
-        ], stdout=FNULL)
+        try:
+            subprocess.check_call([
+                'xhost',
+                '+local:{}'.format(E("HOSTNAME_TO_USE")),
+            ], stdout=FNULL)
+        except:
+            pass
 
     if get_platform() == "macos":
         out = subprocess.check_output([

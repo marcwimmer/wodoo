@@ -3,7 +3,7 @@ version: '3.3'
 
 services:
   odoo_base: &odoo_base
-    container_name: ${CUSTOMS}_odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_base
     build:
         context: $ODOO_HOME/machines/odoo
         args:
@@ -33,7 +33,7 @@ services:
 
   odoo: &odoo
     <<: *odoo_base
-    container_name: ${CUSTOMS}_odoo
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo
     environment:
       DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
@@ -41,7 +41,7 @@ services:
 
   odoo_debug:
     <<: *odoo_base
-    container_name: ${CUSTOMS}_odoo_debug
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_debug
     environment:
       ENDLESS_LOOP: 1
       DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
@@ -50,7 +50,7 @@ services:
       
   odoo_cronjobs:
     <<: *odoo_base
-    container_name: ${CUSTOMS}_odoo_cronjobs
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_cronjobs
     environment:
       IS_ODOO_CRONJOB: 1
     command: /rootrun.sh
@@ -60,11 +60,11 @@ services:
 
   odoo_update:
     <<: *odoo_base
-    container_name: ${CUSTOMS}_odoo_updater
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_updater
     # called by manage.sh
     command: echo 'good bye - it is ok!'
 
   odoo_source_syncer: &odoo_source_syncer
     <<: *odoo_base
-    container_name: ${CUSTOMS}_odoo_source_syncer
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_source_syncer
     command: rsync --daemon --no-detach
