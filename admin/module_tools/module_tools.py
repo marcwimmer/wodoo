@@ -1102,5 +1102,4 @@ def check_if_all_modules_from_install_are_installed():
 
 
 if __name__ == '__main__':
-    update_assets_file('/home/marc/odoo/data/src/customs/caetec11/modules/caetec_report_design')
-    #update_assets_file("/home/marc/odoo/data/src/customs/caetec11/common/holiday/hr_attendance_extended/views/assets.xml")
+    run_test_file("/home/user1/odoo/data/src/customs/yorxs/common/product_modules/product_attributes_as_fields/tests/test_att_as_field.py")
