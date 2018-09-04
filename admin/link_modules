@@ -1,7 +1,0 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-from module_tools.module_tools import link_modules
-
-if __name__ == '__main__':
-    count = link_modules()
-    print "linked {} modules".format(count)

@@ -574,7 +574,11 @@ def link_modules():
                     os.symlink(rel_path, target)
                 except Exception:
                     msg = traceback.format_exc()
-                    raise Exception("Symlink already exists:\n{}\n{}\n".format(rel_path, target, msg))
+                    raise Exception("Symlink for module {module} already exists: \n{}\n{}".format(
+                        os.path.basename(dir),
+                        '\n'.join(x for x in all_valid_module_paths if os.path.basename(x) == os.path.basename(dir)),
+                        msg
+                    ))
                 data['counter'] += 1
 
             else:
@@ -619,18 +623,20 @@ def link_modules():
                 os.symlink(rel_path, target)
                 data['counter'] += 1
 
-        def visit(root, dir, files):
-            if '/.git/' in dir:
-                return
-            if '__pycache__' in dir:
-                return
-            if any(x in dir for x in IGNORE_PATHS):
-                return
-            if not is_module_of_version(dir):
-                return
-            all_valid_module_paths.append(dir)
+        for root, dir, files in os.walk(base_dir, followlinks=True):
+            if any(x in root for x in [
+                '/.git/',
+                '__pycache__',
+                '/active_customs/',
+                '/links/',
+            ]):
+                continue
+            if any(x in root for x in IGNORE_PATHS):
+                continue
+            if not is_module_of_version(root):
+                continue
 
-        os.path.walk(base_dir, visit, False)
+            all_valid_module_paths.append(root)
 
         def sort_paths(x):
             if '/OCA/' in x:
@@ -670,7 +676,7 @@ def make_module(parent_path, module_name):
         with open(install_file(), 'r') as f:
             content = f.read().split("\n")
             content += [module_name]
-            content = [x for x in sorted(content[1:], key=lambda line: line.replace("#", "")) if x]
+            content = [x for x in sorted(content[0:], key=lambda line: line.replace("#", "")) if x]
         with open(install_file(), 'w') as f:
             f.write("\n".join(content))
 
