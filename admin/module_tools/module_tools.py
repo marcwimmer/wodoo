@@ -574,7 +574,11 @@ def link_modules():
                     os.symlink(rel_path, target)
                 except Exception:
                     msg = traceback.format_exc()
-                    raise Exception("Symlink already exists:\n{}\n{}\n".format(rel_path, target, msg))
+                    raise Exception("Symlink for module {module} already exists: \n{}\n{}".format(
+                        os.path.basename(dir),
+                        '\n'.join(x for x in all_valid_module_paths if os.path.basename(x) == os.path.basename(dir)),
+                        msg
+                    ))
                 data['counter'] += 1
 
             else:
@@ -619,18 +623,20 @@ def link_modules():
                 os.symlink(rel_path, target)
                 data['counter'] += 1
 
-        def visit(root, dir, files):
-            if '/.git/' in dir:
-                return
-            if '__pycache__' in dir:
-                return
-            if any(x in dir for x in IGNORE_PATHS):
-                return
-            if not is_module_of_version(dir):
-                return
-            all_valid_module_paths.append(dir)
+        for root, dir, files in os.walk(base_dir, followlinks=True):
+            if any(x in root for x in [
+                '/.git/',
+                '__pycache__',
+                '/active_customs/',
+                '/links/',
+            ]):
+                continue
+            if any(x in root for x in IGNORE_PATHS):
+                continue
+            if not is_module_of_version(root):
+                continue
 
-        os.path.walk(base_dir, visit, False)
+            all_valid_module_paths.append(root)
 
         def sort_paths(x):
             if '/OCA/' in x:
@@ -1102,5 +1108,4 @@ def check_if_all_modules_from_install_are_installed():
 
 
 if __name__ == '__main__':
-    update_assets_file('/home/marc/odoo/data/src/customs/caetec11/modules/caetec_report_design')
-    #update_assets_file("/home/marc/odoo/data/src/customs/caetec11/common/holiday/hr_attendance_extended/views/assets.xml")
+    run_test_file("/home/user1/odoo/data/src/customs/yorxs/common/product_modules/product_attributes_as_fields/tests/test_att_as_field.py")
