@@ -1431,6 +1431,7 @@ def backup_all(ctx, config, filename=None):
     """
     ctx.invoke(backup_db, filename=filename)
     ctx.invoke(backup_files)
+    ctx.invoke(backup_calendar)
 
 @backup.command(name='calendar')
 @pass_config
