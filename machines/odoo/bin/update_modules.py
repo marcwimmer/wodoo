@@ -125,6 +125,10 @@ def main():
 
     for module in MODULE.split(','):
         if not is_module_installed(module):
+            if not module_tools.is_module_listed(module):
+                update_module_list()
+                if not module_tools.is_module_listed(module):
+                    raise Exception("After updating module list, module was not found: {}".format(module))
             update('i', module)
             summary.append("INSTALL " + module)
 
