@@ -158,7 +158,6 @@ def translate_path_relative_to_customs_root(path):
         path = '/'.join(path.split("/")[2:])
         # is in linked common dir
         path = os.path.join('common', path)
-        print(path)
         return path
 
     path = os.path.realpath(path)
