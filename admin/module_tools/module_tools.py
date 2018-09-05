@@ -623,14 +623,15 @@ def link_modules():
                 os.symlink(rel_path, target)
                 data['counter'] += 1
 
-        for root, dir, files in os.walk(base_dir, followlinks=True):
-            if any(x in root for x in [
-                '/.git/',
-                '__pycache__',
-                '/active_customs/',
-                '/links/',
-            ]):
-                continue
+        exclude = [
+            '.git',
+            '__pycache__',
+            'active_customs',
+            'links',
+        ]
+        for root, dirs, files in os.walk(base_dir, followlinks=True):
+            dirs[:] = [x for x in dirs if x not in exclude]
+
             if any(x in root for x in IGNORE_PATHS):
                 continue
             if not is_module_of_version(root):
