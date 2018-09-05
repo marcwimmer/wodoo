@@ -57,6 +57,7 @@ elif [ "$ODOO_PYTHON_VERSION" == "3" ]; then
 	apt install -y libcups2-dev
 	pip3 install pycups
 	PIP=pip3
+
 else
     exit 1
 fi

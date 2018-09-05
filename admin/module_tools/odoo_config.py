@@ -151,8 +151,19 @@ def translate_path_relative_to_customs_root(path):
     The customs must contain a significant file named
     .customsroot to indicate the root of the customs
     """
+
+    if 'data/src/modules' in path:
+        path = path.split("data/src/modules")[1]
+        # remove version
+        path = '/'.join(path.split("/")[2:])
+        # is in linked common dir
+        path = os.path.join('common', path)
+        print(path)
+        return path
+
     path = os.path.realpath(path)
     parent = path
+
     while parent != '/':
         if os.path.exists(os.path.join(parent, '.customsroot')):
             break

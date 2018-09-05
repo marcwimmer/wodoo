@@ -106,6 +106,7 @@ RUN /bin/bash /install_python_packages.sh
 
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
+ADD res/imageio /home/odoo/.imageio
 RUN chmod a+x /*.sh && \
 chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /usr/local/bin/* && \

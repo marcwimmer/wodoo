@@ -643,7 +643,10 @@ def patch_apply(config, filepath):
     __system(["git", "apply", filepath], cwd=config.odoo_local)
 
 def _patch_list(absolute_path=True):
-    for filename in __find_files(dirs['customs'], "-name", "*.patch"):
+    filepaths = []
+    filepaths += __find_files(dirs['customs'], "-name", "*.patch")
+    filepaths += __find_files(os.path.join(dirs['customs'], 'common'), "-name", "*.patch")
+    for filename in filepaths:
         if '/migration/' in filename:
             continue
         if not absolute_path:

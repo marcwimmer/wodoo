@@ -5,7 +5,7 @@ volumes:
 
 services:
   libreoffice:
-    container_name: ${CUSTOMS}_libreoffice
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_libreoffice
     build: $ODOO_HOME/machines/libreoffice
     environment:
       INPUT: /tmp/lo/1
