@@ -2722,8 +2722,9 @@ def shell():
 
 @module.command(name='show-install-state')
 def show_install_state(suppress_error=False):
-    print("Displaying dangling modules:")
     dangling = __get_dangling_modules()
+    if dangling:
+        print("Displaying dangling modules:")
     for row in dangling:
         click.echo("{}: {}".format(row[0], row[1]))
 
