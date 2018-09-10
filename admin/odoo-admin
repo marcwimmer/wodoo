@@ -2513,9 +2513,12 @@ def reset_db(config, dbname):
 
 def _reset_db(config, dbname):
     __start_postgres_and_wait(config)
-    _askcontinue("Delete database {}".format(E("DBNAME")))
-    print "Stopping all services and creating new database"
     dbname = dbname or E("DBNAME")
+    if __exists_db(dbname):
+        _askcontinue("Delete database {}".format(dbname))
+    else:
+        print("Database does not exist yet: {}".format(dbname))
+    print("Stopping all services and creating new database")
     __remove_postgres_connections(dbname, 'drop database {};'.format(dbname))
 
     print "Database dropped {}".format(dbname)

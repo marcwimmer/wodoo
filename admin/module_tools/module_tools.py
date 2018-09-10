@@ -560,7 +560,7 @@ def link_modules():
                 dir = os.path.abspath(complete_module_dir)
                 module_name = get_module_of_file(complete_module_dir)
                 target = os.path.join(LN_DIR, module_name)
-                if os.path.exists(target):
+                if os.path.islink(target):
                     if os.path.realpath(target) != complete_module_dir:
                         # let override OCA modules
                         if "/OCA/" in os.path.realpath(target):
@@ -574,10 +574,10 @@ def link_modules():
                     os.symlink(rel_path, target)
                 except Exception:
                     msg = traceback.format_exc()
-                    raise Exception("Symlink for module {module} already exists: \n{}\n{}".format(
-                        os.path.basename(dir),
-                        '\n'.join(x for x in all_valid_module_paths if os.path.basename(x) == os.path.basename(dir)),
-                        msg
+                    raise Exception("Symlink for module {module} already exists: \n{p1}\n{msg}".format(
+                        module=os.path.basename(dir),
+                        p1='\n'.join(x for x in all_valid_module_paths if os.path.basename(x) == os.path.basename(dir)),
+                        msg=msg,
                     ))
                 data['counter'] += 1
 
@@ -820,17 +820,34 @@ def update_assets_file(module_path):
             'stylesheets': [],
             'js': [],
         },
+        'web.assets_frontend': {
+            'stylesheets': [],
+            'js': [],
+        },
     }
+    # try to keep assets id
+    filepath = os.path.join(module_path, 'views/assets.xml')
+    current_id = None
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as f:
+            xml = f.read()
+            doc = etree.XML(xml)
+            for t in doc.xpath("//template/@inherit_id"):
+                current_id = t
+
     all_files = get_all_files_of_module(module_path)
     for file in all_files:
         local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
 
-        if file.startswith("static/"):
+        if current_id:
+            parent = current_id
+        elif file.startswith("static/"):
             parent = DEFAULT_ASSETS
         elif file.startswith('report/') or file.startswith("reports/"):
             parent = 'web.report_assets_common'
         else:
             continue
+
         if file.endswith('.less') or file.endswith('.css'):
             files_per_assets[parent]['stylesheets'].append(local_file_path)
         elif file.endswith('.js'):
@@ -858,7 +875,6 @@ def update_assets_file(module_path):
     for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
         to_remove.getparent().remove(to_remove)
 
-    filepath = os.path.join(module_path, 'views/assets.xml')
 
     if not doc.xpath("//link| //script"):
         if os.path.exists(filepath):
