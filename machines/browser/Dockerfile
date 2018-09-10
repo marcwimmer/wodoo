@@ -40,7 +40,7 @@ RUN apt install -y fluxbox
 
 WORKDIR /data
 
-# password is odoo2000
+# password is odoo3000
 RUN mkdir .vnc
 ADD vncconfig/ .vnc/
 ADD fluxbox/ .fluxbox/
