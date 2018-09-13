@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import click
 from datetime import datetime
+import hashlib
 import pickle
 import base64
 import copy
@@ -327,7 +328,7 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
     else:
         PREFIX = []
     started = datetime.now()
-    print("Restoring DB...")
+    click.echo("Restoring DB...")
     CMD = " " .join(pipes.quote(s) for s in ['pv', dump_file])
     CMD += " | "
     if PREFIX:
@@ -340,7 +341,7 @@ def __do_restore_db_on_postgres(filename, dbname, host, port, user, password):
         dbname,
     ])
     os.system(CMD)
-    print "Restore took {} seconds".format((datetime.now() - started).seconds)
+    click.echo("Restore took {} seconds".format((datetime.now() - started).seconds))
 
 def __do_restore_files(filepath):
     # remove the postgres volume and reinit
@@ -529,7 +530,7 @@ def __is_container_running(machine_name):
 
 def is_up(*machine_name):
     assert len(machine_name) == 1
-    print 'Running' if __is_container_running(machine_name[0]) else 'Not Running', machine_name[0]
+    click.echo('Running' if __is_container_running(machine_name[0]) else 'Not Running', machine_name[0])
 
 def __isfloat(x):
     try:
@@ -545,7 +546,7 @@ def __makedirs(path):
 
 def __print_env(vars):
     for x in vars:
-        print "{}: {}".format(x, E(x))
+        click.echo("{}: {}".format(x, E(x)))
 
 def _patch_gitify(config):
     if config.odoo_local_dir not in __read_file(config.ignore_file):
@@ -554,13 +555,13 @@ def _patch_gitify(config):
     if os.path.exists(config.sub_git):
         shutil.rmtree(config.sub_git)
 
-    print("Making local git repo... in {}".format(config.odoo_local))
+    click.echo("Making local git repo... in {}".format(config.odoo_local))
     __system(["git", "init", "."], cwd=config.odoo_local)
-    print("Adding files...")
+    click.echo("Adding files...")
     __system(["git", "add", "."], cwd=config.odoo_local)
     __system(["git", "config", "user.email", os.getenv("USER")], cwd=config.odoo_local)
     __system(["git", "commit", "-qam", "initial"], cwd=config.odoo_local)
-    print("Done")
+    click.echo("Done")
 
 def _patch_gitify_on_need(config):
     if not os.path.exists(config.sub_git):
@@ -571,12 +572,12 @@ def _patch_ungitify(config):
         shutil.rmtree(config.sub_git)
 
 def _patch_default_patches(config):
-    print("Applying default patches")
-    print("-remove module install notfications")
+    click.echo("Applying default patches")
+    click.echo("-remove module install notfications")
 
     from module_tools.module_tools import remove_module_install_notifications
     remove_module_install_notifications(dirs['customs'])
-    print("Apply default patches DONE")
+    click.echo("Apply default patches DONE")
 
 @patch.command(name='prepare')
 @pass_config
@@ -593,14 +594,14 @@ def patch_prepare(ctx, config):
     try:
         __system(["git", "commit", "-qam", "removed install notifications"], cwd=config.odoo_local)
     except Exception:
-        print("Perhaps no install notifications")
+        click.echo("Perhaps no install notifications")
     patches = [x for x in _patch_list(config)]
     for filepath in patches:
         ctx.invoke(patch_apply, filepath=filepath)
     __system(["git", "add", "."], cwd=config.odoo_local)
     if patches:
         __system(["git", "commit", "-qam", "applied all current patches"], cwd=config.odoo_local)
-    print("You can now do changes; use odoo patch preview to display your changes.")
+    click.echo("You can now do changes; use odoo patch preview to display your changes.")
 
 @patch.command(name='preview')
 @pass_config
@@ -630,7 +631,7 @@ def patch_create(config, name):
         with open(PATCHFILE, 'w') as f:
             f.write(diff)
     _patch_ungitify(config)
-    print("Created patch file: " + PATCHFILE)
+    click.echo("Created patch file: " + PATCHFILE)
 
 @patch.command(name='apply')
 @click.argument('filepath', required=True)
@@ -646,6 +647,15 @@ def _patch_list(absolute_path=True):
     filepaths = []
     filepaths += __find_files(dirs['customs'], "-name", "*.patch")
     filepaths += __find_files(os.path.join(dirs['customs'], 'common'), "-name", "*.patch")
+
+    # remove duplicate entries, because of symbolic links and so
+    filepaths_hashes = {}
+    for x in filepaths:
+        m = hashlib.md5()
+        with open(x, 'r') as f:
+            m.update(f.read())
+        filepaths_hashes[m.hexdigest()] = x
+    filepaths = sorted(filepaths_hashes.values())
     for filename in filepaths:
         if '/migration/' in filename:
             continue
@@ -659,7 +669,7 @@ def patch_list():
     lists all patches
     """
     for filename in _patch_list(absolute_path=False):
-        print(filename)
+        click.echo(filename)
 
 @patch.command(name='apply-all')
 @pass_config
@@ -671,10 +681,10 @@ def apply_all(ctx, config):
     ctx.invoke(patch_reset)
     _patch_default_patches(config)
     for filepath in _patch_list():
-        print "Applying patch " + filepath
+        click.echo("Applying patch " + filepath)
         ctx.invoke(patch_apply, filepath=filepath)
     _patch_ungitify(config)
-    print("Successfully applied all patches and cleand .git directory.")
+    click.echo("Successfully applied all patches and cleand .git directory.")
 
 def _patch_get_diff(config):
     __system(["git", "add", "--intent-to-add", "."], cwd=config.odoo_local)
@@ -683,7 +693,7 @@ def _patch_get_diff(config):
 
 def __remove_postgres_connections(DBNAME=None, sql_afterwards=""):
     DBNAME = DBNAME or E("DBNAME")
-    print "Removing all current connections from {}".format(DBNAME)
+    click.echo("Removing all current connections from {}".format(DBNAME))
     if __exists_db(DBNAME):
         SQL = """
             SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -718,7 +728,7 @@ def __reset_postgres_container(config):
         if config.run_postgres_in_ram:
             pass
         else:
-            print "Resettings postgres - killing data - not reversible"
+            click.echo("Resettings postgres - killing data - not reversible")
             VOLUMENAME = "{}_postgresdata".format(config.customs)
             docker_client = docker.from_env()
 
@@ -731,7 +741,7 @@ def __reset_postgres_container(config):
                             __dc(["rm", "-f"]) # set volume free
                             volume.remove()
                         except Exception as e:
-                            print e
+                            click.echo(e)
                             if hasattr(e, 'explanation'):
                                 exp = e.explanation
 
@@ -800,7 +810,7 @@ def __try_to_set_owner(UID, path, recursive=False):
     if os.path.isdir(path):
         uid = os.stat(path).st_uid
         if str(uid) != str(UID) or recursive:
-            print("Trying to set correct permissions on {}".format(path))
+            click.echo("Trying to set correct permissions on {}".format(path))
             options = ""
             if recursive:
                 options += "-R"
@@ -854,7 +864,7 @@ def __turn_into_devdb(dbname):
         except Exception as e:
             if critical:
                 raise
-            print("failed un-critical sql:", str(e))
+            click.echo("failed un-critical sql:", str(e))
 
     from module_tools.module_tools import remove_webassets
     remove_webassets(dbname=dbname)
@@ -866,7 +876,7 @@ def __wait_for_port(host, port, timeout=None):
 
 def _askcontinue(msg=None):
     if msg:
-        print(msg)
+        click.echo(msg)
     if FORCE or os.getenv("FORCE_CONTINUE", "0") == "1":
         return
     raw_input("Continue? (Ctrl+C to break)")
@@ -919,13 +929,13 @@ def _display_machine_tips(machine_name):
         filepath = os.path.join(dirs['machines'], filename)
         if os.path.basename(os.path.dirname(filepath)) == machine_name:
             content = __read_file(os.path.join(dirs['machines'], filename))
-            print ""
-            print "Please note:"
-            print "---------------"
-            print ""
-            print content
-            print ""
-            print ""
+            click.echo("")
+            click.echo("Please note:")
+            click.echo("---------------")
+            click.echo("")
+            click.echo(content)
+            click.echo("")
+            click.echo("")
 
 def __postprocess_config(config):
     """
@@ -1198,7 +1208,7 @@ def _prepare_yml_files_from_template_files():
 
     if E("ODOO_MANAGER_STARTED_ONCE") != "1":
         for name in ['CUSTOMS', 'DB', 'ODOO_VERSION', 'ODOO_FILES']:
-            print("{}: {}".format(name, E(name)))
+            click.echo("{}: {}".format(name, E(name)))
 
     # python: find all configuration files from machines folder; extract sort
     # by manage-sort flag and put file into run directory
@@ -1227,7 +1237,7 @@ def _remember_customs_and_cry_if_changed():
             current_customs = out[0].split("=")[-1]
             if os.getenv("CUSTOMS"):
                 if current_customs != os.getenv('CUSTOMS'):
-                    print("Customs changed - you need to restart and/or rebuild!")
+                    click.echo("Customs changed - you need to restart and/or rebuild!")
                     __dc(['stop', '-t 2'])
 
 def _remove_temp_directories():
@@ -1251,13 +1261,13 @@ def _sanity_check():
         raise Exception("Please define RUN_POSTGRES")
 
     if E("RUN_POSTGRES") == "1" and E("DB_HOST") != "postgres":
-        print("You are using the docker postgres container, but you do not have the DB_HOST set to use it.")
-        print("Either configure DB_HOST to point to the docker container or turn it off by: ")
-        print("RUN_POSTGRES=0")
+        click.echo("You are using the docker postgres container, but you do not have the DB_HOST set to use it.")
+        click.echo("Either configure DB_HOST to point to the docker container or turn it off by: ")
+        click.echo("RUN_POSTGRES=0")
         sys.exit(1)
 
     if E("OWNER_UID") == "0":
-        print("Advise: you should set OWNER_UID so that dump files are marked as the correct owner")
+        click.echo("Advise: you should set OWNER_UID so that dump files are marked as the correct owner")
         time.sleep(3)
 
     if E("ODOO_FILES") and os.path.isdir(E("ODOO_FILES")):
@@ -1268,7 +1278,7 @@ def _sanity_check():
     __file_default_content(files['run/odoo_debug.txt'], "")
 
     if not E("ODOO_MODULE_UPDATE_RUN_TESTS"):
-        print("Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS")
+        click.echo("Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS")
         time.sleep(2)
 
 
@@ -1403,7 +1413,7 @@ def _startup():
 
 @module.command()
 def abort_upgrade():
-    print "Aborting upgrade..."
+    click.echo("Aborting upgrade...")
     SQL = """
         UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
         UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
@@ -1482,7 +1492,7 @@ def backup_db(ctx, config, filename):
 
     if filename.startswith("/"):
         raise Exception("No slash for backup filename allowed")
-    print "Databasename is " + E("DBNAME")
+    click.echo("Databasename is " + E("DBNAME"))
     filepath = os.path.join(BACKUPDIR, filename)
     if os.path.exists(filepath):
         os.unlink(filepath)
@@ -1500,7 +1510,7 @@ def backup_db(ctx, config, filename):
             os.path.basename(filepath),
             os.path.basename(LINKPATH)
         ], cwd=os.path.dirname(filepath))
-    print "Dumped to ", filepath
+    click.echo("Dumped to ", filepath)
     ctx.invoke(telegram_send, "Database Backup {} done to {}".format(config.dbname, filepath))
 
 @backup.command(name='files')
@@ -1514,7 +1524,7 @@ def backup_files(config):
             os.unlink(second)
         shutil.move(BACKUP_FILENAME, second)
     __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
-    print "Backup files done to {}".format(BACKUP_FILENAME)
+    click.echo("Backup files done to {}".format(BACKUP_FILENAME))
 
 @control.command()
 @click.argument('machines', nargs=-1)
@@ -1646,7 +1656,7 @@ def compose(config, customs='', db='', demo=False):
         os.unlink(SRC_PATH)
     os.symlink('data/src/customs/{}'.format(config.customs), SRC_PATH)
 
-    print "Built the docker-compose file."
+    click.echo("Built the docker-compose file.")
 
 @ticket.command()
 def current_ticket():
@@ -1664,7 +1674,7 @@ def remove_old_modules(ctx, config, ask_confirm=True):
     from module_tools.module_tools import get_manifest_path_of_module_path
     from module_tools.odoo_config import get_odoo_addons_paths
     from module_tools.odoo_config import get_links_dir
-    print("Analyzing which modules to remove...")
+    click.echo("Analyzing which modules to remove...")
     ctx.invoke(wait_for_container_postgres)
     mods = sorted(map(lambda x: x[0], __execute_sql("select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
     mods = filter(lambda x: x not in ('base'), mods)
@@ -1676,18 +1686,18 @@ def remove_old_modules(ctx, config, ask_confirm=True):
         else:
             to_remove.append(mod)
     if not to_remove:
-        print("Nothing found to remove")
+        click.echo("Nothing found to remove")
         return
-    print("Following modules are set to uninstalled:")
+    click.echo("Following modules are set to uninstalled:")
     for mod in to_remove:
-        print(mod)
+        click.echo(mod)
     if ask_confirm:
         answer = inquirer.prompt([inquirer.Confirm('confirm', message="Continue?", default=True)])
         if not answer or not answer['confirm']:
             return
     for mod in to_remove:
         __execute_sql("update ir_module_module set auto_install=false, state = 'uninstalled' where name = '{}'".format(mod))
-        print("Set module {} to uninstalled.".format(mod))
+        click.echo("Set module {} to uninstalled.".format(mod))
 
 @control.command()
 @click.argument('machine', required=True)
@@ -1753,11 +1763,11 @@ def __do_command(cmd, *params, **kwparams):
 def drop_db(config, dbname):
 
     if not (config.devmode or config.force):
-        print("Either DEVMODE or force required")
+        click.echo("Either DEVMODE or force required")
         sys.exit(-1)
     __remove_postgres_connections(dbname)
     __execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
-    print("Database {} dropped.".format(dbname))
+    click.echo("Database {} dropped.".format(dbname))
 
 @control.command(name='exec')
 @click.argument('machine', required=True)
@@ -1805,7 +1815,7 @@ def get_dump_type(filename):
     if filename:
         dump_file = os.path.join(BACKUPDIR, filename)
         dump_type = __get_dump_type(dump_file)
-        print dump_type
+        click.echo(dump_type)
 
 @control.command()
 @click.argument('machines', nargs=-1)
@@ -1871,7 +1881,7 @@ def image_export(filename):
         if not image:
             continue
         filepath = os.path.join(folder, image)
-        print "Storing {} to {}".format(image, filepath)
+        click.echo("Storing {} to {}".format(image, filepath))
         __system([
             'docker',
             'save',
@@ -1880,7 +1890,7 @@ def image_export(filename):
             filepath,
         ], suppress_out=True)
         filesize += os.stat(filepath).st_size
-        print "File size currently:", humanize.naturalsize(filesize)
+        click.echo("File size currently:", humanize.naturalsize(filesize))
     if not filesize:
         raise Exception("No images found!")
     __system([
@@ -1889,10 +1899,10 @@ def image_export(filename):
         dump_path,
         '.',
     ], cwd=folder)
-    print os.path.basename(dump_path)
+    click.echo(os.path.basename(dump_path))
     compressed_size = os.stat(dump_path).st_size
     ratio = round(float(compressed_size) / float(filesize) * 100.0, 1)
-    print "Compressed:", humanize.naturalsize(compressed_size), "Uncompress:", humanize.naturalsize(filesize), "Ratio:", ratio
+    click.echo("Compressed:", humanize.naturalsize(compressed_size), "Uncompress:", humanize.naturalsize(filesize), "Ratio:", ratio)
 
 @ticket.command(name='inc-version')
 def ticket_incversions():
@@ -1913,7 +1923,7 @@ def module_link():
     """
     from module_tools.module_tools import link_modules
     count = link_modules()
-    print "linked {} modules".format(count)
+    click.echo("linked {} modules".format(count))
 
 @cli.command(name='logs')
 @click.argument('machines', nargs=-1)
@@ -2026,7 +2036,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         conn.close()
 
     def __run_before_after(type, version, debug, module, logger):
-        print("Running {} processes {}".format(type, version))
+        click.echo("Running {} processes {}".format(type, version))
         cmd = (
             "/usr/bin/python",
             "/run_migration.py",
@@ -2040,7 +2050,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
                 ctx.invoke(runbash, machine='odoo', args=cmd, logger=logger)
 
     def __run_migration(migrations, git_clean, version, debug, module, logger, pull_latest):
-        print("Starting Openupgrade Migration to {}".format(version))
+        click.echo("Starting Openupgrade Migration to {}".format(version))
         cmd = (
             "/usr/bin/python",
             "/opt/migrate.sh",
@@ -2163,7 +2173,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
     }
 
     if from_version not in migrations:
-        print "Invalid from version: {}".format(from_version)
+        click.echo("Invalid from version: {}".format(from_version))
 
     for version in sorted(filter(lambda v: float(v) > float(from_version) and float(v) <= float(to_version), migrations), key=lambda x: float(x)):
         with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
@@ -2184,7 +2194,7 @@ Migration to Version {}
         # __check_for_dangling_modules()
 
         if not no_auto_backup:
-            print "Backup of database Version {}".format(version)
+            click.echo("Backup of database Version {}".format(version))
             ctx.invoke(backup_db, filename="{dbname}_{version}".format(version=version, dbname=os.environ['DBNAME']))
 
     with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
@@ -2192,7 +2202,7 @@ Migration to Version {}
 
     os.unlink(SETTINGS_D_FILE)
     ctx.invoke(build)
-    print("Migration process finished - reached end without external exception.")
+    click.echo("Migration process finished - reached end without external exception.")
 
 @cli.command()
 @click.argument('from-version', required=True)
@@ -2233,10 +2243,10 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         with open(LOGFILE, 'a') as f:
             f.write("\n")
             f.write(msg)
-        print(msg)
-        print("Error occurred during migration, suggestions:")
-        print("")
-        print("1. Run odoo version and startup frontend, use ./odoo checkout-odoo -f -v xx.xx to set odoo")
+        click.echo(msg)
+        click.echo("Error occurred during migration, suggestions:")
+        click.echo("")
+        click.echo("1. Run odoo version and startup frontend, use ./odoo checkout-odoo -f -v xx.xx to set odoo")
     else:
         click.echo("Running migration after processes (basically module update)")
         ctx.invoke(remove_old_modules, ask_confirm=False)
@@ -2245,17 +2255,17 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         ctx.invoke(update, module=[], no_restart_machines=True, no_dangling_check=True)
         ctx.invoke(show_install_state, suppress_error=True)
         ctx.invoke(remove_old_modules, ask_confirm=False)
-        print "Backup of database Version {}".format(to_version)
+        click.echo("Backup of database Version {}".format(to_version))
         ctx.invoke(backup_db, filename="{dbname}_{version}_final".format(version=to_version, dbname=os.environ['DBNAME']))
 
     finally:
-        print("To debug an intermediate version, run:")
-        print("=====================================")
-        print("./odoo unlink [to remove links folder of modules]")
-        print("./odoo module remove-old")
-        print("./odoo update --no-update-module-list -m base")
-        print("./odoo checkout-odoo -f -v xx.xx")
-        print("./odoo dev")
+        click.echo("To debug an intermediate version, run:")
+        click.echo("=====================================")
+        click.echo("./odoo unlink [to remove links folder of modules]")
+        click.echo("./odoo module remove-old")
+        click.echo("./odoo update --no-update-module-list -m base")
+        click.echo("./odoo checkout-odoo -f -v xx.xx")
+        click.echo("./odoo dev")
 
 @ticket.command()
 def new_ticket(ticket_name):
@@ -2269,7 +2279,7 @@ def open_tickets(command_options):
 
 def __exists_odoo_commit():
     if not os.path.exists(files['commit']):
-        print("Commit file {} not found!".format(files['commit']))
+        click.echo("Commit file {} not found!".format(files['commit']))
         sys.exit(1)
 
 def __get_odoo_commit():
@@ -2284,20 +2294,20 @@ def patch_reset(config):
     resets odoo to commit version
     """
     __exists_odoo_commit()
-    print("Setting repo to commit {}".format(__get_odoo_commit()))
+    click.echo("Setting repo to commit {}".format(__get_odoo_commit()))
     __system([
         "git",
         "checkout",
         "-f",
         __get_odoo_commit()
     ], cwd=config.odoo_git)
-    print("Cleaning odoo repo...")
+    click.echo("Cleaning odoo repo...")
     __system([
         "git",
         "clean",
         "-xdff",
     ], cwd=config.odoo_git)
-    print("Rsyncing odoo-repo...")
+    click.echo("Rsyncing odoo-repo...")
     __system([
         "rsync",
         config.odoo_git + "/",
@@ -2305,14 +2315,14 @@ def patch_reset(config):
         '-ar',
         '--delete-after',
     ], cwd=config.odoo_git, suppress_out=False)
-    print("CHOWN odoo-repo...")
+    click.echo("CHOWN odoo-repo...")
     __system([
         'chown',
         '-R',
         os.getenv("OWNER_UID"),
         config.odoo_local,
     ], cwd=config.odoo_git)
-    print("Cutting off local git")
+    click.echo("Cutting off local git")
     __system([
         'rm',
         '-Rf',
@@ -2326,7 +2336,7 @@ def progress():
     Displays installation progress
     """
     for row in __execute_sql("select state, count(*) from ir_module_module group by state;", fetchall=True):
-        print "{}: {}".format(row[0], row[1])
+        click.echo("{}: {}".format(row[0], row[1]))
 
 @control.command()
 def proxy_reload():
@@ -2346,7 +2356,7 @@ def __get_all_subtrees():
 @src.command(name='list-subtrees')
 def list_subtrees():
     for x in __get_all_subtrees():
-        print(x)
+        click.echo(x)
 
 def pull_push_all(ctx, mode):
     if mode == 'pull':
@@ -2503,7 +2513,7 @@ def remove_web_assets():
     from module_tools.module_tools import remove_webassets
     remove_webassets()
     if float(E("ODOO_VERSION")) <= 10.0:
-        print("Please login as admin, so that assets are recreated.")
+        click.echo("Please login as admin, so that assets are recreated.")
 
 @db.command(name='reset')
 @click.argument('dbname', required=True, default=E("DBNAME"))
@@ -2517,11 +2527,11 @@ def _reset_db(config, dbname):
     if __exists_db(dbname):
         _askcontinue("Delete database {}".format(dbname))
     else:
-        print("Database does not exist yet: {}".format(dbname))
-    print("Stopping all services and creating new database")
+        click.echo("Database does not exist yet: {}".format(dbname))
+    click.echo("Stopping all services and creating new database")
     __remove_postgres_connections(dbname, 'drop database {};'.format(dbname))
 
-    print "Database dropped {}".format(dbname)
+    click.echo("Database dropped {}".format(dbname))
 
 @control.command()
 @click.argument('machines', nargs=-1)
@@ -2574,7 +2584,7 @@ def _get_dump_files():
 @restore.command(name='list')
 def list_dumps():
     rows = _get_dump_files()
-    print tabulate(rows, ["Nr", 'Filename', 'Age', 'Size'])
+    click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
 
 @restore.command(name='files')
 def restore_files(dumpfile):
@@ -2595,7 +2605,7 @@ def _inquirer_dump_file(message):
 @click.pass_context
 def restore_db(ctx, config, filename, restore_as_dev_db=False, dbname=''):
     for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
-        print("{}: {}".format(x, E(x)))
+        click.echo("{}: {}".format(x, E(x)))
 
     if restore_as_dev_db and E("ALLOW_RESTORE_DEV") != "1" and not config.force:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
@@ -2702,7 +2712,7 @@ def setup_startup():
     if os.path.exists("/sbin_host/initctl"):
         raise Exception("Not impl")
     else:
-        print "Setting up systemd script for startup"
+        click.echo("Setting up systemd script for startup")
         servicename = os.path.expandvars("${CUSTOMS}_odoo.service")
         file = os.path.join("/tmp_host, servicename")
 
@@ -2711,8 +2721,8 @@ def setup_startup():
         __replace_in_file(file, "${CUSTOMS}", E("CUSTOMS"))
         __replace_in_file(file, "${PATH}", E("HOST_ODOO_HOME"))
 
-        print("Please execute on host now (perhaps as sudo):")
-        print("""cp /tmp/{servicename} /etc/systemd/system")
+        click.echo("Please execute on host now (perhaps as sudo):")
+        click.echo("""cp /tmp/{servicename} /etc/systemd/system")
         systemctl stop {servicename}
         systemctl disable {servicename}
         systemctl daemon-reload
@@ -2720,7 +2730,7 @@ def setup_startup():
         systemctl enable {servicename}
         systemctl start {servicename}
         """.format(servicename=servicename)
-              )
+                   )
 
 @admin.command()
 def shell():
@@ -2730,7 +2740,7 @@ def shell():
 def show_install_state(suppress_error=False):
     dangling = __get_dangling_modules()
     if dangling:
-        print("Displaying dangling modules:")
+        click.echo("Displaying dangling modules:")
     for row in dangling:
         click.echo("{}: {}".format(row[0], row[1]))
 
@@ -2747,13 +2757,13 @@ def simplebash(*parameters):
 @admin.command()
 def springclean():
     os.system("docker system prune")
-    print("removing dead containers")
+    click.echo("removing dead containers")
     os.system('docker ps -a -q | while read -r id; do docker rm "$id"; done')
 
-    print("Remove untagged images")
-    os.system('docker images | grep "<none>" | awk \'{ print "docker rmi " $3 }\' | bash')
+    click.echo("Remove untagged images")
+    os.system('docker images | grep "<none>" | awk \'{ click.echo "docker rmi " $3 }\' | bash')
 
-    print("delete unwanted volumes (can pass -dry-run)")
+    click.echo("delete unwanted volumes (can pass -dry-run)")
     os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
 
 @ticket.command()
@@ -2943,7 +2953,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     __start_postgres_and_wait(config)
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
         for x in __get_dangling_modules():
-            print("{}: {}".format(*x[:2]))
+            click.echo("{}: {}".format(*x[:2]))
         if raw_input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
             __execute_sql("update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
     if __get_dangling_modules() and not dangling_modules:
@@ -2959,7 +2969,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if not module:
         raise Exception("no modules to update")
 
-    print("Run module update")
+    click.echo("Run module update")
     if E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER") == "1":
         with open(E("ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER"), 'w') as f:
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -2982,7 +2992,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
             params += ['no-dangling-check']
         __cmd_interactive(*params)
     except Exception:
-        print(traceback.format_exc())
+        click.echo(traceback.format_exc())
         ctx.invoke(show_install_state, suppress_error=True)
         raise Exception("Error at /update_modules.py - aborting update process.")
 
@@ -3020,17 +3030,17 @@ def recreate(ctx, config, machines):
 def update_ast():
     from module_tools.odoo_parser import update_cache
     if _get_platform() == PLATFORM_OSX:
-        print "Update is extreme slow on osx due to share performance. Please use following command natively:"
-        print
-        print
-        print 'time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"'
-        print
-        print
+        click.echo("Update is extreme slow on osx due to share performance. Please use following command natively:")
+        click.echo("")
+        click.echo("")
+        click.echo('time PYTHONPATH=$ODOO_HOME/admin/module_tools python -c "from odoo_parser import update_cache; update_cache()"')
+        click.echo("")
+        click.echo("")
         sys.exit(2)
     started = datetime.now()
-    print "Updating ast - can take about one minute; slow on OSX due to share"
+    click.echo("Updating ast - can take about one minute; slow on OSX due to share")
     update_cache()
-    print "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
+    click.echo("Updated ast - took {} seconds".format((datetime.now() - started).seconds))
 
 @control.command()
 @pass_config
@@ -3063,7 +3073,7 @@ def __get_project_config():
 def project_list():
     projects = __get_project_config()['projects']
     for i, project in enumerate(projects):
-        print "{}:".format(i + 1), "{}/{}".format(project['customs'], project['db'])
+        click.echo("{}:".format(i + 1), "{}/{}".format(project['customs'], project['db']))
 
 def project_activate(ctx, config, project):
     ctx.invoke(
