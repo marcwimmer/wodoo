@@ -1002,7 +1002,7 @@ def update_view_in_db(filepath, lineno):
             line2 = line
             while line2 < lineno:
                 # with search:
-                match = re.findall('id=[\"\']([^\"^\']*)[\"\']', xml[line2])
+                match = re.findall('\ id=[\"\']([^\"^\']*)[\"\']', xml[line2])
                 if match:
                     xmlid = match[0]
                     break
