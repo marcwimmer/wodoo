@@ -18,3 +18,7 @@
 [submodule "repos/openupgradelib"]
 	path = repos/openupgradelib
 	url = https://github.com/OCA/openupgradelib.git
+[submodule "repos/odoo.own"]
+	path = repos/odoo.own
+	url = ssh://git@git.itewimmer.de:50004/odoo/odoo.git
+	branch = 11.0
