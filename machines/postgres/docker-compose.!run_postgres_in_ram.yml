@@ -7,4 +7,3 @@ services:
       INRAM: 0
     volumes:
       - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:/var/lib/postgresql/data
-    command: postgres -c max_connections=1000

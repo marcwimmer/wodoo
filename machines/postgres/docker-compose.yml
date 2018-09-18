@@ -7,15 +7,17 @@ services:
       - $DUMPS_PATH:/opt/dumps
       - $ODOO_HOME/run/sqlscripts:/opt/sqlscripts
       - $ODOO_HOME/machines/postgres/init:/docker-entrypoint-initdb.d/
-        # - $ODOO_HOME/machines/postgres/confs/postgresql2_inram.conf:/var/lib/postgresql/data/pgdata/postgresql.conf
     environment:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata
     env_file:
       - $ODOO_HOME/run/settings
+      - $ODOO_HOME/machines/postgres/default.parameters
 
     healthcheck:
         test: ["CMD-SHELL", "pg_isready"]
         interval: 30s
         timeout: 30s
         retries: 3
+
+    command: /bin/bash /run.sh

@@ -7,3 +7,5 @@ pip install setuptools && \
 git clone https://github.com/julmon/pg_activity.git  && \
 cd pg_activity/ && \
 python setup.py install --with-man
+ADD config* /
+ADD run.sh /run.sh
