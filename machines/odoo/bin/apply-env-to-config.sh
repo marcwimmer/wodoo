@@ -23,7 +23,10 @@ for file in os.listdir("/home/odoo"):
             else:
                 content = content + "\nwithout_demo=all"
 
-        for key in ["DB_USER", "DB_PWD", "DB_MAXCONN", "DB_PORT", "DB_HOST"]:
+        for key in [
+            "DB_USER", "DB_PWD", "DB_MAXCONN",
+            "DB_PORT", "DB_HOST", "ODOO_MAX_CRON_THREADS"
+        ]:
             content = content.replace("__{}__".format(key), os.getenv(key, ""))
 
         with open(filepath, 'w') as f:
