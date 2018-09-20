@@ -1510,7 +1510,7 @@ def backup_db(ctx, config, filename):
             os.path.basename(filepath),
             os.path.basename(LINKPATH)
         ], cwd=os.path.dirname(filepath))
-    click.echo("Dumped to ", filepath)
+    click.echo("Dumped to {}".format(filepath))
     ctx.invoke(telegram_send, "Database Backup {} done to {}".format(config.dbname, filepath))
 
 @backup.command(name='files')

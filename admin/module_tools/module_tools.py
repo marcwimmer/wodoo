@@ -811,19 +811,16 @@ def update_assets_file(module_path):
     DEFAULT_ASSETS = "web.assets_backend"
     module_path = get_path_to_current_odoo_module(module_path)
 
+    def default_dict():
+        return {
+            'stylesheets': [],
+            'js': [],
+        }
+
     files_per_assets = {
-        'web.assets_backend': {
-            'stylesheets': [],
-            'js': [],
-        },
-        'web.report_assets_common': {
-            'stylesheets': [],
-            'js': [],
-        },
-        'web.assets_frontend': {
-            'stylesheets': [],
-            'js': [],
-        },
+        #'web.assets_backend': default_dict(),
+        #'web.report_assets_common': default_dict(),
+        #'web.assets_frontend': default_dict(),
     }
     # try to keep assets id
     filepath = os.path.join(module_path, 'views/assets.xml')
@@ -847,6 +844,7 @@ def update_assets_file(module_path):
             parent = 'web.report_assets_common'
         else:
             continue
+        files_per_assets.setdefault(parent, default_dict())
 
         if file.endswith('.less') or file.endswith('.css'):
             files_per_assets[parent]['stylesheets'].append(local_file_path)
