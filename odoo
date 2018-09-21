@@ -5,6 +5,7 @@ import os
 import inspect
 import subprocess
 import time
+import fileinput
 from admin.module_tools.myconfigparser import MyConfigParser
 
 def E(name):
@@ -12,6 +13,10 @@ def E(name):
         name = name[1:]
     return os.getenv(name, "")
 
+
+input = None
+if not sys.stdin.isatty():
+    input = '\n'.join([x for x in sys.stdin])
 
 FNULL = open(os.devnull, 'w')
 LOCAL_ODOO_HOME = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
@@ -162,7 +167,15 @@ def build_command():
     command += ["/opt/odoo/admin/odoo-admin"]
     if len(sys.argv) > 1:
         command += sys.argv[1:]
-    proc = subprocess.Popen(command, cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'))
+    proc = subprocess.Popen(
+        command,
+        cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'),
+        bufsize=1024,
+        stdin=subprocess.PIPE if input else None,
+    )
+    if input:
+        proc.stdin.write(input)
+        proc.stdin.close()
     return proc
 
 def start_background_sync_from_host():
