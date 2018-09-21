@@ -33,6 +33,7 @@ elif [ "$ODOO_PYTHON_VERSION" == "3" ]; then
 	
 	# minimum python for admin scripts;
 	apt install -y python python-pip python-psycopg2 python-lxml
+    apt install -y python3-gi python3-click python3-gi-cairo python3-cairo gir1.2-gtk-3.0
 	pip install unidecode pudb
 	pip install pip --upgrade
 

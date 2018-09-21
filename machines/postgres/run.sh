@@ -6,4 +6,4 @@ if [[ "$INRAM" == "1" ]]; then
 else
     CONFIG="$CONFIG $(sed 's/^/-c/' /config.noram)"
 fi
-/docker-entrypoint.sh postgres $CONFIG
+exec gosu postgres /docker-entrypoint.sh postgres $CONFIG
