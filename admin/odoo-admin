@@ -1778,12 +1778,12 @@ def snapshot(todo):
         args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/']
         __dcrun(args, interactive=True)
         __dc(['stop', '-t 1'] + ['postgres'])
-        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/']
+        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/', '--delete']
         __dcrun(args)
         __dc(['up', '-d'] + ['postgres'])
     elif todo == 'restore':
         __dc(['kill'] + ['postgres'])
-        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/snapshot/', '/opt/data/']
+        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/snapshot/', '/opt/data/', '--delete']
         __dcrun(args)
         __dc(['up', '-d'] + ['postgres'])
 

@@ -1,4 +1,6 @@
 # manage-order: 500
+volumes:
+    ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}_snapshot:
 services:
   postgres:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_postgres
@@ -24,4 +26,4 @@ services:
   postgres_snapshot:
     build: $ODOO_HOME/machines/postgres/rsync
     volumes:
-      - /opt/snapshot
+      - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}_snapshot:/opt/snapshot
