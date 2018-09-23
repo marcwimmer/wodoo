@@ -1583,6 +1583,8 @@ def pack():
     if os.path.exists(gitignore):
         os.unlink(gitignore)
 
+    subprocess.Popen(["find", "-name", "*.pyc", "-delete"], cwd=folder).wait()
+
     # sync modules
 
     # TODO filter out not licensed modules
