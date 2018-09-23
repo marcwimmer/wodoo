@@ -21,3 +21,7 @@ services:
         retries: 3
 
     command: /bin/bash /run.sh
+  postgres_snapshot:
+    build: $ODOO_HOME/machines/postgres/rsync
+    volumes:
+      - /opt/snapshot

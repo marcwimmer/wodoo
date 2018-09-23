@@ -1771,6 +1771,23 @@ def __do_command(cmd, *params, **kwparams):
     return globals()[cmd](*params, **kwparams)
 
 @db.command()
+@click.option('--todo', type=click.Choice(["save", "restore"]), help='Snapshot control', required=True)
+def snapshot(todo):
+    args = ['postgres_snapshot']
+    if todo == 'save':
+        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/']
+        __dcrun(args, interactive=True)
+        __dc(['stop', '-t 1'] + ['postgres'])
+        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/']
+        __dcrun(args)
+        __dc(['up', '-d'] + ['postgres'])
+    elif todo == 'restore':
+        __dc(['kill'] + ['postgres'])
+        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/snapshot/', '/opt/data/']
+        __dcrun(args)
+        __dc(['up', '-d'] + ['postgres'])
+
+@db.command()
 @click.argument('dbname', required=True)
 @pass_config
 def drop_db(config, dbname):
