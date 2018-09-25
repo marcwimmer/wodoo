@@ -1580,8 +1580,10 @@ def pack():
 
     # remove .gitignore - could contain odoo for example
     gitignore = os.path.join(folder, '.gitignore')
-    if os.path.exists(gitignore):
-        os.unlink(gitignore)
+    with open(gitignore, 'w') as f:
+        f.write("""
+.pyc
+""")
 
     subprocess.Popen(["find", "-name", "*.pyc", "-delete"], cwd=folder).wait()
 
