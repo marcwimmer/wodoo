@@ -143,7 +143,7 @@ class AliasedGroup(click.Group):
 
 @click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
-@click.option("--dev", "--devmode", is_flag=True, default=False)
+@click.option("-dev", "--devmode", is_flag=True, default=False)
 @pass_config
 def cli(config, force, devmode):
     config.force = force
