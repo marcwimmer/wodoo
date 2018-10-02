@@ -15,5 +15,5 @@ humanize
 argh
 tabulate
 curses-menu
-Click
+Click==6.7
 pendulum
