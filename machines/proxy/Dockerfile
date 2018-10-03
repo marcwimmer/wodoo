@@ -1,7 +1,7 @@
 FROM phusion/baseimage:0.9.22
 RUN apt update && apt install -y build-essential libpcre3-dev zlib1g-dev libexpat1-dev wget libnghttp2-dev libxml2-dev
-ENV apache_version=2.4.34
-ENV apr_version=1.6.3
+ENV apache_version=2.4.35
+ENV apr_version=1.6.5
 ENV apr_util_version=1.6.1
 ENV URL=http://www-eu.apache.org/dist/
 ENV URL=http://mirrors.ae-online.de/apache/
