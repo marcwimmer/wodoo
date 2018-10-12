@@ -285,6 +285,13 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
     while True:
         i += 1
         if i > limit:
+
+            # HACK: if /common/ inside, then try version
+            common_version = "/common/" + str(current_version()) + "/"
+            if common_version not in filepath and '/common/' in filepath:
+                filepath = filepath.replace("/common/", common_version)
+                return get_module_of_file(filepath, return_path=return_path, return_manifest=return_manifest)
+
             raise Exception("No module found for: %s" % filepath)
         found, p = is_possible_module_dir(p)
         if found:

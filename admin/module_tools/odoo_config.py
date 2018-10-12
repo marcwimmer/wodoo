@@ -156,6 +156,10 @@ def translate_path_relative_to_customs_root(path):
         path = path.split("data/src/modules")[1]
         if path.startswith("/"):
             path = path[1:]
+        version = str(get_version_from_customs())
+        if path.startswith(version + "/"):
+            path = path[len(version + "/"):]
+        # remove version needed for common/9.0/stock_modules/stock_free_available_items/views/product_form.xml
         # is in linked common dir
         path = os.path.join('common', path)
         return path
