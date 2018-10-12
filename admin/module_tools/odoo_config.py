@@ -154,8 +154,6 @@ def translate_path_relative_to_customs_root(path):
 
     if 'data/src/modules' in path:
         path = path.split("data/src/modules")[1]
-        # remove version
-        path = '/'.join(path.split("/")[2:])
         # is in linked common dir
         path = os.path.join('common', path)
         return path

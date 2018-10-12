@@ -869,7 +869,8 @@ def __turn_into_devdb(dbname):
         except Exception as e:
             if critical:
                 raise
-            click.echo("failed un-critical sql:", str(e))
+            msg = traceback.format_exc()
+            print("failed un-critical sql:", msg)
 
     from module_tools.module_tools import remove_webassets
     remove_webassets(dbname=dbname)
