@@ -154,6 +154,8 @@ def translate_path_relative_to_customs_root(path):
 
     if 'data/src/modules' in path:
         path = path.split("data/src/modules")[1]
+        if path.startswith("/"):
+            path = path[1:]
         # is in linked common dir
         path = os.path.join('common', path)
         return path
