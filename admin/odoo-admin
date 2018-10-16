@@ -866,7 +866,7 @@ def __turn_into_devdb(dbname):
                         continue
         try:
             __execute_sql(line, dbname=dbname)
-        except Exception as e:
+        except Exception:
             if critical:
                 raise
             msg = traceback.format_exc()
@@ -1753,10 +1753,13 @@ def deploy():
 
 @control.command()
 @click.pass_context
-def dev(ctx):
+@click.argument('customs', required=False, default=None)
+def dev(ctx, customs):
     """
     starts developing in the odoo container
     """
+    if customs:
+        ctx.invoke(compose, customs=customs)
     ctx.invoke(kill, brutal=True)
     ctx.invoke(rm)
     ctx.invoke(reload)
