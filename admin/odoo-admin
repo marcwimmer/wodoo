@@ -2646,16 +2646,16 @@ def _inquirer_dump_file(message):
 
 @restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
-@click.option('--dev', '--restore-as-dev-db', is_flag=True, help="If true, then sql clean ups are done, before renaming database to destination", default=E("ALLOW_RESTORE_DEV") == "1")
+@click.option('--dev', is_flag=True, help="If true, then sql clean ups are done, before renaming database to destination")
 @pass_config
 @click.pass_context
-def restore_db(ctx, config, filename, restore_as_dev_db=False, dbname=''):
+def restore_db(ctx, config, filename, dev):
     for x in ['CUSTOMS', "DBNAME", "DB_HOST", "DB_PORT", "RUN_POSTGRES", "RUN_POSTGRES_IN_RAM"]:
         click.echo("{}: {}".format(x, E(x)))
 
-    if restore_as_dev_db and E("ALLOW_RESTORE_DEV") != "1" and not config.force:
+    if dev and E("ALLOW_RESTORE_DEV") != "1" and not config.force:
         raise Exception("ALLOW_RESTORE_DEV must be explicitly allowed.")
-    if restore_as_dev_db:
+    if dev:
         click.echo("Option DEV-DB is set, so cleanup-scripts are run afterwards")
 
     if not filename:
@@ -2666,13 +2666,14 @@ def restore_db(ctx, config, filename, restore_as_dev_db=False, dbname=''):
         raise Exception("No path in dump file allowed")
     if not config.force:
         __restore_check(filename)
-    if E("DEVMODE") == "1" and not restore_as_dev_db:
+    if E("DEVMODE") == "1" and not dev:
         _askcontinue("DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
 
+    dbname = E("DBNAME")
     if not config.force:
         _askcontinue("Deletes database {}!".format(dbname or E("DBNAME")))
 
-    DBNAME_RESTORING = (dbname or E("DBNAME")) + "_restoring"
+    DBNAME_RESTORING = dbname + "_restoring"
     os.environ['DBNAME'] = DBNAME_RESTORING
 
     dbname = dbname or config.dbname
@@ -2682,7 +2683,7 @@ def restore_db(ctx, config, filename, restore_as_dev_db=False, dbname=''):
     ctx.invoke(wait_for_container_postgres)
     _reset_db(config=config, dbname=DBNAME_RESTORING)
     __do_restore_db_on_postgres(filename, DBNAME_RESTORING, E("DB_HOST"), E("DB_PORT"), E("DB_USER"), E("DB_PWD"))
-    if restore_as_dev_db:
+    if dev:
         __turn_into_devdb(DBNAME_RESTORING)
     __rename_db_drop_target(DBNAME_RESTORING, dbname)
     __remove_postgres_connections(dbname)
