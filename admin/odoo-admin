@@ -2977,11 +2977,11 @@ def up(ctx, config, machines, daemon):
 @click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
 @click.option('--non-interactive', '-I', default=True, is_flag=True, help="Not interactive")
 @click.option('--check-install-state', default=True, is_flag=True, help="Check for dangling modules afterwards")
-@click.option('--no-restart-machines', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
+@click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
 @click.option('--no-dangling-check', default=False, is_flag=True, help="Not checking for dangling modules")
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart_machines=True):
+def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
@@ -3046,7 +3046,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if check_install_state:
         ctx.invoke(show_install_state, suppress_error=no_dangling_check)
 
-    if not no_restart_machines:
+    if not no_restart:
         for i in range(5):
             ctx.invoke(up, daemon=True)
             ctx.invoke(proxy_reload)
