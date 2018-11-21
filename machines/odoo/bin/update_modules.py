@@ -16,6 +16,7 @@ from utils import get_env # NOQA
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
 PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
+I18N_OVERWRITE = [x for x in sys.argv[1:] if not x.startswith("--i18n")]
 
 def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
@@ -72,6 +73,34 @@ def update(mode, module):
             if not is_module_installed(module):
                 print "{} is not installed - but it was tried to be installed.".format(module)
                 sys.exit(1)
+    elif I18N_OVERWRITE:
+        for module in module.split(','):
+            if is_module_installed(module):
+                for lang in module_tools.get_all_langs():
+                    if lang == 'en_US':
+                        continue
+                    lang_file = module_tools.get_lang_file_of_module(lang, module)
+                    if not lang_file:
+                        continue
+                    print("Updating language {} for module {}:".format(lang, module))
+                    if os.path.isfile(lang_file):
+                        params = [
+                            '/usr/bin/sudo',
+                            '-H',
+                            '-u',
+                            os.getenv("ODOO_USER"),
+                            os.path.expandvars("$SERVER_DIR/{}".format(get_env()["ODOO_EXECUTABLE"])),
+                            '-c',
+                            os.path.expandvars("$CONFIG_DIR/config_openerp"),
+                            '-d',
+                            os.path.expandvars("$DBNAME"),
+                            '-l',
+                            lang,
+                            '--i18n-import={}/i18n/{}.po'.format(module, lang),
+                            '--i18n-overwrite',
+                        ]
+                        subprocess.check_call(params)
+
     print mode, module, 'done'
 
 def update_module_list():

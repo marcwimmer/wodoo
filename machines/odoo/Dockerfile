@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
-RUN apt-get update --fix-missing && \
+RUN apt update --fix-missing && \
 apt-get install \
 	-y \
 	--no-install-recommends \

@@ -110,7 +110,7 @@ class MyConfigParser:
             self.quoteOptions[key] = '\"'
             self.configOptions[key] = value
 
-    def get(self, key, default_value):
+    def get(self, key, default_value=""):
         try:
             return self[key]
         except Exception:

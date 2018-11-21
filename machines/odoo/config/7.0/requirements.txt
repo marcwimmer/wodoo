@@ -49,3 +49,5 @@ reportlab
 vatnumber
 vobject
 werkzeug==0.8.3
+zebra==0.0.5
+html5lib==1.0b8

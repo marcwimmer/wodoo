@@ -9,6 +9,7 @@ services:
       - $DUMPS_PATH:/opt/dumps
       - $ODOO_HOME/run/sqlscripts:/opt/sqlscripts
       - $ODOO_HOME/machines/postgres/init:/docker-entrypoint-initdb.d/
+      - $ODOO_HOME/run/postgresout:/tmp/out
     environment:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata

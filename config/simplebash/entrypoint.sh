@@ -25,6 +25,17 @@ if [[ -e /root/.config/pudb/pudb.cfg ]]; then
 fi
 chown "$USER":"$USER" /home/$USER/.config -R
 
+#copy docker config
+mkdir -p /home/$USER/.docker
+cp /tmp/docker.config /home/$USER/.docker/config.json
+chown "$USER":"$USER" /home/$USER/.docker -R
+
+# add 999 group for vboxsf access
+if [[ "$DUMPS_PATH_GID" ]]; then
+    addgroup -q --gid $DUMPS_PATH_GID dumps_path_group
+    usermod -aG $DUMPS_PATH_GID user1
+fi
+
 # transfer git settings
 for file in .gitconfig .ssh; do
     if [[ -d "/opt/external_home/$file" ]]; then

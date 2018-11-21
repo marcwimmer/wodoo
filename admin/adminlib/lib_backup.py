@@ -1,0 +1,279 @@
+import re
+from retrying import retry
+import docker
+import traceback
+import humanize
+from threading import Thread
+import subprocess
+import tabulate
+import pipes
+import shutil
+from datetime import datetime
+import inquirer
+import hashlib
+import os
+import tempfile
+import click
+from tools import DBConnection
+from tools import _dropdb
+from tools import __backup_postgres
+from tools import __postgres_restore
+from tools import __assert_file_exists
+from tools import __system
+from tools import __safe_filename
+from tools import __find_files
+from tools import __read_file
+from tools import __dc
+from tools import __write_file
+from tools import __append_line
+from tools import __exists_odoo_commit
+from tools import __get_odoo_commit
+from tools import __get_dump_type
+from tools import __start_postgres_and_wait
+from tools import __dcrun
+from tools import __execute_sql
+from tools import __set_db_ownership
+from tools import _askcontinue
+from tools import __rename_db_drop_target
+from tools import __remove_postgres_connections
+from tools import _get_dump_files
+from . import cli, pass_config, dirs, files, Commands
+from lib_clickhelpers import AliasedGroup
+
+BACKUPDIR = "/host/dumps"
+
+@cli.group(cls=AliasedGroup)
+@pass_config
+def backup(config):
+    pass
+
+@cli.group(cls=AliasedGroup)
+@pass_config
+def restore(config):
+    pass
+
+
+@backup.command(name='all')
+@pass_config
+@click.pass_context
+def backup_all(ctx, config, filename=None):
+    """
+    Runs backup-db and backup-files
+    """
+    ctx.invoke(backup_db, filename=filename)
+    ctx.invoke(backup_files)
+    ctx.invoke(backup_calendar)
+
+@backup.command(name='calendar')
+@pass_config
+def backup_calendar(config, filename=None):
+    if not config.run_calendar:
+        return
+    filename = filename or datetime.now().strftime("{}.calendar.%Y%m%d%H%M%S.dump.gz".format(config.customs))
+    filepath = os.path.join(BACKUPDIR, filename)
+    conn = DBConnection(
+        dbname=config.calendar_db_name,
+        host=config.calendar_db_host,
+        port=config.calendar_db_port,
+        user=config.calendar_db_user,
+        password=config.calendar_db_pwd
+    )
+    __backup_postgres(
+        conn,
+        filepath,
+    )
+
+
+@backup.command(name='odoo-db')
+@click.argument('filename', required=False, default='')
+@pass_config
+@click.pass_context
+def backup_db(ctx, config, filename):
+    if not filename and config.devmode:
+        answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
+        if not answer:
+            return
+        filename = answer['filename']
+
+    filename = filename or __get_default_backup_filename(config)
+
+    if filename.startswith("/"):
+        raise Exception("No slash for backup filename allowed")
+    click.echo("Databasename is " + config.dbname)
+    filepath = os.path.join(BACKUPDIR, filename)
+    if os.path.exists(filepath):
+        os.unlink(filepath)
+    LINKPATH = os.path.join(BACKUPDIR, 'latest_dump')
+    __start_postgres_and_wait(config)
+
+    conn = config.get_odoo_conn()
+    __backup_postgres(
+        conn,
+        filepath,
+    )
+
+    if config.no_backup_symbolic_link_dump:
+        if os.path.islink(LINKPATH) or os.path.exists(LINKPATH):
+            os.unlink(LINKPATH)
+        __system([
+            'ln',
+            '-s',
+            os.path.basename(filepath),
+            os.path.basename(LINKPATH)
+        ], cwd=os.path.dirname(filepath))
+    click.echo("Dumped to {}".format(filepath))
+    Commands.invoke(ctx, 'telegram_send', "Database Backup {} done to {}".format(config.dbname, filepath))
+
+@backup.command(name='files')
+@pass_config
+def backup_files(config):
+    BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=config.customs)
+
+    if os.path.exists(BACKUP_FILENAME):
+        second = BACKUP_FILENAME + ".bak"
+        if os.path.exists(second):
+            os.unlink(second)
+        shutil.move(BACKUP_FILENAME, second)
+    __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
+    click.echo("Backup files done to {}".format(BACKUP_FILENAME))
+
+def __get_default_backup_filename(config):
+    return datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(config.customs))
+
+@restore.command('show-dump-type')
+@pass_config
+def get_dump_type(config, filename):
+    filename = _inquirer_dump_file(config)
+    if filename:
+        dump_file = os.path.join(BACKUPDIR, filename)
+        dump_type = __get_dump_type(dump_file)
+        click.echo(dump_type)
+
+@restore.command(name='list')
+@pass_config
+def list_dumps(config):
+    from . import BACKUPDIR
+    from pudb import set_trace
+    set_trace()
+    rows = _get_dump_files(fnfilter=config.dbname)
+    click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
+
+@restore.command(name='files')
+def restore_files(dumpfile):
+    __do_restore_files(dumpfile)
+
+
+@restore.command(name='odoo-db')
+@click.argument('filename', required=False, default='')
+@pass_config
+@click.pass_context
+def restore_db(ctx, config, filename):
+    conn = config.get_odoo_conn()
+    dest_db = conn.dbname
+    dev = False
+
+    if config.allow_restore_dev:
+        if not config.force:
+            questions = [
+                inquirer.Confirm('dev', message="Restore as development database?", default=True)
+            ]
+            answers = inquirer.prompt(questions)
+            dev = answers['dev']
+        else:
+            config.dev = True
+
+    if dev:
+        click.echo("Option DEV-DB is set, so cleanup-scripts are run afterwards")
+
+    if not filename:
+        filename = _inquirer_dump_file(config, "Choose filename to restore")
+    if not filename:
+        return
+
+    filename == os.path.join(BACKUPDIR, filename)
+    if filename.startswith("/"):
+        raise Exception("No path in dump file allowed")
+    if not config.force:
+        __restore_check(filename, config)
+    if config.devmode and not dev:
+        _askcontinue(config, "DEVMODE ist set - really restore as normal db? Not using restore-dev-db?")
+
+    DBNAME_RESTORING = config.dbname + "_restoring"
+
+    if not config.dbname:
+        raise Exception("somehow dbname is missing")
+
+    Commands.invoke(ctx, 'wait_for_container_postgres')
+    conn = conn.clone(dbname=DBNAME_RESTORING)
+    with config.forced() as config:
+        _dropdb(config, conn)
+    __postgres_restore(
+        conn,
+        os.path.join(BACKUPDIR, filename),
+    )
+    from lib_db import __turn_into_devdb
+    if dev:
+        __turn_into_devdb(conn)
+    __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
+    __remove_postgres_connections(conn.clone(dbname=dest_db))
+    Commands.invoke(ctx, 'telegram_send', "Database Restore $DBNAME done.")
+
+def _inquirer_dump_file(config, message):
+    from . import BACKUPDIR
+    __files = _get_dump_files(BACKUPDIR, fnfilter=config.dbname)
+    filename = inquirer.prompt([inquirer.List('filename', message, choices=__files)])
+    if filename:
+        filename = filename['filename'][1]
+        return filename
+
+def __do_restore_files(filepath):
+    # remove the postgres volume and reinit
+    if filepath.startswith("/"):
+        raise Exception("No absolute path allowed")
+    __dcrun(['odoo', '/bin/restore_files.sh', os.path.basename(filepath)])
+
+def __restore_check(filepath, config):
+    dumpname = os.path.basename(filepath)
+
+    if config.dbname not in dumpname and not config.force:
+        raise Exception("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
+            dumpname,
+            config.dbname,
+        ))
+
+def __reset_postgres_container(ctx, config):
+    # remove the postgres volume and reinit
+    if config.run_postgres:
+        Commands.invoke(ctx, 'kill', machines='postgres', brutal=True)
+        if config.run_postgres_in_ram:
+            pass
+        else:
+            click.echo("Resettings postgres - killing data - not reversible")
+            VOLUMENAME = "{}_postgresdata".format(config.customs)
+            docker_client = docker.from_env()
+
+            @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
+            def remove_volume():
+                for volume in docker_client.volumes.list():
+                    if volume.name == VOLUMENAME:
+                        try:
+                            Commands.invoke(ctx, 'kill', brutal=True)
+                            __dc(["rm", "-f"]) # set volume free
+                            volume.remove()
+                        except Exception as e:
+                            click.echo(e)
+                            if hasattr(e, 'explanation'):
+                                exp = e.explanation
+
+                                if 'volume is in use' in e:
+                                    container_id = re.findall(r'\[([^\]]*)\]', exp)[0]
+                                    __system(["docker", "rm", container_id])
+                            return None
+                return True
+            remove_volume()
+            __dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])
+        __start_postgres_and_wait(config)
+
+
+Commands.register(backup_db)
+Commands.register(restore_db)

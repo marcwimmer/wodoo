@@ -23,7 +23,8 @@ apt install -y \
 	net-tools \ 
 	iputils-ping \
     pv \
-    colordiff
+    colordiff \
+    silversearcher-ag
 
 RUN pip install pip --upgrade
 ADD requirements.txt /requirements.txt
@@ -37,10 +38,18 @@ RUN rsync /opt/docker/ /usr/local/bin/ -arP
 WORKDIR /
 
 ADD pudb.cfg /root/.config/pudb/pudb.cfg
+ADD docker.config /tmp/docker.config
 
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
 RUN \
 git config --global user.email admin && \
 git config --global user.name admin
+
+ADD odoo /usr/local/bin
+RUN chmod a+x /usr/local/bin/odoo
+RUN ln -s /usr/local/bin/odoo /usr/local/bin/o
+RUN echo "PS1='${debian_chroot:+($debian_chroot)}\[\e[1;91m\][odoo]\[\e[0m\]:\w\$ '" >> /etc/bash.bashrc
+RUN echo 'cd $LOCAL_ODOO_HOME' >> /etc/bash.bashrc
+
 WORKDIR /opt/odoo

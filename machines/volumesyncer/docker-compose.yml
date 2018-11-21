@@ -1,0 +1,6 @@
+services:
+  volumesyncer:
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_volumesyncer
+    build: $ODOO_HOME/machines/volumesyncer
+    volumes:
+      - $ODOO_HOME/data/src/customs/$CUSTOMS/.access:/access

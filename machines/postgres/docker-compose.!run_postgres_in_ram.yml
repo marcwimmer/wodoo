@@ -7,6 +7,7 @@ services:
       INRAM: 0
     volumes:
       - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:/var/lib/postgresql/data
+
   postgres_snapshot:
     volumes:
       - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:/opt/data

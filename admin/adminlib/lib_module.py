@@ -1,0 +1,238 @@
+import inquirer
+import traceback
+from datetime import datetime
+import time
+import shutil
+import hashlib
+import os
+import tempfile
+import click
+from tools import DBConnection
+from tools import __assert_file_exists
+from tools import __system
+from tools import __safe_filename
+from tools import __find_files
+from tools import __read_file
+from tools import __write_file
+from tools import __append_line
+from tools import __exists_odoo_commit
+from tools import __get_odoo_commit
+from tools import __start_postgres_and_wait
+from tools import __cmd_interactive
+from tools import __get_installed_modules
+from . import cli, pass_config, dirs, files, Commands
+from lib_clickhelpers import AliasedGroup
+from tools import __execute_sql
+
+@cli.group(cls=AliasedGroup)
+@pass_config
+def odoo_module(config):
+    pass
+
+@odoo_module.command(name='abort-upgrade')
+@pass_config
+def abort_upgrade(config):
+    click.echo("Aborting upgrade...")
+    SQL = """
+        UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
+        UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
+    """
+    __execute_sql(config.get_odoo_conn(), SQL)
+
+@odoo_module.command(name='unlink')
+def module_unlink():
+    for file in os.listdir(os.path.join(dirs['customs'], 'links')):
+        path = os.path.join(dirs['customs'], file)
+        if os.path.islink(path):
+            os.unlink(path)
+
+@odoo_module.command(name='link')
+def module_link():
+    """
+    links all modules into ./links
+    """
+    from module_tools.module_tools import link_modules
+    count = link_modules()
+    click.echo("linked {} modules".format(count))
+
+@odoo_module.command()
+@click.argument('module', nargs=-1, required=False)
+@click.option('--keep-containers', '-k', default=False, is_flag=True, help="Does not recreate and restart odoo containers")
+@click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
+@click.option('--dangling-modules', '-d', default=False, is_flag=True, help="Updates only dangling modules")
+@click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
+@click.option('--non-interactive', '-I', default=True, is_flag=True, help="Not interactive")
+@click.option('--check-install-state', default=True, is_flag=True, help="Check for dangling modules afterwards")
+@click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
+@click.option('--no-dangling-check', default=False, is_flag=True, help="Not checking for dangling modules")
+@click.option('--i18n', default=False, is_flag=True, help="Overwrite Translations")
+@pass_config
+@click.pass_context
+def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False):
+    """
+    Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
+    Minimal downtime;
+
+    To update all (custom) modules set "all" here
+    """
+    ctx.invoke(module_link)
+    from module_tools import module_tools
+    module = filter(lambda x: x, sum(map(lambda x: x.split(','), module), []))  # '1,2 3' --> ['1', '2', '3']
+
+    if not module:
+        module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
+        module += module_tools.get_uninstalled_modules_where_others_depend_on()
+        module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+
+    __start_postgres_and_wait(config)
+    if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
+        for x in __get_dangling_modules():
+            click.echo("{}: {}".format(*x[:2]))
+        if raw_input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+            __execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+    if __get_dangling_modules() and not dangling_modules:
+        if not no_dangling_check:
+            Commands.invoke(ctx, 'show_install_state', suppress_error=True)
+            raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
+            ctx.invoke(abort_upgrade)
+    if installed_modules:
+        module += __get_installed_modules(config)
+    if dangling_modules:
+        module += [x[0] for x in __get_dangling_modules()]
+    module = filter(lambda x: x, module)
+    if not module:
+        raise Exception("no modules to update")
+
+    click.echo("Run module update")
+    if config.odoo_update_start_notification_touch_file_in_container:
+        with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
+            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+    # running duplicate updates is really a problem;
+    if not keep_containers:
+        Commands.invoke(ctx, 'kill')
+        Commands.invoke(ctx, 'rm')
+        Commands.invoke(ctx, 'recreate')
+        __start_postgres_and_wait(config)
+        Commands.invoke(ctx, 'kill', machines=['proxy'])
+
+    try:
+        params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
+        if non_interactive:
+            params += ['--non-interactive']
+        if not no_update_module_list:
+            params += ['--no-update-modulelist']
+        if no_dangling_check:
+            params += ['no-dangling-check']
+        if i18n:
+            params += ['--i18n']
+        __cmd_interactive(*params)
+    except Exception:
+        click.echo(traceback.format_exc())
+        ctx.invoke(show_install_state, suppress_error=True)
+        raise Exception("Error at /update_modules.py - aborting update process.")
+
+    if check_install_state:
+        ctx.invoke(show_install_state, suppress_error=no_dangling_check)
+
+    if not no_restart and not keep_containers:
+        for i in range(5):
+            Commands.invoke(ctx, 'up', daemon=True)
+            Commands.invoke(ctx, 'proxy_reload')
+            time.sleep(2)
+
+    Commands.invoke(ctx, 'status')
+    if config.odoo_update_start_notification_touch_file_in_container:
+        with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
+            f.write("0")
+    Commands.invoke(ctx, 'telegram_send', "Update done")
+
+@odoo_module.command(name='remove-old')
+@click.option("--ask-confirm", default=True, is_flag=True)
+@pass_config
+@click.pass_context
+def remove_old_modules(ctx, config, ask_confirm=True):
+    """
+    Sets modules to 'uninstalled', that have no module dir anymore.
+    """
+    from module_tools.module_tools import get_manifest_path_of_module_path
+    from module_tools.odoo_config import get_odoo_addons_paths
+    from module_tools.odoo_config import get_links_dir
+    click.echo("Analyzing which modules to remove...")
+    Commands.invoke(ctx, 'wait_for_container_postgres')
+    mods = sorted(map(lambda x: x[0], __execute_sql(config.get_odoo_conn(), "select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
+    mods = filter(lambda x: x not in ('base'), mods)
+    to_remove = []
+    for mod in mods:
+        for path in get_odoo_addons_paths() + [get_links_dir()]:
+            if get_manifest_path_of_module_path(os.path.join(path, mod)):
+                break
+        else:
+            to_remove.append(mod)
+    if not to_remove:
+        click.echo("Nothing found to remove")
+        return
+    click.echo("Following modules are set to uninstalled:")
+    for mod in to_remove:
+        click.echo(mod)
+    if ask_confirm:
+        answer = inquirer.prompt([inquirer.Confirm('confirm', message="Continue?", default=True)])
+        if not answer or not answer['confirm']:
+            return
+    for mod in to_remove:
+        __execute_sql(config.get_odoo_conn(), "update ir_module_module set auto_install=false, state = 'uninstalled' where name = '{}'".format(mod))
+        click.echo("Set module {} to uninstalled.".format(mod))
+
+@odoo_module.command()
+@pass_config
+def progress(config):
+    """
+    Displays installation progress
+    """
+    for row in __execute_sql(config.get_odoo_conn(), "select state, count(*) from ir_module_module group by state;", fetchall=True):
+        click.echo("{}: {}".format(row[0], row[1]))
+
+@odoo_module.command(name='show-install-state')
+@pass_config
+def show_install_state(config, suppress_error=False):
+    dangling = __get_dangling_modules()
+    if dangling:
+        click.echo("Displaying dangling modules:")
+    for row in dangling:
+        click.echo("{}: {}".format(row[0], row[1]))
+
+    if dangling and not suppress_error:
+        raise Exception("Dangling modules detected - please fix installation problems and retry!")
+
+def __get_extra_install_modules():
+    path = os.path.join(dirs['odoo_home'], 'extra_install/modules')
+    if not os.path.exists(path):
+        return {}
+    with open(path, 'r') as f:
+        return eval(f.read())
+
+def __get_subtree_url(type, submodule):
+    assert type in ['common', 'extra_install']
+    if type == 'common':
+        url = 'git.mt-software.de:/git/openerp/modules/{}'.format(submodule)
+    elif type == 'extra_install':
+        data = __get_extra_install_modules()
+        url = data[submodule]['url']
+    else:
+        raise Exception("impl")
+    return url
+
+@pass_config
+def __get_dangling_modules(config):
+    rows = __execute_sql(
+        config.get_odoo_conn(),
+        sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
+        fetchall=True
+    )
+    return rows
+
+
+Commands.register(progress)
+Commands.register(remove_old_modules)
+Commands.register(update)
+Commands.register(show_install_state)

@@ -135,6 +135,25 @@ def delete_qweb(modules):
         cr.close()
         conn.close()
 
+def get_all_langs():
+    sql = "select distinct code from res_lang where active = true;"
+    conn, cr = get_conn()
+    try:
+        cr.execute(sql)
+        langs = [x[0] for x in cr.fetchall() if x[0]]
+    finally:
+        cr.close()
+        conn.close()
+    return langs
+
+def get_lang_file_of_module(lang, module):
+    module_path = get_module_path(module)
+    if not module_path:
+        return
+    lang_file = os.path.join(module_path, "i18n", lang + ".po")
+    if os.path.exists(lang_file):
+        return lang_file
+
 def export_lang(current_file):
     module = get_module_of_file(current_file)
     with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
@@ -158,6 +177,15 @@ def get_all_manifests():
             if any(x == filename for x in MANIFESTS):
                 if is_module_dir_in_version(root)['ok']:
                     yield os.path.join(root, filename)
+
+def get_module_path(module_name):
+    """
+    returns the full path to the module
+    """
+    paths = filter(lambda x: '/{}/'.format(module_name) in x, get_all_manifests())
+    if paths:
+        path = os.path.dirname(paths[-1])
+        return path
 
 def get_modules_from_install_file():
     with open(install_file(), 'r') as f:
@@ -696,18 +724,6 @@ def restart(quick):
             f.write('quick_restart')
         else:
             f.write('restart')
-
-def remove_webassets(dbname=None):
-    print "Removing web assets for {}".format(current_customs())
-    conn, cr = get_conn(db=dbname)
-    try:
-        cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
-        cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
-        cr.execute("delete from ir_attachment where name ilike '%.less'")
-        conn.commit()
-    finally:
-        cr.close()
-        conn.close()
 
 
 def remove_module_install_notifications(path):

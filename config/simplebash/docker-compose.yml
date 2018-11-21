@@ -13,8 +13,6 @@ services:
       - /root:/root
       - /etc:/etc_host:ro
     working_dir: $HOME
-    env_file:
-      - ../../run/settings
     environment:
       - DOCKER_BASH=1
       - LOCAL_ODOO_HOME=/opt/odoo

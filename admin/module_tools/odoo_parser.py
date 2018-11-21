@@ -209,8 +209,9 @@ def walk_files(on_match, pattern):
         root = os.path.join(customs_dir()) # everything linked here...
 
         for path, dirs, files in os.walk(os.path.abspath(root), followlinks=False):
-            if '.git' in dirs:
-                dirs.remove('.git')
+            for not_allowed in ['.git', 'links', 'active_customs']:
+                if not_allowed in dirs:
+                    dirs.remove(not_allowed)
             handle(path, dirs, files)
 
 def _get_methods():
