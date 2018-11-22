@@ -103,7 +103,6 @@ def backup_db(ctx, config, filename):
     filepath = os.path.join(BACKUPDIR, filename)
     if os.path.exists(filepath):
         os.unlink(filepath)
-    LINKPATH = os.path.join(BACKUPDIR, 'latest_dump')
     __start_postgres_and_wait(config)
 
     conn = config.get_odoo_conn()
@@ -112,15 +111,6 @@ def backup_db(ctx, config, filename):
         filepath,
     )
 
-    if config.no_backup_symbolic_link_dump:
-        if os.path.islink(LINKPATH) or os.path.exists(LINKPATH):
-            os.unlink(LINKPATH)
-        __system([
-            'ln',
-            '-s',
-            os.path.basename(filepath),
-            os.path.basename(LINKPATH)
-        ], cwd=os.path.dirname(filepath))
     click.echo("Dumped to {}".format(filepath))
     Commands.invoke(ctx, 'telegram_send', "Database Backup {} done to {}".format(config.dbname, filepath))
 
