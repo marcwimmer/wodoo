@@ -302,7 +302,8 @@ def get_module_of_file(filepath, return_path=False, return_manifest=False):
                 return True, x
         try:
             float(basename)
-            return True, os.path.abspath(os.path.join(x, '../'))
+            if '.' in basename:
+                return True, os.path.abspath(os.path.join(x, '../'))
         except Exception:
             pass
 
