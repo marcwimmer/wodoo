@@ -262,16 +262,16 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     final_contents.sort(key=lambda x: x[0])
 
     temp_path = os.path.join(local_odoo_home, '.tmp.compose')
-    #if os.path.isdir(temp_path):
-    #    shutil.rmtree(temp_path)
-    #os.makedirs(temp_path)
+    if os.path.isdir(temp_path):
+        shutil.rmtree(temp_path)
+    os.makedirs(temp_path)
     try:
         temp_files = []
         for i, filecontent in enumerate(final_contents):
             path = os.path.join(temp_path, str(i).zfill(10) + '.yml')
-            #with open(path, 'w', 0) as f:
-            #    f.write(filecontent[1])
-            #    f.flush()
+            with open(path, 'w', 0) as f:
+                f.write(filecontent[1])
+                f.flush()
             temp_files.append("-f")
             temp_files.append(os.path.basename(path))
 
@@ -280,12 +280,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         cmdline += temp_files
         cmdline.append('config')
 
-        import subprocess
-        d = {}
-        d.update(os.environ)
-        d.update(env)
         conf = __system(cmdline, cwd=temp_path, suppress_out=True, env=env)
-        #conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         # post-process config config
         conf = post_process_complete_yaml_config(yaml.load(conf))
         conf = yaml.dump(conf, default_flow_style=False)
@@ -293,8 +288,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         with open(dest_file, 'w', 0) as f:
             f.write(conf)
     finally:
-        #shutil.rmtree(temp_path)
-        pass
+        shutil.rmtree(temp_path)
 
 def _setup_proxy():
     from . import odoo_config
