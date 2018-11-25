@@ -1,3 +1,4 @@
+import time
 import inquirer
 import importlib
 import re
@@ -129,40 +130,42 @@ def _prepare_yml_files_from_template_files(config):
 def _reset_proxy_configs():
     __empty_dir(dirs['run/proxy'])
 
+def __replace_all_envs_in_str(content, env):
+    """
+    Docker does not allow to replace volume names or service names, so we do it by hand
+    """
+    all_params = re.findall(r'\$\{[^\}]*?\}', content)
+    for param in all_params:
+        name = param
+        name = name.replace("${", "")
+        name = name.replace("}", "")
+        if name in env.keys():
+            content = content.replace(param, env[name])
+    return content
+
 def _prepare_docker_compose_files(config, dest_file, paths):
     from . import YAML_VERSION
     from . import MyConfigParser
     local_odoo_home = os.environ['LOCAL_ODOO_HOME']
 
-    temp_files = set()
-    tempdir = tempfile.mkdtemp()
+    final_contents = []
 
     if not dest_file:
         raise Exception('require destination path')
 
-    with open(dest_file, 'w') as f:
+    with open(dest_file, 'w', 0) as f:
         f.write("#Composed {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         f.write("version: '{}'\n".format(config.compose_version))
     myconfig = MyConfigParser(files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
 
-    def replace_all_envs_in_file(filepath):
-        """
-        Docker does not allow to replace volume names or service names, so we do it by hand
-        """
-        with open(filepath, 'r') as f:
-            content = f.read()
-        all_params = re.findall(r'\$\{[^\}]*?\}', content)
-        for param in all_params:
-            name = param
-            name = name.replace("${", "")
-            name = name.replace("}", "")
-            if name in env.keys():
-                content = content.replace(param, env[name])
-        with open(filepath, 'w') as f:
-            f.write(content)
+    # add static yaml content to each machine
+    with open(files['config/default_network'], 'r') as f:
+        default_network = yaml.load(f.read())
 
-    for path in set(paths):
+    for path in paths:
+        with open(path, 'r') as f:
+            content = f.read()
         filename = os.path.basename(path)
 
         def use_file():
@@ -184,60 +187,43 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         if not use_file():
             continue
 
-        with open(path, 'r') as f:
-            content = f.read()
-            # dont matter if written manage-order: or manage-order
-            if 'manage-order' not in content:
-                order = '99999999'
-            else:
-                order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
+        # dont matter if written manage-order: or manage-order
+        if 'manage-order' not in content:
+            order = '99999999'
+        else:
+            order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
+        order = int(order)
         folder_name = os.path.basename(os.path.dirname(path))
 
         if '.run_' not in path:
             if not getattr(config, "run_{}".format(folder_name)):
                 continue
 
-        order = str(order)
+        j = yaml.load(content)
+        if j:
+            # TODO complain version - override version
+            j['version'] = YAML_VERSION
 
-        # put all files in their order into the temp directory
-        counter = 0
-        temp_path = ""
-        while not temp_path or os.path.exists(temp_path):
-            counter += 1
-            temp_path = os.path.join(tempdir, '{}-{}'.format(order, str(counter).zfill(5)))
+            # set settings environment and the override settings after that
+            for file in ['run/settings']:
+                path = os.path.join(local_odoo_home, file)
+                if os.path.exists(path):
+                    if 'services' in j:
+                        for service in j['services']:
+                            service = j['services'][service]
+                            if 'env_file' not in service:
+                                service['env_file'] = []
+                            if isinstance(service['env_file'], (str, unicode)):
+                                service['env_file'] = [service['env_file']]
 
-        # add static yaml content to each machine
-        with open(files['config/default_network'], 'r') as f:
-            default_network = yaml.load(f.read())
+                            if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
+                                service['env_file'].append('$ODOO_HOME/{}'.format(file))
+                j['networks'] = copy.deepcopy(default_network['networks'])
 
-        with open(temp_path, 'w') as dest:
-            with open(path, 'r') as source:
-                j = yaml.load(source.read())
-                if j:
-                    # TODO complain version - override version
-                    j['version'] = YAML_VERSION
+            content = yaml.dump(j, default_flow_style=False)
+        content = __replace_all_envs_in_str(content, env)
 
-                    # set settings environment and the override settings after that
-                    for file in ['run/settings']:
-                        path = os.path.join(local_odoo_home, file)
-                        if os.path.exists(path):
-                            if 'services' in j:
-                                for service in j['services']:
-                                    service = j['services'][service]
-                                    if 'env_file' not in service:
-                                        service['env_file'] = []
-                                    if isinstance(service['env_file'], (str, unicode)):
-                                        service['env_file'] = [service['env_file']]
-
-                                    if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
-                                        service['env_file'].append('$ODOO_HOME/{}'.format(file))
-                        j['networks'] = copy.deepcopy(default_network['networks'])
-
-                    dest.write(yaml.dump(j, default_flow_style=False))
-                    dest.write("\n")
-        replace_all_envs_in_file(temp_path)
-        temp_files.add(os.path.basename(temp_path))
-        del temp_path
+        final_contents.append((order, content))
 
     def post_process_complete_yaml_config(yml):
         """
@@ -254,6 +240,8 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         for odoomachine in odoodc['services']:
             if odoomachine == 'odoo_base':
                 continue
+            if odoomachine not in yml['services']:
+                continue
             machine = yml['services'][odoomachine]
             for k in ['volumes']:
                 machine[k] = []
@@ -261,47 +249,52 @@ def _prepare_docker_compose_files(config, dest_file, paths):
                     machine[k].append(x)
             for k in ['environment']:
                 machine.setdefault(k, {})
-                for x, v in yml['services']['odoo_base'][k].items():
-                    machine[k][x] = v
-        yml['services'].pop('odoo_base')
+                if 'odoo_base' in yml['services']:
+                    for x, v in yml['services']['odoo_base'][k].items():
+                        machine[k][x] = v
+        if 'odoo_base' in yml['services']:
+            yml['services'].pop('odoo_base')
         yml['version'] = YAML_VERSION
 
         return yml
 
     # call docker compose config to get the complete config
-    _files = sorted(temp_files, key=lambda x: float(x.split("/")[-1].replace("-", ".")))
-    cmdline = []
-    cmdline.append("/usr/local/bin/docker-compose")
-    for file in _files:
-        cmdline.append('-f')
-        cmdline.append(os.path.join(os.path.basename(tempdir), file))
-    cmdline.append('config')
+    final_contents.sort(key=lambda x: x[0])
 
-    # annotation: per symlink all subfiles/folders are linked to a path,
-    # that matches the host system path
-    shutil.move(tempdir, local_odoo_home)
-    tempdir = os.path.join(local_odoo_home, os.path.basename(tempdir))
+    temp_path = os.path.join(local_odoo_home, '.tmp.compose')
+    #if os.path.isdir(temp_path):
+    #    shutil.rmtree(temp_path)
+    #os.makedirs(temp_path)
+    try:
+        temp_files = []
+        for i, filecontent in enumerate(final_contents):
+            path = os.path.join(temp_path, str(i).zfill(10) + '.yml')
+            #with open(path, 'w', 0) as f:
+            #    f.write(filecontent[1])
+            #    f.flush()
+            temp_files.append("-f")
+            temp_files.append(os.path.basename(path))
 
-    attempts = 0
-    while True:
-        try:
-            conf = __system(cmdline, cwd=local_odoo_home, suppress_out=True, env=env)
-        except Exception:
-            # stupid conversion from guid to int, if characters missing
-            attempts += 1
-            if attempts > 5:
-                raise
-        else:
-            # post-process config config
-            conf = post_process_complete_yaml_config(yaml.load(conf))
-            conf = yaml.dump(conf, default_flow_style=False)
+        cmdline = []
+        cmdline.append("/usr/local/bin/docker-compose")
+        cmdline += temp_files
+        cmdline.append('config')
 
-            with open(dest_file, 'w') as f:
-                f.write(conf)
-            break
-        finally:
-            # __rmtree(tempdir) UNDO
-            pass
+        import subprocess
+        d = {}
+        d.update(os.environ)
+        d.update(env)
+        conf = __system(cmdline, cwd=temp_path, suppress_out=True, env=env)
+        #conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
+        # post-process config config
+        conf = post_process_complete_yaml_config(yaml.load(conf))
+        conf = yaml.dump(conf, default_flow_style=False)
+
+        with open(dest_file, 'w', 0) as f:
+            f.write(conf)
+    finally:
+        #shutil.rmtree(temp_path)
+        pass
 
 def _setup_proxy():
     from . import odoo_config
@@ -382,7 +375,7 @@ def _setup_odoo_instances():
                         del odoo['ports']
                     odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
                     j['services']['odoo_{}'.format(name)] = odoo
-                    with open(files['docker_compose'], 'w') as f:
+                    with open(files['docker_compose'], 'w', 0) as f:
                         f.write(yaml.dump(j, default_flow_style=False))
 
     for file in os.listdir(dirs['run/proxy']):

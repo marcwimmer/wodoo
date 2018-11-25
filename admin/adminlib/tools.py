@@ -1,3 +1,4 @@
+import traceback
 import yaml
 import json
 import inquirer
@@ -70,99 +71,26 @@ def __assert_file_exists(path, isdir=False):
         ))
 
 
-def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
-             wait_finished=True, shell=False, logger=None, stdin=None,
-             pipeout=None, redirect_std_out_to_file=None,
-             progress=False, progress_every_seconds=1, env=None
-             ):
+def __system(
+        cmd, cwd=None, suppress_out=False, raise_exception=True,
+        shell=False, logger=None, stdin=None, env=None
+):
     assert isinstance(cmd, list)
 
-    STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
-    if (not wait_finished and pipeout is None) or pipeout is False:
-        STDPIPE, ERRPIPE, bufsize = None, None, -1
-    if pipeout:
-        bufsize = 4096
-        suppress_out = True
     if env:
         for k, v in os.environ.items():
             if k not in env:
                 env[k] = v
-    proc = subprocess.Popen(cmd, shell=shell, stdout=STDPIPE, stderr=ERRPIPE, bufsize=bufsize, cwd=cwd, stdin=stdin, env=env or None)
-    collected_errors = []
-
-    def reader(pipe, q):
-        try:
-            with pipe:
-                for line in iter(pipe.readline, ''):
-                    q.put((pipe, line))
-        except Exception as e:
-            print e
-        finally:
-            q.put(None)
-
-    data = {
-        'size_written': 0,
-    }
-    size_written = out_file = 0
-    if redirect_std_out_to_file:
-        out_file = open(redirect_std_out_to_file, 'w')
-    out = []
-
-    def heartbeat():
-        while proc.returncode is None:
-            time.sleep(progress_every_seconds)
-            print("{} processed".format(humanize.naturalsize(data['size_written'])))
-
-    def handle_output():
-        try:
-            err = proc.stderr
-            q = Queue()
-            Thread(target=reader, args=[proc.stdout, q]).start()
-            Thread(target=reader, args=[proc.stderr, q]).start()
-            for source, line in iter(q.get, None):
-                if source != err:
-                    out.append(line)
-                else:
-                    collected_errors.append(line.strip())
-                if source == err or not suppress_out:
-                    sys.stdout.write(line)
-                    sys.stdout.flush()
-                if source != err:
-                    data['size_written'] += len(line)
-                if redirect_std_out_to_file:
-                    if source != err:
-                        out_file.write(line)
-
-                if logger:
-                    if source == err:
-                        logger.error(line.strip())
-                    else:
-                        logger.info(line.strip())
-        except Exception as e:
-            print e
-    if progress:
-        t = Thread(target=heartbeat)
-        t.daemonized = True
-        t.start()
-
-    if wait_finished or progress or redirect_std_out_to_file:
-        t = Thread(target=handle_output)
-        t.daemonized = True
-        t.start()
-        if wait_finished:
-            t.join()
-
-    if not wait_finished:
-        return proc
-    proc.wait()
-    if out_file:
-        out_file.close()
-        print("{} Size: {}".format(redirect_std_out_to_file, humanize.naturalsize(size_written)))
+    proc = subprocess.Popen(
+        cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        bufsize=1, cwd=cwd, stdin=stdin, env=env or None
+    )
+    out, err = proc.communicate()
 
     if proc.returncode and raise_exception:
-        print '\n'.join(collected_errors)
+        print('\n'.join(err))
         raise Exception("Error executing: {}".format(" ".join(cmd)))
-    return "".join(out)
+    return out
 
 def __safe_filename(name):
     name = name or ''
@@ -313,7 +241,6 @@ def __dc(cmd, suppress_out=False, raise_exception=True, wait_finished=True, logg
         cwd=dirs['odoo_home'],
         suppress_out=suppress_out,
         raise_exception=raise_exception,
-        wait_finished=wait_finished,
         logger=logger,
         env=env,
     )
@@ -326,13 +253,13 @@ def __dcexec(cmd, suppress_out=False):
     out = __system(c, cwd=dirs['odoo_home'], suppress_out=suppress_out)
     return out
 
-def __dcrun(cmd, interactive=False, wait_finished=True, raise_exception=True, logger=None, env={}):
+def __dcrun(cmd, interactive=False, raise_exception=True, logger=None, env={}):
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ['run']
     if not interactive:
         cmd += ['-T']
     cmd += ['--rm', '-e ODOO_HOME=/opt/odoo'] + cmd2
-    return __dc(cmd, wait_finished=wait_finished, raise_exception=True, logger=logger, env=env)
+    return __dc(cmd, raise_exception=True, logger=logger, env=env)
 
 def _askcontinue(config, msg=None):
     if msg:
