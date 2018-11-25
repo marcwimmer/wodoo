@@ -26,3 +26,4 @@ settings.override
 *.override.bak
 ./tmp*
 .agignore
+.tmp.compose
