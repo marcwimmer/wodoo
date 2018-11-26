@@ -1,3 +1,5 @@
+from copy import deepcopy
+import subprocess
 import time
 import inquirer
 import importlib
@@ -280,7 +282,9 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         cmdline += temp_files
         cmdline.append('config')
 
-        conf = __system(cmdline, cwd=temp_path, suppress_out=True, env=env)
+        d = deepcopy(os.environ)
+        d.update(env)
+        conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         # post-process config config
         conf = post_process_complete_yaml_config(yaml.load(conf))
         conf = yaml.dump(conf, default_flow_style=False)
