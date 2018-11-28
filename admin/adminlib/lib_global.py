@@ -40,7 +40,7 @@ def logall(machines, follow, tail):
 @click.argument('args', nargs=-1)
 @pass_config
 @click.pass_context
-def run(ctx, config, volum, machine, args, **kwparams):
+def run(ctx, config, volume, machine, args, **kwparams):
     """
     extract volume mounts
 
@@ -49,7 +49,7 @@ def run(ctx, config, volum, machine, args, **kwparams):
     if args and args[0] == 'bash' and len(args) == 1:
         ctx.invoke(runbash, machine=machine)
         return
-    __dcrun([machine] + args, **kwparams)
+    __dcrun([machine] + list(args), **kwparams)
 
 @cli.command()
 @click.argument('machine', required=True)

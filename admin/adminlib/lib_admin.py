@@ -28,8 +28,9 @@ def admin(config):
 
 
 @admin.command()
-def fix_permissions():
-    _fix_permissions()
+@pass_config
+def fix_permissions(config):
+    _fix_permissions(config)
 
 @admin.command()
 @pass_config

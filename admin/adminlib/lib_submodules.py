@@ -73,6 +73,12 @@ def pull():
                 "checkout",
                 module['version'],
             ], cwd=os.path.join(dir, module['subdir'], module['name']))
+            subprocess.check_call([
+                "git",
+                "submodule",
+                "update",
+                "--init"
+            ], cwd=os.path.join(dir, module['subdir'], module['name']))
 
     for module in _get_modules():
         print(module['name'])
