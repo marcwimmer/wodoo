@@ -76,7 +76,7 @@ def backup_calendar(config, filename=None):
         host=config.calendar_db_host,
         port=config.calendar_db_port,
         user=config.calendar_db_user,
-        password=config.calendar_db_pwd
+        pwd=config.calendar_db_pwd
     )
     __backup_postgres(
         conn,
