@@ -39,7 +39,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         def repl(s):
             s = s.format(
                 configfile=CONFIG_FILE,
-                db=os.environ['DBNAME'],
+                db=config.dbname,
                 module=module,
             )
             return s
@@ -51,11 +51,11 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
     def connect_db():
         import psycopg2
         return psycopg2.connect(
-            dbname=os.environ['DBNAME'],
-            user=os.environ['DB_USER'],
-            host=os.environ['DB_HOST'],
-            port=long(os.environ['DB_PORT']),
-            password=os.environ['DB_PWD'],
+            dbname=config.dbname,
+            user=config.db_user,
+            host=config.db_host,
+            port=long(config.db_port),
+            password=config.db_pwd,
         )
 
     def __check_for_dangling_modules():
@@ -75,7 +75,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
             type,
         )
         if module == 'all' and not debug:
-            Commands.invoke(ctx, 'run', machine='odoo', args=cmd, logger=logger)
+            Commands.invoke(ctx, 'run', machine='odoo', args=cmd, logger=logger, volume=None)
         elif debug:
             answer = raw_input("Run {} sql/py? [Y/n]".format(type))
             if not answer or answer in ['Y', 'y']:
@@ -96,7 +96,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         if debug:
             Commands.invoke(ctx, 'runbash', machine='odoo', args=cmd)
         else:
-            Commands.invoke(ctx, 'run', machine='odoo', args=cmd, logger=logger, interactive=False)
+            Commands.invoke(ctx, 'run', machine='odoo', args=cmd, logger=logger, interactive=False, volume=None)
 
     """
 
@@ -228,7 +228,7 @@ Migration to Version {}
 
         if not no_auto_backup:
             click.echo("Backup of database Version {}".format(version))
-            Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}".format(version=version, dbname=os.environ['DBNAME']))
+            Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}".format(version=version, dbname=config.dbname))
 
     with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
         f.write(to_version)
@@ -258,8 +258,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
     del no_git_clean
     LOGFILE = os.path.join(
         odoo_config.customs_dir(),
-        "migration_{}_{}.log".format(config.customs),
-        datetime.now().strftime("%Y-%m-%dT%H%M%S")
+        "migration_{}_{}.log".format(config.customs, datetime.now().strftime("%Y-%m-%dT%H%M%S")),
     )
     Commands.invoke(ctx, 'fix_permissions')
     try:
@@ -288,13 +287,13 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
     else:
         click.echo("Running migration after processes (basically module update)")
         Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
-        Commands.invoke(ctx, 'update', module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart_machines=True)
-        Commands.invoke(ctx, 'update', module=['base'], check_install_state=False, no_restart_machines=True, no_dangling_check=True)
-        Commands.invoke(ctx, 'update', module=[], no_restart_machines=True, no_dangling_check=True)
+        Commands.invoke(ctx, 'update', module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart=True)
+        Commands.invoke(ctx, 'update', module=['base'], check_install_state=False, no_restart=True, no_dangling_check=True)
+        Commands.invoke(ctx, 'update', module=[], no_restart=True, no_dangling_check=True)
         Commands.invoke(ctx, 'show_install_state', suppress_error=True)
         Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
         click.echo("Backup of database Version {}".format(to_version))
-        Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}_final".format(version=to_version, dbname=os.environ['DBNAME']))
+        Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}_final".format(version=to_version, dbname=config.dbname))
 
     finally:
         click.echo("To debug an intermediate version, run:")

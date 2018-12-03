@@ -514,11 +514,9 @@ def _sanity_check(config):
         time.sleep(2)
 
 def __get_installed_modules(config):
+    conn = config.get_odoo_conn()
     rows = __execute_sql(
-        user=config.db_user,
-        pwd=config.db_pwd,
-        host=config.db_host,
-        port=config.db_port,
+        conn,
         sql="SELECT name, state from ir_module_module where state in ('installed', 'to upgrade');",
         fetchall=True
     )
