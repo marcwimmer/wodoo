@@ -244,9 +244,10 @@ Migration to Version {}
 @click.option("-d", "--debug", is_flag=True, help="Interactive mode: stops at breakpoints", default=False)
 @click.option("-p", "--pull", is_flag=True, help="Pulls odoo repository before to get latest odoo, otherwise SHA from previous runs are used.", default=False)
 @click.option('-n', '--no-git-clean', is_flag=True, help="If true, then the git repo is not touch and you can set break points.")
+@click.option('--no-auto-backup', is_flag=True, help="No dumps")
 @pass_config
 @click.pass_context
-def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, pull):
+def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, pull, no_auto_backup):
     """
     For debugging migration of certain module provide module parameter.
     """
@@ -273,6 +274,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
             debug=debug,
             module=module,
             pull_latest=pull,
+            no_auto_backup=no_auto_backup
         )
 
     except Exception:
