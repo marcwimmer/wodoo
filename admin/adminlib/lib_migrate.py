@@ -252,7 +252,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
     For debugging migration of certain module provide module parameter.
     """
     from . import odoo_config
-    assert float(to_version) > float(from_version)
+    assert float(to_version) >= float(from_version)
     Commands.invoke(ctx, 'kill', machines=["proxy", "odoo"], brutal=True)
     Commands.invoke(ctx, 'kill', brutal=True)
     git_clean = not no_git_clean
