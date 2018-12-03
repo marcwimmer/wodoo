@@ -39,3 +39,6 @@ sudo -E -H -u "$ODOO_USER" \
 DEST_PATH="$export_dir/i18n/$LANG.po" 
 cp "$TMP" "$DEST_PATH"
 chown -R "$ODOO_USER" $(dirname "$DEST_PATH")
+if [[ "$OWNER_GID" != "" ]]; then
+    chgrp -R "$OWNER_GID" $(dirname "$DEST_PATH")
+fi

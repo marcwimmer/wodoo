@@ -111,6 +111,8 @@ def backup_db(ctx, config, filename):
         filepath,
     )
 
+    __apply_dump_permissions(filepath)
+
     click.echo("Dumped to {}".format(filepath))
     Commands.invoke(ctx, 'telegram_send', "Database Backup {} done to {}".format(config.dbname, filepath))
 
@@ -125,6 +127,7 @@ def backup_files(config):
             os.unlink(second)
         shutil.move(BACKUP_FILENAME, second)
     __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
+    __apply_dump_permissions(BACKUP_FILENAME)
     click.echo("Backup files done to {}".format(BACKUP_FILENAME))
 
 def __get_default_backup_filename(config):
@@ -263,6 +266,25 @@ def __reset_postgres_container(ctx, config):
             remove_volume()
             __dcrun(['-e', 'INIT=1', 'postgres', '/entrypoint2.sh'])
         __start_postgres_and_wait(config)
+
+
+def __apply_dump_permissions(filepath):
+
+    def change(cmd, id):
+        subprocess.check_call([
+            "sudo",
+            cmd,
+            id,
+            filepath
+        ])
+
+    for x in [
+        ("DUMP_UID", 'chown'),
+        ("DUMP_GID", 'chgrp')
+    ]:
+        id = os.getenv(x[0])
+        if id:
+            change(x[1], id)
 
 
 Commands.register(backup_db)

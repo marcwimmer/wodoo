@@ -32,7 +32,9 @@ chown "$USER":"$USER" /home/$USER/.docker -R
 
 # add 999 group for vboxsf access
 if [[ "$DUMPS_PATH_GID" ]]; then
-    getent group "$DUMPS_PATH_GID" || addgroup -q --gid $DUMPS_PATH_GID dumps_path_group
+    if [[ ! $(getent group "$DUMPS_PATH_GID") && ! $(getent passwd "$DUMPS_PATH_GID") ]]; then
+        addgroup -q --gid $DUMPS_PATH_GID dumps_path_group
+    fi
     usermod -aG $DUMPS_PATH_GID $USER
 fi
 

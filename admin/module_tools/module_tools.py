@@ -745,6 +745,8 @@ def remove_module_install_notifications(path):
             dirnames.remove('migration')
 
         for filename in filenames:
+            if filename.startswith('.'):
+                continue
             path = os.path.join(root, filename)
             if not os.path.getsize(path):
                 continue
