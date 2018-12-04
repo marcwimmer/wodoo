@@ -291,7 +291,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
         Commands.invoke(ctx, 'update', module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart=True)
         Commands.invoke(ctx, 'update', module=['base'], check_install_state=False, no_restart=True, no_dangling_check=True)
-        Commands.invoke(ctx, 'update', module=[], no_restart=True, no_dangling_check=True)
+        Commands.invoke(ctx, 'update', module=[], no_restart=True, no_dangling_check=True, i18n=True)
         Commands.invoke(ctx, 'show_install_state', suppress_error=True)
         Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
         click.echo("Backup of database Version {}".format(to_version))
