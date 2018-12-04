@@ -91,22 +91,6 @@ def update():
 
         sys.exit(0)
 
-# def check_customs():
-    # if not E("CUSTOMS"):
-        # if len(sys.argv) > 1:
-            # if sys.argv[1] == 'compose' and len(sys.argv) == 3:
-                # if not os.path.isdir(os.path.dirname(SETTINGS_FILE)):
-                    # os.makedirs(os.path.dirname(SETTINGS_FILE))
-                # customs = sys.argv[2]
-                # with open(SETTINGS_FILE, 'w') as f:
-                    # f.write("CUSTOMS={}".format(customs))
-                # os.environ['CUSTOMS'] = customs
-                # del customs
-        # else:
-            # print("Please define customs with:")
-            # print("./odoo compose <CUSTOMS>")
-            # sys.exit(1)
-
 def build_command():
     # using absolute path, to work in crontab
 
@@ -116,19 +100,11 @@ def build_command():
                 'xhost',
                 '+local:{}'.format(E("HOSTNAME_TO_USE")),
             ], stdout=FNULL)
-        except:
+        except Exception:
             pass
 
     if get_platform() == "macos":
-        out = subprocess.check_output([
-            'dscl',
-            '.',
-            '-read',
-            '/Groups/staff',
-        ])
-        out = filter(lambda line: "PrimaryGroupID:" in line, out.split("\n"))
-        if out:
-            docker_group_id = out[0].split(":")[-1].strip()  # PrimaryGroupID: 20
+        raise Exception("not supported")
     else:
         # getent group docker docker:x:999:marc
         out = subprocess.check_output([
@@ -221,27 +197,9 @@ def check_docker_network():
             NETWORK_NAME,
         ])
 
-def turn_on_rsynced_on_macos():
-    """
-    Slow Volumes on macos so odoo is started via internal volume,
-    that is rsynced with outside.
-    """
-    if get_platform() == "macos":
-        if E("RUN_RSYNCED") != "1":
-            config = MyConfigParser(SETTINGS_FILE)
-            config['RUN_RSYNCED'] = '1'
-            os.environ['RUN_RSYNCED'] = '1'
-            config.write()
-    else:
-        if E("RUN_RSYNCED") == "1":
-            config = MyConfigParser(SETTINGS_FILE)
-            config['RUN_RSYNCED'] = '0'
-            os.environ['RUN_RSYNCED'] = '0'
-            config.write()
-
 
 if __name__ == '__main__':
-    #show_help()
+    show_help()
     update()
 
     check_docker_network()
