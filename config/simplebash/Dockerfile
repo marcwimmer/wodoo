@@ -31,7 +31,7 @@ ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
 # install docker cli
-RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.03.1-ce.tgz -o /tmp/docker.tgz
+RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz -o /tmp/docker.tgz
 WORKDIR /opt
 RUN tar xfz /tmp/docker.tgz
 RUN rsync /opt/docker/ /usr/local/bin/ -arP
@@ -51,5 +51,8 @@ RUN chmod a+x /usr/local/bin/odoo
 RUN ln -s /usr/local/bin/odoo /usr/local/bin/o
 RUN echo "PS1='${debian_chroot:+($debian_chroot)}\[\e[1;91m\][odoo]\[\e[0m\]:\w\$ '" >> /etc/bash.bashrc
 RUN echo 'cd $LOCAL_ODOO_HOME' >> /etc/bash.bashrc
+
+ADD https://github.com/dshearer/jobber/releases/download/v1.3.4/jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
+RUN dpkg -i /tmp/jobber.deb
 
 WORKDIR /opt/odoo

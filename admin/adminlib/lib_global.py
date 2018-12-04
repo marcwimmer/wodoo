@@ -57,8 +57,6 @@ def run(ctx, config, volume, machine, args, **kwparams):
 @pass_config
 @click.pass_context
 def runbash(ctx, config, machine, args, **kwparams):
-    from pudb import set_trace
-    set_trace()
     __set_db_ownership(config)
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
