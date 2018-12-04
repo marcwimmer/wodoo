@@ -214,7 +214,7 @@ def __get_extra_install_modules():
 def __get_subtree_url(type, submodule):
     assert type in ['common', 'extra_install']
     if type == 'common':
-        url = 'git.mt-software.de:/git/openerp/modules/{}'.format(submodule)
+        url = 'git.clear-consulting.de:/odoo/modules/{}'.format(submodule)
     elif type == 'extra_install':
         data = __get_extra_install_modules()
         url = data[submodule]['url']
