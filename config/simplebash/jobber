@@ -1,0 +1,11 @@
+[prefs]
+
+[jobs]
+#- name: DailyBackup1
+#  #cmd: /opt/odoo/odoo backup all > /docker_out
+#  cmd: touch /host/dumps/croned
+#  time: '* * * * * *'
+#  onError: Continue
+#  notifyOnError: true
+#  notifyOnFailure: true
+

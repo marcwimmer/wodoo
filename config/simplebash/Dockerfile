@@ -54,7 +54,7 @@ RUN echo 'cd $LOCAL_ODOO_HOME' >> /etc/bash.bashrc
 
 #ADD https://github.com/dshearer/jobber/releases/download/v1.3.4/jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
 ADD jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
-ADD jobber.template /opt
+ADD jobber /opt/jobber
 RUN dpkg -i /tmp/jobber.deb
 
 # make docker say something

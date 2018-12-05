@@ -13,6 +13,9 @@ import hashlib
 import os
 import tempfile
 import click
+from copy import deepcopy
+from datetime import datetime
+from wait.decorator import timeout
 from tools import _file2env
 from tools import __find_files
 from tools import __read_file
@@ -25,6 +28,22 @@ from tools import __execute_sql
 from . import cli, pass_config, dirs, files
 from lib_clickhelpers import AliasedGroup
 
+def get_env():
+    d = deepcopy(os.environ)
+    _file2env(files['settings'], out_dict=d)
+    return d
+
+def _exec(cmd):
+    command = ["/usr/local/bin/docker-compose"]
+    command += ["-f", "docker-compose-cron.yml"]
+    command += cmd
+    subprocess.check_call(
+        command,
+        cwd=os.path.join("/opt/odoo/config/simplebash"),
+        env=get_env(),
+    )
+
+
 @cli.group(cls=AliasedGroup)
 @pass_config
 def cron(config):
@@ -33,28 +52,34 @@ def cron(config):
 @cron.command(name="list")
 @click.pass_context
 def do_list(ctx):
-    command = ["/usr/local/bin/docker-compose"]
-    command += ["exec"]
-    command += ["cron"]
-    command += ["sudo", "/usr/bin/jobber", "list"]
-    subprocess.check_call(
-        command,
-        cwd=os.path.join("/opt/odoo/config/simplebash"),
-    )
+
+    started = datetime.now()
+    exc = None
+    while True:
+        if (datetime.now() - started).total_seconds() > 10:
+            break
+        try:
+            _exec([
+                'exec',
+                'cron',
+                "sudo", "/usr/bin/jobber", "list"
+            ])
+        except Exception, e:
+            time.sleep(1)
+            exc = e
+        else:
+            exc = None
+            break
+    if exc:
+        raise exc
 
 @cron.command(name='start')
 @click.pass_context
 def start(ctx):
     ctx.invoke(stop, ignore_error=True)
-    _file2env(files['settings'])
-    command = ["/usr/local/bin/docker-compose"]
-    command += ["up"]
-    command += ["-d"]
-    command += ["cron"]
-    subprocess.check_call(
-        command,
-        cwd=os.path.join("/opt/odoo/config/simplebash"),
-    )
+
+    _exec(['up', '-d', '--force-recreate', 'cron'])
+    _exec(['logs', 'cron'])
 
     ctx.invoke(do_list)
 
@@ -73,13 +98,8 @@ def start(ctx):
 @cron.command(name='stop')
 @click.pass_context
 def stop(ctx, ignore_error=False):
-    command = ["/usr/local/bin/docker-compose"]
-    command += ["kill"]
     try:
-        subprocess.check_call(
-            command,
-            cwd=os.path.join("/opt/odoo/config/simplebash"),
-        )
+        _exec(['kill', 'cron'])
     except Exception:
         if not ignore_error:
             raise
@@ -94,11 +114,13 @@ def restart(ctx, ignore_error=False):
 
 @cron.command(name='execute', help="Called internally to start jobber; contains waiting while loop")
 def execute(*parameters):
-    with open("/opt/jobber.template") as f:
+    # read skeleton
+    with open("/opt/jobber") as f:
         jobber = f.read()
 
     for searchpath in [
         dirs['machines'],
+        dirs['customs'],
     ]:
         for filepath in __find_files(
             searchpath,

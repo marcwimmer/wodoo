@@ -1,0 +1,8 @@
+- name: DailyBackup2
+  #cmd: /opt/odoo/odoo backup all > /docker_out
+  cmd: touch /host/dumps/croned1
+  time: '* * * * * *'
+  onError: Continue
+  notifyOnError: true
+  notifyOnFailure: true
+

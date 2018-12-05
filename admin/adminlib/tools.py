@@ -444,13 +444,16 @@ def __get_docker_image():
         return result[:12]
     return None
 
-def _file2env(filepath):
+def _file2env(filepath, out_dict=None):
     from . import MyConfigParser
     if not os.path.exists(filepath):
         return
     config = MyConfigParser(filepath)
     for k in config.keys():
-        os.environ[k] = config[k]
+        if out_dict:
+            out_dict[k] = config[k]
+        else:
+            os.environ[k] = config[k]
 
 def _get_bash_for_machine(machine):
     if machine == 'postgres':

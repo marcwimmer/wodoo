@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from copy import deepcopy
 import uuid
 import sys
 import os
@@ -71,16 +72,23 @@ def update():
         proc = subprocess.Popen([
             "/bin/bash",
             "rebuild.sh"
-        ], cwd=os.path.expandvars("$ODOO_HOME/config/simplebash"))
+        ], cwd=os.path.expandvars("$ODOO_HOME/config/simplebash"), env=get_env())
         proc.wait()
 
-        proc = subprocess.Popen([
-            "/usr/local/bin/docker-compose",
-            "build"
-        ], cwd=os.path.expandvars("$ODOO_HOME/config/telegrambot"))
-        proc.wait()
+        #proc = subprocess.Popen([
+        #    "/usr/local/bin/docker-compose",
+        #    "build"
+        #], cwd=os.path.expandvars("$ODOO_HOME/config/telegrambot"))
+        #proc.wait()
 
         sys.exit(0)
+
+def get_env():
+    myenv = deepcopy(os.environ)
+    myenv.update({
+        "PROJECT_NAME": PROJECT_NAME,
+    })
+    return myenv
 
 def build_command():
     # using absolute path, to work in crontab
@@ -143,11 +151,13 @@ def build_command():
     command += ["/opt/odoo/admin/odoo-admin"]
     if len(sys.argv) > 1:
         command += sys.argv[1:]
+    myenv = get_env()
     proc = subprocess.Popen(
         command,
         cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'),
         bufsize=1024,
         stdin=subprocess.PIPE if input else None,
+        env=myenv,
     )
     if input:
         proc.stdin.write(input)
