@@ -56,11 +56,11 @@ def restore(config):
 @backup.command(name='all')
 @pass_config
 @click.pass_context
-def backup_all(ctx, config, filename=None):
+def backup_all(ctx, config):
     """
     Runs backup-db and backup-files
     """
-    ctx.invoke(backup_db, filename=filename)
+    ctx.invoke(backup_db, non_interactive=True)
     ctx.invoke(backup_files)
     ctx.invoke(backup_calendar)
 
@@ -86,14 +86,16 @@ def backup_calendar(config, filename=None):
 
 @backup.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
+@click.option('--non-interactive', is_flag=True)
 @pass_config
 @click.pass_context
-def backup_db(ctx, config, filename):
+def backup_db(ctx, config, filename, non_interactive):
     if not filename and config.devmode:
-        answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
-        if not answer:
-            return
-        filename = answer['filename']
+        if not non_interactive:
+            answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
+            if not answer:
+                return
+            filename = answer['filename']
 
     filename = filename or __get_default_backup_filename(config)
 

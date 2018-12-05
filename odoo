@@ -66,15 +66,6 @@ def get_platform():
     return E("PLATFORM")
 
 
-def show_help():
-    if any(x == '--help' for x in sys.argv):
-        print("If you experience problems, try to call")
-        print("")
-        print(os.path.expandvars("$ODOO_HOME/odoo --update"))
-        print("")
-        print("- docker-container admin bash is updated by that")
-        sys.exit(0)
-
 def update():
     if len(sys.argv) > 1 and sys.argv[1] == '--update':
         proc = subprocess.Popen([
@@ -199,7 +190,6 @@ def check_docker_network():
 
 
 if __name__ == '__main__':
-    show_help()
     update()
 
     check_docker_network()

@@ -1,3 +1,4 @@
+import time
 import shutil
 import hashlib
 import os

@@ -22,6 +22,30 @@ services:
       - ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER=/tmp/timestamp_update/timestamp
     entrypoint: /entrypoint.sh
     hostname: $HOSTNAME_TO_USE
+
+  cron:
+    build: .
+    container_name: ${PROJECT_NAME}_cron
+    volumes:
+      - $ODOO_HOME:/opt/odoo
+      - /var/run/docker.sock:/var/run/docker.sock
+      - $DUMPS_PATH:/host/dumps
+    env_file: /opt/odoo/run/settings
+    environment:
+      - DOCKER_BASH=1
+      - LOCAL_ODOO_HOME=/opt/odoo
+      - ODOO_HOME
+      - NETWORK_NAME
+      - PROJECT_NAME
+      - HOST_HOME
+      - DOCKER_GROUP_ID
+      - PLATFORM
+      - UID
+      - SSH_CONNECTION
+    entrypoint: /entrypoint.sh
+    restart: unless-stopped
+    command: ["/opt/odoo/admin/odoo-admin", "execute"]
+
 networks:
     default:
         external:

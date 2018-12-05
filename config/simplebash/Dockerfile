@@ -52,7 +52,11 @@ RUN ln -s /usr/local/bin/odoo /usr/local/bin/o
 RUN echo "PS1='${debian_chroot:+($debian_chroot)}\[\e[1;91m\][odoo]\[\e[0m\]:\w\$ '" >> /etc/bash.bashrc
 RUN echo 'cd $LOCAL_ODOO_HOME' >> /etc/bash.bashrc
 
-ADD https://github.com/dshearer/jobber/releases/download/v1.3.4/jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
+#ADD https://github.com/dshearer/jobber/releases/download/v1.3.4/jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
+ADD jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
+ADD jobber.template /opt
 RUN dpkg -i /tmp/jobber.deb
 
+# make docker say something
+RUN ln -sf /proc/1/fd/1 /docker_out
 WORKDIR /opt/odoo

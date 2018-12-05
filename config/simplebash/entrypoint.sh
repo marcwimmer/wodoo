@@ -50,6 +50,9 @@ for file in .gitconfig .ssh; do
     fi
 done
 
+# set permissions of home folder, otherwise jobber does not like it
+chown "$USER" "/home/$USER"
+
 PGPASSFILE=/tmp/.pgpass
 echo "$DB_HOST:$DB_PORT:$DBNAME:$DB_USER:$DB_PWD" > "$PGPASSFILE"
 echo "$DB_HOST:$DB_PORT:template1:$DB_USER:$DB_PWD" >> "$PGPASSFILE"
