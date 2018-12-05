@@ -1,8 +1,13 @@
 [prefs]
+runLog:
+    type: file
+    path: /var/jobber-runs
+    maxFileLen: 100m
+    maxHistories: 5
 
 [jobs]
 #- name: DailyBackup1
-#  #cmd: /opt/odoo/odoo backup all > /docker_out
+#  #cmd: /opt/odoo/admin/odoo-admin backup all > /docker_out
 #  cmd: touch /host/dumps/croned
 #  time: '* * * * * *'
 #  onError: Continue

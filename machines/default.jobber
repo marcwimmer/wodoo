@@ -1,0 +1,7 @@
+- name: DailyBackup
+  cmd: odoo backup all > /docker_out
+  time: '0 0 0 * * *'
+  onError: Continue
+  notifyOnError: true
+  notifyOnFailure: true
+

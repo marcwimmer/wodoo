@@ -94,6 +94,11 @@ def start(ctx):
         ./odoo cron stop
     """)
 
+@cron.command(name='test-alive')
+@click.pass_context
+def testalive(ctx, ignore_error=False):
+    with open('/host/dumps/test-alive7', 'w') as f:
+        f.write('test')
 
 @cron.command(name='stop')
 @click.pass_context
@@ -111,6 +116,16 @@ def restart(ctx, ignore_error=False):
     ctx.invoke(stop, ignore_error=True)
     ctx.invoke(start)
 
+@cron.command(name='log')
+@click.pass_context
+def logs(ctx):
+    _exec(['exec', 'cron', 'sudo', '/usr/bin/jobber', 'log'])
+
+@cron.command()
+@click.pass_context
+def interactive(ctx):
+    click.echo("Use jobber command, e.g. jobber list, jobber test <job>")
+    _exec(['exec', 'cron', 'bash'])
 
 @cron.command(name='execute', help="Called internally to start jobber; contains waiting while loop")
 def execute(*parameters):
@@ -119,8 +134,9 @@ def execute(*parameters):
         jobber = f.read()
 
     for searchpath in [
-        dirs['machines'],
-        dirs['customs'],
+        "/etc_host/odoo",
+        # dirs['machines'],
+        # dirs['customs'],
     ]:
         for filepath in __find_files(
             searchpath,
@@ -139,7 +155,7 @@ def execute(*parameters):
     os.system("sudo /usr/bin/jobber list")
     click.echo("Starting endless loop")
     while True:
-        time.sleep(3600)
         os.system("date")
         os.system("/usr/bin/jobber list")
+        time.sleep(3600)
     os.system("sudo pkill -9 -f jobber")

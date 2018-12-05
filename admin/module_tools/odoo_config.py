@@ -71,7 +71,7 @@ def odoo_root():
     # be compatible with VIM on host and executed in container.
     #
     odoo_home = os.getenv('ODOO_HOME', False)
-    if not os.path.isdir(odoo_home):
+    if not odoo_home or not os.path.isdir(odoo_home):
         odoo_home = '/opt/odoo'
     if not os.path.isdir(odoo_home):
         raise Exception("ODOO_HOME not found and not given per environment.")
