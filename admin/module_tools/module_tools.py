@@ -844,9 +844,9 @@ def update_assets_file(module_path):
         }
 
     files_per_assets = {
-        #'web.assets_backend': default_dict(),
-        #'web.report_assets_common': default_dict(),
-        #'web.assets_frontend': default_dict(),
+        # 'web.assets_backend': default_dict(),
+        # 'web.report_assets_common': default_dict(),
+        # 'web.assets_frontend': default_dict(),
     }
     # try to keep assets id
     filepath = os.path.join(module_path, 'views/assets.xml')
@@ -898,7 +898,6 @@ def update_assets_file(module_path):
     # remove empty assets and the first template template
     for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
         to_remove.getparent().remove(to_remove)
-
 
     if not doc.xpath("//link| //script"):
         if os.path.exists(filepath):
