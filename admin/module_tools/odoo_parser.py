@@ -100,6 +100,14 @@ def get_view(inherit_id):
             return get_file_lineno(lines[0])
     return None, None
 
+def get_qweb_template(name):
+    with open(plaintextfile(), 'r') as f:
+        lines = f.readlines()
+        lines = filter(lambda line: '~qweb' in line and name in line, lines)
+        if lines:
+            return get_file_lineno(lines[0])
+    return None, None
+
 def manifest2dict(manifest_path):
     if not manifest_path:
         print traceback.format_stack()
@@ -305,6 +313,44 @@ def _get_views():
 
     return result
 
+def _get_qweb_templates():
+    result = []
+
+    def on_match(filename, module, lines):
+        if '/static/' not in filename:
+            return
+
+        try:
+            tree = etree.parse(filename)
+        except Exception:
+            return
+
+        # get all records
+        for r in tree.xpath("/templates/*"):
+            if "t-name" in r.attrib:
+                id = r.attrib["t-name"]
+                extends = r.get('t-extend', '')
+
+                if '.' not in id:
+                    id = "%s.%s" % (module, id)
+
+                r = {
+                    'type': 'qweb',
+                    'module': module,
+                    'id': id,
+                    'filename': os.path.basename(filename),
+                    'filepath': filename,
+                    'line': r.sourceline,
+                    "name": id,
+                    "inherit_id": extends,
+                }
+
+                result.append(r)
+
+    walk_files(on_match, "*.xml")
+    sorted(result, key=lambda x: x['name'])
+
+    return result
 
 def _get_xml_ids():
     result = []
@@ -549,6 +595,7 @@ def update_cache(arg_modified_filename=None):
         _remove_entries(plainfile, rel_path)
 
     cache_models = {}
+    qwebtemplates = _get_qweb_templates()
     xml_ids = _get_xml_ids()
     models = _get_models()
     methods = _get_methods()
@@ -597,29 +644,14 @@ def update_cache(arg_modified_filename=None):
             name = u"{res_model} ~{type} {id} [inherit_id={inherit_id}]".format(**view)
             f.write(TEMPLATE.format(type="view", module=view['module'], name=name, filepath=translate_path_relative_to_customs_root(view['filepath']), line=view['line']))
             f.write("\n")
+        for qwebtemplate in qwebtemplates:
+            name = u"~{type} {id} [inherit_id={inherit_id}]".format(**qwebtemplate)
+            f.write(TEMPLATE.format(type="qweb", module=qwebtemplate['module'], name=name, filepath=translate_path_relative_to_customs_root(qwebtemplate['filepath']), line=qwebtemplate['line']))
+            f.write("\n")
     finally:
         f.close()
 
     return plainfile
-
-def search_qweb(template_name, root_path=None):
-    root_path = root_path or odoo_root()
-    pattern = "*.xml"
-    for path, dirs, files in os.walk(os.path.abspath(root_path), followlinks=True):
-        if '.git' in dirs:
-            dirs.remove('.git')
-        for filename in fnmatch.filter(files, pattern):
-            filename = os.path.join(path, filename)
-            if "/static/" not in filename:
-                continue
-            if os.path.basename(filename).startswith("."):
-                continue
-            with open(filename, "r") as f:
-                filecontent = f.read()
-            for idx, line in enumerate(filecontent.split("\n")):
-                for apo in ['"', "'"]:
-                    if "t-name={0}{1}{0}".format(apo, template_name) in line and "t-extend" not in line:
-                        return filename, idx + 1
 
 def goto_inherited_view(filepath, line, current_buffer):
     line -= 1  # line ist einsbasiert
@@ -633,16 +665,9 @@ def goto_inherited_view(filepath, line, current_buffer):
         if context["context"] in ["arch", "template"] and context.get('inherit_id', False):
             inherit_id = context["inherit_id"]
             filepath, goto = get_view(inherit_id)
-
-    if not filepath:
-        # could be a qweb template
-        for i in range(line, -1, -1):
-            sline = current_buffer[i]
-            if "t-extend=" in sline:
-                sline = sline.split("t-extend=")[1]
-                sline = sline.replace("\"", "'")
-                template_name = sline.split("'")[1]
-                return search_qweb(template_name)
+        if context["context"] in ["qweb"] and context.get('inherit_id', False):
+            inherit_id = context["inherit_id"]
+            filepath, goto = get_qweb_template(inherit_id)
 
     return filepath, goto
 
@@ -697,7 +722,7 @@ def try_to_get_context(line_content, lines_before, filename):
     inherit_id = None
     for i in range(len(lines_before)):
         line = lines_before[- i - 1]
-        if re.search("<template", line):
+        if re.search("<template\ ", line) and "<templates " not in line:
             inherit_id = re.search("\ inherit_id=['\"]([^\"^']*)", line)
             if inherit_id:
                 inherit_id = inherit_id.group(1)
@@ -705,6 +730,15 @@ def try_to_get_context(line_content, lines_before, filename):
                     'context': 'template',
                     'inherit_id': inherit_id,
                 }
+        if "<t " in line:
+            inherit_id = re.search("\ t-extend=['\"]([^\"^']*)", line)
+            if inherit_id:
+                inherit_id = inherit_id.group(1)
+                return {
+                    'context': 'qweb',
+                    'inherit_id': inherit_id,
+                }
+
         if re.search("<field.*name=['\"]arch['\"]", line):
             is_arch = True
         if re.search("<field.*name=['\"]inherit_id['\"]", line):
