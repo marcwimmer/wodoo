@@ -212,4 +212,17 @@ def dosync(config, area):
     __dc(['up', '-d'] + ['postgres'])
 
 
+# @db.command(name="export-table")
+# @click.argument('table', required=True)
+# @pass_config
+# def export_table(config, table):
+    # dbname = config.dbname
+    # conn = config.get_odoo_conn().clone(dbname=dbname)
+    # from pudb import set_trace
+    # set_trace()
+    # __execute_sql(conn, "copy {} to stdout with csv delimiter ';'")
+    # res = conn.fetchall()
+    # return res
+
+
 Commands.register(reset_db, 'reset-db')
