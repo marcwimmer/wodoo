@@ -82,8 +82,8 @@ def update(mode, module):
                     lang_file = module_tools.get_lang_file_of_module(lang, module)
                     if not lang_file:
                         continue
-                    print("Updating language {} for module {}:".format(lang, module))
                     if os.path.isfile(lang_file):
+                        print("Updating language {} for module {}:".format(lang, module))
                         params = [
                             '/usr/bin/sudo',
                             '-H',
