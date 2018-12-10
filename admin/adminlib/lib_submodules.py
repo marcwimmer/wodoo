@@ -116,7 +116,7 @@ def pull():
 def push(ctx, config):
     dir = customs_dir()
     click.echo("Pulling before...")
-    # ctx.invoke(pull) #UNDO
+    ctx.invoke(pull)
     click.echo("Now trying to push.")
     threads = []
     for module in filter(lambda module: any(allowed in module['url'] for allowed in pushable_urls), _get_modules()):
