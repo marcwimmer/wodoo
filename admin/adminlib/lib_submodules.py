@@ -106,7 +106,7 @@ def pull():
                         raise
                 else:
                     break
-        threads.append(threading.Thread(target=_do_pull, args=(module,)))
+            threads.append(threading.Thread(target=_do_pull, args=(module,)))
     [x.start() for x in threads]
     [x.join() for x in threads]
 
@@ -116,11 +116,12 @@ def pull():
 def push(ctx, config):
     dir = customs_dir()
     click.echo("Pulling before...")
-    ctx.invoke(pull)
+    # ctx.invoke(pull) #UNDO
     click.echo("Now trying to push.")
     threads = []
     for module in filter(lambda module: any(allowed in module['url'] for allowed in pushable_urls), _get_modules()):
         def _do_push(module):
+            click.echo("Going to push {}".format(module))
             tries = 0
             while True:
                 try:
@@ -129,8 +130,7 @@ def push(ctx, config):
                         "push",
                     ], cwd=os.path.join(dir, module['subdir'], module['name']))
                 except Exception:
-                    from pudb import set_trace
-                    set_trace()
+                    print("Failed ")
                     time.sleep(1)
                     tries += 1
                     if tries > 5:
@@ -138,7 +138,7 @@ def push(ctx, config):
                         raise
                 else:
                     break
-    threads.append(threading.Thread(target=_do_push, args=(module,)))
+        threads.append(threading.Thread(target=_do_push, args=(module,)))
 
     [x.start() for x in threads]
     [x.join() for x in threads]
