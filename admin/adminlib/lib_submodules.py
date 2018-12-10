@@ -1,3 +1,4 @@
+import traceback
 import time
 import threading
 import click
@@ -104,10 +105,12 @@ def pull():
                     time.sleep(1)
                     tries += 1
                     if tries > 3:
+                        msg = traceback.format_exc()
+                        click.echo(click.style(module['name'] + "\n" + msg, bold=True, fg='red'))
                         raise
                 else:
                     break
-            threads.append(threading.Thread(target=_do_pull, args=(module,)))
+        threads.append(threading.Thread(target=_do_pull, args=(module,)))
     [x.start() for x in threads]
     [x.join() for x in threads]
 
@@ -135,7 +138,8 @@ def push(ctx, config):
                     time.sleep(1)
                     tries += 1
                     if tries > 5:
-                        click.echo(click.style(module['name'], bold=True, color='red'))
+                        msg = traceback.format_exc()
+                        click.echo(click.style(module['name'] + "\n" + msg, bold=True, fg='red'))
                         raise
                 else:
                     break
