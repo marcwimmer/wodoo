@@ -91,6 +91,7 @@ def pull():
     threads = []
     for module in _get_modules():
         def _do_pull(module):
+            click.echo("Pulling {}".format(module))
             tries = 0
             while True:
                 try:
