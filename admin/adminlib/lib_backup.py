@@ -106,7 +106,6 @@ def backup_db(ctx, config, filename, non_interactive):
     if os.path.exists(filepath):
         os.unlink(filepath)
     __start_postgres_and_wait(config)
-    raise Exception('test')
 
     conn = config.get_odoo_conn()
     __backup_postgres(
