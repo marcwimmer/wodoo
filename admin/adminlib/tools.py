@@ -161,8 +161,7 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
         print("{} Size: {}".format(redirect_std_out_to_file, humanize.naturalsize(size_written)))
 
     if proc.returncode and raise_exception:
-        print '\n'.join(collected_errors)
-        raise Exception("Error executing: {}".format(" ".join(cmd)))
+        raise Exception("Error executing: {}\n{}".format(" ".join(cmd), collected_errors))
     return "".join(out)
 
 def __safe_filename(name):
