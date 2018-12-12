@@ -36,6 +36,7 @@ def get_env():
 def _exec(cmd):
     command = ["/usr/local/bin/docker-compose"]
     command += ["-f", "docker-compose-cron.yml"]
+    command += ["-p", os.environ['PROJECT_NAME'] + "_cron"]
     command += cmd
     subprocess.check_call(
         command,
