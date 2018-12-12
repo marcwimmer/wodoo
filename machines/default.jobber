@@ -1,7 +1,10 @@
 - name: DailyBackup
-  cmd: . /root/default_env.jobber && odoo backup all > /docker_out
+  cmd: |
+      set -a  # export env variables
+      . /root/default_env.jobber
+      cd /opt/odoo
+      admin/odoo-admin backup all  > /docker_out
   time: '0 0 0 * * *'
   onError: Continue
   notifyOnError: true
   notifyOnFailure: true
-
