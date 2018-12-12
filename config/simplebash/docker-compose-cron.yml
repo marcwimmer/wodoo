@@ -12,6 +12,7 @@ services:
     env_file: /opt/odoo/run/settings
     environment:
       - DOCKER_BASH=1
+      - CRON_CONTAINER=1
       - LOCAL_ODOO_HOME=/opt/odoo
       - ODOO_HOME
       - NETWORK_NAME
@@ -21,9 +22,9 @@ services:
       - PLATFORM
       - UID
       - SSH_CONNECTION
+      - PERSIST_JOBBER_ENV_VARIABLES=PROJECT_NAME,ODOO_HOME,CUSTOMS
     entrypoint: /entrypoint.sh
     restart: 'unless-stopped'
-    #restart: unless-stopped
     command: ["/opt/odoo/admin/odoo-admin", "execute"]
 
 networks:

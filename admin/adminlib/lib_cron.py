@@ -150,6 +150,14 @@ def execute(*parameters):
     with open(jobber_path, 'w') as f:
         f.write(jobber)
 
+    # prepare the default env
+    if os.getenv("PERSIST_JOBBER_ENV_VARIABLES", False):
+        with open("/root/default_env.jobber", "w") as f:
+            for variable in os.environ['PERSIST_JOBBER_ENV_VARIABLES'].split(","):
+                variable = variable.strip()
+                for k, v in os.environ.items():
+                    if k == variable:
+                        f.write("{}='{}'\n".format(k, v))
     os.system("sudo /usr/libexec/jobbermaster &")
     os.system("/usr/bin/jobber reload")
     os.system("sudo /usr/bin/jobber list")
