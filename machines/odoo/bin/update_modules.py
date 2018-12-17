@@ -16,7 +16,7 @@ from utils import get_env # NOQA
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
 PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
-I18N_OVERWRITE = [x for x in sys.argv[1:] if not x.startswith("--i18n")]
+I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
 
 def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
