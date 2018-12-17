@@ -94,7 +94,8 @@ def rmpyc():
                 os.unlink(os.path.join(root, filename))
 
 @src.command(name='odoo')
-def checkout_odoo(version='', not_use_local_repo=True, commit_changes=False, force=False):
+@click.pass_context
+def checkout_odoo(ctx, version='', not_use_local_repo=True, commit_changes=False, force=False):
     """
     Puts odoo from repos into subfolder 'odoo'.
 
@@ -156,3 +157,14 @@ def checkout_odoo(version='', not_use_local_repo=True, commit_changes=False, for
         f.write(sha.strip())
     reload() # apply new version
     Commands.invoke(ctx, 'status')
+
+@src.command()
+@click.pass_context
+def fetch(ctx):
+    """
+    Fetches latest source (used on production systems fetching from deployment source)
+    """
+    __system([
+        'git',
+        'pull',
+    ], cwd=dirs['customs'])

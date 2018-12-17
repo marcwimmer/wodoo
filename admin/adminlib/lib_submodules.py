@@ -83,11 +83,15 @@ def pull():
 
     for module in _get_modules():
         print(module['name'])
-        subprocess.check_call([
-            "git",
-            "checkout",
-            module['version'],
-        ], cwd=os.path.join(dir, module['subdir'], module['name']))
+        try:
+            subprocess.check_call([
+                "git",
+                "checkout",
+                module['version'],
+            ], cwd=os.path.join(dir, module['subdir'], module['name']))
+        except Exception:
+            click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['version']), bold=True, fg="red"))
+            raise
 
     threads = []
     for module in _get_modules():
