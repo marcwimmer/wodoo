@@ -41,9 +41,10 @@ if MAKE_GIT_CLEAN == "1":
     subprocess.check_call(["git", "clean", "-xdff", BRANCH], cwd=OpenupgradeDir)  # remove old pyc files
     # apply patches
     root = os.path.join(os.environ['ACTIVE_CUSTOMS'], 'migration', VERSION)
-    for file in os.listdir(root):
-        if file.endswith(".patch"):
-            subprocess.check_call(["git", "apply", os.path.join(root, file)], cwd=OpenupgradeDir)
+    if os.path.exists(root):
+        for file in os.listdir(root):
+            if file.endswith(".patch"):
+                subprocess.check_call(["git", "apply", os.path.join(root, file)], cwd=OpenupgradeDir)
 
     def store_sha():
         # store the used SHA migration tag
