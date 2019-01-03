@@ -665,7 +665,7 @@ def __postgres_restore(conn, filepath):
         needs_unzip = True
     elif dump_type == "zipped_pgdump":
         pass
-    elif dump_type == "unzipped_pgdump":
+    elif dump_type == "pgdump":
         needs_unzip = False
     else:
         raise Exception("not impl: {}".format(dump_type))
