@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
-apt install -y \
+apt install -y --no-install-recommends \
 	python \
 	python-pip \
 	gettext-base \
@@ -27,6 +27,7 @@ apt install -y \
     silversearcher-ag
 
 RUN pip install pip --upgrade
+RUN pip install setuptools
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
 
@@ -57,6 +58,7 @@ ADD jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
 ADD jobber /opt/jobber
 RUN dpkg -i /tmp/jobber.deb
 
+RUN apt remove -y --auto-remove python-pip
 # make docker say something
 RUN ln -sf /proc/1/fd/1 /docker_out
 WORKDIR /opt/odoo
