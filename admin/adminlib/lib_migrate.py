@@ -127,6 +127,21 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
     logger.addHandler(rh)
 
     migrations = {
+        '12.0': {
+            'branch': '12.0',
+            'addons_paths': [
+                'odoo/addons',
+                'addons',
+            ],
+            'cmd': [
+                './odoo-bin',
+                '--update={module}',
+                '--database={db}',
+                '--config={configfile}',
+                '--stop-after-init',
+                '--no-xmlrpc'
+            ],
+        },
         '11.0': {
             'branch': '11.0',
             'addons_paths': [
