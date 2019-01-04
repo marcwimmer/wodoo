@@ -17,3 +17,4 @@ tabulate
 curses-menu
 Click==7.0
 pendulum
+idna

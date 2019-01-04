@@ -288,20 +288,37 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
         click.echo("1. Run odoo version and startup frontend, use ./odoo checkout-odoo -f -v xx.xx to set odoo")
     else:
         click.echo("Running migration after processes (basically module update)")
-        Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
-        Commands.invoke(ctx, 'update', module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart=True, non_interactive=True)
-        Commands.invoke(ctx, 'update', module=['base'], check_install_state=False, no_restart=True, no_dangling_check=True, non_interactive=True)
-        Commands.invoke(ctx, 'update', module=[], no_restart=True, no_dangling_check=True, i18n=True, non_interactive=True)
-        Commands.invoke(ctx, 'show_install_state', suppress_error=True)
-        Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
-        click.echo("Backup of database Version {}".format(to_version))
-        Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}_final".format(version=to_version, dbname=config.dbname))
+        Commands.invoke(ctx, 'migrate_run_after_processes', to_version=to_version)
 
     finally:
         click.echo("To debug an intermediate version, run:")
         click.echo("=====================================")
         click.echo("./odoo unlink [to remove links folder of modules]")
-        click.echo("./odoo module remove-old")
+        click.echo("./odoo odoo-module remove-old")
         click.echo("./odoo update --no-update-module-list -m base")
         click.echo("./odoo checkout-odoo -f -v xx.xx")
         click.echo("./odoo dev")
+
+@cli.command(name="migrate-run-after-processes")
+@click.argument('to-version', required=True)
+@pass_config
+@click.pass_context
+def migrate_run_after_processes(ctx, config, to_version):
+    click.echo("\n\n\nMIGRATION FINAL STEP: Removing old modules\n\n\n")
+    Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
+    click.echo("\n\n\nMIGRATION UPDATE MODULES ROUND1\n\n\n")
+    Commands.invoke(ctx, 'update', module=[], dangling_modules=True, installed_modules=True, no_dangling_check=True, check_install_state=False, no_restart=True, non_interactive=True)
+    click.echo("\n\n\nMIGRATION UPDATE MODULES ROUND2\n\n\n")
+    Commands.invoke(ctx, 'update', module=['base'], check_install_state=False, no_restart=True, no_dangling_check=True, non_interactive=True)
+    click.echo("\n\n\nMIGRATION UPDATE MODULES ROUND3\n\n\n")
+    Commands.invoke(ctx, 'update', module=[], no_restart=True, no_dangling_check=True, i18n=True, non_interactive=True)
+    click.echo("\n\n\nMIGRATION UPDATE MODULES: showing install state\n\n\n")
+    Commands.invoke(ctx, 'show_install_state', suppress_error=True)
+    click.echo("\n\n\nMIGRATION FINAL STEP: Removing old modules\n\n\n")
+    Commands.invoke(ctx, 'remove_old_modules', ask_confirm=False)
+    click.echo("\n\n\nMIGRATION FINAL STEP: Backup of final db\n\n\n")
+    click.echo("Backup of database Version {}".format(to_version))
+    Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}_final".format(version=to_version, dbname=config.dbname))
+
+
+Commands.register(migrate_run_after_processes)

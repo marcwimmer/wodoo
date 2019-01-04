@@ -1,7 +1,7 @@
 FROM ubuntu:18.04
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
-apt install -y --no-install-recommends \
+apt install -y  \
 	python \
 	python-pip \
 	gettext-base \
@@ -58,7 +58,6 @@ ADD jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
 ADD jobber /opt/jobber
 RUN dpkg -i /tmp/jobber.deb
 
-RUN apt remove -y --auto-remove python-pip
 # make docker say something
 RUN ln -sf /proc/1/fd/1 /docker_out
 WORKDIR /opt/odoo
