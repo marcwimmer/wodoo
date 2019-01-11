@@ -1,4 +1,4 @@
-# manage-order: 501
+# manage-order: 550
 volumes:
     ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:
 services:
