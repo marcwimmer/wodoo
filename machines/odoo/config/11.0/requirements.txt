@@ -34,3 +34,4 @@ dill==0.2.7.1
 moviepy
 unoconv
 img2pdf==0.3.1
+py-Asterisk==0.5.17

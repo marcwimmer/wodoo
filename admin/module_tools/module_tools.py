@@ -860,6 +860,8 @@ def update_assets_file(module_path):
 
     all_files = get_all_files_of_module(module_path)
     for file in all_files:
+        if file.startswith('.'):
+            continue
         local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
 
         if current_id:
