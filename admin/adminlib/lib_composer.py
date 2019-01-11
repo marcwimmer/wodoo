@@ -97,8 +97,8 @@ def do_compose(config, customs='', db='', demo=False):
     _prepare_filesystem()
     _prepare_yml_files_from_template_files(config)
     _reset_proxy_configs()
-    _setup_proxy()
-    _setup_odoo_instances()
+    _setup_proxy(config)
+    _setup_odoo_instances(config)
     # ln path ./src to customs
     SRC_PATH = os.path.join(os.environ['LOCAL_ODOO_HOME'], 'src')
     if os.path.islink(SRC_PATH):
@@ -117,16 +117,29 @@ def _prepare_yml_files_from_template_files(config):
     # only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
     #
     # - also replace all environment variables
-    def find_files(dir):
-        for filepath in __find_files(
-                dir,
-                '-regex',
-                '.*\/docker-compose.*.yml'
-        ):
+    def find_files(dir, recursive=True):
+        cmd = [
+            dir,
+        ]
+        if not recursive:
+            cmd += ['-maxdepth', '1']
+
+        cmd += [
+            '-regex',
+            r'.*\/docker-compose.*.yml',
+        ]
+        for filepath in __find_files(*cmd):
             yield filepath
     _files = []
     _files += find_files(dirs['machines'])
     _files += find_files(odoo_config.customs_dir())
+    for d in [
+        os.path.join('/etc_host/odoo'),
+        os.path.join('/etc_host/odoo', config.customs),
+    ]:
+        if os.path.exists(d):
+            _files += find_files(d, recursive=False)
+
     _prepare_docker_compose_files(config, files['docker_compose'], _files)
 
 def _reset_proxy_configs():
@@ -294,11 +307,9 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     finally:
         shutil.rmtree(temp_path)
 
-def _setup_proxy():
+def _setup_proxy(config):
     from . import odoo_config
     from . import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
-    env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
     CONFIG_DIR = dirs['run/proxy']
     __empty_dir(dirs['proxy_configs_dir'])
 
@@ -323,7 +334,7 @@ def _setup_proxy():
                     except Exception:
                         version = None
                     else:
-                        if str(version) != str(odoo_config.get_version_from_customs(env['CUSTOMS'])):
+                        if str(version) != str(odoo_config.get_version_from_customs(config.customs)):
                             continue
                     with open(filepath, 'r') as f:
                         content = f.readlines()
@@ -341,7 +352,7 @@ def _setup_proxy():
         UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
         f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
 
-def _setup_odoo_instances():
+def _setup_odoo_instances(config):
     def __add_location_files(config_path, dir):
         lines = []
         for subdir in os.listdir(dir):
@@ -371,7 +382,7 @@ def _setup_odoo_instances():
                     odoo = copy.deepcopy(j['services']['odoo'])
                     if 'ports' in odoo:
                         del odoo['ports']
-                    odoo['container_name'] = '_'.join([os.environ['CUSTOMS'], "odoo", name])
+                    odoo['container_name'] = '_'.join([config.CUSTOMS, "odoo", name])
                     j['services']['odoo_{}'.format(name)] = odoo
                     with open(files['docker_compose'], 'w', 0) as f:
                         f.write(yaml.dump(j, default_flow_style=False))
