@@ -25,7 +25,6 @@ from tools import __set_db_ownership
 from tools import __dcexec
 from tools import _get_machines
 from tools import __dc
-from tools import remove_webassets
 from . import cli, pass_config, dirs, files, Commands
 from lib_clickhelpers import AliasedGroup
 
@@ -152,20 +151,6 @@ def stop(ctx, config,  machines):
 def rebuild(ctx, config, machines):
     Commands.invoke(ctx, 'compose', customs=config.customs)
     ctx.invoke(build, machines=machines, no_cache=True)
-
-@control.command(name="remove-web-assets")
-@pass_config
-@click.pass_context
-def remove_web_assets(ctx, config):
-    """
-    if odoo-web interface is broken (css, js) then purging the web-assets helps;
-    they are usually recreated when admin login
-    """
-    _askcontinue(config)
-    conn = config.get_odoo_conn().clone(dbname=config.dbname)
-    remove_webassets(conn)
-    if config.odoo_version <= 10.0:
-        click.echo("Please login as admin, so that assets are recreated.")
 
 @control.command()
 @click.argument('machines', nargs=-1)

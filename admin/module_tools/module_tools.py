@@ -374,7 +374,9 @@ def get_path_to_current_odoo_module(current_file):
         counter += 1
     if counter > 40:
         pass
-    return os.path.dirname(is_module_path(current_path))
+
+    res = os.path.dirname(is_module_path(current_path))
+    return res
 
 def get_relative_path_to_odoo_module(filepath):
     path_to_module = get_path_to_current_odoo_module(filepath)
@@ -859,9 +861,15 @@ def update_assets_file(module_path):
                 current_id = t
 
     all_files = get_all_files_of_module(module_path)
+    if get_version_from_customs() < 11.0:
+        module_path = module_path.replace("/{}/".format(get_version_from_customs()), "")
+        if module_path.endswith("/{}".format(get_version_from_customs())):
+            module_path = "/".join(module_path.split("/")[:-1])
+
     for file in all_files:
         if file.startswith('.'):
             continue
+
         local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
 
         if current_id:

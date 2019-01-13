@@ -5,6 +5,7 @@ import hashlib
 import os
 import tempfile
 import click
+from tools import _askcontinue
 from tools import __assert_file_exists
 from tools import __system
 from tools import __safe_filename
@@ -18,6 +19,7 @@ from tools import __get_odoo_commit
 from tools import _fix_permissions
 from tools import _remove_temp_directories
 from tools import _prepare_filesystem
+from tools import remove_webassets
 from . import cli, pass_config, dirs, files, Commands
 from lib_clickhelpers import AliasedGroup
 
@@ -145,6 +147,21 @@ def set_setting(key, value):
 @admin.command()
 def shell():
     __cmd_interactive('run', 'odoo', '/bin/bash', '/shell.sh')
+
+
+@admin.command(name="remove-web-assets")
+@pass_config
+@click.pass_context
+def remove_web_assets(ctx, config):
+    """
+    if odoo-web interface is broken (css, js) then purging the web-assets helps;
+    they are usually recreated when admin login
+    """
+    _askcontinue(config)
+    conn = config.get_odoo_conn().clone(dbname=config.dbname)
+    remove_webassets(conn)
+    if config.odoo_version <= 10.0:
+        click.echo("Please login as admin, so that assets are recreated.")
 
 
 Commands.register(status)
