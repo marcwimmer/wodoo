@@ -20,10 +20,11 @@ postmap /etc/postfix/virtual
 /usr/sbin/postfix check
 /usr/sbin/dovecot
 /etc/init.d/postfix start
-sleep 3
-/usr/sbin/rsyslogd -n -c3 &
-tail -F /var/log/mail.err &
-tail -F /var/log/mail.log &
+/etc/init.d/rsyslog start
+while [[ ! -f /var/log/syslog ]]; do
+    sleep 0.5
+done
+tail -f /var/log/syslog | grep postfix &
 tail -F /var/log/dovecot.log &
 
 set +x

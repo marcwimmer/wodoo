@@ -59,6 +59,4 @@ chmod a+x /etc/my_init.d/*.sh && \
 chmod a+x /etc/service/apache/run && \
 rm -Rf /tmp/*
 
-RUN apt install -y iputils-ping
-
 WORKDIR /usr/local/apache2

@@ -1,6 +1,4 @@
 # manage-order: 500
-volumes:
-    ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}_snapshot:
 services:
   postgres:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_postgres
@@ -24,7 +22,3 @@ services:
         retries: 3
 
     command: /bin/bash /run.sh
-  postgres_snapshot:
-    build: $ODOO_HOME/machines/postgres/rsync
-    volumes:
-      - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}_snapshot:/opt/snapshot

@@ -2,6 +2,5 @@
 - redirects all mails to user postmaster
 - imap login: postmaster/postmaster (configure in install.sh chpasswd)
 - send testmail:
-	- ./manage.sh attach mail
 	- /opt/bin/send_test_mail.sh
 	- editable in bin directory
