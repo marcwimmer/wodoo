@@ -511,10 +511,6 @@ def _sanity_check(config):
     # make sure the odoo_debug.txt exists; otherwise directory is created
     __file_default_content(files['run/odoo_debug.txt'], "")
 
-    if config.odoo_module_update_run_tests is None:
-        click.echo("Please define wether to run tests on module updates by setting ODOO_MODULE_UPDATE_RUN_TESTS")
-        time.sleep(2)
-
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
     rows = __execute_sql(
