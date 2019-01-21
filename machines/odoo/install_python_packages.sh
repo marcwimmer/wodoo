@@ -42,10 +42,7 @@ elif [ "$ODOO_PYTHON_VERSION" == "3" ]; then
 	hash -r  # pip3 10.0 is in other directories; hash -r clears the cache of the path
 	pip install --upgrade pip
 	hash -r
-	apt remove -y python3-pip
-	easy_install3 pip
-	hash -r
-	pip3 install --upgrade setuptools
+	pip3 install --upgrade setuptools cython
 
 	pip3 install psycopg2
 	pip3 install pyinotify
