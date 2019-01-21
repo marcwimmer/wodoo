@@ -11,7 +11,6 @@ if [[ "$ODOO_PYTHON_VERSION" == "2" ]]; then
 	apt install -y \
 		libpython-dev \
 		python \
-		python-software-properties \
 		python-pip \
 		python-pyinotify \
 		python-renderpm \
