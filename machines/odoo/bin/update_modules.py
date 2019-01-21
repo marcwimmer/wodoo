@@ -17,6 +17,8 @@ INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
 PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
 I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
+DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
+RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
 
 def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
@@ -40,7 +42,7 @@ def update(mode, module):
     if module == 'all':
         raise Exception("update 'all' not allowed")
 
-    if os.getenv("ODOO_MODULE_UPDATE_RUN_TESTS") == "1":
+    if RUN_TESTS:
         if mode == "i":
             TESTS = '' # dont run tests at install
         else:
@@ -161,7 +163,7 @@ def main():
             update('i', module)
             summary.append("INSTALL " + module)
 
-    if os.getenv("DEVMODE", "") == "1":
+    if DELETE_QWEB:
         for module in MODULE.split(','):
             print "Deleting qweb of module {}".format(module)
             delete_qweb(module)

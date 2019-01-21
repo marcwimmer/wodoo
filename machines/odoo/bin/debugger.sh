@@ -130,7 +130,11 @@ while true; do
 					PARAM_FAST="-fast"
 				fi
 				module=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-				/update_modules.py "$module" "$PARAM_FAST" && {
+				PARAMS_CONST=""
+				if [[ "$DEVMODE" == "1" ]]; then
+					PARAMS_CONST="--delete-qweb"
+				fi
+				/update_modules.py "$module" "$PARAM_FAST" "$PARAMS_CONST" && {
 					/debug.sh -quick
 				}
 
