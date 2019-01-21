@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
@@ -35,8 +35,6 @@ apt-get install \
             ssh \
             mc \
             libxml2-utils \
-            nodejs \
-            npm \
             libxrender1 \
             libxext6 \
             libfontconfig \
@@ -57,13 +55,23 @@ apt-get install \
             cifs-utils \
             imagemagick \
             cups \
-            libav-tools \
             libreoffice \
             libcairo2 libpango1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info \
             locales \
-            pdftk \
 			libmagickwand-dev \
-            zip
+            ffmpeg \
+            zip \
+            gpg-agent
+RUN \
+sudo add-apt-repository ppa:malteworld/ppa && \
+sudo apt update && \
+sudo apt install -y pdftk
+
+# Install nodejs and npm
+RUN \
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - && \
+curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -  && \
+apt update && apt install -y nodejs yarn 
 
 RUN \
 locale-gen en_US.UTF-8 && \
@@ -73,9 +81,9 @@ echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
 
 # libreoffice
-RUN apt-get update && \
-apt install -q -y libreoffice libreoffice-writer ure libreoffice-java-common libreoffice-core libreoffice-common openjdk-8-jre fonts-opensymbol hyphen-fr hyphen-de hyphen-en-us hyphen-it hyphen-ru fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-droid-fallback fonts-dustin fonts-f500 fonts-fanwood fonts-freefont-ttf fonts-liberation fonts-lmodern fonts-lyx fonts-sil-gentium fonts-texgyre fonts-tlwg-purisa && \
-apt -y -q remove libreoffice-gnome
+#RUN apt-get update && \
+#apt install -q -y libreoffice libreoffice-writer ure libreoffice-java-common libreoffice-core libreoffice-common openjdk-8-jre fonts-opensymbol hyphen-fr hyphen-de hyphen-en-us hyphen-it hyphen-ru fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-droid-fallback fonts-dustin fonts-f500 fonts-fanwood fonts-freefont-ttf fonts-liberation fonts-lmodern fonts-lyx fonts-sil-gentium fonts-texgyre fonts-tlwg-purisa && \
+#apt -y -q remove libreoffice-gnome
 
 WORKDIR /tmp
 
