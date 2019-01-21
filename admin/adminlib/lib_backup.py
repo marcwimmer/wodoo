@@ -148,8 +148,6 @@ def get_dump_type(config, filename):
 @pass_config
 def list_dumps(config):
     from . import BACKUPDIR
-    from pudb import set_trace
-    set_trace()
     rows = _get_dump_files(fnfilter=config.dbname)
     click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
 

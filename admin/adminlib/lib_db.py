@@ -191,8 +191,6 @@ def dosync(config, area):
         click.echo("Following areas available:")
         for area in get_areas():
             click.echo(area)
-    from pudb import set_trace
-    set_trace()
     access_config = get_config(area)
 
     compose = json.loads(__read_file(files['docker_compose']))
