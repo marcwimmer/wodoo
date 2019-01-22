@@ -112,6 +112,12 @@ ADD install_python_packages.sh /install_python_packages.sh
 RUN chmod a+x /install_python_packages.sh /eval_odoo_settings.sh
 RUN /bin/bash /install_python_packages.sh
 
+# python2 binary error on ubuntu 18.04
+# https://github.com/psycopg/psycopg2-wheels/issues/2
+RUN mv /bin/sh /bin/sh.bak; ln -s /bin/bash /bin/sh
+RUN if ((`bc <<< "$ODOO_VERSION<=10.0"`)); then pip uninstall -y psycopg2; pip install --no-binary psycopg2; fi
+RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
+
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
 ADD res/imageio /home/odoo/.imageio
