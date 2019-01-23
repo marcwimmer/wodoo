@@ -239,5 +239,12 @@ def _patch_default_patches(config):
 
 def _patch_get_diff(config):
     __system(["git", "add", "--intent-to-add", "."], cwd=config.odoo_local)
-    diff = __system(["git", "diff", "--binary"], cwd=config.odoo_local, suppress_out=True)
+    filename = tempfile.mktemp(suffix='.diff')
+    wkd = os.getcwd()
+    os.chdir(config.odoo_local)
+    os.system('git diff --binary > \'{}\''.format(filename))
+    os.chdir(wkd)
+    with open(filename, 'r') as f:
+        diff = f.read()
+    #diff = __system(["git", "diff", "--binary"], cwd=config.odoo_local, suppress_out=False) # Big fucking bug: terminates incompleted
     return diff
