@@ -147,7 +147,7 @@ def apply_all(ctx, config):
         click.echo("Applying patch " + filepath)
         ctx.invoke(patch_apply, filepath=filepath)
     _patch_ungitify(config)
-    click.echo("Successfully applied all patches and cleand .git directory.")
+    click.echo("Successfully applied all patches and cleaned .git directory.")
 
 @patch.command(name='reset')
 @pass_config
