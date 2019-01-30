@@ -67,7 +67,7 @@ def __get_snapshots(config):
 
 def __choose_snapshot(config):
     snapshots = __get_snapshots(config)
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots)])
+    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots)])['snapshot']
     return snapshot
 
 @snapshot.command(name="list")
@@ -84,7 +84,7 @@ def do_list(config):
 def snapshot_make(config):
     __assert_btrfs(config)
     volume_name = __get_postgres_volume_name(config)
-    __dc(['stop', '-t 0'] + ['postgres'])
+    __dc(['stop', '-t 1'] + ['postgres'])
     snapshot = subprocess.check_output(["buttervolume", "snapshot", volume_name])
     __dc(['up', '-d'] + ['postgres'])
 
@@ -98,7 +98,7 @@ def snapshot_restore(config):
     snapshot = __choose_snapshot(config)
     if not snapshot:
         return
-    __dc(['kill', '-t 1'] + ['postgres'])
+    __dc(['stop', '-t 1'] + ['postgres'])
     subprocess.check_output(["buttervolume", "restore", snapshot])
     __dc(['up', '-d'] + ['postgres'])
 
@@ -110,11 +110,9 @@ def snapshot_clear_all(ctx, config):
 
     snapshots = __get_snapshots(config)
     if snapshots:
-        __dc(['stop', '-t 0'] + ['postgres'])
+        __dc(['stop', '-t 1'] + ['postgres'])
         for snap in snapshots:
-            snap = snap.split("@")[0]
-            print(snap)
-            subprocess.check_output(["buttervolume", "purge", "1m:1m", snap])
+            subprocess.check_output(["buttervolume", "rm", snap])
         __dc(['up', '-d'] + ['postgres'])
 
     ctx.invoke(do_list)
