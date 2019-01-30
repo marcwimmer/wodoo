@@ -39,9 +39,25 @@ def db(config):
     click.echo("database-name: {}, in ram: {}".format(config.dbname, config.run_postgres_in_ram))
     pass
 
-@db.command()
-@click.option('--todo', type=click.Choice(["save", "restore"]), help='Snapshot control', required=True)
-def snapshot(todo):
+@cli.group(cls=AliasedGroup)
+@pass_config
+def snapshot(config):
+    pass
+
+def __assert_btrfs(config):
+    if not config.run_btrfs:
+        click.echo("Please enable RUN_BTRFS=1 and make sure, that volumes are using the anybox/buttervolume docker plugin")
+        sys.exit(-1)
+
+@snapshot.command(name="list")
+@pass_config
+def do_list(config):
+    __assert_btrfs(config)
+    os.system('buttervolume snapshots')
+
+
+    raise Exception('stop')
+
     args = ['postgres_snapshot']
     if todo == 'save':
         args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/']

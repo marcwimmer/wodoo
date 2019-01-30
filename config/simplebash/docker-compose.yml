@@ -2,12 +2,15 @@ version: "3.3"
 services:
   simplebash:
     image: ${PROJECT_NAME}_simplebash
+    privileged: true
     volumes:
       - $ODOO_HOME:/opt/odoo
       - $ODOO_HOME:$ODOO_HOME  # trying to get rid of this; odoo build says: build path /home/marc/odoo/machines/mail either does not exist, is not accessible, or is not a valid URL
       # - /:/ROOT  never mount root / problems on older kernels and system (device or resource busy)
       - $WORKING_DIR:/WORKING_DIR
       - /var/run/docker.sock:/var/run/docker.sock
+      - /run:/host/run
+      - /run/docker/plugins:/run/docker/plugins
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME:/opt/external_home
       - /root:/root

@@ -1,0 +1,4 @@
+# manage-order: 551
+volumes:
+    ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:
+        driver: anybox/buttervolume:latest

@@ -65,4 +65,8 @@ chown "$USER" "$PGPASSFILE"
 # fix docker problem (otherwise logging fails)
 chmod a+w /dev/stdout
 
+# fix permissions on plugins, so that e.g. btrfs.sock is usable
+chmod o+rx /run/docker/plugins /run/docker/plugins/*
+find /run/docker/plugins -name '*.sock' -exec chmod o+rwx {} \;
+
 exec gosu "$USER" "$@"

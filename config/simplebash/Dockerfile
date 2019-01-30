@@ -24,15 +24,18 @@ apt install -y  \
 	iputils-ping \
     pv \
     colordiff \
-    silversearcher-ag
+    silversearcher-ag \
+    runc \
+    python3-pip
 
 RUN pip install pip --upgrade
 RUN pip install setuptools
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
+RUN pip3 install buttervolume
 
 # install docker cli
-RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.06.1-ce.tgz -o /tmp/docker.tgz
+RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.09.1.tgz -o /tmp/docker.tgz
 WORKDIR /opt
 RUN tar xfz /tmp/docker.tgz
 RUN rsync /opt/docker/ /usr/local/bin/ -arP
@@ -41,8 +44,6 @@ WORKDIR /
 ADD pudb.cfg /root/.config/pudb/pudb.cfg
 ADD docker.config /tmp/docker.config
 
-ADD entrypoint.sh /entrypoint.sh
-RUN chmod a+x /entrypoint.sh
 RUN \
 git config --global user.email admin && \
 git config --global user.name admin
@@ -60,4 +61,8 @@ RUN dpkg -i /tmp/jobber.deb
 
 # make docker say something
 RUN ln -sf /proc/1/fd/1 /docker_out
+
+ADD entrypoint.sh /entrypoint.sh
+RUN chmod a+x /entrypoint.sh
+
 WORKDIR /opt/odoo
