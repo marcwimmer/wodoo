@@ -779,3 +779,8 @@ def get_dockercompose():
     content = __read_file(files['docker_compose'])
     compose = yaml.load(content)
     return compose
+
+def get_volume_names():
+    vols = get_dockercompose()['volumes'].keys()
+    project_name = os.environ['PROJECT_NAME']
+    return ["{}_{}".format(project_name, x) for x in vols]

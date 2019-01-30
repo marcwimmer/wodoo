@@ -1,3 +1,4 @@
+import yaml
 import json
 import pipes
 import re
@@ -9,6 +10,7 @@ import hashlib
 import os
 import tempfile
 import click
+import inquirer
 from tools import _dropdb
 from tools import DBConnection
 from tools import __assert_file_exists
@@ -26,9 +28,17 @@ from tools import __exists_odoo_commit
 from tools import __get_odoo_commit
 from tools import __dcrun, __dc, __remove_postgres_connections, __execute_sql, __dcexec
 from tools import __start_postgres_and_wait
+from tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
 from lib_clickhelpers import AliasedGroup
 from lib_remoteaccess import get_config, get_areas
+
+def __get_postgres_volume_name(config):
+    # TODO link somehow to docker-compose file
+    vols = get_volume_names()
+    vols = [x for x in vols if '_POSTGRES_VOLUME_' in x]
+    assert(len(vols) == 1)
+    return vols[0]
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -49,28 +59,63 @@ def __assert_btrfs(config):
         click.echo("Please enable RUN_BTRFS=1 and make sure, that volumes are using the anybox/buttervolume docker plugin")
         sys.exit(-1)
 
+def __get_snapshots(config):
+    snapshots = [x for x in subprocess.check_output(["buttervolume", "snapshots"]).split("\n") if x]
+    # filter to current customs
+    snapshots = [x for x in snapshots if '_POSTGRES_VOLUME_' in x and "_{}_".format(config.customs) in x]
+    return snapshots
+
+def __choose_snapshot(config):
+    snapshots = __get_snapshots(config)
+    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots)])
+    return snapshot
+
 @snapshot.command(name="list")
 @pass_config
 def do_list(config):
     __assert_btrfs(config)
-    os.system('buttervolume snapshots')
+    snapshots = __get_snapshots(config)
 
+    for snap in snapshots:
+        print(snap)
 
-    raise Exception('stop')
+@snapshot.command(name="save")
+@pass_config
+def snapshot_make(config):
+    __assert_btrfs(config)
+    volume_name = __get_postgres_volume_name(config)
+    __dc(['stop', '-t 0'] + ['postgres'])
+    snapshot = subprocess.check_output(["buttervolume", "snapshot", volume_name])
+    __dc(['up', '-d'] + ['postgres'])
 
-    args = ['postgres_snapshot']
-    if todo == 'save':
-        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/']
-        __dcrun(args, interactive=True)
-        __dc(['stop', '-t 1'] + ['postgres'])
-        args += ['/usr/bin/rsync', '-ar', '--info=progress2', '/opt/data/', '/opt/snapshot/', '--delete']
-        __dcrun(args)
+    click.echo("Made snapshot: {}".format(snapshot))
+
+@snapshot.command(name="restore")
+@pass_config
+def snapshot_restore(config):
+    __assert_btrfs(config)
+
+    snapshot = __choose_snapshot(config)
+    if not snapshot:
+        return
+    __dc(['kill', '-t 1'] + ['postgres'])
+    subprocess.check_output(["buttervolume", "restore", snapshot])
+    __dc(['up', '-d'] + ['postgres'])
+
+@snapshot.command(name="clear", help="Removes all snapshots")
+@pass_config
+def snapshot_clear_all(config):
+    __assert_btrfs(config)
+
+    snapshots = __get_snapshots(config)
+    if snapshots:
+        __dc(['stop', '-t 0'] + ['postgres'])
+        for snap in snapshots:
+            snap = snap.split("@")[0]
+            print(snap)
+            subprocess.check_output(["buttervolume", "purge", "1m:1m", snap])
         __dc(['up', '-d'] + ['postgres'])
-    elif todo == 'restore':
-        __dc(['kill'] + ['postgres'])
-        args += ['/usr/bin/rsync', '-arP', '--info=progress2', '/opt/snapshot/', '/opt/data/', '--delete']
-        __dcrun(args)
-        __dc(['up', '-d'] + ['postgres'])
+
 
 @db.command()
 @click.argument('dbname', required=True)
