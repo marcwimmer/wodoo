@@ -67,32 +67,61 @@ def __get_snapshots(config):
 
 def __choose_snapshot(config):
     snapshots = __get_snapshots(config)
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots)])['snapshot']
+    mappings = __get_snapshot_db()
+    snapshots2 = []
+    used_mappings = {}
+    for x in snapshots:
+        snap_name = mappings.get(x, x)
+        used_mappings[snap_name] = x
+        snapshots2.append(snap_name)
+
+    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots2)])['snapshot']
+    snapshot = used_mappings[snapshot]
     return snapshot
+
+def __get_snapshot_db():
+    d = files['run/snapshot_mappings.txt']
+    if not os.path.exists(d):
+        __set_snapshot_db({})
+    with open(d, 'r') as f:
+        return yaml.load(f.read())
+
+def __set_snapshot_db(values):
+    d = files['run/snapshot_mappings.txt']
+    with open(d, 'w') as f:
+        f.write(yaml.dump(values, default_flow_style=False))
 
 @snapshot.command(name="list")
 @pass_config
 def do_list(config):
     __assert_btrfs(config)
     snapshots = __get_snapshots(config)
+    mappings = __get_snapshot_db()
 
     for snap in snapshots:
-        print(snap)
+        print(mappings.get(snap, snap))
 
 @snapshot.command(name="save")
+@click.argument('name', required=False)
 @pass_config
-def snapshot_make(config):
+def snapshot_make(config, name):
     __assert_btrfs(config)
     volume_name = __get_postgres_volume_name(config)
     __dc(['stop', '-t 1'] + ['postgres'])
-    snapshot = subprocess.check_output(["buttervolume", "snapshot", volume_name])
+    snapshot = subprocess.check_output(["buttervolume", "snapshot", volume_name]).strip()
     __dc(['up', '-d'] + ['postgres'])
+    if name:
+        values = __get_snapshot_db()
+        values[snapshot] = name
+        __set_snapshot_db(values)
 
     click.echo("Made snapshot: {}".format(snapshot))
 
 @snapshot.command(name="restore")
+@click.option('-c', '--clear', is_flag=True, help="clears all snapshots afterwards")
 @pass_config
-def snapshot_restore(config):
+@click.pass_context
+def snapshot_restore(ctx, config, clear):
     __assert_btrfs(config)
 
     snapshot = __choose_snapshot(config)
@@ -100,6 +129,9 @@ def snapshot_restore(config):
         return
     __dc(['stop', '-t 1'] + ['postgres'])
     subprocess.check_output(["buttervolume", "restore", snapshot])
+    if clear:
+        ctx.invoke(snapshot_clear_all)
+
     __dc(['up', '-d'] + ['postgres'])
 
 @snapshot.command(name="clear", help="Removes all snapshots")
