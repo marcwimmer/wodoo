@@ -104,7 +104,8 @@ def snapshot_restore(config):
 
 @snapshot.command(name="clear", help="Removes all snapshots")
 @pass_config
-def snapshot_clear_all(config):
+@click.pass_context
+def snapshot_clear_all(ctx, config):
     __assert_btrfs(config)
 
     snapshots = __get_snapshots(config)
@@ -116,6 +117,7 @@ def snapshot_clear_all(config):
             subprocess.check_output(["buttervolume", "purge", "1m:1m", snap])
         __dc(['up', '-d'] + ['postgres'])
 
+    ctx.invoke(do_list)
 
 @db.command()
 @click.argument('dbname', required=True)
