@@ -65,7 +65,7 @@ def __get_snapshots(config):
     snapshots = [x for x in snapshots if '_POSTGRES_VOLUME_' in x and "_{}_".format(config.customs) in x]
     return snapshots
 
-def __choose_snapshot(config):
+def __choose_snapshot(config, take=False):
     snapshots = __get_snapshots(config)
     mappings = __get_snapshot_db()
     snapshots2 = []
@@ -74,6 +74,9 @@ def __choose_snapshot(config):
         snap_name = mappings.get(x, x)
         used_mappings[snap_name] = x
         snapshots2.append(snap_name)
+
+    if take:
+        return used_mappings[take]
 
     snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots2)])['snapshot']
     snapshot = used_mappings[snapshot]
@@ -119,12 +122,13 @@ def snapshot_make(config, name):
 
 @snapshot.command(name="restore")
 @click.option('-c', '--clear', is_flag=True, help="clears all snapshots afterwards")
+@click.argument('name', required=False)
 @pass_config
 @click.pass_context
-def snapshot_restore(ctx, config, clear):
+def snapshot_restore(ctx, config, clear, name):
     __assert_btrfs(config)
 
-    snapshot = __choose_snapshot(config)
+    snapshot = __choose_snapshot(config, take=name)
     if not snapshot:
         return
     __dc(['stop', '-t 1'] + ['postgres'])

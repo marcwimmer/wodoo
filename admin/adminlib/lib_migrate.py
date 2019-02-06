@@ -96,7 +96,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         if debug:
             Commands.invoke(ctx, 'runbash', machine='odoo', args=cmd)
         else:
-            Commands.invoke(ctx, 'run', machine='odoo', args=cmd, logger=logger, interactive=False, volume=None)
+            Commands.invoke(ctx, 'run', machine='odoo', args=cmd, logger=logger, interactive=True, volume=None)  # interactive true: nice colors of [ERROR]
 
     """
 
