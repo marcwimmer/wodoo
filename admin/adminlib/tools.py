@@ -397,6 +397,8 @@ def __cmd_interactive(*params):
     cmd = __get_cmd() + list(params)
     proc = subprocess.Popen(cmd)
     proc.wait()
+    if proc.returncode:
+        raise Exception("command failed: {}".format(" ".join(params)))
 
 def __empty_dir(dir):
     if os.path.isdir(dir):
