@@ -66,7 +66,7 @@ chown "$USER" "$PGPASSFILE"
 chmod a+w /dev/stdout
 
 # fix permissions on plugins, so that e.g. btrfs.sock is usable
-chmod o+rx /run/docker/plugins /run/docker/plugins/*
+chmod o+rx /run/docker/plugins /run/docker/plugins/* || true
 find /run/docker/plugins -name '*.sock' -exec chmod o+rwx {} \;
 
 exec gosu "$USER" "$@"
