@@ -1,3 +1,4 @@
+arrow==0.10.0
 Babel==2.3.4
 chardet==3.0.4
 decorator==4.0.10
