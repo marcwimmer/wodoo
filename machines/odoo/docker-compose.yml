@@ -9,7 +9,6 @@ services:
           ODOO_VERSION: ${ODOO_VERSION}
     depends_on:
         - postgres
-    restart: unless-stopped
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined
@@ -37,6 +36,7 @@ services:
   odoo: &odoo
     <<: *odoo_base
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo
+    restart: unless-stopped
     environment:
       DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
@@ -54,6 +54,7 @@ services:
   odoo_cronjobs:
     <<: *odoo_base
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_cronjobs
+    restart: unless-stopped
     environment:
       IS_ODOO_CRONJOB: 1
     command: /rootrun.sh
