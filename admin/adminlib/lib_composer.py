@@ -274,7 +274,10 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         # remove restart policies, if not restart allowed:
         if not config.restart_containers:
             for service in yml['services']:
-                if 'restart' in yml['services'][service]:
+                # TODO CLEANUP -> more generic instructions ...
+                if 'restart' in yml['services'][service] or \
+                        (service == 'odoo_cronjobs' and not config.run_odoo_cronjobs) or \
+                        (service == 'proxy' and not config.run_proxy):
                     yml['services'][service].pop('restart')
 
         return yml
