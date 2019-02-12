@@ -271,6 +271,12 @@ def _prepare_docker_compose_files(config, dest_file, paths):
             yml['services'].pop('odoo_base')
         yml['version'] = YAML_VERSION
 
+        # remove restart policies, if not restart allowed:
+        if not config.restart_containers:
+            for service in yml['services']:
+                if 'restart' in yml['services'][service]:
+                    yml['services'][service].pop('restart')
+
         return yml
 
     # call docker compose config to get the complete config
