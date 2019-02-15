@@ -127,6 +127,11 @@ chmod a+x /usr/local/bin/* && \
 chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
 
+ADD liberation-sans /usr/share/fonts/
+RUN ls -lhtra /usr/share/fonts -lhtra
+# rebuild font cache
+RUN fc-cache -f -v
+
 ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
 ENTRYPOINT ["/entrypoint.sh"]

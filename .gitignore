@@ -27,3 +27,4 @@ settings.override
 ./tmp*
 .agignore
 .tmp.compose
+._*
