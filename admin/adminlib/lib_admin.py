@@ -85,6 +85,11 @@ def pack(config):
         ], cwd=os.path.dirname(folder), suppress_out=False)
 
     __system([
+        "git",
+        "pull",
+    ], cwd=os.path.dirname(folder), suppress_out=False)
+
+    __system([
         "rsync",
         odoo_config.customs_dir() + "/",
         folder + "/",
