@@ -87,7 +87,7 @@ def pack(config):
     __system([
         "git",
         "pull",
-    ], cwd=os.path.dirname(folder), suppress_out=False)
+    ], cwd=folder, suppress_out=False)
 
     __system([
         "rsync",
