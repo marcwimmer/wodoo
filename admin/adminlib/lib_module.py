@@ -114,7 +114,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
         Commands.invoke(ctx, 'rm')
         Commands.invoke(ctx, 'recreate')
         __start_postgres_and_wait(config)
-        Commands.invoke(ctx, 'kill', machines=['proxy'])
+        if config.run_proxy:
+            Commands.invoke(ctx, 'kill', machines=['proxy'])
 
     try:
         params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
@@ -138,7 +139,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if not no_restart and not keep_containers:
         for i in range(5):
             Commands.invoke(ctx, 'up', daemon=True)
-            Commands.invoke(ctx, 'proxy_reload')
+            if config.run_proxy:
+                Commands.invoke(ctx, 'proxy_reload')
             time.sleep(2)
 
     Commands.invoke(ctx, 'status')
