@@ -21,7 +21,7 @@ from hashlib import sha256
 logger = None
 
 # some globals
-DOCKER_HOST = os.environ['DOCKER_HOST']
+DOCKER_HOST = os.getenv('DOCKER_HOST', "")
 
 def setup_logging():
     FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
@@ -31,7 +31,8 @@ def setup_logging():
 
 
 logger = setup_logging()
-logger.info("Using Asterisk Server on {}".format(DOCKER_HOST))
+if DOCKER_HOST:
+    logger.info("Using Asterisk Server on {}".format(DOCKER_HOST))
 
 
 class MQTT_Endpoint(object):
