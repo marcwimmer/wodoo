@@ -102,8 +102,10 @@ class Asterisk_ACM(MQTT_Endpoint, EventListener):
         t.start()
 
     def run_Console(self, cmd, id=None):
-
-        cmd = "/usr/bin/ssh -p {} {} \"/usr/sbin/asterisk -x '{}'\"".format(os.environ['ASTERISK_SSH_PORT'], DOCKER_HOST, cmd)
+        if os.get('ASTERISK_SSH_PORT', ""):
+            cmd = "/usr/bin/ssh -p {} {} \"/usr/sbin/asterisk -x '{}'\"".format(os.environ['ASTERISK_SSH_PORT'], DOCKER_HOST, cmd)
+        else:
+            cmd = "/usr/sbin/asterisk -x '{}'".format(cmd)
         p = subprocess.check_output(cmd, shell=True)
 
         if id:
@@ -355,6 +357,6 @@ if __name__ == "__main__":
     setup_logging()
 
     Asterisk_ACM().run()
-    #FreepbxConnector().run()
+    # FreepbxConnector().run()
     while True:
         time.sleep(20000)
