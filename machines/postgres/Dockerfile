@@ -1,4 +1,4 @@
-FROM postgres:10
+FROM postgres:11
 RUN apt-get update && \
 apt-get install -y python-pip python-dev build-essential git && \
 pip install psycopg2  && \

@@ -10,7 +10,7 @@ apt install -y  \
 	pigz \
 	shellcheck \
 	sudo \ 
-	postgresql-client-10 \
+	postgresql-client \
 	uuid-runtime \
 	git \
 	rsync \ 
@@ -32,6 +32,7 @@ RUN pip install pip --upgrade
 RUN pip install setuptools
 ADD requirements.txt /requirements.txt
 RUN pip install -r /requirements.txt
+RUN pip3 install -r /requirements.txt
 RUN pip3 install buttervolume
 
 # install docker cli
