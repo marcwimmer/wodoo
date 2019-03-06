@@ -1,3 +1,4 @@
+import re
 import shutil
 import hashlib
 import os
@@ -37,10 +38,13 @@ def patch(config):
     config.odoo_local = os.path.join(dirs['customs'], config.odoo_local_dir)
     config.ignore_file = os.path.join(dirs['customs'], '.gitignore')
     config.odoo_git = os.path.join(dirs['odoo_home'], 'repos/odoo')
-    config.patch_dir = os.path.join(dirs['customs'], 'common/patches')
+    config.patch_dir = os.path.join(dirs['customs'], 'common/patches', __get_odoo_commit())
     config.sub_git = os.path.join(config.odoo_local, '.git')
     odoo_dir = os.path.join(dirs['customs'], 'odoo')
     __assert_file_exists(odoo_dir, isdir=True)
+
+    if not os.path.exists(config.patch_dir):
+        os.mkdir(config.patch_dir)
 
 @patch.command(name='prepare')
 @pass_config
@@ -110,6 +114,24 @@ def _patch_list(absolute_path=True):
     filepaths = []
     filepaths += __find_files(dirs['customs'], "-name", "*.patch")
     filepaths += __find_files(os.path.join(dirs['customs'], 'common'), "-name", "*.patch")
+
+    commit = __get_odoo_commit()
+
+    click.echo("-------------------------------------------------------------------------------")
+    click.echo(click.style("Odoo commit is {} - limiting patches to this version".format(commit), bold=True, fg="red"))
+    click.echo("-------------------------------------------------------------------------------")
+
+    # filter to commits
+    def in_commit(path):
+        match = re.findall(r'/[a-f,0-9]{40}/', path)
+        for x in match:
+            x = x[1:-1]
+            if x != commit:
+                return False
+
+        return True
+
+    filepaths = filter(in_commit, filepaths)
 
     # remove duplicate entries, because of symbolic links and so
     filepaths_hashes = {}
