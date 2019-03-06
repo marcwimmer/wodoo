@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM debian:stretch
 
 # libreoffice
 RUN apt-get update && \

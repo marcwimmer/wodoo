@@ -1,7 +1,0 @@
-lxml
-configobj
-unidecode
-requests[security]
-graphviz
-jsonpickle
-rst2pdf

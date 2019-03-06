@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import uuid
 import json
 import requests
@@ -8,7 +7,7 @@ import cherrypy as cp
 import threading
 import inspect
 import pymustache
-import xmlrpclib
+import xmlrpc
 import time
 import subprocess
 import traceback
@@ -92,7 +91,7 @@ class throttle(object):
 def exe(*params):
     started = datetime.now()
 
-    socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+    socket_obj = xmlrpc.client.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
     try:
         result = socket_obj.execute(odoo['db'], odoo_data['uid'], odoo['pwd'], *params)
     except Exception as e:
@@ -416,7 +415,7 @@ def odoo_thread():
     while not odoo_data['uid']:
         try:
             def login(username, password):
-                socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+                socket_obj = xmlrpc.client.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
                 uid = socket_obj.login(odoo['db'], username, password)
                 return uid
             odoo_data['uid'] = login(odoo['username'], odoo['pwd'])

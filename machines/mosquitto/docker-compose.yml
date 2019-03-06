@@ -12,9 +12,9 @@ services:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_mosquitto
     build: $ODOO_HOME/machines/mosquitto
     volumes:
-        - $ODOO_HOME/machines/mosquitto/config:/mqtt/config
-        - ${CUSTOMS}_mosquitto_logs:/mqtt/logs
-        - ${CUSTOMS}_mosquitto_data:/mqtt/data
+        - $ODOO_HOME/machines/mosquitto/config:/mosquitto/config
+        - ${CUSTOMS}_mosquitto_logs:/mosquitto/logs
+        - ${CUSTOMS}_mosquitto_data:/mosquitto/data
     ports:
         - "1883:1883"
         - "9001:9001"

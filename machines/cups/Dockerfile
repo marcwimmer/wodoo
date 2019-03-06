@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM debian:stretch
 
 MAINTAINER Nicolas Delaby "nicolas@ezeep.com"
 

@@ -1,4 +1,4 @@
-FROM    ubuntu:18.04
+FROM    debian:stretch
 ENV     DEBIAN_FRONTEND noninteractive
 ENV     TERM xterm
 ENV     ROUNDCUBE_VERSION=1.3.8

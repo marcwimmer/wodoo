@@ -14,8 +14,6 @@ services:
       - ${CUSTOMS}_asterisk_connector_perm:/opt/perm
     environment:
         OUTSIDE_PORT: 8500
-        ODOO_HOST: proxy
-        ODOO_PORT: 80
         PERM_DIR: /opt/perm
         REDIS_HOST: redis
     depends_on: 
