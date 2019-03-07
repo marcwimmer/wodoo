@@ -322,7 +322,7 @@ class Connector(object):
                 return {}
             return channel
 
-        result['channels'] = map(filter_channel, sorted(channel_ids, reverse=True)[:int(last_x)])
+        result['channels'] = list(map(filter_channel, sorted(channel_ids, reverse=True)[:int(last_x)]))
         return result
 
     @cp.tools.json_out()
