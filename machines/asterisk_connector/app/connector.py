@@ -7,10 +7,7 @@ import cherrypy as cp
 import threading
 import inspect
 import pymustache
-try:
-    import xmlrpc # python 3
-except Exception:
-    import xmlrpclib
+import xmlrpc # python 3
 import time
 import subprocess
 import traceback
@@ -31,16 +28,12 @@ from redis import StrictRedis
 from redisworks import Root as Redis
 from functools import wraps
 
-def _xmlrpcclient():
-    try:
-        return xmlrpc.client
-    except Exception:
-        return xmlrpclib
-
+memory_held_last_events = {
+    'dnd_state': "",
+}
 
 odoo_data = {}
 odoo_data['uid'] = None
-REDIS_HOST = 'redis'
 EXPIRE_CHANNEL = 3600 * 24 # seconds
 redis_connection_pool = redis.BlockingConnectionPool(host=os.environ['REDIS_HOST'])
 
@@ -100,7 +93,7 @@ class throttle(object):
 def exe(*params):
     started = datetime.now()
 
-    socket_obj = _xmlrpcclient().ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+    socket_obj = xmlrpc.client.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
     try:
         result = socket_obj.execute(odoo['db'], odoo_data['uid'], odoo['pwd'], *params)
     except Exception as e:
@@ -118,111 +111,10 @@ class Connector(object):
 
     def __init__(self):
         # initially load status
-        self.ask_for_dnd()
+        self._ask_for_dnd()
 
-    def try_to_get_channels(self, channel_ids):
-        channels = []
-        for channel_id in channel_ids:
-            channel = self._get_channel(channel_id)
-            if channel:
-                channels.append(channel)
-        return channels
-
-    def on_channels_connected(self, channel_ids, channel_entered):
-        channels = self.try_to_get_channels(channel_ids)
-        self.odoo('asterisk.connector', 'asterisk_channels_connected', channels, channel_entered)
-
-    def on_channels_disconnected(self, channel_ids, channel_left):
-        channels = self.try_to_get_channels(channel_ids)
-        self.odoo('asterisk.connector', 'asterisk_channels_disconnected', channels, channel_left)
-
-    def on_attended_transfer(self, channel_ids):
-        self.odoo('asterisk.connector', 'asterisk_on_attended_transfer', channel_ids)
-
-    def on_channel_change(self, channel_json):
-        if not channel_json:
-            return
-
-        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
-        id = channel_json['id']
-        pipeline = redisStrict.pipeline()
-        pipeline.sadd('channel_ids', id)
-        pipeline.setex(name='channel_creation_date,{}'.format(id), value=channel_json['creationtime'], time=EXPIRE_CHANNEL)
-        current_value = self._get_channel(id) or {}
-        for k, v in channel_json.items():
-            current_value[k] = v
-        current_value = json.dumps(current_value)
-        pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
-        pipeline.execute()
-
-        self.odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
-
-    def odoo(self, *params):
-        params = json.dumps(params)
-
-        filename = 'odoo_' + datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f") + '.params'
-        with open(os.path.join(CONST_PERM_DIR, filename), 'w') as f:
-            f.write(params)
-            f.flush()
-
-    @cp.expose
-    def index(self):
-        with open(os.path.join(dir, 'templates/index.html')) as f:
-            content = f.read()
-        content = pymustache.render(content, {
-            'base_url': 'http://localhost:{port}'.format(port=OUTSIDE_PORT),
-        })
-        return content
-
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    @cp.expose
-    def get_log_level(self):
-        level = logger.level
-        for v in ['DEBUG', 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'NOTSET']:
-            if level == getattr(logging, v):
-                level = v
-        return {
-            'level': level,
-        }
-
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    @cp.expose
-    def set_log_level(self):
-        level = cp.request.json['level']
-        logger.info("Setting log level to: {}".format(level))
-        level = getattr(logging, level)
-        logging.getLogger().setLevel(level)
-        logger.info("Set log level to: {}".format(level))
-        return {
-            'result': 'ok',
-            'level': level,
-        }
-
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    @cp.expose
-    def get_channel(self):
-        id = cp.request.json['id']
-        return self._get_channel(id)
-
-    def _get_channel(self, id):
-        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
-        result = redisStrict.get('channel,{}'.format(id))
-        if result:
-            result = json.loads(result)
-        return result
-
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    @cp.expose
-    def get_active_channels(self):
-        extensions = cp.request.json['extensions']
-        result = {}
-        for ext in extensions:
-            result[ext] = self._get_active_channel(ext)
-        return result
+    def _ask_for_dnd(self):
+        self.adminconsole("DND-State", "database show dnd", 'Console')
 
     def _get_active_channel(self, extension):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
@@ -250,9 +142,76 @@ class Connector(object):
         current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(channel_ids, reverse=True)[:500])) # TBD 500 entries should be enough
 
         # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
-        channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels)
+        channels = list(filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels))
         if not channels:
-            channels = filter(lambda c: c.get('name', '').startswith("SIP/{}-".format(extension)), current_channels)
+            def _filter(channel_name):
+                return bool(re.findall(r'.+\/{}'.format(extension), channel_name))
+            channels = filter(_filter, current_channels)
+        return list(channels)
+
+    def _eval_dnd_state(self, payload):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        exts = set()
+        for line in payload.split("\n"):
+            line = line.strip()
+            if line.startswith("/DND/"):
+                extension = line.split("/DND/")[-1].split(":")[0].strip()
+                redisStrict.sadd('DND', extension)
+                exts.add(extension)
+        for x in redisStrict.smembers("DND"):
+            if x not in exts:
+                redisStrict.srem('DND', x)
+
+    def _get_channel(self, id):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        result = redisStrict.get('channel,{}'.format(id))
+        if result:
+            result = json.loads(result)
+        return result
+
+    def _odoo(self, *params):
+        params = json.dumps(params)
+
+        filename = 'odoo_' + datetime.now().strftime("%Y-%m-%d %H:%M:%S:%f") + '.params'
+        with open(os.path.join(CONST_PERM_DIR, filename), 'w') as f:
+            f.write(params)
+            f.flush()
+
+    def _on_attended_transfer(self, channel_ids):
+        self._odoo('asterisk.connector', 'asterisk_on_attended_transfer', channel_ids)
+
+    def _on_channels_connected(self, channel_ids, channel_entered):
+        channels = self._try_to_get_channels(channel_ids)
+        self._odoo('asterisk.connector', 'asterisk_channels_connected', channels, channel_entered)
+
+    def _on_channels_disconnected(self, channel_ids, channel_left):
+        channels = self._try_to_get_channels(channel_ids)
+        self._odoo('asterisk.connector', 'asterisk_channels_disconnected', channels, channel_left)
+
+    def _on_channel_change(self, channel_json):
+        if not channel_json:
+            return
+
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        id = channel_json['id']
+        pipeline = redisStrict.pipeline()
+        pipeline.sadd('channel_ids', id)
+        pipeline.setex(name='channel_creation_date,{}'.format(id), value=channel_json['creationtime'], time=EXPIRE_CHANNEL)
+        current_value = self._get_channel(id) or {}
+        for k, v in channel_json.items():
+            current_value[k] = v
+        current_value = json.dumps(current_value)
+        pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
+        pipeline.execute()
+
+        self._odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
+
+    def _try_to_get_channels(self, channel_ids):
+        channels = []
+        for channel_id in channel_ids:
+            channel = self._get_channel(channel_id)
+            if channel:
+                channels.append(channel)
         return channels
 
     @cp.tools.json_in()
@@ -288,33 +247,37 @@ class Connector(object):
         mqttclient.publish(topic, payload=cmd, qos=2)
         return None
 
+    @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
+    def accept_call(self):
+        # does not work
+        channel_name = cp.request.json['channel_name']
+        action = {
+            "name": 'AGI',
+            "ActionID": str(uuid.uuid4()),
+            "Channel": channel_name,
+            "Command": "ANSWER",
+            "CommandID": "test",
+        }
+        self.adminconsole(None, action, 'AMI')
+
     @cp.expose
-    def set_dnd(self):
-        if not cp.request.json['endpoint']:
-            raise Exception("Endpoint missing!")
-        self.adminconsole('set_dnd', "database {verb} DND {endpoint} {dnd}".format(
-            endpoint=cp.request.json['endpoint'],
-            dnd='YES' if cp.request.json['dnd'] else '',
-            verb='put' if cp.request.json['dnd'] else 'del',
-        ), 'Console')
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def create_extension(self):
+        ext_data = cp.request.json["ext_data"]
+        out = {"cmd": "CREATE", "ext_data": ext_data}
+        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
 
-    def ask_for_dnd(self):
-        self.adminconsole("DND-State", "database show dnd", 'Console')
-
-    def eval_dnd_state(self, payload):
-        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
-        exts = set()
-        for line in payload.split("\n"):
-            line = line.strip()
-            if line.startswith("/DND/"):
-                extension = line.split("/DND/")[-1].split(":")[0].strip()
-                redisStrict.sadd('DND', extension)
-                exts.add(extension)
-        for x in redisStrict.smembers("DND"):
-            if x not in exts:
-                redisStrict.srem('DND', x)
+    @cp.expose
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    def create_pickupgroup(self):
+        extensions = cp.request.json["extensions"]
+        pickupgroup = cp.request.json["pickupgroup"]
+        out = {"cmd": "CREATE", "pickupgroup": pickupgroup, "extensions": extensions}
+        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
 
     @cp.expose
     @cp.tools.json_in()
@@ -324,6 +287,76 @@ class Connector(object):
         self.adminconsole("DND-State", "database show dnd", 'Console')
         result = list(redisStrict.smembers('DND') or [])
         return result
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
+    def get_active_channels(self):
+        extensions = cp.request.json['extensions']
+        result = {}
+        for ext in extensions:
+            result[ext] = self._get_active_channel(ext)
+
+        return result
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
+    def get_channel(self):
+        id = cp.request.json['id']
+        return self._get_channel(id)
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
+    def get_channels_from_redis(self):
+        redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
+        last_x = cp.request.json['last_x']
+        result = {}
+        result['channels'] = []
+        channel_ids = redisStrict.smembers('channel_ids')
+
+        def filter_channel(channel_id):
+            channel = self._get_channel(channel_id)
+            if not channel:
+                return {}
+            return channel
+
+        result['channels'] = map(filter_channel, sorted(channel_ids, reverse=True)[:int(last_x)])
+        result['channels'] = [{
+            'channel1': {
+                'test': 'test2',
+            }
+        }]
+        return result
+
+    @cp.tools.json_out()
+    @cp.expose
+    def get_config(self):
+        return {
+            'MOSQUITTO_HOST': os.environ['MOSQUITTO_HOST'],
+            'REDIS_HOST': os.environ['REDIS_HOST'],
+            'ODOO_HOST': os.environ['ODOO_HOST'],
+            'ODOO_PORT': os.environ['ODOO_PORT'],
+        }
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
+    def get_log_level(self):
+        level = logger.level
+        for v in ['DEBUG', 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'NOTSET']:
+            if level == getattr(logging, v):
+                level = v
+        return {
+            'level': level,
+        }
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
+    def get_memory_held_last_events(self):
+        return memory_held_last_events
 
     @cp.expose
     @cp.tools.json_in()
@@ -338,6 +371,15 @@ class Connector(object):
             'channels': redisStrict.smembers('channel_ids'),
             'dnds': dnds,
         }
+
+    @cp.expose
+    def index(self):
+        with open(os.path.join(dir, 'templates/index.html')) as f:
+            content = f.read()
+        content = pymustache.render(content, {
+            'base_url': 'http://localhost:{port}'.format(port=OUTSIDE_PORT),
+        })
+        return content
 
     @cp.expose
     @cp.tools.json_in()
@@ -362,21 +404,6 @@ class Connector(object):
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
-    def accept_call(self):
-        # does not work
-        channel_name = cp.request.json['channel_name']
-        action = {
-            "name": 'AGI',
-            "ActionID": str(uuid.uuid4()),
-            "Channel": channel_name,
-            "Command": "ANSWER",
-            "CommandID": "test",
-        }
-        self.adminconsole(None, action, 'AMI')
-
-    @cp.expose
-    @cp.tools.json_in()
-    @cp.tools.json_out()
     def reject_call(self):
         # does not work
         channel_id = cp.request.json['channel_id']
@@ -391,20 +418,10 @@ class Connector(object):
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
-    def create_pickupgroup(self):
-        extensions = cp.request.json["extensions"]
-        pickupgroup = cp.request.json["pickupgroup"]
-        out = {"cmd": "CREATE", "pickupgroup": pickupgroup, "extensions": extensions}
-        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
-
-    @cp.expose
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    def update_pickupgroup(self):
-        extensions = cp.request.json["extensions"]
-        pickupgroup = cp.request.json["pickupgroup"]
-        out = {"cmd": "UPDATE", "pickupgroup": pickupgroup, "extensions": extensions}
-        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
+    def remove_extension(self):
+        ext_data = cp.request.json["ext_data"]
+        out = {"cmd": "REMOVE", "ext_data": ext_data}
+        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
 
     @cp.expose
     @cp.tools.json_in()
@@ -415,13 +432,31 @@ class Connector(object):
         out = {"cmd": "REMOVE", "pickupgroup": pickupgroup, "extensions": extensions}
         mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
 
-    @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
-    def create_extension(self):
-        ext_data = cp.request.json["ext_data"]
-        out = {"cmd": "CREATE", "ext_data": ext_data}
-        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
+    @cp.expose
+    def set_dnd(self):
+        if not cp.request.json['endpoint']:
+            raise Exception("Endpoint missing!")
+        self.adminconsole('set_dnd', "database {verb} DND {endpoint} {dnd}".format(
+            endpoint=cp.request.json['endpoint'],
+            dnd='YES' if cp.request.json['dnd'] else '',
+            verb='put' if cp.request.json['dnd'] else 'del',
+        ), 'Console')
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
+    def set_log_level(self):
+        level = cp.request.json['level']
+        logger.info("Setting log level to: {}".format(level))
+        level = getattr(logging, level)
+        logging.getLogger().setLevel(level)
+        logger.info("Set log level to: {}".format(level))
+        return {
+            'result': 'ok',
+            'level': level,
+        }
 
     @cp.expose
     @cp.tools.json_in()
@@ -434,10 +469,11 @@ class Connector(object):
     @cp.expose
     @cp.tools.json_in()
     @cp.tools.json_out()
-    def remove_extension(self):
-        ext_data = cp.request.json["ext_data"]
-        out = {"cmd": "REMOVE", "ext_data": ext_data}
-        mqttclient.publish('asterisk/man_extension', payload=json.dumps(out), qos=2)
+    def update_pickupgroup(self):
+        extensions = cp.request.json["extensions"]
+        pickupgroup = cp.request.json["pickupgroup"]
+        out = {"cmd": "UPDATE", "pickupgroup": pickupgroup, "extensions": extensions}
+        mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
 
 
 @throttle(seconds=2)
@@ -450,7 +486,7 @@ def odoo_thread():
     while not odoo_data['uid']:
         try:
             def login(username, password):
-                socket_obj = _xmlrpcclient().ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+                socket_obj = xmlrpc.client.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
                 uid = socket_obj.login(odoo['db'], username, password)
                 return uid
             odoo_data['uid'] = login(odoo['username'], odoo['pwd'])
@@ -497,6 +533,7 @@ def odoo_thread():
         time.sleep(0.1)
 
 def on_mqtt_connect(client, userdata, flags, rc):
+    memory_held_last_events['mqtt_connected'] = True
     logger.info("connected with result code " + str(rc))
     client.subscribe("asterisk/Console/result/#")
     client.subscribe("asterisk/AMI/result/#")
@@ -511,13 +548,15 @@ def on_mqtt_message(client, userdata, msg):
     while not connector:
         time.sleep(1)
     try:
-        logger.info("%s %s", msg.topic, str(msg.payload))
+        logger.debug("%s %s", msg.topic, str(msg.payload))
         if msg.topic.startswith("asterisk/Console/result/"):
             id = msg.topic.split("/")[3]
             if id == 'DND-State':
-                connector.eval_dnd_state(msg.payload)
+                memory_held_last_events['dnd_state'] = msg.payload
+                connector._eval_dnd_state(msg.payload)
         elif msg.topic == 'asterisk/ari/originate/result':
             payload = json.loads(msg.payload)
+            memory_held_last_events['originate'] = msg.payload
             if payload.get('odoo_instance'):
                 model, id = payload['odoo_instance'].split(',')
                 channel_id = payload['channel_id']
@@ -526,16 +565,19 @@ def on_mqtt_message(client, userdata, msg):
                 connector.odoo('asterisk.connector', 'on_channel_originated', model, [id], channel_id, extension)
         elif msg.topic == 'asterisk/ari/channel_update':
             payload = json.loads(msg.payload)
-            connector.on_channel_change(payload)
+            memory_held_last_events['channel_update'] = msg.payload
+            connector._on_channel_change(payload)
         elif msg.topic == 'asterisk/ari/channels_connected':
             payload = json.loads(msg.payload)
-            connector.on_channels_connected(
+            memory_held_last_events['channels_connected'] = msg.payload
+            connector._on_channels_connected(
                 payload['channel_ids'],
                 payload['channel_entered'],
             )
         elif msg.topic == 'asterisk/ari/channels_disconnected':
             payload = json.loads(msg.payload)
-            connector.on_channels_disconnected(
+            memory_held_last_events['channels_disconnected'] = msg.payload
+            connector._on_channels_disconnected(
                 payload['channel_ids'],
                 payload['channel_left']
             )
@@ -546,9 +588,10 @@ def on_mqtt_message(client, userdata, msg):
             channels += event['transferer_second_leg_bridge']['channels']
             channels += [event['transferer_first_leg']['id']]
             channels = list(set(channels))
-            connector.on_attended_transfer(channels)
+            connector._on_attended_transfer(channels)
 
         elif msg.topic.startswith('asterisk/ami/event/'):
+            memory_held_last_events['ami_event'] = msg.payload
             if 'Pickup' == msg.topic.split("/")[-1]:
                 # logger.info("AMI EVENT %s", msg.topic)
                 data = json.loads(msg.payload)
@@ -562,10 +605,13 @@ def on_mqtt_message(client, userdata, msg):
                 }))
 
     except Exception:
-        logger.error(traceback.format_exc())
+        t = traceback.format_exc()
+        memory_held_last_events['mqtt_exception'] = t
+        logger.error(t)
 
 def on_mqtt_disconnect(client, userdata, rc):
     if rc != 0:
+        memory_held_last_events['mqtt_connected'] = False
         logger.error("Unexpected MQTT disconnection. Will auto-reconnect")
 
 def mqtt_thread():
