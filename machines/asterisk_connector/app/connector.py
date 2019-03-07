@@ -323,11 +323,6 @@ class Connector(object):
             return channel
 
         result['channels'] = map(filter_channel, sorted(channel_ids, reverse=True)[:int(last_x)])
-        result['channels'] = [{
-            'channel1': {
-                'test': 'test2',
-            }
-        }]
         return result
 
     @cp.tools.json_out()
@@ -356,7 +351,9 @@ class Connector(object):
     @cp.tools.json_out()
     @cp.expose
     def get_memory_held_last_events(self):
-        return memory_held_last_events
+        return {
+            'str': str(memory_held_last_events)
+        }
 
     @cp.expose
     @cp.tools.json_in()
