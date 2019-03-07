@@ -206,7 +206,7 @@ class Connector(object):
         current_value = json.dumps(current_value)
         pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
         pipeline.execute()
-        logger.debug("_on_channel_change: channel put for id ".format(id))
+        logger.debug("_on_channel_change: channel put for id {}".format(id))
 
         self._odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
 
