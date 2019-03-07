@@ -147,7 +147,7 @@ class Connector(object):
             if not channels:
                 def _filter(channel_name):
                     return bool(re.findall(r'.+\/{}'.format(ext), channel_name))
-                channels = filter(_filter, map(lambda c: c['name'], current_channels))
+                channels = filter(_filter, current_channels)
             result[ext] = list(channels)
         return result
 
