@@ -193,6 +193,7 @@ class Connector(object):
     def _on_channel_change(self, channel_json):
         if not channel_json:
             return
+        logger.debug("_on_channel_change {}".format(channel_json))
 
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         id = channel_json['id']
@@ -205,6 +206,7 @@ class Connector(object):
         current_value = json.dumps(current_value)
         pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
         pipeline.execute()
+        logger.debug("_on_channel_change: channel put for id ".format(id))
 
         self._odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
 
