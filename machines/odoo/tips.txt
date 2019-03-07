@@ -1,23 +1,14 @@
-How to use:
-
-
-  
   * via VIM-Commands update and restart, unit tests are possible
-
 	* start /debugger.sh
 
   * just debug:
-
 	  * /debug.sh 
 
   * emulate real run:
-
       * /run.sh
 
   * emulate cronjobs:
-
       * /run_cronjobs.sh
 
   * open shell:
-
       * /shell.sh

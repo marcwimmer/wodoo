@@ -5,6 +5,7 @@ services:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_base
     build:
         context: $ODOO_HOME/machines/odoo
+        dockerfile: $ODOO_HOME/machines/odoo/config/${ODOO_VERSION}/Dockerfile
         args:
           ODOO_VERSION: ${ODOO_VERSION}
     depends_on:

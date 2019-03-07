@@ -1,7 +1,8 @@
-FROM ubuntu:18.04
+FROM debian:stretch
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
+ENV LANG C.UTF-8
 RUN apt update --fix-missing && \
 apt-get install \
 	-y \
@@ -61,17 +62,19 @@ apt-get install \
 			libmagickwand-dev \
             ffmpeg \
             zip \
-            gpg-agent
-RUN \
-sudo add-apt-repository ppa:malteworld/ppa && \
-sudo apt update && \
-sudo apt install -y pdftk
-
-# Install nodejs and npm
-RUN \
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - && \
-curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -  && \
-apt update && apt install -y nodejs yarn 
+            gpg-agent \
+            pdftk \
+            python3-gi \
+            python3-click \
+            python3-gi-cairo \
+            python3-cairo \
+            gir1.2-gtk-3.0 \
+            libmagickwand-dev \
+            libmagic-dev \
+            libcups2-dev \
+            python3-pip \
+            python3-dev \
+            python3
 
 RUN \
 locale-gen en_US.UTF-8 && \
@@ -79,11 +82,6 @@ update-locale && \
 echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
 echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
-
-# libreoffice
-#RUN apt-get update && \
-#apt install -q -y libreoffice libreoffice-writer ure libreoffice-java-common libreoffice-core libreoffice-common openjdk-8-jre fonts-opensymbol hyphen-fr hyphen-de hyphen-en-us hyphen-it hyphen-ru fonts-dejavu fonts-dejavu-core fonts-dejavu-extra fonts-droid-fallback fonts-dustin fonts-f500 fonts-fanwood fonts-freefont-ttf fonts-liberation fonts-lmodern fonts-lyx fonts-sil-gentium fonts-texgyre fonts-tlwg-purisa && \
-#apt -y -q remove libreoffice-gnome
 
 WORKDIR /tmp
 
@@ -102,27 +100,41 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
+ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
 ADD bin/utils.py /
 ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh
 RUN chmod a+x /eval_odoo_settings.sh
 RUN /eval_odoo_settings.sh
-ADD install_python_packages.sh /install_python_packages.sh
-RUN chmod a+x /install_python_packages.sh /eval_odoo_settings.sh
-RUN /bin/bash /install_python_packages.sh
 
-# python2 binary error on ubuntu 18.04
-# https://github.com/psycopg/psycopg2-wheels/issues/2
-RUN mv /bin/sh /bin/sh.bak; ln -s /bin/bash /bin/sh
-RUN if ((`bc <<< "$ODOO_VERSION<=10.0"`)); then pip uninstall -y psycopg2; pip install --no-binary psycopg2; fi
-RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
+
+
+
+
+#p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
+# PYTHON 3 and PIP
+#p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
+
+RUN apt install -y 
+
+#pip3 10.0 is in other directories; hash -r clears the cache of the path
+RUN hash -r && \
+	pip3 install --upgrade pip && \
+	hash -r && \
+	pip3 install --upgrade setuptools cython 
+RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
+RUN pip3 install -r /root/odoo_requirements.txt
+RUN pip3 install -r /root/requirements.txt
+#p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
+
+
+
 
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
 ADD res/imageio /home/odoo/.imageio
 RUN chmod a+x /*.sh && \
-chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /usr/local/bin/* && \
 chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
