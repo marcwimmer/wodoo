@@ -148,7 +148,7 @@ class Connector(object):
                 def _filter(channel_name):
                     return bool(re.findall(r'.+\/{}'.format(ext), channel_name))
                 channels = filter(_filter, current_channels)
-            result[ext] = channels
+            result[ext] = list(channels)
         return result
 
     def _eval_dnd_state(self, payload):
