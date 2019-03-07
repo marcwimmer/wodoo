@@ -146,7 +146,7 @@ class Connector(object):
             channels = list(filter(lambda c: str(c.get('caller', {}).get('number', '')) == ext, current_channels))
             if not channels:
                 def _filter(channel_name):
-                    return bool(re.findall(r'.+\/{}'.format(ext), channel_name))
+                    return bool(re.findall(r'.+\/{}'.format(ext), channel_name['name']))
                 channels = filter(_filter, current_channels)
             result[ext] = list(channels)
         return result
