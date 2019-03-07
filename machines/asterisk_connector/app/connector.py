@@ -168,6 +168,18 @@ class Connector(object):
     @cp.tools.json_in()
     @cp.tools.json_out()
     @cp.expose
+    def set_log_level(self):
+        level = cp.requests.json['level']
+        level = getattr(logging, level)
+        logging.getLogger().setLevel(level)
+        return {
+            'result': 'ok',
+            'level': level,
+        }
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
     def get_channel(self):
         id = cp.request.json['id']
         return self._get_channel(id)
