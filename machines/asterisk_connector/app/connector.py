@@ -20,7 +20,6 @@ import hashlib
 import base64
 import websocket
 import re
-import Queue
 import paho.mqtt.client as mqtt
 from datetime import datetime
 from datetime import timedelta
@@ -178,10 +177,24 @@ class Connector(object):
     @cp.tools.json_in()
     @cp.tools.json_out()
     @cp.expose
+    def get_log_level(self):
+        level = logger.level
+        for v in ['DEBUG', 'CRITICAL', 'ERROR', 'WARNING', 'INFO', 'NOTSET']:
+            if level == getattr(logging, v):
+                level = v
+        return {
+            'level': level,
+        }
+
+    @cp.tools.json_in()
+    @cp.tools.json_out()
+    @cp.expose
     def set_log_level(self):
-        level = cp.requests.json['level']
+        level = cp.request.json['level']
+        logger.info("Setting log level to: {}".format(level))
         level = getattr(logging, level)
         logging.getLogger().setLevel(level)
+        logger.info("Set log level to: {}".format(level))
         return {
             'result': 'ok',
             'level': level,
@@ -266,7 +279,7 @@ class Connector(object):
         if ttype == "AMI":
             assert isinstance(cmd, dict)
             cmd = json.dumps(cmd)
-        assert isinstance(cmd, (str, unicode))
+        assert isinstance(cmd, str)
 
         topic = 'asterisk/{}/send'.format(ttype)
         if id:
@@ -509,7 +522,7 @@ def on_mqtt_message(client, userdata, msg):
                 model, id = payload['odoo_instance'].split(',')
                 channel_id = payload['channel_id']
                 extension = payload['extension']
-                id = long(id)
+                id = int(id)
                 connector.odoo('asterisk.connector', 'on_channel_originated', model, [id], channel_id, extension)
         elif msg.topic == 'asterisk/ari/channel_update':
             payload = json.loads(msg.payload)
@@ -561,7 +574,7 @@ def mqtt_thread():
         try:
             mqttclient = mqtt.Client(client_id="asterisk_connector_receiver.{}".format(socket.gethostname()),)
             # mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
-            PORT = long(os.getenv('MOSQUITTO_PORT', "1883"))
+            PORT = int(os.getenv('MOSQUITTO_PORT', "1883"))
             logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], PORT))
             mqttclient.connect(os.environ['MOSQUITTO_HOST'], PORT, keepalive=10)
             mqttclient.on_connect = on_mqtt_connect
