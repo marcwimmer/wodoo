@@ -141,17 +141,15 @@ class Connector(object):
         channel_ids = redisStrict.smembers('channel_ids')
         current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(channel_ids, reverse=True)[:500])) # TBD 500 entries should be enough
 
-        extensions = set(str(x) for x in extensions)
-        channels = list(filter(lambda c: str(c.get('caller', {}).get('number', '')) in extensions, current_channels))
-        if not channels:
-            def _filter(channel_name):
-                for ext in extensions:
-                    if re.findall(r'.+\/{}'.format(ext), channel_name):
-                        return True
-                return False
-
-            channels = filter(_filter, current_channels)
-        return list(channels)
+        result = {}
+        for ext in set(str(x) for x in extensions):
+            channels = list(filter(lambda c: str(c.get('caller', {}).get('number', '')) == ext, current_channels))
+            if not channels:
+                def _filter(channel_name):
+                    return bool(re.findall(r'.+\/{}'.format(ext), channel_name))
+                channels = filter(_filter, current_channels)
+            result[ext] = channels
+        return result
 
     def _eval_dnd_state(self, payload):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
@@ -298,8 +296,7 @@ class Connector(object):
     def get_active_channels(self):
         extensions = cp.request.json['extensions']
         result = {}
-        result[ext] = self._get_active_channel(extensions)
-
+        result = self._get_active_channel(extensions)
         return result
 
     @cp.tools.json_in()
