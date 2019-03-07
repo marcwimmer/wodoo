@@ -116,7 +116,7 @@ class Connector(object):
     def _ask_for_dnd(self):
         self.adminconsole("DND-State", "database show dnd", 'Console')
 
-    def _get_active_channel(self, extension):
+    def _get_active_channel(self, extensions):
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         critdate = arrow.get(datetime.now() - timedelta(days=1)).replace(tzinfo='utc').datetime
 
@@ -141,11 +141,15 @@ class Connector(object):
         channel_ids = redisStrict.smembers('channel_ids')
         current_channels = filter(lambda x: bool(x), map(filter_channel, sorted(channel_ids, reverse=True)[:500])) # TBD 500 entries should be enough
 
-        # channels = filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension) or str(c.get('connected', {}).get('number', '')) == str(extension), current_channels)
-        channels = list(filter(lambda c: str(c.get('caller', {}).get('number', '')) == str(extension), current_channels))
+        extensions = set(str(x) for x in extensions)
+        channels = list(filter(lambda c: str(c.get('caller', {}).get('number', '')) in extensions, current_channels))
         if not channels:
             def _filter(channel_name):
-                return bool(re.findall(r'.+\/{}'.format(extension), channel_name))
+                for ext in extensions:
+                    if re.findall(r'.+\/{}'.format(ext), channel_name):
+                        return True
+                return False
+
             channels = filter(_filter, current_channels)
         return list(channels)
 
@@ -294,8 +298,7 @@ class Connector(object):
     def get_active_channels(self):
         extensions = cp.request.json['extensions']
         result = {}
-        for ext in extensions:
-            result[ext] = self._get_active_channel(ext)
+        result[ext] = self._get_active_channel(extensions)
 
         return result
 
