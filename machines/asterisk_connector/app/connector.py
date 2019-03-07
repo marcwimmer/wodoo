@@ -7,7 +7,10 @@ import cherrypy as cp
 import threading
 import inspect
 import pymustache
-import xmlrpc
+try:
+    import xmlrpc # python 3
+except Exception:
+    import xmlrpclib
 import time
 import subprocess
 import traceback
@@ -28,6 +31,13 @@ import redis
 from redis import StrictRedis
 from redisworks import Root as Redis
 from functools import wraps
+
+def _xmlrpcclient():
+    try:
+        return xmlrpc.client
+    except Exception:
+        return xmlrpclib
+
 
 odoo_data = {}
 odoo_data['uid'] = None
@@ -91,7 +101,7 @@ class throttle(object):
 def exe(*params):
     started = datetime.now()
 
-    socket_obj = xmlrpc.client.ServerProxy('%s/xmlrpc/object' % (odoo['host']))
+    socket_obj = _xmlrpcclient().ServerProxy('%s/xmlrpc/object' % (odoo['host']))
     try:
         result = socket_obj.execute(odoo['db'], odoo_data['uid'], odoo['pwd'], *params)
     except Exception as e:
@@ -415,7 +425,7 @@ def odoo_thread():
     while not odoo_data['uid']:
         try:
             def login(username, password):
-                socket_obj = xmlrpc.client.ServerProxy('%s/xmlrpc/common' % (odoo['host']))
+                socket_obj = _xmlrpcclient().ServerProxy('%s/xmlrpc/common' % (odoo['host']))
                 uid = socket_obj.login(odoo['db'], username, password)
                 return uid
             odoo_data['uid'] = login(odoo['username'], odoo['pwd'])
