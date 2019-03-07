@@ -169,6 +169,8 @@ class Connector(object):
         result = redisStrict.get('channel,{}'.format(id))
         if result:
             result = json.loads(result)
+        if not result:
+            logger.debug("_get_channel not found for {}".format(id))
         return result
 
     def _odoo(self, *params):
