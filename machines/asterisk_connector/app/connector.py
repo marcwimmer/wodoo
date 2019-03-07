@@ -165,9 +165,6 @@ class Connector(object):
                 redisStrict.srem('DND', x)
 
     def _get_channel(self, id):
-        if id and str(id).startswith('b'):
-            from pudb import set_trace
-            set_trace()
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
         result = redisStrict.get('channel,{}'.format(id))
         if result:
