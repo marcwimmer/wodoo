@@ -401,12 +401,16 @@ class Connector(object):
             return
         endpoint = "{}/{}".format(channel_type, endpoint)
         odoo_instance = cp.request.json.get('odoo_instance', '') or ''
-        mqttclient.publish('asterisk/ari/originate', payload=json.dumps(dict(
+        data = dict(
             endpoint=endpoint,
             extension=extension,
             context=cp.request.json['context'],
             odoo_instance=odoo_instance,
-        )), qos=2)
+        )
+        if cp.request.json['callerId']:
+            data['callerId'] = cp.request.json['callerId']
+
+        mqttclient.publish('asterisk/ari/originate', payload=json.dumps(data), qos=2)
 
     @cp.expose
     @cp.tools.json_in()
