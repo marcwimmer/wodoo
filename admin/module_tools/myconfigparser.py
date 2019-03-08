@@ -48,7 +48,7 @@ class MyConfigParser:
                         else:
                             self.quoteOptions[key.strip()] = '\"'
         except Exception:
-            print "ERROR: File " + self.fileName + " Not Found\n"
+            print("ERROR: File " + self.fileName + " Not Found\n")
 
     def write(self):
         handled_keys = set()
@@ -84,7 +84,7 @@ class MyConfigParser:
                     if key not in handled_keys:
                         file.write(write_line(key, self.configOptions[key]).strip() + "\n")
         except IOError as e:
-                print "ERROR opening file " + self.fileName + ": " + e.strerror + "\n"
+            print("ERROR opening file " + self.fileName + ": " + e.strerror + "\n")
 
     # Redefinition of __getitem__ and __setitem__
 

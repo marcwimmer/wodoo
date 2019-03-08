@@ -8,8 +8,6 @@ try:
     from psycopg2 import IntegrityError
 except Exception:
     pass
-from Queue import Queue
-from unidecode import unidecode
 from odoo_config import admin_dir
 from odoo_config import get_env
 from odoo_config import odoo_root
@@ -37,7 +35,11 @@ import pprint
 from consts import MANIFESTS
 from lxml import etree
 import subprocess
-import xmlrpclib
+try:
+    import xmlrpclib
+except Exception:
+    import xmlrpc
+    from xmlrpc import client as xmlrpclib
 import inspect
 import sys
 import threading
@@ -580,7 +582,7 @@ def link_modules():
 
     data = {'counter': 0}
     version = current_version()
-    print "Linking all modules into: \n{}".format(LN_DIR)
+    print("Linking all modules into: \n{}".format(LN_DIR))
     all_valid_module_paths = []
 
     for link in os.listdir(LN_DIR):
@@ -755,8 +757,8 @@ def remove_module_install_notifications(path):
             try:
                 with open(path) as f:
                     tree = etree.parse(f)
-            except Exception, e:
-                print "error at {filename}: {e}".format(filename=filename, e=e)
+            except Exception as e:
+                print("error at {filename}: {e}".format(filename=filename, e=e))
 
             matched = False
             for n in tree.findall("//record[@model='mail.message']"):
@@ -1093,7 +1095,7 @@ def update_view_in_db(filepath, lineno):
                     if doc.xpath("/data"):
                         html = etree.tounicode(doc.xpath("/data/*", pretty_print=True)[0])
 
-                print html
+                print(html)
                 return html
 
         return None
@@ -1109,7 +1111,7 @@ def update_view_in_db(filepath, lineno):
                 columns = [x[0] for x in cr.fetchall()]
                 arch_column = 'arch_db' if 'arch_db' in columns else 'arch'
                 arch_fs_column = 'arch_fs' if 'arch_fs' in columns else None
-                print "Searching view/template for {}.{}".format(module, xmlid)
+                print("Searching view/template for {}.{}".format(module, xmlid))
                 cr.execute("select res_id from ir_model_data where model='ir.ui.view' and module=%s and name=%s",
                              [
                                  module,
@@ -1117,9 +1119,9 @@ def update_view_in_db(filepath, lineno):
                              ])
                 res = cr.fetchone()
                 if not res:
-                    print "No view found for {}.{}".format(module, xmlid)
+                    print("No view found for {}.{}".format(module, xmlid))
                 else:
-                    print 'updating view of xmlid: %s.%s' % (module, xmlid)
+                    print('updating view of xmlid: %s.%s' % (module, xmlid))
                     res_id = res[0]
                     cr.execute("select type from ir_ui_view where id=%s", (res_id,))
                     # view_type = cr.fetchone()[0]
@@ -1153,7 +1155,7 @@ def update_view_in_db(filepath, lineno):
 def check_if_all_modules_from_install_are_installed():
     for module in get_modules_from_install_file():
         if not is_module_installed(module):
-            print "Module {} not installed!".format(module)
+            print("Module {} not installed!".format(module))
             sys.exit(32)
 
 

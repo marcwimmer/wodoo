@@ -4,8 +4,8 @@ import re
 import fnmatch
 import pdb
 import syslog
-from lxml import etree
 import sys
+from lxml import etree
 import tempfile
 import shutil
 import time
@@ -110,14 +110,14 @@ def get_qweb_template(name):
 
 def manifest2dict(manifest_path):
     if not manifest_path:
-        print traceback.format_stack()
+        print(traceback.format_stack())
         raise Exception('Missing manifest path')
     with open(manifest_path, 'r') as f:
         content = f.read()
     try:
         info = eval(content)
     except Exception:
-        print "error at file: %s" % manifest_path
+        print("error at file: %s" % manifest_path)
         raise
     return info
 

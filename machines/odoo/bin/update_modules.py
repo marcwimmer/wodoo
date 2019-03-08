@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import os
 import datetime
 import sys
@@ -37,7 +37,7 @@ def is_module_installed(module):
 def update(mode, module):
     assert mode in ['i', 'u']
     assert module
-    assert isinstance(module, (str, unicode))
+    assert isinstance(module, str)
 
     if module == 'all':
         raise Exception("update 'all' not allowed")
@@ -50,7 +50,7 @@ def update(mode, module):
     else:
         TESTS = ''
 
-    print mode, module
+    print(mode, module)
     params = [
         '/usr/bin/sudo',
         '-H',
@@ -73,7 +73,7 @@ def update(mode, module):
     if mode == 'i':
         for module in module.split(','):
             if not is_module_installed(module):
-                print "{} is not installed - but it was tried to be installed.".format(module)
+                print( "{} is not installed - but it was tried to be installed.".format(module))
                 sys.exit(1)
     elif I18N_OVERWRITE:
         for module in module.split(','):
@@ -103,12 +103,12 @@ def update(mode, module):
                         ]
                         subprocess.check_call(params)
 
-    print mode, module, 'done'
+    print(mode, module, 'done')
 
 def update_module_list():
     MOD = "update_module_list"
     if not is_module_installed(MOD):
-        print "Update Module List is not installed - installing it..."
+        print("Update Module List is not installed - installing it...")
         update('i', MOD)
 
     if not is_module_installed(MOD):
@@ -165,7 +165,7 @@ def main():
 
     if DELETE_QWEB:
         for module in MODULE.split(','):
-            print "Deleting qweb of module {}".format(module)
+            print("Deleting qweb of module {}".format(module))
             delete_qweb(module)
     update('u', MODULE)
     for module in MODULE.split(","):
@@ -176,7 +176,7 @@ def main():
         auto_install_modules = get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
         if auto_install_modules:
             print("Going to install following modules, that are auto installable modules")
-            print ','.join(auto_install_modules)
+            print(','.join(auto_install_modules))
             print("")
             if INTERACTIVE:
                 raw_input("You should press Ctrl+C NOW to abort")
@@ -186,7 +186,7 @@ def main():
     print("Summary of update module")
     print("--------------------------------------------------------------------------------")
     for line in summary:
-        print line
+        print(line)
 
     if not single_module:
         module_tools.check_if_all_modules_from_install_are_installed()

@@ -12,9 +12,9 @@ except Exception:
 
 def get_odoo_addons_paths():
     folders = subprocess.check_output(
-        "find " + unicode(os.path.join(
+        "find " + str(os.path.join(
             customs_dir(), "odoo"
-        )) + "/ -name addons -type d| grep -v .git", shell=True)
+        )) + "/ -name addons -type d| grep -v .git", shell=True).decode('utf-8')
     addons_paths = [
         x
         for x

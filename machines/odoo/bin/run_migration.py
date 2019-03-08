@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Runs a migration script either SQL or PY
 import re
 import subprocess

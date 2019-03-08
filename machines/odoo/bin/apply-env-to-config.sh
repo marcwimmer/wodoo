@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import os
 
 if not os.getenv("DB_HOST") or not os.getenv("DB_USER"):
