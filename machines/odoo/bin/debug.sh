@@ -1,10 +1,7 @@
 #!/bin/bash
 [[ "$VERBOSE" == "1" ]] && set -x
-source /eval_odoo_settings.sh
 
 echo "$*" |grep -q '[-]quick' || {
-	/apply-env-to-config.py
-
 	echo "Executing autosetup..."
 	/run_autosetup.sh
 	echo "Done autosetup"

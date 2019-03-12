@@ -132,11 +132,11 @@ while true; do
 			elif [[ "$action" == 'unit_test' ]]; then
 				reset
 				last_unit_test=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
-				/unit_test.sh "$last_unit_test"
+				/unit_test.py "$last_unit_test"
 
 			elif [[ "$action" == 'last_unit_test' ]]; then
 				if [[ -n "$last_unit_test" ]]; then
-					/unit_test.sh "$last_unit_test"
+					/unit_test.py "$last_unit_test"
 				fi
 
 			elif [[ "$action" == 'export_i18n' ]]; then

@@ -4,3 +4,10 @@ services:
   odoo:
     environment:
         LOCAL_ODOO_HOST: localhost:8069
+        ODOO_EXECUTABLE: odoo-bin
+        PYTHONPATH: "/opt/odoo/admin"
+        ODOO_PYTHON_VERSION: 3
+        ODOO_EXECUTABLE_GEVENT: "odoo-bin gevent"
+        ODOO_EXECUTABLE_CRONJOBS: "odoo-bin"
+        ODOO_EXECUTABLE_DEBUG: "odoo-bin"
+        ODOO_EXECUTABLE: "odoo-bin"

@@ -1,9 +1,6 @@
 #!/bin/bash
 [[ "$VERBOSE" == "1" ]] && set -x
 
-source /eval_odoo_settings.sh
-/apply-env-to-config.py
-
 OPTIONS=""
 case "$ODOO_VERSION" in
     "7.0"|"8.0"|"9.0"|"10.0")

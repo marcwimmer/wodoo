@@ -6,8 +6,6 @@ if [ -z "$1" ]; then
     echo "Usage: import_i18n de_DE pofilepath"
     exit -1
 fi
-source /eval_odoo_settings.sh
-/apply-env-to-config.py
 
 LANG="$1"
 FILEPATH="$2"

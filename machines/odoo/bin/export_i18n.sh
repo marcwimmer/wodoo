@@ -10,9 +10,6 @@ fi
 LANG="$1"
 MODULES="$2"
 
-source /eval_odoo_settings.sh
-/apply-env-to-config.py
-
 export_dir="${ADDONS_CUSTOMS}/$MODULES"
 if [[ -z "$(find "$export_dir" 2>/dev/null)" ]]; then
 	echo "Symlink not found: $export_dir"

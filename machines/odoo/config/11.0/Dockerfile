@@ -107,15 +107,6 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
-ADD bin/utils.py /
-ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh
-RUN chmod a+x /eval_odoo_settings.sh
-RUN /eval_odoo_settings.sh
-
-
-
-
-
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 # PYTHON 3 and PIP
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
@@ -142,8 +133,6 @@ chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
 
 WORKDIR /opt/odoo
-ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
-ENV PYTHONPATH="$PYTHONPATH:/opt/odoo/admin"
 
 RUN rm /usr/bin/python
 ENTRYPOINT ["/entrypoint.sh"]

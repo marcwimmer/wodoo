@@ -7,12 +7,6 @@ import sys
 import psycopg2
 import importlib
 
-subprocess.check_call([
-    'bash',
-    '-c',
-    'source /eval_odoo_settings.sh; /apply-env-to-config.py'
-])
-
 if sys.argv[1] not in ['after', 'before']:
     raise Exception("Arg 1 must be before or after")
 

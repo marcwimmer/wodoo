@@ -15,7 +15,6 @@ from module_tools.module_tools import is_module_listed
 from module_tools.module_tools import get_lang_file_of_module
 from module_tools.module_tools import get_uninstalled_modules_that_are_auto_install_and_should_be_installed # NOQA
 from module_tools.odoo_parser import manifest2dict
-from utils import get_env # NOQA
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
@@ -51,7 +50,7 @@ def update(mode, module):
         '-H',
         '-u',
         os.getenv("ODOO_USER"),
-        os.path.expandvars("$SERVER_DIR/{}".format(get_env()["ODOO_EXECUTABLE"])),
+        os.path.expandvars("$SERVER_DIR/{}".format(os.environ["ODOO_EXECUTABLE"])),
         '-c',
         os.path.expandvars("$CONFIG_DIR/config_openerp"),
         '-d',
@@ -86,7 +85,7 @@ def update(mode, module):
                             '-H',
                             '-u',
                             os.getenv("ODOO_USER"),
-                            os.path.expandvars("$SERVER_DIR/{}".format(get_env()["ODOO_EXECUTABLE"])),
+                            os.path.expandvars("$SERVER_DIR/{}".format(os.environ["ODOO_EXECUTABLE"])),
                             '-c',
                             os.path.expandvars("$CONFIG_DIR/config_openerp"),
                             '-d',
