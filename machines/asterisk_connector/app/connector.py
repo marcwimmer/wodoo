@@ -586,15 +586,14 @@ def on_mqtt_message(client, userdata, msg):
                 payload['channel_left']
             )
         elif msg.topic == 'asterisk/ari/attended_transfer_done':
-            print("Attended Transfer DONE: {}".format(msg.mid))
             event = json.loads(msg.payload)['event']
             channels = []
             channels += event['transferer_first_leg_bridge']['channels']
+            channels += [event['transferer_first_leg']['id']]
             if 'transferer_second_leg_bridge' in event:
                 channels += event['transferer_second_leg_bridge']['channels']
-                channels += [event['transferer_first_leg']['id']]
-                channels = list(set(channels))
-                connector._on_attended_transfer(channels)
+            channels = list(set(channels))
+            connector._on_attended_transfer(channels)
 
         elif msg.topic.startswith('asterisk/ami/event/'):
             memory_held_last_events['ami_event'] = msg.payload
