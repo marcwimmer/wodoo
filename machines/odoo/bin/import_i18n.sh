@@ -7,7 +7,7 @@ if [ -z "$1" ]; then
     exit -1
 fi
 source /eval_odoo_settings.sh
-/apply-env-to-config.sh
+/apply-env-to-config.py
 
 LANG="$1"
 FILEPATH="$2"

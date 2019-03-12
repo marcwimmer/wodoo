@@ -69,4 +69,8 @@ chmod a+w /dev/stdout
 chmod o+rx /run/docker/plugins /run/docker/plugins/* || true
 find /run/docker/plugins -name '*.sock' -exec chmod o+rwx {} \;
 
+# export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LANGUAGE=en_US.UTF-8
+
 exec gosu "$USER" "$@"

@@ -5,12 +5,16 @@ import sys
 import tempfile
 import subprocess
 from time import sleep
-sys.path.append("/opt/odoo/admin/module_tools")
-sys.path.append("/")
-import module_tools # NOQA
-import odoo_config # NOQA
-import odoo_parser # NOQA
-from odoo_parser import manifest2dict # NOQA
+from module_tools import odoo_config
+from module_tools import odoo_parser
+from module_tools.module_tools import get_all_langs
+from module_tools.module_tools import delete_qweb
+from module_tools.module_tools import check_if_all_modules_from_install_are_installed
+from module_tools.module_tools import is_module_installed
+from module_tools.module_tools import is_module_listed
+from module_tools.module_tools import get_lang_file_of_module
+from module_tools.module_tools import get_uninstalled_modules_that_are_auto_install_and_should_be_installed # NOQA
+from module_tools.odoo_parser import manifest2dict
 from utils import get_env # NOQA
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
@@ -20,19 +24,10 @@ I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
 DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
 RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
 
-def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
+def _get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
-    modules += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+    modules += get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
     return sorted(list(set(modules)))
-
-def delete_qweb(module):
-    # for odoo delete all qweb views and take the new ones;
-    module_tools.delete_qweb(module)
-
-def is_module_installed(module):
-    if not module:
-        return False
-    return module_tools.is_module_installed(module)
 
 def update(mode, module):
     assert mode in ['i', 'u']
@@ -73,15 +68,15 @@ def update(mode, module):
     if mode == 'i':
         for module in module.split(','):
             if not is_module_installed(module):
-                print( "{} is not installed - but it was tried to be installed.".format(module))
+                print("{} is not installed - but it was tried to be installed.".format(module))
                 sys.exit(1)
     elif I18N_OVERWRITE:
         for module in module.split(','):
             if is_module_installed(module):
-                for lang in module_tools.get_all_langs():
+                for lang in get_all_langs():
                     if lang == 'en_US':
                         continue
-                    lang_file = module_tools.get_lang_file_of_module(lang, module)
+                    lang_file = get_lang_file_of_module(lang, module)
                     if not lang_file:
                         continue
                     if os.path.isfile(lang_file):
@@ -149,16 +144,16 @@ def main():
     subprocess.check_call([
         'bash',
         '-c',
-        'source /eval_odoo_settings.sh; /apply-env-to-config.sh'
+        'source /eval_odoo_settings.sh; /apply-env-to-config.py'
     ])
 
     summary = []
 
     for module in MODULE.split(','):
         if not is_module_installed(module):
-            if not module_tools.is_module_listed(module):
+            if not is_module_listed(module):
                 update_module_list()
-                if not module_tools.is_module_listed(module):
+                if not is_module_listed(module):
                     raise Exception("After updating module list, module was not found: {}".format(module))
             update('i', module)
             summary.append("INSTALL " + module)
@@ -173,13 +168,13 @@ def main():
 
     # check if at auto installed modules all predecessors are now installed; then install them
     if not single_module:
-        auto_install_modules = get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+        auto_install_modules = _get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
         if auto_install_modules:
             print("Going to install following modules, that are auto installable modules")
             print(','.join(auto_install_modules))
             print("")
             if INTERACTIVE:
-                raw_input("You should press Ctrl+C NOW to abort")
+                input("You should press Ctrl+C NOW to abort")
             update('i', ','.join(auto_install_modules))
 
     print("--------------------------------------------------------------------------------")
@@ -189,7 +184,7 @@ def main():
         print(line)
 
     if not single_module:
-        module_tools.check_if_all_modules_from_install_are_installed()
+        check_if_all_modules_from_install_are_installed()
 
 
 if __name__ == '__main__':

@@ -53,10 +53,9 @@ while true; do
 			filepath=$(echo "$params" | awk '{split($0, a, "|"); print a[1]}')
 			lineno=$(echo "$params" | awk '{split($0, a, "|"); print a[2]}')
 
-			cd /opt/odoo/admin/module_tools || exit -1
-			python<<-EOF
-			import module_tools
-			module_tools.update_view_in_db("$filepath", $lineno)
+			python3<<-EOF
+			from module_tools.module_tools import update_view_in_db
+			update_view_in_db("$filepath", $lineno)
 			EOF
 		else
 			(

@@ -9,17 +9,17 @@ class AliasedGroup(click.Group):
         rv = click.Group.get_command(self, ctx, cmd_name)
         if rv is not None:
             return rv
-        matches = [(click.Group.get_command(self, ctx, x), x) for x in self.list_commands(ctx) if x.startswith(cmd_name)]
+        matches = list(filter(lambda x: x[1].startswith(cmd_name), map(lambda y: (click.Group.get_command(self, ctx, y), y), self.list_commands(ctx))))
         # search recursivley
         for _cmd_name in self.list_commands(ctx):
             cmd = click.Group.get_command(self, ctx, _cmd_name)
             if type(cmd) == type(self):
                 filtered = filter(lambda cmd: cmd.startswith(cmd_name), cmd.list_commands(ctx))
-                matches += map(lambda cmd_name: (cmd.get_command(ctx, cmd_name), _cmd_name), filtered)
+                matches += list(map(lambda cmd_name: (cmd.get_command(ctx, cmd_name), _cmd_name), filtered))
 
         if len(matches) > 1:
             # try to reduce to exact match
-            try_matches = filter(lambda match: match[0].name == cmd_name, matches)
+            try_matches = list(filter(lambda match: match[0].name == cmd_name, matches))
             if try_matches:
                 matches = try_matches
 

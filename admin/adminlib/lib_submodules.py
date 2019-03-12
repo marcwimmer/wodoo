@@ -7,10 +7,11 @@ import sys
 import inspect
 import subprocess
 from module_tools.odoo_config import customs_dir
-from lib_clickhelpers import AliasedGroup
-from tools import __system
-from tools import __assert_file_exists
+from .lib_clickhelpers import AliasedGroup
+from .tools import __system
+from .tools import __assert_file_exists
 from . import cli, pass_config, dirs, files
+from . import Commands
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -39,7 +40,7 @@ def _get_modules():
                 'url': url.strip(),
                 'version': version,
             }
-            if filter(lambda module: module['name'] == data['name'] and module['url'] == data['url'], modules):
+            if list(filter(lambda module: module['name'] == data['name'] and module['url'] == data['url'], modules)):
                 raise Exception("Already exists: {}".format(data))
             modules.append(data)
     return modules
@@ -48,7 +49,7 @@ def _get_modules():
 @submodules.command(help="Fetches all defined modules")
 def pull():
     dir = customs_dir()
-    subprocess.check_output([
+    __system([
         "git",
         "pull",
     ], cwd=os.path.join(dir))
@@ -133,7 +134,7 @@ def push(ctx, config):
             tries = 0
             while True:
                 try:
-                    subprocess.check_output([
+                    __system([
                         "git",
                         "push",
                     ], cwd=os.path.join(dir, module['subdir'], module['name']))
@@ -153,12 +154,12 @@ def push(ctx, config):
     [x.join() for x in threads]
     try:
         for module in _get_modules():
-            subprocess.check_output([
+            __system([
                 "git",
                 "add",
                 os.path.join(module['subdir'], module['name']),
             ], cwd=os.path.join(dir))
-        subprocess.check_output([
+        __system([
             "git",
             "commit",
             '-m',
@@ -217,7 +218,7 @@ def diff():
         module_path = os.path.join(dir, module['subdir'], module['name'])
         if not os.path.isdir(module_path):
             continue
-        untracked = '\n'.join(filter(lambda line: not line.endswith(".pyc"), subprocess.check_output([
+        untracked = '\n'.join(filter(lambda line: not line.endswith(".pyc"), __system([
             "git",
             "ls-files",
             "-o"
@@ -320,3 +321,11 @@ def submodule_add(config, modules):
             'ssh://git@git.clear-consulting.de:50004/odoo/modules/{}'.format(submodule),
             'common/{}'.format(submodule),
         ], cwd=dirs['customs'])
+
+@submodules.command(name='publish-all')
+@pass_config
+@click.pass_context
+def publish_all(ctx, config):
+    ctx.invoke(commit, msg="Publish current version")
+    ctx.invoke(push)
+    Commands.invoke(ctx, 'pack')

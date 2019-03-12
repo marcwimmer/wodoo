@@ -487,11 +487,6 @@ class Connector(object):
         mqttclient.publish('asterisk/pickupgroup', payload=json.dumps(out), qos=2)
 
 
-@throttle(seconds=2)
-def odoo_bus_send_channel_state():
-    exe("asterisk.connector", "send_channel_state")
-
-
 def odoo_thread():
 
     while not odoo_data['uid']:
@@ -534,12 +529,9 @@ def odoo_thread():
                         os.unlink(filepath)
                         break
 
-                t = threading.Thread(target=odoo_bus_send_channel_state)
-                t.daemon = True
-                t.start()
         except Exception:
             msg = traceback.format_exc()
-            logger.error(msg)
+            logger.error(msg or '')
             time.sleep(1)
         time.sleep(0.1)
 
@@ -559,7 +551,8 @@ def on_mqtt_message(client, userdata, msg):
     while not connector:
         time.sleep(1)
     try:
-        logger.debug("%s %s", msg.topic, str(msg.payload))
+        # logger.debug("%s %s", msg.topic, str(msg.payload))
+        logger.debug("%s", msg.topic)
         if msg.topic.startswith("asterisk/Console/result/"):
             id = msg.topic.split("/")[3]
             if id == 'DND-State':
@@ -593,6 +586,7 @@ def on_mqtt_message(client, userdata, msg):
                 payload['channel_left']
             )
         elif msg.topic == 'asterisk/ari/attended_transfer_done':
+            print("Attended Transfer DONE: {}".format(msg.mid))
             event = json.loads(msg.payload)['event']
             channels = []
             channels += event['transferer_first_leg_bridge']['channels']
@@ -630,7 +624,8 @@ def mqtt_thread():
     global mqttclient
     while True:
         try:
-            mqttclient = mqtt.Client(client_id="asterisk_connector_receiver.{}".format(socket.gethostname()),)
+            client_id = "asterisk_connector_receiver.{}".format(socket.gethostname())
+            mqttclient = mqtt.Client(client_id=client_id,)
             # mqttclient.username_pw_set(os.environ['MOSQUITTO_USER'], os.environ['MOSQUITTO_PASSWORD'])
             PORT = int(os.getenv('MOSQUITTO_PORT', "1883"))
             logger.info("Connectiong mqtt to {}:{}".format(os.environ['MOSQUITTO_HOST'], PORT))

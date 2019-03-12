@@ -10,7 +10,7 @@ import importlib
 subprocess.check_call([
     'bash',
     '-c',
-    'source /eval_odoo_settings.sh; /apply-env-to-config.sh'
+    'source /eval_odoo_settings.sh; /apply-env-to-config.py'
 ])
 
 if sys.argv[1] not in ['after', 'before']:

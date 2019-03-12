@@ -7,7 +7,7 @@ import inspect
 import subprocess
 import json
 from module_tools.odoo_config import customs_dir
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 from . import cli, pass_config, dirs, files, Commands
 
 def __get_project_config():

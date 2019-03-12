@@ -3,30 +3,30 @@ import hashlib
 import os
 import tempfile
 import click
-from tools import __assert_file_exists
-from tools import __system
-from tools import __safe_filename
-from tools import __find_files
-from tools import __read_file
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import _sanity_check
-from tools import _askcontinue
-from tools import __get_odoo_commit
-from tools import __is_container_running
-from tools import _get_bash_for_machine
-from tools import __cmd_interactive
-from tools import _display_machine_tips
-from tools import __start_postgres_and_wait
-from tools import __replace_in_file
-from tools import __wait_for_port
-from tools import __set_db_ownership
-from tools import __dcexec
-from tools import _get_machines
-from tools import __dc
+from .tools import __assert_file_exists
+from .tools import __system
+from .tools import __safe_filename
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import _sanity_check
+from .tools import _askcontinue
+from .tools import __get_odoo_commit
+from .tools import __is_container_running
+from .tools import _get_bash_for_machine
+from .tools import __cmd_interactive
+from .tools import _display_machine_tips
+from .tools import __start_postgres_and_wait
+from .tools import __replace_in_file
+from .tools import __wait_for_port
+from .tools import __set_db_ownership
+from .tools import __dcexec
+from .tools import _get_machines
+from .tools import __dc
 from . import cli, pass_config, dirs, files, Commands
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -244,7 +244,6 @@ def debug(ctx, config, machine):
 def proxy_reload():
     if __is_container_running('proxy'):
         __dcexec(['proxy', '/opt/bin/hot_reload.sh'])
-
 
 Commands.register(kill)
 Commands.register(up)

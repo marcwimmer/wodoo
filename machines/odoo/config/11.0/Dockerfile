@@ -76,6 +76,10 @@ apt-get install \
             python3-dev \
             python3
 
+ADD liberation-sans /usr/share/fonts/
+# rebuild font cache
+RUN fc-cache -f -v
+
 RUN \
 locale-gen en_US.UTF-8 && \
 update-locale && \
@@ -116,8 +120,6 @@ RUN /eval_odoo_settings.sh
 # PYTHON 3 and PIP
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
-RUN apt install -y 
-
 #pip3 10.0 is in other directories; hash -r clears the cache of the path
 RUN hash -r && \
 	pip3 install --upgrade pip && \
@@ -134,16 +136,14 @@ RUN pip3 install -r /root/requirements.txt
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
 ADD res/imageio /home/odoo/.imageio
-RUN chmod a+x /*.sh && \
+RUN chmod a+x /*.sh /*.py && \
 chmod a+x /usr/local/bin/* && \
 chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
 
-ADD liberation-sans /usr/share/fonts/
-RUN ls -lhtra /usr/share/fonts -lhtra
-# rebuild font cache
-RUN fc-cache -f -v
-
-ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
+ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
+ENV PYTHONPATH="$PYTHONPATH:/opt/odoo/admin"
+
+RUN rm /usr/bin/python
 ENTRYPOINT ["/entrypoint.sh"]

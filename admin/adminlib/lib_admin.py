@@ -5,23 +5,23 @@ import hashlib
 import os
 import tempfile
 import click
-from tools import _askcontinue
-from tools import __assert_file_exists
-from tools import __system
-from tools import __safe_filename
-from tools import __cmd_interactive
-from tools import __find_files
-from tools import __read_file
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import _fix_permissions
-from tools import _remove_temp_directories
-from tools import _prepare_filesystem
-from tools import remove_webassets
+from .tools import _askcontinue
+from .tools import __assert_file_exists
+from .tools import __system
+from .tools import __safe_filename
+from .tools import __cmd_interactive
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import _fix_permissions
+from .tools import _remove_temp_directories
+from .tools import _prepare_filesystem
+from .tools import remove_webassets
 from . import cli, pass_config, dirs, files, Commands
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -172,3 +172,4 @@ def remove_web_assets(ctx, config):
 Commands.register(status)
 Commands.register(fix_permissions)
 Commands.register(set_setting)
+Commands.register(pack)

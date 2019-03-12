@@ -5,7 +5,7 @@ set -e
 # sync source is done by extra machine
 
 source /eval_odoo_settings.sh
-/apply-env-to-config.sh
+/apply-env-to-config.py
 
 echo "Executing autosetup..."
 /run_autosetup.sh

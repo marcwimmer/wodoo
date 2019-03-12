@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd /
-python<<EOF
+python3<<EOF
 import sys
 sys.path.append('/')
 import utils

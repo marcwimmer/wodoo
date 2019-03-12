@@ -1,12 +1,11 @@
 #!/usr/bin/python3
 import os
 
+from module_tools import odoo_config
+
 if not os.getenv("DB_HOST") or not os.getenv("DB_USER"):
     raise Exception("Please define all DB Env Variables!")
 
-import sys
-sys.path.append(os.path.join(os.environ['ADMIN_DIR'], 'module_tools'))
-import odoo_config
 ADDONS_PATHS = ','.join(filter(lambda t: t, odoo_config.get_odoo_addons_paths() + [os.getenv('ADDONS_CUSTOMS')] + [os.getenv("ADDONS_PATHS")]))
 
 for file in os.listdir("/home/odoo"):

@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM debian:buster
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
 apt install -y  \
@@ -26,12 +26,11 @@ apt install -y  \
     colordiff \
     silversearcher-ag \
     runc \
-    python3-pip
+    python3-pip \
+    locales
 
-RUN pip install pip --upgrade
-RUN pip install setuptools
 ADD requirements.txt /requirements.txt
-RUN pip install -r /requirements.txt
+RUN pip3 install setuptools
 RUN pip3 install -r /requirements.txt
 RUN pip3 install buttervolume
 
@@ -66,4 +65,15 @@ RUN ln -sf /proc/1/fd/1 /docker_out
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
 
+
+RUN \
+locale-gen en_US.UTF-8 && \
+update-locale && \
+dpkg-reconfigure locales && \
+echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
+echo 'LANG=en_US.UTF-8' >> /etc/environment && \
+echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
+
+# TODO REMOVE
+RUN rm /usr/bin/python
 WORKDIR /opt/odoo

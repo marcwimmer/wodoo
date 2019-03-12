@@ -7,7 +7,7 @@ fi
 
 reset
 source /eval_odoo_settings.sh
-/apply-env-to-config.sh
+/apply-env-to-config.py
 
 cd "$ADMIN_DIR/module_tools" || exit -1
 module=$(python -c "import module_tools; print module_tools.get_module_of_file('$1')")

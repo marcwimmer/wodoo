@@ -2,7 +2,7 @@
 [[ "$VERBOSE" == "1" ]] && set -x
 
 source /eval_odoo_settings.sh
-/apply-env-to-config.sh
+/apply-env-to-config.py
 
 OPTIONS=""
 case "$ODOO_VERSION" in

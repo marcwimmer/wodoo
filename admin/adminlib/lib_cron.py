@@ -15,18 +15,18 @@ import tempfile
 import click
 from copy import deepcopy
 from datetime import datetime
-from wait.decorator import timeout
-from tools import _file2env
-from tools import __find_files
-from tools import __read_file
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import __dcrun
-from tools import __execute_sql
+from .wait.decorator import timeout
+from .tools import _file2env
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import __dcrun
+from .tools import __execute_sql
 from . import cli, pass_config, dirs, files
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 def get_env():
     d = deepcopy(os.environ)
@@ -65,7 +65,7 @@ def do_list(ctx):
                 'cron',
                 "sudo", "/usr/bin/jobber", "list"
             ])
-        except Exception, e:
+        except Exception as e:
             time.sleep(1)
             exc = e
         else:

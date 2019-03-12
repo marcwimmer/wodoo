@@ -11,27 +11,26 @@ import os
 import tempfile
 import click
 import inquirer
-from tools import _dropdb
-from tools import DBConnection
-from tools import __assert_file_exists
-from tools import __exists_db
-from tools import __system
-from tools import __set_db_ownership
-from tools import __safe_filename
-from tools import remove_webassets
-from tools import __find_files
-from tools import __read_file
-from tools import __write_file
-from tools import _askcontinue
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import __dcrun, __dc, __remove_postgres_connections, __execute_sql, __dcexec
-from tools import __start_postgres_and_wait
-from tools import get_volume_names
+from .tools import _dropdb
+from .tools import DBConnection
+from .tools import __assert_file_exists
+from .tools import __exists_db
+from .tools import __system
+from .tools import __set_db_ownership
+from .tools import __safe_filename
+from .tools import remove_webassets
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __write_file
+from .tools import _askcontinue
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import __dcrun, __dc, __remove_postgres_connections, __execute_sql, __dcexec
+from .tools import __start_postgres_and_wait
+from .tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
-from lib_clickhelpers import AliasedGroup
-from lib_remoteaccess import get_config, get_areas
+from .lib_clickhelpers import AliasedGroup
 
 def __get_postgres_volume_name(config):
     # TODO link somehow to docker-compose file
@@ -60,7 +59,7 @@ def __assert_btrfs(config):
         sys.exit(-1)
 
 def __get_snapshots(config):
-    snapshots = [x for x in subprocess.check_output(["buttervolume", "snapshots"]).split("\n") if x]
+    snapshots = [x for x in __system(["buttervolume", "snapshots"]).split("\n") if x]
     # filter to current customs
     snapshots = [x for x in snapshots if '_POSTGRES_VOLUME_' in x and "_{}_".format(config.customs) in x]
     return snapshots
@@ -111,7 +110,7 @@ def snapshot_make(config, name):
     __assert_btrfs(config)
     volume_name = __get_postgres_volume_name(config)
     __dc(['stop', '-t 1'] + ['postgres'])
-    snapshot = subprocess.check_output(["buttervolume", "snapshot", volume_name]).strip()
+    snapshot = __system(["buttervolume", "snapshot", volume_name]).strip()
     __dc(['up', '-d'] + ['postgres'])
     if name:
         values = __get_snapshot_db()
@@ -132,7 +131,7 @@ def snapshot_restore(ctx, config, clear, name):
     if not snapshot:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_output(["buttervolume", "restore", snapshot])
+    __system(["buttervolume", "restore", snapshot])
     if clear:
         ctx.invoke(snapshot_clear_all)
 
@@ -148,7 +147,7 @@ def snapshot_clear_all(ctx, config):
     if snapshots:
         __dc(['stop', '-t 1'] + ['postgres'])
         for snap in snapshots:
-            subprocess.check_output(["buttervolume", "rm", snap])
+            __system(["buttervolume", "rm", snap])
         __dc(['up', '-d'] + ['postgres'])
 
     ctx.invoke(do_list)
@@ -276,36 +275,6 @@ def __turn_into_devdb(conn):
             print("failed un-critical sql:", msg)
 
     remove_webassets(conn)
-
-@db.command(name="dosync")
-@click.argument("area", required=False)
-@pass_config
-def dosync(config, area):
-    """
-    help: Area defined in .access/config e.g. 'prod'
-    """
-    if not area:
-        click.echo("Following areas available:")
-        for area in get_areas():
-            click.echo(area)
-    access_config = get_config(area)
-
-    compose = json.loads(__read_file(files['docker_compose']))
-    volume = filter(lambda v: '/var/lib/postgresql/data' in v, compose['services']['postgres']['volumes'])[0]
-    volume = volume.split(":")[0]
-
-    __dc(['kill'] + ['postgres'])
-    args = [
-        '-v {volume}:/dest'.format(**locals()),
-        'volumesyncer',
-        '/usr/bin/rsync',
-        '-arP',
-        '{host}:{postgres_volume_dir}/_data/'.format(**access_config),
-        '/dest/'
-    ]
-    __dcrun(args, interactive=True)
-    __dc(['up', '-d'] + ['postgres'])
-
 
 # @db.command(name="export-table")
 # @click.argument('table', required=True)

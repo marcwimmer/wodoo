@@ -14,31 +14,31 @@ import hashlib
 import os
 import tempfile
 import click
-from tools import DBConnection
-from tools import _dropdb
-from tools import __backup_postgres
-from tools import __postgres_restore
-from tools import __assert_file_exists
-from tools import __system
-from tools import __safe_filename
-from tools import __find_files
-from tools import __read_file
-from tools import __dc
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import __get_dump_type
-from tools import __start_postgres_and_wait
-from tools import __dcrun
-from tools import __execute_sql
-from tools import __set_db_ownership
-from tools import _askcontinue
-from tools import __rename_db_drop_target
-from tools import __remove_postgres_connections
-from tools import _get_dump_files
+from .tools import DBConnection
+from .tools import _dropdb
+from .tools import __backup_postgres
+from .tools import __postgres_restore
+from .tools import __assert_file_exists
+from .tools import __system
+from .tools import __safe_filename
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __dc
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import __get_dump_type
+from .tools import __start_postgres_and_wait
+from .tools import __dcrun
+from .tools import __execute_sql
+from .tools import __set_db_ownership
+from .tools import _askcontinue
+from .tools import __rename_db_drop_target
+from .tools import __remove_postgres_connections
+from .tools import _get_dump_files
 from . import cli, pass_config, dirs, files, Commands
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 BACKUPDIR = "/host/dumps"
 
@@ -90,6 +90,8 @@ def backup_calendar(config, filename=None):
 @pass_config
 @click.pass_context
 def backup_db(ctx, config, filename, non_interactive):
+    from pudb import set_trace
+    set_trace()
     if not filename and config.devmode:
         if not non_interactive:
             answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
@@ -116,7 +118,6 @@ def backup_db(ctx, config, filename, non_interactive):
     __apply_dump_permissions(filepath)
 
     click.echo("Dumped to {}".format(filepath))
-    Commands.invoke(ctx, 'telegram_send', "Database Backup {} done to {}".format(config.dbname, filepath))
 
 @backup.command(name='files')
 @pass_config
@@ -209,7 +210,6 @@ def restore_db(ctx, config, filename):
         __turn_into_devdb(conn)
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
     __remove_postgres_connections(conn.clone(dbname=dest_db))
-    Commands.invoke(ctx, 'telegram_send', "Database Restore $DBNAME done.")
 
 def _inquirer_dump_file(config, message):
     from . import BACKUPDIR

@@ -1,3 +1,4 @@
+import io
 import traceback
 import yaml
 import json
@@ -6,7 +7,7 @@ import pipes
 import tempfile
 from datetime import datetime
 from retrying import retry
-import wait
+from .wait import tcp as tcp_wait
 import shutil
 import click
 import os
@@ -16,7 +17,7 @@ import humanize
 import sys
 import docker
 from threading import Thread
-from Queue import Queue
+from queue import Queue
 import inspect
 from copy import deepcopy
 
@@ -57,7 +58,7 @@ def __find_files(cwd, *options):
     """
     :param options: ["-name", "default.settings"]
     """
-    files = subprocess.check_output(["find"] + list(options), cwd=cwd)
+    files = __system(["find"] + list(options), cwd=cwd)
     files = files.split("\n")
     files = [x for x in files if x and not x.endswith('/.')]
     files = [os.path.normpath(os.path.join(cwd, x)) for x in files]
@@ -94,10 +95,12 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
     def reader(pipe, q):
         try:
             with pipe:
-                for line in iter(pipe.readline, ''):
+                for line in io.TextIOWrapper(pipe, encoding='utf-8'):
                     q.put((pipe, line))
-        except Exception as e:
-            print e
+                q.put((pipe, ''))
+        except Exception:
+            msg = traceback.format_exc()
+            click.echo(msg)
         finally:
             q.put(None)
 
@@ -139,8 +142,9 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
                         logger.error(line.strip())
                     else:
                         logger.info(line.strip())
-        except Exception as e:
-            print e
+        except Exception:
+            msg = traceback.format_exc()
+            click.echo(msg)
     if progress:
         t = Thread(target=heartbeat)
         t.daemonized = True
@@ -262,9 +266,9 @@ def __start_postgres_and_wait(config):
 def __is_container_running(machine_name):
     container_id = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True).strip()
     if container_id:
-        container = filter(lambda container: container.id == container_id, docker.from_env().containers.list())
+        container = next(filter(lambda container: container.id == container_id, docker.from_env().containers.list()))
         if container:
-            return container[0].status == 'running'
+            return container.status == 'running'
     return False
 
 def is_up(*machine_name):
@@ -338,7 +342,10 @@ def _askcontinue(config, msg=None):
         click.echo(msg)
     if config and config.force:
         return
-    raw_input("Continue? (Ctrl+C to break)")
+    try:
+        raw_input("Continue? (Ctrl+C to break)")
+    except Exception:
+        input("Continue? (Ctrl+C to break)")
 
 def __set_db_ownership(config):
     # in development environments it is safe to set ownership, so
@@ -350,7 +357,7 @@ def __set_db_ownership(config):
         set_ownership_exclusive()
 
 def __wait_for_port(host, port, timeout=None):
-    res = wait.tcp.open(port, host=host, timeout=timeout)
+    res = tcp_wait.open(port, host=host, timeout=timeout)
     if not res and timeout:
         raise Exception("Timeout elapsed waiting for {}:{}".format(host, port))
 
@@ -399,7 +406,7 @@ def __cmd_interactive(*params):
     proc.wait()
     # ctrl+c leads always to error otherwise
     # if proc.returncode:
-        # raise Exception("command failed: {}".format(" ".join(params)))
+    # raise Exception("command failed: {}".format(" ".join(params)))
 
 def __empty_dir(dir):
     if os.path.isdir(dir):

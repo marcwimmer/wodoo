@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 import os
 import time
 import subprocess
 from os.path import expanduser
-from myconfigparser import MyConfigParser
-from consts import VERSIONS
+from .myconfigparser import MyConfigParser
+from .consts import VERSIONS
 try:
     import psycopg2
 except Exception:
@@ -177,6 +176,8 @@ def translate_path_relative_to_customs_root(path):
     return path
 
 def set_customs(customs, dbname=None):
+    from pudb import set_trace
+    set_trace()
     dbname = dbname or customs
     root = odoo_root()
     conf = MyConfigParser(os.path.join(root, 'run/settings'))

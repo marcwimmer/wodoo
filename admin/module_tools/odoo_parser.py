@@ -5,21 +5,22 @@ import fnmatch
 import pdb
 import syslog
 import sys
+import lxml
 from lxml import etree
 import tempfile
 import shutil
 import time
 import traceback
 from datetime import datetime
-from odoo_config import odoo_root
-from odoo_config import customs_dir
-from odoo_config import current_customs
-from odoo_config import plaintextfile
-from odoo_config import current_version
-from odoo_config import translate_path_relative_to_customs_root
-from consts import MANIFEST_FILE
-from consts import MANIFESTS
-from consts import LN_FILE
+from .odoo_config import odoo_root
+from .odoo_config import customs_dir
+from .odoo_config import current_customs
+from .odoo_config import plaintextfile
+from .odoo_config import current_version
+from .odoo_config import translate_path_relative_to_customs_root
+from .consts import MANIFEST_FILE
+from .consts import MANIFESTS
+from .consts import LN_FILE
 cache_models = {}
 cache_xml_ids = {}
 modified_filename = ""
@@ -117,6 +118,8 @@ def manifest2dict(manifest_path):
     try:
         info = eval(content)
     except Exception:
+        from pudb import set_trace
+        set_trace()
         print("error at file: %s" % manifest_path)
         raise
     return info

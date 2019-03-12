@@ -5,18 +5,18 @@ import os
 import tempfile
 import click
 import humanize
-from tools import __assert_file_exists
-from tools import __system
-from tools import __safe_filename
-from tools import __find_files
-from tools import __read_file
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import _get_dump_files, __dc
+from .tools import __assert_file_exists
+from .tools import __system
+from .tools import __safe_filename
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import _get_dump_files, __dc
 from . import cli, pass_config, dirs, files
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 @cli.group(cls=AliasedGroup)
 @pass_config

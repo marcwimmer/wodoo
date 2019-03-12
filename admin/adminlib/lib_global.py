@@ -4,23 +4,23 @@ import hashlib
 import os
 import tempfile
 import click
-from tools import __assert_file_exists
-from tools import __system
-from tools import __safe_filename
-from tools import __find_files
-from tools import __read_file
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import __set_db_ownership
-from tools import __dc
-from tools import __dcrun
-from tools import _display_machine_tips
-from tools import _get_bash_for_machine
-from tools import __cmd_interactive
+from .tools import __assert_file_exists
+from .tools import __system
+from .tools import __safe_filename
+from .tools import __find_files
+from .tools import __read_file
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import __set_db_ownership
+from .tools import __dc
+from .tools import __dcrun
+from .tools import _display_machine_tips
+from .tools import _get_bash_for_machine
+from .tools import __cmd_interactive
 from . import cli, pass_config, dirs, files, Commands
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 @cli.command(name='logs')
 @click.argument('machines', nargs=-1)

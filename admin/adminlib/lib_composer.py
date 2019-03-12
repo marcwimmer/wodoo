@@ -13,26 +13,26 @@ import os
 import tempfile
 import copy
 import click
-from tools import __assert_file_exists
-from tools import __system
-from tools import __replace_in_file
-from tools import __safe_filename
-from tools import _file2env
-from tools import __file_get_lines
-from tools import __empty_dir
-from tools import __find_files
-from tools import _get_platform
-from tools import __read_file
-from tools import __write_file
-from tools import __append_line
-from tools import __exists_odoo_commit
-from tools import __get_odoo_commit
-from tools import _remove_temp_directories
-from tools import __makedirs
-from tools import _prepare_filesystem
-from tools import __rmtree
+from .tools import __assert_file_exists
+from .tools import __system
+from .tools import __replace_in_file
+from .tools import __safe_filename
+from .tools import _file2env
+from .tools import __file_get_lines
+from .tools import __empty_dir
+from .tools import __find_files
+from .tools import _get_platform
+from .tools import __read_file
+from .tools import __write_file
+from .tools import __append_line
+from .tools import __exists_odoo_commit
+from .tools import __get_odoo_commit
+from .tools import _remove_temp_directories
+from .tools import __makedirs
+from .tools import _prepare_filesystem
+from .tools import __rmtree
 from . import cli, pass_config, dirs, files, Commands
-from lib_clickhelpers import AliasedGroup
+from .lib_clickhelpers import AliasedGroup
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -168,7 +168,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     if not dest_file:
         raise Exception('require destination path')
 
-    with open(dest_file, 'w', 0) as f:
+    with open(dest_file, 'w') as f:
         f.write("#Composed {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         f.write("version: '{}'\n".format(config.compose_version))
     myconfig = MyConfigParser(files['settings'])
@@ -228,7 +228,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
                             service = j['services'][service]
                             if 'env_file' not in service:
                                 service['env_file'] = []
-                            if isinstance(service['env_file'], (str, unicode)):
+                            if isinstance(service['env_file'], str):
                                 service['env_file'] = [service['env_file']]
 
                             if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
@@ -293,7 +293,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         temp_files = []
         for i, filecontent in enumerate(final_contents):
             path = os.path.join(temp_path, str(i).zfill(10) + '.yml')
-            with open(path, 'w', 0) as f:
+            with open(path, 'w') as f:
                 f.write(filecontent[1])
                 f.flush()
             temp_files.append("-f")
@@ -306,12 +306,12 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
         d = deepcopy(os.environ)
         d.update(env)
-        conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
+        conf = __system(cmdline, cwd=temp_path, env=d)
         # post-process config config
         conf = post_process_complete_yaml_config(yaml.load(conf))
         conf = yaml.dump(conf, default_flow_style=False)
 
-        with open(dest_file, 'w', 0) as f:
+        with open(dest_file, 'w') as f:
             f.write(conf)
     finally:
         shutil.rmtree(temp_path)

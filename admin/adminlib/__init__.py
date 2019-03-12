@@ -5,8 +5,8 @@ import inspect
 import os
 import glob
 import click
-from tools import _file2env
-from lib_clickhelpers import AliasedGroup
+from .tools import _file2env
+from .lib_clickhelpers import AliasedGroup
 
 stdinput = None
 if not sys.stdin.isatty() and "SSH_CONNECTION" not in os.environ:
@@ -14,6 +14,7 @@ if not sys.stdin.isatty() and "SSH_CONNECTION" not in os.environ:
 
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 sys.path.append(os.path.join(dir, '../module_tools'))
+import module_tools
 from module_tools.myconfigparser import MyConfigParser  # NOQA
 from module_tools import odoo_config  # NOQA
 
@@ -156,7 +157,7 @@ class Config(object):
             raise
 
     def get_odoo_conn(self):
-        from tools import DBConnection
+        from .tools import DBConnection
         conn = DBConnection(
             self.dbname,
             self.db_host,
@@ -175,13 +176,26 @@ pass_config = click.make_pass_decorator(Config, ensure=True)
 def cli(config, force):
     config.force = force
 
-def do_import(pyfile):
-    name = os.path.basename(pyfile).replace(".py", "")
-    __import__('.'.join(['adminlib', name]))
 
-
-map(do_import, [os.path.basename(f)[:-3] for f in glob.glob(os.path.dirname(__file__) + "/*.py")])
+__import__("adminlib.lib_clickhelpers")
+__import__("adminlib.lib_composer")
 __import__("adminlib.lib_admin")
+__import__("adminlib.lib_backup")
+__import__("adminlib.lib_control")
+__import__("adminlib.lib_cron")
+__import__("adminlib.lib_db")
+__import__("adminlib.lib_global")
+__import__("adminlib.lib_image")
+__import__("adminlib.lib_lang")
+__import__("adminlib.lib_migrate")
+__import__("adminlib.lib_module")
+__import__("adminlib.lib_patches")
+# __import__("adminlib.lib_project")
+__import__("adminlib.lib_setup")
+__import__("adminlib.lib_src")
+__import__("adminlib.lib_submodules")
+# __import__("adminlib.lib_telegram")
+# __import__("adminlib.lib_ticket")
 
 SAFE_KILL = ['postgres', 'redis']
 PLATFORM_OSX = "OSX"

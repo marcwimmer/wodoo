@@ -8,31 +8,30 @@ try:
     from psycopg2 import IntegrityError
 except Exception:
     pass
-from odoo_config import admin_dir
-from odoo_config import get_env
-from odoo_config import odoo_root
-from odoo_config import run_dir
-from odoo_config import get_version_from_customs
-from odoo_config import get_conn
-from odoo_config import current_customs
-from odoo_config import current_version
-from odoo_config import current_db
-from odoo_config import customs_dir
-from odoo_config import install_file
-from odoo_config import translate_path_into_machine_path
-from odoo_config import set_customs
-from odoo_config import translate_path_relative_to_customs_root
-from odoo_config import get_module_directory_in_machine
-from myconfigparser import MyConfigParser
+from .odoo_config import admin_dir
+from .odoo_config import get_env
+from .odoo_config import odoo_root
+from .odoo_config import run_dir
+from .odoo_config import get_version_from_customs
+from .odoo_config import get_conn
+from .odoo_config import current_customs
+from .odoo_config import current_version
+from .odoo_config import current_db
+from .odoo_config import customs_dir
+from .odoo_config import install_file
+from .odoo_config import translate_path_into_machine_path
+from .odoo_config import set_customs
+from .odoo_config import translate_path_relative_to_customs_root
+from .odoo_config import get_module_directory_in_machine
+from .myconfigparser import MyConfigParser
 import traceback
-import odoo_parser
-from odoo_parser import get_view
-from odoo_parser import is_module_of_version
-from odoo_parser import manifest2dict
+from .odoo_parser import get_view
+from .odoo_parser import is_module_of_version
+from .odoo_parser import manifest2dict
 import fnmatch
 import re
 import pprint
-from consts import MANIFESTS
+from .consts import MANIFESTS
 from lxml import etree
 import subprocess
 try:
@@ -184,7 +183,7 @@ def get_module_path(module_name):
     """
     returns the full path to the module
     """
-    paths = filter(lambda x: '/{}/'.format(module_name) in x, get_all_manifests())
+    paths = list(filter(lambda x: '/{}/'.format(module_name) in x, get_all_manifests()))
     if paths:
         path = os.path.dirname(paths[-1])
         return path
@@ -400,7 +399,7 @@ def is_module_dir_in_version(module_dir):
         info_file = os.path.join(module_dir, '.ln')
         if os.path.exists(info_file):
             info = manifest2dict(info_file)
-            if isinstance(info, (float, long, int)):
+            if isinstance(info, (float, int)):
                 min_ver = info
                 max_ver = info
                 info = {'minimum_version': min_ver, 'maximum_version': max_ver}
@@ -529,6 +528,8 @@ def is_module_listed(module):
         conn.close()
 
 def is_module_installed(module):
+    if not module:
+        raise Exception("no module given")
     conn, cr = get_conn()
     try:
         cr.execute("select name, state from ir_module_module where name = %s", (module,))
@@ -755,7 +756,7 @@ def remove_module_install_notifications(path):
             if not os.path.getsize(path):
                 continue
             try:
-                with open(path) as f:
+                with open(path, 'rb') as f:
                     tree = etree.parse(f)
             except Exception as e:
                 print("error at {filename}: {e}".format(filename=filename, e=e))
@@ -766,7 +767,7 @@ def remove_module_install_notifications(path):
                     n.getparent().remove(n)
                     matched = True
             if matched:
-                with open(root + "/" + filename, "w") as f:
+                with open(root + "/" + filename, "wb") as f:
                     tree.write(f)
 
 

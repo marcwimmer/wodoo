@@ -46,7 +46,7 @@ else:
     action = None
 
 def display_help():
-    print "How to use:"
+    print( "How to use:")
     print ""
     for action in actions:
         print os.path.basename(sys.argv[0]), action, '[' if parameters.get('action', '') else '', '|'.join(parameters.get(action, [])), ']' if parameters.get('action', '') else ''
@@ -726,7 +726,7 @@ help = {
 
 if __name__ == '__main__':
     if action not in actions:
-        print "Invalid verb: {}".format(action)
+        print("Invalid verb: {}".format(action))
         display_help()
         sys.exit(-1)
     else:
