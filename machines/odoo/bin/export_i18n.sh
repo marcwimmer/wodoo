@@ -3,7 +3,7 @@ set -e
 [[ "$VERBOSE" == "1" ]] && set -x
 
 if [ -z "$1" ]; then
-    echo "Usage: import_i18n de_DE [filepath of po file optional]"
+    echo "Usage: export_i18n de_DE [filepath of po file optional]"
     exit -1
 fi
 

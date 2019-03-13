@@ -190,6 +190,10 @@ class Connector(object):
     def _on_attended_transfer(self, channel_ids):
         self._odoo('asterisk.connector', 'asterisk_on_attended_transfer', channel_ids)
 
+    def _on_channels_blindtransfer(self, channel_ids):
+        channels = self._try_to_get_channels(channel_ids)
+        self._odoo('asterisk.connector', 'asterisk_channels_blindtransfer', channels)
+
     def _on_channels_connected(self, channel_ids, channel_entered):
         channels = self._try_to_get_channels(channel_ids)
         self._odoo('asterisk.connector', 'asterisk_channels_connected', channels, channel_entered)
@@ -309,12 +313,12 @@ class Connector(object):
         result = self._get_active_channel(extensions)
         return result
 
-    @cp.tools.json_in()
-    @cp.tools.json_out()
-    @cp.expose
-    def get_channel(self):
-        id = cp.request.json['id']
-        return self._get_channel(id)
+    # @cp.tools.json_in()
+    # @cp.tools.json_out()
+    # @cp.expose
+    # def get_channel(self):
+        # id = cp.request.json['id']
+        # return self._get_channel(id)
 
     @cp.tools.json_in()
     @cp.tools.json_out()
@@ -543,6 +547,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/ari/channel_update")
     client.subscribe("asterisk/ari/channels_connected")
     client.subscribe("asterisk/ari/channels_disconnected")
+    client.subscribe("asterisk/ari/blind_transfer")
     client.subscribe("asterisk/ari/attended_transfer_done")
     client.subscribe("asterisk/ari/originate/result")
     client.subscribe("asterisk/ami/event/Pickup")
@@ -577,6 +582,11 @@ def on_mqtt_message(client, userdata, msg):
             connector._on_channels_connected(
                 payload['channel_ids'],
                 payload['channel_entered'],
+            )
+        elif msg.topic == 'asterisk/ari/blind_transfer':
+            payload = json.loads(msg.payload)
+            connector._on_channels_blindtransfer(
+                payload['channel_ids'],
             )
         elif msg.topic == 'asterisk/ari/channels_disconnected':
             payload = json.loads(msg.payload)
