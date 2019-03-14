@@ -140,12 +140,6 @@ def main():
     if not MODULE:
         raise Exception("requires module!")
 
-    subprocess.check_call([
-        'bash',
-        '-c',
-        'source /eval_odoo_settings.sh; /apply-env-to-config.py'
-    ])
-
     summary = []
 
     for module in MODULE.split(','):
