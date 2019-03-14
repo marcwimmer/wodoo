@@ -131,7 +131,7 @@ def _patch_list(absolute_path=True):
 
         return True
 
-    filepaths = filter(in_commit, filepaths)
+    filepaths = list(filter(in_commit, filepaths))
 
     # remove duplicate entries, because of symbolic links and so
     filepaths_hashes = {}

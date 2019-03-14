@@ -80,7 +80,7 @@ def project_delete():
         return
     customs, db = answer['project'].split("/")
     config = __get_project_config()
-    project = filter(lambda x: x['customs'] == customs and x['db'] == db, config['projects'])[0]
+    project = list(filter(lambda x: x['customs'] == customs and x['db'] == db, config['projects'])[0])
     config['projects'].remove(project)
     __set_project_config(config)
 
@@ -95,7 +95,7 @@ def project(ctx, config):
         return
 
     customs, db = answer['project'].split("/")
-    project = filter(lambda x: x['customs'] == customs and x['db'] == db, projects)[0]
+    project = list(filter(lambda x: x['customs'] == customs and x['db'] == db, projects)[0])
     project_activate(ctx, config, project)
 
 def __set_project_config(content):

@@ -77,7 +77,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     """
     ctx.invoke(module_link)
     from module_tools import module_tools
-    module = filter(lambda x: x, sum(map(lambda x: x.split(','), module), []))  # '1,2 3' --> ['1', '2', '3']
+    module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
     if not module:
         module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
@@ -99,7 +99,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
         module += __get_installed_modules(config)
     if dangling_modules:
         module += [x[0] for x in __get_dangling_modules()]
-    module = filter(lambda x: x, module)
+    module = list(filter(lambda x: x, module))
     if not module:
         raise Exception("no modules to update")
 
@@ -162,7 +162,7 @@ def remove_old_modules(ctx, config, ask_confirm=True):
     click.echo("Analyzing which modules to remove...")
     Commands.invoke(ctx, 'wait_for_container_postgres')
     mods = sorted(map(lambda x: x[0], __execute_sql(config.get_odoo_conn(), "select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
-    mods = filter(lambda x: x not in ('base'), mods)
+    mods = list(filter(lambda x: x not in ('base'), mods))
     to_remove = []
     for mod in mods:
         for path in get_odoo_addons_paths() + [get_links_dir()]:

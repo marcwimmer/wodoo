@@ -72,7 +72,7 @@ def kill(ctx, config, machines, brutal=False):
     from . import SAFE_KILL
     machines = list(machines)
     if config.run_postgres_in_ram and not machines:
-        machines = filter(lambda x: x != 'postgres', _get_machines())
+        machines = list(filter(lambda x: x != 'postgres', _get_machines()))
     if not brutal:
         safe_stop = []
         for machine in SAFE_KILL:
@@ -108,7 +108,7 @@ def recreate(ctx, config, machines):
     machines = list(machines)
     if not machines and 'postgres' not in machines:
         if config.run_postgres_in_ram:
-            machines = filter(lambda x: x != 'postgres', _get_machines())
+            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
     if machines:
         __dc(['up', '--no-start', '--force-recreate'] + machines)
@@ -128,7 +128,7 @@ def up(ctx, config, machines, daemon):
 
     if not machines and 'postgres' not in machines:
         if config.run_postgres_in_ram:
-            machines = filter(lambda x: x != 'postgres', _get_machines())
+            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
     options = [
     ]
@@ -160,7 +160,7 @@ def restart(ctx, config, machines):
     machines = list(machines)
     if not machines and 'postgres' not in machines:
         if config.run_postgres_in_ram:
-            machines = filter(lambda x: x != 'postgres', _get_machines())
+            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
     ctx.invoke(kill, machines=machines)
     ctx.invoke(rm, machines=machines)
@@ -176,7 +176,7 @@ def rm(ctx, config, machines):
     machines = list(machines)
     if not machines and 'postgres' not in machines:
         if config.run_postgres_in_ram:
-            machines = filter(lambda x: x != 'postgres', _get_machines())
+            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
     __dc(['rm', '-f'] + machines)
 
 @control.command()
