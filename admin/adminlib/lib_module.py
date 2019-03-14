@@ -88,12 +88,12 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
         for x in __get_dangling_modules():
             click.echo("{}: {}".format(*x[:2]))
-        if non_interactive or raw_input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+        if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
             __execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
     if __get_dangling_modules() and not dangling_modules:
         if not no_dangling_check:
             Commands.invoke(ctx, 'show_install_state', suppress_error=True)
-            raw_input("Abort old upgrade and continue? (Ctrl+c to break)")
+            input("Abort old upgrade and continue? (Ctrl+c to break)")
             ctx.invoke(abort_upgrade)
     if installed_modules:
         module += __get_installed_modules(config)
