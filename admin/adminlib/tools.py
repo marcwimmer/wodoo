@@ -268,6 +268,7 @@ def __is_container_running(machine_name):
     if container_id:
         container = list(filter(lambda container: container.id == container_id, docker.from_env().containers.list()))
         if container:
+            container = container[0]
             return container.status == 'running'
     return False
 
