@@ -266,7 +266,7 @@ def __start_postgres_and_wait(config):
 def __is_container_running(machine_name):
     container_id = __dc(['ps', '-q', machine_name], raise_exception=False, suppress_out=True).strip()
     if container_id:
-        container = next(filter(lambda container: container.id == container_id, docker.from_env().containers.list()))
+        container = list(filter(lambda container: container.id == container_id, docker.from_env().containers.list()))
         if container:
             return container.status == 'running'
     return False
@@ -342,10 +342,7 @@ def _askcontinue(config, msg=None):
         click.echo(msg)
     if config and config.force:
         return
-    try:
-        raw_input("Continue? (Ctrl+C to break)")
-    except Exception:
-        input("Continue? (Ctrl+C to break)")
+    input("Continue? (Ctrl+C to break)")
 
 def __set_db_ownership(config):
     # in development environments it is safe to set ownership, so
@@ -531,7 +528,7 @@ def __get_installed_modules(config):
     return [x[0] for x in rows]
 
 def __splitcomma(param):
-    if isinstance(param, (str, unicode)):
+    if isinstance(param, str):
         if not param:
             return []
         return [x.strip() for x in param.split(',') if x.strip()]
