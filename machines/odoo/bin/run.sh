@@ -34,4 +34,4 @@ else
     CONFIG=config_gevent
     EXEC="$ODOO_EXECUTABLE_GEVENT"
 fi
-sudo -E -H -u "$ODOO_USER" "$SERVER_DIR/$EXEC" -c "$CONFIG_DIR/$CONFIG"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
+sudo -E -H -u "$ODOO_USER" $SERVER_DIR/$EXEC -c "$CONFIG_DIR/$CONFIG"  -d "$DBNAME" --log-level="$ODOO_LOG_LEVEL"
