@@ -8,6 +8,6 @@ ADDONS_CUSTOMS=/opt/odoo/addons_customs
 ADMIN_DIR=/opt/odoo/admin
 CONFIG_DIR=/home/odoo
 ODOO_USER=odoo
-LANG en_US.UTF-8
-LANGUAGE en_US:en
-LC_ALL en_US.UTF-8
+LANG=en_US.UTF-8
+LANGUAGE=en_US:en
+LC_ALL=en_US.UTF-8
