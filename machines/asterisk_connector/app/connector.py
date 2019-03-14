@@ -205,10 +205,10 @@ class Connector(object):
     def _on_channel_change(self, channel_json):
         if not channel_json:
             return
-        logger.debug("_on_channel_change {}".format(channel_json))
+        id = channel_json['id']
+        logger.debug("_on_channel_change: {} to {}".format(id, channel_json['state']))
 
         redisStrict = redis.StrictRedis(connection_pool=redis_connection_pool)
-        id = channel_json['id']
         pipeline = redisStrict.pipeline()
         pipeline.sadd('channel_ids', id)
         pipeline.setex(name='channel_creation_date,{}'.format(id), value=channel_json['creationtime'], time=EXPIRE_CHANNEL)
@@ -218,9 +218,13 @@ class Connector(object):
         current_value = json.dumps(current_value)
         pipeline.setex(name='channel,{}'.format(id), value=current_value, time=EXPIRE_CHANNEL)
         pipeline.execute()
-        logger.debug("_on_channel_change: channel put for id {}".format(id))
-
         self._odoo('asterisk.connector', 'asterisk_updated_channel_state', channel_json)
+
+    def _on_channel_destroyed(self, channel_json):
+        if not channel_json:
+            return
+        logger.debug("_on_channel_destroyed {}".format(channel_json['id']))
+        self._odoo('asterisk.connector', 'asterisk_channel_destroyed', channel_json)
 
     def _try_to_get_channels(self, channel_ids):
         channels = []
@@ -545,6 +549,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     client.subscribe("asterisk/Console/result/#")
     client.subscribe("asterisk/AMI/result/#")
     client.subscribe("asterisk/ari/channel_update")
+    client.subscribe("asterisk/ari/channel_destroyed")
     client.subscribe("asterisk/ari/channels_connected")
     client.subscribe("asterisk/ari/channels_disconnected")
     client.subscribe("asterisk/ari/blind_transfer")
@@ -576,6 +581,10 @@ def on_mqtt_message(client, userdata, msg):
             payload = json.loads(msg.payload)
             memory_held_last_events['channel_update'] = msg.payload
             connector._on_channel_change(payload)
+        elif msg.topic == 'asterisk/ari/channel_destroyed':
+            payload = json.loads(msg.payload)
+            memory_held_last_events['channel_destroyed'] = msg.payload
+            connector._on_channel_destroyed(payload)
         elif msg.topic == 'asterisk/ari/channels_connected':
             payload = json.loads(msg.payload)
             memory_held_last_events['channels_connected'] = msg.payload
