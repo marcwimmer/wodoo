@@ -74,18 +74,12 @@ apt-get install \
             libcups2-dev \
             python3-pip \
             python3-dev \
-            python3
+            python3 \
+            locales-all
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
 RUN fc-cache -f -v
-
-RUN \
-locale-gen en_US.UTF-8 && \
-update-locale && \
-echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
-echo 'LANG=en_US.UTF-8' >> /etc/environment && \
-echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
 
 WORKDIR /tmp
 
@@ -126,16 +120,10 @@ RUN pip3 install -r /root/requirements.txt
 
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
-ADD res/imageio /home/odoo/.imageio
 RUN chmod a+x /*.sh /*.py && \
 chmod a+x /usr/local/bin/* && \
 chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
 
 WORKDIR /opt/odoo
-
-ENV DEBIAN_FRONTEND noninteractive
-RUN apt install locales-all
-RUN dpkg-reconfigure locales
-RUN rm /usr/bin/python
 ENTRYPOINT ["/entrypoint.sh"]
