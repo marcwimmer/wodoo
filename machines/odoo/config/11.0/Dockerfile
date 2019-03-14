@@ -135,6 +135,7 @@ chown odoo:odoo /home/odoo -R
 WORKDIR /opt/odoo
 
 ENV DEBIAN_FRONTEND noninteractive
+RUN apt install locales-all
 RUN dpkg-reconfigure locales
 RUN rm /usr/bin/python
 ENTRYPOINT ["/entrypoint.sh"]
