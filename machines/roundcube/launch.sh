@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 set -eux
 
 sed -i "s/__MAIL_SERVER__/$MAIL_SERVER/g" /usr/share/nginx/www/config/config.inc.php && \
@@ -11,6 +12,6 @@ chown -R www-data:www-data /rc
 
 phpenmod mcrypt
 service nginx start
-service php7.2-fpm start
+service php7.0-fpm start
 
 tail -F /var/log/nginx/access.log

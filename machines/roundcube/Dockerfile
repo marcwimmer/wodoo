@@ -10,7 +10,8 @@ RUN apt update && \
     nginx php-fpm nano wget sqlite3 procps \
     php-intl php-pear \
     php-net-smtp php-mail-mime \
-    php-sqlite3
+    php-sqlite3 \
+    php-mcrypt
 WORKDIR /root
 # when roundcube grows older, change version in the download link, but also in the 'mv' command
 RUN rm -fr /usr/share/nginx/www && \
