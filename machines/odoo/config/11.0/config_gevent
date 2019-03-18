@@ -1,6 +1,6 @@
 [options]
-http_port=8059
-longpolling_port=8069
+http_port=8069
+longpolling_port=8072
 addons_path=__ADDONS_PATH__
 admin_passwd = JJASD21adsm2n124DSASDzxzn$!##''';asdasdADS":2149!4@*ADS
 auto_reload = False
