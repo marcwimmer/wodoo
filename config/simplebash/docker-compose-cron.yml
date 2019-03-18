@@ -23,7 +23,7 @@ services:
       - UID
       - SSH_CONNECTION
       - PERSIST_JOBBER_ENV_VARIABLES=PROJECT_NAME,ODOO_HOME,CUSTOMS
-    entrypoint: /entrypoint.sh
+    #entrypoint: /entrypoint.sh
     restart: 'unless-stopped'
     command: ["/opt/odoo/admin/odoo-admin", "execute"]
 

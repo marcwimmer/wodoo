@@ -38,6 +38,7 @@ def _exec(cmd):
     command += ["-f", "docker-compose-cron.yml"]
     command += ["-p", os.environ['PROJECT_NAME'] + "_cron"]
     command += cmd
+    print(" ".join(command))
     subprocess.check_call(
         command,
         cwd=os.path.join("/opt/odoo/config/simplebash"),
@@ -74,7 +75,12 @@ def do_list(ctx):
     if exc:
         raise exc
 
-@cron.command(name='start')
+@cron.command(name='up')
+@click.pass_context
+def up(ctx):
+    _exec(['up', '--force-recreate', 'cron'])
+
+@cron.command(name='start', help="Start cron container in console")
 @click.pass_context
 def start(ctx):
     ctx.invoke(stop, ignore_error=True)
