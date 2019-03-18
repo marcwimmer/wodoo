@@ -74,14 +74,12 @@ apt-get install \
             libcups2-dev \
             python3-pip \
             python3-dev \
-            python3
+            python3 \
+            locales-all
 
-RUN \
-locale-gen en_US.UTF-8 && \
-update-locale && \
-echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
-echo 'LANG=en_US.UTF-8' >> /etc/environment && \
-echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
+ADD liberation-sans /usr/share/fonts/
+# rebuild font cache
+RUN fc-cache -f -v
 
 WORKDIR /tmp
 
@@ -103,20 +101,9 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
-ADD bin/utils.py /
-ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh
-RUN chmod a+x /eval_odoo_settings.sh
-RUN /eval_odoo_settings.sh
-
-
-
-
-
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 # PYTHON 3 and PIP
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
-
-RUN apt install -y 
 
 #pip3 10.0 is in other directories; hash -r clears the cache of the path
 RUN hash -r && \
@@ -133,17 +120,10 @@ RUN pip3 install -r /root/requirements.txt
 
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
-ADD res/imageio /home/odoo/.imageio
-RUN chmod a+x /*.sh && \
+RUN chmod a+x /*.sh /*.py && \
 chmod a+x /usr/local/bin/* && \
 chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
 
-ADD liberation-sans /usr/share/fonts/
-RUN ls -lhtra /usr/share/fonts -lhtra
-# rebuild font cache
-RUN fc-cache -f -v
-
-ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
 ENTRYPOINT ["/entrypoint.sh"]
