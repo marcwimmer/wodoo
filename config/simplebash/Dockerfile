@@ -1,12 +1,9 @@
 FROM debian:buster
+ENV DOCKER_VERSION=docker-18.09.3
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
 apt install -y  \
-	python \
-	python-pip \
 	gettext-base \
-	python-psycopg2 \
-	python-pip \
 	pigz \
 	shellcheck \
 	sudo \ 
@@ -27,7 +24,8 @@ apt install -y  \
     silversearcher-ag \
     runc \
     python3-pip \
-    locales
+    locales \
+    locales-all
 
 ADD requirements.txt /requirements.txt
 RUN pip3 install setuptools
@@ -35,7 +33,7 @@ RUN pip3 install -r /requirements.txt
 RUN pip3 install buttervolume
 
 # install docker cli
-RUN curl https://download.docker.com/linux/static/stable/x86_64/docker-18.09.1.tgz -o /tmp/docker.tgz
+RUN curl https://download.docker.com/linux/static/stable/x86_64/$DOCKER_VERSION.tgz -o /tmp/docker.tgz
 WORKDIR /opt
 RUN tar xfz /tmp/docker.tgz
 RUN rsync /opt/docker/ /usr/local/bin/ -arP
@@ -54,26 +52,10 @@ RUN ln -s /usr/local/bin/odoo /usr/local/bin/o
 RUN echo "PS1='${debian_chroot:+($debian_chroot)}\[\e[1;91m\][odoo]\[\e[0m\]:\w\$ '" >> /etc/bash.bashrc
 RUN echo 'cd $LOCAL_ODOO_HOME' >> /etc/bash.bashrc
 
-#ADD https://github.com/dshearer/jobber/releases/download/v1.3.4/jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
-ADD jobber_1.3.4-1_amd64.deb /tmp/jobber.deb
-ADD jobber /opt/jobber
-RUN dpkg -i /tmp/jobber.deb
-
 # make docker say something
 RUN ln -sf /proc/1/fd/1 /docker_out
 
 ADD entrypoint.sh /entrypoint.sh
 RUN chmod a+x /entrypoint.sh
 
-
-RUN \
-locale-gen en_US.UTF-8 && \
-update-locale && \
-dpkg-reconfigure locales && \
-echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
-echo 'LANG=en_US.UTF-8' >> /etc/environment && \
-echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
-
-# TODO REMOVE
-RUN rm /usr/bin/python
 WORKDIR /opt/odoo

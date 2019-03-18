@@ -1,0 +1,11 @@
+croniter
+inquirer
+Click==7.0
+pyyaml
+docker
+tabulate
+retrying
+humanize
+pudb
+docker-compose
+psycopg2
