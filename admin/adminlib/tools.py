@@ -707,7 +707,7 @@ def __get_dump_type(filepath):
             with pipe:
                 for line in iter(pipe.readline, ''):
                     with open(temp, 'a') as f:
-                        f.write(line)
+                        f.write(line.decode("utf-8", errors='ignore'))
                         lines += 1
                         if lines > 20:
                             break
