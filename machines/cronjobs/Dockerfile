@@ -14,7 +14,7 @@ RUN rsync /opt/docker/ /usr/local/bin/ -ar
 ADD requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
 ADD debug.sh /
-RUN chmod a+x /usr/local/bin/debug.sh
+RUN chmod a+x /debug.sh
 
 
 WORKDIR /usr/local/bin

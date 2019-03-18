@@ -25,6 +25,7 @@ def get_jobs():
 
 def execute(job_cmd):
     logger.info("Executing: {}".format(job_cmd))
+    os.system(job_cmd)
 
 
 jobs = list(get_jobs())
