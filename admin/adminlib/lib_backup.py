@@ -205,7 +205,7 @@ def restore_db(ctx, config, filename):
         conn,
         os.path.join(BACKUPDIR, filename),
     )
-    from lib_db import __turn_into_devdb
+    from .lib_db import __turn_into_devdb
     if dev:
         __turn_into_devdb(conn)
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
