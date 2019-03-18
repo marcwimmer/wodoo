@@ -90,8 +90,6 @@ def backup_calendar(config, filename=None):
 @pass_config
 @click.pass_context
 def backup_db(ctx, config, filename, non_interactive):
-    from pudb import set_trace
-    set_trace()
     if not filename and config.devmode:
         if not non_interactive:
             answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
