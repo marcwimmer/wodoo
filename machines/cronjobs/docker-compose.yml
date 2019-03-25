@@ -13,6 +13,7 @@ services:
     volumes:
         - /var/run/docker.sock:/var/run/docker.sock
         - /run/docker/plugins:/run/docker/plugins
+        - "$HOST_ODOO_HOME:$HOST_ODOO_HOME"
         - "$ODOO_HOME:/opt/odoo"
         - "$ODOO_HOME/machines/cronjobs/run.py:/usr/local/bin/run.py"
         - "$ODOO_HOME/admin:/opt/admin"
