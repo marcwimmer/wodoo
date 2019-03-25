@@ -19,9 +19,13 @@ def get_jobs():
         if key.startswith("CRONJOB_BACKUP_"):
             job = os.environ[key]
             job = job.split(" ", 6)
-            job_time = " ".join(job[:5])
+            schedule = " ".join(job[:5])
             job_command = job[-1]
-            yield (job_time, job_command)
+            yield {
+                'schedule': schedule,
+                'cmd': job_command,
+                'base': datetime.now()
+            }
 
 def execute(job_cmd):
     logger.info("Executing: {}".format(job_cmd))
@@ -33,10 +37,11 @@ next_dates = []
 
 logging.info("Found jobs: {}".format(jobs))
 while True:
-    base = datetime.now()
-    for job_time, job_cmd in jobs:
-        print(croniter(job_time, base).get_next(datetime))
-        if croniter(job_time, base).get_next(datetime) < base:
-            execute(job_cmd)
+    for job in jobs:
+        next_run = croniter(job['schedule'], job['base']).get_next(datetime)
+        logging.info("Next run of %s at %s", job['cmd'], next_run)
+        if next_run > datetime.now():
+            execute(job['cmd'])
+            job['base'] = datetime.now()
 
     time.sleep(1)

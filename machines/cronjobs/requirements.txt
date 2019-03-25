@@ -8,4 +8,4 @@ retrying
 humanize
 pudb
 docker-compose
-psycopg2
+psycopg2-binary
