@@ -40,8 +40,8 @@ while True:
     for job in jobs:
         next_run = croniter(job['schedule'], job['base']).get_next(datetime)
         logging.info("Next run of %s at %s", job['cmd'], next_run)
-        if next_run > datetime.now():
+        if next_run < datetime.now():
             execute(job['cmd'])
-            job['base'] = datetime.now()
+            job['base'] = next_run
 
     time.sleep(1)
