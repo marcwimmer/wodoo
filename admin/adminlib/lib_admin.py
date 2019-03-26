@@ -89,12 +89,37 @@ def pack(config):
         "pull",
     ], cwd=folder, suppress_out=False)
 
+    # clone to tmp directory and cleanup - remove unstaged and so on
+    tmp_folder = '/tmp/pack'
     __system([
         "rsync",
         odoo_config.customs_dir() + "/",
+        tmp_folder + "/",
+        '-ar',
+        '--exclude=.pyc',
+        '--delete-after',
+    ], cwd=odoo_config.customs_dir(), suppress_out=False)
+    __system([
+        "git",
+        "clean",
+        "-xdff",
+    ], cwd=tmp_folder, suppress_out=False)
+    __system([
+        "git",
+        "submodule",
+        "foreach",
+        "git",
+        "clean",
+        "-xdff",
+    ], cwd=tmp_folder, suppress_out=False)
+
+    __system([
+        "rsync",
+        tmp_folder + "/",
         folder + "/",
         '-ar',
         '--exclude=.git',
+        '--exclude=.odoo.ast',
         '--exclude=.pyc',
         '--delete-after',
     ], cwd=odoo_config.customs_dir(), suppress_out=False)
