@@ -113,6 +113,12 @@ def pack(config):
         "-xdff",
     ], cwd=tmp_folder, suppress_out=False)
 
+    # remove set_traces
+    pwd = os.getcwd()
+    os.chdir(tmp_folder)
+    os.system("find . -type f -name *.py | grep \"modules\|common\" | xargs sed -i /set_trace/d", )
+    os.chdir(pwd)
+
     __system([
         "rsync",
         tmp_folder + "/",
@@ -124,17 +130,17 @@ def pack(config):
         '--delete-after',
     ], cwd=odoo_config.customs_dir(), suppress_out=False)
 
-    if os.path.islink(os.path.join(odoo_config.customs_dir(), 'common')):
-        os.unlink(os.path.join(folder, 'common'))
-        __system([
-            "rsync",
-            odoo_config.customs_dir() + "/common/",
-            folder + "/common/",
-            '-arL',
-            '--exclude=.git',
-            '--exclude=.pyc',
-            '--delete-after',
-        ], cwd=odoo_config.customs_dir(), suppress_out=False)
+    # if os.path.islink(os.path.join(odoo_config.customs_dir(), 'common')):
+        # os.unlink(os.path.join(folder, 'common'))
+        # __system([
+            # "rsync",
+            # odoo_config.customs_dir() + "/common/",
+            # folder + "/common/",
+            # '-arL',
+            # '--exclude=.git',
+            # '--exclude=.pyc',
+            # '--delete-after',
+        # ], cwd=odoo_config.customs_dir(), suppress_out=False)
 
     # remove .gitignore - could contain odoo for example
     gitignore = os.path.join(folder, '.gitignore')
