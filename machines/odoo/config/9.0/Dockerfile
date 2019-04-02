@@ -102,15 +102,6 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
-ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
-
-ADD bin/utils.py /
-ADD bin/eval_odoo_settings.sh /eval_odoo_settings.sh
-RUN chmod a+x /eval_odoo_settings.sh
-RUN /eval_odoo_settings.sh
-
-
-
 RUN apt install -y \
 		libpython-dev \
 		python \
@@ -130,7 +121,10 @@ RUN apt install -y \
 	pip install glob2 && \
 	pip install pip==9.0.3 --upgrade
 
-
+ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
+ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
+RUN pip install -r /root/odoo_requirements.txt
+RUN pip install -r /root/requirements.txt
 
 # python2 binary error on ubuntu 18.04
 # https://github.com/psycopg/psycopg2-wheels/issues/2
@@ -140,7 +134,6 @@ RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
 
 ADD bin/ /
 ADD config/$ODOO_VERSION/* /home/odoo/
-ADD res/imageio /home/odoo/.imageio
 RUN chmod a+x /*.sh && \
 chmod 644 /etc/python2.7/sitecustomize.py && \
 chmod a+x /usr/local/bin/* && \
@@ -148,7 +141,6 @@ chmod a+x /*.sh && \
 chown odoo:odoo /home/odoo -R
 
 ADD liberation-sans /usr/share/fonts/
-RUN ls -lhtra /usr/share/fonts -lhtra
 # rebuild font cache
 RUN fc-cache -f -v
 

@@ -1,0 +1,13 @@
+# manage-order 1001
+version: '3.3'
+services:
+  odoo_base:
+    environment:
+        LOCAL_ODOO_HOST: localhost:8069
+        ODOO_EXECUTABLE: odoo-bin
+        PYTHONPATH: "/opt/odoo/admin"
+        ODOO_PYTHON_VERSION: 3
+        ODOO_EXECUTABLE_GEVENT: "openerp-gevent"
+        ODOO_EXECUTABLE_CRONJOBS: "openerp-server"
+        ODOO_EXECUTABLE_DEBUG: "openerp-server"
+        ODOO_EXECUTABLE: "openerp-server"

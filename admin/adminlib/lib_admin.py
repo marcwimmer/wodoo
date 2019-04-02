@@ -113,10 +113,11 @@ def pack(config):
         "-xdff",
     ], cwd=tmp_folder, suppress_out=False)
 
-    # remove set_traces
+    # remove set_traces and other
     pwd = os.getcwd()
     os.chdir(tmp_folder)
     os.system("find . -type f -name *.py | grep \"modules\|common\" | xargs sed -i /set_trace/d", )
+    os.system("find . -type f -name .odoo.ast -delete")
     os.chdir(pwd)
 
     __system([
@@ -125,7 +126,6 @@ def pack(config):
         folder + "/",
         '-ar',
         '--exclude=.git',
-        '--exclude=.odoo.ast',
         '--exclude=.pyc',
         '--delete-after',
     ], cwd=odoo_config.customs_dir(), suppress_out=False)
