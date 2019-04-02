@@ -9,6 +9,6 @@ fi
 sed -i "s/1000:1000/$OWNER_UID:$OWNER_UID/g" /etc/passwd
 chown $OWNER_UID:$OWNER_UID /home/odoo -R
 
-/apply-env-to-config.py
+python3 /apply-env-to-config.py
 
 exec "$@"

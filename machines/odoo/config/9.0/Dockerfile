@@ -123,8 +123,9 @@ RUN apt install -y \
 
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
-RUN pip install -r /root/odoo_requirements.txt
+RUN pip install pathlib2
 RUN pip install -r /root/requirements.txt
+RUN pip install -r /root/odoo_requirements.txt
 
 # python2 binary error on ubuntu 18.04
 # https://github.com/psycopg/psycopg2-wheels/issues/2
