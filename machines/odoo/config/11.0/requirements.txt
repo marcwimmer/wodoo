@@ -1,3 +1,4 @@
+python-barcode==0.8.3
 caldav==0.5.0
 configobj==5.0.6
 unidecode==1.0.22
