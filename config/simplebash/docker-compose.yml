@@ -22,6 +22,12 @@ services:
       - DISPLAY
       - QT_X11_NO_MITSHM=1
       - ODOO_UPDATE_START_NOTIFICATION_TOUCH_FILE_IN_CONTAINER=/tmp/timestamp_update/timestamp
+      - PROJECT_NAME
+      - NETWORK_NAME
+      - HOST_HOME
+      - HOST_ODOO_HOME
+      - DUMPS_PATH
+      - DUMPS_PATH_GID
     entrypoint: /entrypoint.sh
     hostname: $HOSTNAME_TO_USE
 

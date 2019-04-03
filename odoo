@@ -150,13 +150,6 @@ def build_command():
         command += ['-v', '/tmp:/tmp_host']
         command += ['-v', '{}:/opt/odoo'.format(LOCAL_ODOO_HOME)]
     else:
-        for key in [
-                "PROJECT_NAME",
-                "NETWORK_NAME",
-                "HOST_HOME",
-                "HOST_ODOO_HOME",
-        ]:
-            command += ['-e', '{}={}'.format(key, E(key))]
         command += ['-v', '{}:/opt/odoo'.format(E("HOST_ODOO_HOME"))]
     command += ['simplebash']
     command += ["/opt/odoo/admin/odoo-admin"]
