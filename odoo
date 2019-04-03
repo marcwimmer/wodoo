@@ -127,6 +127,7 @@ def build_command():
     command += ['-e', 'PLATFORM={}'.format(get_platform())]
     if E("DOCKER_MACHINE") != "1":
         # on host
+        command += ['-e', 'DOCKER_MACHINE=1']
         command += ['-e', 'PROJECT_NAME={}'.format(PROJECT_NAME)]
         command += ['-e', 'NETWORK_NAME={}'.format(NETWORK_NAME)]
         command += ['-e', 'HOST_HOME={}'.format(os.environ['HOME'])]
@@ -147,6 +148,16 @@ def build_command():
             command += ['-v', '/etc:/etc_host']
         command += ['-v', '/sbin:/sbin_host']
         command += ['-v', '/tmp:/tmp_host']
+        command += ['-v', '{}:/opt/odoo'.format(LOCAL_ODOO_HOME)]
+    else:
+        for key in [
+                "PROJECT_NAME",
+                "NETWORK_NAME",
+                "HOST_HOME",
+                "HOST_ODOO_HOME",
+        ]:
+            command += ['-e', '{}={}'.format(key, E(key))]
+        command += ['-v', '{}:/opt/odoo'.format(E("HOST_ODOO_HOME"))]
     command += ['simplebash']
     command += ["/opt/odoo/admin/odoo-admin"]
     if len(sys.argv) > 1:

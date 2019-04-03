@@ -65,6 +65,8 @@ class MyConfigParser:
                 file.truncate()
 
                 def write_line(key, val):
+                    if val is None:
+                        raise Exception("None value not allowed for: {}".format(key))
                     return key + "=" + val
 
                 # Loop through the file to change with new values in dict

@@ -26,16 +26,9 @@ def admin_dir():
     return os.path.join(odoo_root(), 'admin')
 
 def customs_root():
-    if os.getenv("DOCKER_MACHINE", "0") == "1":
-        raise Exception("Not available within docker machine; there is only active_customs")
-        # return os.path.dirname(os.environ['ACTIVE_CUSTOMS'])
-    else:
-        return os.path.join(odoo_root(), 'data', 'src', 'customs')
+    return os.path.join(odoo_root(), 'data', 'src', 'customs')
 
 def customs_dir(customs=None):
-    if os.getenv("DOCKER_MACHINE", "0") == "1":
-        return os.environ['ACTIVE_CUSTOMS']
-
     c = customs or current_customs()
     return os.path.join(customs_root(), c)
 
@@ -90,11 +83,8 @@ def _read_file(path, default=None):
 
 def get_env():
     # on docker machine self use environment variables; otherwise read from config file
-    if os.getenv("DOCKER_MACHINE", "") == "1":
-        return os.environ
-    else:
-        root = odoo_root()
-        conf = MyConfigParser(os.path.join(root, 'run/settings'))
+    root = odoo_root()
+    conf = MyConfigParser(os.path.join(root, 'run/settings'))
     return conf
 
 def current_customs():

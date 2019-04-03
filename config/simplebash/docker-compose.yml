@@ -4,7 +4,6 @@ services:
     image: ${PROJECT_NAME}_simplebash
     privileged: true
     volumes:
-      - $ODOO_HOME:/opt/odoo
       - $WORKING_DIR:/WORKING_DIR
       - /var/run/docker.sock:/var/run/docker.sock
       - /run:/host/run

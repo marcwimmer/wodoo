@@ -173,6 +173,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         f.write("version: '{}'\n".format(config.compose_version))
     myconfig = MyConfigParser(files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
+    env['ODOO_HOME'] = local_odoo_home
 
     # add static yaml content to each machine
     with open(files['config/default_network'], 'r') as f:
