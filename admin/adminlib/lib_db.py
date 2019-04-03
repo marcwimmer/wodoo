@@ -90,10 +90,10 @@ def __choose_snapshot(config, take=False):
                 d = d.strftime("%Y-%m-%d %H:%M:%S")
             else:
                 d = '-'
-            snap_name_with_date = snap_name + " " + d
+            snap_name_with_date = "{0:<33} [{1}]".format(snap_name, d)
             used_mappings[snap_name] = x
             used_mappings[snap_name_with_date] = x
-            snapshots2.append(snap_name)
+            snapshots2.append(snap_name_with_date)
 
     if take:
         return used_mappings[take]
