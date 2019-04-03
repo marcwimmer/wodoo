@@ -165,9 +165,9 @@ def is_module_of_version(path):
                 content = {}
 
             if isinstance(content, dict):
-                _from = content.get('minimum_version', 0)
-                _to = content.get('maximum_version', 9999)
-            elif isinstance(content, (float, int, long)):
+                _from = float(content.get('minimum_version', 0))
+                _to = float(content.get('maximum_version', 9999))
+            elif isinstance(content, (float, int)):
                 _from = content
                 _to = content
             result = VERSION >= _from and VERSION <= _to

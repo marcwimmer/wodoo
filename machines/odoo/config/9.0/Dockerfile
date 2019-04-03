@@ -147,4 +147,6 @@ RUN fc-cache -f -v
 
 ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
+RUN apt install -y python3-pip
+RUN pip3 install lxml psycopg2
 ENTRYPOINT ["/entrypoint.sh"]
