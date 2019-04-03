@@ -176,7 +176,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
     # add static yaml content to each machine
     with open(files['config/default_network'], 'r') as f:
-        default_network = yaml.load(f.read())
+        default_network = yaml.safe_load(f.read())
 
     for path in paths:
         with open(path, 'r') as f:
@@ -214,7 +214,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
             if not getattr(config, "run_{}".format(folder_name)):
                 continue
 
-        j = yaml.load(content)
+        j = yaml.safe_load(content)
         if j:
             # TODO complain version - override version
             j['version'] = YAML_VERSION
@@ -250,7 +250,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         """
 
         with open(os.path.join(local_odoo_home, 'machines/odoo/docker-compose.yml')) as f:
-            odoodc = yaml.load(f.read())
+            odoodc = yaml.safe_load(f.read())
 
         for odoomachine in odoodc['services']:
             if odoomachine == 'odoo_base':
@@ -293,11 +293,13 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         temp_files = []
         for i, filecontent in enumerate(final_contents):
             path = os.path.join(temp_path, str(i).zfill(10) + '.yml')
-            with open(path, 'w') as f:
-                f.write(filecontent[1])
-                f.flush()
+            with open(path, 'wb', 0) as f:  # no buffer
+                f.write(filecontent[1].encode('utf-8'))
+                f.flush() # flush although no buffer
+                os.fsync(f.fileno()) # fsync although no buffer
             temp_files.append("-f")
             temp_files.append(os.path.basename(path))
+        os.system("sync")
 
         cmdline = []
         cmdline.append("/usr/local/bin/docker-compose")
@@ -306,9 +308,24 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
         d = deepcopy(os.environ)
         d.update(env)
-        conf = __system(cmdline, cwd=temp_path, env=d)
+
+        # have some tries; sometimes the compose files are not completley written
+        # although turning off any buffers
+        count = 0
+        conf = None
+        while count < 5:
+            try:
+                conf = __system(cmdline, cwd=temp_path, env=d, suppress_out=True)
+            except Exception:
+                click.echo("Configuration files dont seem to be written completley retrying in 0.5 seconds to parse docker-compose configuration")
+                time.sleep(1.5)
+                count += 1
+            else:
+                break
+        if conf is None:
+            raise Exception("Configuration files either not found or not writable. Please try again.")
         # post-process config config
-        conf = post_process_complete_yaml_config(yaml.load(conf))
+        conf = post_process_complete_yaml_config(yaml.safe_load(conf))
         conf = yaml.dump(conf, default_flow_style=False)
 
         with open(dest_file, 'w') as f:

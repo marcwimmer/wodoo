@@ -58,7 +58,7 @@ def __find_files(cwd, *options):
     """
     :param options: ["-name", "default.settings"]
     """
-    files = __system(["find"] + list(options), cwd=cwd)
+    files = __system(["find"] + list(options), cwd=cwd, suppress_out=True)
     files = files.split("\n")
     files = [x for x in files if x and not x.endswith('/.')]
     files = [os.path.normpath(os.path.join(cwd, x)) for x in files]
