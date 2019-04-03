@@ -28,10 +28,13 @@ def admin_dir():
 def customs_root():
     if os.getenv("DOCKER_MACHINE", "0") == "1":
         if os.getenv("ACTIVE_CUSTOMS", "") and os.path.exists(os.environ['ACTIVE_CUSTOMS']):
-            return os.path.dirname(os.environ['ACTIVE_CUSTOMS'])
+            raise Exception("not customs root available")
     return os.path.join(odoo_root(), 'data', 'src', 'customs')
 
 def customs_dir(customs=None):
+    if os.getenv("DOCKER_MACHINE", "0") == "1":
+        if os.getenv("ACTIVE_CUSTOMS", "") and os.path.exists(os.environ['ACTIVE_CUSTOMS']):
+            return os.environ['ACTIVE_CUSTOMS']
     c = customs or current_customs()
     return os.path.join(customs_root(), c)
 
