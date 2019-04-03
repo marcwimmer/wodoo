@@ -26,6 +26,8 @@ def admin_dir():
     return os.path.join(odoo_root(), 'admin')
 
 def customs_root():
+    if os.getenv("DOCKER_MACHINE", "0") == "1":
+        return os.environ['ACTIVE_CUSTOMS']
     return os.path.join(odoo_root(), 'data', 'src', 'customs')
 
 def customs_dir(customs=None):
