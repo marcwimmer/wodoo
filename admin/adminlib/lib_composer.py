@@ -514,11 +514,6 @@ def __postprocess_config(config):
     if "RUN_POSTGRES" in config.keys() and config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
         config['RUN_POSTGRES_IN_RAM'] = "1"
 
-    if "DEVMODE" in config.keys() and config.get("DEVMODE", "0") == "1":
-        config['RUN_ODOODEV'] = "1"
-    else:
-        config['RUN_ODOODEV'] = "0"
-
     if "RUN_CALENDAR" in config.keys() and config.get("RUN_CALENDAR", "") == "1":
         config['RUN_CALENDAR_DB'] = "1"
 
