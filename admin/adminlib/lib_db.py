@@ -61,7 +61,7 @@ def __assert_btrfs(config):
         sys.exit(-1)
 
 def __get_snapshots(config):
-    snapshots = [x for x in __system(["buttervolume", "snapshots"]).split("\n") if x]
+    snapshots = [x for x in __system(["buttervolume", "snapshots"], suppress_out=True).split("\n") if x]
     # filter to current customs
     snapshots = [x for x in snapshots if '_POSTGRES_VOLUME_' in x and "_{}_".format(config.customs) in x]
     return snapshots
@@ -138,11 +138,11 @@ def snapshot_make(config, name):
     # remove existing snaps
     for snapshot, snapname in list(values.items()):
         if snapname == name:
-            __system(["buttervolume", "rm", snapshot])
+            __system(["buttervolume", "rm", snapshot], suppress_out=True)
             del values[snapshot]
             __set_snapshot_db(values)
 
-    snapshot = __system(["buttervolume", "snapshot", volume_name]).strip()
+    snapshot = __system(["buttervolume", "snapshot", volume_name], suppress_out=True).strip()
     __dc(['up', '-d'] + ['postgres'])
     if name:
         values = __get_snapshot_db()
@@ -163,7 +163,7 @@ def snapshot_restore(ctx, config, clear, name):
     if not snapshot:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    __system(["buttervolume", "restore", snapshot])
+    __system(["buttervolume", "restore", snapshot], suppress_out=True)
     if clear:
         ctx.invoke(snapshot_clear_all)
 
@@ -180,7 +180,7 @@ def snapshot_remove(ctx, config, name):
     if not snapshot:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    __system(["buttervolume", "rm", snapshot])
+    __system(["buttervolume", "rm", snapshot], suppress_out=True)
     __dc(['up', '-d'] + ['postgres'])
     values = __get_snapshot_db()
     if snapshot in values:
@@ -197,7 +197,7 @@ def snapshot_clear_all(ctx, config):
     if snapshots:
         __dc(['stop', '-t 1'] + ['postgres'])
         for snap in snapshots:
-            __system(["buttervolume", "rm", snap])
+            __system(["buttervolume", "rm", snap], suppress_out=True)
         __dc(['up', '-d'] + ['postgres'])
 
     ctx.invoke(do_list)
