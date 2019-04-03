@@ -90,8 +90,9 @@ def __choose_snapshot(config, take=False):
                 d = d.strftime("%Y-%m-%d %H:%M:%S")
             else:
                 d = '-'
-            snap_name += " " + d
+            snap_name_with_date = snap_name + " " + d
             used_mappings[snap_name] = x
+            used_mappings[snap_name_with_date] = x
             snapshots2.append(snap_name)
 
     if take:
@@ -107,7 +108,7 @@ def __get_snapshot_db():
     if not os.path.exists(d):
         __set_snapshot_db({})
     with open(d, 'r') as f:
-        return yaml.load(f.read())
+        return yaml.safe_load(f.read())
 
 def __set_snapshot_db(values):
     d = files['run/snapshot_mappings.txt']
@@ -167,6 +168,24 @@ def snapshot_restore(ctx, config, clear, name):
         ctx.invoke(snapshot_clear_all)
 
     __dc(['up', '-d'] + ['postgres'])
+
+@snapshot.command(name="remove")
+@click.argument('name', required=False)
+@pass_config
+@click.pass_context
+def snapshot_remove(ctx, config, name):
+    __assert_btrfs(config)
+
+    snapshot = __choose_snapshot(config, take=name)
+    if not snapshot:
+        return
+    __dc(['stop', '-t 1'] + ['postgres'])
+    __system(["buttervolume", "rm", snapshot])
+    __dc(['up', '-d'] + ['postgres'])
+    values = __get_snapshot_db()
+    if snapshot in values:
+        del values[snapshot]
+        __set_snapshot_db(values)
 
 @snapshot.command(name="clear", help="Removes all snapshots")
 @pass_config

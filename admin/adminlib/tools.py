@@ -785,7 +785,7 @@ def remove_webassets(conn):
 def get_dockercompose():
     from . import files
     content = __read_file(files['docker_compose'])
-    compose = yaml.load(content)
+    compose = yaml.safe_load(content)
     return compose
 
 def get_volume_names():
