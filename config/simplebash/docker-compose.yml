@@ -28,6 +28,7 @@ services:
       - HOST_ODOO_HOME
       - DUMPS_PATH
       - DUMPS_PATH_GID
+      - TZ
     entrypoint: /entrypoint.sh
     hostname: $HOSTNAME_TO_USE
 

@@ -1,3 +1,4 @@
+import arrow
 import yaml
 import json
 import pipes
@@ -11,6 +12,7 @@ import os
 import tempfile
 import click
 import inquirer
+from datetime import datetime
 from .tools import _dropdb
 from .tools import DBConnection
 from .tools import __assert_file_exists
@@ -64,6 +66,17 @@ def __get_snapshots(config):
     snapshots = [x for x in snapshots if '_POSTGRES_VOLUME_' in x and "_{}_".format(config.customs) in x]
     return snapshots
 
+def _try_get_date_from_snap(snap_name):
+    try:
+        snap_name = snap_name.split("@")[-1][:19]
+        d = datetime.strptime(snap_name, '%Y-%m-%dT%H:%M:%S')
+        tz = os.getenv("TZ", "")
+        if tz:
+            d = arrow.get(d).to(tz).datetime
+        return d
+    except Exception:
+        return None
+
 def __choose_snapshot(config, take=False):
     snapshots = __get_snapshots(config)
     mappings = __get_snapshot_db()
@@ -71,11 +84,19 @@ def __choose_snapshot(config, take=False):
     used_mappings = {}
     for x in snapshots:
         snap_name = mappings.get(x, x)
-        used_mappings[snap_name] = x
-        snapshots2.append(snap_name)
+        if x != snap_name:
+            d = _try_get_date_from_snap(x)
+            if d:
+                d = d.strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                d = '-'
+            snap_name += " " + d
+            used_mappings[snap_name] = x
+            snapshots2.append(snap_name)
 
     if take:
         return used_mappings[take]
+    snapshots2 = list(reversed(snapshots2))
 
     snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots2)])['snapshot']
     snapshot = used_mappings[snapshot]
@@ -104,12 +125,22 @@ def do_list(config):
         print(mappings.get(snap, snap))
 
 @snapshot.command(name="save")
-@click.argument('name', required=False)
+@click.argument('name', required=True)
 @pass_config
 def snapshot_make(config, name):
     __assert_btrfs(config)
+
+    values = __get_snapshot_db()
     volume_name = __get_postgres_volume_name(config)
     __dc(['stop', '-t 1'] + ['postgres'])
+
+    # remove existing snaps
+    for snapshot, snapname in list(values.items()):
+        if snapname == name:
+            __system(["buttervolume", "rm", snapshot])
+            del values[snapshot]
+            __set_snapshot_db(values)
+
     snapshot = __system(["buttervolume", "snapshot", volume_name]).strip()
     __dc(['up', '-d'] + ['postgres'])
     if name:

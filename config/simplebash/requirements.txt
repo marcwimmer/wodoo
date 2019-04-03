@@ -1,3 +1,4 @@
+arrow
 retrying
 inquirer
 pudb
@@ -15,7 +16,7 @@ humanize
 argh
 tabulate
 curses-menu
-Click==7.0
+Click
 pendulum
 idna
 psycopg2-binary
