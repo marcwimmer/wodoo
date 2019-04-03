@@ -149,8 +149,8 @@ def build_command():
         command += ['-v', '/sbin:/sbin_host']
         command += ['-v', '/tmp:/tmp_host']
         command += ['-v', '{}:/opt/odoo'.format(LOCAL_ODOO_HOME)]
-        if E("HOST_ODOO_HOME") != "/opt/odoo":
-            command += ['-v', '{h}:{h}'.format(h=E("HOST_ODOO_HOME"))]
+        if LOCAL_ODOO_HOME != "/opt/odoo":
+            command += ['-v', '{h}:{h}'.format(h=LOCAL_ODOO_HOME)]
     else:
         command += ['-v', '{}:/opt/odoo'.format(E("HOST_ODOO_HOME"))]
     command += ['simplebash']
