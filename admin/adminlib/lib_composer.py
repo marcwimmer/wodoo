@@ -313,10 +313,12 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         # although turning off any buffers
         count = 0
         conf = None
-        while count < 5:
+        while True:
             try:
                 conf = __system(cmdline, cwd=temp_path, env=d, suppress_out=True)
             except Exception:
+                if count > 5:
+                    raise
                 click.echo("Configuration files dont seem to be written completley retrying in 0.5 seconds to parse docker-compose configuration")
                 time.sleep(1.5)
                 count += 1
