@@ -18,6 +18,7 @@ services:
       - NET_ADMIN
       - DAC_READ_SEARCH
     volumes:
+      - ${ODOO_HOME}/run/odoo_outdir:/opt/out_dir
       - ${DUMPS_PATH}:/opt/dumps
       - ${ODOO_FILES}/:/opt/files
       - ${ODOO_HOME}/admin:/opt/odoo/admin

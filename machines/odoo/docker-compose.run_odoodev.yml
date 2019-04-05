@@ -1,8 +1,0 @@
-# manage-order 1001
-version: '3.3'
-services:
-  odoo:
-    command: bash -c 'echo "entering endless loop"; while true; do sleep 1; done'
-  odoo_base:
-    volumes:
-      - ${ODOO_HOME}/run/odoo_outdir:/opt/out_dir

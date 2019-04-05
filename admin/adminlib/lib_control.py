@@ -47,8 +47,7 @@ def dev(ctx, customs):
     ctx.invoke(rm)
     Commands.invoke(ctx, 'reload')
     ctx.invoke(build)
-    ctx.invoke(up, daemon=True)
-    ctx.invoke(attach, machine='odoo')
+    Commands.invoke(ctx, 'debug', machine="odoo")
 
 @control.command(name='exec')
 @click.argument('machine', required=True)
@@ -96,7 +95,7 @@ def wait_for_container_postgres(config):
 
 @control.command()
 def wait_for_port(host, port):
-    port = long(port)
+    port = int(port)
     __wait_for_port(host=host, port=port)
 
 
@@ -221,7 +220,8 @@ def debug(ctx, config, machine):
     # puts endless loop into container command and then attaches to it;
     # by this, name resolution to the container still works
     __set_db_ownership(config)
-    _askcontinue(config, "Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine))
+    if not config.devmode:
+        _askcontinue(config, "Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine))
     # shutdown current machine and start via run and port-mappings the replacement machine
     ctx.invoke(kill, machines=[machine])
     ctx.invoke(rm, machines=[machine])
@@ -245,6 +245,7 @@ def proxy_reload():
     if __is_container_running('proxy'):
         __dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
+
 Commands.register(kill)
 Commands.register(up)
 Commands.register(wait_for_container_postgres)
@@ -252,3 +253,4 @@ Commands.register(build)
 Commands.register(rm)
 Commands.register(recreate)
 Commands.register(proxy_reload)
+Commands.register(debug)
