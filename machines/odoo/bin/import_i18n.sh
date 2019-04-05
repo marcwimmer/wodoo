@@ -19,7 +19,7 @@ fi
 echo "Importing lang file $FILEPATH"
 sudo -E -H -u "$ODOO_USER" \
 	"$SERVER_DIR/$ODOO_EXECUTABLE" \
-	-c "$CONFIG_DIR/config_openerp" \
+	-c "$CONFIG_DIR/config_i18n" \
 	--log-level=warn \
 	--stop-after-init \
 	-d "$DBNAME" \

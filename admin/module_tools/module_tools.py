@@ -20,7 +20,6 @@ from .odoo_config import current_db
 from .odoo_config import customs_dir
 from .odoo_config import install_file
 from .odoo_config import translate_path_into_machine_path
-from .odoo_config import set_customs
 from .odoo_config import translate_path_relative_to_customs_root
 from .odoo_config import get_module_directory_in_machine
 from .myconfigparser import MyConfigParser

@@ -109,10 +109,7 @@ def recreate(ctx, config, machines):
         if config.run_postgres_in_ram:
             machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
-    if machines:
-        __dc(['up', '--no-start', '--force-recreate'] + machines)
-    else:
-        __dc(['up', '--no-start', '--force-recreate'])
+    __dc(['up', '--no-start', '--force-recreate'] + machines)
 
 @control.command()
 @click.argument('machines', nargs=-1)

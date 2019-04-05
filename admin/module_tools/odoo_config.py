@@ -165,12 +165,12 @@ def translate_path_relative_to_customs_root(path):
     path = path[len(parent) + 1:]
     return path
 
-def set_customs(customs, dbname=None):
-    from pudb import set_trace
-    set_trace()
-    dbname = dbname or customs
-    root = odoo_root()
-    conf = MyConfigParser(os.path.join(root, 'run/settings'))
-    conf['CUSTOMS'] = customs
-    conf['DBNAME'] = dbname
-    conf.write()
+# def set_customs(customs, dbname=None):
+    # from pudb import set_trace
+    # set_trace()
+    # dbname = dbname or customs
+    # root = odoo_root()
+    # conf = MyConfigParser(os.path.join(root, 'run/settings'))
+    # conf['CUSTOMS'] = customs
+    # conf['DBNAME'] = dbname
+    # conf.write()

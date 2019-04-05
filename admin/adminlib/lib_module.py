@@ -118,6 +118,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
             Commands.invoke(ctx, 'kill', machines=['proxy'])
 
     try:
+        Commands.invoke(ctx, 'rm', machines=['odoo_update'])
+        Commands.invoke(ctx, 'recreate', machines=['odoo_update'])
         params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
         if non_interactive:
             params += ['--non-interactive']
