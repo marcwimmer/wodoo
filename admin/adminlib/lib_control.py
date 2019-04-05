@@ -47,6 +47,7 @@ def dev(ctx, customs):
     ctx.invoke(rm)
     Commands.invoke(ctx, 'reload')
     ctx.invoke(build)
+    __dc(['up', '-d'])
     Commands.invoke(ctx, 'debug', machine="odoo")
 
 @control.command(name='exec')
