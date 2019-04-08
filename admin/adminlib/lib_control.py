@@ -210,7 +210,7 @@ def build(config, machines, pull=False, no_cache=False):
 @click.option('-p', '--ports', is_flag=True, help='With Port 33824')
 @pass_config
 @click.pass_context
-def debug(ctx, config, machine, with_ports):
+def debug(ctx, config, machine, ports):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     """
@@ -225,7 +225,7 @@ def debug(ctx, config, machine, with_ports):
     ctx.invoke(kill, machines=[machine])
     ctx.invoke(rm, machines=[machine])
     src_files = [files['debugging_template_onlyloop']]
-    if with_ports:
+    if ports:
         src_files += [files['debugging_template_withports']]
 
     for i, filepath in enumerate(src_files):
