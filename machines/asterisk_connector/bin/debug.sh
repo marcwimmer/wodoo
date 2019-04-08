@@ -1,3 +1,3 @@
 #!/bin/bash
-cd /usr/src
+cd /usr/src/app
 python connector.py
