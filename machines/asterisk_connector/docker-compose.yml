@@ -10,7 +10,7 @@ services:
     ports:
       - "8500:80"
     volumes:
-      - $ODOO_HOME/machines/asterisk_connector/app:/usr/src/app
+      - $ODOO_HOME/machines/asterisk_connector/app/${ODOO_VERSION}/connector.py:/usr/src/connector.py
       - ${CUSTOMS}_asterisk_connector_perm:/opt/perm
     environment:
         OUTSIDE_PORT: 8500
