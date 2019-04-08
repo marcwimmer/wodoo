@@ -230,7 +230,7 @@ def debug(ctx, config, machine, ports):
 
     for i, filepath in enumerate(src_files):
         dest = files['debugging_composer'].replace(".yml", ".{}.yml".format(i))
-        shutil.copy(files['debugging_template'], dest)
+        shutil.copy(filepath, dest)
         __replace_in_file(dest, "${CUSTOMS}", config.customs)
         __replace_in_file(dest, "${NAME}", machine)
 
