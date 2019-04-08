@@ -207,9 +207,10 @@ def build(config, machines, pull=False, no_cache=False):
 
 @control.command()
 @click.argument('machine', required=True)
+@click.option('-p', '--ports', is_flag=True, help='With Port 33824')
 @pass_config
 @click.pass_context
-def debug(ctx, config, machine):
+def debug(ctx, config, machine, with_ports):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     """
@@ -223,17 +224,23 @@ def debug(ctx, config, machine):
     # shutdown current machine and start via run and port-mappings the replacement machine
     ctx.invoke(kill, machines=[machine])
     ctx.invoke(rm, machines=[machine])
-    shutil.copy(files['debugging_template'], files['debugging_composer'])
-    __replace_in_file(files['debugging_composer'], "${CUSTOMS}", config.customs)
-    __replace_in_file(files['debugging_composer'], "${NAME}", machine)
+    src_files = [files['debugging_template_onlyloop']]
+    if with_ports:
+        src_files += [files['debugging_template_withports']]
 
-    # TODO make configurable in machines
-    PORT = str({
-        'odoo': 8069,
-        'odoo_debug': 8069
-    }.get(machine, 80))
-    __replace_in_file(files['debugging_composer'], "{machine_main_port}", PORT)
-    commands['dc'] += ['-f', files['debugging_composer']]
+    for i, filepath in enumerate(src_files):
+        dest = files['debugging_composer'].replace(".yml", ".{}.yml".format(i))
+        __replace_in_file(dest, "${CUSTOMS}", config.customs)
+        __replace_in_file(dest, "${NAME}", machine)
+
+        # TODO make configurable in machines
+        PORT = str({
+            'odoo': 8069,
+            'odoo_debug': 8069
+        }.get(machine, 80))
+        __replace_in_file(dest, "{machine_main_port}", PORT)
+
+        commands['dc'] += ['-f', dest]
 
     __dc(['up', '-d', machine])
     ctx.invoke(attach, machine=machine)

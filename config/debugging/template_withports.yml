@@ -1,7 +1,6 @@
 version: '3.5'
 services:
     ${NAME}:
-        command: /bin/bash -c "while true; do sleep 1; done"
         ports:
             - "33284:{machine_main_port}"
             - "33285:8069"

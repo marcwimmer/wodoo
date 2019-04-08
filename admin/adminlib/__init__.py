@@ -52,7 +52,8 @@ dirs = {
 
 files = {
     'docker_compose': 'run/docker-compose.yml',
-    'debugging_template': 'config/debugging/template.yml',
+    'debugging_template_withports': 'config/debugging/template_withports.yml',
+    'debugging_template_onlyloop': 'config/debugging/template_onlyloop.yml',
     'debugging_composer': 'run/debugging.yml',
     'settings': 'run/settings',
     'settings_local': 'run/settings.d/local',
