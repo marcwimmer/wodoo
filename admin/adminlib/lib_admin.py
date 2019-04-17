@@ -117,6 +117,7 @@ def pack(config):
     pwd = os.getcwd()
     os.chdir(tmp_folder)
     os.system("find . -type f -name *.py | grep \"modules\|common\" | xargs sed -i /set_trace/d", )
+    os.system("find . -type f -name *.py | grep \"odoo\" | grep -v qweb.py | xargs sed -i /set_trace/d", )  # there is in qweb a body = ast.parse("__import__('%s').set_trace()" % re.sub(r'[^a-zA-Z]', '', debugger)).body + body  # pdb, ipdb, pudb, ...
     os.system("find . -type f -name .odoo.ast -delete")
     os.chdir(pwd)
 
