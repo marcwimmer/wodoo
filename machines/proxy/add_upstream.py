@@ -19,7 +19,8 @@ def add_upstream(location, upstream_instance, config_path):
 #https://httpd.apache.org/docs/2.4/howto/reverse_proxy.html
 
 <Proxy balancer://{proxy_name}>
-    BalancerMember {upstream_instance} hcmethod=GET hcpasses=1 hcfails=5 hcinterval=2 hcuri=/
+    BalancerMember {upstream_instance} hcmethod=GET hcpasses=1 hcfails=5 hcinterval=30 hcuri=/ retry=60 timeout=5
+    ProxySet lbmethod=byrequests failontimeout=on
 </Proxy>
 
 <Location {url_server_status}>

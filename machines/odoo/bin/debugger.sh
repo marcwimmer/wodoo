@@ -1,6 +1,8 @@
 #!/bin/bash
 set -x
 
+/run_soffice.sh &
+
 # append configuration option to run old odoo on port 8072
 case "$ODOO_VERSION" in
 	"7.0" | "6.1" | "6.0")

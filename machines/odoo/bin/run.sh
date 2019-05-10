@@ -8,6 +8,8 @@ echo "Executing autosetup..."
 /run_autosetup.sh
 echo "Done autosetup"
 
+/run_soffice.sh &
+
 echo "Starting up odoo"
 if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
     echo 'Starting odoo cronjobs'
