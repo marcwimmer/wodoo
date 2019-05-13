@@ -18,23 +18,6 @@ def add_upstream(location, upstream_instance, config_path):
         f.write("""
 #https://httpd.apache.org/docs/2.4/howto/reverse_proxy.html
 
-<Proxy balancer://{proxy_name}>
-    BalancerMember {upstream_instance} hcmethod=GET hcpasses=1 hcfails=5 hcinterval=30 hcuri=/ retry=60 timeout=5
-    ProxySet lbmethod=byrequests failontimeout=on
-</Proxy>
-
-<Location {url_server_status}>
-    SetHandler server-status
-    Require all granted
-</Location>
-
-<Location {url_balancer_manager}>
-    SetHandler balancer-manager
-    Require all granted
-</Location>
-
-ProxyPass {url_balancer_manager} !
-ProxyPass {url_server_status} !
-ProxyPass {location} balancer://{proxy_name}/
-ProxyPassReverse {location} balancer://{proxy_name}/
+ProxyPass "{location}" "{upstream_instance}/"
+ProxyPassReverse "{location}" "{upstream_instance}/"
 """.format(**locals()).strip())
