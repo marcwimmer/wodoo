@@ -18,6 +18,6 @@ def add_upstream(location, upstream_instance, config_path):
         f.write("""
 #https://httpd.apache.org/docs/2.4/howto/reverse_proxy.html
 
-ProxyPass "{location}" "{upstream_instance}/"
+ProxyPass "{location}" "{upstream_instance}/" keepalive=on retry=3
 ProxyPassReverse "{location}" "{upstream_instance}/"
 """.format(**locals()).strip())
