@@ -20,6 +20,7 @@ INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
 PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
 I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
+ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
 DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
 RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
 
@@ -44,32 +45,33 @@ def update(mode, module):
     else:
         TESTS = ''
 
-    print(mode, module)
-    params = [
-        '/usr/bin/sudo',
-        '-H',
-        '-u',
-        os.getenv("ODOO_USER"),
-        os.path.expandvars("$SERVER_DIR/{}".format(os.environ["ODOO_EXECUTABLE"])),
-        '-c',
-        os.path.expandvars("$CONFIG_DIR/config_update"),
-        '-d',
-        os.path.expandvars("$DBNAME"),
-        '-' + mode,
-        module,
-        '--stop-after-init',
-        '--log-level=debug',
-    ]
-    if TESTS:
-        params += [TESTS]
-    subprocess.check_call(params)
+    if not ONLY_I18N:
+        print(mode, module)
+        params = [
+            '/usr/bin/sudo',
+            '-H',
+            '-u',
+            os.getenv("ODOO_USER"),
+            os.path.expandvars("$SERVER_DIR/{}".format(os.environ["ODOO_EXECUTABLE"])),
+            '-c',
+            os.path.expandvars("$CONFIG_DIR/config_update"),
+            '-d',
+            os.path.expandvars("$DBNAME"),
+            '-' + mode,
+            module,
+            '--stop-after-init',
+            '--log-level=debug',
+        ]
+        if TESTS:
+            params += [TESTS]
+        subprocess.check_call(params)
 
-    if mode == 'i':
+    if mode == 'i' and not ONLY_I18N:
         for module in module.split(','):
             if not is_module_installed(module):
                 print("{} is not installed - but it was tried to be installed.".format(module))
                 sys.exit(1)
-    elif I18N_OVERWRITE:
+    elif I18N_OVERWRITE or ONLY_I18N:
         for module in module.split(','):
             if is_module_installed(module):
                 for lang in get_all_langs():

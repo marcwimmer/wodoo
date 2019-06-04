@@ -55,9 +55,15 @@ def module_link():
     count = link_modules()
     click.echo("linked {} modules".format(count))
 
+def _get_default_modules_to_update():
+    from module_tools import module_tools
+    module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
+    module += module_tools.get_uninstalled_modules_where_others_depend_on()
+    module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+    return module
+
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
-@click.option('--keep-containers', '-k', default=False, is_flag=True, help="Does not recreate and restart odoo containers")
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
 @click.option('--dangling-modules', '-d', default=False, is_flag=True, help="Updates only dangling modules")
 @click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
@@ -68,23 +74,20 @@ def module_link():
 @click.option('--i18n', default=False, is_flag=True, help="Overwrite Translations")
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, keep_containers, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False):
+def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
 
     To update all (custom) modules set "all" here
     """
-    ctx.invoke(module_link)
-    from module_tools import module_tools
+    # ctx.invoke(module_link)
+    Commands.invoke(ctx, 'wait_for_container_postgres')
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
     if not module:
-        module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
-        module += module_tools.get_uninstalled_modules_where_others_depend_on()
-        module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+        module = _get_default_modules_to_update()
 
-    __start_postgres_and_wait(config)
     if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
         for x in __get_dangling_modules():
             click.echo("{}: {}".format(*x[:2]))
@@ -108,18 +111,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
         with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    # running duplicate updates is really a problem;
-    if not keep_containers:
-        Commands.invoke(ctx, 'kill')
-        Commands.invoke(ctx, 'rm')
-        Commands.invoke(ctx, 'recreate')
-        __start_postgres_and_wait(config)
-        if config.run_proxy:
-            Commands.invoke(ctx, 'kill', machines=['proxy'])
-
     try:
-        Commands.invoke(ctx, 'rm', machines=['odoo_update'])
-        Commands.invoke(ctx, 'recreate', machines=['odoo_update'])
         params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
         if non_interactive:
             params += ['--non-interactive']
@@ -138,17 +130,42 @@ def update(ctx, config, module, dangling_modules, installed_modules, keep_contai
     if check_install_state:
         ctx.invoke(show_install_state, suppress_error=no_dangling_check)
 
-    if not no_restart and not keep_containers:
-        for i in range(5):
-            Commands.invoke(ctx, 'up', daemon=True)
-            if config.run_proxy:
-                Commands.invoke(ctx, 'proxy_reload')
-            time.sleep(2)
+    if not no_restart:
+        Commands.invoke(ctx, 'up', daemon=True)
+        if config.run_proxy:
+            Commands.invoke(ctx, 'proxy_reload')
 
     Commands.invoke(ctx, 'status')
     if config.odoo_update_start_notification_touch_file_in_container:
         with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
             f.write("0")
+
+@odoo_module.command(name="update-i18n", help="Just update translations")
+@click.argument('module', nargs=-1, required=False)
+@click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
+@pass_config
+@click.pass_context
+def update_i18n(ctx, config, module, no_restart):
+    Commands.invoke(ctx, 'wait_for_container_postgres')
+    module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
+
+    if not module:
+        module = _get_default_modules_to_update()
+
+    try:
+        params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
+        params += ['--non-interactive']
+        params += ['--no-update-modulelist']
+        params += ['no-dangling-check']
+        params += ['--only-i18n']
+        __cmd_interactive(*params)
+    except Exception:
+        click.echo(traceback.format_exc())
+        ctx.invoke(show_install_state, suppress_error=True)
+        raise Exception("Error at /update_modules.py - aborting update process.")
+
+    if not no_restart:
+        Commands.invoke(ctx, 'restart', machines=['odoo'])
 
 @odoo_module.command(name='remove-old')
 @click.option("--ask-confirm", default=True, is_flag=True)

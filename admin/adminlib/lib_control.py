@@ -160,8 +160,6 @@ def restart(ctx, config, machines):
             machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
     ctx.invoke(kill, machines=machines)
-    ctx.invoke(rm, machines=machines)
-    ctx.invoke(recreate, machines=machines)
     ctx.invoke(up, machines=machines, daemon=True)
     ctx.invoke(proxy_reload)
 
@@ -248,8 +246,9 @@ def debug(ctx, config, machine, ports):
 
 @control.command()
 def proxy_reload():
-    if __is_container_running('proxy'):
-        __dcexec(['proxy', '/opt/bin/hot_reload.sh'])
+    pass
+    # if __is_container_running('proxy'):
+    #    __dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
 
 Commands.register(kill)
@@ -260,3 +259,4 @@ Commands.register(rm)
 Commands.register(recreate)
 Commands.register(proxy_reload)
 Commands.register(debug)
+Commands.register(restart)

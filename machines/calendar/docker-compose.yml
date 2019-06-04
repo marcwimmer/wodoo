@@ -15,6 +15,8 @@ services:
         - ${CUSTOMS}_calendar:/var/www/html
         - $ODOO_HOME/machines/calendar/src:/opt/src
         - $ODOO_HOME/machines/calendar/admin.py:/opt/admin.py
+    ports:
+        - 8082:80
     environment:
         PHP_VERSION: 7.0.10
         PGPASSWORD: davical

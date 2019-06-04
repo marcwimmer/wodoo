@@ -1,0 +1,19 @@
+{
+  "name": "docker_web_app",
+  "version": "1.0.0",
+  "description": "Node.js on Docker",
+  "author": "First Last <first.last@example.com>",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --debug --inspect=0.0.0.0:9229 server.js"
+  },
+  "dependencies": {
+    "body-parser-xml": "^1.1.0",
+    "xml-stringify": "^1.1.4",
+    "xml-parser": "^1.2.1", 
+    "express": "^4.17.1",
+    "http-proxy": "^1.17.0",
+    "unzip": "^0.1.11",
+    "xml-parser": "^1.2.1"
+  }
+}

@@ -8,8 +8,6 @@ services:
         dockerfile: $ODOO_HOME/machines/odoo/config/${ODOO_VERSION}/Dockerfile
         args:
           ODOO_VERSION: ${ODOO_VERSION}
-    depends_on:
-        - postgres
     security_opt:
       - apparmor:unconfined
       - seccomp:unconfined

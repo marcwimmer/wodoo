@@ -96,8 +96,6 @@ def do_compose(config, customs='', db='', demo=False):
     _remove_temp_directories()
     _prepare_filesystem()
     _prepare_yml_files_from_template_files(config)
-    _reset_proxy_configs()
-    _setup_proxy(config)
     _setup_odoo_instances(config)
     # ln path ./src to customs
     SRC_PATH = os.path.join(os.environ['LOCAL_ODOO_HOME'], 'src')
@@ -141,9 +139,6 @@ def _prepare_yml_files_from_template_files(config):
             _files += find_files(d, recursive=False)
 
     _prepare_docker_compose_files(config, files['docker_compose'], _files)
-
-def _reset_proxy_configs():
-    __empty_dir(dirs['run/proxy'])
 
 def __replace_all_envs_in_str(content, env):
     """
@@ -336,51 +331,6 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     finally:
         shutil.rmtree(temp_path)
 
-def _setup_proxy(config):
-    from . import odoo_config
-    from . import MyConfigParser
-    CONFIG_DIR = dirs['run/proxy']
-    __empty_dir(dirs['proxy_configs_dir'])
-
-    sys.path.append(dirs['machines/proxy'])
-    importlib.import_module("add_upstream")
-    from add_upstream import add_upstream as f_add_upstream
-
-    def get_rules():
-        for root, _, _filenames in os.walk(dirs['machines']):
-            for filename in _filenames:
-                if filename == 'upstream.path':
-                    filepath = os.path.join(root, filename)
-                    machine = None
-                    p = filepath
-                    while os.path.basename(p) != "machines":
-                        machine = os.path.basename(p)
-                        p = os.path.dirname(p)
-                    del p
-
-                    try:
-                        version = float(os.path.basename(os.path.dirname(filepath)))
-                    except Exception:
-                        version = None
-                    else:
-                        if str(version) != str(odoo_config.get_version_from_customs(config.customs)):
-                            continue
-                    with open(filepath, 'r') as f:
-                        content = f.readlines()
-                        for line in content:
-                            LOCATION, UPSTREAM = line.strip().split(" ")
-                            if not LOCATION or not UPSTREAM:
-                                raise Exception("Invalid rule: {}".format(line))
-                            yield filepath, LOCATION, UPSTREAM, machine
-
-    for filepath, LOCATION, UPSTREAM, machine in get_rules():
-        __makedirs(os.path.join(CONFIG_DIR, machine))
-        location_friendly_name = LOCATION.replace("/", "_")
-        filename = "{}.location".format(location_friendly_name)
-        CONFIG_PATH = os.path.join(CONFIG_DIR, machine, filename)
-        UPSTREAM_INSTANCE = UPSTREAM.replace("default", "odoo")
-        f_add_upstream(LOCATION, UPSTREAM_INSTANCE, CONFIG_PATH)
-
 def _setup_odoo_instances(config):
     def __add_location_files(config_path, dir):
         lines = []
@@ -395,32 +345,7 @@ def _setup_odoo_instances(config):
         if os.path.exists(files['odoo_instances']):
             for line in __file_get_lines(files['odoo_instances']):
                 name, domain = line.strip().split(" ")
-                config_path = os.path.join(dirs['proxy_configs_dir'], "{}.host".format(name))
-                shutil.copy(files['machines/proxy/instance.conf'], config_path)
-
-                if domain == "default":
-                    __replace_in_file(config_path, "__DOMAIN__", '*')
-                else:
-                    if domain:
-                        __replace_in_file(config_path, "__DOMAIN__", domain)
-                if name != "default":
-                    # adapt the one yml file and duplicate the odoo service there;
-                    # removing any ports
-                    with open(files['docker_compose']) as f:
-                        j = yaml.load(f.read())
-                    odoo = copy.deepcopy(j['services']['odoo'])
-                    if 'ports' in odoo:
-                        del odoo['ports']
-                    odoo['container_name'] = '_'.join([config.CUSTOMS, "odoo", name])
-                    j['services']['odoo_{}'.format(name)] = odoo
-                    with open(files['docker_compose'], 'w', 0) as f:
-                        f.write(yaml.dump(j, default_flow_style=False))
-
-    for file in os.listdir(dirs['run/proxy']):
-        if not file.endswith('.host'):
-            continue
-        config_path = os.path.join(dirs['run/proxy'], file)
-        __add_location_files(config_path, dirs['run/proxy'])
+                print(name, domain, "please configure nodejs proxy to handle this")
 
 def _export_settings(customs):
     from . import files
