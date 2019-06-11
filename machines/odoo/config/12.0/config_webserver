@@ -52,3 +52,4 @@ timezone = False
 translate_modules = ['all']
 unaccent = False
 workers = 0
+longpolling_port=8069
