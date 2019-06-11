@@ -7,9 +7,9 @@ services:
     restart: unless-stopped
     ports:
       - "${PROXY_PORT}:8080"
-      - "9229:9229"
+      # - "9229:9229"
     env_file:
         - $ODOO_HOME/run/settings
     volumes:
       - $ODOO_HOME/run/proxy:/etc/proxy
-      - $ODOO_HOME/machines/proxy/app:/usr/src/app
+      - $ODOO_HOME/machines/proxy/app/server.js:/usr/src/app/server.js
