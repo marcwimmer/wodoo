@@ -335,7 +335,7 @@ def __dcrun(cmd, interactive=False, raise_exception=True, logger=None, env={}):
     cmd = ['run']
     if not interactive:
         cmd += ['-T']
-    cmd += ['--rm', '-e ODOO_HOME=/opt/odoo'] + cmd2
+    cmd += ['--rm', '-eODOO_HOME=/opt/odoo'] + cmd2
     return __dc(cmd, raise_exception=True, logger=logger, env=env)
 
 def _askcontinue(config, msg=None):
