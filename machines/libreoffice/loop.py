@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import datetime
 import threading
@@ -8,8 +8,10 @@ import os
 INPUT = os.getenv("INPUT")
 OUTPUT = os.getenv("OUTPUT")
 
+print("Starting libreoffice converter daemon")
+
 def setup_dir(d):
-    os.makedirds(d)
+    os.makedirs(d)
     os.system("chown 1000:1000 '{}'".format(d))
     os.system("chmod a+rw '{}'".format(d))
 
