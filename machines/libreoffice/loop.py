@@ -11,7 +11,8 @@ OUTPUT = os.getenv("OUTPUT")
 print("Starting libreoffice converter daemon")
 
 def setup_dir(d):
-    os.makedirs(d)
+    if not os.path.exists(d):
+        os.makedirs(d)
     os.system("chown 1000:1000 '{}'".format(d))
     os.system("chmod a+rw '{}'".format(d))
 
