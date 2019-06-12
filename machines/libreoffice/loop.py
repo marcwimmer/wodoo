@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+import datetime
+import threading
+import subprocess
 import time
 import os
 INPUT = os.getenv("INPUT")
@@ -19,9 +22,19 @@ while True:
     for filename in files:
         filepath = os.path.join(INPUT, filename)
         del filename
-        os.system("/usr/bin/soffice --headless --convert-to pdf --outdir '{}' '{}'".format(
-            OUTPUT,
-            filepath
-        ))
-        os.unlink(filepath)
-    time.sleep(0.4)
+
+        try:
+            subprocess.check_call([
+                "/usr/bin/soffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                OUTPUT,
+                filepath
+            ], timeout=10)
+        except Exception:
+            print("Error converting File: {}".format(filename))
+        finally:
+            os.unlink(filepath)
+    time.sleep(1.0)
