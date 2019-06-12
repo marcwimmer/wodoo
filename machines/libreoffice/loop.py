@@ -24,7 +24,6 @@ while True:
     files = os.listdir(INPUT)
     for filename in files:
         filepath = os.path.join(INPUT, filename)
-        del filename
 
         try:
             subprocess.check_call([
@@ -40,4 +39,5 @@ while True:
             print("Error converting File: {}".format(filename))
         finally:
             os.unlink(filepath)
+        del filename
     time.sleep(1.0)
