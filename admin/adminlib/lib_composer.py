@@ -412,10 +412,10 @@ def _get_settings_directories(customs):
     from . import dirs
     customs_dir = odoo_config.customs_dir(customs)
     yield os.path.join(customs_dir, 'settings')
-    if os.path.exists('/etc_host/odoo/{}/settings'.format(customs)):
-        yield '/etc_host/odoo/{}/settings'.format(customs)
     if os.path.exists('/etc_host/odoo/settings'):
         yield '/etc_host/odoo/settings'
+    if os.path.exists('/etc_host/odoo/{}/settings'.format(customs)):
+        yield '/etc_host/odoo/{}/settings'.format(customs)
     yield dirs['settings.d']
 
 def __postprocess_config(config):
