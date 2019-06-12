@@ -120,15 +120,20 @@ def backup_db(ctx, config, filename, non_interactive):
 @backup.command(name='files')
 @pass_config
 def backup_files(config):
+    from . import BACKUPDIR
     BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=config.customs)
+    BACKUP_FILEPATH = os.path.join(BACKUPDIR, BACKUP_FILENAME)
 
-    if os.path.exists(BACKUP_FILENAME):
+    if os.path.exists(BACKUP_FILEPATH):
         second = BACKUP_FILENAME + ".bak"
-        if os.path.exists(second):
-            os.unlink(second)
-        shutil.move(BACKUP_FILENAME, second)
+        second_path = os.path.join(BACKUPDIR, second)
+        if os.path.exists(second_path):
+            os.unlink(second_path)
+        shutil.move(BACKUP_FILEPATH, second_path)
+        del second
+        del second_path
     __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
-    __apply_dump_permissions(BACKUP_FILENAME)
+    __apply_dump_permissions(BACKUP_FILEPATH)
     click.echo("Backup files done to {}".format(BACKUP_FILENAME))
 
 def __get_default_backup_filename(config):
