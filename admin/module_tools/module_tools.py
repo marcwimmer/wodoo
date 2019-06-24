@@ -526,6 +526,24 @@ def is_module_listed(module):
         cr.close()
         conn.close()
 
+def uninstall_module(module, raise_error=False):
+    """
+    Gentley uninstalls, without restart
+    """
+    conn, cr = get_conn()
+    try:
+        cr.execute("select state from ir_module_module where name = %s", (module,))
+        state = cr.fetchone()
+        if not state:
+            return
+        state = state[0]
+        if state not in ['uninstalled']:
+            cr.execute("update ir_module_module set state = 'uninstalled' where name = %s", (module,))
+        conn.commit()
+    finally:
+        cr.close()
+        conn.close()
+
 def is_module_installed(module):
     if not module:
         raise Exception("no module given")

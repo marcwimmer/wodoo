@@ -4,6 +4,7 @@ import datetime
 import sys
 import tempfile
 import subprocess
+from pathlib import Path
 from time import sleep
 from module_tools import odoo_config
 from module_tools import odoo_parser
@@ -11,10 +12,12 @@ from module_tools.module_tools import get_all_langs
 from module_tools.module_tools import delete_qweb
 from module_tools.module_tools import check_if_all_modules_from_install_are_installed
 from module_tools.module_tools import is_module_installed
+from module_tools.module_tools import uninstall_module
 from module_tools.module_tools import is_module_listed
 from module_tools.module_tools import get_lang_file_of_module
 from module_tools.module_tools import get_uninstalled_modules_that_are_auto_install_and_should_be_installed # NOQA
 from module_tools.odoo_parser import manifest2dict
+from module_tools.odoo_config import customs_dir
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
@@ -122,15 +125,30 @@ def update_module_list():
 
 def all_dependencies_installed(module):
     dir = odoo_config.module_dir(module)
+    manifest_path = odoo_parser.get_manifest_file(dir)
     if not dir:
         raise Exception("Path to {} does not exist. Perhaps ./odoo link required?")
-    manifest_path = odoo_parser.get_manifest_file(dir)
     manifest = manifest2dict(manifest_path)
     return all(is_module_installed(mod) for mod in manifest.get('depends', []))
+
+def _uninstall_marked_modules():
+    """
+    Checks for file "uninstall" in customs root and sets modules to uninstalled.
+    """
+    file = (Path(customs_dir()) / 'uninstall')
+    if not file.exists():
+        return
+    modules = filter(lambda x: x.strip(), file.open().read().split("\n"))
+    for module in modules:
+        uninstall_module(module, raise_error=False)
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
     single_module = MODULE and ',' not in MODULE
+
+    from pudb import set_trace
+    set_trace()
+    _uninstall_marked_modules()
 
     print("--------------------------------------------------------------------------")
     print("Updating Module {}".format(MODULE))
