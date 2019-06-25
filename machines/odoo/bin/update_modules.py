@@ -146,8 +146,6 @@ def main():
     MODULE = PARAMS[0] if PARAMS else ""
     single_module = MODULE and ',' not in MODULE
 
-    from pudb import set_trace
-    set_trace()
     _uninstall_marked_modules()
 
     print("--------------------------------------------------------------------------")
