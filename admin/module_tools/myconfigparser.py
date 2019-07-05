@@ -1,20 +1,18 @@
-# -*- coding: utf-8 -*-
 # used to read and write to settings
-
 import os
 import sys
+from pathlib import Path
 
 class MyConfigParser:
 
     def __init__(self, fileName, debug=False):
-        self.fileName = fileName
+        self.fileName = Path(fileName)
+        del fileName
         self.debug = debug
-        self.debug = debug
-        self.fileName = fileName
         self.fileContents = None
         self.configOptions = dict()
         self.quoteOptions = dict()
-        if os.path.exists(fileName):
+        if self.fileName.exists():
             self._open()
 
     def apply(self, other):
@@ -31,10 +29,10 @@ class MyConfigParser:
         return self.quoteOptions.keys()
 
     def _open(self):
-        if not os.path.exists(self.fileName):
+        if not self.fileName.exists():
             return
         try:
-            with open(self.fileName, 'r') as file:
+            with self.fileName.open() as file:
                 for line in file:
                     # If it isn't a comment get the variable and value and put it on a dict
                     if not line.startswith("#") and len(line) > 1:
@@ -54,10 +52,9 @@ class MyConfigParser:
         handled_keys = set()
         try:
             # Write the file contents
-            if not os.path.isfile(self.fileName):
-                with open(self.fileName, 'w'):
-                    pass
-            with open(self.fileName, 'r+') as file:
+            if not self.fileName.is_file():
+                self.fileName.write_text("")
+            with self.fileName.open("r+") as file:
                 lines = file.readlines()
                 # Truncate file so we don't need to close it and open it again
                 # for writing

@@ -62,6 +62,18 @@ def _get_default_modules_to_update():
     module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
     return module
 
+@odoo_module.command(name='update-ast-file')
+def update_ast_file():
+    from module_tools.odoo_parser import update_cache
+    update_cache()
+
+@odoo_module.command(name='update-module-file')
+@click.argument('module', nargs=-1, required=True)
+def update_module_file(module):
+    from module_tools.module_tools import Module
+    for module in module:
+        Module.get_by_name(module).update_module_file()
+
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")

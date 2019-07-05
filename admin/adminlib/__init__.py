@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 import imp
 import importlib
 import inspect
@@ -12,9 +13,9 @@ stdinput = None
 if not sys.stdin.isatty() and "SSH_CONNECTION" not in os.environ:
     stdinput = '\n'.join([x for x in sys.stdin])
 
-dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
+dir = Path(inspect.getfile(inspect.currentframe())).resolve().parent
 sys.path.append(os.path.join(dir, '../module_tools'))
-import module_tools
+import module_tools # NOQA
 from module_tools.myconfigparser import MyConfigParser  # NOQA
 from module_tools import odoo_config  # NOQA
 
@@ -70,24 +71,20 @@ commands = {
 }
 
 def make_absolute_paths():
-    dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
-    dir = os.path.dirname(dir)
-    dir = os.path.dirname(dir)
-    dirs['odoo_home'] = dir
+    dirs['odoo_home'] = Path(inspect.getfile(inspect.currentframe())).resolve().parent.parent.parent
 
     def make_absolute(d):
         for k, v in d.items():
             if not v:
                 continue
-            if not v.startswith('/'):
-                d[k] = os.path.join(dir, v)
+            if not str(v).startswith('/'):
+                d[k] = dirs['odoo_home'] / v
 
     make_absolute(dirs)
     make_absolute(files)
 
-    # os.environ['LOCAL_WORKING_DIR'] = "{}/{}".format(os.getenv("EXTERNAL_ROOT"), os.getenv("WORKING_DIR"))  # the working directory accessible from container of this script.
     dirs['host_working_dir'] = os.getenv('LOCAL_WORKING_DIR', "")
-    commands['dc'] = [x.replace("$docker_compose_file", files['docker_compose']) for x in commands['dc']]
+    commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc']]
 
 
 make_absolute_paths()
@@ -117,7 +114,7 @@ class Config(object):
             dirs['customs'] = None
 
         if dirs['customs']:
-            files['commit'] = os.path.join(dirs['customs'], os.path.basename(files['commit']))
+            files['commit'] = dirs['customs'] / files['commit'].name
         else:
             files['commit'] = None
 
@@ -147,7 +144,7 @@ class Config(object):
                 value = myconfig.get(tries, "")
                 if convert:
                     if convert == 'asint':
-                        value = long(value or '0')
+                        value = int(value or '0')
 
                 if value == "1":
                     value = True

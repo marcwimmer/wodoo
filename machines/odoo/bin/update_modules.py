@@ -10,13 +10,7 @@ from module_tools import odoo_config
 from module_tools import odoo_parser
 from module_tools.module_tools import get_all_langs
 from module_tools.module_tools import delete_qweb
-from module_tools.module_tools import check_if_all_modules_from_install_are_installed
-from module_tools.module_tools import is_module_installed
-from module_tools.module_tools import uninstall_module
-from module_tools.module_tools import is_module_listed
-from module_tools.module_tools import get_lang_file_of_module
-from module_tools.module_tools import get_uninstalled_modules_that_are_auto_install_and_should_be_installed # NOQA
-from module_tools.odoo_parser import manifest2dict
+from module_tools.module_tools import Module, Modules, DBModules
 from module_tools.odoo_config import customs_dir
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
@@ -29,7 +23,7 @@ RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
 
 def _get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
-    modules += get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+    modules += DBModules.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
     return sorted(list(set(modules)))
 
 def update(mode, module):
@@ -71,16 +65,17 @@ def update(mode, module):
 
     if mode == 'i' and not ONLY_I18N:
         for module in module.split(','):
-            if not is_module_installed(module):
+            if not DBModules.is_module_installed(module):
                 print("{} is not installed - but it was tried to be installed.".format(module))
                 sys.exit(1)
     elif I18N_OVERWRITE or ONLY_I18N:
         for module in module.split(','):
-            if is_module_installed(module):
+            module = Module(module)
+            if DBModules.is_module_installed(module.name):
                 for lang in get_all_langs():
                     if lang == 'en_US':
                         continue
-                    lang_file = get_lang_file_of_module(lang, module)
+                    lang_file = module.get_lang_file(lang)
                     if not lang_file:
                         continue
                     if os.path.isfile(lang_file):
@@ -106,11 +101,11 @@ def update(mode, module):
 
 def update_module_list():
     MOD = "update_module_list"
-    if not is_module_installed(MOD):
+    if not DBModules.is_module_installed(MOD):
         print("Update Module List is not installed - installing it...")
         update('i', MOD)
 
-    if not is_module_installed(MOD):
+    if not DBModules.is_module_installed(MOD):
         print("")
         print("")
         print("")
@@ -123,14 +118,6 @@ def update_module_list():
     update('u', MOD)
 
 
-def all_dependencies_installed(module):
-    dir = odoo_config.module_dir(module)
-    manifest_path = odoo_parser.get_manifest_file(dir)
-    if not dir:
-        raise Exception("Path to {} does not exist. Perhaps ./odoo link required?")
-    manifest = manifest2dict(manifest_path)
-    return all(is_module_installed(mod) for mod in manifest.get('depends', []))
-
 def _uninstall_marked_modules():
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
@@ -140,7 +127,7 @@ def _uninstall_marked_modules():
         return
     modules = filter(lambda x: x.strip(), file.open().read().split("\n"))
     for module in modules:
-        uninstall_module(module, raise_error=False)
+        DBModules.uninstall_module(module, raise_error=False)
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
@@ -161,10 +148,10 @@ def main():
     summary = []
 
     for module in MODULE.split(','):
-        if not is_module_installed(module):
-            if not is_module_listed(module):
+        if not DBModules.is_module_installed(module):
+            if not DBModules.is_module_listed(module):
                 update_module_list()
-                if not is_module_listed(module):
+                if not DBModules.is_module_listed(module):
                     raise Exception("After updating module list, module was not found: {}".format(module))
             update('i', module)
             summary.append("INSTALL " + module)
@@ -195,7 +182,7 @@ def main():
         print(line)
 
     if not single_module:
-        check_if_all_modules_from_install_are_installed()
+        DBModules.check_if_all_modules_from_install_are_installed()
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+from pathlib import Path
 from copy import deepcopy
 import os
 import codecs
@@ -22,15 +22,13 @@ from .odoo_config import install_file
 from .odoo_config import translate_path_into_machine_path
 from .odoo_config import translate_path_relative_to_customs_root
 from .odoo_config import get_module_directory_in_machine
+from .odoo_config import MANIFEST_FILE
 from .myconfigparser import MyConfigParser
 import traceback
 from .odoo_parser import get_view
-from .odoo_parser import is_module_of_version
-from .odoo_parser import manifest2dict
 import fnmatch
 import re
 import pprint
-from .consts import MANIFESTS
 from lxml import etree
 import subprocess
 try:
@@ -43,8 +41,7 @@ import sys
 import threading
 import glob
 
-
-ODOO_DEBUG_FILE = 'debug/odoo_debug.txt'
+ODOO_DEBUG_FILE = Path('debug/odoo_debug.txt')
 try:
     current_version()
 except Exception:
@@ -68,17 +65,6 @@ def exe(*params):
     socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (host))
     return socket_obj.execute(current_db(), uid, pwd, *params)
 
-
-def apply_po_file(pofile_path):
-    """
-    pofile_path - pathin in the machine
-    """
-    modname = get_module_of_file(pofile_path)
-    LANG = os.path.basename(pofile_path).split(".po")[0]
-    pofile_path = os.path.join(modname, pofile_path.split(modname + "/")[-1])
-
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        f.write('import_i18n:{}:{}'.format(LANG, pofile_path))
 
 def delete_qweb(modules):
     conn, cr = get_conn()
@@ -117,7 +103,7 @@ def delete_qweb(modules):
                 cr.execute("rollback to savepoint {}".format(sp))
 
         for module in cr.fetchall():
-            if not is_module_installed(module):
+            if not DBModules.is_module_installed(module):
                 continue
             cr.execute("""
                 select
@@ -146,567 +132,175 @@ def get_all_langs():
         conn.close()
     return langs
 
-def get_lang_file_of_module(lang, module):
-    module_path = get_module_path(module)
-    if not module_path:
-        return
-    lang_file = os.path.join(module_path, "i18n", lang + ".po")
-    if os.path.exists(lang_file):
-        return lang_file
-
-def export_lang(current_file):
-    module = get_module_of_file(current_file)
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        f.write('export_i18n:{}:{}'.format(LANG, module))
-
 def get_all_customs():
-    home = os.path.join(odoo_root(), 'data/src/customs')
+    home = odoo_root() / 'data/src/customs'
 
     customs = []
-    for dir in os.listdir(home):
-        if os.path.isdir(os.path.join(home, dir)):
-            customs.append(dir)
+    for dir in home.glob("*"):
+        if dir.is_dir():
+            customs.append(dir.name)
     return customs
 
-def get_all_manifests():
-    """
-    Returns a list of full paths of all manifests
-    """
-    for root, dirs, files in os.walk(customs_dir()):
-        for filename in files:
-            if any(x == filename for x in MANIFESTS):
-                if is_module_dir_in_version(root)['ok']:
-                    yield os.path.join(root, filename)
-
-def get_module_path(module_name):
-    """
-    returns the full path to the module
-    """
-    paths = list(filter(lambda x: '/{}/'.format(module_name) in x, get_all_manifests()))
-    if paths:
-        path = os.path.dirname(paths[-1])
-        return path
-
 def get_modules_from_install_file():
-    with open(install_file(), 'r') as f:
+    with install_file().open('r') as f:
         content = f.read().split('\n')
         modules_from_file = [x for x in content if not x.strip().startswith("#") and x]
         return modules_from_file
 
-def get_customs_modules(customs_path=None, mode=None):
-    """
+class DBModules(object):
+    def __init__(self):
+        pass
 
-    Called by odoo update
+    @classmethod
+    def check_if_all_modules_from_install_are_installed(clazz):
+        for module in get_modules_from_install_file():
+            if not clazz.is_module_installed(module):
+                print("Module {} not installed!".format(module))
+                sys.exit(32)
 
-    - fetches to be installed modules from install-file
-    - selects all installed, to_be_installed, to_upgrade modules from db and checks wether
-      they are from "us" or OCA
-      (often those modules are forgotten to be updated)
-
-    :param customs_path: e.g. /opt/odoo/active_customs
-
-    """
-    customs_path = customs_path or customs_dir()
-    assert mode in [None, 'to_update', 'to_install']
-
-    path_modules = install_file()
-    if os.path.isfile(path_modules):
-        modules_from_file = get_modules_from_install_file()
-        modules = sorted(list(set(get_all_installed_modules() + modules_from_file)))
-
-        installed_modules = set(list(get_all_installed_modules()))
-        all_non_odoo = list(get_all_non_odoo_modules())
-
-        modules = [x for x in all_non_odoo if x in installed_modules]
-        modules += modules_from_file
-        modules = list(set(modules))
-
-        if mode == 'to_install':
-            modules = [x for x in modules if not is_module_installed(x)]
-
-        return modules
-    return []
-
-def get_all_non_odoo_modules(return_relative_manifest_paths=False):
-    """
-    Returns module names of all modules, that are from customs or OCA.
-    """
-    for manifest in get_all_manifests():
-        relpath = translate_path_relative_to_customs_root(manifest)
-        if any(relpath.startswith(x) for x in ['common/', 'modules/', 'OCA/']):
-            if not return_relative_manifest_paths:
-                yield get_module_of_file(manifest)
-            else:
-                yield relpath
-
-def get_all_module_dependency_tree(all_manifests=None):
-    """
-    per modulename all dependencies - no hierarchy
-    """
-    result = {}
-    all_manifests = all_manifests or get_all_manifests()
-
-    for man in all_manifests:
-        module_name = get_module_of_file(man)
-        result.setdefault(module_name, set())
-        info = manifest2dict(man)
-        for dep in info.get('depends', []):
-            result[module_name].add(dep)
-    return result
-
-def get_module_dependency_tree(manifest_path, all_manifests=None):
-    """
-    Dict of dicts
-    """
-    if not all_manifests:
-        all_manifests = list(get_all_manifests())
-    result = {}
-
-    info = manifest2dict(manifest_path)
-
-    for dep in info.get("depends"):
-        if dep == 'base':
-            continue
-        result.setdefault(dep, {})
-
-        mans = [x for x in all_manifests if get_module_of_file(x) == dep]
-        for manifest in mans:
-            for module_name, deps in get_module_dependency_tree(manifest, all_manifests).items():
-                result[dep][module_name] = deps
-    return result
-
-def get_module_flat_dependency_tree(manifest_path, all_manifests=None):
-    deptree = get_module_dependency_tree(manifest_path, all_manifests=all_manifests)
-    result = set()
-
-    def x(d):
-        for k, v in d.items():
-            result.add(k)
-            x(v)
-
-    x(deptree)
-    return sorted(list(result))
-
-
-def get_module_of_file(filepath, return_path=False, return_manifest=False):
-
-    if os.path.isdir(filepath):
-        p = filepath
-    else:
-        p = os.path.dirname(filepath)
-
-    def is_possible_module_dir(x):
-        basename = os.path.basename(x)
-        for m in MANIFESTS:
-            if os.path.isfile(os.path.join(os.path.realpath(p), m)):
-                return True, x
+    @classmethod
+    def get_uninstalled_modules_that_are_auto_install_and_should_be_installed(clazz):
+        sql = """
+            select
+                mprior.name, mprior.state
+            from
+                ir_module_module_dependency d
+            inner join
+                ir_module_module m
+            on
+                m.id = d.module_id
+            inner join
+                ir_module_module mprior
+            on
+                mprior.name = d.name
+            where
+                m.name = '{module}';
+        """
+        conn, cr = get_conn()
+        result = []
         try:
-            float(basename)
-            if '.' in basename:
-                return True, os.path.abspath(os.path.join(x, '../'))
-        except Exception:
-            pass
+            cr.execute("select id, name from ir_module_module where state in ('uninstalled') and auto_install;")
+            for mod in [x[1] for x in cr.fetchall()]:
+                cr.execute(sql.format(module=mod))
+                if all(x[1] == 'installed' for x in cr.fetchall()):
+                    # means that all predecessing modules are installed but not the one;
+                    # so it shoule be installed
+                    result.append(mod)
+        finally:
+            cr.close()
+            conn.close()
+        return result
 
-        return False, x
+    @classmethod
+    def get_uninstalled_modules_where_others_depend_on(clazz):
+        sql = """
+            select
+                d.name
+            from
+                ir_module_module_dependency d
+            inner join
+                ir_module_module m
+            on
+                m.id = d.module_id
+            inner join
+                ir_module_module mprior
+            on
+                mprior.name = d.name
+            where
+                m.state in ('installed', 'to install', 'to upgrade')
+            and
+                mprior.state = 'uninstalled';
+        """
+        conn, cr = get_conn()
+        try:
+            cr.execute(sql)
+            return [x[0] for x in cr.fetchall()]
+        finally:
+            cr.close()
+            conn.close()
 
-    limit = 30
-    i = 0
-    while True:
-        i += 1
-        if i > limit:
+    @classmethod
+    def dangling_modules(clazz):
+        conn, cr = get_conn()
+        try:
+            cr.execute("select count(*) from ir_module_module where state in ('to install', 'to upgrade', 'to remove');")
+            return cr.fetchone()[0]
+        finally:
+            cr.close()
+            conn.close()
 
-            # HACK: if /common/ inside, then try version
-            common_version = "/common/" + str(current_version()) + "/"
-            if common_version not in filepath and '/common/' in filepath:
-                filepath = filepath.replace("/common/", common_version)
-                return get_module_of_file(filepath, return_path=return_path, return_manifest=return_manifest)
+    @classmethod
+    def get_all_installed_modules(clazz):
+        conn, cr = get_conn()
+        try:
+            cr.execute("select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');")
+            return [x[0] for x in cr.fetchall()]
+        finally:
+            cr.close()
+            conn.close()
 
-            raise Exception("No module found for: %s" % filepath)
-        found, p = is_possible_module_dir(p)
-        if found:
-            break
-        p = os.path.dirname(os.path.realpath(p))
+    @classmethod
+    def get_module_state(clazz, module):
+        conn, cr = get_conn()
+        try:
+            cr.execute("select name, state from ir_module_module where name = %s", (module,))
+            state = cr.fetchone()
+            if not state:
+                return False
+            return state[1]
+        finally:
+            cr.close()
+            conn.close()
 
-    module_name = os.path.basename(p)
-    try:
-        float(module_name)
-    except Exception:
-        pass
-    else:
-        module_name = os.path.basename(os.path.dirname(p))
+    @classmethod
+    def is_module_listed(clazz, module):
+        conn, cr = get_conn()
+        try:
+            cr.execute("select count(*) from ir_module_module where name = %s", (module,))
+            return bool(cr.fetchone()[0])
+        finally:
+            cr.close()
+            conn.close()
 
-    if return_manifest:
-        manifest = None
-        for m in MANIFESTS:
-            if os.path.isfile(os.path.join(p, m)):
-                manifest = m
-        if not manifest:
-            raise Exception('error')
-        return module_name, p, os.path.join(p, manifest)
+    @classmethod
+    def uninstall_module(clazz, module, raise_error=False):
+        """
+        Gentley uninstalls, without restart
+        """
+        conn, cr = get_conn()
+        try:
+            cr.execute("select state from ir_module_module where name = %s", (module,))
+            state = cr.fetchone()
+            if not state:
+                return
+            state = state[0]
+            if state not in ['uninstalled']:
+                cr.execute("update ir_module_module set state = 'uninstalled' where name = %s", (module,))
+            conn.commit()
+        finally:
+            cr.close()
+            conn.close()
 
-    if return_path:
-        return module_name, p
-    if not return_path:
-        return module_name
-
-def get_manifest_path_of_module_path(module_path):
-    for m in MANIFESTS:
-        path = os.path.join(module_path, m)
-        if os.path.isfile(path):
-            return path
-
-
-def get_path_to_current_odoo_module(current_file):
-    """
-    Fetches the path of __openerp__.py belonging to the current file
-    """
-    def is_module_path(path):
-        for f in MANIFESTS:
-            test = os.path.join(path, f)
-            if os.path.exists(test):
-                return test
-        return None
-
-    current_path = os.path.dirname(current_file) if not os.path.isdir(current_file) else current_file
-    counter = 0
-    while counter < 100 and len(current_path) > 1 and not is_module_path(current_path):
-        current_path = os.path.dirname(current_path)
-        counter += 1
-    if counter > 40:
-        pass
-
-    res = os.path.dirname(is_module_path(current_path))
-    return res
-
-def get_relative_path_to_odoo_module(filepath):
-    path_to_module = get_path_to_current_odoo_module(filepath)
-    filepath = filepath[len(path_to_module):]
-    if filepath.startswith("/"):
-        filepath = filepath[1:]
-    return filepath
-
-def is_module_dir_in_version(module_dir):
-    version = current_version()
-    if version >= 11.0:
-        ok = is_module_of_version(module_dir)
-        return {
-            'ok': ok,
-            'paths': [module_dir]
-        }
-    else:
-        result = {'ok': False, "paths": []}
-        info_file = os.path.join(module_dir, '.ln')
-        if os.path.exists(info_file):
-            info = manifest2dict(info_file)
-            if isinstance(info, (float, int)):
-                min_ver = info
-                max_ver = info
-                info = {'minimum_version': min_ver, 'maximum_version': max_ver}
-            else:
-                min_ver = info.get("minimum_version", 1.0)
-                max_ver = info.get("maximum_version", 1000.0)
-            if min_ver > max_ver:
-                raise Exception("Invalid version: {}".format(module_dir))
-            if float(version) >= float(min_ver) and float(version) <= float(max_ver):
-                result['ok'] = True
-
-            for m in MANIFESTS:
-                if os.path.exists(os.path.join(module_dir, m)):
-                    result['paths'].append(module_dir)
-            if info.get('paths') and result['ok']:
-                # used for OCA paths for example
-                for path in info['paths']:
-                    path = os.path.abspath(os.path.join(module_dir, path))
-                    result['paths'].append(path)
-        elif "/OCA/" in module_dir:
-            relpath = module_dir.split(u"/OCA/")[1].split("/")
-            if len(relpath) == 2:
-                return {
-                    'ok': True,
-                    'paths': [module_dir],
-                }
-
-    return result
-
-def get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
-    sql = """
-        select
-            mprior.name, mprior.state
-        from
-            ir_module_module_dependency d
-        inner join
-            ir_module_module m
-        on
-            m.id = d.module_id
-        inner join
-            ir_module_module mprior
-        on
-            mprior.name = d.name
-        where
-            m.name = '{module}';
-    """
-    conn, cr = get_conn()
-    result = []
-    try:
-        cr.execute("select id, name from ir_module_module where state in ('uninstalled') and auto_install;")
-        for mod in [x[1] for x in cr.fetchall()]:
-            cr.execute(sql.format(module=mod))
-            if all(x[1] == 'installed' for x in cr.fetchall()):
-                # means that all predecessing modules are installed but not the one;
-                # so it shoule be installed
-                result.append(mod)
-    finally:
-        cr.close()
-        conn.close()
-    return result
-
-def get_uninstalled_modules_where_others_depend_on():
-    sql = """
-        select
-            d.name
-        from
-            ir_module_module_dependency d
-        inner join
-            ir_module_module m
-        on
-            m.id = d.module_id
-        inner join
-            ir_module_module mprior
-        on
-            mprior.name = d.name
-        where
-            m.state in ('installed', 'to install', 'to upgrade')
-        and
-            mprior.state = 'uninstalled';
-    """
-    conn, cr = get_conn()
-    try:
-        cr.execute(sql)
-        return [x[0] for x in cr.fetchall()]
-    finally:
-        cr.close()
-        conn.close()
-
-def dangling_modules():
-    conn, cr = get_conn()
-    try:
-        cr.execute("select count(*) from ir_module_module where state in ('to install', 'to upgrade', 'to remove');")
-        return cr.fetchone()[0]
-    finally:
-        cr.close()
-        conn.close()
-
-def get_all_installed_modules():
-    conn, cr = get_conn()
-    try:
-        cr.execute("select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');")
-        return [x[0] for x in cr.fetchall()]
-    finally:
-        cr.close()
-        conn.close()
-
-def get_module_state(module):
-    conn, cr = get_conn()
-    try:
-        cr.execute("select name, state from ir_module_module where name = %s", (module,))
-        state = cr.fetchone()
-        if not state:
-            return False
-        return state[1]
-    finally:
-        cr.close()
-        conn.close()
-
-def is_module_listed(module):
-    conn, cr = get_conn()
-    try:
-        cr.execute("select count(*) from ir_module_module where name = %s", (module,))
-        return bool(cr.fetchone()[0])
-    finally:
-        cr.close()
-        conn.close()
-
-def uninstall_module(module, raise_error=False):
-    """
-    Gentley uninstalls, without restart
-    """
-    conn, cr = get_conn()
-    try:
-        cr.execute("select state from ir_module_module where name = %s", (module,))
-        state = cr.fetchone()
-        if not state:
-            return
-        state = state[0]
-        if state not in ['uninstalled']:
-            cr.execute("update ir_module_module set state = 'uninstalled' where name = %s", (module,))
-        conn.commit()
-    finally:
-        cr.close()
-        conn.close()
-
-def is_module_installed(module):
-    if not module:
-        raise Exception("no module given")
-    conn, cr = get_conn()
-    try:
-        cr.execute("select name, state from ir_module_module where name = %s", (module,))
-        state = cr.fetchone()
-        if not state:
-            return False
-        return state[1] in ['installed', 'to upgrade']
-    finally:
-        cr.close()
-        conn.close()
-
-def is_module_listed_in_install_file_or_in_dependency_tree(module, all_manifests=None, all_module_dependency_tree=None):
-    """
-    Checks wether a module is in the install file. If not,
-    then via the dependency tree it is checked, if it is an ancestor
-    of the installed modules
-    """
-    all_manifests = all_manifests or get_all_manifests()
-    depends = all_module_dependency_tree or get_all_module_dependency_tree(all_manifests=all_manifests)
-    mods = get_customs_modules()
-    if module in mods:
-        return True
-
-    def get_parents(module):
-        for parent, dependson in depends.items():
-            if module in dependson:
-                yield parent
-
-    def check_module(module):
-        for p in get_parents(module):
-            if p in mods:
-                return True
-            if check_module(p):
-                return True
-        return False
-
-    return check_module(module)
+    @classmethod
+    def is_module_installed(clazz, module):
+        if not module:
+            raise Exception("no module given")
+        conn, cr = get_conn()
+        try:
+            cr.execute("select name, state from ir_module_module where name = %s", (module,))
+            state = cr.fetchone()
+            if not state:
+                return False
+            return state[1] in ['installed', 'to upgrade']
+        finally:
+            cr.close()
+            conn.close()
 
 def make_customs(customs, version):
-    complete_path = os.path.join(odoo_root(), 'data/src/customs', customs)
-    if os.path.exists(complete_path):
+    complete_path = odoo_root() / Path('data/src/customs') / Path(customs)
+    if complete_path.exists():
         raise Exception("Customs already exists.")
-    shutil.copytree(os.path.join(odoo_root(), 'admin/customs_template', str(version)), complete_path)
-
-def link_modules():
-    LN_DIR = os.path.join(customs_dir(), 'links')
-    IGNORE_PATHS = ['odoo/addons', 'odoo/odoo/test']
-
-    if not os.path.isdir(LN_DIR):
-        os.mkdir(LN_DIR)
-
-    data = {'counter': 0}
-    version = current_version()
-    print("Linking all modules into: \n{}".format(LN_DIR))
-    all_valid_module_paths = []
-
-    for link in os.listdir(LN_DIR):
-        os.unlink(os.path.join(LN_DIR, link))
-
-    os.system("chown $ODOO_USER:$ODOO_USER \"{}\"".format(LN_DIR))
-
-    def search_dir_for_modules(base_dir):
-
-        def link_module(complete_module_dir):
-            if version >= 11.0:
-                if not os.path.exists(os.path.join(complete_module_dir, '__manifest__.py')):
-                    return
-                abs_root = os.path.abspath(base_dir)
-                dir = os.path.abspath(complete_module_dir)
-                module_name = get_module_of_file(complete_module_dir)
-                target = os.path.join(LN_DIR, module_name)
-                if os.path.islink(target):
-                    if os.path.realpath(target) != complete_module_dir:
-                        # let override OCA modules
-                        if "/OCA/" in os.path.realpath(target):
-                            os.unlink(target)
-                        elif "/OCA/" in complete_module_dir:
-                            os.unlink(target)
-                        else:
-                            raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
-                rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
-                try:
-                    os.symlink(rel_path, target)
-                except Exception:
-                    msg = traceback.format_exc()
-                    raise Exception("Symlink for module {module} already exists: \n{p1}\n{msg}".format(
-                        module=os.path.basename(dir),
-                        p1='\n'.join(x for x in all_valid_module_paths if os.path.basename(x) == os.path.basename(dir)),
-                        msg=msg,
-                    ))
-                data['counter'] += 1
-
-            else:
-                # prüfen, obs nicht zu den verbotenen pfaden gehört:
-                abs_root = os.path.abspath(base_dir)
-                dir = os.path.abspath(complete_module_dir)
-                while dir != abs_root:
-                    dir = os.path.abspath(os.path.join(dir, ".."))
-
-                try:
-                    module_name = get_module_of_file(complete_module_dir)
-                except Exception:
-                    return
-
-                if not os.path.exists(os.path.join(complete_module_dir, "__openerp__.py")):
-                    return
-
-                target = os.path.join(LN_DIR, module_name)
-
-                if os.path.exists(target):
-                    if os.path.realpath(target) != complete_module_dir:
-                        # let override OCA modules
-                        if "/OCA/" in os.path.realpath(target):
-                            os.unlink(target)
-                        elif "/OCA/" in complete_module_dir:
-                            os.unlink(target)
-                        else:
-                            raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
-
-                # if there are versions under the module e.g. 6.1, 7.0 then take name from parent
-                try:
-                    float(os.path.basename(target))
-                    target = os.path.dirname(target)
-                    target += "/%s" % os.path.basename(os.path.dirname(complete_module_dir))
-                except Exception:
-                    pass
-
-                while os.path.islink(target):
-                    os.unlink(target)
-
-                rel_path = complete_module_dir.replace(customs_dir(), "../active_customs")
-                os.symlink(rel_path, target)
-                data['counter'] += 1
-
-        exclude = [
-            '.git',
-            '__pycache__',
-            'active_customs',
-            'links',
-        ]
-        for root, dirs, files in os.walk(base_dir, followlinks=True):
-            dirs[:] = [x for x in dirs if x not in exclude]
-
-            if any(x in root for x in IGNORE_PATHS):
-                continue
-            if not is_module_of_version(root):
-                continue
-
-            all_valid_module_paths.append(root)
-
-        def sort_paths(x):
-            if '/OCA/' in x:
-                return "0000_" + x
-            return "1000_" + x
-
-        for path in sorted(all_valid_module_paths, key=sort_paths):
-            link_module(path)
-
-    search_dir_for_modules(customs_dir())
-    return data['counter']
+    shutil.copytree(str(odoo_root() / Path('admin/customs_template') / Path(str(version))), complete_path)
 
 def make_module(parent_path, module_name):
     """
@@ -714,11 +308,12 @@ def make_module(parent_path, module_name):
 
     """
     version = get_version_from_customs()
-    complete_path = os.path.join(parent_path, module_name)
-    if os.path.isdir(complete_path):
+    complete_path = Path(parent_path) / Path(module_name)
+    del parent_path
+    if complete_path.exists():
         raise Exception("Path already exists: {}".format(complete_path))
 
-    shutil.copytree(os.path.join(odoo_root(), 'admin/module_template', str(version)), complete_path)
+    shutil.copytree(str(odoo_root() / Path('admin/module_template') / Path(str(version))), complete_path)
     for root, dirs, files in os.walk(complete_path):
         if '.git' in dirs:
             dirs.remove('.git')
@@ -731,22 +326,21 @@ def make_module(parent_path, module_name):
                 f.write(content)
 
     # enter in install file
-    if os.path.isfile(install_file()):
-        with open(install_file(), 'r') as f:
+    if install_file().exists():
+        with install_file().open('r') as f:
             content = f.read().split("\n")
             content += [module_name]
             content = [x for x in sorted(content[0:], key=lambda line: line.replace("#", "")) if x]
-        with open(install_file(), 'w') as f:
+        with install_file().open('w') as f:
             f.write("\n".join(content))
 
     link_modules()
 
 def restart(quick):
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        if quick:
-            f.write('quick_restart')
-        else:
-            f.write('restart')
+    if quick:
+        write_debug_instruction('quick_restart')
+    else:
+        write_debug_instruction('restart')
 
 
 def remove_module_install_notifications(path):
@@ -761,22 +355,19 @@ def remove_module_install_notifications(path):
     versions sollte danach eingecheckt werden!
     """
 
-    for root, dirnames, filenames in os.walk(path):
-        filenames = [x for x in filenames if x.endswith(".xml")]
-        if 'migration' in dirnames:
-            dirnames.remove('migration')
+    for file in Path(path).glob("**/*.xml"):
+        if 'migration' in file.parts:
+            continue
+        if file.name.startswith('.'):
+            continue
 
-        for filename in filenames:
-            if filename.startswith('.'):
-                continue
-            path = os.path.join(root, filename)
-            if not os.path.getsize(path):
+            if not file.stat().st_size:
                 continue
             try:
-                with open(path, 'rb') as f:
+                with path.open('rb') as f:
                     tree = etree.parse(f)
             except Exception as e:
-                print("error at {filename}: {e}".format(filename=filename, e=e))
+                print("error at {filename}: {e}".format(filename=file, e=e))
 
             matched = False
             for n in tree.findall("//record[@model='mail.message']"):
@@ -784,37 +375,32 @@ def remove_module_install_notifications(path):
                     n.getparent().remove(n)
                     matched = True
             if matched:
-                with open(root + "/" + filename, "wb") as f:
+                with file.open("wb") as f:
                     tree.write(f)
 
 
 def run_test_file(path):
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        if not path:
-            f.write('last_unit_test')
-        else:
-            machine_path = translate_path_into_machine_path(path)
-            if os.getenv("DOCKER_MACHINE", "0") == "1":
-                path = machine_path
-            module = get_module_of_file(path)
-            # transform customs/cpb/common/followup/9.0/followup/tests/test_followup.py
-            # to customs/cpb/common/followup/9.0/followup/tests/__init__.pyc so that
-            # unit test runner is tricked to run the file
-            # test_file = os.path.join(os.path.dirname(machine_path), "__init__.py")
-            f.write('unit_test:{}:{}'.format(machine_path, module))
+    if not path:
+        instruction = 'last_unit_test'
+    else:
+        machine_path = translate_path_into_machine_path(path)
+        if os.getenv("DOCKER_MACHINE", "0") == "1":
+            path = machine_path
+        module = Module(path)
+        instruction = 'unit_test:{}:{}'.format(machine_path, module.name)
+    write_debug_instruction(instruction)
 
 def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()
     pattern = "*.xml"
-    for path, dirs, files in os.walk(os.path.abspath(root_path), followlinks=True):
+    for path, dirs, files in os.walk(str(root_path.resolve().absoulte()), followlinks=True):
         for filename in fnmatch.filter(files, pattern):
-            filename = os.path.join(path, filename)
-            if "/static/" not in filename:
+            if filename.name.startswith("."):
                 continue
-            if os.path.basename(filename).startswith("."):
+            filename = Path(path) / Path(filename)
+            if "static" not in filename.parts:
                 continue
-            with open(filename, "r") as f:
-                filecontent = f.read()
+            filecontent = filename.read_text()
             for idx, line in enumerate(filecontent.split("\n")):
                 for apo in ['"', "'"]:
                     if "t-name={0}{1}{0}".format(apo, template_name) in line and "t-extend" not in line:
@@ -837,216 +423,16 @@ def set_ownership_exclusive(host=None):
         conn.close()
 
 def update_module(filepath, full=False):
-    module = get_module_of_file(filepath)
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        f.write('update_module{}:{}'.format('_full' if full else '', module))
-
-
-def update_assets_file(module_path):
-    """
-    Put somewhere in the file: assets: <xmlid>, then
-    asset is put there.
-    """
-    assets_template = """
-<odoo><data>
-<template id="{id}" inherit_id="{inherit_id}">
-    <xpath expr="." position="inside">
-    </xpath>
-</template>
-</data>
-</odoo>
-"""
-    DEFAULT_ASSETS = "web.assets_backend"
-    module_path = get_path_to_current_odoo_module(module_path)
-
-    def default_dict():
-        return {
-            'stylesheets': [],
-            'js': [],
-        }
-
-    files_per_assets = {
-        # 'web.assets_backend': default_dict(),
-        # 'web.report_assets_common': default_dict(),
-        # 'web.assets_frontend': default_dict(),
-    }
-    # try to keep assets id
-    filepath = os.path.join(module_path, 'views/assets.xml')
-    current_id = None
-    if os.path.exists(filepath):
-        with open(filepath, 'r') as f:
-            xml = f.read()
-            doc = etree.XML(xml)
-            for t in doc.xpath("//template/@inherit_id"):
-                current_id = t
-
-    all_files = get_all_files_of_module(module_path)
-    if get_version_from_customs() < 11.0:
-        module_path = module_path.replace("/{}/".format(get_version_from_customs()), "")
-        if module_path.endswith("/{}".format(get_version_from_customs())):
-            module_path = "/".join(module_path.split("/")[:-1])
-
-    for file in all_files:
-        if file.startswith('.'):
-            continue
-
-        local_file_path = '/{}/'.format(os.path.basename(module_path)) + file
-
-        if current_id:
-            parent = current_id
-        elif file.startswith("static/"):
-            parent = DEFAULT_ASSETS
-        elif file.startswith('report/') or file.startswith("reports/"):
-            parent = 'web.report_assets_common'
-        else:
-            continue
-        files_per_assets.setdefault(parent, default_dict())
-
-        if file.endswith('.less') or file.endswith('.css'):
-            files_per_assets[parent]['stylesheets'].append(local_file_path)
-        elif file.endswith('.js'):
-            files_per_assets[parent]['js'].append(local_file_path)
-
-    doc = etree.XML(assets_template)
-    for asset_inherit_id, files in files_per_assets.items():
-        parent = deepcopy(doc.xpath("//template")[0])
-        parent.set('inherit_id', asset_inherit_id)
-        parent.set('id', asset_inherit_id.split('.')[-1])
-        parent_xpath = parent.xpath("xpath")[0]
-        for style in files['stylesheets']:
-            etree.SubElement(parent_xpath, 'link', {
-                'rel': 'stylesheet',
-                'href': style,
-            })
-        for js in files['js']:
-            etree.SubElement(parent_xpath, 'script', {
-                'type': 'text/javascript',
-                'src': js,
-            })
-        doc.xpath("/odoo/data")[0].append(parent)
-
-    # remove empty assets and the first template template
-    for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
-        to_remove.getparent().remove(to_remove)
-
-    if not doc.xpath("//link| //script"):
-        if os.path.exists(filepath):
-            os.unlink(filepath)
-    else:
-        if not os.path.exists(os.path.dirname(filepath)):
-            os.mkdir(os.path.dirname(filepath))
-        with open(filepath, 'w') as f:
-            f.write(etree.tostring(doc, pretty_print=True))
-
-def get_all_files_of_module(module_path):
-    all_files = [
-        os.path.join(root, name)
-        for root, dirs, files in os.walk(module_path)
-        for name in files
-    ]
-    for i in range(len(all_files)):
-        file = all_files[i]
-        common_prefix = os.path.commonprefix([file, module_path])
-        if common_prefix != "/":
-            f = all_files[i][len(common_prefix):]
-            if f.startswith('/'):
-                f = f[1:]
-            all_files[i] = f
-    return all_files
-
-def update_module_file(current_file):
-    if not current_file:
-        return
-    # updates __openerp__.py the update-section to point to all xml files in the module;
-    # except if there is a directory test; those files are ignored;
-    module_path = get_path_to_current_odoo_module(current_file)
-    file_path = get_manifest_path_of_module_path(module_path)
-    update_assets_file(module_path)
-
-    file = open(file_path, "rb")
-    mod = eval(file.read())
-    file.close()
-
-    all_files = get_all_files_of_module(module_path)
-    # first collect all xml files and ignore test and static
-    DATA_NAME = 'data'
-    if get_version_from_customs() <= 7.0:
-        DATA_NAME = 'update_xml'
-
-    mod[DATA_NAME] = []
-    mod["qweb"] = []
-    mod["js"] = []
-    mod["demo_xml"] = []
-    mod["css"] = []
-
-    for f in all_files:
-        if 'test/' in f:
-            continue
-        if f.endswith(".xml") or f.endswith(".csv") or f.endswith('.yml'):
-            if f.startswith("demo%s" % os.sep):
-                mod["demo_xml"].append(f)
-            elif f.startswith("static%s" % os.sep):
-                mod["qweb"].append(f)
-            else:
-                mod[DATA_NAME].append(f)
-        elif f.endswith(".js"):
-            mod["js"].append(f)
-        elif f.endswith(".css"):
-            mod["css"].append(f)
-
-    # keep test empty: use concrete call to test-file instead of testing on every module update
-    mod["test"] = []
-
-    # sort
-    mod[DATA_NAME].sort()
-    mod["js"].sort()
-    mod["css"].sort()
-    if 'depends' in mod:
-        mod["depends"].sort()
-
-    # now sort again by inspecting file content - if __openerp__.sequence NUMBER is found, then
-    # set this index; reason: some times there are wizards that reference forms and vice versa
-    # but cannot find action ids
-    # 06.05.2014: put the ir.model.acces.csv always at the end, because it references others, but security/groups always in front
-    sorted_by_index = [] # contains tuples (index, filename)
-    for filename in mod[DATA_NAME]:
-        filename_xml = filename
-        filename = os.path.join(module_path, filename)
-        sequence = 0
-        with open(filename, 'r') as f:
-            content = f.read()
-            if '__openerp__.sequence' in content:
-                sequence = int(re.search('__openerp__.sequence[^\d]*(\d*)', content).group(1))
-            elif os.path.basename(filename) == 'groups.xml':
-                sequence = -999999
-            elif os.path.basename(filename) == 'ir.model.access.csv':
-                sequence = 999999
-        sorted_by_index.append((sequence, filename_xml))
-
-    sorted_by_index = sorted(sorted_by_index, key=lambda x: x[0])
-    mod[DATA_NAME] = [x[1] for x in sorted_by_index]
-
-    if mod["qweb"]:
-        mod["web"] = True
-    if "application" not in mod:
-        mod["application"] = False
-
-    write_manifest(file_path, mod)
-
-def write_manifest(manifest_path, data):
-    with open(manifest_path, "wb") as file:
-        pp = pprint.PrettyPrinter(indent=4, stream=file)
-        pp.pprint(data)
+    module = Module(filepath)
+    write_debug_instruction('update_module{}:{}'.format('_full' if full else '', module))
 
 def update_view_in_db_in_debug_file(filepath, lineno):
     filepath = translate_path_into_machine_path(filepath)
-    with open(os.path.join(run_dir(), ODOO_DEBUG_FILE), 'w') as f:
-        f.write('update_view_in_db:{}|{}'.format(filepath, lineno))
+    write_debug_instruction('update_view_in_db:{}|{}'.format(filepath, lineno))
 
 def update_view_in_db(filepath, lineno):
-    module = get_module_of_file(filepath)
-    with open(filepath, 'r') as f:
-        xml = f.read().split("\n")
+    module = Module(filepath)
+    xml = filepath.read_text().split("\n")
 
     line = lineno
     xmlid = ""
@@ -1055,7 +441,7 @@ def update_view_in_db(filepath, lineno):
             line2 = line
             while line2 < lineno:
                 # with search:
-                match = re.findall('\ id=[\"\']([^\"^\']*)[\"\']', xml[line2])
+                match = re.findall(r'\ id=[\"\']([^\"^\']*)[\"\']', xml[line2])
                 if match:
                     xmlid = match[0]
                     break
@@ -1150,6 +536,8 @@ def update_view_in_db(filepath, lineno):
                     conn.commit()
                     if arch_fs_column:
                         try:
+                            from pudb import set_trace
+                            set_trace()
                             rel_path = module + "/" + get_relative_path_to_odoo_module(filepath)
                             cr.execute("update ir_ui_view set arch_fs=%s where id=%s", [
                                 rel_path,
@@ -1170,12 +558,535 @@ def update_view_in_db(filepath, lineno):
                 conn.close()
 
 
-def check_if_all_modules_from_install_are_installed():
-    for module in get_modules_from_install_file():
-        if not is_module_installed(module):
-            print("Module {} not installed!".format(module))
-            sys.exit(32)
+class Modules(object):
+
+    def __init__(self):
+
+        def get_all_manifests():
+            """
+            Returns a list of full paths of all manifests
+            """
+            for file in customs_dir().glob("**/" + MANIFEST_FILE):
+                yield file.absolute()
+
+        self.modules = {}
+        for m in get_all_manifests():
+            self.modules[m.parent.name] = Module(m)
+
+    def get_all_non_odoo_modules(self):
+        """
+        Returns module names of all modules, that are from customs or OCA.
+        """
+        for m in self.modules.values():
+            if any(x in m.manifest_path.parts for x in ['common', 'modules', 'OCA']):
+                yield m
+
+    @classmethod
+    def get_module_dependency_tree(clazz, module):
+        """
+        Dict of dicts
+
+        'stock_prod_lot_unique': {
+            'stock': {
+                'base':
+            },
+            'product': {},
+        }
+        """
+        result = {}
+
+        def append_deps(mod, data):
+            data[mod.name] = {}
+            for dep in mod.manifest_dict['depends']:
+                if dep == 'base':
+                    continue
+                dep_mod = [x for x in clazz.modules if x.name == dep]
+                if dep_mod:
+                    data[mod.name][dep_mod] = {}
+                    append_deps(dep_mod[0], data[mod.name][dep_mod])
+
+        append_deps(module, result)
+        return result
+
+    @classmethod
+    def get_module_flat_dependency_tree(clazz, module):
+        deptree = clazz.get_module_dependency_tree(module)
+        result = set()
+
+        def x(d):
+            for k, v in d.items():
+                result.add(k)
+                x(v)
+
+        x(deptree)
+        return sorted(list(result))
+
+class Module(object):
+
+    class IsNot(Exception): pass
+
+    def __init__(self, path):
+
+        from .odoo_config import customs_root
+        self.version = float(current_version())
+        self.customs_root = customs_root()
+        p = path if path.is_dir() else path.parent
+        self.path = p
+        del path
+        self.name = p.name
+
+        for p in [p] + list(p.parents):
+            if (p / MANIFEST_FILE).exists():
+                self._manifest_path = p / MANIFEST_FILE
+        if not getattr(self, '_manifest_path', ''):
+            raise Module.IsNot("no module found for {}".format(self.path))
+        if not self.path.exists() or not self.path.is_dir():
+            raise Module.IsNot("invalid dir: {}".format(self.path))
+
+    @property
+    def ttype(self):
+        if "OCA" in self.path.parts:
+            return 'OCA'
+        if "common" in self.path.parts:
+            return 'common'
+        if "modules" in self.path.parts:
+            return 'modules'
+        if 'addons' in self.path.parts:
+            return 'odoo'
+        raise Exception("undefined module: {}".format(self.path))
+
+    @property
+    def manifest_path(self):
+        return self._manifest_path
+
+    @property
+    def manifest_dict(self):
+        try:
+            return eval(self.manifest_path.read_text()) # TODO safe
+        except Exception:
+            print("error at file: %s" % self.manifest_path)
+            raise
+
+    def __make_path_relative(self, path):
+        path = path.resolve().absolute()
+        path = path.relative_to(self.path)
+        if not path:
+            raise Exception("not part of module")
+
+    def apply_po_file(self, pofile_path):
+        """
+        pofile_path - pathin in the machine
+        """
+        pofile_path = self.__make_path_relative(pofile_path)
+        LANG = pofile_path.name.split(".po")[0]
+        write_debug_instruction('import_i18n:{}:{}'.format(LANG, pofile_path))
+
+    def export_lang(self, current_file, LANG):
+        write_debug_instruction('export_i18n:{}:{}'.format(LANG, self.name))
+
+    @classmethod
+    def get_by_name(clazz, name):
+        from .odoo_config import customs_dir
+        path = customs_dir() / 'links' / name
+        if path.is_dir():
+            return Module(path)
+        raise Exception("Module not found or not linked: {}".format(name))
+
+    @property
+    def dependent_moduless(self):
+        """
+        per modulename all dependencies - no hierarchy
+        """
+        result = {}
+        for dep in self.manifest_dict.get('depends', []):
+            result.add(Module.get_by_name(dep))
+
+        return result
+
+    def get_lang_file(self, lang):
+        lang_file = self.path / "i18n" / lang.with_suffix('.po')
+        if lang_file.exists():
+            return lang_file
+
+    @property
+    def in_version(self):
+        if self.version >= 10.0:
+            version = self.manifest_dict['version']
+            check = str(self.version).split('.')[0] + '.'
+            return version.startswith(check)
+        else:
+            info_file = self.path / '.ln'
+            if info_file.exists():
+                info = eval(info_file.read_text())
+                if isinstance(info, (float, int)):
+                    min_ver = info
+                    max_ver = info
+                    info = {'minimum_version': min_ver, 'maximum_version': max_ver}
+                else:
+                    min_ver = info.get("minimum_version", 1.0)
+                    max_ver = info.get("maximum_version", 1000.0)
+                if min_ver > max_ver:
+                    raise Exception("Invalid version: {}".format(self.path))
+                if self.version >= float(min_ver) and self.version <= float(max_ver):
+                    return True
+
+            elif "OCA" in self.path.parts:
+                relpath = str(self.path).split(u"/OCA/")[1].split("/")
+                return len(relpath) == 2
+        return False
+
+    def update_assets_file(self):
+        """
+        Put somewhere in the file: assets: <xmlid>, then
+        asset is put there.
+        """
+        assets_template = """
+    <odoo><data>
+    <template id="{id}" inherit_id="{inherit_id}">
+        <xpath expr="." position="inside">
+        </xpath>
+    </template>
+    </data>
+    </odoo>
+    """
+        DEFAULT_ASSETS = "web.assets_backend"
+
+        def default_dict():
+            return {
+                'stylesheets': [],
+                'js': [],
+            }
+
+        files_per_assets = {
+            # 'web.assets_backend': default_dict(),
+            # 'web.report_assets_common': default_dict(),
+            # 'web.assets_frontend': default_dict(),
+        }
+        # try to keep assets id
+        filepath = self.path / 'views/assets.xml'
+        current_id = None
+        if filepath.exists():
+            with filepath.open('r') as f:
+                xml = f.read()
+                doc = etree.XML(xml)
+                for t in doc.xpath("//template/@inherit_id"):
+                    current_id = t
+
+        all_files = self.get_all_files_of_module()
+        if get_version_from_customs() < 11.0:
+            module_path = Path(str(self.path).replace("/{}/".format(get_version_from_customs()), ""))
+            if module_path.endswith("/{}".format(get_version_from_customs())):
+                module_path = "/".join(module_path.split("/")[:-1])
+
+        for file in all_files:
+            if file.name.startswith('.'):
+                continue
+
+            local_file_path = file.relative_to(self.path)
+
+            if current_id:
+                parent = current_id
+            elif local_file_path.parts[0] == 'static':
+                parent = DEFAULT_ASSETS
+            elif local_file_path.parts[0] == 'report':
+                parent = 'web.report_assets_common'
+            else:
+                continue
+            files_per_assets.setdefault(parent, default_dict())
+
+            if file.endswith('.less') or file.endswith('.css'):
+                files_per_assets[parent]['stylesheets'].append(local_file_path)
+            elif file.endswith('.js'):
+                files_per_assets[parent]['js'].append(local_file_path)
+
+        doc = etree.XML(assets_template)
+        for asset_inherit_id, files in files_per_assets.items():
+            parent = deepcopy(doc.xpath("//template")[0])
+            parent.set('inherit_id', asset_inherit_id)
+            parent.set('id', asset_inherit_id.split('.')[-1])
+            parent_xpath = parent.xpath("xpath")[0]
+            for style in files['stylesheets']:
+                etree.SubElement(parent_xpath, 'link', {
+                    'rel': 'stylesheet',
+                    'href': style,
+                })
+            for js in files['js']:
+                etree.SubElement(parent_xpath, 'script', {
+                    'type': 'text/javascript',
+                    'src': js,
+                })
+            doc.xpath("/odoo/data")[0].append(parent)
+
+        # remove empty assets and the first template template
+        for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
+            to_remove.getparent().remove(to_remove)
+
+        if not doc.xpath("//link| //script"):
+            if filepath.exists():
+                filepath.unlink()
+        else:
+            filepath.parent.mkdir(exist_ok=True)
+            with filepath.open('w') as f:
+                f.write(etree.tostring(doc, pretty_print=True))
+
+    def get_all_files_of_module(self):
+        for file in self.path.glob("**/*"):
+            if file.name.startswith("."):
+                continue
+            if ".git" in file.parts:
+                continue
+            # relative to module path
+            yield file
+
+    def update_module_file(self):
+        # updates __openerp__.py the update-section to point to all xml files in the module;
+        # except if there is a directory test; those files are ignored;
+        self.update_assets_file()
+        mod = self.manifest_dict
+
+        all_files = self.get_all_files_of_module()
+        # first collect all xml files and ignore test and static
+        DATA_NAME = 'data'
+        if get_version_from_customs() <= 7.0:
+            DATA_NAME = 'update_xml'
+
+        mod[DATA_NAME] = []
+        mod["qweb"] = []
+        mod["js"] = []
+        mod["demo_xml"] = []
+        mod["css"] = []
+
+        for f in all_files:
+            local_path = str(f.relative_to(self.path))
+            if 'test' in f.parts:
+                continue
+            if f.suffix in ['.xml', '.csv', '.yml']:
+                if f.name.startswith("demo%s" % os.sep):
+                    mod["demo_xml"].append(local_path)
+                elif f.name.startswith("static%s" % os.sep):
+                    mod["qweb"].append(local_path)
+                else:
+                    mod[DATA_NAME].append(local_path)
+            elif f.suffix == '.js':
+                mod["js"].append(local_path)
+            elif f.suffix in ['.css', '.less']:
+                mod["css"].append(local_path)
+
+        # keep test empty: use concrete call to test-file instead of testing on every module update
+        mod["test"] = []
+
+        # sort
+        mod[DATA_NAME].sort()
+        mod["js"].sort()
+        mod["css"].sort()
+        if 'depends' in mod:
+            mod["depends"].sort()
+
+        # now sort again by inspecting file content - if __openerp__.sequence NUMBER is found, then
+        # set this index; reason: some times there are wizards that reference forms and vice versa
+        # but cannot find action ids
+        # 06.05.2014: put the ir.model.acces.csv always at the end, because it references others, but security/groups always in front
+        sorted_by_index = [] # contains tuples (index, filename)
+        for filename in mod[DATA_NAME]:
+            filename_xml = filename
+            filename = self.path / filename
+            sequence = 0
+            with filename.open('r') as f:
+                content = f.read()
+                if '__openerp__.sequence' in content:
+                    sequence = int(re.search(r'__openerp__.sequence[^\d]*(\d*)', content).group(1))
+                elif filename.name == 'groups.xml':
+                    sequence = -999999
+                elif filename.name == 'ir.model.access.csv':
+                    sequence = 999999
+            sorted_by_index.append((sequence, filename_xml))
+
+        sorted_by_index = sorted(sorted_by_index, key=lambda x: x[0])
+        mod[DATA_NAME] = [x[1] for x in sorted_by_index]
+
+        if mod["qweb"]:
+            mod["web"] = True
+        if "application" not in mod:
+            mod["application"] = False
+
+        self.write_manifest(mod)
+
+    def write_manifest(self, data):
+        with self.manifest_path.open('w') as file:
+            pp = pprint.PrettyPrinter(indent=4, stream=file)
+            pp.pprint(data)
 
 
-if __name__ == '__main__':
-    run_test_file("/home/user1/odoo/data/src/customs/yorxs/common/product_modules/product_attributes_as_fields/tests/test_att_as_field.py")
+def link_modules():
+    LN_DIR = Path(customs_dir()) / 'links'
+    IGNORE_PATHS = ['odoo/addons', 'odoo/odoo/test']
+    LN_DIR.mkdir(exist_ok=True)
+
+    data = {'counter': 0}
+    version = current_version()
+    print("Linking all modules into: {}".format(LN_DIR))
+    valid_modules = []
+
+    [x.unlink() for x in LN_DIR.glob("*")]
+    os.system("chown $ODOO_USER:$ODOO_USER \"{}\"".format(LN_DIR)) # TODO in pathlib
+
+    def search_dir_for_modules(base_dir):
+
+        def link_module(module):
+            if version >= 11.0:
+                dir = module.path.resolve()
+                module_name = module.name
+                target = LN_DIR / module_name
+                if target.is_symlink():
+                    if target.resolve() != module.path.resolve():
+                        # let override OCA modules
+                        if module.ttype == 'OCA':
+                            print("Overriding OCA module {}".format(module.name))
+                            return
+                        target.unlink()
+                rel_path = Path("../active_customs") / module.path.relative_to(customs_dir())
+                try:
+                    if target.exists() and target.is_link():
+                        from pudb import set_trace
+                        set_trace()
+                    target.symlink_to(rel_path, target_is_directory=True)
+                except Exception:
+                    msg = traceback.format_exc()
+                    from pudb import set_trace
+                    set_trace()
+                    raise Exception("Symlink for module {module} already exists: \n{p1}\n{msg}".format(
+                        module=dir.name,
+                        p1='\n'.join(x.path for x in valid_modules if x.name == dir.name),
+                        msg=msg,
+                    ))
+                data['counter'] += 1
+
+            else:
+                # pruefen, obs nicht zu den verbotenen pfaden gehoert:
+
+                target = os.path.join(LN_DIR, module_name)
+
+                if os.path.exists(target):
+                    if os.path.realpath(target) != complete_module_dir:
+                        # let override OCA modules
+                        if "OCA" in target.parts:
+                            os.unlink(target)
+                        elif "OCA" in mod.path.parts:
+                            os.unlink(target)
+                        else:
+                            raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
+
+                # if there are versions under the module e.g. 6.1, 7.0 then take name from parent
+                try:
+                    float(target.name)
+                except Exception:
+                    pass
+                else:
+                    raise Exception("not supported anymore")
+
+                if target.is_link():
+                    target.unlink()
+
+                rel_path = Path(str(module.path).replace(customs_dir(), "../active_customs"))
+                from pudb import set_trace
+                set_trace()
+                target.symlink_to(rel_path)
+                data['counter'] += 1
+
+        exclude = [
+            '.git',
+            '__pycache__',
+            'active_customs',
+            'links',
+        ]
+
+        for file in Path(base_dir).glob("**/" + MANIFEST_FILE):
+            if any(x in exclude for x in file.parts): continue
+            if any(x in str(file) for x in IGNORE_PATHS):
+                continue
+            try:
+                mod = Module(file)
+            except Module.IsNot:
+                continue
+            if not mod.in_version:
+                continue
+            if mod.ttype in ['odoo']:
+                continue
+
+            valid_modules.append(mod)
+
+        for path in valid_modules:
+            link_module(path)
+
+    search_dir_for_modules(customs_dir())
+    return data['counter']
+
+
+def write_debug_instruction(instruction):
+    (run_dir() / ODOO_DEBUG_FILE).write_text(instruction)
+
+
+"""
+
+        # def get_customs_modules(mode=None):
+            # ""
+
+            # Called by odoo update
+
+            # - fetches to be installed modules from install-file
+            # - selects all installed, to_be_installed, to_upgrade modules from db and checks wether
+              # they are from "us" or OCA
+              # (often those modules are forgotten to be updated)
+
+            # :param customs_path: e.g. /opt/odoo/active_customs
+
+            # ""
+            # customs_path = customs_path or customs_dir()
+            # assert mode in [None, 'to_update', 'to_install']
+
+            # path_modules = install_file()
+            # if path_modules.is_file():
+                # modules_from_file = get_modules_from_install_file()
+                # modules = sorted(list(set(get_all_installed_modules() + modules_from_file)))
+
+                # installed_modules = set(list(get_all_installed_modules()))
+                # all_non_odoo = list(get_all_non_odoo_modules())
+
+                # modules = [x for x in all_non_odoo if x in installed_modules]
+                # modules += modules_from_file
+                # modules = list(set(modules))
+
+                # if mode == 'to_install':
+                    # modules = [x for x in modules if not is_module_installed(x)]
+
+                # return modules
+            # return []
+
+    # @classmethod
+
+    # def is_module_listed_in_install_file_or_in_dependency_tree(clazz, module):
+        # ""
+        # Checks wether a module is in the install file. If not,
+        # then via the dependency tree it is checked, if it is an ancestor
+        # of the installed modules
+        # ""
+        # depends = clazz.get_module_dependency_tree(module)
+        # mods = get_customs_modules()
+        # if module in mods:
+            # return True
+
+        # def get_parents(module):
+            # for parent, dependson in depends.items():
+                # if module in dependson:
+                    # yield parent
+
+        # def check_module(module):
+            # for p in get_parents(module):
+                # if p in mods:
+                    # return True
+                # if check_module(p):
+                    # return True
+            # return False
+
+        # return check_module(module)
+"""

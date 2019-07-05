@@ -1,3 +1,4 @@
+from pathlib import Path
 from copy import deepcopy
 import subprocess
 import time
@@ -333,26 +334,26 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
 def _setup_odoo_instances(config):
     def __add_location_files(config_path, dir):
+        from pudb import set_trace
+        set_trace()
+        etc_proxy = Path("/etc/proxy")
         lines = []
-        for subdir in os.listdir(dir):
-            if os.path.isdir(os.path.join(dir, subdir)):
-                for file in os.listdir(os.path.join(dir, subdir)):
-                    lines.append("\tInclude " + os.path.join("/etc/proxy", os.path.basename(subdir), file))
+        for file in dir.glob("**"):
+            if file.is_file():
+                lines.append("\tInclude " + str(etc_proxy / file.parent.name / file.name))
         __replace_in_file(config_path, "__INCLUDES__", '\n'.join(lines))
 
-    if os.path.exists(files['odoo_instances']):
-
-        if os.path.exists(files['odoo_instances']):
-            for line in __file_get_lines(files['odoo_instances']):
-                name, domain = line.strip().split(" ")
-                print(name, domain, "please configure nodejs proxy to handle this")
+    if files['odoo_instances'].exists():
+        for line in __file_get_lines(files['odoo_instances']):
+            name, domain = line.strip().split(" ")
+            print(name, domain, "please configure nodejs proxy to handle this")
 
 def _export_settings(customs):
     from . import files
     from . import odoo_config
     from . import MyConfigParser
 
-    if not os.path.exists(files['settings']):
+    if not files['settings'].exists():
         raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
 
     setting_files = _collect_settings_files(customs)
@@ -367,7 +368,7 @@ def _export_settings(customs):
 def _collect_settings_files(customs):
     from . import dirs
     _files = []
-    _files.append(os.path.join(dirs['odoo_home'], 'machines/defaults'))
+    _files.append(dirs['odoo_home'] / Path('machines/defaults'))
     # optimize
     for filename in __find_files(dirs['machines'], "-name", "default.settings"):
         _files.append(os.path.join(dirs['machines'], filename))

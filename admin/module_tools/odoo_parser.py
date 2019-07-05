@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+from pathlib import Path
 import os
 import re
 import fnmatch
@@ -18,12 +18,11 @@ from .odoo_config import current_customs
 from .odoo_config import plaintextfile
 from .odoo_config import current_version
 from .odoo_config import translate_path_relative_to_customs_root
-from .consts import MANIFEST_FILE
-from .consts import MANIFESTS
+from .odoo_config import MANIFEST_FILE
 from .consts import LN_FILE
+modified_filename = ""
 cache_models = {}
 cache_xml_ids = {}
-modified_filename = ""
 
 SEP_FILE = ":::"
 SEP_LINENO = "::"
@@ -32,42 +31,6 @@ try:
     VERSION = current_version()
 except Exception:
     VERSION = None
-
-def ignore_file(full_path):
-    if "/." in full_path:
-        return True
-    return False
-
-def _determine_module(current_file):
-    """
-    identifies for the given file
-    """
-    current_path = os.path.dirname(current_file)
-    counter = 0
-    result = None
-
-    def exists_manifest(current_path):
-        for manifest in MANIFESTS:
-            if os.path.exists("%s/%s" % (current_path, manifest)):
-                return True
-        return False
-
-    while counter < 100 and len(current_path) > 1 and not exists_manifest(current_path):
-        current_path = os.path.dirname(current_path)
-        counter += 1
-    if counter > 40:
-        pass
-    if current_path != "/":
-        result = os.path.basename(current_path)
-        try:
-            float(result)
-        except Exception:
-            pass
-        else:
-            # is a version take parent path
-            current_path = os.path.dirname(current_path)
-            result = os.path.basename(current_path)
-    return result
 
 def try_to_get_filepath(filepath):
     if not os.path.isfile(filepath):
@@ -93,137 +56,59 @@ def get_file_lineno(line):
     return path, int(lineno)
 
 def get_view(inherit_id):
-    with open(plaintextfile(), 'r') as f:
+    with plaintextfile().open('r') as f:
         lines = f.readlines()
         lines = filter(lambda line: inherit_id in line, lines)
-        lines = filter(lambda line: re.search("\D\ {}\ \D".format(inherit_id), line), lines)
+        lines = filter(lambda line: re.search(r"\D\ {}\ \D".format(inherit_id), line), lines)
         if lines:
             return get_file_lineno(lines[0])
     return None, None
 
 def get_qweb_template(name):
-    with open(plaintextfile(), 'r') as f:
+    with plaintextfile().open('r') as f:
         lines = f.readlines()
         lines = filter(lambda line: '~qweb' in line and name in line, lines)
         if lines:
             return get_file_lineno(lines[0])
     return None, None
 
-def manifest2dict(manifest_path):
-    if not manifest_path:
-        print(traceback.format_stack())
-        raise Exception('Missing manifest path')
-    with open(manifest_path, 'r') as f:
-        content = f.read()
-    try:
-        info = eval(content)
-    except Exception:
-        from pudb import set_trace
-        set_trace()
-        print("error at file: %s" % manifest_path)
-        raise
-    return info
-
-def get_manifest_file(module_dir):
-    for x in MANIFESTS:
-        if os.path.exists(os.path.join(module_dir, x)):
-            return os.path.join(module_dir, x)
-    return None
-
-def is_module_of_version(path):
-    if float(VERSION) >= 11.0:
-        p = path
-        while p and p != '/':
-            if os.path.exists(os.path.join(os.path.abspath(p), MANIFEST_FILE)):
-                break
-            p = os.path.dirname(p)
-        path = os.path.join(os.path.abspath(p), MANIFEST_FILE)
-        if os.path.exists(path):
-            manifest = manifest2dict(path)
-            v = manifest.get('version', '0.0')
-            if len(v.split('.')) < 4:
-                # raise Exception("Manifest file {} contains invalid version: {}".format(path, v))
-                return False
-            return v.startswith(str(VERSION) + ".")
-    else:
-        p = path
-        while p and p != '/':
-            if os.path.exists(os.path.join(os.path.abspath(p), "__openerp__.py")):
-                break
-            if os.path.exists(os.path.join(os.path.abspath(p), LN_FILE)):
-                break
-            p = os.path.dirname(p)
-        path = os.path.abspath(p)
-
-        LNFILE = os.path.join(path, LN_FILE)
-        if os.path.isfile(LNFILE):
-            with open(LNFILE, 'r') as f:
-                content = f.read()
-            try:
-                content = eval(content)
-            except Exception:
-                content = {}
-
-            if isinstance(content, dict):
-                _from = float(content.get('minimum_version', 0))
-                _to = float(content.get('maximum_version', 9999))
-            elif isinstance(content, (float, int)):
-                _from = content
-                _to = content
-            result = VERSION >= _from and VERSION <= _to
-            return result
-        elif '/OCA/' in path:
-            MANIFEST = os.path.join(path, "__openerp__.py")
-            if os.path.exists(MANIFEST):
-                return True
-        return False
-
-
 def walk_files(on_match, pattern):
-    from module_tools import get_module_of_file
-
-    def handle(path, dirs, files):
-        if '/migration/' in path: # ignore migrations folder that contain OpenUpgrade
-            return
-
-        if is_module_of_version(path) or 'odoo/addons' in path:
-            for filename in fnmatch.filter(files, pattern):
-                filename = os.path.join(path, filename)
-                if ignore_file(filename):
-                    continue
-                if os.path.basename(filename).startswith("."):
-                    continue
-                module = _determine_module(filename)
-                with open(filename, "r") as f:
-                    lines = f.read().split("\n")
-
-                if modified_filename:
-                    if modified_filename != filename:
-                        continue
-
-                on_match(filename, module, lines)
+    from module_tools.module_tools import Module, Modules
+    from .odoo_config import customs_root
 
     if modified_filename:
-        root = os.path.dirname(modified_filename)
         try:
-            module, module_path = get_module_of_file(modified_filename, return_path=True)
-        except Exception:
-            # no module edited, ignore:
-            return
-
-        for path, dirs, files in os.walk(os.path.abspath(module_path), followlinks=False):
-            if '.git' in dirs:
-                dirs.remove('.git')
-            handle(path, dirs, files)
-
+            mod = Module(modified_filename)
+            modules = [mod]
+        except Module.IsNot:
+            modules = []
+        else:
+            modules = Modules().modules.values()
     else:
-        root = os.path.join(customs_dir()) # everything linked here...
+        modules = Modules().modules.values()
 
-        for path, dirs, files in os.walk(os.path.abspath(root), followlinks=False):
-            for not_allowed in ['.git', 'links', 'active_customs']:
-                if not_allowed in dirs:
-                    dirs.remove(not_allowed)
-            handle(path, dirs, files)
+    for module in modules:
+        for file in module.path.glob("**/" + pattern):
+            rel_file = file.relative_to(module.path)
+            if rel_file.parts[0] in ['migrations', 'migration']: # ignore migrations folder that contain OpenUpgrade
+                continue
+            if '.git' in file.parts:
+                continue
+            if 'links' in file.parts:
+                continue
+            if 'active_customs' in file.parts:
+                continue
+            if file.name.startswith('.'):
+                continue
+
+            try:
+                mod = Module(file)
+            except Exception:
+                continue
+
+            lines = file.read_text(encoding='utf-8', errors='ignore').split("\n")
+            on_match(file, mod, lines)
+
 
 def _get_methods():
 
@@ -232,14 +117,14 @@ def _get_methods():
     def on_match(filename, module, lines):
         for linenumber, line in enumerate(lines):
             linenumber += 1
-            methodname = re.search("def\ ([^\(]*)", line)
+            methodname = re.search(r"def\ ([^\(]*)", line)
             if methodname:
                 methodname = methodname.group(1)
                 model = None
                 if filename in cache_models:
                     if 'lines' in cache_models[filename]:
-                        linenums = filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys())
-                        linenums.sort(lambda a, b: cmp(b, a))
+                        linenums = list(filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys()))
+                        linenums.sort()
                         model = None
                         if len(linenums) > 0:
                             model = cache_models[filename]['lines'][linenums[0]]
@@ -277,15 +162,15 @@ def _get_fields():
                     continue
                 fieldname = match.group(1)
             if filename in cache_models and 'lines' in cache_models[filename]:
-                linenums = filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys())
-                linenums.sort(lambda a, b: cmp(b, a))
+                linenums = list(filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys()))
+                linenums.sort()
                 model = None
                 if len(linenums) > 0:
                     model = cache_models[filename]['lines'][linenums[0]]
 
                 result.append({
                     'model': model,
-                    'module': _determine_module(filename),
+                    'module': module.name,
                     'type': 'N/A',
                     'filename': os.path.basename(filename),
                     'filepath': filename,
@@ -320,7 +205,7 @@ def _get_qweb_templates():
     result = []
 
     def on_match(filename, module, lines):
-        if '/static/' not in filename:
+        if filename.relative_to(module.path).parts[0] != 'static':
             return
 
         try:
@@ -472,14 +357,14 @@ def _get_xml_ids():
                 append_result(model, id, r.sourceline, 'qweb', inherit_id=inherit_id)
 
     walk_files(on_match, "*.xml")
-    result.sort(lambda a, b: cmp(a["id"], b["id"]))
+    result.sort(key=lambda x: x['id'])
 
     return result
 
 def _get_models():
     result = []
 
-    def on_match(filename, unused, lines):
+    def on_match(filename, module, lines):
         with open(filename, "r") as f:
             lines = f.read().split("\n")
 
@@ -507,15 +392,15 @@ def _get_models():
                     cache_models["models"][model] = []
                 cache_models[filename]['models'][model].append(linenum)
                 cache_models[filename]['lines'][linenum] = model
-                cache_models["models"][model].append({'file': filename, 'line': linenum, 'inherited': inherited})
+                cache_models["models"][model].append({'file': filename, 'line': linenum, 'inherited': inherited, 'module': module})
 
             for linenum, line in enumerate(lines):
                 linenum += 1
 
                 osvregex = [
-                    "class.*\(.*osv.*\)",
-                    "class.*\(.*TransientModel.*\)",
-                    "class.*\(.*Model.*\)",
+                    r"class.*\(.*osv.*\)",
+                    r"class.*\(.*TransientModel.*\)",
+                    r"class.*\(.*Model.*\)",
                 ]
                 if any(re.match(x, line) for x in osvregex):
                     syslog.syslog("found line: {}\n".format(line))
@@ -527,14 +412,14 @@ def _get_models():
                         line1 = lines[linenum1]
                         linenum1 += 1
 
-                        if re.search("[\\\t\ ]_name.?=", line1):
+                        if re.search(r"[\\\t\ ]_name.?=", line1):
                             _name = re.search("[\\\'\\\"]([^\\\'^\\\"]*)[\\\'\\\"]", line1)
                             if not _name:
                                 # print "classname not found in: %s"%lines[i]
                                 pass
                             else:
                                 _name = _name.group(1)
-                        elif re.search("[\\\t\ ]_inherit.?=", line1):
+                        elif re.search(r"[\\\t\ ]_inherit.?=", line1):
                             match = re.search("[\\\'\\\"]([^\\\'^\\\"]*)[\\\'\\\"]", line1)
                             if match:
                                 _inherit = match.group(1)
@@ -555,8 +440,8 @@ def _get_models():
                 'model': m,
                 'line': l['line'],
                 'filepath': l['file'],
-                'filename': os.path.basename(l['file']),
-                'module': _determine_module(l['file']),
+                'filename': l['file'].name,
+                'module': l['module'].name,
                 'inherited': l['inherited']
             })
     return result
@@ -578,7 +463,7 @@ def update_cache(arg_modified_filename=None):
     if arg_modified_filename:
         arg_modified_filename = os.path.realpath(arg_modified_filename)
     plainfile = plaintextfile()
-    if not os.path.isfile(plainfile):
+    if not plainfile.is_file():
         arg_modified_filename = None
 
     customs = current_customs()
@@ -594,7 +479,7 @@ def update_cache(arg_modified_filename=None):
         # suck errors - called from vim for all files
         return
 
-    if arg_modified_filename and os.path.isfile(plainfile):
+    if arg_modified_filename and plainfile.is_file():
         _remove_entries(plainfile, rel_path)
 
     cache_models = {}
@@ -604,15 +489,6 @@ def update_cache(arg_modified_filename=None):
     methods = _get_methods()
     fields = _get_fields()
     views = _get_views()
-
-    # get the relative module path and ignore everthing from that module;
-    # the walk routine scanned the whole module
-    from module_tools import get_module_of_file
-    try:
-        module, module_path = get_module_of_file(modified_filename, return_path=True)
-        module_path = translate_path_relative_to_customs_root(module_path) + "/"
-    except Exception:
-        module_path = None
 
     if os.path.isfile(plainfile) and arg_modified_filename:
         f = open(plainfile, 'a')
@@ -725,8 +601,8 @@ def try_to_get_context(line_content, lines_before, filename):
     inherit_id = None
     for i in range(len(lines_before)):
         line = lines_before[- i - 1]
-        if re.search("<template\ ", line) and "<templates " not in line:
-            inherit_id = re.search("\ inherit_id=['\"]([^\"^']*)", line)
+        if re.search(r"<template\ ", line) and "<templates " not in line:
+            inherit_id = re.search(r"\ inherit_id=['\"]([^\"^']*)", line)
             if inherit_id:
                 inherit_id = inherit_id.group(1)
                 return {
@@ -734,7 +610,7 @@ def try_to_get_context(line_content, lines_before, filename):
                     'inherit_id': inherit_id,
                 }
         if "<t " in line:
-            inherit_id = re.search("\ t-extend=['\"]([^\"^']*)", line)
+            inherit_id = re.search(r"\ t-extend=['\"]([^\"^']*)", line)
             if inherit_id:
                 inherit_id = inherit_id.group(1)
                 return {
@@ -746,7 +622,7 @@ def try_to_get_context(line_content, lines_before, filename):
             is_arch = True
         if re.search("<field.*name=['\"]inherit_id['\"]", line):
             try:
-                inherit_id = re.search("\ ref=['\"]([^\"^']*)", line).group(1)
+                inherit_id = re.search(r"\ ref=['\"]([^\"^']*)", line).group(1)
             except Exception:
                 pass
         if re.search("<field.*name=['\"]model['\"]", line):

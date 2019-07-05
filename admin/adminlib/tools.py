@@ -1,3 +1,4 @@
+from pathlib import Path
 import io
 import traceback
 import yaml
@@ -753,6 +754,7 @@ def _dropdb(config, conn):
     click.echo("Database dropped {}".format(conn.dbname))
 
 def __backup_postgres(conn, filepath):
+    filepath = Path(filepath)
     os.environ['PGPASSWORD'] = conn.pwd
     psyconn = conn.get_psyco_connection()
     cr = psyconn.cursor()
@@ -760,14 +762,16 @@ def __backup_postgres(conn, filepath):
     size = cr.fetchone()[0] * 0.7 # ct
     bytes = str(float(size)).split(".")[0]
     psyconn.close()
+    temp_filepath = filepath.with_name('.' + filepath.name)
     os.system('pg_dump -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(
         host=conn.host,
         port=conn.port,
         user=conn.user,
         dbname=conn.dbname,
         bytes=bytes,
-        filepath=filepath,
+        filepath=temp_filepath,
     ))
+    temp_filepath.replace(filepath)
 
 def remove_webassets(conn):
     click.echo("Removing web assets")

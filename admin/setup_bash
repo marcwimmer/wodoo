@@ -1,8 +1,0 @@
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-export PATH="$PATH:$DIR"
-
-# zeige zuletzt bearbeitete branches:
-alias last-branch="git for-each-ref --count=30 --sort=-committerdate refs/heads/ --format='%(refname:short)'"
-alias gs="git status"
-alias ci="contint -d"
-alias gac="git add . && git status -s > /tmp/state && git commit -a -F /tmp/state --no-edit && rm /tmp/state"

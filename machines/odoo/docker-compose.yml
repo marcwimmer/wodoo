@@ -26,6 +26,7 @@ services:
       - ${ODOO_HOME}/data/src/customs/${CUSTOMS}/links:/opt/odoo/addons_customs
       - ${ODOO_HOME}/run/debug:/tmp/debug
       - ${ODOO_HOME}/machines/odoo/bin/update_modules.py:/update_modules.py
+      - ${ODOO_HOME}/machines/odoo/bin/apply-env-to-config.py:/apply-env-to-config.py
       - ${ODOO_HOME}/machines/odoo/bin/unit_test.py:/unit_test.py
     env_file:
       - $ODOO_HOME/run/settings

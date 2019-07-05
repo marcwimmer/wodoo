@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
+from pathlib import Path
 import os
-import os.path
 import re
 import time
 
@@ -39,7 +39,7 @@ def tail(path, seek=None):
 
 @decorator.timeout
 def exists(path, timeout=300):
-    return os.path.exists(path)
+    return Path(path).exists()
 
 
 def pattern(path, patterns, run=True, seek=None, timeout=300):
@@ -55,7 +55,7 @@ def pattern(path, patterns, run=True, seek=None, timeout=300):
     elif isinstance(patterns, tuple):
         patterns = list(patterns)
 
-    if seek is None and os.path.exists(path):
+    if seek is None and Path(path).exists():
         seek = size(path)
 
     def check():
