@@ -515,17 +515,18 @@ def update_view_in_db(filepath, lineno):
                 columns = [x[0] for x in cr.fetchall()]
                 arch_column = 'arch_db' if 'arch_db' in columns else 'arch'
                 arch_fs_column = 'arch_fs' if 'arch_fs' in columns else None
-                print("Searching view/template for {}.{}".format(module, xmlid))
+                module = Module.get_by_name(module)
+                print("Searching view/template for {}.{}".format(module.name, xmlid))
                 cr.execute("select res_id from ir_model_data where model='ir.ui.view' and module=%s and name=%s",
                              [
-                                 module,
+                                 module.name,
                                  xmlid
                              ])
                 res = cr.fetchone()
                 if not res:
-                    print("No view found for {}.{}".format(module, xmlid))
+                    print("No view found for {}.{}".format(module.name, xmlid))
                 else:
-                    print('updating view of xmlid: %s.%s' % (module, xmlid))
+                    print('updating view of xmlid: %s.%s' % (module.name, xmlid))
                     res_id = res[0]
                     cr.execute("select type from ir_ui_view where id=%s", (res_id,))
                     # view_type = cr.fetchone()[0]
@@ -538,7 +539,7 @@ def update_view_in_db(filepath, lineno):
                         try:
                             from pudb import set_trace
                             set_trace()
-                            rel_path = module + "/" + get_relative_path_to_odoo_module(filepath)
+                            rel_path = module.name + "/" + str(filepath.relative_to(module.path))
                             cr.execute("update ir_ui_view set arch_fs=%s where id=%s", [
                                 rel_path,
                                 res_id
@@ -642,18 +643,6 @@ class Module(object):
             raise Module.IsNot("no module found for {}".format(self.path))
         if not self.path.exists() or not self.path.is_dir():
             raise Module.IsNot("invalid dir: {}".format(self.path))
-
-    @property
-    def ttype(self):
-        if "OCA" in self.path.parts:
-            return 'OCA'
-        if "common" in self.path.parts:
-            return 'common'
-        if "modules" in self.path.parts:
-            return 'modules'
-        if 'addons' in self.path.parts:
-            return 'odoo'
-        raise Exception("undefined module: {}".format(self.path))
 
     @property
     def manifest_path(self):
@@ -919,7 +908,6 @@ class Module(object):
 
 def link_modules():
     LN_DIR = Path(customs_dir()) / 'links'
-    IGNORE_PATHS = ['odoo/addons', 'odoo/odoo/test']
     LN_DIR.mkdir(exist_ok=True)
 
     data = {'counter': 0}
@@ -934,47 +922,35 @@ def link_modules():
 
         def link_module(module):
             if version >= 11.0:
-                dir = module.path.resolve()
                 module_name = module.name
                 target = LN_DIR / module_name
                 if target.is_symlink():
                     if target.resolve() != module.path.resolve():
                         # let override OCA modules
-                        if module.ttype == 'OCA':
-                            print("Overriding OCA module {}".format(module.name))
-                            return
+                        print("Overriding module {} in {} by {}".format(module.name, target.resolve(), module.path))
                         target.unlink()
                 rel_path = Path("../active_customs") / module.path.relative_to(customs_dir())
-                try:
-                    if target.exists() and target.is_link():
-                        from pudb import set_trace
-                        set_trace()
-                    target.symlink_to(rel_path, target_is_directory=True)
-                except Exception:
-                    msg = traceback.format_exc()
-                    from pudb import set_trace
-                    set_trace()
-                    raise Exception("Symlink for module {module} already exists: \n{p1}\n{msg}".format(
-                        module=dir.name,
-                        p1='\n'.join(x.path for x in valid_modules if x.name == dir.name),
-                        msg=msg,
-                    ))
+                target.symlink_to(rel_path, target_is_directory=True)
                 data['counter'] += 1
 
             else:
                 # pruefen, obs nicht zu den verbotenen pfaden gehoert:
 
-                target = os.path.join(LN_DIR, module_name)
+                target = LN_DIR / module_name
 
-                if os.path.exists(target):
-                    if os.path.realpath(target) != complete_module_dir:
+                if target.exists():
+                    if target.resolve().absolute() != mod.path.resolve().absoulte():
                         # let override OCA modules
                         if "OCA" in target.parts:
                             os.unlink(target)
                         elif "OCA" in mod.path.parts:
                             os.unlink(target)
                         else:
-                            raise Exception("Module {} already linked to {}; could not link to {}".format(os.path.basename(target), os.path.realpath(target), complete_module_dir))
+                            raise Exception("Module {} already linked to {}; could not link to {}".format(
+                                os.path.basename(target),
+                                os.path.realpath(target),
+                                mod.path
+                            ))
 
                 # if there are versions under the module e.g. 6.1, 7.0 then take name from parent
                 try:
@@ -993,16 +969,20 @@ def link_modules():
                 target.symlink_to(rel_path)
                 data['counter'] += 1
 
-        exclude = [
-            '.git',
-            '__pycache__',
-            'active_customs',
-            'links',
+        # default module paths, can be set by .module_paths
+        modules_path_file = customs_dir() / '.module_paths'
+        module_paths = [
+            'OCA',
+            'common',
+            'modules',
         ]
+        if modules_path_file.exists():
+            module_paths = list(filter(lambda x: x, modules_path_file.read_text().split("\n")))
+        del modules_path_file
+        _customs_dir = customs_dir()
 
         for file in Path(base_dir).glob("**/" + MANIFEST_FILE):
-            if any(x in exclude for x in file.parts): continue
-            if any(x in str(file) for x in IGNORE_PATHS):
+            if not any(str(file.relative_to(_customs_dir)).startswith(x + "/") for x in module_paths):
                 continue
             try:
                 mod = Module(file)
@@ -1010,12 +990,16 @@ def link_modules():
                 continue
             if not mod.in_version:
                 continue
-            if mod.ttype in ['odoo']:
-                continue
 
             valid_modules.append(mod)
 
-        for path in valid_modules:
+        def _sort_modules(mod):
+            for i, x in enumerate(module_paths):
+                if x in str(mod.path.relative_to(_customs_dir)):
+                    return i
+            return 99999999
+
+        for path in sorted(valid_modules, key=_sort_modules):
             link_module(path)
 
     search_dir_for_modules(customs_dir())
