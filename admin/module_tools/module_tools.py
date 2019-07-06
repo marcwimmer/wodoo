@@ -142,10 +142,9 @@ def get_all_customs():
     return customs
 
 def get_modules_from_install_file():
-    with install_file().open('r') as f:
-        content = f.read().split('\n')
-        modules_from_file = [x for x in content if not x.strip().startswith("#") and x]
-        return modules_from_file
+    content = install_file().read_text().split("\n")
+    modules_from_file = [x for x in content if not x.strip().startswith("#") and x]
+    return modules_from_file
 
 class DBModules(object):
     def __init__(self):
@@ -424,7 +423,7 @@ def set_ownership_exclusive(host=None):
 
 def update_module(filepath, full=False):
     module = Module(filepath)
-    write_debug_instruction('update_module{}:{}'.format('_full' if full else '', module))
+    write_debug_instruction('update_module{}:{}'.format('_full' if full else '', module.name))
 
 def update_view_in_db_in_debug_file(filepath, lineno):
     filepath = translate_path_into_machine_path(filepath)
@@ -574,6 +573,38 @@ class Modules(object):
         for m in get_all_manifests():
             self.modules[m.parent.name] = Module(m)
 
+    def get_customs_modules(self, mode=None):
+        """
+        Called by odoo update
+
+        - fetches to be installed modules from install-file
+        - selects all installed, to_be_installed, to_upgrade modules from db and checks wether
+          they are from "us" or OCA
+          (often those modules are forgotten to be updated)
+
+        :param customs_path: e.g. /opt/odoo/active_customs
+        """
+        assert mode in [None, 'to_update', 'to_install']
+
+        path_modules = install_file()
+        if path_modules.is_file():
+            modules_from_file = get_modules_from_install_file()
+            modules = sorted(list(set(DBModules.get_all_installed_modules() + modules_from_file)))
+
+            installed_modules = set(list(DBModules.get_all_installed_modules()))
+            all_non_odoo = list(map(lambda x: x.name, self.get_all_non_odoo_modules()))
+
+            modules = [x for x in all_non_odoo if x in installed_modules]
+            modules += modules_from_file
+            modules = list(set(modules))
+
+            if mode == 'to_install':
+                modules = [x for x in modules if not DBModules.is_module_installed(x)]
+
+            return modules
+        return []
+
+
     def get_all_non_odoo_modules(self):
         """
         Returns module names of all modules, that are from customs or OCA.
@@ -627,22 +658,19 @@ class Module(object):
     class IsNot(Exception): pass
 
     def __init__(self, path):
-
         from .odoo_config import customs_root
         self.version = float(current_version())
         self.customs_root = customs_root()
         p = path if path.is_dir() else path.parent
-        self.path = p
-        del path
-        self.name = p.name
 
         for p in [p] + list(p.parents):
             if (p / MANIFEST_FILE).exists():
                 self._manifest_path = p / MANIFEST_FILE
+                break
         if not getattr(self, '_manifest_path', ''):
-            raise Module.IsNot("no module found for {}".format(self.path))
-        if not self.path.exists() or not self.path.is_dir():
-            raise Module.IsNot("invalid dir: {}".format(self.path))
+            raise Module.IsNot("no module found for {}".format(path))
+        self.name = self._manifest_path.parent.name
+        self.path = self._manifest_path.parent
 
     @property
     def manifest_path(self):
@@ -700,7 +728,13 @@ class Module(object):
     @property
     def in_version(self):
         if self.version >= 10.0:
-            version = self.manifest_dict['version']
+            version = self.manifest_dict.get('version', "")
+            # enterprise modules from odoo have versions: "", "1.0" and so on... ok
+            if not version:
+                return True
+            if len(version.split(".")) <= 3:
+                # allow 1.0 2.2 etc.
+                return True
             check = str(self.version).split('.')[0] + '.'
             return version.startswith(check)
         else:
@@ -1009,42 +1043,7 @@ def link_modules():
 def write_debug_instruction(instruction):
     (run_dir() / ODOO_DEBUG_FILE).write_text(instruction)
 
-
 """
-
-        # def get_customs_modules(mode=None):
-            # ""
-
-            # Called by odoo update
-
-            # - fetches to be installed modules from install-file
-            # - selects all installed, to_be_installed, to_upgrade modules from db and checks wether
-              # they are from "us" or OCA
-              # (often those modules are forgotten to be updated)
-
-            # :param customs_path: e.g. /opt/odoo/active_customs
-
-            # ""
-            # customs_path = customs_path or customs_dir()
-            # assert mode in [None, 'to_update', 'to_install']
-
-            # path_modules = install_file()
-            # if path_modules.is_file():
-                # modules_from_file = get_modules_from_install_file()
-                # modules = sorted(list(set(get_all_installed_modules() + modules_from_file)))
-
-                # installed_modules = set(list(get_all_installed_modules()))
-                # all_non_odoo = list(get_all_non_odoo_modules())
-
-                # modules = [x for x in all_non_odoo if x in installed_modules]
-                # modules += modules_from_file
-                # modules = list(set(modules))
-
-                # if mode == 'to_install':
-                    # modules = [x for x in modules if not is_module_installed(x)]
-
-                # return modules
-            # return []
 
     # @classmethod
 

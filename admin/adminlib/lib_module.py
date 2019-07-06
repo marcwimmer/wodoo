@@ -56,10 +56,11 @@ def module_link():
     click.echo("linked {} modules".format(count))
 
 def _get_default_modules_to_update():
-    from module_tools import module_tools
-    module = module_tools.get_customs_modules(dirs['customs'], 'to_update')
-    module += module_tools.get_uninstalled_modules_where_others_depend_on()
-    module += module_tools.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
+    from module_tools.module_tools import Modules, DBModules
+    mods = Modules()
+    module = mods.get_customs_modules('to_update')
+    module += DBModules.get_uninstalled_modules_where_others_depend_on()
+    module += DBModules.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
     return module
 
 @odoo_module.command(name='update-ast-file')
@@ -262,6 +263,15 @@ def __get_dangling_modules(config):
         fetchall=True
     )
     return rows
+
+@odoo_module.command(name='test')
+def test123():
+    from module_tools.module_tools import Module
+    s = "/opt/odoo/data/src/customs/sunday/odoo-modules/addons_sunday/magento_partner/views/partner_form.xml"
+    from pathlib import Path
+    m = Module(Path(s))
+    m.update_module_file()
+    print(m.name)
 
 
 Commands.register(progress)
