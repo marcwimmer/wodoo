@@ -6,7 +6,7 @@ from module_tools import odoo_config
 if not os.getenv("DB_HOST") or not os.getenv("DB_USER"):
     raise Exception("Please define all DB Env Variables!")
 
-ADDONS_PATHS = ','.join(filter(lambda t: t, list(map(str, odoo_config.get_odoo_addons_paths())) + [odoo_config.customs_dir() / 'links'] + [os.getenv("ADDONS_PATHS")]))
+ADDONS_PATHS = ','.join(filter(lambda t: t, list(map(str, odoo_config.get_odoo_addons_paths())) + [str(odoo_config.customs_dir() / 'links')]))
 
 for file in os.listdir("/home/odoo"):
     if file.startswith("config_"):

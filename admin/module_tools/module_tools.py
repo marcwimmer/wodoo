@@ -699,8 +699,6 @@ class Module(object):
 
     @classmethod
     def get_by_name(clazz, name):
-        from pudb import set_trace
-        set_trace()
         from .odoo_config import customs_dir
         path = customs_dir() / 'links' / name
         path = path.resolve()
