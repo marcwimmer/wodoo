@@ -4,7 +4,6 @@ LANGUAGE=en_US:en
 ODOO_HOME=/opt/odoo
 SERVER_DIR=/opt/odoo/active_customs/odoo
 ACTIVE_CUSTOMS=/opt/odoo/active_customs
-ADDONS_CUSTOMS=/opt/odoo/addons_customs
 ADMIN_DIR=/opt/odoo/admin
 CONFIG_DIR=/home/odoo
 ODOO_USER=odoo

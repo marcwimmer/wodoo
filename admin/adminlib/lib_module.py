@@ -264,14 +264,15 @@ def __get_dangling_modules(config):
     )
     return rows
 
-@odoo_module.command(name='test')
-def test123():
-    from module_tools.module_tools import Module
-    s = "/opt/odoo/data/src/customs/sunday/odoo-modules/addons_sunday/magento_partner/views/partner_form.xml"
-    from pathlib import Path
-    m = Module(Path(s))
-    m.update_module_file()
-    print(m.name)
+# @odoo_module.command(name='test')
+# def test123():
+    # from module_tools.module_tools import Module
+    # from module_tools.module_tools import update_view_in_db
+    # s = "/opt/odoo/data/src/customs/sunday/odoo-modules/addons_sunday/magento_partner/views/partner_form.xml"
+    # from pathlib import Path
+    # m = Module(Path(s))
+    # update_view_in_db(Path(s), 10)
+    # print(m.name)
 
 
 Commands.register(progress)

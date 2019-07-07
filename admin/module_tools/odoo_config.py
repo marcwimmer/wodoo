@@ -92,12 +92,10 @@ def current_customs():
     return result
 
 def current_version():
-
-    version_file = os.path.join(customs_dir(), '.version')
-    if not os.path.isfile(version_file):
+    version_file = customs_dir() / '.version'
+    if not version_file.exists():
         raise Exception("Missing: {}".format(version_file))
-    with open(version_file, 'r') as f:
-        return float(f.read())
+    return float(version_file.read_text().strip())
 
 def current_db():
     return get_env().get('DBNAME', '')
@@ -125,8 +123,8 @@ def get_conn(db=None, host=None):
     cr = conn.cursor()
     return conn, cr
 
-def get_module_directory_in_machine(module_name):
-    return os.path.join('/opt/odoo/addons_customs', module_name)
+# def get_module_directory_in_machine(module_name):
+    # return customs_dir() / 'links' / module_name
 
 def translate_path_into_machine_path(path):
     path = Path("/opt/odoo/active_customs") / translate_path_relative_to_customs_root(path)

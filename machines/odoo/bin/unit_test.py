@@ -2,21 +2,17 @@
 import os
 import sys
 import subprocess
-from module_tools.module_tools import get_module_of_file
+from module_tools.module_tools import Module
+from filepath import Path
 if len(sys.argv) == 1:
     print("Missing test file!")
     sys.exit(-1)
 
 subprocess.check_call(['reset'])
 
-filepath = sys.argv[1]
-module = get_module_of_file(filepath)
-path = os.path.join(
-    os.environ['ADDONS_CUSTOMS'],
-    module,
-    'tests',
-    os.path.basename(filepath)
-)
+filepath = Path(sys.argv[1])
+module = Module(filepath)
+path = module.path / 'tests' / filepath.name
 
 cmd = [
     "/usr/bin/sudo",

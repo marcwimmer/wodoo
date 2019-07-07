@@ -21,7 +21,6 @@ from .odoo_config import customs_dir
 from .odoo_config import install_file
 from .odoo_config import translate_path_into_machine_path
 from .odoo_config import translate_path_relative_to_customs_root
-from .odoo_config import get_module_directory_in_machine
 from .odoo_config import MANIFEST_FILE
 from .myconfigparser import MyConfigParser
 import traceback
@@ -392,7 +391,7 @@ def run_test_file(path):
 def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()
     pattern = "*.xml"
-    for path, dirs, files in os.walk(str(root_path.resolve().absoulte()), followlinks=True):
+    for path, dirs, files in os.walk(str(root_path.resolve().absolute()), followlinks=True):
         for filename in fnmatch.filter(files, pattern):
             if filename.name.startswith("."):
                 continue
@@ -449,7 +448,7 @@ def update_view_in_db(filepath, lineno):
         line -= 1
 
     if '.' not in xmlid:
-        xmlid = module + '.' + xmlid
+        xmlid = module.name + '.' + xmlid
 
     def extract_html(parent_node):
         arch = parent_node.xpath("*")
@@ -536,8 +535,6 @@ def update_view_in_db(filepath, lineno):
                     conn.commit()
                     if arch_fs_column:
                         try:
-                            from pudb import set_trace
-                            set_trace()
                             rel_path = module.name + "/" + str(filepath.relative_to(module.path))
                             cr.execute("update ir_ui_view set arch_fs=%s where id=%s", [
                                 rel_path,
@@ -603,7 +600,6 @@ class Modules(object):
 
             return modules
         return []
-
 
     def get_all_non_odoo_modules(self):
         """
@@ -703,8 +699,12 @@ class Module(object):
 
     @classmethod
     def get_by_name(clazz, name):
+        from pudb import set_trace
+        set_trace()
         from .odoo_config import customs_dir
         path = customs_dir() / 'links' / name
+        path = path.resolve()
+
         if path.is_dir():
             return Module(path)
         raise Exception("Module not found or not linked: {}".format(name))
@@ -963,17 +963,17 @@ def link_modules():
                         # let override OCA modules
                         print("Overriding module {} in {} by {}".format(module.name, target.resolve(), module.path))
                         target.unlink()
-                rel_path = Path("../active_customs") / module.path.relative_to(customs_dir())
+                rel_path = Path(".." / module.path.relative_to(customs_dir()))
                 target.symlink_to(rel_path, target_is_directory=True)
                 data['counter'] += 1
 
             else:
                 # pruefen, obs nicht zu den verbotenen pfaden gehoert:
 
-                target = LN_DIR / module_name
+                target = LN_DIR / module.name
 
                 if target.exists():
-                    if target.resolve().absolute() != mod.path.resolve().absoulte():
+                    if target.resolve().absolute() != mod.path.resolve().absolute():
                         # let override OCA modules
                         if "OCA" in target.parts:
                             os.unlink(target)
@@ -992,14 +992,12 @@ def link_modules():
                 except Exception:
                     pass
                 else:
-                    raise Exception("not supported anymore")
+                    raise Exception("not supported anymore: {}".format(str(module.path)))
 
-                if target.is_link():
+                if target.is_symlink():
                     target.unlink()
 
-                rel_path = Path(str(module.path).replace(customs_dir(), "../active_customs"))
-                from pudb import set_trace
-                set_trace()
+                rel_path = Path(".." / module.path.relative_to(customs_dir()))
                 target.symlink_to(rel_path)
                 data['counter'] += 1
 
@@ -1042,6 +1040,7 @@ def link_modules():
 
 def write_debug_instruction(instruction):
     (run_dir() / ODOO_DEBUG_FILE).write_text(instruction)
+
 
 """
 

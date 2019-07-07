@@ -57,7 +57,8 @@ while true; do
 
 			python3<<-EOF
 			from module_tools.module_tools import update_view_in_db
-			update_view_in_db("$filepath", $lineno)
+			from pathlib import Path
+			update_view_in_db(Path("$filepath"), $lineno)
 			EOF
 		else
 			(
@@ -145,13 +146,13 @@ while true; do
 				# export_i18n:lang:module
 				lang=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
 				module=$(awk '{split($0, a, ":"); print a[3]}' < "$DEBUGGER_WATCH")
-				/export_i18n.sh "$lang" "$module"
+				/export_i18n.py "$lang" "$module"
 				
 			elif [[ "$action" == 'import_i18n' ]]; then
 				# import_i18n:lang:filepath
 				lang=$(awk '{split($0, a, ":"); print a[2]}' < "$DEBUGGER_WATCH")
 				filepath=$(awk '{split($0, a, ":"); print a[3]}' < "$DEBUGGER_WATCH")
-				/import_i18n.sh "$lang" "$filepath" && {
+				/import_i18n.py "$lang" "$filepath" && {
                     /debug.sh -quick
                 }
 
