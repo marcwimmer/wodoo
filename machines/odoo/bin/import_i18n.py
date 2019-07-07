@@ -5,7 +5,7 @@ import os
 import sys
 import subprocess
 from module_tools.module_tools import Module
-from filepath import Path
+from pathlib import Path
 if len(sys.argv) == 1:
     print("Usage: import_i18n de_DE pofilepath")
     sys.exit(-1)
@@ -18,7 +18,7 @@ if len(sys.argv) == 2:
 LANG = sys.argv[1]
 FILEPATH = sys.argv[2]
 
-print( "Importing lang file $FILEPATH")
+print("Importing lang file $FILEPATH")
 
 cmd = [
     "/usr/bin/sudo",
@@ -33,7 +33,7 @@ cmd = [
     '--stop-after-init',
     '--log-level=warn',
     '-l', LANG,
-    '--i18n-import={}'.format(filename),
+    '--i18n-import={}'.format(FILEPATH),
     '--i18n-overwrite',
 ]
 subprocess.call(cmd)
