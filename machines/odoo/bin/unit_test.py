@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 from module_tools.module_tools import Module
-from filepath import Path
+from pathlib import Path
 if len(sys.argv) == 1:
     print("Missing test file!")
     sys.exit(-1)

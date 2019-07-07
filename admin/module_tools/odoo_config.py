@@ -127,7 +127,7 @@ def get_conn(db=None, host=None):
     # return customs_dir() / 'links' / module_name
 
 def translate_path_into_machine_path(path):
-    path = Path("/opt/odoo/active_customs") / translate_path_relative_to_customs_root(path)
+    path = customs_dir() / translate_path_relative_to_customs_root(path)
     return path
 
 def translate_path_relative_to_customs_root(path):
