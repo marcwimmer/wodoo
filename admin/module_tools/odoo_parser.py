@@ -115,8 +115,7 @@ def _get_methods():
                 model = None
                 if filename in cache_models:
                     if 'lines' in cache_models[filename]:
-                        linenums = list(filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys()))
-                        linenums.sort()
+                        linenums = list(reversed(list(filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys()))))
                         model = None
                         if len(linenums) > 0:
                             model = cache_models[filename]['lines'][linenums[0]]
@@ -154,8 +153,7 @@ def _get_fields():
                     continue
                 fieldname = match.group(1)
             if filename in cache_models and 'lines' in cache_models[filename]:
-                linenums = list(filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys()))
-                linenums.sort()
+                linenums = list(reversed(list(filter(lambda x: x < linenumber, cache_models[filename]['lines'].keys()))))
                 model = None
                 if len(linenums) > 0:
                     model = cache_models[filename]['lines'][linenums[0]]
