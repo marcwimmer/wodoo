@@ -10,6 +10,7 @@ case "$ODOO_VERSION" in
 		;;
 esac
 
+
 set +x
 LOCKFILE=$(mktemp -u)
 echo "Starting debugger"

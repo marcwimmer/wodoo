@@ -3,7 +3,7 @@
 
 echo "$*" |grep -q '[-]quick' || {
 	echo "Executing autosetup..."
-	/run_autosetup.sh
+	/run_autosetup.py
 	echo "Done autosetup"
 }
 

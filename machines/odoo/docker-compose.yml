@@ -30,6 +30,8 @@ services:
     env_file:
       - $ODOO_HOME/run/settings
       - $ODOO_HOME/machines/odoo/docker-env
+    environment:
+      - SERVER_DIR=/opt/odoo/data/src/customs/${CUSTOMS}/odoo
     command: echo 'odoo_base - good bye - it is ok!'
     logging:
         options:

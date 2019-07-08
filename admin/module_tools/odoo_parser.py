@@ -79,31 +79,23 @@ def walk_files(on_match, pattern):
     if modified_filename:
         try:
             mod = Module(modified_filename)
-            modules = [mod]
         except Module.IsNot:
-            modules = []
-        else:
             modules = Modules().modules.values()
+        else:
+            modules = [mod]
     else:
         modules = Modules().modules.values()
 
-    for module in modules:
-        for file in module.path.glob("**/" + pattern):
-            rel_file = file.relative_to(module.path)
+    for mod in modules:
+        for file in mod.path.glob("**/" + pattern):
+            rel_file = file.relative_to(mod.path)
             if rel_file.parts[0] in ['migrations', 'migration']: # ignore migrations folder that contain OpenUpgrade
                 continue
             if '.git' in file.parts:
                 continue
             if 'links' in file.parts:
                 continue
-            if 'active_customs' in file.parts:
-                continue
             if file.name.startswith('.'):
-                continue
-
-            try:
-                mod = Module(file)
-            except Exception:
                 continue
 
             lines = file.read_text(encoding='utf-8', errors='ignore').split("\n")
@@ -131,7 +123,7 @@ def _get_methods():
 
                     result.append({
                             'model': model,
-                            'module': module,
+                            'module': module.name,
                             'type': 'N/A',
                             'filename': os.path.basename(filename),
                             'filepath': filename,
@@ -461,7 +453,7 @@ def update_cache(arg_modified_filename=None):
     param: modified_filename - if given, then only this filename is parsed;
     """
     if arg_modified_filename:
-        arg_modified_filename = os.path.realpath(arg_modified_filename)
+        arg_modified_filename = Path(arg_modified_filename).resolve().absolute()
     plainfile = plaintextfile()
     if not plainfile.is_file():
         arg_modified_filename = None

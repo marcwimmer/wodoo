@@ -23,7 +23,7 @@ def set_addons_path():
     subprocess.check_call(["/apply-env-to-config.sh"])
 set_addons_path()
 
-path_shas = os.path.join(os.environ['ACTIVE_CUSTOMS'], 'migration.sha')
+path_shas = customs_dir() / 'migration.sha'
 
 if MAKE_GIT_CLEAN == "1":
     # clean
@@ -40,7 +40,7 @@ if MAKE_GIT_CLEAN == "1":
 
     subprocess.check_call(["git", "clean", "-xdff", BRANCH], cwd=OpenupgradeDir)  # remove old pyc files
     # apply patches
-    root = os.path.join(os.environ['ACTIVE_CUSTOMS'], 'migration', VERSION)
+    root = customs_dir / 'migration' / VERSION
     if os.path.exists(root):
         for file in os.listdir(root):
             if file.endswith(".patch"):

@@ -3,6 +3,7 @@ import os
 import sys
 import subprocess
 from module_tools.module_tools import Module
+from module_tools.odoo_config import customs_dir
 from pathlib import Path
 if len(sys.argv) == 1:
     print("Missing test file!")
@@ -12,7 +13,9 @@ subprocess.check_call(['reset'])
 
 filepath = Path(sys.argv[1])
 module = Module(filepath)
-path = module.path / 'tests' / filepath.name
+
+# make path relative to links, so that test is recognized by odoo
+path = customs_dir() / 'links' / module.name / filepath.resolve().relative_to(module.path)
 
 cmd = [
     "/usr/bin/sudo",

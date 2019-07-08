@@ -5,7 +5,7 @@ set -e
 # sync source is done by extra machine
 
 echo "Executing autosetup..."
-/run_autosetup.sh
+/run_autosetup.py
 echo "Done autosetup"
 
 /run_soffice.sh &

@@ -579,7 +579,6 @@ class Modules(object):
           they are from "us" or OCA
           (often those modules are forgotten to be updated)
 
-        :param customs_path: e.g. /opt/odoo/active_customs
         """
         assert mode in [None, 'to_update', 'to_install']
 

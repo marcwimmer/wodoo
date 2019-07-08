@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-set -x
+set +x
 [[ "$VERBOSE" == "1" ]] && set -x
 
 echo "IS_ODOO_CRONJOB: $IS_ODOO_CRONJOB"
