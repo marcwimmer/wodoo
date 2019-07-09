@@ -450,11 +450,18 @@ def update_cache(arg_modified_filename=None):
     """
     param: modified_filename - if given, then only this filename is parsed;
     """
+    from module_tools.module_tools import Module, Modules
     if arg_modified_filename:
         arg_modified_filename = Path(arg_modified_filename).resolve().absolute()
     plainfile = plaintextfile()
     if not plainfile.is_file():
         arg_modified_filename = None
+
+    if arg_modified_filename:
+        try:
+            Module(arg_modified_filename)
+        except Module.IsNot:
+            return
 
     customs = current_customs()
     if not customs:
