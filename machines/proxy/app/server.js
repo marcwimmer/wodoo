@@ -50,8 +50,10 @@ function _wait_tcp_conn(target) {
         let do_connect = () => {
             var client = net.connect({host: target.host, port: target.port}, () => {
                 resolve();
+                client.end()
             });
             client.on('error', function(e) {
+                client.end();
                 setTimeout(() => {
                     do_connect();
                 }, 100);
