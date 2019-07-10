@@ -93,7 +93,7 @@ def pack(config):
     tmp_folder = '/tmp/pack'
     __system([
         "rsync",
-        odoo_config.customs_dir() + "/",
+        str(odoo_config.customs_dir()) + "/",
         tmp_folder + "/",
         '-ar',
         '--exclude=.pyc',
@@ -123,7 +123,7 @@ def pack(config):
 
     __system([
         "rsync",
-        tmp_folder + "/",
+        str(tmp_folder) + "/",
         folder + "/",
         '-ar',
         '--exclude=.git',

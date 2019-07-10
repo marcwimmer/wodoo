@@ -53,6 +53,7 @@ class MyConfigParser:
         try:
             # Write the file contents
             if not self.fileName.is_file():
+                self.fileName.parent.mkdir(exist_ok=True, parents=True)
                 self.fileName.write_text("")
             with self.fileName.open("r+") as file:
                 lines = file.readlines()

@@ -33,20 +33,20 @@ except Exception:
     VERSION = None
 
 def try_to_get_filepath(filepath):
-    if not os.path.isfile(filepath):
+    filepath = Path(filepath)
+    if not filepath.is_file():
         candidates = []
-        if filepath[0] != '/':
-            filepath = '/' + filepath
+        if str(filepath)[0] != '/':
+            filepath = customs_dir() / filepath
         root = customs_dir()
-        candidates.append((root + filepath).replace("//", "/"))
+        candidates.append((root / filepath))
         for candidate in candidates:
-            if os.path.isfile(candidate):
+            if candidate.is_file():
                 filepath = candidate
                 break
-    if not os.path.isfile(filepath):
+    if not filepath.is_file():
         raise Exception(u"not found: {}".format(filepath))
-    while "//" in filepath:
-        filepath = filepath.replace("//", "/")
+    filepath = filepath.resolve()
     return filepath
 
 def get_file_lineno(line):

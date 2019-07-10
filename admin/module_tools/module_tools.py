@@ -699,11 +699,18 @@ class Module(object):
     @classmethod
     def get_by_name(clazz, name):
         from .odoo_config import customs_dir
+        from .odoo_config import get_odoo_addons_paths
         path = customs_dir() / 'links' / name
-        path = path.resolve()
+        if path.exists():
+            path = path.resolve()
 
         if path.is_dir():
             return Module(path)
+        # could be an odoo module then
+        for path in get_odoo_addons_paths():
+            print(path)
+            if (path / name).resolve().is_dir():
+                return Module(path / name)
         raise Exception("Module not found or not linked: {}".format(name))
 
     @property
