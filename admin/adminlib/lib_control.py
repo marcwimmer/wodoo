@@ -212,6 +212,8 @@ def debug(ctx, config, machine, ports):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     """
+    from pudb import set_trace
+    set_trace()
     from . import commands
 
     # puts endless loop into container command and then attaches to it;
@@ -227,7 +229,8 @@ def debug(ctx, config, machine, ports):
         src_files += [files['debugging_template_withports']]
 
     for i, filepath in enumerate(src_files):
-        dest = files['debugging_composer'].name.replace(".yml", ".{}.yml".format(i))
+        dest = files['debugging_composer']
+        dest = dest.parent / dest.name.replace(".yml", ".{}.yml".format(i))
         shutil.copy(filepath, dest)
         __replace_in_file(dest, "${CUSTOMS}", config.customs)
         __replace_in_file(dest, "${NAME}", machine)
