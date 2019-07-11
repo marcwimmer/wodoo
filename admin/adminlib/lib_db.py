@@ -267,13 +267,33 @@ def _psql(conn, params):
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)
 @pass_config
-def reset_db(config, dbname):
+@click.pass_context
+def reset_db(ctx, config, dbname):
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
     __start_postgres_and_wait(config)
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
+    conn = config.get_odoo_conn().clone(dbname='template1')
+    __execute_sql(
+        conn,
+        "create database {}".format(
+            dbname
+        ),
+        notransaction=True
+    )
+
+    # since odoo version 12 "-i base -d <name>" is required
+    Commands.invoke(
+        ctx,
+        'update',
+        module=['base'],
+        no_restart=True,
+        no_dangling_check=True,
+        no_update_module_list=True,
+        non_interactive=True,
+    )
 
 @db.command(name='setname')
 @click.argument("DBNAME", required=True)

@@ -254,6 +254,8 @@ class DBModules(object):
     def is_module_listed(clazz, module):
         conn, cr = get_conn()
         try:
+            if not clazz.__table_exists(conn, 'ir_module_module'):
+                return False
             cr.execute("select count(*) from ir_module_module where name = %s", (module,))
             return bool(cr.fetchone()[0])
         finally:
@@ -267,6 +269,8 @@ class DBModules(object):
         """
         conn, cr = get_conn()
         try:
+            if not clazz.__table_exists(conn, 'ir_module_module'):
+                return
             cr.execute("select state from ir_module_module where name = %s", (module,))
             state = cr.fetchone()
             if not state:
@@ -280,11 +284,31 @@ class DBModules(object):
             conn.close()
 
     @classmethod
+    def __table_exists(self, conn, tablename):
+        conn, cr = get_conn()
+        try:
+            cr.execute("""
+            select exists(
+                select 1
+                from information_schema.tables
+                where table_name = 'ir_module_module'
+            )
+
+            """)
+            rec = cr.fetchone()[0]
+            return rec
+        finally:
+            cr.close()
+            conn.close()
+
+    @classmethod
     def is_module_installed(clazz, module):
         if not module:
             raise Exception("no module given")
         conn, cr = get_conn()
         try:
+            if not clazz.__table_exists(conn, 'ir_module_module'):
+                return False
             cr.execute("select name, state from ir_module_module where name = %s", (module,))
             state = cr.fetchone()
             if not state:

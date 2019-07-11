@@ -249,6 +249,17 @@ def __exists_db(conn):
         return False
     return True
 
+
+def __exists_table(conn, table_name):
+    record = __execute_sql(conn, """
+    select exists(
+        select 1
+        from information_schema.tables
+        where table_name = '{}'
+    )
+    """.format(table_name), fetchone=True)
+    return record[0]
+
 def __start_postgres_and_wait(config):
     if config.run_postgres:
         if config.run_postgres_in_ram and __is_container_running('postgres'):

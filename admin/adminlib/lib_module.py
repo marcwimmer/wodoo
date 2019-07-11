@@ -16,6 +16,7 @@ from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
 from .tools import __exists_odoo_commit
+from .tools import __exists_table
 from .tools import __get_odoo_commit
 from .tools import __start_postgres_and_wait
 from .tools import __cmd_interactive
@@ -101,16 +102,17 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     if not module:
         module = _get_default_modules_to_update()
 
-    if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
-        for x in __get_dangling_modules():
-            click.echo("{}: {}".format(*x[:2]))
-        if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
-            __execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
-    if __get_dangling_modules() and not dangling_modules:
-        if not no_dangling_check:
-            Commands.invoke(ctx, 'show_install_state', suppress_error=True)
-            input("Abort old upgrade and continue? (Ctrl+c to break)")
-            ctx.invoke(abort_upgrade)
+    if not no_dangling_check:
+        if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
+            for x in __get_dangling_modules():
+                click.echo("{}: {}".format(*x[:2]))
+            if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+                __execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+        if __get_dangling_modules() and not dangling_modules:
+            if not no_dangling_check:
+                Commands.invoke(ctx, 'show_install_state', suppress_error=True)
+                input("Abort old upgrade and continue? (Ctrl+c to break)")
+                ctx.invoke(abort_upgrade)
     if installed_modules:
         module += __get_installed_modules(config)
     if dangling_modules:
@@ -257,8 +259,12 @@ def __get_subtree_url(type, submodule):
 
 @pass_config
 def __get_dangling_modules(config):
+    conn = config.get_odoo_conn()
+    if not __exists_table(conn, 'ir_module_module'):
+        return []
+
     rows = __execute_sql(
-        config.get_odoo_conn(),
+        conn,
         sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
         fetchall=True
     )

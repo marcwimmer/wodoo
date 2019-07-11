@@ -212,8 +212,6 @@ def debug(ctx, config, machine, ports):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     """
-    from pudb import set_trace
-    set_trace()
     from . import commands
 
     # puts endless loop into container command and then attaches to it;
