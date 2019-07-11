@@ -42,8 +42,9 @@ def module_dir(modulename):
     return path
 
 def get_version_from_customs(customs=None):
-    with open(os.path.join(customs_dir(customs), '.version')) as f:
-        return eval(f.read())
+    content = (customs_dir(customs) / '.version').read_text()
+    content = eval(content)
+    return content
 
 def install_file():
     return customs_dir() / 'install'

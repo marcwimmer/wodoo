@@ -4,11 +4,13 @@ import sys
 import subprocess
 from module_tools.module_tools import Module
 from module_tools.odoo_config import customs_dir
+from module_tools.odoo_config import get_version_from_customs
 from pathlib import Path
 if len(sys.argv) == 1:
     print("Missing test file!")
     sys.exit(-1)
 
+VERSION = get_version_from_customs()
 subprocess.check_call(['reset'])
 
 filepath = Path(sys.argv[1])
@@ -29,7 +31,11 @@ cmd = [
     '--pidfile={}'.format(os.environ['DEBUGGER_ODOO_PID']),
     '--stop-after-init',
     '--test-file={}'.format(path),
-    '--test-report-directory=/tmp',
     '--log-level=debug',
 ]
+if VERSION <= 11.0:
+    cmd += [
+        '--test-report-directory=/tmp',
+    ]
+
 subprocess.call(cmd)
