@@ -6,7 +6,7 @@ services:
     build: $ODOO_HOME/machines/proxy
     restart: unless-stopped
     ports:
-      - "${PROXY_PORT}:8080"
+      - "${PROXY_PORT}:80"
       # - "9229:9229"
     env_file:
         - $ODOO_HOME/run/settings
