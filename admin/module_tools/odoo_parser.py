@@ -88,6 +88,7 @@ def walk_files(on_match, pattern):
 
     for mod in modules:
         for file in mod.path.glob("**/" + pattern):
+
             rel_file = file.relative_to(mod.path)
             if rel_file.parts[0] in ['migrations', 'migration']: # ignore migrations folder that contain OpenUpgrade
                 continue
@@ -238,8 +239,10 @@ def _get_xml_ids():
 
     def on_match(filename, module, lines):
         try:
-            tree = etree.parse(filename)
-        except Exception:
+            tree = etree.parse(str(filename))
+        except TypeError:
+            return
+        except etree.XMLSyntaxError:
             return
 
         if filename not in cache_xml_ids["files"]:
@@ -253,7 +256,7 @@ def _get_xml_ids():
             # find res_models of view:
             if model and xmlid and '.' in xmlid:
                 r = {
-                    'module': module,
+                    'module': module.name,
                     'model': model,
                     'id': xmlid,
                     'filename': os.path.basename(filename),
@@ -297,7 +300,7 @@ def _get_xml_ids():
                     ttype = ""
                     if not inherit_id:
                         if r.xpath("field[@name='arch']"):
-                            arch = etree.tostring(r.xpath("field[@name='arch']")[0])
+                            arch = etree.tostring(r.xpath("field[@name='arch']")[0]).decode('utf-8')
                             lines = [x.strip() for x in arch.split("\n")]
                             lines = [l for l in lines if l]
                             lines = lines[:5]
