@@ -83,9 +83,8 @@ def do_compose(config, customs='', db='', demo=False):
             if config.get(k, '') != v:
                 config[k] = v
                 config.write()
-        if not os.path.isdir(dirs['settings.d']):
-            os.makedirs(dirs['settings.d'])
-        config_compose_minimum = MyConfigParser(os.path.join(dirs['settings.d'], 'compose'))
+        dirs['settings.d'].mkdir(parents=True, exist_ok=True)
+        config_compose_minimum = MyConfigParser(dirs['settings.d'] / 'compose')
         config_compose_minimum.clear()
         for k in ['CUSTOMS', 'DBNAME', 'ODOO_DEMO']:
             if k in vals:
@@ -99,9 +98,9 @@ def do_compose(config, customs='', db='', demo=False):
     _prepare_yml_files_from_template_files(config)
     _setup_odoo_instances(config)
     # ln path ./src to customs
-    SRC_PATH = os.path.join(os.environ['LOCAL_ODOO_HOME'], 'src')
-    if os.path.islink(SRC_PATH):
-        os.unlink(SRC_PATH)
+    SRC_PATH = Path(os.environ['LOCAL_ODOO_HOME']) / 'src'
+    if SRC_PATH.is_symlink():
+        SRC_PATH.unlink()
     os.symlink('data/src/customs/{}'.format(config.customs), SRC_PATH)
 
     click.echo("Built the docker-compose file.")
@@ -133,10 +132,10 @@ def _prepare_yml_files_from_template_files(config):
     _files += find_files(dirs['machines'])
     _files += find_files(odoo_config.customs_dir())
     for d in [
-        os.path.join('/etc_host/odoo'),
-        os.path.join('/etc_host/odoo', config.customs),
+        Path('/etc_host/odoo'),
+        Path('/etc_host/odoo') / config.customs,
     ]:
-        if os.path.exists(d):
+        if d.exists():
             _files += find_files(d, recursive=False)
 
     _prepare_docker_compose_files(config, files['docker_compose'], _files)
@@ -157,7 +156,7 @@ def __replace_all_envs_in_str(content, env):
 def _prepare_docker_compose_files(config, dest_file, paths):
     from . import YAML_VERSION
     from . import MyConfigParser
-    local_odoo_home = os.environ['LOCAL_ODOO_HOME']
+    local_odoo_home = Path(os.environ['LOCAL_ODOO_HOME'])
 
     final_contents = []
 
@@ -175,29 +174,8 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     with open(files['config/default_network'], 'r') as f:
         default_network = yaml.safe_load(f.read())
 
-    for path in paths:
-        with open(path, 'r') as f:
-            content = f.read()
-        filename = os.path.basename(path)
-
-        def use_file():
-            if "run_odoo_version.{}.yml".format(config.odoo_version) in filename:
-                return True
-            if 'run_' in filename:
-                run = re.findall(r'run_[^\.]*', filename)
-                if run:
-                    if '!run' in filename:
-                        if not getattr(config, run[0]):
-                            return True
-                    else:
-                        if getattr(config, run[0]):
-                            return True
-                return False
-            else:
-                return True
-
-        if not use_file():
-            continue
+    for path in filter(lambda x: _use_file(config, x), paths):
+        content = path.read_text()
 
         # dont matter if written manage-order: or manage-order
         if 'manage-order' not in content:
@@ -205,11 +183,6 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         else:
             order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
         order = int(order)
-        folder_name = os.path.basename(os.path.dirname(path))
-
-        if '.run_' not in path:
-            if not getattr(config, "run_{}".format(folder_name)):
-                continue
 
         j = yaml.safe_load(content)
         if j:
@@ -218,8 +191,8 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
             # set settings environment and the override settings after that
             for file in ['run/settings']:
-                path = os.path.join(local_odoo_home, file)
-                if os.path.exists(path):
+                path = local_odoo_home / file
+                if path.exists():
                     if 'services' in j:
                         for service in j['services']:
                             service = j['services'][service]
@@ -246,8 +219,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         to all odoo containers.
         """
 
-        with open(os.path.join(local_odoo_home, 'machines/odoo/docker-compose.yml')) as f:
-            odoodc = yaml.safe_load(f.read())
+        odoodc = yaml.safe_load((local_odoo_home / 'machines/odoo/docker-compose.yml').read_text())
 
         for odoomachine in odoodc['services']:
             if odoomachine == 'odoo_base':
@@ -282,20 +254,20 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     # call docker compose config to get the complete config
     final_contents.sort(key=lambda x: x[0])
 
-    temp_path = os.path.join(local_odoo_home, '.tmp.compose')
-    if os.path.isdir(temp_path):
+    temp_path = local_odoo_home / '.tmp.compose'
+    if temp_path.is_dir():
         shutil.rmtree(temp_path)
-    os.makedirs(temp_path)
+    temp_path.mkdir(parents=True, exist_ok=True)
     try:
         temp_files = []
         for i, filecontent in enumerate(final_contents):
-            path = os.path.join(temp_path, str(i).zfill(10) + '.yml')
+            path = temp_path / (str(i).zfill(10) + '.yml')
             with open(path, 'wb', 0) as f:  # no buffer
                 f.write(filecontent[1].encode('utf-8'))
                 f.flush() # flush although no buffer
                 os.fsync(f.fileno()) # fsync although no buffer
             temp_files.append("-f")
-            temp_files.append(os.path.basename(path))
+            temp_files.append(path.name)
         os.system("sync")
 
         cmdline = []
@@ -371,14 +343,14 @@ def _collect_settings_files(customs):
     _files.append(dirs['odoo_home'] / Path('machines/defaults'))
     # optimize
     for filename in __find_files(dirs['machines'], "-name", "default.settings"):
-        _files.append(os.path.join(dirs['machines'], filename))
+        _files.append(dirs['machines'] / filename)
 
-    for dir in _get_settings_directories(customs):
-        if os.path.isfile(dir):
+    for dir in filter(lambda x: x.exists(), _get_settings_directories(customs)):
+        if dir.is_file():
             _files.append(dir)
-        elif os.path.isdir(dir):
+        elif dir.is_dir():
             for filename in os.listdir(dir):
-                _files.append(os.path.join(dir, filename))
+                _files.append(dir / filename)
     return _files
 
 def _make_settings_file(outfile, setting_files):
@@ -401,8 +373,6 @@ def _make_settings_file(outfile, setting_files):
 
         c.apply(c2)
 
-    if _get_platform() == PLATFORM_OSX:
-        c['RUN_RSYNCED'] = '1'
     c.write()
 
 def _get_settings_directories(customs):
@@ -412,11 +382,9 @@ def _get_settings_directories(customs):
     from . import odoo_config
     from . import dirs
     customs_dir = odoo_config.customs_dir(customs)
-    yield os.path.join(customs_dir, 'settings')
-    if os.path.exists('/etc_host/odoo/settings'):
-        yield '/etc_host/odoo/settings'
-    if os.path.exists('/etc_host/odoo/{}/settings'.format(customs)):
-        yield '/etc_host/odoo/{}/settings'.format(customs)
+    yield customs_dir / 'settings'
+    yield Path('/etc_host/odoo/settings')
+    yield Path('/etc_host/odoo/{}/settings'.format(customs))
     yield dirs['settings.d']
 
 def __postprocess_config(config):
@@ -484,6 +452,28 @@ def toggle_settings(ctx, config):
     __postprocess_config(config_local)
     config_local.write()
     Commands.invoke(ctx, 'reload')
+
+def _use_file(config, path):
+
+    if path.parent.parent.name == 'machines':
+        if not getattr(config, "run_{}".format(path.parent.name)):
+            return False
+        if not any(x.startswith("run_") for x in path.parts):
+            if getattr(config, 'run_{}'.format(path.parent.name)):
+                return True
+
+    if "run_odoo_version.{}.yml".format(config.odoo_version) in path.name:
+        return True
+    run = filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")])
+    for run in run:
+        if getattr(config, run):
+            return True
+    run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
+    for run in run:
+        if not getattr(config, run):
+            return True
+
+    return False
 
 
 Commands.register(do_reload, 'reload')

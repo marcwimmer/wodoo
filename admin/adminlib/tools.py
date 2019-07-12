@@ -1,3 +1,4 @@
+import arrow
 from pathlib import Path
 import io
 import traceback
@@ -62,11 +63,11 @@ def __find_files(cwd, *options):
     files = __system(["find"] + list(options), cwd=cwd, suppress_out=True)
     files = files.split("\n")
     files = [x for x in files if x and not x.endswith('/.')]
-    files = [os.path.normpath(os.path.join(cwd, x)) for x in files]
+    files = [(Path(cwd) / x).absolute().resolve() for x in files]
     return files
 
 def __assert_file_exists(path, isdir=False):
-    if not os.path.exists(path):
+    if not Path(path).exists():
         raise Exception("{} {} not found!".format(
             'Directory' if isdir else 'File',
             path
@@ -180,7 +181,7 @@ def __write_file(path, content):
         f.write(content)
 
 def __append_line(path, line):
-    if not os.path.exists(path):
+    if not Path(path).exists():
         content = ""
     else:
         with open(path, 'r') as f:
@@ -204,7 +205,7 @@ def E2(name):
 
 def __exists_odoo_commit():
     from . import files
-    if not os.path.exists(files['commit']):
+    if not files['commit'].exists():
         click.echo("Commit file {} not found!".format(files['commit']))
         sys.exit(1)
 
@@ -297,8 +298,7 @@ def __isfloat(x):
         return True
 
 def __makedirs(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
+    path.mkdir(exist_ok=True, parents=True)
 
 def __remove_postgres_connections(connection, sql_afterwards=""):
     click.echo("Removing all current connections from {}".format(connection.dbname))
@@ -379,8 +379,8 @@ def __replace_in_file(filepath, text, replacewith):
         f.write(content)
 
 def __rm_file_if_exists(path):
-    if os.path.exists(path):
-        os.unlink(path)
+    if path.exists():
+        path.unlink()
 
 def __rmtree(path):
     from . import dirs
@@ -397,8 +397,8 @@ def __rmtree(path):
 
 def __safeget(array, index, exception_on_missing, file_options=None):
     if file_options:
-        if os.path.exists(file_options):
-            file_options = '\n' + '\n'.join(os.listdir(file_options))
+        if file_options.exists():
+            file_options = '\n' + '\n'.join(file_options.glob("*"))
     file_options = file_options or ''
     if len(array) < index + 1:
         raise Exception(exception_on_missing + file_options)
@@ -419,22 +419,17 @@ def __cmd_interactive(*params):
     # raise Exception("command failed: {}".format(" ".join(params)))
 
 def __empty_dir(dir):
-    if os.path.isdir(dir):
-        for f in os.listdir(dir):
-            filepath = os.path.join(dir, f)
-            if os.path.isdir(filepath):
-                __rmtree(filepath)
-            else:
-                os.unlink(filepath)
+    dir = Path(dir)
+    if dir.is_dir():
+        shutil.rmtree(dir)
 
 def __file_default_content(path, default_content):
-    if not os.path.exists(path):
-        with open(path, 'w') as f:
-            f.write(default_content)
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(default_content)
 
 def __file_get_lines(path):
-    with open(path) as f:
-        return f.readlines()
+    return path.read_text().strip().split("\n")
 
 def _get_machines():
     from . import commands, dirs
@@ -465,7 +460,7 @@ def __get_docker_image():
 
 def _file2env(filepath, out_dict=None):
     from . import MyConfigParser
-    if not os.path.exists(filepath):
+    if not filepath.exists():
         return
     config = MyConfigParser(filepath)
     for k in config.keys():
@@ -498,13 +493,13 @@ def _remove_temp_directories():
     from . import dirs
     for dir in os.listdir(dirs['odoo_home']):
         if dir.startswith("tmp") and len(dir) == len('tmp......'):
-            __rmtree(os.path.join(dirs['odoo_home'], dir))
+            __rmtree(dirs['odoo_home'] / dir)
 
 def _prepare_filesystem():
     from . import dirs, files
     __makedirs(dirs['settings.d'])
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
-        __makedirs(os.path.join(dirs['odoo_home'], 'run', 'subdir'))
+        __makedirs(dirs['odoo_home'] / 'run' / 'subdir')
     __system(['sudo', '-E', 'chown', "{uid}:{uid}".format(uid=os.getenv("UID")), "-R", dirs['run']])
 
     __file_default_content(files['odoo_instances'], "default default\n")
@@ -524,7 +519,7 @@ def _sanity_check(config):
         click.echo("Advise: you should set OWNER_UID so that dump files are marked as the correct owner")
         time.sleep(3)
 
-    if config.odoo_files and os.path.isdir(config.odoo_files):
+    if config.odoo_files and config.odoo_files.is_dir():
         if config.owner_uid and os.stat(config.odoo_files).st_uid != config.owner_uid_as_int:
             _fix_permissions()
 
@@ -550,7 +545,7 @@ def __splitcomma(param):
     raise Exception("not impl")
 
 def __try_to_set_owner(UID, path, recursive=False):
-    if os.path.isdir(path):
+    if path.is_dir():
         uid = os.stat(path).st_uid
         if str(uid) != str(UID) or recursive:
             click.echo("Trying to set correct permissions on {}".format(path))
@@ -580,32 +575,28 @@ def _check_working_dir_customs_mismatch(config):
     # in the wrong customizations.
 
     from . import dirs
-    working_dir = dirs['host_working_dir']
-    while not os.path.isfile(os.path.join(working_dir, '.customsroot')):
-        try:
-            working_dir = os.path.dirname(working_dir)
-        except Exception:
+    for working_dir in dirs['host_working_dir'].parents:
+        if (working_dir / '.customsroot').is_file():
             break
-        if not working_dir.replace("/", ""):
-            break
+    else:
+        return # no customs
 
-    if os.path.isfile(os.path.join(working_dir, '.customsroot')):
-        current_customs = os.path.basename(working_dir)
-        if current_customs != config.customs:
-            _askcontinue(None, """Caution: current customs is {} but you are in another customs directory: {}
+    current_customs = working_dir.name
+    if current_customs != config.customs:
+        _askcontinue(None, """Caution: current customs is {} but you are in another customs directory: {}
 Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
-                         )
+                     )
 
 def _display_machine_tips(machine_name):
     from . import dirs
-    dir = os.path.join(dirs['machines'], machine_name)
-    if not os.path.isdir(dir):
+    dir = dirs['machines'] / machine_name
+    if not dir.is_dir():
         return
 
     for filename in __find_files(dirs['machines'], '-name', 'tips.txt'):
-        filepath = os.path.join(dirs['machines'], filename)
-        if os.path.basename(os.path.dirname(filepath)) == machine_name:
-            content = __read_file(os.path.join(dirs['machines'], filename))
+        filepath = dirs['machines'] / filename
+        if filepath.parent.name == machine_name:
+            content = (dirs['machines'] / filename).read_text()
             click.echo("")
             click.echo("Please note:")
             click.echo("---------------")
@@ -620,7 +611,7 @@ def __do_command(cmd, *params, **kwparams):
 
 def _fix_permissions(config):
     from . import odoo_config
-    if config.odoo_files and os.path.isdir(config.odoo_files) and \
+    if config.odoo_files and config.odoo_files.is_dir() and \
             config.owner_uid and \
             config.owner_uid_as_int != 0:
         __try_to_set_owner(config.owner_uid, config.odoo_files, recursive=True)
@@ -628,24 +619,24 @@ def _fix_permissions(config):
     __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
 def _get_dump_files(backupdir, fnfilter=None):
-    _files = os.listdir(backupdir)
+    _files = backupdir.glob("*")
 
     def _get_ctime(filepath):
         if fnfilter and fnfilter not in filepath:
             return False
         try:
-            return os.path.getctime(os.path.join(backupdir, filepath))
+            return (backupdir / filepath).stat().st_ctime
         except Exception:
             return 0
     rows = []
     for i, file in enumerate(sorted(filter(lambda x: _get_ctime(x), _files), reverse=True, key=_get_ctime)):
-        filepath = os.path.join(backupdir, file)
-        delta = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filepath))
+        filepath = backupdir / file
+        delta = arrow.get() - arrow.get(filepath.stat().st_mtime)
         rows.append((
             i + 1,
             file,
             humanize.naturaltime(delta),
-            humanize.naturalsize(os.stat(filepath).st_size)
+            humanize.naturalsize(filepath.stat().st_size),
         ))
 
     return rows
@@ -708,7 +699,7 @@ def __postgres_restore(conn, filepath):
     click.echo("Restore took {} seconds".format((datetime.now() - started).seconds))
 
 def __get_dump_type(filepath):
-    temp = tempfile.mktemp(suffix='.check')
+    temp = Path(tempfile.mktemp(suffix='.check'))
     MARKER = "PostgreSQL database dump"
     FNULL = open(os.devnull, 'w')
     proc = subprocess.Popen(['gunzip', '-c', filepath], stdout=subprocess.PIPE, stderr=FNULL, bufsize=1)
@@ -718,7 +709,7 @@ def __get_dump_type(filepath):
             lines = 0
             with pipe:
                 for line in iter(pipe.readline, ''):
-                    with open(temp, 'a') as f:
+                    with temp.open('a') as f:
                         f.write(line.decode("utf-8", errors='ignore'))
                         lines += 1
                         if lines > 20:
@@ -730,8 +721,8 @@ def __get_dump_type(filepath):
     Thread(target=reader, args=[proc, proc.stdout]).start()
     proc.wait()
 
-    if os.path.exists(temp):
-        content = __read_file(temp)
+    if temp.exists():
+        content = temp.read_text()
         if MARKER in content:
             return 'zipped_sql'
         if content.startswith("PGDMP"):

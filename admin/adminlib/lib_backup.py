@@ -14,6 +14,7 @@ import hashlib
 import os
 import tempfile
 import click
+from pathlib import Path
 from .tools import DBConnection
 from .tools import _dropdb
 from .tools import __backup_postgres
@@ -40,7 +41,7 @@ from .tools import _get_dump_files
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 
-BACKUPDIR = "/host/dumps"
+BACKUPDIR = Path("/host/dumps")
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -70,7 +71,7 @@ def backup_calendar(config, filename=None):
     if not config.run_calendar:
         return
     filename = filename or datetime.now().strftime("{}.calendar.%Y%m%d%H%M%S.dump.gz".format(config.customs))
-    filepath = os.path.join(BACKUPDIR, filename)
+    filepath = BACKUPDIR / filename
     conn = DBConnection(
         dbname=config.calendar_db_name,
         host=config.calendar_db_host,
@@ -102,9 +103,9 @@ def backup_db(ctx, config, filename, non_interactive):
     if filename.startswith("/"):
         raise Exception("No slash for backup filename allowed")
     click.echo("Databasename is " + config.dbname)
-    filepath = os.path.join(BACKUPDIR, filename)
-    if os.path.exists(filepath):
-        os.unlink(filepath)
+    filepath = BACKUPDIR / filename
+    if filepath.exists():
+        filepath.unlink()
     __start_postgres_and_wait(config)
 
     conn = config.get_odoo_conn()
@@ -120,15 +121,14 @@ def backup_db(ctx, config, filename, non_interactive):
 @backup.command(name='files')
 @pass_config
 def backup_files(config):
-    from . import BACKUPDIR
     BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=config.customs)
-    BACKUP_FILEPATH = os.path.join(BACKUPDIR, BACKUP_FILENAME)
+    BACKUP_FILEPATH = BACKUPDIR / BACKUP_FILENAME
 
-    if os.path.exists(BACKUP_FILEPATH):
+    if BACKUP_FILEPATH.exists():
         second = BACKUP_FILENAME + ".bak"
-        second_path = os.path.join(BACKUPDIR, second)
-        if os.path.exists(second_path):
-            os.unlink(second_path)
+        second_path = BACKUPDIR / second
+        if second_path.exists():
+            second_path.unlink()
         shutil.move(BACKUP_FILEPATH, second_path)
         del second
         del second_path
@@ -144,14 +144,13 @@ def __get_default_backup_filename(config):
 def get_dump_type(config, filename):
     filename = _inquirer_dump_file(config)
     if filename:
-        dump_file = os.path.join(BACKUPDIR, filename)
+        dump_file = BACKUPDIR / filename
         dump_type = __get_dump_type(dump_file)
         click.echo(dump_type)
 
 @restore.command(name='list')
 @pass_config
 def list_dumps(config):
-    from . import BACKUPDIR
     rows = _get_dump_files(fnfilter=config.dbname)
     click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
 
@@ -187,7 +186,7 @@ def restore_db(ctx, config, filename):
     if not filename:
         return
 
-    filename == os.path.join(BACKUPDIR, filename)
+    filename == BACKUPDIR / filename
     if filename.startswith("/"):
         raise Exception("No path in dump file allowed")
     if not config.force:
@@ -206,7 +205,7 @@ def restore_db(ctx, config, filename):
         _dropdb(config, conn)
     __postgres_restore(
         conn,
-        os.path.join(BACKUPDIR, filename),
+        BACKUPDIR / filename,
     )
     from .lib_db import __turn_into_devdb
     if dev:
@@ -215,7 +214,6 @@ def restore_db(ctx, config, filename):
     __remove_postgres_connections(conn.clone(dbname=dest_db))
 
 def _inquirer_dump_file(config, message):
-    from . import BACKUPDIR
     __files = _get_dump_files(BACKUPDIR, fnfilter=config.dbname)
     filename = inquirer.prompt([inquirer.List('filename', message, choices=__files)])
     if filename:
@@ -226,10 +224,10 @@ def __do_restore_files(filepath):
     # remove the postgres volume and reinit
     if filepath.startswith("/"):
         raise Exception("No absolute path allowed")
-    __dcrun(['odoo', '/bin/restore_files.sh', os.path.basename(filepath)])
+    __dcrun(['odoo', '/bin/restore_files.sh', filepath.name])
 
 def __restore_check(filepath, config):
-    dumpname = os.path.basename(filepath)
+    dumpname = filepath.name
 
     if config.dbname not in dumpname and not config.force:
         raise Exception("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
