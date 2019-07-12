@@ -124,7 +124,7 @@ def pack(config):
     __system([
         "rsync",
         str(tmp_folder) + "/",
-        folder + "/",
+        str(folder) + "/",
         '-ar',
         '--exclude=.git',
         '--exclude=.pyc',
