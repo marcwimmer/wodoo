@@ -1,3 +1,4 @@
+from pathlib import Path
 import shutil
 from retrying import retry
 import hashlib
@@ -17,6 +18,7 @@ from .tools import __get_odoo_commit
 from .tools import _get_dump_files, __dc
 from . import cli, pass_config, dirs, files
 from .lib_clickhelpers import AliasedGroup
+from . import BACKUPDIR
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -33,11 +35,10 @@ def image_import(filename):
     """
     Imports binary image of machine
     """
-    from . import BACKUPDIR
     filename = _get_dump_files("Choose image to import")
     if not filename:
         return
-    dump_path = os.path.join(BACKUPDIR, os.path.basename(filename))
+    dump_path = BACKUPDIR /filename.name
     __system([
         "docker",
         "load",
@@ -53,9 +54,8 @@ def image_export(ctx, config, filename):
     Exports all images of the customizations to one file.
     Can be imported via image-import.
     """
-    from . import BACKUPDIR
-    dump_path = os.path.join(BACKUPDIR, config.customs + '.docker.images.tar')
-    folder = tempfile.mkdtemp()
+    dump_path = BACKUPDIR / config.customs + '.docker.images.tar'
+    folder = Path(tempfile.mkdtemp())
     image_ids = __dc([
         'images',
         '-q',
@@ -64,7 +64,7 @@ def image_export(ctx, config, filename):
     for image in image_ids:
         if not image:
             continue
-        filepath = os.path.join(folder, image)
+        filepath = folder / image
         click.echo("Storing {} to {}".format(image, filepath))
         __system([
             'docker',
@@ -83,7 +83,7 @@ def image_export(ctx, config, filename):
         dump_path,
         '.',
     ], cwd=folder)
-    click.echo(os.path.basename(dump_path))
+    click.echo(dump_path.name)
     compressed_size = os.stat(dump_path).st_size
     ratio = round(float(compressed_size) / float(filesize) * 100.0, 1)
     click.echo("Compressed:", humanize.naturalsize(compressed_size), "Uncompress:", humanize.naturalsize(filesize), "Ratio:", ratio)

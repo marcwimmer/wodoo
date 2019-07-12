@@ -1,3 +1,4 @@
+from pathlib import Path
 import inquirer
 import time
 import threading
@@ -11,15 +12,12 @@ from .lib_clickhelpers import AliasedGroup
 from . import cli, pass_config, dirs, files, Commands
 
 def __get_project_config():
-    path = os.path.expanduser("/opt/external_home/.odoodev/conf.json")
-    if not os.path.isdir(os.path.dirname(path)):
-        os.makedirs(os.path.dirname(path))
-    if not os.path.isfile(path):
-        with open(path, 'w') as f:
-            f.write("{}")
-    with open(path, 'r') as f:
-        res = json.loads(f.read())
-        res.setdefault('projects', [])
+    path = Path("/opt/external_home/.odoodev/conf.json").resolve()
+    path.parent.mkdir(exist_ok=True)
+    if not path.exists():
+        path.write_text("{}")
+    res = json.loads(path.read_text())
+    res.setdefault('projects', [])
     return res
 
 
@@ -99,6 +97,5 @@ def project(ctx, config):
     project_activate(ctx, config, project)
 
 def __set_project_config(content):
-    path = os.path.expandvars("/opt/external_home/.odoodev/conf.json")
-    with open(path, 'w') as f:
-        f.write(json.dumps(content))
+    path = Path("/opt/external_home/.odoodev/conf.json")
+    path.write_text(json.dumps(content))

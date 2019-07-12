@@ -1,3 +1,4 @@
+from pathlib import Path
 import traceback
 from datetime import datetime
 import logging
@@ -88,7 +89,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
             "/opt/migrate.sh",
             migrations[version]['branch'],
             prepareCommand(migrations[version]['cmd'], module=module),
-            ','.join(os.path.join(BASE_PATH, x) for x in migrations[version]['addons_paths']),
+            ','.join(str(BASE_PATH / x) for x in migrations[version]['addons_paths']),
             version,
             '1' if git_clean else '0',
             '1' if pull_latest else '0',
@@ -119,7 +120,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
     logger = logging.getLogger('')  # root handler
     formatter = logging.Formatter(FORMAT)
 
-    if os.path.exists(log_file):
+    if log_file.exists():
         os.unlink(log_file)
     rh = FileHandler(filename=log_file)
     rh.setFormatter(formatter)
@@ -224,8 +225,7 @@ def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, n
         click.echo("Invalid from version: {}".format(from_version))
 
     for version in sorted(filter(lambda v: float(v) > float(from_version) and float(v) <= float(to_version), migrations), key=lambda x: float(x)):
-        with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
-            f.write(version)
+        (dirs['customs'] / '.version').write_text(version)
         logger.info("""\n========================================================================
 Migration to Version {}
 ========================================================================""".format(version)
@@ -245,8 +245,7 @@ Migration to Version {}
             click.echo("Backup of database Version {}".format(version))
             Commands.invoke(ctx, 'backup_db', filename="{dbname}_{version}".format(version=version, dbname=config.dbname))
 
-    with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
-        f.write(to_version)
+    (dirs['customs'] / '.version').write_text(to_version)
 
     os.unlink(SETTINGS_D_FILE)
     Commands.invoke(ctx, 'build')
@@ -272,10 +271,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
     Commands.invoke(ctx, 'kill', brutal=True)
     git_clean = not no_git_clean
     del no_git_clean
-    LOGFILE = os.path.join(
-        odoo_config.customs_dir(),
-        "migration_{}_{}.log".format(config.customs, datetime.now().strftime("%Y-%m-%dT%H%M%S")),
-    )
+    LOGFILE = odoo_config.customs_dir() / "migration_{}_{}.log".format(config.customs, datetime.now().strftime("%Y-%m-%dT%H%M%S"))
     Commands.invoke(ctx, 'fix_permissions')
     try:
         _migrate(
@@ -284,7 +280,7 @@ def migrate(ctx, config, from_version, to_version, no_git_clean, debug, module, 
             LOGFILE,
             from_version,
             to_version,
-            SETTINGS_D_FILE=os.path.join(dirs['settings.d'], 'migration'),
+            SETTINGS_D_FILE=str(dirs['settings.d'] / 'migration'),
             git_clean=git_clean,
             debug=debug,
             module=module,

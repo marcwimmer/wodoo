@@ -80,6 +80,7 @@ def __system(cmd, cwd=None, suppress_out=False, raise_exception=True,
              progress=False, progress_every_seconds=1, env=None
              ):
     assert isinstance(cmd, list)
+    cmd = list(map(str, cmd))
 
     STDPIPE, ERRPIPE, bufsize = subprocess.PIPE, subprocess.PIPE, 1
     if (not wait_finished and pipeout is None) or pipeout is False:

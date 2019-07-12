@@ -1,3 +1,4 @@
+from pathlib import Path
 import sys
 from datetime import datetime
 import shutil
@@ -38,9 +39,9 @@ def src_make_customs(ctx, config, customs, version):
         version=version,
     )
     os.environ['CUSTOMS'] = customs
-    cwd = os.path.join(dirs['odoo_home'], 'customs', customs)
+    cwd = dirs['odoo_home'] / 'customs' / customs
     ctx.invoke(checkout_odoo)
-    odoo_dir = os.path.join(cwd, 'odoo')
+    odoo_dir = Path(cwd) / 'odoo'
     __system([
         'git', 'checkout', str(version)
     ], cwd=odoo_dir)
@@ -88,10 +89,8 @@ def update_ast():
 
 @src.command()
 def rmpyc():
-    for root, _, _files in os.walk(dirs['customs']):
-        for filename in _files:
-            if filename.endswith(".pyc"):
-                os.unlink(os.path.join(root, filename))
+    for file in dirs['customs'].glob("**/*.pyc"):
+        file.unlink()
 
 @src.command(name='odoo')
 @click.pass_context
@@ -103,21 +102,21 @@ def checkout_odoo(ctx, version='', not_use_local_repo=True, commit_changes=False
      - temporary switch to odoo version
 
     """
-    __assert_file_exists(os.path.join(dirs['customs'], '.version'))
+    __assert_file_exists(dirs['customs'] / '.version')
 
-    if os.path.isdir(os.path.join(dirs['customs'], 'odoo')) and not force:
+    if (dirs['customs'] / 'odoo').is_dir() and not force:
         raise Exception("Odoo already exists")
 
     if not version:
-        version = __read_file(os.path.join(dirs['customs'], '.version')).strip()
+        version = __read_file(dirs['customs'] / '.version').strip()
     version = float(version)
 
     __system([
         'git',
         'status',
     ], cwd=dirs['customs'])
-    odoo_path = os.path.join(dirs['customs'], 'odoo')
-    if os.path.exists(odoo_path):
+    odoo_path = dirs['customs'] / 'odoo'
+    if odoo_path.exists():
         shutil.rmtree(odoo_path)
         if commit_changes:
             __system([
@@ -150,11 +149,9 @@ def checkout_odoo(ctx, version='', not_use_local_repo=True, commit_changes=False
         "HEAD",
     ], cwd=odoo_path).strip()
 
-    shutil.rmtree(os.path.join(dirs['customs'], 'odoo/.git'))
-    with open(os.path.join(dirs['customs'], '.version'), 'w') as f:
-        f.write(str(version))
-    with open(os.path.join(dirs['customs'], 'odoo.commit'), 'w') as f:
-        f.write(sha.strip())
+    shutil.rmtree(dirs['customs'] / 'odoo/.git')
+    (dirs['customs'] / '.version').write_text(str(version))
+    (dirs['customs'] / 'odoo.commit').write_text(sha.strip())
     reload() # apply new version
     Commands.invoke(ctx, 'status')
 

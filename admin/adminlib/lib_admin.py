@@ -1,3 +1,4 @@
+from pathlib import Path
 import subprocess
 import sys
 import shutil
@@ -72,17 +73,16 @@ def springclean():
 def pack(config):
     from . import odoo_config
     url = "ssh://git@git.clear-consulting.de:50004/odoo-deployments/{}".format(config.customs)
-    folder = os.path.join(os.environ['LOCAL_ODOO_HOME'], 'data/src/deployments', config.customs)
-    if not os.path.isdir(os.path.dirname(folder)):
-        os.makedirs(os.path.dirname(folder))
+    folder = Path(os.environ['LOCAL_ODOO_HOME']) / 'data' / 'src' / 'deployments' / config.customs
+    folder.parent.mkdir(parents=True, exist_ok=True)
 
-    if not os.path.exists(folder):
+    if not folder.exists():
         __system([
             "git",
             "clone",
             url,
-            os.path.basename(folder),
-        ], cwd=os.path.dirname(folder), suppress_out=False)
+            folder.name,
+        ], cwd=folder.parent, suppress_out=False)
 
     __system([
         "git",
@@ -116,7 +116,7 @@ def pack(config):
     # remove set_traces and other
     pwd = os.getcwd()
     os.chdir(tmp_folder)
-    os.system("find . -type f -name *.py | grep \"modules\|common\" | xargs sed -i /set_trace/d", )
+    os.system(r"find . -type f -name *.py | grep \"modules\|common\" | xargs sed -i /set_trace/d", )
     os.system("find . -type f -name *.py | grep \"odoo\" | grep -v qweb.py | xargs sed -i /set_trace/d", )  # there is in qweb a body = ast.parse("__import__('%s').set_trace()" % re.sub(r'[^a-zA-Z]', '', debugger)).body + body  # pdb, ipdb, pudb, ...
     os.system("find . -type f -name .odoo.ast -delete")
     os.chdir(pwd)
@@ -131,42 +131,14 @@ def pack(config):
         '--delete-after',
     ], cwd=odoo_config.customs_dir(), suppress_out=False)
 
-    # if os.path.islink(os.path.join(odoo_config.customs_dir(), 'common')):
-        # os.unlink(os.path.join(folder, 'common'))
-        # __system([
-            # "rsync",
-            # odoo_config.customs_dir() + "/common/",
-            # folder + "/common/",
-            # '-arL',
-            # '--exclude=.git',
-            # '--exclude=.pyc',
-            # '--delete-after',
-        # ], cwd=odoo_config.customs_dir(), suppress_out=False)
-
     # remove .gitignore - could contain odoo for example
-    gitignore = os.path.join(folder, '.gitignore')
-    with open(gitignore, 'w') as f:
+    gitignore = folder / '.gitignore'
+    with gitignore.open('w') as f:
         f.write("""
 *.pyc
 """)
 
     subprocess.Popen(["find", "-name", "*.pyc", "-delete"], cwd=folder).wait()
-
-    # sync modules
-
-    # TODO filter out not licensed modules
-    for linkdir in [
-        'common',
-    ]:
-        if os.path.islink(linkdir):
-            os.unlink(os.path.join(folder, linkdir))
-            __system([
-                "rsync",
-                os.path.join(odoo_config.customs_dir(), "../../modules", config.odoo_version) + "/",
-                folder + "/{}/".format(linkdir),
-                '-ar',
-                '--exclude=.git',
-            ], cwd=odoo_config.customs_dir(), suppress_out=False)
 
     __system(["git", "add", "."], cwd=folder, suppress_out=False)
     __system(["git", "commit", "-am 'new deployment'"], cwd=folder, suppress_out=False)

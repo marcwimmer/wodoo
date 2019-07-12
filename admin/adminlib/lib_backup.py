@@ -1,3 +1,4 @@
+import arrow
 import re
 from retrying import retry
 import docker
@@ -91,12 +92,17 @@ def backup_calendar(config, filename=None):
 @pass_config
 @click.pass_context
 def backup_db(ctx, config, filename, non_interactive):
-    if not filename and config.devmode:
-        if not non_interactive:
-            answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
-            if not answer:
-                return
-            filename = answer['filename']
+    if not filename:
+        if config.devmode:
+            if not non_interactive:
+                answer = inquirer.prompt([inquirer.Text('filename', message="Filename", default=__get_default_backup_filename(config))])
+                if not answer:
+                    return
+                filename = answer['filename']
+        else:
+            customs = config.customs
+            date = arrow.get()
+            filename = config.db_odoo_fileformat.format(customs=customs, date=date)
 
     filename = filename or __get_default_backup_filename(config)
 

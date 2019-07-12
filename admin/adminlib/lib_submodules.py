@@ -1,3 +1,4 @@
+from pathlib import Path
 import traceback
 import time
 import threading
@@ -26,23 +27,22 @@ pushable_urls = [
 
 def _get_modules():
     modules = []
-    with open(os.path.join(customs_dir(), 'submodules')) as f:
-        content = f.read()
-        for line in content.split("\n"):
-            if not line:
-                continue
-            version, dir, url = line.split(":", 2)
-            if dir == '.':
-                dir = ''
-            data = {
-                'name': os.path.basename(url).strip(),
-                'subdir': os.path.join('common', dir),
-                'url': url.strip(),
-                'version': version,
-            }
-            if list(filter(lambda module: module['name'] == data['name'] and module['url'] == data['url'], modules)):
-                raise Exception("Already exists: {}".format(data))
-            modules.append(data)
+    content = (customs_dir() / 'submodules').read_text()
+    for line in content.split("\n"):
+        if not line:
+            continue
+        version, dir, url = line.split(":", 2)
+        if dir == '.':
+            dir = ''
+        data = {
+            'name': os.path.basename(url).strip(),
+            'subdir': Path("common") / dir,
+            'url': url.strip(),
+            'version': version,
+        }
+        if list(filter(lambda module: module['name'] == data['name'] and module['url'] == data['url'], modules)):
+            raise Exception("Already exists: {}".format(data))
+        modules.append(data)
     return modules
 
 
@@ -52,14 +52,14 @@ def pull():
     __system([
         "git",
         "pull",
-    ], cwd=os.path.join(dir))
+    ], cwd=dir)
     for module in _get_modules():
-        full_path = os.path.join(dir, module['subdir'], module['name'])
-        if not module['subdir'].endswith("/."):
-            if not os.path.exists(os.path.dirname(full_path)):
-                os.makedirs(os.path.dirname(full_path))
+        full_path = dir / module['subdir'] / module['name']
+        if not str(module['subdir']).endswith("/."):
+            if not full_path.parent.exists():
+                full_path.parent.mkdir(exist_ok=True, parents=True)
 
-        if not os.path.isdir(full_path):
+        if not full_path.is_dir():
             subprocess.check_call([
                 "git",
                 "submodule",
@@ -68,19 +68,19 @@ def pull():
                 "-b",
                 module['version'],
                 module['url'],
-                os.path.join(module['subdir'], module['name']),
+                Path(module['subdir']) / module['name'],
             ], cwd=dir)
             subprocess.check_call([
                 "git",
                 "checkout",
                 module['version'],
-            ], cwd=os.path.join(dir, module['subdir'], module['name']))
+            ], cwd=dir / module['subdir'] / module['name'])
             subprocess.check_call([
                 "git",
                 "submodule",
                 "update",
                 "--init"
-            ], cwd=os.path.join(dir, module['subdir'], module['name']))
+            ], cwd=dir / module['subdir'] / module['name'])
 
     for module in _get_modules():
         print(module['name'])
@@ -89,7 +89,7 @@ def pull():
                 "git",
                 "checkout",
                 module['version'],
-            ], cwd=os.path.join(dir, module['subdir'], module['name']))
+            ], cwd=dir / module['subdir'] / module['name'])
         except Exception:
             click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['version']), bold=True, fg="red"))
             raise
@@ -105,7 +105,7 @@ def pull():
                         "git",
                         "pull",
                         "--no-edit",
-                    ], cwd=os.path.join(dir, module['subdir'], module['name']))
+                    ], cwd=dir / module['subdir'] / module['name'])
                 except Exception:
                     time.sleep(1)
                     tries += 1
@@ -137,7 +137,7 @@ def push(ctx, config):
                     __system([
                         "git",
                         "push",
-                    ], cwd=os.path.join(dir, module['subdir'], module['name']))
+                    ], cwd=dir / module['subdir'] / module['name'])
                 except Exception:
                     print("Failed ")
                     time.sleep(1)
@@ -157,20 +157,20 @@ def push(ctx, config):
             __system([
                 "git",
                 "add",
-                os.path.join(module['subdir'], module['name']),
-            ], cwd=os.path.join(dir))
+                module['subdir'] / module['name']
+            ], cwd=dir)
         __system([
             "git",
             "commit",
             '-m',
             '.',
-        ], cwd=os.path.join(dir))
+        ], cwd=dir)
     except Exception:
         pass
     subprocess.check_call([
         "git",
         "push",
-    ], cwd=os.path.join(dir))
+    ], cwd=dir)
 
 @submodules.command(help="Commits changes in submodules")
 @click.argument("msg", required=True)
@@ -181,42 +181,42 @@ def commit(msg):
             "git",
             "checkout",
             module['version'],
-        ], cwd=os.path.join(dir, module['subdir'], module['name']))
+        ], cwd=dir / module['subdir'] / module['name'])
         subprocess.check_call([
             "git",
             "add",
             ".",
-        ], cwd=os.path.join(dir, module['subdir'], module['name']))
+        ], cwd=dir / module['subdir'] / module['name'])
         subprocess.Popen([
             "git",
             "commit",
             "-am",
             msg,
-        ], cwd=os.path.join(dir, module['subdir'], module['name'])).wait()
+        ], cwd=dir / module['subdir'] / module['name']).wait()
     subprocess.Popen([
         "git",
         "add",
         '.'
-    ], cwd=os.path.join(dir)).wait()
+    ], cwd=dir).wait()
     subprocess.Popen([
         "git",
         "commit",
         '-am',
         "update submodules",
-    ], cwd=os.path.join(dir)).wait()
+    ], cwd=dir).wait()
     print("--------------------")
     subprocess.Popen([
         "git",
         "status",
-    ], cwd=os.path.join(dir)).wait()
+    ], cwd=dir).wait()
 
 @submodules.command(help="Displays diff in submodules")
 def diff():
     DEVNULL = open(os.devnull, 'wb')
     dir = customs_dir()
     for module in _get_modules():
-        module_path = os.path.join(dir, module['subdir'], module['name'])
-        if not os.path.isdir(module_path):
+        module_path = dir / module['subdir'] / module['name']
+        if not module_path.is_dir():
             continue
         untracked = '\n'.join(filter(lambda line: not line.endswith(".pyc"), __system([
             "git",
@@ -253,14 +253,13 @@ def pull_push_all(ctx, mode):
         todo = push
     for mod in __get_all_subtrees():
         if mod.startswith("common/"):
-            path = os.path.join(dirs['customs'], mod)
-            if os.path.isdir(path):
+            path = dirs['customs'] / mod
+            if path.is_dir():
                 mod = mod[len("common/"):]
                 ctx.invoke(todo, submodule=mod)
-    extra_installs = os.path.join(dirs['odoo_home'], 'extra_install', 'module')
-    if os.path.exists(extra_installs):
-        with open(extra_installs, 'r') as f:
-            data = eval(f.read())
+    extra_installs = dirs['odoo_home'] / 'extra_install' / 'module'
+    if extra_installs.exists():
+        data = eval(extra_installs.read_text())
         for mod in data.keys():
             ctx.invoke(todo, submodule=mod, is_extra_install=True)
 
@@ -275,8 +274,8 @@ def OCA(config, module):
     for module in module:
         for module in module.split(","):
             wd = dirs['customs']
-            if not os.path.exists(os.path.join(wd, 'OCA')):
-                os.mkdir(os.path.join(wd, 'OCA'))
+            if not (wd / 'OCA'.exists()):
+                (wd / 'OCA').mkdir()
             __system([
                 'git',
                 'submodule',
@@ -307,8 +306,8 @@ def submodule_add(config, modules):
     if not modules:
         click.echo("Please provide some modules!")
         sys.exit(-1)
-    __assert_file_exists(os.path.join(dirs['customs'], '.git'))
-    __assert_file_exists(os.path.join(dirs['customs'], 'common'))
+    __assert_file_exists(dirs['customs'], '.git')
+    __assert_file_exists(dirs['customs'], 'common')
 
     for submodule in modules:
         __system([

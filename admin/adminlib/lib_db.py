@@ -105,7 +105,7 @@ def __choose_snapshot(config, take=False):
 
 def __get_snapshot_db():
     d = files['run/snapshot_mappings.txt']
-    if not os.path.exists(d):
+    if not d.exists():
         __set_snapshot_db({})
     with open(d, 'r') as f:
         return yaml.safe_load(f.read())

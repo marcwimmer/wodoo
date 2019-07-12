@@ -42,10 +42,9 @@ def abort_upgrade(config):
 
 @odoo_module.command(name='unlink')
 def module_unlink():
-    for file in os.listdir(os.path.join(dirs['customs'], 'links')):
-        path = os.path.join(dirs['customs'], file)
-        if os.path.islink(path):
-            os.unlink(path)
+    for file in (dirs['customs'] / 'links').glob("*"):
+        if file.is_symlink():
+            file.unlink()
 
 @odoo_module.command(name='link')
 def module_link():
@@ -200,7 +199,7 @@ def remove_old_modules(ctx, config, ask_confirm=True):
     to_remove = []
     for mod in mods:
         for path in get_odoo_addons_paths() + [get_links_dir()]:
-            if get_manifest_path_of_module_path(os.path.join(path, mod)):
+            if get_manifest_path_of_module_path(path / mod):
                 break
         else:
             to_remove.append(mod)
@@ -240,8 +239,8 @@ def show_install_state(config, suppress_error=False):
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
 def __get_extra_install_modules():
-    path = os.path.join(dirs['odoo_home'], 'extra_install/modules')
-    if not os.path.exists(path):
+    path = dirs['odoo_home'] / 'extra_install' / 'modules'
+    if not path.exxists():
         return {}
     with open(path, 'r') as f:
         return eval(f.read())

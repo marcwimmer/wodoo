@@ -454,8 +454,7 @@ def toggle_settings(ctx, config):
     Commands.invoke(ctx, 'reload')
 
 def _use_file(config, path):
-
-    if path.parent.parent.name == 'machines':
+    if path.parent.parent.name == 'machines' and path.name == 'docker-compose.yml':
         if not getattr(config, "run_{}".format(path.parent.name)):
             return False
         if not any(x.startswith("run_") for x in path.parts):

@@ -35,16 +35,15 @@ def patch(config):
       *./odoo patch apply-all
     """
     config.odoo_local_dir = 'odoo'
-    config.odoo_local = os.path.join(dirs['customs'], config.odoo_local_dir)
-    config.ignore_file = os.path.join(dirs['customs'], '.gitignore')
-    config.odoo_git = os.path.join(dirs['odoo_home'], 'repos/odoo')
-    config.patch_dir = os.path.join(dirs['customs'], 'common/patches', __get_odoo_commit())
-    config.sub_git = os.path.join(config.odoo_local, '.git')
-    odoo_dir = os.path.join(dirs['customs'], 'odoo')
+    config.odoo_local = dirs['customs'] / config.odoo_local_dir
+    config.ignore_file = dirs['customs'] / '.gitignore'
+    config.odoo_git = dirs['odoo_home'] / 'repos' / 'odoo'
+    config.patch_dir = dirs['customs'] / 'common' / 'patches' / __get_odoo_commit()
+    config.sub_git = config.odoo_local / '.git'
+    odoo_dir = dirs['customs'] / 'odoo'
     __assert_file_exists(odoo_dir, isdir=True)
 
-    if not os.path.exists(config.patch_dir):
-        os.mkdir(config.patch_dir)
+    config.patch_dir.mkdir(exists_ok=True)
 
 @patch.command(name='prepare')
 @pass_config
@@ -89,9 +88,8 @@ def patch_create(config, name):
     """
     creates the patch
     """
-    if not os.path.exists(config.patch_dir):
-        os.makedirs(config.patch_dir)
-    PATCHFILE = os.path.join(config.patch_dir, __safe_filename(name) + ".patch")
+    config.patch_dir.mkdir(exist_ok=True, parents=True)
+    PATCHFILE = config.patch_dir / __safe_filename(name) + ".patch"
 
     diff = _patch_get_diff(config)
     if diff:
@@ -113,7 +111,7 @@ def patch_apply(config, filepath):
 def _patch_list(absolute_path=True):
     filepaths = []
     filepaths += __find_files(dirs['customs'], "-name", "*.patch")
-    filepaths += __find_files(os.path.join(dirs['customs'], 'common'), "-name", "*.patch")
+    filepaths += __find_files(dirs['customs'] / 'common', "-name", "*.patch")
 
     commit = __get_odoo_commit()
 
@@ -145,7 +143,7 @@ def _patch_list(absolute_path=True):
         if '/migration/' in filename:
             continue
         if not absolute_path:
-            filename = os.path.relpath(filename, dirs['customs'])
+            filename = filename.relative_to(dirs['customs'])
         yield filename
 
 @patch.command(name='list')
@@ -226,7 +224,7 @@ def _patch_gitify(config):
     if config.odoo_local_dir not in __read_file(config.ignore_file):
         __append_line(config.ignore_file, config.odoo_local_dir)
 
-    if os.path.exists(config.sub_git):
+    if config.sub_git.exists():
         shutil.rmtree(config.sub_git)
 
     click.echo("Making local git repo... in {}".format(config.odoo_local))
@@ -238,7 +236,7 @@ def _patch_gitify(config):
     click.echo("Done")
 
 def _patch_gitify_on_need(config):
-    if not os.path.exists(config.sub_git):
+    if not config.sub_git.exists():
         _patch_gitify(config)
 
 def _patch_rmerror(function, path, excinfo):
@@ -248,7 +246,7 @@ def _patch_rmerror(function, path, excinfo):
         raise excinfo[1]
 
 def _patch_ungitify(config):
-    if os.path.exists(config.sub_git):
+    if config.sub_git.exists():
         shutil.rmtree(config.sub_git, True, onerror=_patch_rmerror)
 
 def _patch_default_patches(config):
@@ -268,5 +266,5 @@ def _patch_get_diff(config):
     os.chdir(wkd)
     with open(filename, 'r') as f:
         diff = f.read()
-    #diff = __system(["git", "diff", "--binary"], cwd=config.odoo_local, suppress_out=False) # Big fucking bug: terminates incompleted
+    # diff = __system(["git", "diff", "--binary"], cwd=config.odoo_local, suppress_out=False) # Big fucking bug: terminates incompleted
     return diff

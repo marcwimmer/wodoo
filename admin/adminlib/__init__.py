@@ -14,7 +14,7 @@ if not sys.stdin.isatty() and "SSH_CONNECTION" not in os.environ:
     stdinput = '\n'.join([x for x in sys.stdin])
 
 dir = Path(inspect.getfile(inspect.currentframe())).resolve().parent
-sys.path.append(os.path.join(dir, '../module_tools'))
+sys.path.append(dir / '..' / 'module_tools')
 import module_tools # NOQA
 from module_tools.myconfigparser import MyConfigParser  # NOQA
 from module_tools import odoo_config  # NOQA
@@ -182,7 +182,7 @@ __import__("adminlib.lib_backup")
 __import__("adminlib.lib_control")
 __import__("adminlib.lib_db")
 __import__("adminlib.lib_global")
-__import__("adminlib.lib_image")
+#__import__("adminlib.lib_image")
 __import__("adminlib.lib_lang")
 __import__("adminlib.lib_migrate")
 __import__("adminlib.lib_module")
@@ -198,4 +198,4 @@ SAFE_KILL = ['postgres', 'redis']
 PLATFORM_OSX = "OSX"
 PLATFORM_LINUX = "Linux"
 YAML_VERSION = '3.5'
-BACKUPDIR = "/host/dumps"
+BACKUPDIR = Path("/host/dumps")
