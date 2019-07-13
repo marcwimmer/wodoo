@@ -192,9 +192,7 @@ def restore_db(ctx, config, filename):
     if not filename:
         return
 
-    filename == BACKUPDIR / filename
-    if filename.startswith("/"):
-        raise Exception("No path in dump file allowed")
+    filename = BACKUPDIR / filename
     if not config.force:
         __restore_check(filename, config)
     if config.devmode and not dev:

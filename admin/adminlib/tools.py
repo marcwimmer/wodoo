@@ -620,10 +620,10 @@ def _fix_permissions(config):
     __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
 def _get_dump_files(backupdir, fnfilter=None):
-    _files = backupdir.glob("*")
+    _files = list(backupdir.glob("*"))
 
     def _get_ctime(filepath):
-        if fnfilter and fnfilter not in filepath:
+        if fnfilter and fnfilter not in filepath.name:
             return False
         try:
             return (backupdir / filepath).stat().st_ctime
@@ -635,7 +635,7 @@ def _get_dump_files(backupdir, fnfilter=None):
         delta = arrow.get() - arrow.get(filepath.stat().st_mtime)
         rows.append((
             i + 1,
-            file,
+            file.name,
             humanize.naturaltime(delta),
             humanize.naturalsize(filepath.stat().st_size),
         ))
@@ -685,7 +685,7 @@ def __postgres_restore(conn, filepath):
         PREFIX = []
     started = datetime.now()
     click.echo("Restoring DB...")
-    CMD = " " .join(pipes.quote(s) for s in ['pv', filepath])
+    CMD = " " .join(pipes.quote(s) for s in ['pv', str(filepath)])
     CMD += " | "
     if PREFIX:
         CMD += " ".join(pipes.quote(s) for s in PREFIX)
