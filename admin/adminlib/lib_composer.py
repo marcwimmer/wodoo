@@ -21,7 +21,6 @@ from .tools import __safe_filename
 from .tools import _file2env
 from .tools import __file_get_lines
 from .tools import __empty_dir
-from .tools import __find_files
 from .tools import _get_platform
 from .tools import __read_file
 from .tools import __write_file
@@ -115,28 +114,18 @@ def _prepare_yml_files_from_template_files(config):
     # only if RUN_parentpath like RUN_ODOO is <> 0 include the machine
     #
     # - also replace all environment variables
-    def find_files(dir, recursive=True):
-        cmd = [
-            dir,
-        ]
-        if not recursive:
-            cmd += ['-maxdepth', '1']
-
-        cmd += [
-            '-regex',
-            r'.*\/docker-compose.*.yml',
-        ]
-        for filepath in __find_files(*cmd):
-            yield filepath
     _files = []
-    _files += find_files(dirs['machines'])
-    _files += find_files(odoo_config.customs_dir())
+    for dir in [
+        dirs['machines'],
+        odoo_config.customs_dir(),
+    ]:
+        [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
     for d in [
         Path('/etc_host/odoo'),
         Path('/etc_host/odoo') / config.customs,
     ]:
         if d.exists():
-            _files += find_files(d, recursive=False)
+            [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
 
     _prepare_docker_compose_files(config, files['docker_compose'], _files)
 
@@ -163,7 +152,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     if not dest_file:
         raise Exception('require destination path')
 
-    with open(dest_file, 'w') as f:
+    with dest_file.open('w') as f:
         f.write("#Composed {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         f.write("version: '{}'\n".format(config.compose_version))
     myconfig = MyConfigParser(files['settings'])
@@ -174,7 +163,8 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     with open(files['config/default_network'], 'r') as f:
         default_network = yaml.safe_load(f.read())
 
-    for path in filter(lambda x: _use_file(config, x), paths):
+    paths = list(filter(lambda x: _use_file(config, x), paths))
+    for path in paths:
         content = path.read_text()
 
         # dont matter if written manage-order: or manage-order
@@ -262,13 +252,10 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         temp_files = []
         for i, filecontent in enumerate(final_contents):
             path = temp_path / (str(i).zfill(10) + '.yml')
-            with open(path, 'wb', 0) as f:  # no buffer
+            with path.open('wb') as f:
                 f.write(filecontent[1].encode('utf-8'))
-                f.flush() # flush although no buffer
-                os.fsync(f.fileno()) # fsync although no buffer
             temp_files.append("-f")
             temp_files.append(path.name)
-        os.system("sync")
 
         cmdline = []
         cmdline.append("/usr/local/bin/docker-compose")
@@ -281,20 +268,14 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         # have some tries; sometimes the compose files are not completley written
         # although turning off any buffers
         count = 0
-        conf = None
-        while True:
-            try:
-                conf = __system(cmdline, cwd=temp_path, env=d, suppress_out=True)
-            except Exception:
-                if count > 5:
-                    raise
-                click.echo("Configuration files dont seem to be written completley retrying in 0.5 seconds to parse docker-compose configuration")
-                time.sleep(1.5)
-                count += 1
-            else:
-                break
-        if conf is None:
-            raise Exception("Configuration files either not found or not writable. Please try again.")
+        try:
+            conf = __system(cmdline, cwd=temp_path, env=d, suppress_out=True)
+        except Exception:
+            if count > 5:
+                raise
+            print(cmdline)
+            click.echo("Configuration files dont seem to be written completley retrying in 0.5 seconds to parse docker-compose configuration")
+            raise
         # post-process config config
         conf = post_process_complete_yaml_config(yaml.safe_load(conf))
         conf = yaml.dump(conf, default_flow_style=False)
@@ -342,7 +323,7 @@ def _collect_settings_files(customs):
     _files = []
     _files.append(dirs['odoo_home'] / Path('machines/defaults'))
     # optimize
-    for filename in __find_files(dirs['machines'], "-name", "default.settings"):
+    for filename in dirs['machines'].glob("**/default.settings"):
         _files.append(dirs['machines'] / filename)
 
     for dir in filter(lambda x: x.exists(), _get_settings_directories(customs)):

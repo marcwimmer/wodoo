@@ -7,7 +7,6 @@ import click
 from .tools import __assert_file_exists
 from .tools import __system
 from .tools import __safe_filename
-from .tools import __find_files
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
@@ -110,8 +109,8 @@ def patch_apply(config, filepath):
 
 def _patch_list(absolute_path=True):
     filepaths = []
-    filepaths += __find_files(dirs['customs'], "-name", "*.patch")
-    filepaths += __find_files(dirs['customs'] / 'common', "-name", "*.patch")
+    filepaths += list(dirs['customs'].glob("**/*.patch"))
+    filepaths += list((dirs['customs'] / 'common').glob("**/*.patch"))
 
     commit = __get_odoo_commit()
 

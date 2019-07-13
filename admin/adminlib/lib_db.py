@@ -21,7 +21,6 @@ from .tools import __system
 from .tools import __set_db_ownership
 from .tools import __safe_filename
 from .tools import remove_webassets
-from .tools import __find_files
 from .tools import __read_file
 from .tools import __write_file
 from .tools import _askcontinue

@@ -23,7 +23,6 @@ from .tools import __postgres_restore
 from .tools import __assert_file_exists
 from .tools import __system
 from .tools import __safe_filename
-from .tools import __find_files
 from .tools import __read_file
 from .tools import __dc
 from .tools import __write_file

@@ -56,16 +56,6 @@ class DBConnection(object):
         )
         return conn
 
-def __find_files(cwd, *options):
-    """
-    :param options: ["-name", "default.settings"]
-    """
-    files = __system(["find"] + list(options), cwd=cwd, suppress_out=True)
-    files = files.split("\n")
-    files = [x for x in files if x and not x.endswith('/.')]
-    files = [(Path(cwd) / x).absolute().resolve() for x in files]
-    return files
-
 def __assert_file_exists(path, isdir=False):
     if not Path(path).exists():
         raise Exception("{} {} not found!".format(
@@ -594,7 +584,7 @@ def _display_machine_tips(machine_name):
     if not dir.is_dir():
         return
 
-    for filename in __find_files(dirs['machines'], '-name', 'tips.txt'):
+    for filename in dirs['machines'].glob("**/tips.txt"):
         filepath = dirs['machines'] / filename
         if filepath.parent.name == machine_name:
             content = (dirs['machines'] / filename).read_text()
