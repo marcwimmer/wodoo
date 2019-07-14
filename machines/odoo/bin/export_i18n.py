@@ -8,6 +8,7 @@ import pwd
 import subprocess
 from module_tools.module_tools import Module
 from pathlib import Path
+from tools import exec_odoo
 if len(sys.argv) == 1:
     print("Usage: export_i18n de_DE module")
     sys.exit(-1)
@@ -23,23 +24,14 @@ for module in MODULES.split(","):
 
     filename = Path(tempfile.mktemp(suffix='.po'))
 
-    cmd = [
-        "/usr/bin/sudo",
-        "-E",
-        "-H",
-        "-u",
-        os.environ['ODOO_USER'],
-        os.path.join(os.environ['SERVER_DIR'], os.environ['ODOO_EXECUTABLE']),
-        '-d', os.environ['DBNAME'],
-        '-c', os.path.join(os.environ['CONFIG_DIR'], 'config_i18n'),
-        '--pidfile={}'.format(os.environ['DEBUGGER_ODOO_PID']),
+    exec_odoo(
+        'config_i18n',
         '--stop-after-init',
         '--log-level=warn',
         '-l', LANG,
         '--i18n-export={}'.format(str(filename)),
         '--modules={}'.format(module.name),
-    ]
-    subprocess.call(cmd)
+    )
 
     dest_path = module.path / 'i18n' / "{}.po".format(LANG)
     shutil.copy(str(filename), str(dest_path))

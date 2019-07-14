@@ -6,6 +6,7 @@ import sys
 import subprocess
 from module_tools.module_tools import Module
 from pathlib import Path
+from tools import exec_odoo
 if len(sys.argv) == 1:
     print("Usage: import_i18n de_DE pofilepath")
     sys.exit(-1)
@@ -19,21 +20,14 @@ LANG = sys.argv[1]
 FILEPATH = sys.argv[2]
 
 print("Importing lang file $FILEPATH")
+from pudb import set_trace
+set_trace()
 
-cmd = [
-    "/usr/bin/sudo",
-    "-E",
-    "-H",
-    "-u",
-    os.environ['ODOO_USER'],
-    os.path.join(os.environ['SERVER_DIR'], os.environ['ODOO_EXECUTABLE']),
-    '-d', os.environ['DBNAME'],
-    '-c', os.path.join(os.environ['CONFIG_DIR'], 'config_i18n'),
-    '--pidfile={}'.format(os.environ['DEBUGGER_ODOO_PID']),
+exec_odoo(
+    'config_i18n',
     '--stop-after-init',
     '--log-level=warn',
     '-l', LANG,
     '--i18n-import={}'.format(FILEPATH),
     '--i18n-overwrite',
-]
-subprocess.call(cmd)
+)

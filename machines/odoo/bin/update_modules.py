@@ -55,8 +55,6 @@ def update(mode, module):
         ]
         if TESTS:
             params += [TESTS]
-        from pudb import set_trace
-        set_trace()
         exec_odoo('config_update', *params, force_no_gevent=True)
 
     if mode == 'i' and not ONLY_I18N:

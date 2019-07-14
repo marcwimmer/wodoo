@@ -62,7 +62,8 @@ apt-get install \
             ffmpeg \
             zip \
             gpg-agent \
-            python3-pip
+            python3-pip \
+            python3-setuptools
 
 RUN pip3 install lxml psycopg2
 RUN \

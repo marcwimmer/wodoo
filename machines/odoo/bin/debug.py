@@ -109,7 +109,7 @@ while True:
             subprocess.call([
                 "import_i18n.py",
                 lang,
-                module
+                filepath
             ])
         last_mod = new_mod
     time.sleep(0.2)

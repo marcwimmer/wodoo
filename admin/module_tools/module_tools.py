@@ -707,6 +707,7 @@ class Module(object):
         path = path.relative_to(self.path)
         if not path:
             raise Exception("not part of module")
+        return self.path.name / path
 
     def apply_po_file(self, pofile_path):
         """
