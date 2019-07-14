@@ -5,7 +5,7 @@ import os
 from module_tools import odoo_config
 from module_tools.odoo_config import customs_dir
 from pathlib import Path
-pidfile = Path('/var/run/odoo.pid')
+pidfile = Path('/tmp/odoo.pid')
 config = odoo_config.get_env()
 
 
@@ -103,7 +103,7 @@ def get_odoo_bin():
     return EXEC, CONFIG, GEVENT_MARKER
 
 
-def exec_odoo(CONFIG, *args, env={}): # NOQA
+def exec_odoo(CONFIG, *args, force_no_gevent=False, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
@@ -128,7 +128,7 @@ def exec_odoo(CONFIG, *args, env={}): # NOQA
         ODOO_USER,
         EXEC,
     ]
-    if GEVENT_MARKER:
+    if GEVENT_MARKER and not force_no_gevent:
         cmd += [GEVENT_MARKER]
     cmd += [
         '-c',
@@ -138,4 +138,6 @@ def exec_odoo(CONFIG, *args, env={}): # NOQA
         '--pidfile={}'.format(pidfile),
     ]
 
-    subprocess.check_call(cmd, env=env)
+    subprocess.call(cmd, **kwargs)
+    #proc = subprocess.Popen(cmd, stdout='/dev/fd/0', **kwargs)
+    #proc.wait()
