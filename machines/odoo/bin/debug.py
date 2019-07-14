@@ -69,8 +69,6 @@ while True:
         if action[0] in ['debug', 'quick_restart']:
             subprocess.call(['/usr/bin/reset'])
             subprocess.call(["run_debug.py"])
-            from pudb import set_trace
-            set_trace()
 
         elif action[0] in ["update_module", "update_module_full"]:
             module = action[1]

@@ -7,7 +7,7 @@ ENV = {
     "ODOO_TRACE": "1"
 }
 exec_odoo(
-    'config_webserver',
+    'config_debug',
     '--log-level=debug',
     force_no_gevent=True,
 )

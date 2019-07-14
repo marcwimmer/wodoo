@@ -13,6 +13,7 @@ from module_tools.module_tools import delete_qweb
 from module_tools.module_tools import Module, Modules, DBModules
 from module_tools.odoo_config import customs_dir
 from tools import prepare_run
+from tools import exec_odoo
 prepare_run()
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
@@ -47,15 +48,6 @@ def update(mode, module):
     if not ONLY_I18N:
         print(mode, module)
         params = [
-            '/usr/bin/sudo',
-            '-H',
-            '-u',
-            os.getenv("ODOO_USER"),
-            os.path.expandvars("$SERVER_DIR/{}".format(os.environ["ODOO_EXECUTABLE"])),
-            '-c',
-            os.path.expandvars("$CONFIG_DIR/config_update"),
-            '-d',
-            os.path.expandvars("$DBNAME"),
             '-' + mode,
             module,
             '--stop-after-init',
@@ -63,7 +55,7 @@ def update(mode, module):
         ]
         if TESTS:
             params += [TESTS]
-        subprocess.check_call(params)
+        exec_odoo('config_update', *params)
 
     if mode == 'i' and not ONLY_I18N:
         for module in module.split(','):
@@ -83,21 +75,13 @@ def update(mode, module):
                     if os.path.isfile(lang_file):
                         print("Updating language {} for module {}:".format(lang, module))
                         params = [
-                            '/usr/bin/sudo',
-                            '-H',
-                            '-u',
-                            os.getenv("ODOO_USER"),
-                            os.path.expandvars("$SERVER_DIR/{}".format(os.environ["ODOO_EXECUTABLE"])),
-                            '-c',
-                            os.path.expandvars("$CONFIG_DIR/config_update"),
-                            '-d',
-                            os.path.expandvars("$DBNAME"),
                             '-l',
                             lang,
                             '--i18n-import={}/i18n/{}.po'.format(module, lang),
                             '--i18n-overwrite',
                         ]
                         subprocess.check_call(params)
+                        exec_odoo('config_update', *params)
 
     print(mode, module, 'done')
 
