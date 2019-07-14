@@ -115,15 +115,4 @@ RUN pip3 install -r /root/odoo_requirements.txt
 RUN pip3 install -r /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
-
-
-
-ADD bin/ /
-ADD config/$ODOO_VERSION/* /home/odoo/
-RUN chmod a+x /*.sh /*.py && \
-chmod a+x /usr/local/bin/* && \
-chmod a+x /*.sh && \
-chown odoo:odoo /home/odoo -R
-
 WORKDIR /opt/odoo
-ENTRYPOINT ["/entrypoint.sh"]

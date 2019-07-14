@@ -375,7 +375,7 @@ def __postprocess_config(config):
     """
     from . import odoo_config
     if "CUSTOMS" in config.keys():
-        config['ODOO_VERSION'] = str(float(odoo_config.get_version_from_customs(config['CUSTOMS'])))
+        config['ODOO_VERSION'] = str(odoo_config.current_version())
         config['HOST_ODOO_HOME'] = os.getenv("HOST_ODOO_HOME")
 
     if 'RUN_POSTGRES' in config.keys() and config['RUN_POSTGRES'] == '1':

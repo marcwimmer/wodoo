@@ -12,7 +12,6 @@ from .odoo_config import admin_dir
 from .odoo_config import get_env
 from .odoo_config import odoo_root
 from .odoo_config import run_dir
-from .odoo_config import get_version_from_customs
 from .odoo_config import get_conn
 from .odoo_config import current_customs
 from .odoo_config import current_version
@@ -329,7 +328,7 @@ def make_module(parent_path, module_name):
     Creates a new odoo module based on a provided template.
 
     """
-    version = get_version_from_customs()
+    version = current_version()
     complete_path = Path(parent_path) / Path(module_name)
     del parent_path
     if complete_path.exists():
@@ -824,9 +823,9 @@ class Module(object):
                     current_id = t
 
         all_files = self.get_all_files_of_module()
-        if get_version_from_customs() < 11.0:
-            module_path = Path(str(self.path).replace("/{}/".format(get_version_from_customs()), ""))
-            if module_path.endswith("/{}".format(get_version_from_customs())):
+        if current_version() < 11.0:
+            module_path = Path(str(self.path).replace("/{}/".format(current_version()), ""))
+            if module_path.endswith("/{}".format(current_version())):
                 module_path = "/".join(module_path.split("/")[:-1])
 
         for file in all_files:
@@ -898,7 +897,7 @@ class Module(object):
         all_files = self.get_all_files_of_module()
         # first collect all xml files and ignore test and static
         DATA_NAME = 'data'
-        if get_version_from_customs() <= 7.0:
+        if current_version() <= 7.0:
             DATA_NAME = 'update_xml'
 
         mod[DATA_NAME] = []

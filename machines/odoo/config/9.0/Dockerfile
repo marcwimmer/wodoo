@@ -61,11 +61,19 @@ apt-get install \
 			libmagickwand-dev \
             ffmpeg \
             zip \
-            gpg-agent
+            gpg-agent \
+            python3-pip
+
+RUN pip3 install lxml psycopg2
 RUN \
 sudo add-apt-repository ppa:malteworld/ppa && \
 sudo apt update && \
 sudo apt install -y pdftk
+
+ADD liberation-sans /usr/share/fonts/
+# rebuild font cache
+RUN fc-cache -f -v
+
 
 # Install nodejs and npm
 RUN \
@@ -130,23 +138,8 @@ RUN pip install -r /root/odoo_requirements.txt
 # python2 binary error on ubuntu 18.04
 # https://github.com/psycopg/psycopg2-wheels/issues/2
 RUN mv /bin/sh /bin/sh.bak; ln -s /bin/bash /bin/sh
-RUN if ((`bc <<< "$ODOO_VERSION<=10.0"`)); then pip uninstall -y psycopg2; pip install --no-binary psycopg2; fi
+RUN pip uninstall -y psycopg2
+RUN pip install --no-binary psycopg2
 RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
 
-ADD bin/ /
-ADD config/$ODOO_VERSION/* /home/odoo/
-RUN chmod a+x /*.sh && \
-chmod 644 /etc/python2.7/sitecustomize.py && \
-chmod a+x /usr/local/bin/* && \
-chmod a+x /*.sh && \
-chown odoo:odoo /home/odoo -R
-
-ADD liberation-sans /usr/share/fonts/
-# rebuild font cache
-RUN fc-cache -f -v
-
-ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
-RUN apt install -y python3-pip
-RUN pip3 install lxml psycopg2
-ENTRYPOINT ["/entrypoint.sh"]

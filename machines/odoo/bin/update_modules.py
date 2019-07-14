@@ -12,6 +12,8 @@ from module_tools.module_tools import get_all_langs
 from module_tools.module_tools import delete_qweb
 from module_tools.module_tools import Module, Modules, DBModules
 from module_tools.odoo_config import customs_dir
+from tools import prepare_run
+prepare_run()
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)

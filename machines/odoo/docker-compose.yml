@@ -23,16 +23,17 @@ services:
       - ${ODOO_HOME}:/opt/odoo
       - ${ODOO_HOME}/run/debug:/tmp/debug
       - ${ODOO_HOME}/machines/odoo/bin/update_modules.py:/update_modules.py
-      - ${ODOO_HOME}/machines/odoo/bin/apply-env-to-config.py:/apply-env-to-config.py
-      - ${ODOO_HOME}/machines/odoo/bin/export_i18n.py:/export_i18n.py
-      - ${ODOO_HOME}/machines/odoo/bin/import_i18n.py:/import_i18n.py
-      - ${ODOO_HOME}/machines/odoo/bin/unit_test.py:/unit_test.py
+      - ${ODOO_HOME}/machines/odoo/bin:/odoolib
+      - ${ODOO_HOME}/machines/odoo/config/${ODOO_VERSION}/config:${ODOO_CONFIG_DIR}
     env_file:
       - $ODOO_HOME/run/settings
       - $ODOO_HOME/machines/odoo/docker-env
     environment:
       - SERVER_DIR=/opt/odoo/data/src/customs/${CUSTOMS}/odoo
-    command: echo 'odoo_base - good bye - it is ok!'
+      - ODOOLIB=/odoolib
+      - PYTHONPATH=/odoolib:/opt/odoo/admin
+    command: /usr/bin/python3 $ODOOLIB/run.py
+    entrypoint: ["/bin/bash", "/odoolib/entrypoint.sh"]
     logging:
         options:
             max-size: 1g
@@ -44,7 +45,6 @@ services:
     environment:
       DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
-    command: /rootrun.sh
 
   odoo_debug:
     <<: *odoo_base
@@ -53,7 +53,6 @@ services:
       ENDLESS_LOOP: 1
       DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
-    command: /rootrun.sh
       
   odoo_cronjobs:
     <<: *odoo_base
@@ -61,7 +60,6 @@ services:
     restart: unless-stopped
     environment:
       IS_ODOO_CRONJOB: 1
-    command: /rootrun.sh
     logging:
         options:
             max-size: 3g
@@ -72,7 +70,6 @@ services:
     restart: unless-stopped
     environment:
       IS_ODOO_QUEUEJOB: 1
-    command: /rootrun.sh
     logging:
         options:
             max-size: 3g
@@ -80,5 +77,4 @@ services:
   odoo_update:
     <<: *odoo_base
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_updater
-    # called by manage.sh
     command: echo 'good bye - it is ok!'

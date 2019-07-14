@@ -39,11 +39,6 @@ def module_dir(modulename):
                 path = path / modulename
     return path
 
-def get_version_from_customs(customs=None):
-    content = (customs_dir(customs) / '.version').read_text()
-    content = eval(content)
-    return content
-
 def install_file():
     return customs_dir() / 'install'
 

@@ -3,7 +3,6 @@ LANG=en_US.UTF-8
 LANGUAGE=en_US:en
 ODOO_HOME=/opt/odoo
 ADMIN_DIR=/opt/odoo/admin
-CONFIG_DIR=/home/odoo
 ODOO_USER=odoo
 LANG=en_US.UTF-8
 LANGUAGE=en_US:en
