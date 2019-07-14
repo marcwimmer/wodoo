@@ -137,7 +137,7 @@ def backup_files(config):
         shutil.move(BACKUP_FILEPATH, second_path)
         del second
         del second_path
-    __dcrun(["odoo", "/backup_files.sh", BACKUP_FILENAME])
+    __dcrun(["odoo", "/odoolib/backup_files.py", BACKUP_FILENAME])
     __apply_dump_permissions(BACKUP_FILEPATH)
     click.echo("Backup files done to {}".format(BACKUP_FILENAME))
 
@@ -160,8 +160,9 @@ def list_dumps(config):
     click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
 
 @restore.command(name='files')
-def restore_files(dumpfile):
-    __do_restore_files(dumpfile)
+@click.argument('filename', required=True)
+def restore_files(filename):
+    __do_restore_files(filename)
 
 
 @restore.command(name='odoo-db')
@@ -227,7 +228,8 @@ def __do_restore_files(filepath):
     # remove the postgres volume and reinit
     if filepath.startswith("/"):
         raise Exception("No absolute path allowed")
-    __dcrun(['odoo', '/bin/restore_files.sh', filepath.name])
+    filepath = Path(filepath)
+    __dcrun(['odoo', '/odoolib/restore_files.py', filepath.name])
 
 def __restore_check(filepath, config):
     dumpname = filepath.name

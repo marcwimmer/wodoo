@@ -1,11 +1,15 @@
 #!/usr/bin/env python3 
+import sys
 import subprocess
+from pathlib import Path
 from module_tools import odoo_config
-DESTFILE = "/opt/dumps/{}".format(odoo_config.current_customs())
+path = Path(sys.argv[1])
+DESTFILE = "/opt/dumps/{}".format(path.name)
+d = "/opt/files"
 
 subprocess.check_call([
     "/bin/tar",
     "cfz",
     DESTFILE,
-    "/opt/files"
-])
+    d,
+], cwd=d)
