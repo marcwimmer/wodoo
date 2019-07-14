@@ -9,5 +9,6 @@ services:
         ODOO_PYTHON_VERSION: 3
         ODOO_EXECUTABLE_GEVENT: "odoo-bin"
         ODOO_EXECUTABLE_CRONJOBS: "odoo-bin"
+        ODOO_EXECUTABLE_QUEUEJOBS: "odoo-bin"
         ODOO_EXECUTABLE_DEBUG: "odoo-bin"
         ODOO_EXECUTABLE: "odoo-bin"

@@ -66,6 +66,17 @@ services:
         options:
             max-size: 3g
 
+  odoo_queuejobs:
+    <<: *odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_queuejobs
+    restart: unless-stopped
+    environment:
+      IS_ODOO_QUEUEJOB: 1
+    command: /rootrun.sh
+    logging:
+        options:
+            max-size: 3g
+
   odoo_update:
     <<: *odoo_base
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_updater

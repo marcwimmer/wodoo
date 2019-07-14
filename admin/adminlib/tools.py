@@ -510,8 +510,8 @@ def _sanity_check(config):
         click.echo("Advise: you should set OWNER_UID so that dump files are marked as the correct owner")
         time.sleep(3)
 
-    if config.odoo_files and config.odoo_files.is_dir():
-        if config.owner_uid and os.stat(config.odoo_files).st_uid != config.owner_uid_as_int:
+    if config.odoo_files and Path(config.odoo_files).is_dir():
+        if config.owner_uid and Path(config.odoo_files).stat().st_uid != config.owner_uid_as_int:
             _fix_permissions()
 
     # make sure the odoo_debug.txt exists; otherwise directory is created
@@ -602,10 +602,10 @@ def __do_command(cmd, *params, **kwparams):
 
 def _fix_permissions(config):
     from . import odoo_config
-    if config.odoo_files and config.odoo_files.is_dir() and \
+    if config.odoo_files and Path(config.odoo_files).is_dir() and \
             config.owner_uid and \
             config.owner_uid_as_int != 0:
-        __try_to_set_owner(config.owner_uid, config.odoo_files, recursive=True)
+        __try_to_set_owner(config.owner_uid, Path(config.odoo_files), recursive=True)
     customs_dir = odoo_config.customs_dir()
     __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 

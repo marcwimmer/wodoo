@@ -15,6 +15,10 @@ if [[ "$IS_ODOO_CRONJOB" == "1" ]]; then
     echo 'Starting odoo cronjobs'
     CONFIG=config_cronjob
     EXEC="$ODOO_EXECUTABLE_CRONJOBS"
+elif [[ "$IS_ODOO_QUEUEJOB" == "1" ]]; then
+    echo 'Starting odoo queuejobs'
+    CONFIG=config_queuejob
+    EXEC="$ODOO_EXECUTABLE_QUEUEJOBS"
 else
     echo 'Starting odoo web'
     CONFIG=config_webserver

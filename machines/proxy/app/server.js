@@ -96,5 +96,5 @@ app.all("/*", (req, res, next) => {
 });
 
 app.listen(80, '0.0.0.0', () => {
-    console.log('Proxy server listening on 8080 all interfaces.');
+    console.log('Proxy server listening on 80 all interfaces.');
 });

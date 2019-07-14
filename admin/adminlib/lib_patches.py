@@ -12,6 +12,7 @@ from .tools import __write_file
 from .tools import __append_line
 from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
+from . import odoo_config
 from . import cli, pass_config, dirs, files
 from .lib_clickhelpers import AliasedGroup
 
@@ -42,7 +43,7 @@ def patch(config):
     odoo_dir = dirs['customs'] / 'odoo'
     __assert_file_exists(odoo_dir, isdir=True)
 
-    config.patch_dir.mkdir(exists_ok=True)
+    config.patch_dir.mkdir(exist_ok=True)
 
 @patch.command(name='prepare')
 @pass_config
@@ -120,7 +121,7 @@ def _patch_list(absolute_path=True):
 
     # filter to commits
     def in_commit(path):
-        match = re.findall(r'/[a-f,0-9]{40}/', path)
+        match = re.findall(r'/[a-f,0-9]{40}/', str(path))
         for x in match:
             x = x[1:-1]
             if x != commit:
@@ -139,7 +140,7 @@ def _patch_list(absolute_path=True):
         filepaths_hashes[m.hexdigest()] = x
     filepaths = sorted(filepaths_hashes.values())
     for filename in filepaths:
-        if '/migration/' in filename:
+        if 'migration' in filename.relative_to(odoo_config.customs_dir()).parts:
             continue
         if not absolute_path:
             filename = filename.relative_to(dirs['customs'])
@@ -163,7 +164,7 @@ def apply_all(ctx, config):
     ctx.invoke(patch_reset)
     _patch_default_patches(config)
     for filepath in _patch_list():
-        click.echo("Applying patch " + filepath)
+        click.echo("Applying patch {}".format(filepath.relative_to(odoo_config.customs_dir())))
         ctx.invoke(patch_apply, filepath=filepath)
     _patch_ungitify(config)
     click.echo("Successfully applied all patches and cleaned .git directory.")
@@ -192,8 +193,8 @@ def patch_reset(config):
     __system([
         "sudo",
         "rsync",
-        config.odoo_git + "/",
-        config.odoo_local + "/",
+        str(config.odoo_git) + "/",
+        str(config.odoo_local) + "/",
         '-rlDtp',
         '--delete-after',
     ], cwd=config.odoo_git, suppress_out=False)

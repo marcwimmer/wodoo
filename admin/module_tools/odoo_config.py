@@ -11,14 +11,12 @@ except Exception:
     pass
 
 def get_odoo_addons_paths():
-    folders = subprocess.check_output("find " + str(customs_dir() / 'odoo') + "/ -name addons -type d| grep -v .git", shell=True).decode('utf-8')
-    addons_paths = [
-        Path(x)
-        for x
-        in folders.split("\n")
-        if 'test' not in x and x.endswith("/addons") and 'odoo/odoo' not in x
-    ]
-    return addons_paths
+    folders = []
+    c = customs_dir()
+    for f in (c / 'odoo').glob("**/addons"):
+        if f.is_dir() and '.git' not in f.parts and 'test' not in f.relative_to(c).parts:
+            folders.append(f.resolve().absolute())
+    return folders
 
 def admin_dir():
     return odoo_root() / 'admin'
