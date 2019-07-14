@@ -102,21 +102,23 @@ def get_odoo_bin():
 
     return EXEC, CONFIG, GEVENT_MARKER
 
+def kill_odoo():
+    if pidfile.exists():
+        print("Killing Odoo")
+        pid = pidfile.read_text()
+        subprocess.call([
+            '/usr/bin/sudo',
+            '/bin/kill',
+            '-9',
+            pid
+        ])
+        pidfile.unlink()
 
 def exec_odoo(CONFIG, *args, force_no_gevent=False, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
-    if pidfile.exists():
-        if pidfile.exists():
-            pid = pidfile.read_text()
-            subprocess.call([
-                '/usr/bin/sudo',
-                '/usr/bin/kill',
-                '-9',
-                pid
-            ])
-            pidfile.unlink()
+    kill_odoo()
 
     EXEC, _CONFIG, GEVENT_MARKER = get_odoo_bin()
     CONFIG = get_config_file(CONFIG or _CONFIG)
@@ -139,5 +141,3 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, **kwargs): # NOQA
     ]
 
     subprocess.call(cmd, **kwargs)
-    #proc = subprocess.Popen(cmd, stdout='/dev/fd/0', **kwargs)
-    #proc.wait()

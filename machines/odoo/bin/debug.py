@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import time
 import os
+import threading
 import subprocess
 from pathlib import Path
 from tools import prepare_run
@@ -8,6 +9,7 @@ from tools import get_config_file
 from module_tools.odoo_config import current_version
 from module_tools.odoo_config import get_env
 from module_tools.module_tools import update_view_in_db
+from tools import kill_odoo
 config = get_env()
 prepare_run()
 DEBUGGER_WATCH = Path(os.environ["DEBUGGER_WATCH"])
@@ -25,13 +27,36 @@ last_mod = ''
 last_unit_test = ''
 
 
-def odoo_kill():
-    subprocess.call([
-        "/usr/bin/pkill",
-        "-9",
-        "-f",
-        "/opt/odoo"
-    ])
+def watch_file_and_kill():
+    last_mod = DEBUGGER_WATCH.stat().st_mtime
+    while True:
+        try:
+            new_mod = DEBUGGER_WATCH.stat().st_mtime
+        except Exception:
+            pass
+        else:
+            if new_mod != last_mod:
+                try:
+                    content = DEBUGGER_WATCH.read_text()
+                    action = content.split(":")
+                    if action[0]:
+                        if action[0] == 'update_view_in_db':
+                            filepath = Path(action[1])
+                            lineno = action[2]
+                            update_view_in_db(filepath, lineno)
+                        else:
+                            kill_odoo()
+                except Exception as e:
+                    print(e)
+                    continue
+            last_mod = new_mod
+
+        time.sleep(0.2)
+
+
+t = threading.Thread(target=watch_file_and_kill)
+t.daemon = True
+t.start()
 
 
 DEBUGGER_WATCH.write_text("debug")
@@ -41,13 +66,11 @@ while True:
         os.chdir(os.environ["ODOOLIB"])
         content = DEBUGGER_WATCH.read_text()
         action = content.split(":")
-        if action[0] == 'update_view_in_db':
-            filepath = Path(action[1])
-            lineno = action[2]
-            update_view_in_db(filepath, lineno)
-        elif action[0] in ['debug', 'quick_restart']:
+        if action[0] in ['debug', 'quick_restart']:
             subprocess.call(['/usr/bin/reset'])
             subprocess.call(["run_debug.py"])
+            from pudb import set_trace
+            set_trace()
 
         elif action[0] in ["update_module", "update_module_full"]:
             module = action[1]
@@ -91,4 +114,4 @@ while True:
                 module
             ])
         last_mod = new_mod
-        time.sleep(0.2)
+    time.sleep(0.2)
