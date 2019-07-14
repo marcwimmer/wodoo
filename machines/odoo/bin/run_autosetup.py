@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # Autosetup searches in /opt/odoo/customs/$CUSTOMS/autosetup for
 # *.sh files; makes them executable and executes them
 # You can do setup there, like deploying ssh keys and so on
