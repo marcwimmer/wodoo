@@ -12,7 +12,8 @@ if os.getenv("RUN_AUTOSETUP", "") == "1":
     if path.exists():
         for file in path.glob("*.sh"):
             print("executing {}".format(file))
+            os.chdir(path)
             os.system("bash '{}' {}".format(
                 file,
                 os.environ['ODOO_AUTOSETUP_PARAM'],
-            ), cwd=path)
+            ))
