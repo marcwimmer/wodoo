@@ -55,7 +55,9 @@ def update(mode, module):
         ]
         if TESTS:
             params += [TESTS]
-        exec_odoo('config_update', *params)
+        from pudb import set_trace
+        set_trace()
+        exec_odoo('config_update', *params, force_no_gevent=True)
 
     if mode == 'i' and not ONLY_I18N:
         for module in module.split(','):
@@ -81,7 +83,7 @@ def update(mode, module):
                             '--i18n-overwrite',
                         ]
                         subprocess.check_call(params)
-                        exec_odoo('config_update', *params)
+                        exec_odoo('config_update', *params, force_no_gevent=True)
 
     print(mode, module, 'done')
 

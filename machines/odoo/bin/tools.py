@@ -139,5 +139,8 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, **kwargs): # NOQA
         config["DBNAME"],
         '--pidfile={}'.format(pidfile),
     ]
+    cmd += args
 
     subprocess.call(cmd, **kwargs)
+    if pidfile.exists():
+        pidfile.unlink()
