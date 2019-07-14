@@ -103,9 +103,7 @@ def get_odoo_bin():
     return EXEC, CONFIG, GEVENT_MARKER
 
 
-def exec_odoo(CONFIG, *args, env={}):
-    from pudb import set_trace
-    set_trace()
+def exec_odoo(CONFIG, *args, env={}): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
@@ -140,4 +138,4 @@ def exec_odoo(CONFIG, *args, env={}):
         '--pidfile={}'.format(pidfile),
     ]
 
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, env=env)

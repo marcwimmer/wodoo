@@ -32,7 +32,7 @@ services:
       - SERVER_DIR=/opt/odoo/data/src/customs/${CUSTOMS}/odoo
       - ODOOLIB=/odoolib
       - PYTHONPATH=/odoolib:/opt/odoo/admin
-    command: /usr/bin/python3 $ODOOLIB/run.py
+    command: /usr/bin/python3 /odoolib/run.py
     entrypoint: ["/bin/bash", "/odoolib/entrypoint.sh"]
     logging:
         options:
