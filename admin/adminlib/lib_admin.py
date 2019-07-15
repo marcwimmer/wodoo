@@ -154,7 +154,7 @@ def set_setting(key, value):
 
 @admin.command()
 def shell():
-    __cmd_interactive('run', 'odoo', '/bin/bash', '/shell.sh')
+    __cmd_interactive('run', 'odoo', '/usr/bin/python3', '/odoolib/shell.py')
 
 
 @admin.command(name="remove-web-assets")
@@ -165,10 +165,11 @@ def remove_web_assets(ctx, config):
     if odoo-web interface is broken (css, js) then purging the web-assets helps;
     they are usually recreated when admin login
     """
+    from module_tools.odoo_config import current_version
     _askcontinue(config)
     conn = config.get_odoo_conn().clone(dbname=config.dbname)
     remove_webassets(conn)
-    if config.odoo_version <= 10.0:
+    if current_version() <= 10.0:
         click.echo("Please login as admin, so that assets are recreated.")
 
 

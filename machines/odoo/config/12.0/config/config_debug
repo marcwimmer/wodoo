@@ -21,3 +21,4 @@ workers = 0
 xmlrpcs = False
 netrpc = False
 proxy_mode = True
+server_wide_modules = __SERVER_WIDE_MODULES__

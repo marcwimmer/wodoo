@@ -690,6 +690,21 @@ class Module(object):
         self.name = self._manifest_path.parent.name
         self.path = self._manifest_path.parent
 
+    # def mark_to_upgrade(self):
+
+        # conn, cr = get_conn()
+        # try:
+            # cr.execute("select state from ir_module_module where name = %s", (self.name,))
+            # rec = cr.fetchone()
+            # if rec:
+                # if rec[0] not in ['uninstalled']:
+                    # cr.execute("update ir_module_module set state = 'to upgrade' where name = %s", (self.name,))
+
+            # conn.commit()
+        # finally:
+            # cr.close()
+            # conn.close()
+
     @property
     def manifest_path(self):
         return self._manifest_path

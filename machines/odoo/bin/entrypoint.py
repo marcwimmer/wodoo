@@ -14,7 +14,6 @@ config_dir_template = Path(os.environ['ODOO_CONFIG_DIR'] + '.template')
 if not list(config_dir.glob("*")):
     config_dir.mkdir(exist_ok=True, parents=True)
     for file in config_dir_template.glob("*"):
-        print("copying {}".format(file))
         shutil.copy(str(file), str(config_dir / file.name))
 
 os.execvp(sys.argv[1], sys.argv[1:])

@@ -1,14 +1,8 @@
-  * via VIM-Commands update and restart, unit tests are possible
-	* debugger.sh
-
   * just debug:
-	* debug.sh 
+	* debug
 
   * emulate real run:
-    * run.sh
-
-  * emulate cronjobs:
-    * run_cronjobs.sh
+    * run.py
 
   * open shell:
-    * shell.sh
+    * shell.py

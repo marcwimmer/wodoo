@@ -774,6 +774,7 @@ def remove_webassets(conn):
         cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
         cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
         cr.execute("delete from ir_attachment where name ilike '%.less'")
+        cr.execute("delete from ir_attachment where name ilike 'web_icon_data'")
         conn.commit()
     finally:
         cr.close()

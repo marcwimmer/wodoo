@@ -25,3 +25,4 @@ xmlrpc = False
 xmlrpcs = False
 netrpc = False
 no_http = 1
+server_wide_modules = __SERVER_WIDE_MODULES__

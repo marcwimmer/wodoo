@@ -47,6 +47,7 @@ def update(mode, module):
 
     if not ONLY_I18N:
         print(mode, module)
+        # obj_module = Module.get_by_name(module)
         params = [
             '-' + mode,
             module,
@@ -56,13 +57,14 @@ def update(mode, module):
         if TESTS:
             params += [TESTS]
         exec_odoo('config_update', *params, force_no_gevent=True)
-
-    if mode == 'i' and not ONLY_I18N:
-        for module in module.split(','):
-            if not DBModules.is_module_installed(module):
+        if not DBModules.is_module_installed(module):
+            if mode == 'i':
                 print("{} is not installed - but it was tried to be installed.".format(module))
-                sys.exit(1)
-    elif I18N_OVERWRITE or ONLY_I18N:
+            else:
+                print("{} update error".format(module))
+            sys.exit(1)
+
+    if I18N_OVERWRITE or ONLY_I18N:
         for module in module.split(','):
             module = Module(module)
             if DBModules.is_module_installed(module.name):

@@ -9,6 +9,7 @@ from tools import get_config_file
 from module_tools.odoo_config import current_version
 from module_tools.odoo_config import get_env
 from module_tools.module_tools import update_view_in_db
+from module_tools.module_tools import Modules
 from tools import kill_odoo
 config = get_env()
 prepare_run()
@@ -74,7 +75,7 @@ while True:
             PARAMS_CONST = ""
             if config['DEVMODE'] == "1":
                 PARAMS_CONST = "--delete-qweb"
-            subprocess.call([
+            test = subprocess.call([
                 "update_modules.py",
                 module,
                 "-fast" if action[0] == "update_module" else "",

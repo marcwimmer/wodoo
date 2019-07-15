@@ -15,6 +15,11 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     content = file.read_text()
     content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
 
+    server_wide_modules = os.environ['SERVER_WIDE_MODULES']
+    if os.getenv("IS_ODOO_QUEUEJOB", "") == "1":
+        server_wide_modules += ',queue_job'
+    content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
+
     if 'without_demo=' not in content:
         if os.getenv("ODOO_DEMO", "") == "1":
             content = content + "\nwithout_demo=False"
@@ -114,7 +119,7 @@ def kill_odoo():
         ])
         pidfile.unlink()
 
-def exec_odoo(CONFIG, *args, force_no_gevent=False, **kwargs): # NOQA
+def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
@@ -130,8 +135,10 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, **kwargs): # NOQA
         ODOO_USER,
         EXEC,
     ]
-    if GEVENT_MARKER and not force_no_gevent:
+    if GEVENT_MARKER and not force_no_gevent or odoo_shell:
         cmd += [GEVENT_MARKER]
+    if odoo_shell:
+        cmd += ['shell']
     cmd += [
         '-c',
         CONFIG,
