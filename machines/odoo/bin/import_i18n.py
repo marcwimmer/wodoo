@@ -20,8 +20,6 @@ LANG = sys.argv[1]
 FILEPATH = sys.argv[2]
 
 print("Importing lang file $FILEPATH")
-from pudb import set_trace
-set_trace()
 
 exec_odoo(
     'config_i18n',

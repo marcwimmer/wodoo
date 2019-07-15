@@ -135,7 +135,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs):
         ODOO_USER,
         EXEC,
     ]
-    if GEVENT_MARKER and not force_no_gevent or odoo_shell:
+    if not odoo_shell and (GEVENT_MARKER and not force_no_gevent):
         cmd += [GEVENT_MARKER]
     if odoo_shell:
         cmd += ['shell']
