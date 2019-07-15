@@ -155,4 +155,3 @@ RUN fc-cache -f -v
 
 ENV ODOO_EXECUTABLE=$ODOO_EXECUTABLE
 WORKDIR /opt/odoo
-ENTRYPOINT ["/entrypoint.sh"]

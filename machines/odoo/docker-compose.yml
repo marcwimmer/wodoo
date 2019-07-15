@@ -34,7 +34,7 @@ services:
       - PYTHONPATH=/odoolib:/opt/odoo/admin
       - PATH=/odoolib:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     command: /usr/bin/python3 /odoolib/run.py
-    entrypoint: ["/bin/bash", "/odoolib/entrypoint.sh"]
+    entrypoint: ["/usr/bin/python3", "/odoolib/entrypoint.py"]
     logging:
         options:
             max-size: 1g
