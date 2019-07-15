@@ -449,7 +449,7 @@ def update_module(filepath, full=False):
 
 def update_view_in_db_in_debug_file(filepath, lineno):
     filepath = translate_path_into_machine_path(filepath)
-    write_debug_instruction('update_view_in_db:{}|{}'.format(filepath, lineno))
+    write_debug_instruction('update_view_in_db:{}:{}'.format(filepath, lineno))
 
 def update_view_in_db(filepath, lineno):
     module = Module(filepath)

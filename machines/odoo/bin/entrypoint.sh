@@ -9,5 +9,7 @@ fi
 sed -i "s/1000:1000/$OWNER_UID:$OWNER_UID/g" /etc/passwd
 
 export PATH="$ODOOLIB:$PATH"
+mkdir -p $"ODOO_CONFIG_DIR"
+rsync "${ODOO_CONFIG_DIR}.template/" "$ODOO_CONFIG_DIR/" -ar
 
 exec "$@"

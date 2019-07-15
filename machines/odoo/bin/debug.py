@@ -42,13 +42,12 @@ def watch_file_and_kill():
                     if action[0]:
                         if action[0] == 'update_view_in_db':
                             filepath = Path(action[1])
-                            lineno = action[2]
+                            lineno = int(action[2])
                             update_view_in_db(filepath, lineno)
                         else:
                             kill_odoo()
                 except Exception as e:
                     print(e)
-                    continue
             last_mod = new_mod
 
         time.sleep(0.2)

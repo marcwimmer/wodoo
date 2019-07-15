@@ -24,7 +24,7 @@ services:
       - ${ODOO_HOME}/run/debug:/tmp/debug
       - ${ODOO_HOME}/machines/odoo/bin/update_modules.py:/update_modules.py
       - ${ODOO_HOME}/machines/odoo/bin:/odoolib:ro
-      - ${ODOO_HOME}/machines/odoo/config/${ODOO_VERSION}/config:${ODOO_CONFIG_DIR}
+      - ${ODOO_HOME}/machines/odoo/config/${ODOO_VERSION}/config:${ODOO_CONFIG_DIR}.template:ro
     env_file:
       - $ODOO_HOME/run/settings
       - $ODOO_HOME/machines/odoo/docker-env

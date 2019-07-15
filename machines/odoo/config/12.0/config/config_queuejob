@@ -10,18 +10,23 @@ db_port = __DB_PORT__
 db_template = template1
 db_user = __DB_USER__
 email_from = False
+server_wide_modules = web,queue_job
 limit_memory_hard = 8053063680
 limit_memory_soft = 6710886400
 limit_request = 8192
 limit_time_cpu = 6000000
 limit_time_real = 12000000
 list_db = False
-max_cron_threads = __ODOO_MAX_CRON_THREADS__
+max_cron_threads = 0
 smtp_password = False
 smtp_port = 25
 smtp_server = localhost
-workers = 1
-xmlrpc = False
+workers = 6
+xmlrpc = True
 xmlrpcs = False
+xmlrpc_port = 8069
 netrpc = False
-no_http = 1
+no_http = 0
+
+[queue_job]
+channels = root:2
