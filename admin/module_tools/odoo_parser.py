@@ -60,6 +60,7 @@ def get_view(inherit_id):
         lines = f.readlines()
         lines = filter(lambda line: inherit_id in line, lines)
         lines = filter(lambda line: re.search(r"\D\ {}\ \D".format(inherit_id), line), lines)
+        lines = list(lines)
         if lines:
             return get_file_lineno(lines[0])
     return None, None
@@ -211,11 +212,11 @@ def _get_qweb_templates():
                 extends = r.get('t-extend', '')
 
                 if '.' not in id:
-                    id = "%s.%s" % (module, id)
+                    id = "%s.%s" % (module.name, id)
 
                 r = {
                     'type': 'qweb',
-                    'module': module,
+                    'module': module.name,
                     'id': id,
                     'filename': os.path.basename(filename),
                     'filepath': filename,
@@ -251,7 +252,7 @@ def _get_xml_ids():
         def append_result(model, xmlid, line, res_model, name="", ttype="", inherit_id=""):
 
             if '.' not in xmlid:
-                xmlid = "%s.%s" % (module, xmlid)
+                xmlid = "%s.%s" % (module.name, xmlid)
 
             # find res_models of view:
             if model and xmlid and '.' in xmlid:

@@ -11,8 +11,6 @@ from tools import prepare_run
 
 prepare_run()
 
-subprocess.check_call(['reset'])
-
 # make path relative to links, so that test is recognized by odoo
 cmd = [
     '--log-level=debug',
