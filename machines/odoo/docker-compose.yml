@@ -33,7 +33,6 @@ services:
       - ODOOLIB=/odoolib
       - PYTHONPATH=/odoolib:/opt/odoo/admin
       - PATH=/odoolib:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      - SERVER_WIDE_MODULES=web,field_onchange
     command: /usr/bin/python3 /odoolib/run.py
     entrypoint: ["/usr/bin/python3", "/odoolib/entrypoint.py"]
     logging:
