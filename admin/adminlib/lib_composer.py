@@ -173,6 +173,9 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         else:
             order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
         order = int(order)
+        if order == 99992:
+            from pudb import set_trace
+            set_trace()
 
         j = yaml.safe_load(content)
         if j:
@@ -435,6 +438,8 @@ def toggle_settings(ctx, config):
     Commands.invoke(ctx, 'reload')
 
 def _use_file(config, path):
+    if 'etc' in path.parts or 'etc_host' in path.parts:
+        return True
     if path.parent.parent.name == 'machines' and path.name == 'docker-compose.yml':
         if not getattr(config, "run_{}".format(path.parent.name)):
             return False
