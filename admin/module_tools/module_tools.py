@@ -860,9 +860,9 @@ class Module(object):
                 continue
             files_per_assets.setdefault(parent, default_dict())
 
-            if file.endswith('.less') or file.endswith('.css'):
+            if file.suffix in ['.less', '.css']:
                 files_per_assets[parent]['stylesheets'].append(local_file_path)
-            elif file.endswith('.js'):
+            elif file.suffix in ['.js']:
                 files_per_assets[parent]['js'].append(local_file_path)
 
         doc = etree.XML(assets_template)
@@ -874,12 +874,12 @@ class Module(object):
             for style in files['stylesheets']:
                 etree.SubElement(parent_xpath, 'link', {
                     'rel': 'stylesheet',
-                    'href': style,
+                    'href': str(style),
                 })
             for js in files['js']:
                 etree.SubElement(parent_xpath, 'script', {
                     'type': 'text/javascript',
-                    'src': js,
+                    'src': str(js),
                 })
             doc.xpath("/odoo/data")[0].append(parent)
 
@@ -892,7 +892,7 @@ class Module(object):
                 filepath.unlink()
         else:
             filepath.parent.mkdir(exist_ok=True)
-            with filepath.open('w') as f:
+            with filepath.open('wb') as f:
                 f.write(etree.tostring(doc, pretty_print=True))
 
     def get_all_files_of_module(self):
