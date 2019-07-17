@@ -70,6 +70,7 @@ def springclean():
 @admin.command()
 @pass_config
 def pack(config):
+    from module_tools.odoo_config import get_links_dir
     from . import odoo_config
     url = "ssh://git@git.clear-consulting.de:50004/odoo-deployments/{}".format(config.customs)
     folder = Path(os.environ['LOCAL_ODOO_HOME']) / 'data' / 'src' / 'deployments' / config.customs
@@ -89,11 +90,11 @@ def pack(config):
     ], cwd=folder, suppress_out=False)
 
     # clone to tmp directory and cleanup - remove unstaged and so on
-    tmp_folder = '/tmp/pack'
+    tmp_folder = Path('/tmp/pack')
     __system([
         "rsync",
         str(odoo_config.customs_dir()) + "/",
-        tmp_folder + "/",
+        str(tmp_folder) + "/",
         '-ar',
         '--exclude=.pyc',
         '--delete-after',
@@ -113,12 +114,30 @@ def pack(config):
     ], cwd=tmp_folder, suppress_out=False)
 
     # remove set_traces and other
-    pwd = os.getcwd()
-    os.chdir(tmp_folder)
-    os.system(r"find . -type f -name *.py | grep \"modules\|common\" | xargs sed -i /set_trace/d", )
-    os.system("find . -type f -name *.py | grep \"odoo\" | grep -v qweb.py | xargs sed -i /set_trace/d", )  # there is in qweb a body = ast.parse("__import__('%s').set_trace()" % re.sub(r'[^a-zA-Z]', '', debugger)).body + body  # pdb, ipdb, pudb, ...
-    os.system("find . -type f -name .odoo.ast -delete")
-    os.chdir(pwd)
+    link_folder = (tmp_folder / 'links')
+    paths = []
+    for path in os.listdir(link_folder):
+        path = Path(link_folder / path)
+        paths.append(path)
+        del path
+    paths.append(tmp_folder / 'odoo')
+    for path in paths:
+        if path.is_symlink():
+            for file in path.glob("**/*.py"):
+                if file.is_dir():
+                    continue
+                if file.name.startswith("."):
+                    continue
+                print(file)
+                content = file.read_text()
+                if 'set_trace' in content:
+                    content = content.replace("import pudb; set_trace()", "pass")
+                    content = content.replace("import pudb;set_trace()", "pass")
+                    content = content.replace("set_trace()", "pass")
+                    file.write_text(content)
+    ast_file = tmp_folder / '.odoo.ast'
+    if ast_file.exists():
+        ast_file.unlink()
 
     __system([
         "rsync",
