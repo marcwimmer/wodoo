@@ -177,38 +177,38 @@ def push(ctx, config):
 def commit(msg):
     dir = customs_dir()
     for module in _get_modules():
-        subprocess.check_call([
+        subprocess.call([
             "git",
             "checkout",
             module['version'],
         ], cwd=dir / module['subdir'] / module['name'])
-        subprocess.check_call([
+        subprocess.call([
             "git",
             "add",
             ".",
         ], cwd=dir / module['subdir'] / module['name'])
-        subprocess.Popen([
+        subprocess.call([
             "git",
             "commit",
             "-am",
             msg,
-        ], cwd=dir / module['subdir'] / module['name']).wait()
-    subprocess.Popen([
+        ], cwd=dir / module['subdir'] / module['name'])
+    subprocess.call([
         "git",
         "add",
         '.'
-    ], cwd=dir).wait()
-    subprocess.Popen([
+    ], cwd=dir)
+    subprocess.call([
         "git",
         "commit",
         '-am',
         "update submodules",
-    ], cwd=dir).wait()
+    ], cwd=dir)
     print("--------------------")
-    subprocess.Popen([
+    subprocess.call([
         "git",
         "status",
-    ], cwd=dir).wait()
+    ], cwd=dir)
 
 @submodules.command(help="Displays diff in submodules")
 def diff():
@@ -236,10 +236,10 @@ def diff():
         except Exception:
             if not untracked:
                 print(module['name'])
-            subprocess.Popen([
+            subprocess.call([
                 "git",
                 "diff",
-            ], cwd=module_path).wait()
+            ], cwd=module_path)
 
 @submodules.command(name='list-subtrees')
 def list_subtrees():

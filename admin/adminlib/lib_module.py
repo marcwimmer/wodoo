@@ -1,3 +1,4 @@
+import subprocess
 import inquirer
 import traceback
 from datetime import datetime
@@ -268,13 +269,40 @@ def __get_dangling_modules(config):
     )
     return rows
 
-@odoo_module.command(name='test')
-def test123():
-    from module_tools.module_tools import Module
-    from module_tools.odoo_parser import update_cache
-    s = "/opt/odoo/data/src/customs/sunday/odoo-modules/addons_sunday/fix_inventory/models/stock_inventory.py"
-    from pathlib import Path
-    update_cache(Path(s))
+# @odoo_module.command(name='test')
+# def test123():
+    # from module_tools.module_tools import Module
+    # from module_tools.odoo_parser import update_cache
+    # s = "/opt/odoo/data/src/customs/sunday/odoo-modules/addons_sunday/fix_inventory/models/stock_inventory.py"
+    # from pathlib import Path
+    # update_cache(Path(s))
+
+@odoo_module.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
+def fetch_latest_revision():
+    from module_tools.odoo_config import get_links_dir
+    from module_tools.odoo_config import customs_dir
+
+    links_dir = get_links_dir()
+    if links_dir.exists():
+        for x in links_dir.glob("*"):
+            if x.is_symlink():
+                x.unlink()
+
+    subprocess.call([
+        "git",
+        "pull",
+    ], cwd=customs_dir())
+
+    subprocess.check_call([
+        "git",
+        "checkout",
+        "-f",
+    ], cwd=customs_dir())
+
+    subprocess.call([
+        "git",
+        "status",
+    ], cwd=customs_dir())
 
 
 Commands.register(progress)
