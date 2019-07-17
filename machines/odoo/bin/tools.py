@@ -71,11 +71,11 @@ def get_odoo_bin():
     is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "")
     is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "")
 
-    if is_odoo_cronjob and not config.run_odoo_cronjob:
+    if is_odoo_cronjob and not config.get('RUN_ODOO_CRONJOB') == '1':
         print("Cronjobs shall not run. Good-bye!")
         sys.exit(0)
 
-    if is_odoo_queuejob and not config.run_odoo_queuejob:
+    if is_odoo_queuejob and not config.get("RUN_ODOO_QUEUEJOB") == "1":
         print("Queue-Jobs shall not run. Good-bye!")
         sys.exit(0)
 
