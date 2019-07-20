@@ -14,6 +14,7 @@ import os
 import tempfile
 import copy
 import click
+from .tools import __running_as_root_or_sudo
 from .tools import __assert_file_exists
 from .tools import __system
 from .tools import __replace_in_file
@@ -324,7 +325,7 @@ def _export_settings(customs):
 def _collect_settings_files(customs):
     from . import dirs
     _files = []
-    _files.append(dirs['odoo_home'] / Path('machines/defaults'))
+    _files.append(dirs['odoo_home'] / 'machines/defaults')
     # optimize
     for filename in dirs['machines'].glob("**/default.settings"):
         _files.append(dirs['machines'] / filename)
@@ -369,7 +370,6 @@ def _get_settings_directories(customs):
     yield customs_dir / 'settings'
     yield Path('/etc_host/odoo/settings')
     yield Path('/etc_host/odoo/{}/settings'.format(customs))
-    yield dirs['settings.d']
 
 def __postprocess_config(config):
     """
@@ -402,9 +402,13 @@ def __postprocess_config(config):
 @pass_config
 @click.pass_context
 def toggle_settings(ctx, config):
+    if not __running_as_root_or_sudo():
+        click.echo("Please run as root:")
+        click.echo("sudo -E odoo toggle")
+        sys.exit(1)
     from . import MyConfigParser
     myconfig = MyConfigParser(files['settings'])
-    config_local = MyConfigParser(files['settings_local'])
+    config_local = MyConfigParser(files['settings_etc_default_file'])
 
     choices = [
         "DEVMODE",

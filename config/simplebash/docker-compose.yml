@@ -11,7 +11,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - $HOME:/opt/external_home
       - /root:/root
-      - /etc:/etc_host:ro
+      - /etc:/etc_host
       # Parallels compatible
       - /media/psf/Home/:/media/psf/Home:ro
     working_dir: $HOME

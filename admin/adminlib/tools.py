@@ -790,3 +790,7 @@ def get_volume_names():
     vols = get_dockercompose()['volumes'].keys()
     project_name = os.environ['PROJECT_NAME']
     return ["{}_{}".format(project_name, x) for x in vols]
+
+def __running_as_root_or_sudo():
+    output = subprocess.check_output(["/usr/bin/id", '-u']).strip().decode('utf-8')
+    return output == "0"

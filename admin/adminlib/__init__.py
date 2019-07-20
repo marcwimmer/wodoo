@@ -57,7 +57,6 @@ files = {
     'debugging_template_onlyloop': 'config/debugging/template_onlyloop.yml',
     'debugging_composer': 'run/debugging.yml',
     'settings': 'run/settings',
-    'settings_local': 'run/settings.d/local',
     'odoo_instances': 'run/odoo_instances',
     'config/default_network': 'config/default_network',
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
@@ -65,6 +64,7 @@ files = {
     'machines/proxy/instance.conf': 'machines/proxy/instance.conf',
     'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
     'commit': 'odoo.commit',
+    'settings_etc_default_file': '/etc_host/odoo/settings',
 }
 commands = {
     'dc': ["/usr/local/bin/docker-compose", "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
