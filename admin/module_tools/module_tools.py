@@ -848,13 +848,13 @@ class Module(object):
             if file.name.startswith('.'):
                 continue
 
-            local_file_path = file.relative_to(self.path)
+            local_file_path = Path("/") / Path(self.path.name) / file.relative_to(self.path)
 
             if current_id:
                 parent = current_id
-            elif local_file_path.parts[0] == 'static':
+            elif 'static' in local_file_path.parts:
                 parent = DEFAULT_ASSETS
-            elif local_file_path.parts[0] == 'report':
+            elif 'report' in local_file_path.parts:
                 parent = 'web.report_assets_common'
             else:
                 continue
