@@ -113,7 +113,7 @@ def build_command():
         ]).decode('utf-8')
         docker_group_id = out.split(":")[2]
 
-    command = ['/usr/local/bin/docker-compose']
+    command = ['docker-compose']
     command += ['run']
     command += ['--rm']
     command += ['--service-ports']
