@@ -1,0 +1,15 @@
+# manage-order 8000
+version: '3.3'
+services:
+  fssync:
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_fssync
+    build: $ODOO_HOME/machines/fssync
+    volumes:
+      - ${FSSYNC_SOURCE}:/opt/source
+      - ${FSSYNC_TARGET}:/opt/target
+    environment:
+      - TERM=xterm
+    command: >
+        sh -c "echo 'starting filesync every ${FSSYNC_INTERVAL} seconds from ${FSSYNC_SOURCE} to ${FSSYNC_TARGET}' && 
+        /usr/bin/watch -n${FSSYNC_INTERVAL} rsync -arP /opt/source/ /opt/target/ --delete-after ${FSSYNC_EXCLUDE}
+        "

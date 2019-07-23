@@ -31,22 +31,19 @@ class MyConfigParser:
     def _open(self):
         if not self.fileName.exists():
             return
-        try:
-            with self.fileName.open() as file:
-                for line in file:
-                    # If it isn't a comment get the variable and value and put it on a dict
-                    if not line.startswith("#") and len(line) > 1:
-                        (key, val) = line.rstrip('\n').split('=')
-                        val = val.strip()
-                        val = val.strip('\"')
-                        val = val.strip('\'')
-                        self.configOptions[key.strip()] = val
-                        if val.startswith("("):
-                            self.quoteOptions[key.strip()] = ''
-                        else:
-                            self.quoteOptions[key.strip()] = '\"'
-        except Exception:
-            print("ERROR: File " + self.fileName + " Not Found\n")
+        content = self.fileName.read_text().strip()
+        for line in content.split("\n"):
+            # If it isn't a comment get the variable and value and put it on a dict
+            if not line.startswith("#") and len(line) > 1:
+                (key, val) = line.rstrip('\n').split('=', 1)
+                val = val.strip()
+                val = val.strip('\"')
+                val = val.strip('\'')
+                self.configOptions[key.strip()] = val
+                if val.startswith("("):
+                    self.quoteOptions[key.strip()] = ''
+                else:
+                    self.quoteOptions[key.strip()] = '\"'
 
     def write(self):
         handled_keys = set()
@@ -70,7 +67,7 @@ class MyConfigParser:
                 # Loop through the file to change with new values in dict
                 for line in lines:
                     if not line.startswith("#") and len(line) > 1:
-                        (key, val) = line.rstrip('\n').split('=')
+                        (key, val) = line.rstrip('\n').split('=', 1)
                         key = key.strip()
                         if key in self.configOptions:
                             newVal = self.configOptions[key]
