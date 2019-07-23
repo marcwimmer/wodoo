@@ -50,7 +50,7 @@ connector = None
 OUTSIDE_PORT = os.environ['OUTSIDE_PORT']
 
 odoo = {
-    'host': "http://{}:{}".format(os.environ['ODOO_HOST'], os.environ['ODOO_PORT']),
+    'host': "http://{}:{}".format(os.environ['INTERNAL_ODOO_HOST'], os.environ['INTERNAL_ODOO_PORT']),
     'username': os.environ['PHONEBOX_ODOO_USER'],
     'pwd': os.environ['PHONEBOX_ODOO_PASSWORD'],
     'db': os.environ['DBNAME'],
