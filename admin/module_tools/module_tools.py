@@ -841,8 +841,8 @@ class Module(object):
         all_files = self.get_all_files_of_module()
         if current_version() < 11.0:
             module_path = Path(str(self.path).replace("/{}/".format(current_version()), ""))
-            if module_path.endswith("/{}".format(current_version())):
-                module_path = "/".join(module_path.split("/")[:-1])
+            if str(module_path).endswith("/{}".format(current_version())):
+                module_path = "/".join(str(module_path).split("/")[:-1])
 
         for file in all_files:
             if file.name.startswith('.'):

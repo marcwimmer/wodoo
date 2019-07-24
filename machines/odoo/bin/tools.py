@@ -7,6 +7,7 @@ from module_tools.odoo_config import customs_dir
 from pathlib import Path
 pidfile = Path('/tmp/odoo.pid')
 config = odoo_config.get_env()
+version = odoo_config.current_version()
 
 
 def _replace_params_in_config(ADDONS_PATHS, file):
@@ -85,7 +86,7 @@ def get_odoo_bin(for_shell=False):
         print('Starting odoo cronjobs')
         CONFIG = "config_cronjob"
         EXEC = os.environ["ODOO_EXECUTABLE_CRONJOBS"]
-        if odoo_config.current_version() <= 9.0:
+        if version <= 9.0:
             EXEC = "openerp-server"
 
     elif is_odoo_queuejob:
@@ -95,7 +96,7 @@ def get_odoo_bin(for_shell=False):
     else:
         print('Starting odoo web')
         CONFIG = 'config_webserver'
-        if odoo_config.current_version() <= 9.0:
+        if version <= 9.0:
             if for_shell:
                 EXEC = "openerp-server"
             else:
@@ -121,6 +122,22 @@ def kill_odoo():
             pid
         ])
         pidfile.unlink()
+    else:
+        if version <= 9.0:
+            subprocess.call([
+                '/usr/bin/sudo',
+                '/usr/bin/pkill',
+                '-9',
+                '-f',
+                'openerp-server',
+            ])
+            subprocess.call([
+                '/usr/bin/sudo',
+                '/usr/bin/pkill',
+                '-9',
+                '-f',
+                'openerp-gevent',
+            ])
 
 def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs): # NOQA
 
