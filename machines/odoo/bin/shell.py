@@ -21,5 +21,5 @@ if current_version() >= 11.0:
 exec_odoo(
     "config_shell",
     *cmd,
-    odoo_shell=True
+    odoo_shell=True,
 )

@@ -67,7 +67,7 @@ def prepare_run():
     _run_libreoffice_in_background()
 
 
-def get_odoo_bin():
+def get_odoo_bin(for_shell=False):
     is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "")
     is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "")
 
@@ -96,7 +96,10 @@ def get_odoo_bin():
         print('Starting odoo web')
         CONFIG = 'config_webserver'
         if odoo_config.current_version() <= 9.0:
-            EXEC = "openerp-gevent"
+            if for_shell:
+                EXEC = "openerp-server"
+            else:
+                EXEC = "openerp-gevent"
         else:
             GEVENT_MARKER = "gevent" if config["ODOO_GEVENT_MODE"] == "1" else ""
 
@@ -125,7 +128,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs):
 
     kill_odoo()
 
-    EXEC, _CONFIG, GEVENT_MARKER = get_odoo_bin()
+    EXEC, _CONFIG, GEVENT_MARKER = get_odoo_bin(for_shell=odoo_shell)
     CONFIG = get_config_file(CONFIG or _CONFIG)
     cmd = [
         "/usr/bin/sudo",
@@ -144,8 +147,11 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs):
         CONFIG,
         '-d',
         config["DBNAME"],
-        '--pidfile={}'.format(pidfile),
     ]
+    if not odoo_shell:
+        cmd += [
+            '--pidfile={}'.format(pidfile),
+        ]
     cmd += args
 
     subprocess.call(cmd, **kwargs)
