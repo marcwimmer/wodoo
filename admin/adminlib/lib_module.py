@@ -295,6 +295,11 @@ def pretty_print_manifest():
     d = MANIFEST()
     MANIFEST_update(d)
 
+@odoo_module.command(name='show-conflicting-modules')
+def show_conflicting_modules():
+    from module_tools.odoo_config import get_odoo_addons_paths
+    get_odoo_addons_paths(show_conflicts=True)
+
 
 Commands.register(progress)
 Commands.register(remove_old_modules)

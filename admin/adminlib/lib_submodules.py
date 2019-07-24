@@ -67,7 +67,7 @@ def pull(oca, depth):
         "git",
         "pull",
     ], cwd=dir)
-    for module in _get_modules(include_oca=oca):
+    for module in _get_modules():
         full_path = dir / module['subdir']
         if not str(module['subdir']).endswith("/."):
             if not full_path.parent.exists():
@@ -117,7 +117,7 @@ def pull(oca, depth):
             raise
 
     threads = []
-    for module in _get_modules():
+    for module in _get_modules(include_oca=oca):
         def _do_pull(module):
             click.echo("Pulling {}".format(module))
             tries = 0

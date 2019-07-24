@@ -13,7 +13,7 @@ try:
 except Exception:
     pass
 
-def get_odoo_addons_paths():
+def get_odoo_addons_paths(show_conflicts):
     from .module_tools import Module
     folders = []
     c = customs_dir()
@@ -53,9 +53,8 @@ def get_odoo_addons_paths():
 
     _get_modules_in_folder(c)
 
-    _detect_duplicate_modules(folders, modules)
-    t = threading.Thread(target=_detect_duplicate_modules, args=(folders, modules))
-    t.start()
+    if show_conflicts:
+        _detect_duplicate_modules(folders, modules)
 
     return list(reversed(folders))
 
