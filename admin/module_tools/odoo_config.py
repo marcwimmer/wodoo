@@ -13,7 +13,7 @@ try:
 except Exception:
     pass
 
-def get_odoo_addons_paths(show_conflicts):
+def get_odoo_addons_paths(show_conflicts=False):
     from .module_tools import Module
     folders = []
     c = customs_dir()
