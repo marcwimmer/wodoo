@@ -49,7 +49,7 @@ def _run_autosetup():
     print("Done autosetup")
 
 def _replace_variables_in_config_files():
-    ADDONS_PATHS = ','.join(filter(lambda t: t, list(map(str, odoo_config.get_odoo_addons_paths())) + [str(odoo_config.customs_dir() / 'links')]))
+    ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths())))
     for file in Path(os.getenv("ODOO_CONFIG_DIR")).glob("config_*"):
         _replace_params_in_config(ADDONS_PATHS, file)
 
@@ -139,6 +139,12 @@ def kill_odoo():
                 'openerp-gevent',
             ])
 
+def __python_exe():
+    if version <= 10.0:
+        return "/usr/bin/python"
+    else:
+        return "/usr/bin/python3"
+
 def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
@@ -153,6 +159,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs):
         "-H",
         "-u",
         ODOO_USER,
+        __python_exe(),
         EXEC,
     ]
     if not odoo_shell and (GEVENT_MARKER and not force_no_gevent):

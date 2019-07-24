@@ -17,10 +17,11 @@ from .odoo_config import current_customs
 from .odoo_config import current_version
 from .odoo_config import current_db
 from .odoo_config import customs_dir
-from .odoo_config import install_file
 from .odoo_config import translate_path_into_machine_path
 from .odoo_config import translate_path_relative_to_customs_root
 from .odoo_config import MANIFEST_FILE
+from .odoo_config import MANIFEST
+from .odoo_config import MANIFEST_update
 from .myconfigparser import MyConfigParser
 import traceback
 from .odoo_parser import get_view
@@ -140,9 +141,7 @@ def get_all_customs():
     return customs
 
 def get_modules_from_install_file():
-    content = install_file().read_text().split("\n")
-    modules_from_file = [x for x in content if not x.strip().startswith("#") and x]
-    return modules_from_file
+    return MANIFEST()['install']
 
 class DBModules(object):
     def __init__(self):
@@ -347,15 +346,10 @@ def make_module(parent_path, module_name):
                 f.write(content)
 
     # enter in install file
-    if install_file().exists():
-        with install_file().open('r') as f:
-            content = f.read().split("\n")
-            content += [module_name]
-            content = [x for x in sorted(content[0:], key=lambda line: line.replace("#", "")) if x]
-        with install_file().open('w') as f:
-            f.write("\n".join(content))
-
-    link_modules()
+    m = MANIFEST()
+    m['install'].append(module_name)
+    m['install'] = list(sorted(m['install']))
+    MANIFEST_update(m)
 
 def restart(quick):
     if quick:
@@ -605,23 +599,20 @@ class Modules(object):
         """
         assert mode in [None, 'to_update', 'to_install']
 
-        path_modules = install_file()
-        if path_modules.is_file():
-            modules_from_file = get_modules_from_install_file()
-            modules = sorted(list(set(DBModules.get_all_installed_modules() + modules_from_file)))
+        modules_from_file = get_modules_from_install_file()
+        modules = sorted(list(set(DBModules.get_all_installed_modules() + modules_from_file)))
 
-            installed_modules = set(list(DBModules.get_all_installed_modules()))
-            all_non_odoo = list(map(lambda x: x.name, self.get_all_non_odoo_modules()))
+        installed_modules = set(list(DBModules.get_all_installed_modules()))
+        all_non_odoo = list(map(lambda x: x.name, self.get_all_non_odoo_modules()))
 
-            modules = [x for x in all_non_odoo if x in installed_modules]
-            modules += modules_from_file
-            modules = list(set(modules))
+        modules = [x for x in all_non_odoo if x in installed_modules]
+        modules += modules_from_file
+        modules = list(set(modules))
 
-            if mode == 'to_install':
-                modules = [x for x in modules if not DBModules.is_module_installed(x)]
+        if mode == 'to_install':
+            modules = [x for x in modules if not DBModules.is_module_installed(x)]
 
-            return modules
-        return []
+        return modules
 
     def get_all_non_odoo_modules(self):
         """
@@ -690,21 +681,6 @@ class Module(object):
         self.name = self._manifest_path.parent.name
         self.path = self._manifest_path.parent
 
-    # def mark_to_upgrade(self):
-
-        # conn, cr = get_conn()
-        # try:
-            # cr.execute("select state from ir_module_module where name = %s", (self.name,))
-            # rec = cr.fetchone()
-            # if rec:
-                # if rec[0] not in ['uninstalled']:
-                    # cr.execute("update ir_module_module set state = 'to upgrade' where name = %s", (self.name,))
-
-            # conn.commit()
-        # finally:
-            # cr.close()
-            # conn.close()
-
     @property
     def manifest_path(self):
         return self._manifest_path
@@ -712,7 +688,11 @@ class Module(object):
     @property
     def manifest_dict(self):
         try:
-            return eval(self.manifest_path.read_text()) # TODO safe
+            content = self.manifest_path.read_text()
+            content = '\n'.join(filter(lambda x: not x.strip().startswith("#"), content.split("\n")))
+            return eval(content) # TODO safe
+        except SyntaxError:
+            raise
         except Exception:
             print("error at file: %s" % self.manifest_path)
             raise
@@ -771,7 +751,10 @@ class Module(object):
     @property
     def in_version(self):
         if self.version >= 10.0:
-            version = self.manifest_dict.get('version', "")
+            try:
+                version = self.manifest_dict.get('version', "")
+            except SyntaxError:
+                return False
             # enterprise modules from odoo have versions: "", "1.0" and so on... ok
             if not version:
                 return True
@@ -982,136 +965,5 @@ class Module(object):
             pp = pprint.PrettyPrinter(indent=4, stream=file)
             pp.pprint(data)
 
-
-def link_modules():
-    LN_DIR = Path(customs_dir()) / 'links'
-    LN_DIR.mkdir(exist_ok=True)
-
-    data = {'counter': 0}
-    version = current_version()
-    print("Linking all modules into: {}".format(LN_DIR))
-    valid_modules = []
-
-    [x.unlink() for x in LN_DIR.glob("*")]
-    os.system("chown $ODOO_USER:$ODOO_USER \"{}\"".format(LN_DIR)) # TODO in pathlib
-
-    def search_dir_for_modules(base_dir):
-
-        def link_module(module):
-            if version >= 11.0:
-                module_name = module.name
-                target = LN_DIR / module_name
-                if target.is_symlink():
-                    if target.resolve() != module.path.resolve():
-                        # let override OCA modules
-                        print("Overriding module {} in {} by {}".format(module.name, target.resolve(), module.path))
-                        target.unlink()
-                rel_path = Path(".." / module.path.relative_to(customs_dir()))
-                target.symlink_to(rel_path, target_is_directory=True)
-                data['counter'] += 1
-
-            else:
-                # pruefen, obs nicht zu den verbotenen pfaden gehoert:
-
-                target = LN_DIR / module.name
-
-                if target.exists():
-                    if target.resolve().absolute() != mod.path.resolve().absolute():
-                        # let override OCA modules
-                        if "OCA" in target.parts:
-                            os.unlink(target)
-                        elif "OCA" in mod.path.parts:
-                            os.unlink(target)
-                        else:
-                            raise Exception("Module {} already linked to {}; could not link to {}".format(
-                                os.path.basename(target),
-                                os.path.realpath(target),
-                                mod.path
-                            ))
-
-                # if there are versions under the module e.g. 6.1, 7.0 then take name from parent
-                try:
-                    float(target.name)
-                except Exception:
-                    pass
-                else:
-                    raise Exception("not supported anymore: {}".format(str(module.path)))
-
-                if target.is_symlink():
-                    target.unlink()
-
-                rel_path = Path(".." / module.path.relative_to(customs_dir()))
-                target.symlink_to(rel_path)
-                data['counter'] += 1
-
-        # default module paths, can be set by .module_paths
-        modules_path_file = customs_dir() / '.module_paths'
-        module_paths = [
-            'OCA',
-            'common',
-            'modules',
-        ]
-        if modules_path_file.exists():
-            module_paths = list(filter(lambda x: x, modules_path_file.read_text().split("\n")))
-        del modules_path_file
-        _customs_dir = customs_dir()
-
-        for file in Path(base_dir).glob("**/" + MANIFEST_FILE):
-            if not any(str(file.relative_to(_customs_dir)).startswith(x + "/") for x in module_paths):
-                continue
-            try:
-                mod = Module(file)
-            except Module.IsNot:
-                continue
-            if not mod.in_version:
-                continue
-
-            valid_modules.append(mod)
-
-        def _sort_modules(mod):
-            for i, x in enumerate(module_paths):
-                if x in str(mod.path.relative_to(_customs_dir)):
-                    return i
-            return 99999999
-
-        for path in sorted(valid_modules, key=_sort_modules):
-            link_module(path)
-
-    search_dir_for_modules(customs_dir())
-    return data['counter']
-
-
 def write_debug_instruction(instruction):
     (run_dir() / ODOO_DEBUG_FILE).write_text(instruction)
-
-
-"""
-
-    # @classmethod
-
-    # def is_module_listed_in_install_file_or_in_dependency_tree(clazz, module):
-        # ""
-        # Checks wether a module is in the install file. If not,
-        # then via the dependency tree it is checked, if it is an ancestor
-        # of the installed modules
-        # ""
-        # depends = clazz.get_module_dependency_tree(module)
-        # mods = get_customs_modules()
-        # if module in mods:
-            # return True
-
-        # def get_parents(module):
-            # for parent, dependson in depends.items():
-                # if module in dependson:
-                    # yield parent
-
-        # def check_module(module):
-            # for p in get_parents(module):
-                # if p in mods:
-                    # return True
-                # if check_module(p):
-                    # return True
-            # return False
-
-        # return check_module(module)
-"""

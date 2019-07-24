@@ -567,7 +567,7 @@ def _check_working_dir_customs_mismatch(config):
 
     from . import dirs
     for working_dir in dirs['host_working_dir'].parents:
-        if (working_dir / '.customsroot').is_file():
+        if (working_dir / 'MANIFEST').is_file():
             break
     else:
         return # no customs

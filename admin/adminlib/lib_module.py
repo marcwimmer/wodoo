@@ -46,15 +46,6 @@ def module_unlink():
         if file.is_symlink():
             file.unlink()
 
-@odoo_module.command(name='link')
-def module_link():
-    """
-    links all modules into ./links
-    """
-    from module_tools.module_tools import link_modules
-    count = link_modules()
-    click.echo("linked {} modules".format(count))
-
 def _get_default_modules_to_update():
     from module_tools.module_tools import Modules, DBModules
     mods = Modules()
@@ -269,24 +260,17 @@ def __get_dangling_modules(config):
     )
     return rows
 
-# @odoo_module.command(name='test')
-# def test123():
-    # from module_tools.module_tools import Module
-    # from module_tools.odoo_parser import update_cache
-    # s = "/opt/odoo/data/src/customs/sunday/odoo-modules/addons_sunday/fix_inventory/models/stock_inventory.py"
-    # from pathlib import Path
-    # update_cache(Path(s))
+@odoo_module.command(name='show-addons-paths')
+def show_addons_paths():
+    from module_tools.odoo_config import get_odoo_addons_paths
+    paths = get_odoo_addons_paths()
+    for path in paths:
+        click.echo(path)
 
 @odoo_module.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
 def fetch_latest_revision():
     from module_tools.odoo_config import get_links_dir
     from module_tools.odoo_config import customs_dir
-
-    links_dir = get_links_dir()
-    if links_dir.exists():
-        for x in links_dir.glob("*"):
-            if x.is_symlink():
-                x.unlink()
 
     subprocess.call([
         "git",
@@ -303,6 +287,13 @@ def fetch_latest_revision():
         "git",
         "status",
     ], cwd=customs_dir())
+
+@odoo_module.command(name='pretty-print-manifest')
+def pretty_print_manifest():
+    from module_tools.odoo_config import MANIFEST
+    from module_tools.odoo_config import MANIFEST_update
+    d = MANIFEST()
+    MANIFEST_update(d)
 
 
 Commands.register(progress)

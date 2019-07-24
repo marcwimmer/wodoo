@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import os
 import time
@@ -11,11 +12,42 @@ except Exception:
     pass
 
 def get_odoo_addons_paths():
+    from .module_tools import Module
     folders = []
     c = customs_dir()
-    for f in (c / 'odoo').glob("**/addons"):
-        if f.is_dir() and '.git' not in f.parts and 'test' not in f.relative_to(c).parts:
-            folders.append(f.resolve().absolute())
+
+    def _get_modules_in_folder(folder):
+        # find extra modules without repo
+        for file in folder.glob("**/__manifest__.py"):
+            file = file.resolve().absolute()
+            if file.parent.parent in folders:
+                continue
+            if any(x in file.relative_to(c).parts for x in {'test', 'tests', '.git'}):
+                continue
+            try:
+                module = Module(file)
+            except Module.IsNot:
+                continue
+            if module.in_version:
+                if module.path.parent not in folders:
+                    folders.append(module.path.parent)
+
+    for f in reversed(list((c / 'odoo').glob("**/addons"))):
+        if not f.is_dir():
+            continue
+        # should be at least one valid module
+        _get_modules_in_folder(f.resolve().absolute())
+        del f
+
+    manifest = MANIFEST()
+    for module in manifest['modules']:
+        for url in module['urls']:
+            repo_name = url.split("/")[-1].replace(".git", "")
+            path = c / Path(module['path']) / repo_name
+            _get_modules_in_folder(path)
+
+    _get_modules_in_folder(c)
+
     return folders
 
 def admin_dir():
@@ -27,20 +59,6 @@ def customs_root():
 def customs_dir(customs=None):
     c = customs or current_customs()
     return customs_root() / c
-
-def get_links_dir():
-    return customs_dir() / 'links'
-
-def module_dir(modulename):
-    path = get_links_dir() / modulename
-    if not path.exists():
-        for path in get_odoo_addons_paths():
-            if (path / modulename).exists():
-                path = path / modulename
-    return path
-
-def install_file():
-    return customs_dir() / 'install'
 
 def run_dir():
     "returns ~/odoo/run"
@@ -85,11 +103,22 @@ def current_customs():
         raise Exception("No Customs found. Please define customs=")
     return result
 
+def CUSTOMS_MANIFEST_FILE():
+    return customs_dir().resolve().absolute() / "MANIFEST"
+
+def MANIFEST():
+    return eval(CUSTOMS_MANIFEST_FILE().read_text())
+
+def MANIFEST_update(d):
+    d['install'] = list(sorted(d['install']))
+    d['OCA'] = list(sorted(d['OCA']))
+    for mod in d['modules']:
+        mod['urls'] = list(sorted(filter(lambda x: x, mod['urls'])))
+    s = json.dumps(d, indent=4)
+    CUSTOMS_MANIFEST_FILE().write_text(s)
+
 def current_version():
-    version_file = customs_dir() / '.version'
-    if not version_file.exists():
-        raise Exception("Missing: {}".format(version_file))
-    return float(version_file.read_text().strip())
+    return float(MANIFEST()['version'])
 
 def current_db():
     return get_env().get('DBNAME', '')
@@ -117,9 +146,6 @@ def get_conn(db=None, host=None):
     cr = conn.cursor()
     return conn, cr
 
-# def get_module_directory_in_machine(module_name):
-    # return customs_dir() / 'links' / module_name
-
 def translate_path_into_machine_path(path):
     path = customs_dir() / translate_path_relative_to_customs_root(path)
     return path
@@ -127,32 +153,17 @@ def translate_path_into_machine_path(path):
 def translate_path_relative_to_customs_root(path):
     """
     The customs must contain a significant file named
-    .customsroot to indicate the root of the customs
+    MANIFEST to indicate the root of the customs
     """
     path = path.resolve()
 
-    if 'data/src/modules' in str(path):
-        raise Exception('todo')
-        from pudb import set_trace
-        set_trace()
-        path = str(path).split("data/src/modules")[1]
-        if path.startswith("/"):
-            path = path[1:]
-        path = Path(path)
-        version = str(get_version_from_customs())
-        if path.startswith(version + "/"):
-            path = path[len(version + "/"):]
-        # remove version needed for common/9.0/stock_modules/stock_free_available_items/views/product_form.xml
-        # is in linked common dir
-        path = os.path.join('common', path)
-        return path
-
+    cmf = CUSTOMS_MANIFEST_FILE()
     for parent in path.resolve().parents:
-        if (parent / '.customsroot').exists():
+        if str(parent.resolve().absolute()) == cmf.parent:
             path = str(path)[len(str(parent)) + 1:]
             return path
     else:
-        raise Exception("no .customsroot found! - started at: {}".format(path))
+        raise Exception("No Customs MANIFEST File found. started at: {}".format(path))
 
 
 MANIFEST_FILE = "__manifest__.py"

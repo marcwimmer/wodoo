@@ -95,8 +95,6 @@ def walk_files(on_match, pattern):
                 continue
             if '.git' in file.parts:
                 continue
-            if 'links' in file.parts:
-                continue
             if file.name.startswith('.'):
                 continue
 

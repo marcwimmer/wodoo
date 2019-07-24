@@ -8,6 +8,8 @@ import sys
 import inspect
 import subprocess
 from module_tools.odoo_config import customs_dir
+from module_tools.odoo_config import current_version
+from module_tools.odoo_config import MANIFEST
 from .lib_clickhelpers import AliasedGroup
 from .tools import __system
 from .tools import __assert_file_exists
@@ -25,62 +27,82 @@ pushable_urls = [
     'git.itewimmer.de',
 ]
 
-def _get_modules():
+def _get_modules(include_oca=True):
     modules = []
-    content = (customs_dir() / 'submodules').read_text()
-    for line in content.split("\n"):
-        if not line:
-            continue
-        version, dir, url = line.split(":", 2)
-        if dir == '.':
-            dir = ''
-        data = {
-            'name': os.path.basename(url).strip(),
-            'subdir': Path("common") / dir,
-            'url': url.strip(),
-            'version': version,
-        }
-        if list(filter(lambda module: module['name'] == data['name'] and module['url'] == data['url'], modules)):
-            raise Exception("Already exists: {}".format(data))
-        modules.append(data)
+    v = str(current_version())
+    if include_oca:
+        OCA_PATH = customs_dir() / 'OCA'
+        for OCA in MANIFEST()['OCA']:
+            modules.append({
+                'name': OCA,
+                'branch': v,
+                'url': 'https://github.com/OCA/{}.git'.format(OCA),
+                'subdir': OCA_PATH / OCA,
+            })
+
+    for module_path in MANIFEST()['modules']:
+        branch = module_path['branch']
+        path = Path(module_path['path']) # like 'common'
+        for url in module_path['urls']:
+            name = url.split("/")[-1].replace(".git", "")
+            modules.append({
+                'name': name,
+                'subdir': path,
+                'url': url.strip(),
+                'branch': branch,
+            })
+    for x in modules:
+        f = list(filter(lambda y: x['url'] == y['url'], modules))
+        if len(f) > 1:
+            raise Exception("Too many url exists: {}".format(x['url']))
     return modules
 
 
 @submodules.command(help="Fetches all defined modules")
-def pull():
+@click.option('--oca', help="Include OCA Modules", is_flag=True)
+@click.option('--depth', default="", help="Depth of git fetch for new modules")
+def pull(oca, depth):
     dir = customs_dir()
     __system([
         "git",
         "pull",
     ], cwd=dir)
-    for module in _get_modules():
-        full_path = dir / module['subdir'] / module['name']
+    for module in _get_modules(include_oca=oca):
+        full_path = dir / module['subdir']
         if not str(module['subdir']).endswith("/."):
             if not full_path.parent.exists():
                 full_path.parent.mkdir(exist_ok=True, parents=True)
 
         if not full_path.is_dir():
-            subprocess.check_call([
+            cmd = [
                 "git",
                 "submodule",
                 "add",
                 "--force",
+            ]
+            if depth:
+                cmd += [
+                    '--depth',
+                    str(depth),
+                ]
+            cmd += [
                 "-b",
-                module['version'],
+                module['branch'],
                 module['url'],
-                Path(module['subdir']) / module['name'],
-            ], cwd=dir)
+                Path(module['subdir']),
+            ]
+            subprocess.check_call(cmd, cwd=dir)
             subprocess.check_call([
                 "git",
                 "checkout",
-                module['version'],
-            ], cwd=dir / module['subdir'] / module['name'])
+                module['branch'],
+            ], cwd=dir / module['subdir'])
             subprocess.check_call([
                 "git",
                 "submodule",
                 "update",
                 "--init"
-            ], cwd=dir / module['subdir'] / module['name'])
+            ], cwd=dir / module['subdir'])
 
     for module in _get_modules():
         print(module['name'])
@@ -88,10 +110,10 @@ def pull():
             subprocess.check_call([
                 "git",
                 "checkout",
-                module['version'],
-            ], cwd=dir / module['subdir'] / module['name'])
+                module['branch'],
+            ], cwd=dir / module['subdir'])
         except Exception:
-            click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['version']), bold=True, fg="red"))
+            click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['branch']), bold=True, fg="red"))
             raise
 
     threads = []
@@ -262,32 +284,6 @@ def pull_push_all(ctx, mode):
         data = eval(extra_installs.read_text())
         for mod in data.keys():
             ctx.invoke(todo, submodule=mod, is_extra_install=True)
-
-@submodules.command(name='OCA')
-@click.argument('module', nargs=-1)
-@pass_config
-def OCA(config, module):
-    """
-    Adds module from OCA - provide the repository name like 'web_modules'
-    """
-    from module_tools.module_tools import link_modules
-    for module in module:
-        for module in module.split(","):
-            wd = dirs['customs']
-            if not (wd / 'OCA'.exists()):
-                (wd / 'OCA').mkdir()
-            __system([
-                'git',
-                'submodule',
-                'add',
-                '-b',
-                str(config.odoo_version),
-                '--',
-                'https://github.com/OCA/{}.git'.format(module),
-                'OCA/{}'.format(module),
-            ], cwd=wd)
-            click.echo("Added submodule {}".format(module))
-    link_modules()
 
 def __get_all_subtrees():
     res = __system([
