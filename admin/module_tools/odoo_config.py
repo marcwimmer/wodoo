@@ -1,3 +1,5 @@
+import threading
+import click
 import json
 from pathlib import Path
 import os
@@ -15,6 +17,7 @@ def get_odoo_addons_paths():
     from .module_tools import Module
     folders = []
     c = customs_dir()
+    modules = []
 
     def _get_modules_in_folder(folder):
         # find extra modules without repo
@@ -31,6 +34,7 @@ def get_odoo_addons_paths():
             if module.in_version:
                 if module.path.parent not in folders:
                     folders.append(module.path.parent)
+                    modules.append(module)
 
     for f in reversed(list((c / 'odoo').glob("**/addons"))):
         if not f.is_dir():
@@ -49,7 +53,31 @@ def get_odoo_addons_paths():
 
     _get_modules_in_folder(c)
 
+    _detect_duplicate_modules(folders, modules)
+    t = threading.Thread(target=_detect_duplicate_modules, args=(folders, modules))
+    t.start()
+
     return list(reversed(folders))
+
+def _detect_duplicate_modules(folders, modules):
+    from .module_tools import Module
+    check_modules = {}
+    c = customs_dir()
+    for folder in folders:
+        folder_rel = folder.relative_to(c)
+        modules_in_folder = [x for x in modules if str(x.path.relative_to(c)).startswith(str(folder_rel))]
+        for module in modules_in_folder:
+            check_modules.setdefault(module.name, [])
+            if module.path not in [x.path for x in check_modules[module.name]]:
+                check_modules[module.name].append(module)
+
+    for v in filter(lambda x: len(x) > 1, check_modules.values()):
+        click.echo(click.style("Overridden Module: {}".format(v[0].name), bold=True, fg='green'))
+        for i, module in enumerate(v):
+            styles = dict(bold=True) if not i else {}
+            s = str(module.path.relative_to(c))
+            click.echo(click.style(s, **styles))
+    time.sleep(2)
 
 def admin_dir():
     return odoo_root() / 'admin'
