@@ -40,6 +40,7 @@ def get_odoo_addons_paths():
         del f
 
     manifest = MANIFEST()
+    _get_modules_in_folder(c / 'OCA')
     for module in manifest['modules']:
         for url in module['urls']:
             repo_name = url.split("/")[-1].replace(".git", "")
@@ -48,7 +49,7 @@ def get_odoo_addons_paths():
 
     _get_modules_in_folder(c)
 
-    return folders
+    return list(reversed(folders))
 
 def admin_dir():
     return odoo_root() / 'admin'

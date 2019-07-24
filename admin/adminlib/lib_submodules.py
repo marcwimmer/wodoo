@@ -31,7 +31,7 @@ def _get_modules(include_oca=True):
     modules = []
     v = str(current_version())
     if include_oca:
-        OCA_PATH = customs_dir() / 'OCA'
+        OCA_PATH = Path('OCA')
         for OCA in MANIFEST()['OCA']:
             modules.append({
                 'name': OCA,
@@ -47,7 +47,7 @@ def _get_modules(include_oca=True):
             name = url.split("/")[-1].replace(".git", "")
             modules.append({
                 'name': name,
-                'subdir': path,
+                'subdir': path / name,
                 'url': url.strip(),
                 'branch': branch,
             })
@@ -107,6 +107,8 @@ def pull(oca, depth):
     for module in _get_modules():
         print(module['name'])
         try:
+            from pudb import set_trace
+            set_trace()
             subprocess.check_call([
                 "git",
                 "checkout",
@@ -127,7 +129,7 @@ def pull(oca, depth):
                         "git",
                         "pull",
                         "--no-edit",
-                    ], cwd=dir / module['subdir'] / module['name'])
+                    ], cwd=dir / module['subdir'])
                 except Exception:
                     time.sleep(1)
                     tries += 1
@@ -159,7 +161,7 @@ def push(ctx, config):
                     __system([
                         "git",
                         "push",
-                    ], cwd=dir / module['subdir'] / module['name'])
+                    ], cwd=dir / module['subdir'])
                 except Exception:
                     print("Failed ")
                     time.sleep(1)
@@ -179,7 +181,7 @@ def push(ctx, config):
             __system([
                 "git",
                 "add",
-                module['subdir'] / module['name']
+                module['subdir']
             ], cwd=dir)
         __system([
             "git",
@@ -203,18 +205,18 @@ def commit(msg):
             "git",
             "checkout",
             module['version'],
-        ], cwd=dir / module['subdir'] / module['name'])
+        ], cwd=dir / module['subdir'])
         subprocess.call([
             "git",
             "add",
             ".",
-        ], cwd=dir / module['subdir'] / module['name'])
+        ], cwd=dir / module['subdir'])
         subprocess.call([
             "git",
             "commit",
             "-am",
             msg,
-        ], cwd=dir / module['subdir'] / module['name'])
+        ], cwd=dir / module['subdir'])
     subprocess.call([
         "git",
         "add",
@@ -237,7 +239,7 @@ def diff():
     DEVNULL = open(os.devnull, 'wb')
     dir = customs_dir()
     for module in _get_modules():
-        module_path = dir / module['subdir'] / module['name']
+        module_path = dir / module['subdir']
         if not module_path.is_dir():
             continue
         untracked = '\n'.join(filter(lambda line: not line.endswith(".pyc"), __system([
