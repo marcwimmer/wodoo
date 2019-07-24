@@ -174,9 +174,6 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         else:
             order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
         order = int(order)
-        if order == 99992:
-            from pudb import set_trace
-            set_trace()
 
         j = yaml.safe_load(content)
         if j:

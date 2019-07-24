@@ -107,8 +107,6 @@ def pull(oca, depth):
     for module in _get_modules():
         print(module['name'])
         try:
-            from pudb import set_trace
-            set_trace()
             subprocess.check_call([
                 "git",
                 "checkout",
