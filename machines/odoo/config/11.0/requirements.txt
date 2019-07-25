@@ -1,3 +1,4 @@
+unicodecsv==0.14.1
 zpl2==1.2
 cachetools==3.1.1
 iso3166==1.0

@@ -185,9 +185,9 @@ def translate_path_relative_to_customs_root(path):
     """
     path = path.resolve()
 
-    cmf = CUSTOMS_MANIFEST_FILE()
+    cmf = CUSTOMS_MANIFEST_FILE().resolve().absolute()
     for parent in path.resolve().parents:
-        if str(parent.resolve().absolute()) == cmf.parent:
+        if parent.resolve().absolute() == cmf.parent:
             path = str(path)[len(str(parent)) + 1:]
             return path
     else:
