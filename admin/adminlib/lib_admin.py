@@ -69,7 +69,6 @@ def springclean():
 @admin.command()
 @pass_config
 def pack(config):
-    from module_tools.odoo_config import get_links_dir
     from . import odoo_config
     url = "ssh://git@git.clear-consulting.de:50004/odoo-deployments/{}".format(config.customs)
     folder = Path(os.environ['LOCAL_ODOO_HOME']) / 'data' / 'src' / 'deployments' / config.customs

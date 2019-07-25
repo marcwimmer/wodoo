@@ -181,14 +181,13 @@ def remove_old_modules(ctx, config, ask_confirm=True):
     """
     from module_tools.module_tools import get_manifest_path_of_module_path
     from module_tools.odoo_config import get_odoo_addons_paths
-    from module_tools.odoo_config import get_links_dir
     click.echo("Analyzing which modules to remove...")
     Commands.invoke(ctx, 'wait_for_container_postgres')
     mods = sorted(map(lambda x: x[0], __execute_sql(config.get_odoo_conn(), "select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
     mods = list(filter(lambda x: x not in ('base'), mods))
     to_remove = []
     for mod in mods:
-        for path in get_odoo_addons_paths() + [get_links_dir()]:
+        for path in get_odoo_addons_paths():
             if get_manifest_path_of_module_path(path / mod):
                 break
         else:
@@ -268,7 +267,6 @@ def show_addons_paths():
 
 @odoo_module.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
 def fetch_latest_revision():
-    from module_tools.odoo_config import get_links_dir
     from module_tools.odoo_config import customs_dir
 
     subprocess.call([

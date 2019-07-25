@@ -110,7 +110,7 @@ def pull(oca, depth):
             subprocess.check_call([
                 "git",
                 "checkout",
-                module['branch'],
+                str(module['branch']),
             ], cwd=dir / module['subdir'])
         except Exception:
             click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['branch']), bold=True, fg="red"))
@@ -202,7 +202,7 @@ def commit(msg):
         subprocess.call([
             "git",
             "checkout",
-            module['version'],
+            str(module['branch']),
         ], cwd=dir / module['subdir'])
         subprocess.call([
             "git",

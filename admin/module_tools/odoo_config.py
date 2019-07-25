@@ -152,7 +152,7 @@ class MANIFEST_CLASS(object):
         if not mods:
             d['modules'].append({
                 'path': 'common',
-                'version': d['version'],
+                'branch': d['version'],
                 'urls': [
                     "ssh://git@git.clear-consulting.de:50004/odoo/modules/patches",
                 ],
@@ -183,6 +183,7 @@ class MANIFEST_CLASS(object):
         d['OCA'] = list(sorted(d['OCA']))
         for mod in d['modules']:
             mod['urls'] = list(sorted(filter(lambda x: x, mod['urls'])))
+            mod['branch'] = str(mod['branch'])
         s = json.dumps(d, indent=4)
         CUSTOMS_MANIFEST_FILE().write_text(s)
 
