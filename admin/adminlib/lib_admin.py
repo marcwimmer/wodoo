@@ -14,7 +14,6 @@ from .tools import __cmd_interactive
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from .tools import _fix_permissions
 from .tools import _remove_temp_directories

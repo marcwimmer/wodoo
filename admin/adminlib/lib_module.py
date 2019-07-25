@@ -15,7 +15,6 @@ from .tools import __safe_filename
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __exists_table
 from .tools import __get_odoo_commit
 from .tools import __start_postgres_and_wait
@@ -255,7 +254,7 @@ def __get_dangling_modules(config):
 
     rows = __execute_sql(
         conn,
-        sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled');",
+        sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled', 'uninstallable');",
         fetchall=True
     )
     return rows
@@ -292,8 +291,7 @@ def fetch_latest_revision():
 def pretty_print_manifest():
     from module_tools.odoo_config import MANIFEST
     from module_tools.odoo_config import MANIFEST_update
-    d = MANIFEST()
-    MANIFEST_update(d)
+    MANIFEST().rewrite()
 
 @odoo_module.command(name='show-conflicting-modules')
 def show_conflicting_modules():

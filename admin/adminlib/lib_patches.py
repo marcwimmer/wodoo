@@ -10,7 +10,6 @@ from .tools import __safe_filename
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from . import odoo_config
 from . import cli, pass_config, dirs, files
@@ -34,11 +33,12 @@ def patch(config):
 
       *./odoo patch apply-all
     """
+    M = odoo_config.MANIFEST()
     config.odoo_local_dir = 'odoo'
     config.odoo_local = dirs['customs'] / config.odoo_local_dir
     config.ignore_file = dirs['customs'] / '.gitignore'
     config.odoo_git = dirs['odoo_home'] / 'repos' / 'odoo'
-    config.patch_dir = dirs['customs'] / 'common' / 'patches' / __get_odoo_commit()
+    config.patch_dir = M.patch_dir / __get_odoo_commit()
     config.sub_git = config.odoo_local / '.git'
     odoo_dir = dirs['customs'] / 'odoo'
     __assert_file_exists(odoo_dir, isdir=True)
@@ -175,7 +175,7 @@ def patch_reset(config):
     """
     resets odoo to commit version
     """
-    __exists_odoo_commit()
+    assert __get_odoo_commit()
     click.echo("Setting repo to commit {}".format(__get_odoo_commit()))
     __system([
         "git",

@@ -25,7 +25,6 @@ from .tools import __read_file
 from .tools import __write_file
 from .tools import _askcontinue
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from .tools import __dcrun, __dc, __remove_postgres_connections, __execute_sql, __dcexec
 from .tools import __start_postgres_and_wait

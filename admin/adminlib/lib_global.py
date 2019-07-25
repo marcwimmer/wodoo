@@ -10,7 +10,6 @@ from .tools import __safe_filename
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from .tools import __set_db_ownership
 from .tools import __dc

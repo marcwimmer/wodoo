@@ -14,7 +14,6 @@ from .tools import __write_file
 from .tools import _get_platform
 from .tools import _askcontinue
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup

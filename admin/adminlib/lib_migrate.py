@@ -16,7 +16,6 @@ from .tools import __safe_filename
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup

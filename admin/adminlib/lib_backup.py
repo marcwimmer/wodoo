@@ -27,7 +27,6 @@ from .tools import __read_file
 from .tools import __dc
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_odoo_commit
 from .tools import __get_odoo_commit
 from .tools import __get_dump_type
 from .tools import __start_postgres_and_wait

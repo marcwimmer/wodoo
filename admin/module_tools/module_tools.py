@@ -21,7 +21,6 @@ from .odoo_config import translate_path_into_machine_path
 from .odoo_config import translate_path_relative_to_customs_root
 from .odoo_config import MANIFEST_FILE
 from .odoo_config import MANIFEST
-from .odoo_config import MANIFEST_update
 from .myconfigparser import MyConfigParser
 import traceback
 from .odoo_parser import get_view
@@ -349,7 +348,6 @@ def make_module(parent_path, module_name):
     m = MANIFEST()
     m['install'].append(module_name)
     m['install'] = list(sorted(m['install']))
-    MANIFEST_update(m)
 
 def restart(quick):
     if quick:

@@ -194,17 +194,12 @@ def E2(name):
         name = name[1:]
     return os.getenv(name, "")
 
-def __exists_odoo_commit():
-    from . import files
-    if not files['commit'].exists():
-        click.echo("Commit file {} not found!".format(files['commit']))
-        sys.exit(1)
-
 def __get_odoo_commit():
-    from . import files
-    with open(files['commit'], 'r') as f:
-        content = f.read()
-    return content.strip()
+    from module_tools.odoo_config import MANIFEST
+    commit = MANIFEST().get('odoo-commit', "")
+    if not commit:
+        raise Exception("No odoo commit defined.")
+    return commit
 
 def __execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False):
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
