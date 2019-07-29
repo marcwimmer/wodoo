@@ -717,7 +717,12 @@ class Module(object):
     def get_by_name(clazz, name):
         from .odoo_config import customs_dir
         from .odoo_config import get_odoo_addons_paths
-        path = customs_dir() / 'links' / name
+        path = None
+        for addon_path in get_odoo_addons_paths():
+            dir = addon_path / name
+            if dir.exists():
+                path = dir
+            del dir
         if path.exists():
             path = path.resolve()
 

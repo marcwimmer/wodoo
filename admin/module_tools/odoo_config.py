@@ -232,6 +232,7 @@ def translate_path_relative_to_customs_root(path):
     MANIFEST to indicate the root of the customs
     """
     path = path.resolve()
+    raise Exception(path)
 
     cmf = CUSTOMS_MANIFEST_FILE().resolve().absolute()
     for parent in path.resolve().parents:
