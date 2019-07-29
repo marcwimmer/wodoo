@@ -145,8 +145,6 @@ def pull(oca, depth):
 @pass_config
 @click.pass_context
 def push(ctx, config):
-    from pudb import set_trace
-    set_trace()
     dir = customs_dir()
     click.echo("Pulling before...")
     ctx.invoke(pull)
