@@ -346,8 +346,9 @@ def make_module(parent_path, module_name):
 
     # enter in install file
     m = MANIFEST()
-    m['install'].append(module_name)
-    m['install'] = list(sorted(m['install']))
+    modules = m['install']
+    modules.append(module_name)
+    m['install'] = modules
 
 def restart(quick):
     if quick:
