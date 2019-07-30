@@ -288,7 +288,6 @@ def fetch_latest_revision():
 @odoo_module.command(name='pretty-print-manifest')
 def pretty_print_manifest():
     from module_tools.odoo_config import MANIFEST
-    from module_tools.odoo_config import MANIFEST_update
     MANIFEST().rewrite()
 
 @odoo_module.command(name='show-conflicting-modules')
