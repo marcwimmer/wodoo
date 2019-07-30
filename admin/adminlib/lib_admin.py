@@ -19,6 +19,7 @@ from .tools import _fix_permissions
 from .tools import _remove_temp_directories
 from .tools import _prepare_filesystem
 from .tools import remove_webassets
+from module_tools.odoo_config import get_odoo_addons_paths
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 
@@ -112,27 +113,23 @@ def pack(config):
     ], cwd=tmp_folder, suppress_out=False)
 
     # remove set_traces and other
-    link_folder = (tmp_folder / 'links')
-    paths = []
-    for path in os.listdir(link_folder):
-        path = Path(link_folder / path)
-        paths.append(path)
-        del path
-    paths.append(tmp_folder / 'odoo')
-    for path in paths:
-        if path.is_symlink():
-            for file in path.glob("**/*.py"):
-                if file.is_dir():
-                    continue
-                if file.name.startswith("."):
-                    continue
-                print(file)
-                content = file.read_text()
-                if 'set_trace' in content:
-                    content = content.replace("import pudb; set_trace()", "pass")
-                    content = content.replace("import pudb;set_trace()", "pass")
-                    content = content.replace("set_trace()", "pass")
-                    file.write_text(content)
+    for path in get_odoo_addons_paths():
+        output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=path)
+        from pudb import set_trace
+        set_trace()
+        for filepath in output.split("\n"):
+            filepath = path / filepath
+            if file.is_dir():
+                continue
+            if file.name.startswith("."):
+                continue
+            print(file)
+            content = file.read_text()
+            if 'set_trace' in content:
+                content = content.replace("import pudb; set_trace()", "pass")
+                content = content.replace("import pudb;set_trace()", "pass")
+                content = content.replace("set_trace()", "pass")
+                file.write_text(content)
     ast_file = tmp_folder / '.odoo.ast'
     if ast_file.exists():
         ast_file.unlink()
