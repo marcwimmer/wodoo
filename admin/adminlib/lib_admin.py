@@ -114,11 +114,9 @@ def pack(config):
 
     # remove set_traces and other
     for path in get_odoo_addons_paths():
-        output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=path)
-        from pudb import set_trace
-        set_trace()
-        for filepath in output.split("\n"):
-            filepath = path / filepath
+        output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=path).decode('utf-8')
+        for file in output.split("\n"):
+            file = path / filepath
             if file.is_dir():
                 continue
             if file.name.startswith("."):
