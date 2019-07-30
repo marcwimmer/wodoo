@@ -11,5 +11,5 @@ services:
       - TERM=xterm
     command: >
         sh -c "echo 'starting filesync every ${FSSYNC_INTERVAL} seconds from ${FSSYNC_SOURCE} to ${FSSYNC_TARGET}' && 
-        /usr/bin/watch -n${FSSYNC_INTERVAL} rsync -arP /opt/source/ /opt/target/ --delete-after ${FSSYNC_EXCLUDE}
+        /usr/bin/watch -n${FSSYNC_INTERVAL} rsync -arP /opt/source/ /opt/target/ --delete-after ${FSSYNC_EXCLUDE} --chown=${OWNER_UID}:${OWNER_UID}
         "
