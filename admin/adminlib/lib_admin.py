@@ -113,21 +113,20 @@ def pack(config):
     ], cwd=tmp_folder, suppress_out=False)
 
     # remove set_traces and other
-    for path in get_odoo_addons_paths():
-        output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=path).decode('utf-8')
-        for file in output.split("\n"):
-            file = path / file
-            if file.is_dir():
-                continue
-            if file.name.startswith("."):
-                continue
-            print(file)
-            content = file.read_text()
-            if 'set_trace' in content:
-                content = content.replace("import pudb; set_trace()", "pass")
-                content = content.replace("import pudb;set_trace()", "pass")
-                content = content.replace("set_trace()", "pass")
-                file.write_text(content)
+    output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
+    for file in output.split("\n"):
+        file = tmp_folder / file
+        if file.is_dir():
+            continue
+        if file.name.startswith("."):
+            continue
+        print(file)
+        content = file.read_text()
+        if 'set_trace' in content:
+            content = content.replace("import pudb; set_trace()", "pass")
+            content = content.replace("import pudb;set_trace()", "pass")
+            content = content.replace("set_trace()", "pass")
+            file.write_text(content)
     ast_file = tmp_folder / '.odoo.ast'
     if ast_file.exists():
         ast_file.unlink()
