@@ -13,6 +13,7 @@ from module_tools.odoo_config import MANIFEST
 from .lib_clickhelpers import AliasedGroup
 from .tools import __system
 from .tools import __assert_file_exists
+from .tools import check_directory_mismatch
 from . import cli, pass_config, dirs, files
 from . import Commands
 
@@ -105,7 +106,6 @@ def pull(oca, depth):
             ], cwd=dir / module['subdir'])
 
     for module in _get_modules():
-        print(module['name'])
         try:
             subprocess.check_call([
                 "git",
@@ -117,29 +117,29 @@ def pull(oca, depth):
             raise
 
     threads = []
+    try_again = []
     for module in _get_modules(include_oca=oca):
         def _do_pull(module):
             click.echo("Pulling {}".format(module))
-            tries = 0
-            while True:
-                try:
-                    subprocess.check_call([
-                        "git",
-                        "pull",
-                        "--no-edit",
-                    ], cwd=dir / module['subdir'])
-                except Exception:
-                    time.sleep(1)
-                    tries += 1
-                    if tries > 3:
-                        msg = traceback.format_exc()
-                        click.echo(click.style(module['name'] + "\n" + msg, bold=True, fg='red'))
-                        raise
-                else:
-                    break
+            try:
+                subprocess.check_call([
+                    "git",
+                    "pull",
+                    "--no-edit",
+                ], cwd=dir / module['subdir'])
+            except Exception:
+                try_again.append(module)
         threads.append(threading.Thread(target=_do_pull, args=(module,)))
     [x.start() for x in threads]
     [x.join() for x in threads]
+
+    for module in try_again:
+        print(module['name'])
+        subprocess.check_call([
+            "git",
+            "pull",
+            "--no-edit",
+        ], cwd=dir / module['subdir'])
 
 @submodules.command(help="Pushes to allowed submodules")
 @pass_config
