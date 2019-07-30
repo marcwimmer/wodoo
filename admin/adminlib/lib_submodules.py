@@ -13,7 +13,6 @@ from module_tools.odoo_config import MANIFEST
 from .lib_clickhelpers import AliasedGroup
 from .tools import __system
 from .tools import __assert_file_exists
-from .tools import check_directory_mismatch
 from . import cli, pass_config, dirs, files
 from . import Commands
 
