@@ -10,10 +10,6 @@ services:
     environment:
       - TERM=xterm
     command: >
-        sh -c "echo 'starting filesync every ${FSSYNC_INTERVAL} seconds from ${FSSYNC_SOURCE} to ${FSSYNC_TARGET}' && 
-        /usr/bin/watch -n${FSSYNC_INTERVAL} rsync -arP /opt/source/ /opt/target/ --delete-after ${FSSYNC_EXCLUDE} --chown=${OWNER_UID}:${OWNER_UID}
-        "
-command: >
          sh -c "echo 'starting filesync every ${FSSYNC_INTERVAL} seconds from ${FSSYNC_SOURCE} to ${FSSYNC_TARGET}' &&
          rsync -ar /opt/source/ /opt/target/ --delete-after --chown=${OWNER_UID}:${OWNER_UID} &&
          echo 'Full sync done - now syncing deltas' &&
