@@ -116,7 +116,7 @@ def pack(config):
     for path in get_odoo_addons_paths():
         output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=path).decode('utf-8')
         for file in output.split("\n"):
-            file = path / filepath
+            file = path / file
             if file.is_dir():
                 continue
             if file.name.startswith("."):
