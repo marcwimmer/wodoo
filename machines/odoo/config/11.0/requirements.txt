@@ -39,3 +39,4 @@ moviepy
 unoconv
 img2pdf==0.3.1
 py-Asterisk==0.5.17
+pyyaml==5.1.1
