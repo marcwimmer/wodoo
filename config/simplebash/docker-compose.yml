@@ -16,6 +16,7 @@ services:
       - /media/psf/Home/:/media/psf/Home:ro
     working_dir: $HOME
     environment:
+      - COMPOSE_HTTP_TIMEOUT=300
       - DOCKER_BASH=1
       - LOCAL_ODOO_HOME=/opt/odoo
       - ODOO_HOME
