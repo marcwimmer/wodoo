@@ -82,7 +82,6 @@ def update(mode, module):
                             '--i18n-import={}/i18n/{}.po'.format(module, lang),
                             '--i18n-overwrite',
                         ]
-                        subprocess.check_call(params)
                         exec_odoo('config_update', *params, force_no_gevent=True)
 
     print(mode, module, 'done')
