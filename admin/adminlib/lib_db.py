@@ -13,6 +13,7 @@ import tempfile
 import click
 import inquirer
 from datetime import datetime
+from .tools import __replace_all_envs_in_str
 from .tools import _dropdb
 from .tools import DBConnection
 from .tools import __assert_file_exists
@@ -306,8 +307,13 @@ def set_db_ownership(config):
 
 
 def __turn_into_devdb(conn):
-    SQLFILE = files['machines/postgres/turndb2dev.sql']
-    sql = __read_file(SQLFILE)
+    from . import MyConfigParser
+    from pudb import set_trace
+    set_trace()
+    myconfig = MyConfigParser(files['settings'])
+    env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
+    sql = files['machines/postgres/turndb2dev.sql'].read_text()
+    sql = __replace_all_envs_in_str(sql, env)
 
     critical = False
     for line in sql.split("\n"):

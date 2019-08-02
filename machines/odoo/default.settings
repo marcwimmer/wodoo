@@ -17,3 +17,5 @@ ODOO_LOG_LEVEL=debug
 ODOO_MAX_CRON_THREADS=2
 SERVER_WIDE_MODULES=web,field_onchange
 DEBUGGER_WATCH=/tmp/debug/odoo_debug.txt
+
+DEFAULT_DEV_PASSWORD=1

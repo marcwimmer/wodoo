@@ -14,6 +14,7 @@ import os
 import tempfile
 import copy
 import click
+from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
 from .tools import __assert_file_exists
 from .tools import __system
@@ -128,19 +129,6 @@ def _prepare_yml_files_from_template_files(config):
             [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
 
     _prepare_docker_compose_files(config, files['docker_compose'], _files)
-
-def __replace_all_envs_in_str(content, env):
-    """
-    Docker does not allow to replace volume names or service names, so we do it by hand
-    """
-    all_params = re.findall(r'\$\{[^\}]*?\}', content)
-    for param in all_params:
-        name = param
-        name = name.replace("${", "")
-        name = name.replace("}", "")
-        if name in env.keys():
-            content = content.replace(param, env[name])
-    return content
 
 def _prepare_docker_compose_files(config, dest_file, paths):
     from . import YAML_VERSION
