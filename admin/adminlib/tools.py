@@ -23,6 +23,7 @@ from threading import Thread
 from queue import Queue
 import inspect
 from copy import deepcopy
+from passlib.context import CryptContext
 
 class DBConnection(object):
     def __init__(self, dbname, host, port, user, pwd):
@@ -803,3 +804,16 @@ def __replace_all_envs_in_str(content, env):
         if name in env.keys():
             content = content.replace(param, env[name])
     return content
+
+def __hash_odoo_password(pwd):
+    from .module_tools.odoo_config import current_version
+    if current_version() in [
+            11.0,
+            12.0,
+            10.0,
+            09.0,
+    ]:
+        setpw = CryptContext(schemes=['pbkdf2_sha512', 'md5_crypt'])
+        return setpw.encrypt(pwd)
+    else:
+        raise NotImplementedError()

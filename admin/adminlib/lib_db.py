@@ -32,7 +32,7 @@ from .tools import __start_postgres_and_wait
 from .tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
-from passlib.context import CryptContext
+from .tools import __hash_odoo_password
 
 def __get_postgres_volume_name(config):
     # TODO link somehow to docker-compose file
@@ -313,9 +313,7 @@ def __turn_into_devdb(conn):
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
 
     # encrypt password
-    DEFAULT_DEV_PASSWORD = env['DEFAULT_DEV_PASSWORD']
-    setpw = CryptContext(schemes=['pbkdf2_sha512'])
-    env['DEFAULT_DEV_PASSWORD'] = setpw.encrypt(DEFAULT_DEV_PASSWORD)
+    env['DEFAULT_DEV_PASSWORD'] = __hash_odoo_password(env['DEFAULT_DEV_PASSWORD'])
 
     sql = files['machines/postgres/turndb2dev.sql'].read_text()
     sql = __replace_all_envs_in_str(sql, env)
