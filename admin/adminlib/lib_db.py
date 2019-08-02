@@ -308,8 +308,6 @@ def set_db_ownership(config):
 
 def __turn_into_devdb(conn):
     from . import MyConfigParser
-    from pudb import set_trace
-    set_trace()
     myconfig = MyConfigParser(files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
     sql = files['machines/postgres/turndb2dev.sql'].read_text()
