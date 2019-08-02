@@ -22,3 +22,4 @@ idna
 psycopg2-binary
 neovim
 lxml
+passlib
