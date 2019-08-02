@@ -749,7 +749,7 @@ class Module(object):
         return result
 
     def get_lang_file(self, lang):
-        lang_file = self.path / "i18n" / lang.with_suffix('.po')
+        lang_file = (self.path / "i18n" / lang).with_suffix('.po')
         if lang_file.exists():
             return lang_file
 
