@@ -79,7 +79,7 @@ def update(mode, module):
                         params = [
                             '-l',
                             lang,
-                            '--i18n-import={}/i18n/{}.po'.format(module, lang),
+                            '--i18n-import={}/i18n/{}.po'.format(module.name, lang),
                             '--i18n-overwrite',
                         ]
                         exec_odoo('config_update', *params, force_no_gevent=True)
