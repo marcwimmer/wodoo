@@ -66,7 +66,7 @@ def update(mode, module):
 
     if I18N_OVERWRITE or ONLY_I18N:
         for module in module.split(','):
-            module = Module(module)
+            module = Module.get_by_name(module)
             if DBModules.is_module_installed(module.name):
                 for lang in get_all_langs():
                     if lang == 'en_US':

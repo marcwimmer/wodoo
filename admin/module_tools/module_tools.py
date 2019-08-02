@@ -669,7 +669,6 @@ class Module(object):
         from .odoo_config import customs_root
         self.version = float(current_version())
         self.customs_root = customs_root()
-        path = Path(path)
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
