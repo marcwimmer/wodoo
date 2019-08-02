@@ -332,6 +332,10 @@ def _collect_settings_files(customs):
         elif dir.is_dir():
             for filename in os.listdir(dir):
                 _files.append(dir / filename)
+
+    # collect setting file per project name; make warning if it doesnt exist:
+    project_namem = os.environ["PROJECT_NAME"]
+
     return _files
 
 def _make_settings_file(outfile, setting_files):
