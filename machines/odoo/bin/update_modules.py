@@ -74,7 +74,7 @@ def update(mode, module):
                     lang_file = module.get_lang_file(lang)
                     if not lang_file:
                         continue
-                    if os.path.isfile(lang_file):
+                    if lang_file.exists():
                         print("Updating language {} for module {}:".format(lang, module))
                         params = [
                             '-l',
