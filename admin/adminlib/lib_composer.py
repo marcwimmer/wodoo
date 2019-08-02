@@ -333,8 +333,6 @@ def _collect_settings_files(customs):
             for filename in os.listdir(dir):
                 _files.append(dir / filename)
 
-    # collect setting file per project name; make warning if it doesnt exist:
-    project_namem = os.environ["PROJECT_NAME"]
 
     return _files
 
@@ -367,9 +365,11 @@ def _get_settings_directories(customs):
     from . import odoo_config
     from . import dirs
     customs_dir = odoo_config.customs_dir(customs)
+    project_name = os.environ["PROJECT_NAME"]
     yield customs_dir / 'settings'
     yield Path('/etc_host/odoo/settings')
     yield Path('/etc_host/odoo/{}/settings'.format(customs))
+    yield Path('/etc_host/odoo/{}/settings'.format(project_name))
 
 def __postprocess_config(config):
     """
