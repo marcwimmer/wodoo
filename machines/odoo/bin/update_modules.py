@@ -81,10 +81,11 @@ def update(mode, module):
                             lang,
                             '--i18n-import={}/i18n/{}.po'.format(module.name, lang),
                             '--i18n-overwrite',
+                            '--stop-after-init',
                         ]
                         exec_odoo('config_update', *params, force_no_gevent=True)
 
-    print(mode, module, 'done')
+    print(mode, module.name, 'done')
 
 def update_module_list():
     MOD = "update_module_list"
