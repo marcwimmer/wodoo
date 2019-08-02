@@ -806,7 +806,7 @@ def __replace_all_envs_in_str(content, env):
     return content
 
 def __hash_odoo_password(pwd):
-    from .module_tools.odoo_config import current_version
+    from module_tools.odoo_config import current_version
     if current_version() in [
             11.0,
             12.0,
