@@ -26,7 +26,7 @@ xmlrpc = True
 xmlrpcs = False
 xmlrpc_port = 8069
 netrpc = False
-no_http = 0
+no_http = 1
 
 [queue_job]
 channels = root:2
