@@ -306,6 +306,15 @@ def set_db_name(ctx, DBNAME):
 def set_db_ownership(config):
     __set_db_ownership(config)
 
+def __collect_other_turndb2dev_sql():
+    from module_tools.odoo_config import customs_dir
+    dir = customs_dir() / 'devscripts'
+    if not dir.exists():
+        return
+    sqls = []
+    for file in dir.glob("**/*.sql"):
+        sqls.append(file.read_text())
+    return "\n\n".join(sqls)
 
 def __turn_into_devdb(conn):
     from . import MyConfigParser
@@ -316,6 +325,9 @@ def __turn_into_devdb(conn):
     env['DEFAULT_DEV_PASSWORD'] = __hash_odoo_password(env['DEFAULT_DEV_PASSWORD'])
 
     sql = files['machines/postgres/turndb2dev.sql'].read_text()
+
+    sql += __collect_other_turndb2dev_sql()
+
     sql = __replace_all_envs_in_str(sql, env)
 
     critical = False
