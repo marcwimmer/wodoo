@@ -17,7 +17,7 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
 
     server_wide_modules = (os.environ['SERVER_WIDE_MODULES'] or '').split(',')
-    if os.getenv("IS_ODOO_WEBSERVER", "") == "1" and 'debug' not in file.name:
+    if os.getenv("IS_ODOO_QUEUEJOB", "") == "1" or 'debug' in file.name:
         server_wide_modules += 'queue_job'
     server_wide_modules = ','.join(server_wide_modules)
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
