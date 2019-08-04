@@ -11,8 +11,8 @@ const options = {
 
 const server_odoo = {
     protocol: 'http',
-    port: 8069,
-    host: 'odoo',
+    port: Number(process.env.INTERNAL_ODOO_PORT),
+    host: process.env.INTERNAL_ODOO_HOST,
 };
 
 const server_calendar = {
