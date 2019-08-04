@@ -44,6 +44,8 @@ services:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo
     restart: unless-stopped
     environment:
+      IS_ODOO_WEBSERVER: 1
+    environment:
       DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
 
