@@ -85,7 +85,6 @@ def get_odoo_bin(for_shell=False):
     if is_odoo_cronjob:
         print('Starting odoo cronjobs')
         CONFIG = "config_cronjob"
-        EXEC = os.environ["ODOO_EXECUTABLE_CRONJOBS"]
         if version <= 9.0:
             EXEC = "openerp-server"
 
