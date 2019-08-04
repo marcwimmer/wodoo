@@ -14,6 +14,7 @@ const server_odoo = {
     port: Number(process.env.INTERNAL_ODOO_PORT),
     host: process.env.INTERNAL_ODOO_HOST,
 };
+console.log(server_odoo);
 
 const server_calendar = {
     protocol: 'http',
