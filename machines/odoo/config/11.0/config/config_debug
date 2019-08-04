@@ -19,6 +19,7 @@ smtp_port = 25
 smtp_server = localhost
 workers = 0
 xmlrpcs = False
+xmlrpc_port = __INTERNAL_ODOO_PORT__
 netrpc = False
 proxy_mode = True
 server_wide_modules = __SERVER_WIDE_MODULES__
