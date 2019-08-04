@@ -59,3 +59,4 @@ timezone = False
 translate_modules = ['all']
 unaccent = False
 workers = 0
+xmlrpc_port=__INTERNAL_ODOO_PORT__

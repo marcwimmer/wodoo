@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import threading
 import click
 import json
@@ -221,6 +222,19 @@ def get_conn(db=None, host=None):
     conn = psycopg2.connect(connstring)
     cr = conn.cursor()
     return conn, cr
+
+@contextmanager
+def get_conn_autoclose(*args, **kwargs):
+    conn, cr = get_conn(*args, **kwargs)
+    try:
+        yield cr
+    except Exception:
+        conn.rollback()
+    else:
+        conn.commit()
+    finally:
+        cr.close()
+        conn.close()
 
 def translate_path_into_machine_path(path):
     path = customs_dir() / translate_path_relative_to_customs_root(path)

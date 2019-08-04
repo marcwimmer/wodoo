@@ -5,6 +5,7 @@ import subprocess
 import os
 from module_tools import odoo_config
 from module_tools.odoo_config import customs_dir
+from module_tools.odoo_config import get_conn_autoclose
 from pathlib import Path
 pidfile = Path('/tmp/odoo.pid')
 config = odoo_config.get_env()
@@ -73,6 +74,11 @@ def prepare_run():
 
     _run_libreoffice_in_background()
 
+    if os.getenv("IS_ODOO_QUEUEJOB", "") == "1":
+        # https://www.odoo.com/apps/modules/10.0/queue_job/
+        sql = "update queue_job set state='pending' where state in ('started', 'enqueued');"
+        with get_conn_autoclose() as cr:
+            cr.execute(sql)
 
 def get_odoo_bin(for_shell=False):
     is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "")
