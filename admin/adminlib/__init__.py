@@ -62,7 +62,6 @@ files = {
     'run/odoo_debug.txt': 'run/odoo_debug.txt',
     'run/snapshot_mappings.txt': 'run/snapshot_mappings.txt',
     'machines/proxy/instance.conf': 'machines/proxy/instance.conf',
-    'machines/postgres/turndb2dev.sql': 'machines/postgres/turndb2dev.sql',
     'commit': 'odoo.commit',
     'settings_etc_default_file': '/etc_host/odoo/settings',
 }

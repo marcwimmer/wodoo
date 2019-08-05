@@ -317,6 +317,7 @@ def __collect_other_turndb2dev_sql():
     return "\n\n".join(sqls)
 
 def __turn_into_devdb(conn):
+    from module_tools.odoo_config import current_version
     from . import MyConfigParser
     myconfig = MyConfigParser(files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
@@ -324,7 +325,8 @@ def __turn_into_devdb(conn):
     # encrypt password
     env['DEFAULT_DEV_PASSWORD'] = __hash_odoo_password(env['DEFAULT_DEV_PASSWORD'])
 
-    sql = files['machines/postgres/turndb2dev.sql'].read_text()
+    sql_file = dirs['machines'] / 'odoo' / 'config' / str(current_version()) / 'turndb2dev.sql'
+    sql = sql_file.read_text()
 
     sql += __collect_other_turndb2dev_sql() or ""
 
