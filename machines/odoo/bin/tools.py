@@ -1,3 +1,4 @@
+import requests
 import time
 import threading
 import sys
@@ -194,19 +195,25 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
 
     class Toucher(threading.Thread):
         def run(self):
-            time.sleep(2)
-            cmd = [
-                '/usr/bin/wget',
-                'http://{}:{}'.format(
-                    'localhost',
-                    os.environ['INTERNAL_ODOO_PORT'],
-                )
-            ]
-            subprocess.call(cmd, cwd='/tmp')
+            while True:
+                try:
+                    r = requests.get('http://{}:{}'.format(
+                            'localhost',
+                            os.environ['INTERNAL_ODOO_PORT']
+                    ))
+                    r.raise_for_status()
+                except Exception:
+                    raise
+                else:
+                    break
+                finally:
+                    time.sleep(2)
 
     if touch_url:
+        print("Touching odoo url to start it")
         Toucher().start()
 
+    print("Executing odoo")
     os.system(cmd)
     if pidfile.exists():
         pidfile.unlink()
