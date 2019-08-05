@@ -6,6 +6,7 @@ import hashlib
 import os
 import tempfile
 import click
+from .tools import __dc
 from .tools import _askcontinue
 from .tools import __assert_file_exists
 from .tools import __system
@@ -54,6 +55,8 @@ def status(config):
             config.db_port,
             config.dbname,
         ))
+    cmd = ['config']
+    __dc(cmd)
 
 @admin.command()
 def springclean():
