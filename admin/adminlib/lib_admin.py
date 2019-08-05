@@ -55,7 +55,9 @@ def status(config):
             config.db_port,
             config.dbname,
         ))
-    cmd = ['config']
+    cmd = ['config', '--services']
+    __dc(cmd)
+    cmd = ['config', '--volumes']
     __dc(cmd)
 
 @admin.command()
