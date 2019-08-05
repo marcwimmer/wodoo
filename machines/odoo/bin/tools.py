@@ -189,6 +189,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs):
         ]
     cmd += args
 
-    subprocess.call(cmd, **kwargs)
+    cmd = " ".join(map(lambda x: '"{}"'.format(x), cmd))
+    os.system(cmd)
     if pidfile.exists():
         pidfile.unlink()
