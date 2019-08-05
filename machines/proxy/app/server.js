@@ -50,6 +50,7 @@ function _wait_tcp_conn(target) {
     return new Promise((resolve, reject) => {
         let do_connect = () => {
             var client = net.connect({host: target.host, port: target.port}, () => {
+                console.log("TCP connect odoo succeeded");
                 resolve();
                 client.end()
             });
