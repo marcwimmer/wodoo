@@ -193,7 +193,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
 
     cmd = " ".join(map(lambda x: '"{}"'.format(x), cmd))
 
-    def toucher(self):
+    def toucher():
         while True:
             try:
                 r = requests.get('http://{}:{}'.format(
