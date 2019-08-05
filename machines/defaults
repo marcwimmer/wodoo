@@ -20,4 +20,4 @@ OWNER_UID=1000
 RESTART_CONTAINERS=1
 
 DB_ODOO_FILEFORMAT={customs}.odoo.{date:YYYYMMDDhhmmss}.dump.gz
-CRONJOB_BACKUP_DAILY=0 0 * * * * odoo backup all
+CRONJOB_BACKUP_DAILY=0 0 * * * odoo backup all

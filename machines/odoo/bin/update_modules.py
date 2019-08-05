@@ -65,25 +65,26 @@ def update(mode, module):
             sys.exit(1)
 
     if I18N_OVERWRITE or ONLY_I18N:
-        for module in module.split(','):
-            module = Module(module)
-            if DBModules.is_module_installed(module.name):
+        for i_module in module.split(','):
+            i_module = Module.get_by_name(i_module)
+            if DBModules.is_module_installed(i_module.name):
                 for lang in get_all_langs():
                     if lang == 'en_US':
                         continue
                     lang_file = module.get_lang_file(lang)
                     if not lang_file:
                         continue
-                    if os.path.isfile(lang_file):
-                        print("Updating language {} for module {}:".format(lang, module))
+                    if lang_file.exists():
+                        print("Updating language {} for module {}:".format(lang, i_module))
                         params = [
                             '-l',
                             lang,
-                            '--i18n-import={}/i18n/{}.po'.format(module, lang),
+                            '--i18n-import={}/i18n/{}.po'.format(i_module.name, lang),
                             '--i18n-overwrite',
+                            '--stop-after-init',
                         ]
-                        subprocess.check_call(params)
                         exec_odoo('config_update', *params, force_no_gevent=True)
+            del i_module
 
     print(mode, module, 'done')
 

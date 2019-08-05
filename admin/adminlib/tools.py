@@ -1,3 +1,4 @@
+import re
 import arrow
 from pathlib import Path
 import io
@@ -22,6 +23,7 @@ from threading import Thread
 from queue import Queue
 import inspect
 from copy import deepcopy
+from passlib.context import CryptContext
 
 class DBConnection(object):
     def __init__(self, dbname, host, port, user, pwd):
@@ -789,3 +791,29 @@ def get_volume_names():
 def __running_as_root_or_sudo():
     output = subprocess.check_output(["/usr/bin/id", '-u']).strip().decode('utf-8')
     return output == "0"
+
+def __replace_all_envs_in_str(content, env):
+    """
+    Docker does not allow to replace volume names or service names, so we do it by hand
+    """
+    all_params = re.findall(r'\$\{[^\}]*?\}', content)
+    for param in all_params:
+        name = param
+        name = name.replace("${", "")
+        name = name.replace("}", "")
+        if name in env.keys():
+            content = content.replace(param, env[name])
+    return content
+
+def __hash_odoo_password(pwd):
+    from module_tools.odoo_config import current_version
+    if current_version() in [
+            11.0,
+            12.0,
+            10.0,
+            09.0,
+    ]:
+        setpw = CryptContext(schemes=['pbkdf2_sha512', 'md5_crypt'])
+        return setpw.encrypt(pwd)
+    else:
+        raise NotImplementedError()

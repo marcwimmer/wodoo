@@ -100,13 +100,14 @@ def checkout_odoo(ctx, version='', not_use_local_repo=True, commit_changes=False
      - temporary switch to odoo version
 
     """
+    from .module_tools.odoo_config import current_version
     __assert_file_exists(dirs['customs'] / '.version')
 
     if (dirs['customs'] / 'odoo').is_dir() and not force:
         raise Exception("Odoo already exists")
 
     if not version:
-        version = __read_file(dirs['customs'] / '.version').strip()
+        version = current_version()
     version = float(version)
 
     __system([

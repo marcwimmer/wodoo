@@ -5,9 +5,6 @@ services:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_proxy
     build: $ODOO_HOME/machines/proxy
     restart: unless-stopped
-    ports:
-      - "${PROXY_PORT}:80"
-      # - "9229:9229"
     env_file:
         - $ODOO_HOME/run/settings
     volumes:

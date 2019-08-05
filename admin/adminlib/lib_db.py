@@ -13,6 +13,7 @@ import tempfile
 import click
 import inquirer
 from datetime import datetime
+from .tools import __replace_all_envs_in_str
 from .tools import _dropdb
 from .tools import DBConnection
 from .tools import __assert_file_exists
@@ -31,6 +32,7 @@ from .tools import __start_postgres_and_wait
 from .tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
+from .tools import __hash_odoo_password
 
 def __get_postgres_volume_name(config):
     # TODO link somehow to docker-compose file
@@ -304,10 +306,29 @@ def set_db_name(ctx, DBNAME):
 def set_db_ownership(config):
     __set_db_ownership(config)
 
+def __collect_other_turndb2dev_sql():
+    from module_tools.odoo_config import customs_dir
+    dir = customs_dir() / 'devscripts'
+    if not dir.exists():
+        return
+    sqls = []
+    for file in dir.glob("**/*.sql"):
+        sqls.append(file.read_text())
+    return "\n\n".join(sqls)
 
 def __turn_into_devdb(conn):
-    SQLFILE = files['machines/postgres/turndb2dev.sql']
-    sql = __read_file(SQLFILE)
+    from . import MyConfigParser
+    myconfig = MyConfigParser(files['settings'])
+    env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
+
+    # encrypt password
+    env['DEFAULT_DEV_PASSWORD'] = __hash_odoo_password(env['DEFAULT_DEV_PASSWORD'])
+
+    sql = files['machines/postgres/turndb2dev.sql'].read_text()
+
+    sql += __collect_other_turndb2dev_sql()
+
+    sql = __replace_all_envs_in_str(sql, env)
 
     critical = False
     for line in sql.split("\n"):

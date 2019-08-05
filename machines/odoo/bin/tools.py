@@ -1,9 +1,11 @@
+import time
 import sys
 from consts import ODOO_USER
 import subprocess
 import os
 from module_tools import odoo_config
 from module_tools.odoo_config import customs_dir
+from module_tools.odoo_config import get_conn_autoclose
 from pathlib import Path
 pidfile = Path('/tmp/odoo.pid')
 config = odoo_config.get_env()
@@ -16,9 +18,13 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     content = file.read_text()
     content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
 
-    server_wide_modules = os.environ['SERVER_WIDE_MODULES']
+    server_wide_modules = (os.environ['SERVER_WIDE_MODULES'] or '').split(',')
     if os.getenv("IS_ODOO_QUEUEJOB", "") == "1" or 'debug' in file.name:
-        server_wide_modules += ',queue_job'
+        server_wide_modules += ['queue_job']
+    if os.getenv("IS_ODOO_QUEUEJOB", "") != "1" and 'debug' not in file.name:
+        if 'queue_job' in server_wide_modules:
+            server_wide_modules.remove('queue_job')
+    server_wide_modules = ','.join(server_wide_modules)
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 
     if 'without_demo=' not in content:
@@ -29,7 +35,8 @@ def _replace_params_in_config(ADDONS_PATHS, file):
 
     for key in [
         "DB_USER", "DB_PWD", "DB_MAXCONN",
-        "DB_PORT", "DB_HOST", "ODOO_MAX_CRON_THREADS"
+        "DB_PORT", "DB_HOST", "ODOO_MAX_CRON_THREADS",
+        "INTERNAL_ODOO_PORT",
     ]:
         content = content.replace("__{}__".format(key), os.getenv(key, ""))
 
@@ -67,16 +74,21 @@ def prepare_run():
 
     _run_libreoffice_in_background()
 
+    if os.getenv("IS_ODOO_QUEUEJOB", "") == "1":
+        # https://www.odoo.com/apps/modules/10.0/queue_job/
+        sql = "update queue_job set state='pending' where state in ('started', 'enqueued');"
+        with get_conn_autoclose() as cr:
+            cr.execute(sql)
 
 def get_odoo_bin(for_shell=False):
     is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "")
     is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "")
 
-    if is_odoo_cronjob and not config.get('RUN_ODOO_CRONJOB') == '1':
+    if is_odoo_cronjob and not config.get('RUN_ODOO_CRONJOBS') == '1':
         print("Cronjobs shall not run. Good-bye!")
         sys.exit(0)
 
-    if is_odoo_queuejob and not config.get("RUN_ODOO_QUEUEJOB") == "1":
+    if is_odoo_queuejob and not config.get("RUN_ODOO_QUEUEJOBS") == "1":
         print("Queue-Jobs shall not run. Good-bye!")
         sys.exit(0)
 
@@ -85,7 +97,6 @@ def get_odoo_bin(for_shell=False):
     if is_odoo_cronjob:
         print('Starting odoo cronjobs')
         CONFIG = "config_cronjob"
-        EXEC = os.environ["ODOO_EXECUTABLE_CRONJOBS"]
         if version <= 9.0:
             EXEC = "openerp-server"
 

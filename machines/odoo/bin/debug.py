@@ -19,16 +19,6 @@ DEBUGGER_WATCH = Path(os.environ["DEBUGGER_WATCH"])
 last_mod = ''
 last_unit_test = ''
 
-# append configuration option to run old odoo on port 8072
-if current_version() <= 7.0:
-    conf = Path(get_config_file('config_debug'))
-    with conf.open('a') as f:
-        f.write('\n')
-        f.write("xmlrpc_port=8072")
-        f.write('\n')
-    del conf
-
-
 def watch_file_and_kill():
     last_mod = DEBUGGER_WATCH.stat().st_mtime
     while True:

@@ -26,4 +26,4 @@ workers = 1
 xmlrpcs = False
 netrpc = False
 proxy_mode = True
-xmlrpc_port = 8069
+xmlrpc_port = __INTERNAL_ODOO_PORT__
