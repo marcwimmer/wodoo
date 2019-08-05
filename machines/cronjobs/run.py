@@ -35,16 +35,17 @@ def execute(job_cmd):
 jobs = list(get_jobs())
 next_dates = []
 
-logging.info("Found jobs: {}".format(jobs))
-counter = 0
+for job in jobs:
+    logging.info("Scheduling Job: {}".format(job))
+displayed_infos = False
 while True:
     for job in jobs:
         next_run = croniter(job['schedule'], job['base']).get_next(datetime)
-        if datetime.now().second == 0 and datetime.now().minute == 0:
+        if not displayed_infos or (datetime.now().second == 0 and datetime.now().minute == 0):
             logging.info("Next run of %s at %s", job['cmd'], next_run)
         if next_run < datetime.now():
             execute(job['cmd'])
             job['base'] = next_run
 
     time.sleep(1)
-    counter += 1
+    displayed_infos = True
