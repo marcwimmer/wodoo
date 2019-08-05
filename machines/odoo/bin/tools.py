@@ -210,7 +210,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
                 time.sleep(2)
 
     if touch_url:
-        t = threading.Thread(target=Toucher)
+        t = threading.Thread(target=toucher)
         t.daemon = True
         print("Touching odoo url to start it")
         t.start()
