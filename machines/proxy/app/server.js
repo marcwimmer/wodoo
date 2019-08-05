@@ -54,6 +54,7 @@ function _wait_tcp_conn(target) {
                 client.end()
             });
             client.on('error', function(e) {
+                console.log("Error connecting to odoo");
                 client.end();
                 setTimeout(() => {
                     do_connect();
@@ -96,6 +97,11 @@ app.all("/*", (req, res, next) => {
     }
 });
 
-app.listen(80, '0.0.0.0', () => {
-    console.log('Proxy server listening on 80 all interfaces.');
+var client = net.connect({host: server_odoo.host, port: server_odoo.port}, () => {
+    // wait for first connection; it also initializes odoo
+    client.end()
+    app.listen(80, '0.0.0.0', () => {
+        console.log('Proxy server listening on 80 all interfaces.');
+    });
 });
+
