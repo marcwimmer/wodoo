@@ -163,7 +163,6 @@ class MANIFEST_CLASS(object):
             self.patch_dir = customs_dir() / mods[0]['path'] / 'patches'
 
         d['version'] = float(d['version'])
-        self._update(d)
 
     def _get_data(self):
         return OrderedDict(eval(self.path.read_text() or "{}"))
