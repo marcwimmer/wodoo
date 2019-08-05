@@ -74,6 +74,7 @@ def endless_loop():
                 subprocess.call(["run_debug.py"])
 
             elif action[0] in ['unit_test', 'last_unit_test']:
+                kill_odoo()
                 subprocess.call(['/usr/bin/reset'])
                 if action[0] == 'unit_test':
                     last_unit_test = action[1]

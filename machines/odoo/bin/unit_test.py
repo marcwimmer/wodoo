@@ -19,7 +19,8 @@ filepath = Path(sys.argv[1])
 module = Module(filepath)
 
 # make path relative to links, so that test is recognized by odoo
-path = customs_dir() / 'links' / module.name / filepath.resolve().relative_to(module.path)
+#path = customs_dir() / 'links' / module.name / filepath.resolve().relative_to(module.path)
+path = filepath.resolve().absolute()
 cmd = [
     '--stop-after-init',
     '--test-file={}'.format(path),
@@ -31,5 +32,7 @@ if current_version() <= 11.0:
     ]
 exec_odoo(
     "config_unittest",
-    *cmd
+    *cmd,
+    force_no_gevent=True,
+    odoo_shell=False,
 )
