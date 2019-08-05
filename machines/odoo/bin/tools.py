@@ -193,25 +193,27 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
 
     cmd = " ".join(map(lambda x: '"{}"'.format(x), cmd))
 
-    class Toucher(threading.Thread):
-        def run(self):
-            while True:
-                try:
-                    r = requests.get('http://{}:{}'.format(
-                            'localhost',
-                            os.environ['INTERNAL_ODOO_PORT']
-                    ))
-                    r.raise_for_status()
-                except Exception:
-                    raise
-                else:
-                    break
-                finally:
-                    time.sleep(2)
+    def toucher(self):
+        while True:
+            try:
+                r = requests.get('http://{}:{}'.format(
+                        'localhost',
+                        os.environ['INTERNAL_ODOO_PORT']
+                ))
+                r.raise_for_status()
+            except Exception:
+                raise
+            else:
+                print("HTTP Get to odoo succeeded.")
+                break
+            finally:
+                time.sleep(2)
 
     if touch_url:
+        t = threading.Thread(target=Toucher)
+        t.daemon = True
         print("Touching odoo url to start it")
-        Toucher().start()
+        t.start()
 
     print("Executing odoo")
     os.system(cmd)
