@@ -1,4 +1,5 @@
 import time
+import threading
 import sys
 from consts import ODOO_USER
 import subprocess
@@ -156,7 +157,7 @@ def __python_exe():
     else:
         return "/usr/bin/python3"
 
-def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs): # NOQA
+def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=False, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
@@ -190,6 +191,22 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, **kwargs):
     cmd += args
 
     cmd = " ".join(map(lambda x: '"{}"'.format(x), cmd))
+
+    class Toucher(threading.Thread):
+        def run(self):
+            time.sleep(2)
+            cmd = [
+                '/usr/bin/wget',
+                'http://{}:{}'.format(
+                    'localhost',
+                    os.environ['INTERNAL_ODOO_PORT'],
+                )
+            ]
+            subprocess.call(cmd, cwd='/tmp')
+
+    if touch_url:
+        Toucher().start()
+
     os.system(cmd)
     if pidfile.exists():
         pidfile.unlink()

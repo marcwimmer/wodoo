@@ -97,11 +97,6 @@ app.all("/*", (req, res, next) => {
     }
 });
 
-var client = net.connect({host: server_odoo.host, port: server_odoo.port}, () => {
-    // wait for first connection; it also initializes odoo
-    client.end()
-    app.listen(80, '0.0.0.0', () => {
-        console.log('Proxy server listening on 80 all interfaces.');
-    });
+app.listen(80, '0.0.0.0', () => {
+    console.log('Proxy server listening on 80 all interfaces.');
 });
-
