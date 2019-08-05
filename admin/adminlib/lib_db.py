@@ -310,7 +310,7 @@ def __collect_other_turndb2dev_sql():
     from module_tools.odoo_config import customs_dir
     dir = customs_dir() / 'devscripts'
     if not dir.exists():
-        return
+        return ""
     sqls = []
     for file in dir.glob("**/*.sql"):
         sqls.append(file.read_text())
@@ -326,7 +326,7 @@ def __turn_into_devdb(conn):
 
     sql = files['machines/postgres/turndb2dev.sql'].read_text()
 
-    sql += __collect_other_turndb2dev_sql()
+    sql += __collect_other_turndb2dev_sql() or ""
 
     sql = __replace_all_envs_in_str(sql, env)
 
