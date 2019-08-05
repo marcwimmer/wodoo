@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from collections import OrderedDict
 import threading
 import click
 import json
@@ -165,7 +166,7 @@ class MANIFEST_CLASS(object):
         self._update(d)
 
     def _get_data(self):
-        return eval(self.path.read_text() or "{}")
+        return OrderedDict(eval(self.path.read_text() or "{}"))
 
     def __getitem__(self, key):
         data = self._get_data()
