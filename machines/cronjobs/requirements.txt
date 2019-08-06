@@ -1,3 +1,5 @@
+passlib
+pathlib
 arrow
 croniter
 inquirer
