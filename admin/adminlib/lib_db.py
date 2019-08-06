@@ -345,7 +345,8 @@ def __turn_into_devdb(conn):
 
         comment = re.findall(r'\/\*[^\*^\/]*\*\/', line)
         if comment:
-            for comment in comment[0].split(";"):
+
+            def ignore_line(comment):
                 comment = comment[2:-2]
                 if 'if-table-exists' in comment:
                     table = comment.split("if-table-exists")[1].strip()
@@ -354,8 +355,11 @@ def __turn_into_devdb(conn):
                         "select count(*) from information_schema.tables where table_schema='public' and table_name='{}'".format(table),
                         fetchone=True
                     )
-                    if not res[0]:
-                        continue
+                    return not res[0]
+                return False
+
+            if any(list(ignore_line(comment) for comment in comment[0].split(";"))):
+                continue
         try:
             print(line)
             __execute_sql(conn, line)
