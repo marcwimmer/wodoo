@@ -10,4 +10,5 @@ delete from ir_config_parameter where key = 'database.enterprise_code';
 --set not-critical
 
 /*if-table-exists caldav_cal*/ update caldav_cal set password = '1';
+/*if-table-exists delivery_carrier_file*/update delivery_carrier_file set export_path = '/opt/out_dir';
 
