@@ -33,6 +33,4 @@ if current_version() <= 11.0:
 exec_odoo(
     "config_unittest",
     *cmd,
-    force_no_gevent=True,
-    odoo_shell=False,
 )

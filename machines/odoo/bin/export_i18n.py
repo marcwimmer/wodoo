@@ -31,7 +31,6 @@ for module in MODULES.split(","):
         '-l', LANG,
         '--i18n-export={}'.format(str(filename)),
         '--modules={}'.format(module.name),
-        force_no_gevent=True,
     )
 
     dest_path = module.path / 'i18n' / "{}.po".format(LANG)

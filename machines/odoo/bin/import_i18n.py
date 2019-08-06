@@ -28,5 +28,4 @@ exec_odoo(
     '-l', LANG,
     '--i18n-import={}'.format(FILEPATH),
     '--i18n-overwrite',
-    force_no_gevent=True,
 )

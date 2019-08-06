@@ -56,7 +56,7 @@ def update(mode, module):
         ]
         if TESTS:
             params += [TESTS]
-        exec_odoo('config_update', *params, force_no_gevent=True)
+        exec_odoo('config_update', *params)
         if not DBModules.is_module_installed(module):
             if mode == 'i':
                 print("{} is not installed - but it was tried to be installed.".format(module))
@@ -83,7 +83,7 @@ def update(mode, module):
                             '--i18n-overwrite',
                             '--stop-after-init',
                         ]
-                        exec_odoo('config_update', *params, force_no_gevent=True)
+                        exec_odoo('config_update', *params)
             del i_module
 
     print(mode, module, 'done')

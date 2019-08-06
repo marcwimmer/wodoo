@@ -1,3 +1,4 @@
+import shutil
 import requests
 import time
 import threading
@@ -35,11 +36,7 @@ def _replace_params_in_config(ADDONS_PATHS, file):
         else:
             content = content + "\nwithout_demo=all"
 
-    for key in [
-        "DB_USER", "DB_PWD", "DB_MAXCONN",
-        "DB_PORT", "DB_HOST", "ODOO_MAX_CRON_THREADS",
-        "INTERNAL_ODOO_PORT",
-    ]:
+    for key in os.environ.keys():
         content = content.replace("__{}__".format(key), os.getenv(key, ""))
 
     file.write_text(content)
@@ -58,8 +55,18 @@ def _run_autosetup():
     print("Done autosetup")
 
 def _replace_variables_in_config_files():
+    config_dir = Path(os.environ['ODOO_CONFIG_DIR'])
+    config_dir_template = Path(os.environ['ODOO_CONFIG_DIR'] + '.template')
+    config_dir.mkdir(exist_ok=True, parents=True)
+    for file in config_dir_template.glob("*"):
+        shutil.copy(str(file), str(config_dir / file.name))
     ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths())))
-    for file in Path(os.getenv("ODOO_CONFIG_DIR")).glob("config_*"):
+
+    config_dir = Path(os.getenv("ODOO_CONFIG_DIR"))
+    common_content = (config_dir / 'common').read_text()
+    for file in config_dir.glob("config_*"):
+        content = file.read_text()
+        file.write_text(common_content + "\n" + content)
         _replace_params_in_config(ADDONS_PATHS, file)
 
 def _run_libreoffice_in_background():
@@ -69,6 +76,7 @@ def get_config_file(confname):
     return str(Path(os.environ['ODOO_CONFIG_DIR']) / confname)
 
 def prepare_run():
+
     _replace_variables_in_config_files()
 
     if config['RUN_AUTOSETUP'] == "1":
@@ -95,7 +103,6 @@ def get_odoo_bin(for_shell=False):
         sys.exit(0)
 
     EXEC = "odoo-bin"
-    GEVENT_MARKER = ""
     if is_odoo_cronjob:
         print('Starting odoo cronjobs')
         CONFIG = "config_cronjob"
@@ -115,14 +122,15 @@ def get_odoo_bin(for_shell=False):
             else:
                 EXEC = "openerp-gevent"
         else:
-            GEVENT_MARKER = "gevent" if config["ODOO_GEVENT_MODE"] == "1" else ""
+            if config.get("ODOO_GEVENT_MODE", "") == "1":
+                raise Exception("Dont use GEVENT MODE anymore")
 
     EXEC = "{}/{}".format(
         os.environ["SERVER_DIR"],
         EXEC
     )
 
-    return EXEC, CONFIG, GEVENT_MARKER
+    return EXEC, CONFIG
 
 def kill_odoo():
     if pidfile.exists():
@@ -158,13 +166,13 @@ def __python_exe():
     else:
         return "/usr/bin/python3"
 
-def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=False, **kwargs): # NOQA
+def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
     kill_odoo()
 
-    EXEC, _CONFIG, GEVENT_MARKER = get_odoo_bin(for_shell=odoo_shell)
+    EXEC, _CONFIG = get_odoo_bin(for_shell=odoo_shell)
     CONFIG = get_config_file(CONFIG or _CONFIG)
     cmd = [
         "/usr/bin/sudo",
@@ -175,8 +183,6 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
         __python_exe(),
         EXEC,
     ]
-    if not odoo_shell and (GEVENT_MARKER and not force_no_gevent):
-        cmd += [GEVENT_MARKER]
     if odoo_shell:
         cmd += ['shell']
     cmd += [
@@ -185,6 +191,7 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
         '-d',
         config["DBNAME"],
     ]
+    print(Path(CONFIG).read_text())
     if not odoo_shell:
         cmd += [
             '--pidfile={}'.format(pidfile),
@@ -196,9 +203,9 @@ def exec_odoo(CONFIG, *args, force_no_gevent=False, odoo_shell=False, touch_url=
     def toucher():
         while True:
             try:
-                r = requests.get('http://{}:{}'.format(
-                        'localhost',
-                        os.environ['INTERNAL_ODOO_PORT']
+                r = requests.get('http://{}:'.format(
+                    'localhost',
+                    os.environ['INTERNAL_ODOO_PORT']
                 ))
                 r.raise_for_status()
             except Exception:

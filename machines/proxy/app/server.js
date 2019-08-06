@@ -22,6 +22,12 @@ const server_calendar = {
     port: 80
 };
 
+const server_longpolling = {
+    protocol: 'http',
+    host: 'odoo',
+    port: 8072
+};
+
 if (process.env.ODOO_VERSION == "9.0") {
     options.odoo_tcp_check = false;
     server_odoo.port = 8072;
@@ -85,6 +91,10 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
 
 app.all("/caldav/*", (req, res, next) => {
     _call_proxy(req, res, server_calendar);
+});
+
+app.all("/longpolling/*", (req, res, next) => {
+    _call_proxy(req, res, server_longpolling);
 });
  
 app.all("/*", (req, res, next) => {
