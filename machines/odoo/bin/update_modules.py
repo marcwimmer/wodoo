@@ -52,7 +52,6 @@ def update(mode, module):
             '-' + mode,
             module,
             '--stop-after-init',
-            '--log-level=debug',
         ]
         if TESTS:
             params += [TESTS]

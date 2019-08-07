@@ -8,6 +8,5 @@ ENV = {
 }
 exec_odoo(
     'config_debug',
-    '--log-level=error',
     env=ENV
 )

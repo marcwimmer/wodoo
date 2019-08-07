@@ -27,7 +27,6 @@ for module in MODULES.split(","):
     exec_odoo(
         'config_i18n',
         '--stop-after-init',
-        '--log-level=warn',
         '-l', LANG,
         '--i18n-export={}'.format(str(filename)),
         '--modules={}'.format(module.name),

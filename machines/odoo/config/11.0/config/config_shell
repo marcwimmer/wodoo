@@ -1,2 +1,1 @@
 http_enable = False
-server_wide_modules = __SERVER_WIDE_MODULES__

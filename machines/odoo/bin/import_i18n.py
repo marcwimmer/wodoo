@@ -24,7 +24,6 @@ print("Importing lang file $FILEPATH")
 exec_odoo(
     'config_i18n',
     '--stop-after-init',
-    '--log-level=warn',
     '-l', LANG,
     '--i18n-import={}'.format(FILEPATH),
     '--i18n-overwrite',

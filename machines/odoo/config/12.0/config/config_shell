@@ -1,2 +1,2 @@
 http_enable = False
-server_wide_modules = __SERVER_WIDE_MODULES__
+log_level = debug

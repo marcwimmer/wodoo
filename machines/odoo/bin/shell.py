@@ -13,7 +13,6 @@ prepare_run()
 
 # make path relative to links, so that test is recognized by odoo
 cmd = [
-    '--log-level=debug',
     '--stop-after-init',
 ]
 if current_version() >= 11.0:
