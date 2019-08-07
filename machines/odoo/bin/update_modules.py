@@ -12,6 +12,7 @@ from module_tools.module_tools import get_all_langs
 from module_tools.module_tools import delete_qweb
 from module_tools.module_tools import Module, Modules, DBModules
 from module_tools.odoo_config import customs_dir
+from module_tools.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
 prepare_run()
@@ -110,10 +111,9 @@ def _uninstall_marked_modules():
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
-    file = (Path(customs_dir()) / 'uninstall')
-    if not file.exists():
-        return
-    modules = filter(lambda x: x.strip(), file.open().read().split("\n"))
+
+    manifest = MANIFEST()
+    modules = manifest.get('uninstall', [])
     for module in modules:
         DBModules.uninstall_module(module, raise_error=False)
 
