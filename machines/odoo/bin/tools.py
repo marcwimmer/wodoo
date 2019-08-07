@@ -166,7 +166,7 @@ def __python_exe():
     else:
         return "/usr/bin/python3"
 
-def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, **kwargs): # NOQA
+def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **kwargs): # NOQA
 
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
@@ -226,3 +226,5 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, **kwargs): # NOQ
     os.system(cmd)
     if pidfile.exists():
         pidfile.unlink()
+    if on_done:
+        on_done()

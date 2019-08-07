@@ -917,7 +917,7 @@ class Module(object):
             if f.suffix in ['.xml', '.csv', '.yml']:
                 if f.name.startswith("demo%s" % os.sep):
                     mod["demo_xml"].append(local_path)
-                elif f.name.startswith("static%s" % os.sep):
+                elif 'static' in f.parts:
                     mod["qweb"].append(local_path)
                 else:
                     mod[DATA_NAME].append(local_path)

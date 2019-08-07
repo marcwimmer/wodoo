@@ -92,6 +92,8 @@ def endless_loop():
                     lang,
                     module
                 ])
+                action = ('debug',)
+                continue
 
             elif action[0] == 'import_i18n':
                 subprocess.call(['/usr/bin/reset'])
@@ -102,6 +104,8 @@ def endless_loop():
                     lang,
                     filepath
                 ])
+                action = ('debug',)
+                continue
             last_mod = new_mod
         time.sleep(0.2)
 
