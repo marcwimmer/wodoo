@@ -1,7 +1,7 @@
 # db access (define if you dont use RUN_POSTGRES=1)
 
 # external directory where files are stored (when using file storage)
-ODOO_FILES=/opt/oefiles
+ODOO_FILES=/opt/odoo_files
 
 VERBOSE=0
 
