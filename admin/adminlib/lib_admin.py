@@ -118,7 +118,7 @@ def pack(config):
     ], cwd=tmp_folder, suppress_out=False)
 
     # remove set_traces and other
-    output = subprocess.check_output(["/usr/bin/ag", "-L", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
+    output = subprocess.check_output(["/usr/bin/ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
     for file in output.split("\n"):
         file = tmp_folder / file
         if file.is_dir():
