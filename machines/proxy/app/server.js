@@ -1,10 +1,17 @@
 var express  = require('express');
 var net = require('net');
+var bodyParser = require('body-parser');
 var app      = express();
 var httpProxy = require('http-proxy');
 var proxy = httpProxy.createProxyServer();
 const web_o = Object.values(require('http-proxy/lib/http-proxy/passes/web-outgoing'));
-app.use(express.bodyParser({limit: '1024mb'})
+//app.use(bodyParser({limit: '1024mb'}));
+//app.use(bodyParser.urlencoded({extended: true}));
+//app.use(bodyParser.json());
+app.use(bodyParser.raw({limit: '1024mb'}));
+//app.use(bodyParser.text());
+console.log("hier");
+
 
 const options = {
     odoo_tcp_check: true
@@ -57,12 +64,11 @@ function _wait_tcp_conn(target) {
     return new Promise((resolve, reject) => {
         let do_connect = () => {
             var client = net.connect({host: target.host, port: target.port}, () => {
-                console.log("TCP connect odoo succeeded");
                 resolve();
                 client.end()
             });
             client.on('error', function(e) {
-                console.log("Error connecting to odoo");
+                console.log("Error connecting to odoo: " + (new Date()));
                 client.end();
                 setTimeout(() => {
                     do_connect();
