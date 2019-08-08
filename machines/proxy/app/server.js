@@ -5,12 +5,7 @@ var app      = express();
 var httpProxy = require('http-proxy');
 var proxy = httpProxy.createProxyServer();
 const web_o = Object.values(require('http-proxy/lib/http-proxy/passes/web-outgoing'));
-//app.use(bodyParser({limit: '1024mb'}));
-//app.use(bodyParser.urlencoded({extended: true}));
-//app.use(bodyParser.json());
 app.use(bodyParser.raw({limit: '1024mb'}));
-//app.use(bodyParser.text());
-console.log("hier");
 
 
 const options = {
