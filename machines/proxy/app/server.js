@@ -4,6 +4,7 @@ var app      = express();
 var httpProxy = require('http-proxy');
 var proxy = httpProxy.createProxyServer();
 const web_o = Object.values(require('http-proxy/lib/http-proxy/passes/web-outgoing'));
+app.use(express.bodyParser({limit: '1024mb'})
 
 const options = {
     odoo_tcp_check: true
