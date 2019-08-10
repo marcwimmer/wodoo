@@ -21,12 +21,6 @@ from . import Commands
 def submodules(config):
     pass
 
-
-pushable_urls = [
-    'git.clear-consulting.de',
-    'git.itewimmer.de',
-]
-
 def _get_modules(include_oca=True):
     modules = []
     v = str(current_version())
@@ -149,7 +143,7 @@ def push(ctx, config):
     ctx.invoke(pull)
     click.echo("Now trying to push.")
     threads = []
-    for module in filter(lambda module: any(allowed in module['url'] for allowed in pushable_urls), _get_modules()):
+    for module in _get_modules(include_oca=False):
         def _do_push(module):
             click.echo("Going to push {}".format(module))
             tries = 0
@@ -174,7 +168,7 @@ def push(ctx, config):
     [x.start() for x in threads]
     [x.join() for x in threads]
     try:
-        for module in _get_modules():
+        for module in _get_modules(include_oca=False):
             __system([
                 "git",
                 "add",
@@ -197,7 +191,7 @@ def push(ctx, config):
 @click.argument("msg", required=True)
 def commit(msg):
     dir = customs_dir()
-    for module in _get_modules():
+    for module in _get_modules(include_oca=False):
         subprocess.call([
             "git",
             "checkout",
