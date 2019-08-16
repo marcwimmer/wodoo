@@ -40,7 +40,7 @@ fi
 
 rsync $CONF_ROOT/ /etc/cups/ -ar
 
-sleep 10 && python /print.py "$WATCHPATH" "$PRINTED_PATH"&
+sleep 10 && python /print.py "$WATCHPATH" "$PRINTED_PATH" &
 sleep 5 && /backup_printers.sh &
 
 exec /usr/sbin/cupsd -f
