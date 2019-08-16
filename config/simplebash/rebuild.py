@@ -8,6 +8,7 @@ CURRENT_DIR = Path(__file__).parent
 subprocess.check_call([
     'docker',
     'build',
+    '--no-cache',
     '--tag',
     '{}_simplebash'.format(PROJECT_NAME),
     '.',

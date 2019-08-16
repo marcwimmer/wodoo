@@ -106,7 +106,7 @@ def build_command():
     except KeyError:
         docker_group_id = None
     else:
-        docker_group_id = dokcer_groupd.gr_gid
+        docker_group_id = docker_groupd.gr_gid
 
     command = ['docker-compose']
     command += ['run']

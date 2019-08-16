@@ -1,5 +1,5 @@
 FROM debian:buster
-ENV DOCKER_VERSION=docker-18.09.3
+ENV DOCKER_VERSION=docker-19.03.1
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
 apt install -y  \
