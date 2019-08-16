@@ -1,4 +1,5 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+from pathlib import Path
 from copy import deepcopy
 import uuid
 import sys
@@ -7,6 +8,7 @@ import inspect
 import subprocess
 import time
 import fileinput
+import grp
 from admin.module_tools.myconfigparser import MyConfigParser
 
 def E(name):
@@ -20,34 +22,34 @@ if not sys.stdin.isatty() and "SSH_CONNECTION" not in os.environ:
     input = '\n'.join([x for x in sys.stdin])
 
 FNULL = open(os.devnull, 'w')
-LOCAL_ODOO_HOME = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
-PROJECT_NAME = LOCAL_ODOO_HOME.replace("/", "_").lstrip("_")
+LOCAL_ODOO_HOME = Path(inspect.getfile(inspect.currentframe())).absolute().parent
+PROJECT_NAME = str(LOCAL_ODOO_HOME).replace("/", "_").lstrip("_").lower()
 NETWORK_NAME = "{}_default".format(PROJECT_NAME)
 
 os.environ['NETWORK_NAME'] = NETWORK_NAME
 WORKING_DIR = E("WORKING_DIR")
-SETTINGS_FILE = os.path.join(LOCAL_ODOO_HOME, 'run/settings')
+SETTINGS_FILE = LOCAL_ODOO_HOME / 'run/settings'
 
 if not WORKING_DIR:
     WORKING_DIR = os.getcwd()
 
 if E("DOCKER_MACHINE") != "1":
-    os.environ['ODOO_HOME'] = LOCAL_ODOO_HOME
+    os.environ['ODOO_HOME'] = str(LOCAL_ODOO_HOME)
 
 if not E("ODOO_HOME") and E("DOCKER_MACHINE") != "1":
     ODOO_HOME = LOCAL_ODOO_HOME
 else:
-    ODOO_HOME = E("ODOO_HOME")
+    ODOO_HOME = Path(E("ODOO_HOME"))
 
-os.environ['ODOO_HOME'] = ODOO_HOME
+os.environ['ODOO_HOME'] = str(ODOO_HOME)
 os.environ['WORKING_DIR'] = WORKING_DIR
 
 if len(sys.argv) > 1 and sys.argv[1] == 'compose':
-    if os.path.exists(SETTINGS_FILE):
-        os.unlink(SETTINGS_FILE)
+    if SETTINGS_FILE.exists():
+        SETTINGS_FILE.unlink()
 
 config = MyConfigParser(SETTINGS_FILE)
-if not os.path.exists(SETTINGS_FILE):
+if not SETTINGS_FILE.exists():
     config.write()
 
 for k in config.keys():
@@ -69,11 +71,8 @@ def get_platform():
 
 def update():
     if len(sys.argv) > 1 and sys.argv[1] == '--update':
-        proc = subprocess.Popen([
-            "/bin/bash",
-            "rebuild.sh"
-        ], cwd=os.path.expandvars("$ODOO_HOME/config/simplebash"), env=get_env())
-        proc.wait()
+        rebuild = LOCAL_ODOO_HOME / 'config' / 'simplebash' / 'rebuild.py'
+        subprocess.check_call([rebuild], env=get_env())
 
         #proc = subprocess.Popen([
         #    "/usr/local/bin/docker-compose",
@@ -102,16 +101,12 @@ def build_command():
         except Exception:
             pass
 
-    if get_platform() == "macos":
-        raise Exception("not supported")
+    try:
+        docker_groupd = grp.getgrnam("docker")
+    except KeyError:
+        docker_group_id = None
     else:
-        # getent group docker docker:x:999:marc
-        out = subprocess.check_output([
-            'getent',
-            'group',
-            'docker',
-        ]).decode('utf-8')
-        docker_group_id = out.split(":")[2]
+        docker_group_id = dokcer_groupd.gr_gid
 
     command = ['docker-compose']
     command += ['run']
@@ -119,7 +114,7 @@ def build_command():
     command += ['--service-ports']
     command += ['--name', "odoo_bash_{}".format(str(uuid.uuid4()))]
     command += ['-e', 'SSH_CONNECTION']
-    command += ['-e', 'ODOO_HOME={}'.format(E("ODOO_HOME"))]
+    command += ['-e', 'ODOO_HOME={}'.format(str(ODOO_HOME))]
     command += ['-e', 'UID={}'.format(os.getuid())]
     command += ['-e', 'USER={}'.format(E("USER"))]
     command += ['-e', 'WORKING_DIR={}'.format(E("WORKING_DIR"))]
@@ -149,7 +144,7 @@ def build_command():
         command += ['-v', '/sbin:/sbin_host']
         command += ['-v', '/tmp:/tmp_host']
         command += ['-v', '{}:/opt/odoo'.format(LOCAL_ODOO_HOME)]
-        if LOCAL_ODOO_HOME != "/opt/odoo":
+        if str(LOCAL_ODOO_HOME) != "/opt/odoo":
             command += ['-v', '{h}:{h}'.format(h=LOCAL_ODOO_HOME)]
     else:
         command += ['-v', '{}:/opt/odoo'.format(E("HOST_ODOO_HOME"))]
@@ -160,7 +155,7 @@ def build_command():
     myenv = get_env()
     proc = subprocess.Popen(
         command,
-        cwd=os.path.join(LOCAL_ODOO_HOME, 'config/simplebash'),
+        cwd=LOCAL_ODOO_HOME / 'config/simplebash',
         bufsize=1024,
         stdin=subprocess.PIPE if input else None,
         env=myenv,
@@ -184,7 +179,7 @@ def start_background_sync_from_host():
     if get_platform() == 'macos' or E("RUN_RSYNCED") == "1":
         if len(sys.argv) > 1 and sys.argv[1] == 'dev':
             subprocess.Popen([
-                os.path.join(LOCAL_ODOO_HOME, 'admin/sync_source.py'),
+                LOCAL_ODOO_HOME / 'admin/sync_source.py',
                 E("CUSTOMS"),
             ], stdout=None)
 
