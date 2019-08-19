@@ -3,6 +3,7 @@ ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
 ENV LANG C.UTF-8
+ADD etc/ /etc/
 RUN apt update --fix-missing && \
 apt-get install \
 	-y \
