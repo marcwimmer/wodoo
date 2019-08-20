@@ -3,9 +3,8 @@ FROM debian:stretch
 MAINTAINER Nicolas Delaby "nicolas@ezeep.com"
 
 # Install cups
-RUN apt-get update && apt-get install cups cups-pdf whois wget samba-client python3 python3-cups rsync vim -y \
+RUN apt-get update && apt-get install cups cups-pdf whois wget samba-client python3 python3-cups rsync python3-pip vim -y \
 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-RUN apt install -y python3-pip
 RUN pip install pathlib
 
 # Disbale some cups backend that are unusable within a container
