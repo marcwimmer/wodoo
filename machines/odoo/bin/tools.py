@@ -14,6 +14,8 @@ pidfile = Path('/tmp/odoo.pid')
 config = odoo_config.get_env()
 version = odoo_config.current_version()
 
+is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "0") == "1"
+is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "0") == "1"
 
 def _replace_params_in_config(ADDONS_PATHS, file):
     if not os.getenv("DB_HOST") or not os.getenv("DB_USER"):
@@ -91,8 +93,6 @@ def prepare_run():
             cr.execute(sql)
 
 def get_odoo_bin(for_shell=False):
-    is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "")
-    is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "")
 
     if is_odoo_cronjob and not config.get('RUN_ODOO_CRONJOBS') == '1':
         print("Cronjobs shall not run. Good-bye!")

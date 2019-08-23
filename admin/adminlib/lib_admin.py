@@ -118,6 +118,10 @@ def pack(config):
     ], cwd=tmp_folder, suppress_out=False)
 
     # remove set_traces and other
+    # remove ignore file to make ag find everything
+    ignore_file = tmp_folder / '.ignore'
+    if ignore_file.exists():
+        ignore_file.unlink()
     output = subprocess.check_output(["/usr/bin/ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
     for file in output.split("\n"):
         file = tmp_folder / file
