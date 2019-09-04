@@ -114,6 +114,7 @@ def _do_compose(config, customs='', db='', demo=False):
 
     _export_settings(customs)
     _prepare_filesystem()
+    _execute_after_settings()
     _prepare_yml_files_from_template_files(config)
     _execute_after_compose()
 
@@ -134,6 +135,22 @@ def _execute_after_compose():
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module.after_compose(config)
+
+def _execute_after_settings():
+    """
+    execute local __oncompose.py scripts
+    """
+    from . import MyConfigParser
+    config = MyConfigParser(files['settings'])
+    for module in dirs['images'].glob("**/__after_settings.py"):
+        if module.is_dir():
+            continue
+        spec = importlib.util.spec_from_file_location(
+            "dynamic_loaded_module", str(module),
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.after_settings(config)
 
 def _prepare_yml_files_from_template_files(config):
     # replace params in configuration file
