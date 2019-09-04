@@ -1,0 +1,17 @@
+#manage-order: 12000
+version: "3.3"
+services:
+  cronjobshell:
+    build: $ODOO_HOME/images/cronjobs
+    privileged: true
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_cronjobshell
+    command: ['exit']
+    restart: no
+    env_file:
+        - $HOST_RUN_DIR/settings
+    environment:
+        - "PROJECT_NAME=${PROJECT_NAME}"
+        - DOCKER_MACHINE=1
+    volumes:
+        - "$ODOO_HOME/images/cronjobs/bin/:/usr/local/bin/"
+        - "$DUMPS_PATH:/host/dumps"

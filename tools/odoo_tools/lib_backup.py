@@ -68,9 +68,15 @@ def backup_calendar(config):
         return
     cmd = [
         'run',
-        'cronjobs',
-        'run.py',
-        '${JOB_BACKUP_CALENDAR_DB}',
+        'cronjobshell',
+        'postgres.py',
+        'backup',
+        config.CALENDAR_DB_NAME,
+        config.CALENDAR_DB_HOST,
+        config.CALENDAR_DB_PORT,
+        config.CALENDAR_DB_USER,
+        config.CALENDAR_DB_PWD,
+        config.DB_CALENDAR_FILEFORMAT,
     ]
     __dc(cmd)
 
@@ -81,9 +87,16 @@ def backup_calendar(config):
 def backup_db(ctx, config):
     cmd = [
         'run',
-        'cronjobs',
-        '/usr/local/bin/run.py',
-        '${JOB_BACKUP_ODOO_DB}',
+        'cronjobshell',
+        'cronjobshell',
+        'postgres.py',
+        'backup',
+        config.DBNAME,
+        config.DB_HOST,
+        config.DB_PORT,
+        config.DB_USER,
+        config.DB_PWD,
+        config.DB_ODOO_FILEFORMAT,
     ]
     __dc(cmd)
 
