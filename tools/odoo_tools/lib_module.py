@@ -133,12 +133,10 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         ctx.invoke(show_install_state, suppress_error=no_dangling_check)
 
     if not no_restart:
-        from pudb import set_trace
-        set_trace()
         Commands.invoke(ctx, 'restart', machines=['odoo'])
-        if myconfig.get("RUN_ODOOCRONJOBS"):
+        if config.run_odoocronjobs:
             Commands.invoke(ctx, 'restart', machines=['odoo_cronjobs'])
-        if myconfig.get("RUN_ODOOQUEUEJOBS"):
+        if config.run_queuejobs:
             Commands.invoke(ctx, 'restart', machines=['odoo_queuejobs'])
         Commands.invoke(ctx, 'up', daemon=True)
         if config.run_proxy:
