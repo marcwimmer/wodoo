@@ -6,7 +6,7 @@ services:
     privileged: true
     container_name: ${PROJECT_NAME}_${CUSTOMS}_cronjobshell
     command: ['exit']
-    restart: no
+    restart: 'no'
     env_file:
         - $HOST_RUN_DIR/settings
     environment:

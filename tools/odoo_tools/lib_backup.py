@@ -77,6 +77,7 @@ def backup_calendar(config):
         config.CALENDAR_DB_USER,
         config.CALENDAR_DB_PWD,
         config.DB_CALENDAR_FILEFORMAT,
+        '/host/dumps/' + config.CALENDAR_DB_NAME + '.dump.gz',
     ]
     __dc(cmd)
 
@@ -88,7 +89,6 @@ def backup_db(ctx, config):
     cmd = [
         'run',
         'cronjobshell',
-        'cronjobshell',
         'postgres.py',
         'backup',
         config.DBNAME,
@@ -96,7 +96,7 @@ def backup_db(ctx, config):
         config.DB_PORT,
         config.DB_USER,
         config.DB_PWD,
-        config.DB_ODOO_FILEFORMAT,
+        '/host/dumps/' + config.DBNAME + '.dump.gz',
     ]
     __dc(cmd)
 
