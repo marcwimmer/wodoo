@@ -1,0 +1,6 @@
+# manage-order 8001
+version: '3.3'
+services:
+  fssync:
+    volumes:
+      - ${CUSTOMS_DIR}:/opt/target

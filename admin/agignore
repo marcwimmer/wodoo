@@ -1,7 +1,0 @@
-__VERSION__
-ckeditor
-lang/*.js
-*.min.css
-*.min.js
-static/lib
-*.po

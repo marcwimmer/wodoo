@@ -1,0 +1,7 @@
+# manage-order 1001
+volumes:
+  odoo_src:
+services:
+  odoo_base:
+      volumes:
+          - odoo_src:/opt/odoo/data/src/customs/${CUSTOMS}

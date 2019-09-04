@@ -1,4 +1,0 @@
-
-model	[heine_tasks]	project.project	:::modules/heine_tasks/entities/project.py::6
-def	[heine_tasks]	project.project.update_infogroup_ids_for_default_project	:::modules/heine_tasks/entities/project.py::13
-field	[heine_tasks]	project.project.for_no_project_tasks	:::modules/heine_tasks/entities/project.py::10

@@ -1,0 +1,12 @@
+passlib
+pathlib
+arrow
+croniter
+pyyaml
+docker
+tabulate
+retrying
+humanize
+pudb
+psycopg2-binary
+click

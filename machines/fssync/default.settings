@@ -1,5 +1,0 @@
-RUN_FSSYNC=0
-FSSYNC_SOURCE=/media/sf_folder
-FSSYNC_TARGET=/opt/odoo/data/src/customs/
-FSSYNC_EXCLUDE=--exclude=.git --exclude=odoo
-FSSYNC_INTERVAL=0.5

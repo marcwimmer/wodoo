@@ -1,5 +1,0 @@
-#!/bin/bash
-# shortcut for odoo-admin to use in job definitions
-
-cd /opt/odoo/admin
-./odoo-admin "$@"

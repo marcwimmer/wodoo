@@ -1,0 +1,27 @@
+#manage-order: 5000
+version: '3.3'
+volumes:
+  ${CUSTOMS}_cupsdatatoprint:
+
+services:
+  cups:
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_cups
+    build: $ODOO_HOME/images/cups
+    ports:
+      - "${CUPS_PORT}:631"
+    volumes:
+      - ${CUSTOMS}_cupsdatatoprint:/opt/toprint 
+      - $ODOO_HOME/data/cups/printed:/opt/printed 
+      - $ODOO_HOME/data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+    env_file:
+      - $HOST_RUN_DIR/settings
+    environment:
+      WATCHPATH: /opt/toprint
+      PRINTED_PATH: /opt/printed
+      CONF_ROOT: /opt/printer_setup
+  odoo_base:
+    volumes:
+      - ${CUSTOMS}_cupsdatatoprint:/opt/toprint 
+    environment:
+      CUPS_TOPRINT: /opt/toprint
+

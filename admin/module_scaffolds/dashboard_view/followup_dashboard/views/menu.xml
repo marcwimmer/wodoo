@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<odoo>
-  <data noupdate="0">
-    <record model="ir.actions.act_window" id="followup.act_followup_window">
-      <field name="view_mode">followup_dashboard,tree</field>
-    </record>
-  </data>
-</odoo>

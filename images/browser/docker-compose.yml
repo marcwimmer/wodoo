@@ -1,0 +1,18 @@
+# manage-order 1000
+version: '3.5'
+
+services:
+    browser:
+        container_name: ${PROJECT_NAME}_${CUSTOMS}_browser
+        build: $ODOO_HOME/images/browser
+        ports:
+            - "5900:5901"
+        cap_add:
+            - SYS_ADMIN
+        shm_size: 4gb
+        environment:
+            # 8 places
+            - "PASSWORD=${BROWSER_PWD}"
+              #- "GEOMETRY=1440x960"
+            - "GEOMETRY=${BROWSER_GEOMETRY}"
+            - "DEPTH=${BROWSER_DEPTH}"

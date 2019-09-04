@@ -1,208 +1,27 @@
 #!/usr/bin/env python3
 from pathlib import Path
-from copy import deepcopy
-import uuid
 import sys
 import os
 import inspect
-import subprocess
-import time
-import fileinput
-import grp
-from admin.module_tools.myconfigparser import MyConfigParser
-
-def E(name):
-    if name.startswith("$"):
-        name = name[1:]
-    return os.getenv(name, "")
 
 
-input = None
-if not sys.stdin.isatty() and "SSH_CONNECTION" not in os.environ:
-    input = '\n'.join([x for x in sys.stdin])
+SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
 
-FNULL = open(os.devnull, 'w')
-LOCAL_ODOO_HOME = Path(inspect.getfile(inspect.currentframe())).absolute().parent
-PROJECT_NAME = str(LOCAL_ODOO_HOME).replace("/", "_").lstrip("_").lower()
-NETWORK_NAME = "{}_default".format(PROJECT_NAME)
+if os.getenv("DOCKER_MACHINE", "") == "1":
+    raise Exception("Cannot execute this script in docker container.")
+os.environ['HOST_HOME'] = os.environ['HOME']
+os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
 
-os.environ['NETWORK_NAME'] = NETWORK_NAME
-WORKING_DIR = E("WORKING_DIR")
-SETTINGS_FILE = LOCAL_ODOO_HOME / 'run/settings'
+sys.path.append(str(SCRIPT_DIRECTORY / 'tools'))
+from odoo_tools import cli # NOQA
+from odoo_tools import Commands # NOQA
+from odoo_tools import HOST_RUN_DIR # NOQA
+from odoo_tools.myconfigparser import MyConfigParser # NOQA
 
-if not WORKING_DIR:
-    WORKING_DIR = os.getcwd()
-
-if E("DOCKER_MACHINE") != "1":
-    os.environ['ODOO_HOME'] = str(LOCAL_ODOO_HOME)
-
-if not E("ODOO_HOME") and E("DOCKER_MACHINE") != "1":
-    ODOO_HOME = LOCAL_ODOO_HOME
-else:
-    ODOO_HOME = Path(E("ODOO_HOME"))
-
-os.environ['ODOO_HOME'] = str(ODOO_HOME)
-os.environ['WORKING_DIR'] = WORKING_DIR
-
-if len(sys.argv) > 1 and sys.argv[1] == 'compose':
-    if SETTINGS_FILE.exists():
-        SETTINGS_FILE.unlink()
-
-config = MyConfigParser(SETTINGS_FILE)
-if not SETTINGS_FILE.exists():
-    config.write()
-
-for k in config.keys():
-    os.environ[k] = config[k]
-
-os.environ['HOSTNAME_TO_USE'] = E("HOST")
-
-if not E("CUSTOMS"):
-    os.environ['CUSTOMS'] = config.get("CUSTOMS", "")
-
-def get_platform():
-    if not E("PLATFORM"):
-        if "Darwin" in subprocess.check_output(["uname"]).decode('utf-8'):
-            os.environ['PLATFORM'] = 'macos'
-        else:
-            os.environ['PLATFORM'] = 'linux'
-    return E("PLATFORM")
-
-
-def update():
-    if len(sys.argv) > 1 and sys.argv[1] == '--update':
-        rebuild = LOCAL_ODOO_HOME / 'config' / 'simplebash' / 'rebuild.py'
-        subprocess.check_call([rebuild], env=get_env())
-
-        #proc = subprocess.Popen([
-        #    "/usr/local/bin/docker-compose",
-        #    "build"
-        #], cwd=os.path.expandvars("$ODOO_HOME/config/telegrambot"))
-        #proc.wait()
-
-        sys.exit(0)
-
-def get_env():
-    myenv = deepcopy(os.environ)
-    myenv.update({
-        "PROJECT_NAME": PROJECT_NAME,
-    })
-    return myenv
-
-def build_command():
-    # using absolute path, to work in crontab
-
-    if E("DISPLAY"):
-        try:
-            subprocess.check_call([
-                'xhost',
-                '+local:{}'.format(E("HOSTNAME_TO_USE")),
-            ], stdout=FNULL)
-        except Exception:
-            pass
-
-    try:
-        docker_groupd = grp.getgrnam("docker")
-    except KeyError:
-        docker_group_id = None
-    else:
-        docker_group_id = docker_groupd.gr_gid
-
-    command = ['docker-compose']
-    command += ['run']
-    command += ['--rm']
-    command += ['--service-ports']
-    command += ['--name', "odoo_bash_{}".format(str(uuid.uuid4()))]
-    command += ['-e', 'SSH_CONNECTION']
-    command += ['-e', 'ODOO_HOME={}'.format(str(ODOO_HOME))]
-    command += ['-e', 'UID={}'.format(os.getuid())]
-    command += ['-e', 'USER={}'.format(E("USER"))]
-    command += ['-e', 'WORKING_DIR={}'.format(E("WORKING_DIR"))]
-    command += ['-e', 'DOCKER_GROUP_ID={}'.format(docker_group_id)]
-    command += ['-e', 'PLATFORM={}'.format(get_platform())]
-    if E("DOCKER_MACHINE") != "1":
-        # on host
-        command += ['-e', 'DOCKER_MACHINE=1']
-        command += ['-e', 'PROJECT_NAME={}'.format(PROJECT_NAME)]
-        command += ['-e', 'NETWORK_NAME={}'.format(NETWORK_NAME)]
-        command += ['-e', 'HOST_HOME={}'.format(os.environ['HOME'])]
-        command += ['-e', 'HOST_ODOO_HOME={}'.format(LOCAL_ODOO_HOME)]
-        if E("DUMPS_PATH") and os.path.isdir(E("DUMPS_PATH")):
-            dumps_path_group_id = os.stat(E("DUMPS_PATH")).st_gid
-            if os.stat(E("DUMPS_PATH")).st_uid == dumps_path_group_id:
-                dumps_path_group_id = 999
-        else:
-            dumps_path_group_id = 999
-        if E("DUMPS_PATH"):
-            command += ['-v', "{}:/host/dumps".format(E("DUMPS_PATH"))]
-            command += ['-e', "DUMPS_PATH_GID={}".format(dumps_path_group_id)]
-        if get_platform() == 'macos':
-            command += ['-v', '/private/etc:/etc_host']
-            command += ['-v', '/private:/private'] # otherwise cd /etc_host/odoo does not work
-        else:
-            command += ['-v', '/etc:/etc_host']
-        command += ['-v', '/sbin:/sbin_host']
-        command += ['-v', '/tmp:/tmp_host']
-        command += ['-v', '{}:/opt/odoo'.format(LOCAL_ODOO_HOME)]
-        if str(LOCAL_ODOO_HOME) != "/opt/odoo":
-            command += ['-v', '{h}:{h}'.format(h=LOCAL_ODOO_HOME)]
-    else:
-        command += ['-v', '{}:/opt/odoo'.format(E("HOST_ODOO_HOME"))]
-    command += ['simplebash']
-    command += ["/opt/odoo/admin/odoo-admin"]
-    if len(sys.argv) > 1:
-        command += sys.argv[1:]
-    myenv = get_env()
-    proc = subprocess.Popen(
-        command,
-        cwd=LOCAL_ODOO_HOME / 'config/simplebash',
-        bufsize=1024,
-        stdin=subprocess.PIPE if input else None,
-        env=myenv,
-    )
-    if input:
-        proc.stdin.write(input)
-        proc.stdin.close()
-    return proc
-
-def start_background_sync_from_host():
-    if E("NO_SYNC") == "1" or E("DOCKER_MACHINE") == "1":
-        return
-    if "Darwin" in subprocess.check_output(["uname"]):
-        if E("RUN_RSYNCED") != "1":
-            print("")
-            print("Warning: on macos you should turn on RUN_RSYNCED in settings.")
-            print("")
-            print("")
-            time.sleep(3)
-
-    if get_platform() == 'macos' or E("RUN_RSYNCED") == "1":
-        if len(sys.argv) > 1 and sys.argv[1] == 'dev':
-            subprocess.Popen([
-                LOCAL_ODOO_HOME / 'admin/sync_source.py',
-                E("CUSTOMS"),
-            ], stdout=None)
-
-
-def check_docker_network():
-    # makes sure, that docker network CUSTOMS_default really exists
-    networks = subprocess.check_output([
-        'docker',
-        'network',
-        'ls'
-    ]).decode('utf-8').split("\n")
-    if not any(NETWORK_NAME in line for line in networks):
-        networks = subprocess.check_call([
-            'docker',
-            'network',
-            'create',
-            NETWORK_NAME,
-        ])
-
+os.environ['RUN_DIR'] = str(HOST_RUN_DIR)
 
 if __name__ == '__main__':
-    update()
-
-    check_docker_network()
-    proc = build_command()
-    proc.wait()
+    if not HOST_RUN_DIR.exists():
+        with cli.make_context('odoo', ['-f']) as ctx:
+            Commands.invoke(ctx, 'reload')
+    cli()

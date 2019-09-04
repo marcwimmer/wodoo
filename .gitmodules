@@ -18,10 +18,6 @@
 [submodule "repos/openupgradelib"]
 	path = repos/openupgradelib
 	url = https://github.com/OCA/openupgradelib.git
-[submodule "repos/odoo.own"]
-	path = repos/odoo.own
-	url = ssh://git@git.clear-consulting.de:50004/odoo/odoo.git
-	branch = 11.0
 [submodule "extra_install/asterisk_customs"]
 	path = extra_install/asterisk_customs
 	url = ssh://git@git.clear-consulting.de:50004/odoo/asterisk_customs.git

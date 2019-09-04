@@ -1,0 +1,20 @@
+#manage-order: 5000
+version: '3.3'
+volumes:
+    ${CUSTOMS}_asterisk_connector_perm:
+
+services:
+  asterisk_connector:
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_asterisk_connector
+    build: $ODOO_HOME/images/asterisk_connector
+    ports:
+      - "8500:80"
+    volumes:
+      - $ODOO_HOME/images/asterisk_connector/app/${ODOO_VERSION}/connector.py:/usr/src/connector.py
+      - ${CUSTOMS}_asterisk_connector_perm:/opt/perm
+    environment:
+        OUTSIDE_PORT: 8500
+        PERM_DIR: /opt/perm
+        REDIS_HOST: redis
+    depends_on: 
+        - redis

@@ -1,0 +1,95 @@
+# manage-order 1000
+version: '3.3'
+volumes:
+  odoo_src:
+      driver: local
+      driver_opts:
+          type: none
+          device: /tmp/src
+          o: bind
+services:
+  odoo_base: &odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_base
+    build:
+        context: $ODOO_HOME/images/odoo
+        dockerfile: $ODOO_HOME/images/odoo/config/${ODOO_VERSION}/Dockerfile
+        args:
+          ODOO_VERSION: ${ODOO_VERSION}
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - DAC_READ_SEARCH
+    volumes:
+      - ${HOST_RUN_DIR}:/opt/run
+      - ${HOST_RUN_DIR}/odoo_outdir:/opt/out_dir
+      - ${DUMPS_PATH}:/opt/dumps
+      - ${ODOO_FILES}/:/opt/files
+      - ${ODOO_HOME}/tools:/opt/odoo/tools
+      - ${ODOO_HOME}:/opt/odoo
+      - ${HOST_RUN_DIR}/debug:/tmp/debug
+      - ${ODOO_HOME}/images/odoo/bin/update_modules.py:/update_modules.py
+      - ${ODOO_HOME}/images/odoo/bin:/odoolib:ro
+      - ${ODOO_HOME}/images/odoo/config/${ODOO_VERSION}/config:${ODOO_CONFIG_DIR}.template:ro
+      - ${HOST_RUN_DIR}/intercom:/intercom
+      - ~/.config/pudb:/home/odoo/.config/pudb
+    env_file:
+      - $HOST_RUN_DIR/settings
+      - $ODOO_HOME/images/odoo/docker-env
+    environment:
+      - RUN_DIR=/opt/run
+      - SERVER_DIR=/opt/odoo/data/src/customs/${CUSTOMS}/odoo
+      - CUSTOMS_DIR=/opt/odoo/data/src/customs/${CUSTOMS}
+      - ODOOLIB=/odoolib
+      - PYTHONPATH=/odoolib:/opt/odoo/tools
+      - PATH=/odoolib:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    command: /usr/bin/python3 /odoolib/run.py
+    entrypoint: ["/odoolib/entrypoint.py"]
+    logging:
+        options:
+            max-size: 1g
+
+  odoo: &odoo
+    <<: *odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo
+    restart: unless-stopped
+    environment:
+      IS_ODOO_WEBSERVER: 1
+    environment:
+      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
+      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
+
+  odoo_debug:
+    <<: *odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_debug
+    environment:
+      ENDLESS_LOOP: 1
+      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
+      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
+      
+  odoo_cronjobs:
+    <<: *odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_cronjobs
+    restart: unless-stopped
+    environment:
+      IS_ODOO_CRONJOB: 1
+    logging:
+        options:
+            max-size: 3g
+
+  odoo_queuejobs:
+    <<: *odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_queuejobs
+    restart: unless-stopped
+    environment:
+      IS_ODOO_QUEUEJOB: 1
+    logging:
+        options:
+            max-size: 3g
+
+  odoo_update:
+    <<: *odoo_base
+    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_updater
+    command: echo 'good bye - it is ok!'
