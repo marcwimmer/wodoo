@@ -1,7 +1,0 @@
-# manage-order: 550
-services:
-  postgres:
-    tmpfs:
-      - /var/lib/postgresql/data
-    environment:
-      INRAM: 1
