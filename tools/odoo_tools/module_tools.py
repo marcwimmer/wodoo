@@ -909,5 +909,4 @@ class Module(object):
             pp.pprint(data)
 
 def write_debug_instruction(instruction):
-    Path("/tmp/vide.used.path").write_text(str(run_dir()))
     (run_dir() / ODOO_DEBUG_FILE).write_text(instruction)
