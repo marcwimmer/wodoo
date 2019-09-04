@@ -75,8 +75,6 @@ def get_odoo_addons_paths(show_conflicts=False):
                 del url
             del module
 
-        _get_modules_in_folder(c)
-
         folders = list(reversed(folders))
         for odoo_folder in filter(lambda x: x.exists(), map(Path, [
             c / 'odoo' / 'openerp' / 'addons',  # backwards compatibility
@@ -88,6 +86,7 @@ def get_odoo_addons_paths(show_conflicts=False):
             _get_modules_in_folder(odoo_folder)
             del odoo_folder
         folders = list(reversed(folders))
+        _get_modules_in_folder(c)
 
         if show_conflicts:
             _detect_duplicate_modules(folders, modules)
