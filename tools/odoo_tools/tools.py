@@ -407,8 +407,6 @@ def _prepare_filesystem():
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
         __makedirs(dirs['run'] / 'subdir')
 
-    __file_default_content(files['odoo_instances'], "default default\n")
-
 def _sanity_check(config):
     from . import files
     if config.run_postgres is None:
