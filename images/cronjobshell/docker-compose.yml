@@ -13,5 +13,5 @@ services:
         - "PROJECT_NAME=${PROJECT_NAME}"
         - DOCKER_MACHINE=1
     volumes:
-        - "$ODOO_HOME/images/cronjobs/bin/:/usr/local/bin/"
+        - "$ODOO_HOME/images/cronjobs/bin/:/usr/local/bin/:ro"
         - "$DUMPS_PATH:/host/dumps"
