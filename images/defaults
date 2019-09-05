@@ -3,6 +3,7 @@
 # external directory where files are stored (when using file storage)
 ODOO_FILES=~/.odoo/files
 
+NO_QWEB_DELETE=0
 VERBOSE=0
 
 FORCE_CONTINUE=0
