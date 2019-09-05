@@ -169,11 +169,13 @@ def pull(oca, depth):
 
     for module in _get_modules(include_oca=oca):
         try:
-            subprocess.check_call([
-                "git",
-                "checkout",
-                str(module['branch']),
-            ], cwd=dir / module['subdir'])
+            module_dir = dir / module['subdir']
+            if module_dir.exists():
+                subprocess.check_call([
+                    "git",
+                    "checkout",
+                    str(module['branch']),
+                ], cwd=module_dir)
         except Exception:
             click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['branch']), bold=True, fg="red"))
             raise
