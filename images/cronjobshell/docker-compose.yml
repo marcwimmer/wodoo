@@ -5,7 +5,7 @@ services:
     build: $ODOO_HOME/images/cronjobs
     privileged: true
     container_name: ${PROJECT_NAME}_${CUSTOMS}_cronjobshell
-    command: ['exit']
+    command: ['echo', 'goodbye']
     restart: 'no'
     env_file:
         - $HOST_RUN_DIR/settings
