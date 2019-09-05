@@ -70,7 +70,7 @@ def endless_loop():
                 kill_odoo()
                 module = action[1]
                 PARAMS_CONST = ""
-                if config['DEVMODE'] == "1":
+                if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
                     PARAMS_CONST = "--delete-qweb"
                 subprocess.call([
                     "update_modules.py",
