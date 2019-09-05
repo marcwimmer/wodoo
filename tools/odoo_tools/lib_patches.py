@@ -1,3 +1,5 @@
+from pathlib import Path
+import sys
 import re
 import subprocess
 import shutil
@@ -15,6 +17,13 @@ from . import odoo_config
 from . import cli, pass_config, dirs, files
 from .lib_clickhelpers import AliasedGroup
 
+
+def _get_odoo_github_disk_path():
+    url = Path(os.environ['GITHUB_ODOO_ON_DISK']).absolute()
+    if not Path(url).exists() and not Path(url).absolute().is_dir():
+        click.echo("Requires odoo on from github cloned to disk.")
+        sys.exit(-1)
+    return url
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -37,7 +46,7 @@ def patch(config):
     config.odoo_local_dir = 'odoo'
     config.odoo_local = dirs['customs'] / config.odoo_local_dir
     config.ignore_file = dirs['customs'] / '.gitignore'
-    config.odoo_git = dirs['odoo_home'] / 'repos' / 'odoo'
+    config.odoo_git = _get_odoo_github_disk_path()
     config.patch_dir = M.patch_dir / __get_odoo_commit()
     config.sub_git = config.odoo_local / '.git'
     odoo_dir = dirs['customs'] / 'odoo'
