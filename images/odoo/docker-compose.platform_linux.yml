@@ -3,4 +3,3 @@ services:
   odoo_base:
       volumes:
           - ${CUSTOMS_DIR}:/opt/odoo/data/src/customs/${CUSTOMS}
-          - ${CUSTOMS_DIR}:/opt/mickeymouse
