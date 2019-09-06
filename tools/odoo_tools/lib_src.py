@@ -65,6 +65,12 @@ def show_addons_paths():
     for path in paths:
         click.echo(path)
 
+def _edit_text(file):
+    editor = Path(os.environ['EDITOR'])
+    proc = subprocess.call([str(editor), file])
+    from pudb import set_trace
+    set_trace()
+
 def _needs_dev_mode(config):
     if not config.devmode:
         click.echo("In devmode - please pull yourself - only for production.")
@@ -92,6 +98,11 @@ class BranchText(object):
     def set_text(self, text):
         self.path.write_text(text)
 
+    def new_text(self):
+        if not self.path.exists():
+            self.path.write("Please describe the ticket task here.\n")
+        _edit_text(self.path)
+
 @src.command(name='new-branch')
 @click.argument("branch", required=True)
 @pass_config
@@ -106,20 +117,9 @@ def new_branch(config, branch):
         click.echo("Dirty directory - please cleanup.")
         sys.exit(-1)
 
-    question = [
-        inquirer.Text('desc', message="Description")
-    ]
-    ans = inquirer.prompt(question)
-
     # temporary store the text to retrieve it later
-    BranchText(branch).set_text(ans['desc'])
+    BranchText(branch).new_text(ans['desc'])
 
-    from pudb import set_trace
-    set_trace()
-    question = [
-        inquirer.Text('desc', message="Description", default=ans['desc'])
-    ]
-    ans = inquirer.prompt(question)
 
 @src.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
 @pass_config
