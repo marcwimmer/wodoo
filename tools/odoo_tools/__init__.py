@@ -30,6 +30,12 @@ def _get_customs_root(p):
 def _get_project_name(p):
     if not p:
         return
+
+    settings = Path(os.environ['HOME']) / '.odoo' / 'settings'
+    if settings.exists():
+        if 'DEVMODE=1' in settings.read_text():
+            return p.name
+
     if (p / '.git').exists():
         branch_name = subprocess.check_output([
             'git',
@@ -41,7 +47,8 @@ def _get_project_name(p):
         branch_name = ""
     if branch_name and branch_name not in [
         'master',
-        'deploy'
+        'deploy',
+        'stage',
     ]:
         branch_name = 'dev'
     return "_".join(x for x in [
