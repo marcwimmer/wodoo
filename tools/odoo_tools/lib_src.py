@@ -100,14 +100,18 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
 class BranchText(object):
     def __init__(self, branch):
         self.path = Path(os.environ['HOME']) / '.odoo/branch_texts' / branch
+        self.branch = branch
         self.path.parent.mkdir(exist_ok=True, parents=True)
 
-    def get_text(self, prefix):
+    def get_text(self):
         _edit_text(self.path)
         text = self.path.read_text()
-        text = "\n".join([prefix, text])
+        text = """Ticket: {}
+
+{}
+""".format(self.branch, text)
         click.echo(text)
-        if not inquirer.prompt([inquirer.Confirm('use', message="Use this text:\n\n\n{}\n\n".format(text))])['use']:
+        if not inquirer.prompt([inquirer.Confirm('use', default=True, message="Use this text:\n\n\n{}\n\n".format(text))])['use']:
             click.echo("Aborted")
             sys.exit(-1)
         return text
@@ -329,10 +333,7 @@ def merge(config, branch):
 
     _is_dirty(repo, True, assert_clean=True)
 
-    prefix = """Ticket: {}
-
-""".format(active_branch)
-    text = BranchText(active_branch).get_text(prefix=prefix)
+    text = BranchText(active_branch).get_text()
     repo.git.checkout(branch)
     repo.git.merge(active_branch, '--squash', '--no-commit')
     repo.git.commit('-m', text)
@@ -350,16 +351,7 @@ def commit():
     if branch in m['not_allowed_commit_branches']:
         click.echo("Not allowed to commit on {}".format(branch))
 
-    BranchText(branch).get_text()
-    question = [
-        inquirer.Text('desc', message="Description")
-    ]
-    ans = inquirer.prompt(question)
-
-    text = """Ticket: {}
-
-{}
-""".format(ans['ticketnr'], ans['desc']).strip()
+    text = BranchText(branch).get_text()
     for module in _get_modules(include_oca=False):
         subdir = dir / module['subdir']
         subprocess.call([
@@ -388,7 +380,7 @@ def commit():
         "git",
         "commit",
         '-am',
-        "msg",
+        text,
     ], cwd=dir)
     subprocess.call([
         "git",
