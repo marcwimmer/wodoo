@@ -107,7 +107,7 @@ def new_branch(config, branch):
         sys.exit(-1)
 
     question = [
-        inquirer.Text('desc', message="Description", required=True)
+        inquirer.Text('desc', message="Description")
     ]
     ans = inquirer.prompt(question)
 
