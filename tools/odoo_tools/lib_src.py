@@ -1,5 +1,4 @@
 from pathlib import Path
-from git import Repo
 import subprocess
 import inquirer
 import sys
@@ -73,6 +72,7 @@ def _needs_dev_mode(config):
 
 
 def _is_dirty(repo, check_submodule):
+    from git import Repo
     if repo.is_dirty() or repo.untracked_files:
         return True
     if check_submodule:
@@ -81,7 +81,16 @@ def _is_dirty(repo, check_submodule):
                 return True
     return False
 
-_get_branch
+class BranchText(object):
+    def __init__(self, branch):
+        self.path = Path(os.environ['HOME']) / '/.odoo/branch_texts' / branch
+        self.path.parent.mkdir(exist_ok=True, parents=True)
+
+    def get_text(self):
+        return self.path.read_text()
+
+    def set_text(self, text):
+        self.path.write_text(text)
 
 @src.command(name='new-branch')
 @click.argument("branch", required=True)
@@ -89,6 +98,7 @@ _get_branch
 def new_branch(config, branch):
     from .odoo_config import customs_dir
     _needs_dev_mode(config)
+    from git import Repo
 
     dir = customs_dir()
     repo = Repo(dir)
@@ -102,10 +112,14 @@ def new_branch(config, branch):
     ans = inquirer.prompt(question)
 
     # temporary store the text to retrieve it later
-
+    BranchText(branch).set_text(ans['desc'])
 
     from pudb import set_trace
     set_trace()
+    question = [
+        inquirer.Text('desc', message="Description", default=ans['desc'])
+    ]
+    ans = inquirer.prompt(question)
 
 @src.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
 @pass_config
@@ -299,18 +313,19 @@ def push(ctx, config):
 
 @src.command(help="Commits changes in submodules")
 def commit():
+    from git import Repo
     dir = customs_dir()
     m = MANIFEST()
 
-    question = [
-        inquirer.Text('desc', message="Description")
-    ]
     repo = Repo(dir)
     branch = repo.active_branch.name
     if branch in m['not_allowed_commit_branches']:
         click.echo("Not allowed to commit on {}".format(branch))
     from pudb import set_trace
     set_trace()
+    question = [
+        inquirer.Text('desc', message="Description")
+    ]
     ans = inquirer.prompt(question)
 
     text = """Ticket: {}
