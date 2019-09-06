@@ -151,6 +151,7 @@ def _execute_after_settings():
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         module.after_settings(config)
+        config.write()
 
 def _prepare_yml_files_from_template_files(config):
     # replace params in configuration file

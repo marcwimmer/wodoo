@@ -1,9 +1,10 @@
 # manage-order: 550
 volumes:
-    ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:
+    ODOO_POSTGRES_VOLUME:
+        name: ${POSTGRES_VOLUME_NAME}
 services:
   postgres:
     environment:
       INRAM: 0
     volumes:
-      - ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:/var/lib/postgresql/data
+      - ODOO_POSTGRES_VOLUME:/var/lib/postgresql/data
