@@ -20,6 +20,7 @@ from .tools import __write_file
 from .tools import _askcontinue
 from .tools import __append_line
 from .tools import __get_odoo_commit
+from .odoo_config import current_customs
 from .odoo_config import customs_dir
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
@@ -67,9 +68,10 @@ def show_addons_paths():
 
 def _edit_text(file):
     editor = Path(os.environ['EDITOR'])
-    proc = subprocess.call([str(editor), file])
-    from pudb import set_trace
-    set_trace()
+    subprocess.call("'{}' '{}'".format(
+        editor,
+        file
+    ), shell=True)
 
 def _needs_dev_mode(config):
     if not config.devmode:
@@ -77,13 +79,21 @@ def _needs_dev_mode(config):
         sys.exit(-1)
 
 
-def _is_dirty(repo, check_submodule):
+def _is_dirty(repo, check_submodule, assert_clean=False):
     from git import Repo
+
+    def raise_error():
+        if assert_clean:
+            click.echo("Dirty directory - please cleanup: {}".format(repo.working_dir))
+            sys.exit(42)
+
     if repo.is_dirty() or repo.untracked_files:
+        raise_error()
         return True
     if check_submodule:
         for submodule in repo.submodules:
-            if _is_dirty(Repo(submodule.path), True):
+            if _is_dirty(Repo(submodule.path), True, assert_clean=assert_clean):
+                raise_error()
                 return True
     return False
 
@@ -92,15 +102,23 @@ class BranchText(object):
         self.path = Path(os.environ['HOME']) / '.odoo/branch_texts' / branch
         self.path.parent.mkdir(exist_ok=True, parents=True)
 
-    def get_text(self):
-        return self.path.read_text()
+    def get_text(self, prefix):
+        _edit_text(self.path)
+        text = self.path.read_text()
+        text = "\n".join([prefix, text])
+        click.echo(text)
+        if not inquirer.prompt([inquirer.Confirm('use', message="Use this text:\n\n\n{}\n\n".format(text))])['use']:
+            click.echo("Aborted")
+            sys.exit(-1)
+        return text
 
     def set_text(self, text):
         self.path.write_text(text)
 
     def new_text(self):
         if not self.path.exists():
-            self.path.write("Please describe the ticket task here.\n")
+            pass
+        self.path.write_text("Please describe the ticket task here.\n")
         _edit_text(self.path)
 
 @src.command(name='new-branch')
@@ -113,35 +131,19 @@ def new_branch(config, branch):
 
     dir = customs_dir()
     repo = Repo(dir)
-    if _is_dirty(repo, True):
-        click.echo("Dirty directory - please cleanup.")
-        sys.exit(-1)
+    _is_dirty(repo, True, assert_clean=True)
 
     # temporary store the text to retrieve it later
-    BranchText(branch).new_text(ans['desc'])
+    active_branch = repo.active_branch.name
+    if active_branch != 'master':
+        if not _is_dirty(repo, True):
+            repo.git.checkout('master')
+        else:
+            click.echo("Diverge from master required. You are on {}".format(active_branch))
+            sys.exit(-1)
+    repo.git.checkout('-b', branch)
+    BranchText(branch).new_text()
 
-
-@src.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
-@pass_config
-def fetch_latest_revision(config):
-    from .odoo_config import customs_dir
-    _needs_dev_mode(config)
-
-    subprocess.call([
-        "git",
-        "pull",
-    ], cwd=customs_dir())
-
-    subprocess.check_call([
-        "git",
-        "checkout",
-        "-f",
-    ], cwd=customs_dir())
-
-    subprocess.call([
-        "git",
-        "status",
-    ], cwd=customs_dir())
 
 def _get_modules(include_oca=True):
     modules = []
@@ -311,6 +313,32 @@ def push(ctx, config):
         "push",
     ], cwd=dir)
 
+@src.command()
+@click.argument('branch')
+@pass_config
+def merge(config, branch):
+    from git import Repo
+    branch = _ask_deploy(config, branch)
+    m = MANIFEST()
+
+    repo = Repo(customs_dir())
+    active_branch = repo.active_branch.name
+    if active_branch in m['deploy'].keys():
+        click.echo("Please go to feature branch.")
+        sys.exit(-1)
+
+    _is_dirty(repo, True, assert_clean=True)
+
+    prefix = """Ticket: {}
+
+""".format(active_branch)
+    text = BranchText(active_branch).get_text(prefix=prefix)
+    repo.git.checkout(branch)
+    repo.git.merge(active_branch, '--squash', '--no-commit')
+    repo.git.commit('-m', text)
+    click.echo("On branch {} now.".format(branch))
+
+
 @src.command(help="Commits changes in submodules")
 def commit():
     from git import Repo
@@ -321,8 +349,8 @@ def commit():
     branch = repo.active_branch.name
     if branch in m['not_allowed_commit_branches']:
         click.echo("Not allowed to commit on {}".format(branch))
-    from pudb import set_trace
-    set_trace()
+
+    BranchText(branch).get_text()
     question = [
         inquirer.Text('desc', message="Description")
     ]
@@ -367,14 +395,7 @@ def commit():
         "status",
     ], cwd=dir)
 
-
-@src.command()
-@click.argument("branch", required=False)
-@click.option("--refetch", is_flag=True)
-@pass_config
-def pack(config, branch, refetch):
-    from . import odoo_config
-
+def _ask_deploy(config, branch):
     m = MANIFEST()
     try:
         m['deploy']
@@ -382,12 +403,25 @@ def pack(config, branch, refetch):
         click.echo("Missing key 'deploy' in Manifest.")
         click.echo("Example:")
         click.echo('"deploy": {')
-        click.echo('"master": "ssh://git@git.clear-consulting.de:50004/odoo-deployments/sunday.git",',)
+        click.echo('"master": "ssh://git@git.clear-consulting.de:50004/odoo-deployments/{}.git",'.format(
+            current_customs()
+        ),)
         click.echo('}')
         sys.exit(-1)
     question = inquirer.List('branch', "", choices=m['deploy'].keys())
     if not branch:
         branch = inquirer.prompt([question])['branch']
+    return branch
+
+@src.command()
+@click.argument("branch", required=False)
+@click.option("--refetch", is_flag=True)
+@pass_config
+def pack(config, branch, refetch):
+    from . import odoo_config
+    m = MANIFEST()
+
+    branch = _ask_deploy(config, branch)
     deploy_url = m['deploy'][branch]
     folder = Path(os.environ['HOME']) / '.odoo' / 'pack_for_deploy' / 'odoo-deployments' / config.customs
     folder = folder.absolute()

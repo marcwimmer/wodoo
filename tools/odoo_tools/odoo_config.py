@@ -196,23 +196,27 @@ class MANIFEST_CLASS(object):
 
         mods = list(filter(lambda x: any(has_url('/patches', y) for y in x['urls']), d['modules']))
         if not mods:
-            d['modules'].append({
+            mods = self['modules']
+            mods.append({
                 'path': 'common',
                 'branch': d['version'],
                 'urls': [
                     "ssh://git@git.clear-consulting.de:50004/odoo/modules/patches",
                 ],
             })
+            self['modules'] = mods
         else:
             self.patch_dir = customs_dir() / mods[0]['path'] / 'patches'
 
-        d.setdefault('not_allowed_commit_branches', [
-            'master',
-            'stage',
-            'deploy',
-        ])
+        if 'not_allowed_commit_branches' not in d:
+            self['not_allowed_commit_branches'] = [
+                'master',
+                'stage',
+                'deploy',
+            ]
 
-        d['version'] = float(d['version'])
+        if 'version' not in d:
+            self['version'] = float(d['version'])
 
     def _get_data(self):
         return OrderedDict(eval(self.path.read_text() or "{}"))
