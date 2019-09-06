@@ -1,4 +1,5 @@
 from pathlib import Path
+from git import Repo
 import subprocess
 import inquirer
 import sys
@@ -65,14 +66,52 @@ def show_addons_paths():
     for path in paths:
         click.echo(path)
 
+def _needs_dev_mode(config):
+    if not config.devmode:
+        click.echo("In devmode - please pull yourself - only for production.")
+        sys.exit(-1)
+
+
+def _is_dirty(repo, check_submodule):
+    if repo.is_dirty() or repo.untracked_files:
+        return True
+    if check_submodule:
+        for submodule in repo.submodules:
+            if _is_dirty(Repo(submodule.path), True):
+                return True
+    return False
+
+_get_branch
+
+@src.command(name='new-branch')
+@click.argument("branch", required=True)
+@pass_config
+def new_branch(config, branch):
+    from .odoo_config import customs_dir
+    _needs_dev_mode(config)
+
+    dir = customs_dir()
+    repo = Repo(dir)
+    if _is_dirty(repo, True):
+        click.echo("Dirty directory - please cleanup.")
+        sys.exit(-1)
+
+    question = [
+        inquirer.Text('desc', message="Description", required=True)
+    ]
+    ans = inquirer.prompt(question)
+
+    # temporary store the text to retrieve it later
+
+
+    from pudb import set_trace
+    set_trace()
+
 @src.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
 @pass_config
 def fetch_latest_revision(config):
     from .odoo_config import customs_dir
-
-    if not config.devmode:
-        click.echo("In devmode - please pull yourself - only for production.")
-        sys.exit(-1)
+    _needs_dev_mode(config)
 
     subprocess.call([
         "git",
@@ -259,26 +298,44 @@ def push(ctx, config):
     ], cwd=dir)
 
 @src.command(help="Commits changes in submodules")
-@click.argument("msg", required=True)
-def commit(msg):
+def commit():
     dir = customs_dir()
+    m = MANIFEST()
+
+    question = [
+        inquirer.Text('desc', message="Description")
+    ]
+    repo = Repo(dir)
+    branch = repo.active_branch.name
+    if branch in m['not_allowed_commit_branches']:
+        click.echo("Not allowed to commit on {}".format(branch))
+    from pudb import set_trace
+    set_trace()
+    ans = inquirer.prompt(question)
+
+    text = """Ticket: {}
+
+{}
+""".format(ans['ticketnr'], ans['desc']).strip()
     for module in _get_modules(include_oca=False):
+        subdir = dir / module['subdir']
         subprocess.call([
             "git",
             "checkout",
             str(module['branch']),
-        ], cwd=dir / module['subdir'])
+        ], cwd=subdir)
         subprocess.call([
             "git",
             "add",
             ".",
-        ], cwd=dir / module['subdir'])
+        ], cwd=subdir)
         subprocess.call([
             "git",
             "commit",
             "-am",
-            msg,
-        ], cwd=dir / module['subdir'])
+            text,
+        ], cwd=subdir)
+        del subdir
     subprocess.call([
         "git",
         "add",
@@ -290,19 +347,10 @@ def commit(msg):
         '-am',
         "msg",
     ], cwd=dir)
-    print("--------------------")
     subprocess.call([
         "git",
         "status",
     ], cwd=dir)
-
-@src.command(name='publish-all')
-@pass_config
-@click.pass_context
-def publish_all(ctx, config):
-    ctx.invoke(commit, msg="Publish current version")
-    ctx.invoke(push)
-    ctx.invoke(pack)
 
 
 @src.command()
@@ -372,76 +420,84 @@ def pack(config, branch, refetch):
         ], cwd=folder)
 
     # clone to tmp directory and cleanup - remove unstaged and so on
-    tmp_folder = Path('/tmp/pack')
-    subprocess.check_call([
-        "rsync",
-        str(odoo_config.customs_dir()) + "/",
-        str(tmp_folder) + "/",
-        '-ar',
-        '--exclude=.pyc',
-        '--exclude=.git',
-        '--delete-after',
-    ], cwd=odoo_config.customs_dir())
-    subprocess.check_call([
-        "git",
-        "clean",
-        "-xdff",
-    ], cwd=tmp_folder)
+    tmp_folder = Path(tempfile.mktemp(suffix='.'))
+    try:
+        subprocess.check_call([
+            "rsync",
+            str(odoo_config.customs_dir()) + "/",
+            str(tmp_folder) + "/",
+            '-ar',
+            '--exclude=.pyc',
+            '--exclude=.git',
+            '--delete-after',
+        ], cwd=odoo_config.customs_dir())
 
-    # remove set_traces and other
-    # remove ignore file to make ag find everything
-    for f in [
-        '.ignore',
-        '.gitmodules',
-        '.odoo.ast',
-    ]:
-        f = tmp_folder / f
-        if f.exists():
-            f.unlink()
-    output = subprocess.check_output(["ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
-    for file in output.split("\n"):
-        file = tmp_folder / file
-        if file.is_dir():
-            continue
-        if file.name.startswith("."):
-            continue
-        print(file)
-        content = file.read_text()
-        if 'set_trace' in content:
-            content = content.replace("import pudb; set_trace()", "pass")
-            content = content.replace("import pudb;set_trace()", "pass")
-            content = content.replace("set_trace()", "pass")
-            file.write_text(content)
+        # remove set_traces and other
+        # remove ignore file to make ag find everything
+        for f in [
+            '.ignore',
+            '.agignore',
+            '.customsroot',
+            '.module_paths',
+            '.version',
+            '.watchman_config',
+            'submodules',
+            'install',
+            '.gitmodules',
+            '.odoo.ast',
+            '.idea',
+        ]:
+            f = tmp_folder / f
+            if f.is_dir():
+                shutil.rmtree(f)
+            elif f.exists():
+                f.unlink()
+        output = subprocess.check_output(["ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
+        for file in output.split("\n"):
+            file = tmp_folder / file
+            if file.is_dir():
+                continue
+            if file.name.startswith("."):
+                continue
+            print(file)
+            content = file.read_text()
+            if 'set_trace' in content:
+                content = content.replace("import pudb; set_trace()", "pass")
+                content = content.replace("import pudb;set_trace()", "pass")
+                content = content.replace("set_trace()", "pass")
+                file.write_text(content)
 
-    subprocess.check_call([
-        "rsync",
-        str(tmp_folder) + "/",
-        str(folder) + "/",
-        '-ar',
-        '--exclude=.git',
-        '--exclude=.pyc',
-        '--delete-after',
-    ], cwd=odoo_config.customs_dir())
+        subprocess.check_call([
+            "rsync",
+            str(tmp_folder) + "/",
+            str(folder) + "/",
+            '-ar',
+            '--exclude=.git',
+            '--exclude=.pyc',
+            '--delete-after',
+        ], cwd=odoo_config.customs_dir())
 
-    # remove .gitignore - could contain odoo for example
-    gitignore = folder / '.gitignore'
-    with gitignore.open('w') as f:
-        f.write("""
-*.pyc
-""")
+        # remove .gitignore - could contain odoo for example
+        gitignore = folder / '.gitignore'
+        with gitignore.open('w') as f:
+            f.write("""
+    *.pyc
+    """)
 
-    subprocess.call(["find", '.', "-name", "*.pyc", "-delete"], cwd=folder)
+        subprocess.call(["find", '.', "-name", "*.pyc", "-delete"], cwd=folder)
 
-    subprocess.call(["git", "add", "."], cwd=folder)
-    subprocess.call(["git", "commit", "-am 'new deployment - details found in development branch'"], cwd=folder)
-    subprocess.call([
-        "git",
-        "push",
-        "--set-upstream",
-        "origin",
-        branch,
-    ], cwd=folder)
-    subprocess.call(["git", "push"], cwd=folder)
+        subprocess.call(["git", "add", "."], cwd=folder)
+        subprocess.call(["git", "commit", "-am 'new deployment - details found in development branch'"], cwd=folder)
+        subprocess.call([
+            "git",
+            "push",
+            "--set-upstream",
+            "origin",
+            branch,
+        ], cwd=folder)
+        subprocess.call(["git", "push"], cwd=folder)
+    except Exception:
+        shutil.rmtree(str(tmp_folder))
 
 
 Commands.register(pack)

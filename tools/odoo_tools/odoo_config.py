@@ -1,4 +1,6 @@
 from contextlib import contextmanager
+from datetime import datetime
+import arrow
 from collections import OrderedDict
 import threading
 import click
@@ -29,7 +31,8 @@ def get_odoo_addons_paths(show_conflicts=True):
             cache_file.unlink()
             cache_content = {}
 
-    #cache_file.unlink()
+    if (datetime.now() - arrow.get(cache_file.stat().st_mtime).datetime).total_seconds() > 3600:
+        cache_file.unlink()
 
     if not cache_file.exists():
 
@@ -202,6 +205,12 @@ class MANIFEST_CLASS(object):
             })
         else:
             self.patch_dir = customs_dir() / mods[0]['path'] / 'patches'
+
+        d.setdefault('not_allowed_commit_branches', [
+            'master',
+            'stage',
+            'deploy',
+        ])
 
         d['version'] = float(d['version'])
 
