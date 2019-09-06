@@ -32,7 +32,7 @@ def get_odoo_addons_paths(show_conflicts=True):
             cache_content = {}
 
     if cache_file.exists():
-        if (datetime.now() - arrow.get(cache_file.stat().st_mtime).datetime).total_seconds() > 3600:
+        if (arrow.get(datetime.now()) - arrow.get(cache_file.stat().st_mtime)).total_seconds() > 3600:
             cache_file.unlink()
 
     if not cache_file.exists():

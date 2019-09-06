@@ -103,17 +103,19 @@ class BranchText(object):
         self.branch = branch
         self.path.parent.mkdir(exist_ok=True, parents=True)
 
-    def get_text(self):
-        _edit_text(self.path)
+    def get_text(self, interactive=True):
+        if interactive:
+            _edit_text(self.path)
         text = self.path.read_text()
         text = """Ticket: {}
 
 {}
 """.format(self.branch, text)
-        click.echo(text)
-        if not inquirer.prompt([inquirer.Confirm('use', default=True, message="Use this text:\n\n\n{}\n\n".format(text))])['use']:
-            click.echo("Aborted")
-            sys.exit(-1)
+        if interactive:
+            click.echo(text)
+            if not inquirer.prompt([inquirer.Confirm('use', default=True, message="Use this text:\n\n\n{}\n\n".format(text))])['use']:
+                click.echo("Aborted")
+                sys.exit(-1)
         return text
 
     def set_text(self, text):
@@ -539,6 +541,15 @@ def pack(config, branch, refetch):
         subprocess.call(["git", "push"], cwd=folder)
     except Exception:
         shutil.rmtree(str(tmp_folder))
+
+
+@src.command()
+def show_current_ticket():
+    from git import Repo
+    repo = Repo(customs_dir())
+    branch = repo.active_branch.name
+    text = BranchText(branch).get_text(interactive=False)
+    click.echo(text)
 
 
 Commands.register(pack)

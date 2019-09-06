@@ -39,6 +39,11 @@ def _get_project_name(p):
         ], cwd=str(p)).decode('utf-8').strip()
     else:
         branch_name = ""
+    if branch_name and branch_name not in [
+        'master',
+        'deploy'
+    ]:
+        branch_name = 'dev'
     return "_".join(x for x in [
         p.name,
         branch_name
