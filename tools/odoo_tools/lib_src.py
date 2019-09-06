@@ -83,7 +83,7 @@ def _is_dirty(repo, check_submodule):
 
 class BranchText(object):
     def __init__(self, branch):
-        self.path = Path(os.environ['HOME']) / '/.odoo/branch_texts' / branch
+        self.path = Path(os.environ['HOME']) / '.odoo/branch_texts' / branch
         self.path.parent.mkdir(exist_ok=True, parents=True)
 
     def get_text(self):
