@@ -1,4 +1,4 @@
 # manage-order: 551
 volumes:
-    ${CUSTOMS}_POSTGRES_VOLUME_${DBNAME}:
+    ODOO_POSTGRES_VOLUME:
         driver: anybox/buttervolume:latest

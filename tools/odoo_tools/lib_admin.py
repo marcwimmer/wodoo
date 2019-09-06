@@ -71,98 +71,6 @@ def springclean():
     click.echo("delete unwanted volumes (can pass -dry-run)")
     os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
 
-@admin.command()
-@pass_config
-def pack(config):
-    from . import odoo_config
-    from .odoo_config import MANIFEST
-    manifest = MANIFEST()
-    url = manifest.get("deploy-url", "ssh://git@git.clear-consulting.de:50004/odoo-deployments/{}".format(config.customs))
-    folder = Path(os.path.expanduser("~/.odoo/pack_for_deploy")) / 'odoo-deployments' / config.customs
-    folder.parent.mkdir(parents=True, exist_ok=True)
-
-    if not folder.exists():
-        subprocess.check_call([
-            "git",
-            "clone",
-            url,
-            folder.name,
-        ], cwd=folder.parent)
-
-    subprocess.check_call([
-        "git",
-        "pull",
-    ], cwd=folder)
-
-    # clone to tmp directory and cleanup - remove unstaged and so on
-    tmp_folder = Path('/tmp/pack')
-    subprocess.check_call([
-        "rsync",
-        str(odoo_config.customs_dir()) + "/",
-        str(tmp_folder) + "/",
-        '-ar',
-        '--exclude=.pyc',
-        '--delete-after',
-    ], cwd=odoo_config.customs_dir())
-    subprocess.check_call([
-        "git",
-        "clean",
-        "-xdff",
-    ], cwd=tmp_folder)
-    subprocess.check_call([
-        "git",
-        "submodule",
-        "foreach",
-        "git",
-        "clean",
-        "-xdff",
-    ], cwd=tmp_folder)
-
-    # remove set_traces and other
-    # remove ignore file to make ag find everything
-    ignore_file = tmp_folder / '.ignore'
-    if ignore_file.exists():
-        ignore_file.unlink()
-    output = subprocess.check_output(["ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
-    for file in output.split("\n"):
-        file = tmp_folder / file
-        if file.is_dir():
-            continue
-        if file.name.startswith("."):
-            continue
-        print(file)
-        content = file.read_text()
-        if 'set_trace' in content:
-            content = content.replace("import pudb; set_trace()", "pass")
-            content = content.replace("import pudb;set_trace()", "pass")
-            content = content.replace("set_trace()", "pass")
-            file.write_text(content)
-    ast_file = tmp_folder / '.odoo.ast'
-    if ast_file.exists():
-        ast_file.unlink()
-
-    subprocess.check_call([
-        "rsync",
-        str(tmp_folder) + "/",
-        str(folder) + "/",
-        '-ar',
-        '--exclude=.git',
-        '--exclude=.pyc',
-        '--delete-after',
-    ], cwd=odoo_config.customs_dir())
-
-    # remove .gitignore - could contain odoo for example
-    gitignore = folder / '.gitignore'
-    with gitignore.open('w') as f:
-        f.write("""
-*.pyc
-""")
-
-    subprocess.call(["find", '.', "-name", "*.pyc", "-delete"], cwd=folder)
-
-    subprocess.call(["git", "add", "."], cwd=folder)
-    subprocess.call(["git", "commit", "-am 'new deployment'"], cwd=folder)
-    subprocess.call(["git", "push"], cwd=folder)
 
 @admin.command(name='set-setting')
 @click.argument('key', required=True)
@@ -216,4 +124,3 @@ def fullsync(ctx, config):
 Commands.register(status)
 Commands.register(fix_permissions)
 Commands.register(set_setting)
-Commands.register(pack)

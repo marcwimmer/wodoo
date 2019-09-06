@@ -306,12 +306,16 @@ def publish_all(ctx, config):
 
 
 @src.command()
+@click.argument("branch", required=False)
+@click.option("--refetch", is_flag=True)
 @pass_config
-def pack(config):
+def pack(config, branch, refetch):
     from . import odoo_config
 
     m = MANIFEST()
-    if 'deploy' not in m:
+    try:
+        m['deploy']
+    except KeyError:
         click.echo("Missing key 'deploy' in Manifest.")
         click.echo("Example:")
         click.echo('"deploy": {')
@@ -319,11 +323,15 @@ def pack(config):
         click.echo('}')
         sys.exit(-1)
     question = inquirer.List('branch', "", choices=m['deploy'].keys())
-    branch = inquirer.prompt([question])['branch']
-    deploy_url = m[branch]
-    folder = Path("~/.odoo/pack_for_deploy") / 'odoo-deployments' / config.customs
+    if not branch:
+        branch = inquirer.prompt([question])['branch']
+    deploy_url = m['deploy'][branch]
+    folder = Path(os.environ['HOME']) / '.odoo' / 'pack_for_deploy' / 'odoo-deployments' / config.customs
     folder = folder.absolute()
     folder.parent.mkdir(parents=True, exist_ok=True)
+
+    if refetch:
+        shutil.rmtree(str(folder))
 
     if not folder.exists():
         subprocess.check_call([
@@ -349,6 +357,19 @@ def pack(config):
         checkout('-f')
     except Exception:
         checkout('-b')
+        subprocess.call([
+            "git",
+            "push",
+            "--set-upstream",
+            "origin",
+            branch,
+        ], cwd=folder)
+        subprocess.call([
+            "git",
+            "push",
+            "--set-upstream-to=origin/{}".format(branch),
+            branch,
+        ], cwd=folder)
 
     # clone to tmp directory and cleanup - remove unstaged and so on
     tmp_folder = Path('/tmp/pack')
@@ -366,20 +387,17 @@ def pack(config):
         "clean",
         "-xdff",
     ], cwd=tmp_folder)
-    subprocess.check_call([
-        "git",
-        "submodule",
-        "foreach",
-        "git",
-        "clean",
-        "-xdff",
-    ], cwd=tmp_folder)
 
     # remove set_traces and other
     # remove ignore file to make ag find everything
-    ignore_file = tmp_folder / '.ignore'
-    if ignore_file.exists():
-        ignore_file.unlink()
+    for f in [
+        '.ignore',
+        '.gitmodules',
+        '.odoo.ast',
+    ]:
+        f = tmp_folder / f
+        if f.exists():
+            f.unlink()
     output = subprocess.check_output(["ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
     for file in output.split("\n"):
         file = tmp_folder / file
@@ -394,9 +412,6 @@ def pack(config):
             content = content.replace("import pudb;set_trace()", "pass")
             content = content.replace("set_trace()", "pass")
             file.write_text(content)
-    ast_file = tmp_folder / '.odoo.ast'
-    if ast_file.exists():
-        ast_file.unlink()
 
     subprocess.check_call([
         "rsync",
@@ -419,4 +434,14 @@ def pack(config):
 
     subprocess.call(["git", "add", "."], cwd=folder)
     subprocess.call(["git", "commit", "-am 'new deployment - details found in development branch'"], cwd=folder)
+    subprocess.call([
+        "git",
+        "push",
+        "--set-upstream",
+        "origin",
+        branch,
+    ], cwd=folder)
     subprocess.call(["git", "push"], cwd=folder)
+
+
+Commands.register(pack)
