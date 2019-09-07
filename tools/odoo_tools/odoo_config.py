@@ -17,93 +17,80 @@ try:
 except Exception:
     pass
 
-def get_odoo_addons_paths(show_conflicts=True):
+def get_odoo_addons_paths():
+    m = MANIFEST()
+    c = customs_dir()
+    res = []
+    for x in m['addons_paths']:
+        res.append(c / x)
+    return res
+
+
+def _identify_odoo_addons_paths(show_conflicts=True):
     from .module_tools import Module
     folders = []
     c = customs_dir()
-    mtime = str(CUSTOMS_MANIFEST_FILE().stat().st_mtime)
 
-    cache_file = Path("/tmp/addons_paths.{}".format(c.name))
-    cache_content = {}
-    if cache_file.exists():
-        cache_content = json.loads(cache_file.read_text())
-        if cache_content['MANIFEST_mtime'] != mtime:
-            cache_file.unlink()
-            cache_content = {}
+    modules = []
 
-    if cache_file.exists():
-        if (arrow.get(datetime.now()) - arrow.get(cache_file.stat().st_mtime)).total_seconds() > 3600:
-            cache_file.unlink()
-
-    if not cache_file.exists():
-
-        modules = []
-
-        def _get_modules_in_folder(folder):
-            # find extra modules without repo
-            for file in folder.glob("**/__manifest__.py"):
-                file = file.resolve().absolute()
-                if file.parent.parent in folders:
-                    continue
-                if any(x in file.relative_to(c).parts for x in {'test', 'tests', '.git'}):
-                    continue
-                try:
-                    module = Module(file)
-                except Module.IsNot:
-                    continue
-                if module.in_version:
-                    if module.path.parent not in folders:
-                        folders.append(module.path.parent)
-                        modules.append(module)
-                del file
-
-        manifest = MANIFEST()
-
-        oca_addons = [
-            "addons_oca",
-            "OCA",
-            "addons_OCA",
-            "*OCA",
-        ]
-        for oca in oca_addons:
-            for oca_folder in list(c.glob(oca)):
-                _get_modules_in_folder(oca_folder)
-                del oca_folder
-            del oca
-
-        for module in manifest['modules']:
-            for url in module['urls']:
-                repo_name = url.split("/")[-1].replace(".git", "")
-                path = c / Path(module['path']) / repo_name
-                _get_modules_in_folder(path)
-                del url
-            del module
-
-        folders = list(reversed(folders))
-        for odoo_folder in filter(lambda x: x.exists(), map(Path, [
-            c / 'odoo' / 'openerp' / 'addons',  # backwards compatibility
-            c / 'odoo' / 'addons',
-            c / 'odoo' / 'odoo' / 'addons',
-        ])):
-            if not odoo_folder.exists():
+    def _get_modules_in_folder(folder):
+        # find extra modules without repo
+        for file in folder.glob("**/__manifest__.py"):
+            file = file.resolve().absolute()
+            if file.parent.parent in folders:
                 continue
-            _get_modules_in_folder(odoo_folder)
-            del odoo_folder
-        folders = list(reversed(folders))
-        _get_modules_in_folder(c)
+            if any(x in file.relative_to(c).parts for x in {'test', 'tests', '.git'}):
+                continue
+            try:
+                module = Module(file)
+            except Module.IsNot:
+                continue
+            if module.in_version:
+                if module.path.parent not in folders:
+                    folders.append(module.path.parent)
+                    modules.append(module)
+            del file
 
-        if show_conflicts:
-            _detect_duplicate_modules(folders, modules)
+    manifest = MANIFEST()
 
-        cache_file.write_text(json.dumps({
-            "folders": list(map(str, folders)),
-            "MANIFEST_mtime": mtime,
-        }))
+    oca_addons = [
+        "addons_oca",
+        "OCA",
+        "addons_OCA",
+        "*OCA",
+    ]
+    for oca in oca_addons:
+        for oca_folder in list(c.glob(oca)):
+            _get_modules_in_folder(oca_folder)
+            del oca_folder
+        del oca
 
-    cache_content = cache_content or json.loads(cache_file.read_text())
-    folders = cache_content['folders']
-    folders = [Path(x) for x in folders]
+    for module in manifest['modules']:
+        for url in module['urls']:
+            repo_name = url.split("/")[-1].replace(".git", "")
+            path = c / Path(module['path']) / repo_name
+            _get_modules_in_folder(path)
+            del url
+        del module
+
+    folders = list(reversed(folders))
+    for odoo_folder in filter(lambda x: x.exists(), map(Path, [
+        c / 'odoo' / 'openerp' / 'addons',  # backwards compatibility
+        c / 'odoo' / 'addons',
+        c / 'odoo' / 'odoo' / 'addons',
+    ])):
+        if not odoo_folder.exists():
+            continue
+        _get_modules_in_folder(odoo_folder)
+        del odoo_folder
+    folders = list(reversed(folders))
+    _get_modules_in_folder(c)
+
+    if show_conflicts:
+        _detect_duplicate_modules(folders, modules)
+
     return folders
+
 
 def _detect_duplicate_modules(folders, modules):
     from .module_tools import Module

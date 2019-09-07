@@ -551,5 +551,26 @@ def show_current_ticket():
     text = BranchText(branch).get_text(interactive=False)
     click.echo(text)
 
+@src.command(name="update-addons-path", help="Sets addons paths in manifest file. Can be edited there (order)")
+def update_addons_path():
+    from .odoo_config import _identify_odoo_addons_paths
+    paths = _identify_odoo_addons_paths(show_conflicts=True)
+    root = customs_dir()
+    paths = [str(x.relative_to(root)) for x in paths]
+
+    m = MANIFEST()
+    try:
+        m['addons_paths']
+    except KeyError:
+        m['addons_paths'] = []
+    current_paths = m['addons_paths']
+    for p in paths:
+        if p not in current_paths:
+            current_paths.append(str(p))
+
+    current_paths = [x for x in current_paths if x in paths]
+    m['addons_paths'] = current_paths
+    m.rewrite()
+
 
 Commands.register(pack)
