@@ -1,5 +1,6 @@
 import subprocess
 import yaml
+import arrow
 import json
 import pipes
 import re
@@ -30,13 +31,17 @@ from .tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
+from . import PROJECT_NAME
+
+
+def _get_cmd_butter_volume():
+    drunc = ["sudo", "runc", "--root", "/run/docker/plugins/runtime-root/plugins.moby/"]
+    container_id = subprocess.check_output(drunc + ["list"]).decode('utf-8').split('\n')[1].split(" ")[0]
+    buttervolume = drunc + ['exec', '-t', container_id, 'buttervolume']
+    return buttervolume
 
 def __get_postgres_volume_name(config):
-    # TODO link somehow to docker-compose file
-    vols = get_volume_names()
-    vols = [x for x in vols if '_POSTGRES_VOLUME_' in x]
-    assert(len(vols) == 1)
-    return vols[0]
+    return PROJECT_NAME + "_" + 'ODOO_POSTGRES_VOLUME'
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -45,7 +50,6 @@ def db(config):
     Database related actions.
     """
     click.echo("database-name: {}, in ram: {}".format(config.dbname, config.run_postgres_in_ram))
-    pass
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -58,13 +62,13 @@ def __assert_btrfs(config):
         sys.exit(-1)
 
 def __get_snapshots(config):
-    snapshots = [x for x in subprocess.check_output(["buttervolume", "snapshots"]).split("\n") if x]
+    snapshots = [x for x in subprocess.check_output(_get_cmd_butter_volume() + ["snapshots"]).decode('utf-8').split("\n") if x]
     # filter to current customs
-    snapshots = [x for x in snapshots if '_POSTGRES_VOLUME_' in x and "_{}_".format(config.customs) in x]
+    name = __get_postgres_volume_name(config)
+    snapshots = [x for x in snapshots if name in x in x]
     return snapshots
 
 def _try_get_date_from_snap(snap_name):
-    import arrow
     try:
         snap_name = snap_name.split("@")[-1][:19]
         d = datetime.strptime(snap_name, '%Y-%m-%dT%H:%M:%S')
@@ -105,13 +109,11 @@ def __get_snapshot_db():
     d = files['run/snapshot_mappings.txt']
     if not d.exists():
         __set_snapshot_db({})
-    with open(d, 'r') as f:
-        return yaml.safe_load(f.read())
+    return yaml.safe_load(d.read_text())
 
 def __set_snapshot_db(values):
     d = files['run/snapshot_mappings.txt']
-    with open(d, 'w') as f:
-        f.write(yaml.dump(values, default_flow_style=False))
+    d.write_text(yaml.dump(values, default_flow_style=False))
 
 @snapshot.command(name="list")
 @pass_config
@@ -136,11 +138,10 @@ def snapshot_make(config, name):
     # remove existing snaps
     for snapshot, snapname in list(values.items()):
         if snapname == name:
-            subprocess.check_call(["buttervolume", "rm", snapshot])
+            subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
             del values[snapshot]
             __set_snapshot_db(values)
-
-    snapshot = subprocess.check_output(["buttervolume", "snapshot", volume_name]).strip()
+    snapshot = subprocess.check_output(_get_cmd_butter_volume() + ["snapshot", volume_name]).decode('utf-8').strip()
     __dc(['up', '-d'] + ['postgres'])
     if name:
         values = __get_snapshot_db()
@@ -161,7 +162,7 @@ def snapshot_restore(ctx, config, clear, name):
     if not snapshot:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(["buttervolume", "restore", snapshot])
+    subprocess.check_call(_get_cmd_butter_volume() + ["restore", snapshot])
     if clear:
         ctx.invoke(snapshot_clear_all)
 
@@ -178,7 +179,7 @@ def snapshot_remove(ctx, config, name):
     if not snapshot:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(["buttervolume", "rm", snapshot])
+    subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
     __dc(['up', '-d'] + ['postgres'])
     values = __get_snapshot_db()
     if snapshot in values:
@@ -195,7 +196,7 @@ def snapshot_clear_all(ctx, config):
     if snapshots:
         __dc(['stop', '-t 1'] + ['postgres'])
         for snap in snapshots:
-            subprocess.check_call(["buttervolume", "rm", snap])
+            subprocess.check_call(_get_cmd_butter_volume() + ["rm", snap])
         __dc(['up', '-d'] + ['postgres'])
 
     ctx.invoke(do_list)
@@ -367,18 +368,6 @@ def __turn_into_devdb(conn):
             print("failed un-critical sql:", msg)
 
     remove_webassets(conn)
-
-# @db.command(name="export-table")
-# @click.argument('table', required=True)
-# @pass_config
-# def export_table(config, table):
-    # dbname = config.dbname
-    # conn = config.get_odoo_conn().clone(dbname=dbname)
-    # from pudb import set_trace
-    # set_trace()
-    # __execute_sql(conn, "copy {} to stdout with csv delimiter ';'")
-    # res = conn.fetchall()
-    # return res
 
 
 Commands.register(reset_db, 'reset-db')
