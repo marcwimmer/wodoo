@@ -21,6 +21,10 @@ from odoo_tools.myconfigparser import MyConfigParser # NOQA
 os.environ['RUN_DIR'] = str(HOST_RUN_DIR)
 
 if __name__ == '__main__':
+    if not HOST_RUN_DIR:
+        import click
+        click.echo("Please enter into an odoo directory, which contains a MANIFEST file.")
+        sys.exit(1)
     if not HOST_RUN_DIR.exists():
         with cli.make_context('odoo', ['-f']) as ctx:
             Commands.invoke(ctx, 'reload')
