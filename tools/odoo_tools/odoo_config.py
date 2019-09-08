@@ -17,12 +17,15 @@ try:
 except Exception:
     pass
 
-def get_odoo_addons_paths():
+def get_odoo_addons_paths(relative=False):
     m = MANIFEST()
     c = customs_dir()
     res = []
     for x in m['addons_paths']:
-        res.append(c / x)
+        if relative:
+            res.append(x)
+        else:
+            res.append(c / x)
     return res
 
 

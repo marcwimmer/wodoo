@@ -62,7 +62,7 @@ def rmpyc():
 @src.command(name='show-addons-paths')
 def show_addons_paths():
     from .odoo_config import get_odoo_addons_paths
-    paths = get_odoo_addons_paths()
+    paths = get_odoo_addons_paths(relative=True)
     for path in paths:
         click.echo(path)
 
@@ -81,6 +81,7 @@ def _needs_dev_mode(config):
 
 def _is_dirty(repo, check_submodule, assert_clean=False):
     from git import Repo
+    from git import InvalidGitRepositoryError
 
     def raise_error():
         if assert_clean:
@@ -92,9 +93,14 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
         return True
     if check_submodule:
         for submodule in repo.submodules:
-            if _is_dirty(Repo(submodule.path), True, assert_clean=assert_clean):
-                raise_error()
-                return True
+            try:
+                sub_repo = Repo(submodule.path)
+            except InvalidGitRepositoryError:
+                click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+            else:
+                if _is_dirty(sub_repo, True, assert_clean=assert_clean):
+                    raise_error()
+                    return True
     return False
 
 class BranchText(object):
@@ -183,15 +189,27 @@ def _get_modules(include_oca=True):
 
 
 @src.command(help="Fetches all defined modules")
+@click.argument('module', required=False)
 @click.option('--oca', help="Include OCA Modules", is_flag=True)
 @click.option('--depth', default="", help="Depth of git fetch for new modules")
-def pull(oca, depth):
+def pull(oca, depth, module):
+    filter_module = module
+    del module
+    from git import Repo
+    from git import InvalidGitRepositoryError
     dir = customs_dir()
+    repo = Repo(dir)
+    _is_dirty(repo, True, assert_clean=True)
+    if oca and filter_module:
+        click.echo("Either provide module or oca")
+        sys.exit(1)
     subprocess.call([
         "git",
         "pull",
     ], cwd=dir)
     for module in _get_modules(include_oca=oca):
+        if filter_module and module.name != filter_module:
+            continue
         full_path = dir / module['subdir']
         if not str(module['subdir']).endswith("/."):
             if not full_path.parent.exists():
@@ -227,23 +245,31 @@ def pull(oca, depth):
                 "update",
                 "--init"
             ], cwd=dir / module['subdir'])
+        del module
 
     for module in _get_modules(include_oca=oca):
+        if filter_module and module.name != filter_module:
+            continue
         try:
             module_dir = dir / module['subdir']
             if module_dir.exists():
-                subprocess.check_call([
-                    "git",
-                    "checkout",
-                    str(module['branch']),
-                ], cwd=module_dir)
+                try:
+                    repo = Repo(module_dir)
+                except InvalidGitRepositoryError:
+                    click.secho("Invalid Repo: {}".format(module['subdir']), bold=True, fg='red')
+                else:
+                    repo.git.checkout(module['branch'])
         except Exception:
             click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['branch']), bold=True, fg="red"))
             raise
+        del module
 
     threads = []
     try_again = []
     for module in _get_modules(include_oca=oca):
+        if filter_module and module.name != filter_module:
+            continue
+
         def _do_pull(module):
             click.echo("Pulling {}".format(module))
             try:
@@ -255,6 +281,7 @@ def pull(oca, depth):
             except Exception:
                 try_again.append(module)
         threads.append(threading.Thread(target=_do_pull, args=(module,)))
+        del module
     [x.start() for x in threads]
     [x.join() for x in threads]
 
@@ -265,6 +292,7 @@ def pull(oca, depth):
             "pull",
             "--no-edit",
         ], cwd=dir / module['subdir'])
+        del module
 
 @src.command(help="Pushes to allowed submodules")
 @pass_config
