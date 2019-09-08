@@ -39,6 +39,8 @@ def _identify_odoo_addons_paths(show_conflicts=True):
     def _get_modules_in_folder(folder):
         # find extra modules without repo
         for file in folder.glob("**/__manifest__.py"):
+            if '.git' in file.parts:
+                continue
             file = file.resolve().absolute()
             if file.parent.parent in folders:
                 continue
@@ -63,7 +65,10 @@ def _identify_odoo_addons_paths(show_conflicts=True):
         "*OCA",
     ]
     for oca in oca_addons:
-        for oca_folder in list(c.glob(oca)):
+        if oca not in os.listdir(c):
+            continue
+
+        for oca_folder in list(c.glob(oca)): # case insensitive on windows / macos
             _get_modules_in_folder(oca_folder)
             del oca_folder
         del oca
