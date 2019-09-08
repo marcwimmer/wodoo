@@ -85,7 +85,7 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
 
     def raise_error():
         if assert_clean:
-            click.echo("Dirty directory - please cleanup: {}".format(repo.working_dir))
+            click.secho("Dirty directory - please cleanup: {}".format(repo.working_dir), bold=True, fg='red')
             sys.exit(42)
 
     if repo.is_dirty() or repo.untracked_files:
@@ -441,7 +441,14 @@ def _ask_deploy(config, branch):
 @pass_config
 def pack(config, branch, refetch):
     from . import odoo_config
+    from git import Repo
     m = MANIFEST()
+    dir = customs_dir()
+    repo = Repo(dir)
+    if repo.active_branch.name not in ['master']:
+        click.secho("Must be on branch master please.", bold=True, fg='red')
+        sys.exit(1)
+    _is_dirty(repo, True, True)
 
     branch = _ask_deploy(config, branch)
     deploy_url = m['deploy'][branch]
