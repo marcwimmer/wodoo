@@ -31,11 +31,6 @@ const server_longpolling = {
     port: 8072
 };
 
-if (process.env.ODOO_VERSION == "9.0") {
-    options.odoo_tcp_check = false;
-    server_odoo.port = 8072;
-}
-
 
 function _make_davical_path(path) {
     let a = path.split("/"); //a = ["", "caldav", "user1", ]
@@ -51,6 +46,7 @@ function _call_proxy(req, res, url) {
     proxy.web(req, res, {target: url,
         selfHandleResponse: true
     }, (e) => {
+        console.log(e);
         res.status(500).end();
     });
 }
