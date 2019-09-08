@@ -445,12 +445,12 @@ def pack(config, branch, refetch):
     m = MANIFEST()
     dir = customs_dir()
     repo = Repo(dir)
-    if repo.active_branch.name not in ['master']:
-        click.secho("Must be on branch master please.", bold=True, fg='red')
+    if repo.active_branch.name not in ['master', 'stage']:
+        click.secho("Must be on branch master or stage please.", bold=True, fg='red')
         sys.exit(1)
     _is_dirty(repo, True, True)
 
-    branch = _ask_deploy(config, branch)
+    branch = repo.active_branch.name
     deploy_url = m['deploy'][branch]
     folder = Path(os.environ['HOME']) / '.odoo' / 'pack_for_deploy' / 'odoo-deployments' / config.customs
     folder = folder.absolute()
