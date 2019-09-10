@@ -113,10 +113,7 @@ class BranchText(object):
         if interactive:
             _edit_text(self.path)
         text = self.path.read_text()
-        text = """Ticket: {}
-
-{}
-""".format(self.branch, text)
+        text = """{} {}""".format(self.branch, text)
         if interactive:
             click.echo(text)
             if not inquirer.prompt([inquirer.Confirm('use', default=True, message="Use this text:\n\n\n{}\n\n".format(text))])['use']:
