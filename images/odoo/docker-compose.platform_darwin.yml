@@ -1,6 +1,11 @@
 # manage-order 1001
 volumes:
   odoo_src:
+      driver: local
+      driver_opts:
+          type: none
+          device: /tmp/src
+          o: bind
 services:
   odoo_base:
       volumes:
