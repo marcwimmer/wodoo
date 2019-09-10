@@ -3,7 +3,6 @@ import os
 import re
 import fnmatch
 import pdb
-import syslog
 import sys
 import lxml
 from lxml import etree
@@ -395,7 +394,6 @@ def _get_models():
                     r"class.*\(.*Model.*\)",
                 ]
                 if any(re.match(x, line) for x in osvregex):
-                    syslog.syslog("found line: {}\n".format(line))
 
                     _name = ""
                     _inherit = ""
