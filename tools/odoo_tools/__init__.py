@@ -115,7 +115,7 @@ files = {
     'commit': 'odoo.commit',
     'settings_auto': "${run}/settings.auto",
     'user_settings': "~/.odoo/settings",
-    'project_settings': "~/.odoo/settings.{project_name}",
+    'project_settings': "~/.odoo/settings.${project_name}",
 }
 commands = {
     'dc': ["/usr/local/bin/docker-compose", "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
