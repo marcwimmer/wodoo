@@ -115,6 +115,7 @@ files = {
     'commit': 'odoo.commit',
     'settings_auto': "${run}/settings.auto",
     'user_settings': "~/.odoo/settings",
+    'project_settings': "~/.odoo/settings.{project_name}",
 }
 commands = {
     'dc': ["/usr/local/bin/docker-compose", "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
@@ -127,12 +128,20 @@ def make_absolute_paths():
         for k, v in list(d.items()):
             if not v:
                 continue
-            if HOST_RUN_DIR:
-                v = str(v).replace("${run}", str(HOST_RUN_DIR))
-            else:
-                if "${run}" in k:
-                    del d[k]
-                    continue
+            skip = False
+            for value, name in [
+                (HOST_RUN_DIR, '${run}'),
+                (PROJECT_NAME, '${project_name}'),
+            ]:
+                if name in str(v):
+                    if value:
+                        v = str(v).replace(name, str(value))
+                    else:
+                        del d[k]
+                        skip = True
+                        break
+            if skip:
+                continue
             if str(v).startswith("~"):
                 v = Path(os.path.expanduser(str(v)))
 
@@ -144,7 +153,8 @@ def make_absolute_paths():
     make_absolute(files)
 
     # dirs['host_working_dir'] = os.getenv('LOCAL_WORKING_DIR', "")
-    commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc']]
+    if 'docker_compose' in files:
+        commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc']]
 
 
 make_absolute_paths()
