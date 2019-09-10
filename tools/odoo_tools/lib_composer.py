@@ -477,7 +477,8 @@ def _use_file(config, path):
     if any(x for x in path.parts if 'platform_' in x):
         pl = 'platform_{}'.format(platform.system().lower())
         if not any(pl in x for x in path.parts):
-            return False
+            run_key = 'RUN_{}'.format(path.parent.name).upper()
+            return getattr(config, run_key)
 
     if "run_odoo_version.{}.yml".format(config.odoo_version) in path.name:
         return True
