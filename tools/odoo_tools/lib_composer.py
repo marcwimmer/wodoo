@@ -337,6 +337,7 @@ def _collect_settings_files(customs):
         _files.append(dirs['images'] / filename)
     _files.append(files['settings_auto'])
     _files.append(files['user_settings'])
+    _files.append(files['project_settings'])
 
     for dir in filter(lambda x: x.exists(), _get_settings_directories(customs)):
         click.echo("Searching for settings in: {}".format(dir))
