@@ -113,13 +113,6 @@ def show_effective_settings(ctx, config):
             config[k]
         ))
 
-@admin.command(help="Syncs all files from source to docker volume source")
-@pass_config
-@click.pass_context
-def fullsync(ctx, config):
-    r = requests.get(config.fssync_service_url + "/fullsync")
-    r.raise_for_status()
-
 
 Commands.register(status)
 Commands.register(fix_permissions)
