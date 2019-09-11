@@ -93,6 +93,7 @@ def prepare_run():
         os.environ['RUN_DIR'],
         os.environ['ODOO_DATA_DIR'],
         os.environ['INTERCOM_DIR'],
+        Path(os.environ['RUN_DIR']) / 'debug',
         Path(os.environ['ODOO_DATA_DIR']) / 'addons',
         Path(os.environ['ODOO_DATA_DIR']) / 'filestore',
         Path(os.environ['ODOO_DATA_DIR']) / 'sessions',
