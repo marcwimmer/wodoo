@@ -435,8 +435,9 @@ def _ask_deploy(config, branch):
 @src.command()
 @click.argument("branch", required=False)
 @click.option("--refetch", is_flag=True)
+@click.option("--no-dirty-check", is_flag=True)
 @pass_config
-def pack(config, branch, refetch):
+def pack(config, branch, refetch, no_dirty_check):
     from . import odoo_config
     from git import Repo
     m = MANIFEST()
@@ -445,7 +446,8 @@ def pack(config, branch, refetch):
     if repo.active_branch.name not in ['master', 'stage']:
         click.secho("Must be on branch master or stage please.", bold=True, fg='red')
         sys.exit(1)
-    _is_dirty(repo, True, True)
+    if not no_dirty_check:
+        _is_dirty(repo, True, True)
 
     dest_branch = branch
     branch = repo.active_branch.name
