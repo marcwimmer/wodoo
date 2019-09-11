@@ -447,6 +447,7 @@ def pack(config, branch, refetch):
         sys.exit(1)
     _is_dirty(repo, True, True)
 
+    dest_branch = branch
     branch = repo.active_branch.name
     deploy_url = m['deploy'][branch]
     folder = Path(os.environ['HOME']) / '.odoo' / 'pack_for_deploy' / 'odoo-deployments' / config.customs
@@ -474,7 +475,7 @@ def pack(config, branch, refetch):
             "git",
             "checkout",
             option,
-            branch
+            dest_branch
         ], cwd=folder)
     try:
         checkout('-f')
@@ -534,7 +535,6 @@ def pack(config, branch, refetch):
                 continue
             if file.name.startswith("."):
                 continue
-            print(file)
             content = file.read_text()
             if 'set_trace' in content:
                 content = content.replace("import pudb; set_trace()", "pass")
