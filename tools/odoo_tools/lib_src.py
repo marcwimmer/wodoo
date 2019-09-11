@@ -435,7 +435,7 @@ def _ask_deploy(config, branch):
 @src.command()
 @click.argument("branch", required=False)
 @click.option("--refetch", is_flag=True)
-@click.option("--no-dirty-check", is_flag=True)
+@click.option("-D", "--no-dirty-check", is_flag=True)
 @pass_config
 def pack(config, branch, refetch, no_dirty_check):
     from . import odoo_config
