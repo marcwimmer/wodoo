@@ -32,7 +32,10 @@ services:
       - $HOST_RUN_DIR/settings
       - $ODOO_HOME/images/odoo/docker-env
     environment:
+      - ODOO_DATA_DIR=/opt/files
+      - OUT_DIR=/opt/out_dir
       - RUN_DIR=/opt/run
+      - INTERCOM_DIR=/intercom
       - SERVER_DIR=/opt/odoo/data/src/customs/${CUSTOMS}/odoo
       - SERVER_WIDE_MODULES=${SERVER_WIDE_MODULES}
       - CUSTOMS_DIR=/opt/odoo/data/src/customs/${CUSTOMS}

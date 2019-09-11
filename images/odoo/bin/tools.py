@@ -86,6 +86,25 @@ def prepare_run():
 
     _run_libreoffice_in_background()
 
+    # make sure out dir is owned by odoo user to be writable
+    user_id = int(os.environ['OWNER_UID'])
+    for path in [
+        os.environ['OUT_DIR'],
+        os.environ['RUN_DIR'],
+        os.environ['ODOO_DATA_DIR'],
+        os.environ['INTERCOM_DIR'],
+        Path(os.environ['ODOO_DATA_DIR']) / 'addons',
+        Path(os.environ['ODOO_DATA_DIR']) / 'filestore',
+        Path(os.environ['ODOO_DATA_DIR']) / 'sessions',
+    ]:
+        out_dir = Path(path)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if out_dir.exists():
+            if out_dir.stat().st_uid == 0:
+                shutil.chown(str(out_dir), user=user_id, group=user_id)
+        del path
+        del out_dir
+
     if os.getenv("IS_ODOO_QUEUEJOB", "") == "1":
         # https://www.odoo.com/apps/modules/10.0/queue_job/
         sql = "update queue_job set state='pending' where state in ('started', 'enqueued');"

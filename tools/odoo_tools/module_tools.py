@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from datetime import datetime
 from copy import deepcopy
@@ -268,11 +269,58 @@ class DBModules(object):
                 return False
             return state[1] in ['installed', 'to upgrade']
 
-def make_customs(customs, version):
-    complete_path = odoo_root() / Path('data/src/customs') / Path(customs)
-    if complete_path.exists():
-        raise Exception("Customs already exists.")
-    shutil.copytree(str(odoo_root() / Path('admin/customs_template') / Path(str(version))), complete_path)
+def make_customs(path):
+    from .tools import abort
+    import click
+    if not path.exists():
+        abort("Path does not exist: {}".format(path))
+    elif list(path.glob("*")):
+        abort("Path is not empty: {}".format(path))
+
+    import inquirer
+    from git import Repo
+    from .tools import copy_dir_contents
+    dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+    src_dir = dir.parent / 'customs_template'
+
+    def _floatify(x):
+        try:
+            return float(x)
+        except Exception:
+            return 0
+
+    versions = sorted([x.name for x in src_dir.glob("*")], key=lambda x: _floatify(x), reverse=True)
+    version = inquirer.prompt([inquirer.List('version', "", choices=versions)])['version']
+    del versions
+
+    copy_dir_contents(src_dir / version, path)
+
+    manifest_file = path / "MANIFEST"
+    manifest = eval(manifest_file.read_text())
+
+    click.echo("Checking for odoo repo at env variable 'ODOO_REPO'")
+    if os.getenv("ODOO_REPO", ""):
+        odoo_path = path / 'odoo'
+        repo_path = Path(os.environ['ODOO_REPO'])
+        repo = Repo(repo_path)
+        repo.git.checkout(str(version))
+        odoo_path.mkdir()
+        sha = repo.head.object.hexsha
+        sha = repo.git.rev_parse(sha)
+        click.echo("Copying odoo with sha to local directory [{}]".format(sha))
+        copy_dir_contents(repo_path, odoo_path, exclude=['.git'])
+        manifest['odoo_commit'] = sha
+
+    manifest_file.write_text(json.dumps(manifest, indent=4))
+
+    subprocess.call(["git", "init"], cwd=path)
+    subprocess.call(["git", "add", "."], cwd=path)
+    subprocess.call(["git", "commit", "-am", "init"], cwd=path)
+
+    click.secho("Initialized - please call following now.", fg='green')
+    click.secho("odoo pull --oca", fg='green')
+    click.secho("odoo db reset", fg='green')
+    sys.exit(0)
 
 def make_module(parent_path, module_name):
     """

@@ -30,11 +30,6 @@ from .lib_clickhelpers import AliasedGroup
 def src(config):
     pass
 
-@src.command(name='make-customs')
-@pass_config
-@click.pass_context
-def src_make_customs(ctx, config, customs, version):
-    raise Exception("rework - add fetch sha")
 
 @src.command()
 @pass_config
@@ -481,6 +476,10 @@ def pack(config, branch, refetch, no_dirty_check):
         ], cwd=folder)
     try:
         checkout('-f')
+        subprocess.call([
+            "git",
+            "pull",
+        ], cwd=folder)
     except Exception:
         checkout('-b')
         subprocess.call([
@@ -488,13 +487,13 @@ def pack(config, branch, refetch, no_dirty_check):
             "push",
             "--set-upstream",
             "origin",
-            branch,
+            dest_branch,
         ], cwd=folder)
         subprocess.call([
             "git",
             "push",
             "--set-upstream-to=origin/{}".format(branch),
-            branch,
+            dest_branch,
         ], cwd=folder)
 
     # clone to tmp directory and cleanup - remove unstaged and so on

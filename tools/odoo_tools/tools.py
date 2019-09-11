@@ -657,3 +657,20 @@ def __hash_odoo_password(pwd):
         return setpw.encrypt(pwd)
     else:
         raise NotImplementedError()
+
+def abort(msg, nr=1):
+    click.secho(msg, fg='red', bold=True)
+    sys.exit(nr)
+
+def copy_dir_contents(dir, dest_dir, exclude=None):
+    assert dir.is_dir()
+    assert dest_dir.is_dir()
+    exclude = exclude or []
+    for x in dir.glob("*"):
+        if exclude:
+            if x in exclude:
+                continue
+        if not x.is_dir():
+            shutil.copy(str(x.absolute()), str((dest_dir / x.name).absolute()))
+        else:
+            shutil.copytree(str(x.absolute()), str((dest_dir / x.name).absolute()))
