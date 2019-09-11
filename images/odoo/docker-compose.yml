@@ -1,12 +1,5 @@
 # manage-order 1000
 version: '3.3'
-volumes:
-  odoo_src:
-      driver: local
-      driver_opts:
-          type: none
-          device: /tmp/src
-          o: bind
 services:
   odoo_base: &odoo_base
     container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_base
