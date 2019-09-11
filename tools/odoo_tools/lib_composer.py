@@ -201,6 +201,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
     paths = list(filter(lambda x: _use_file(config, x), paths))
     for path in paths:
+        click.echo(path)
         content = path.read_text()
 
         # dont matter if written manage-order: or manage-order
