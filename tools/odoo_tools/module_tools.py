@@ -308,7 +308,8 @@ def make_customs(path):
         sha = repo.head.object.hexsha
         sha = repo.git.rev_parse(sha)
         click.echo("Copying odoo with sha to local directory [{}]".format(sha))
-        raise Exception('exclude did not work check')
+        from pudb import set_trace
+        set_trace()
         copy_dir_contents(repo_path, odoo_path, exclude=['.git'])
         manifest['odoo_commit'] = sha
 

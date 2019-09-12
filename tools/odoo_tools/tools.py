@@ -668,7 +668,7 @@ def copy_dir_contents(dir, dest_dir, exclude=None):
     exclude = exclude or []
     for x in dir.glob("*"):
         if exclude:
-            if x in exclude:
+            if x.name in exclude:
                 continue
         if not x.is_dir():
             shutil.copy(str(x.absolute()), str((dest_dir / x.name).absolute()))
