@@ -17,7 +17,7 @@ logger.info("Starting cronjobs")
 
 def get_jobs():
     for key in os.environ.keys():
-        if key.startswith("CRONJOB_BACKUP_"):
+        if key.startswith("CRONJOB_"):
             job = os.environ[key]
             job = job.split(" ", 6)
             schedule = " ".join(job[:5])
@@ -28,23 +28,25 @@ def get_jobs():
                 'base': datetime.now()
             }
 
-def execute(job_cmd):
-    logger.info("Executing: {}".format(job_cmd))
-
+def replace_params(text):
     # replace params in there
-    def replace_params(cmd):
-        cmd = string.Template(cmd).substitute(os.environ)
-        cmd = cmd.format(
+    def _replace_params(text):
+        text = string.Template(text).substitute(os.environ)
+        text = text.format(
             customs=os.environ['CUSTOMS'],
             date=datetime.now(),
         )
-        return cmd
-
+        return text
     while True:
-        job_cmd = replace_params(job_cmd)
-        if replace_params(job_cmd) == job_cmd:
+        text = _replace_params(text)
+        if _replace_params(text) == text:
             break
+    return text
 
+def execute(job_cmd):
+    logger.info("Executing: {}".format(job_cmd))
+
+    job_cmd = replace_params(job_cmd)
     os.system(job_cmd)
 
 
@@ -58,6 +60,7 @@ if __name__ == "__main__":
 
     for job in jobs:
         logging.info("Scheduling Job: {}".format(job))
+        logging.info("With replaced values in looks like: {}".format(replace_params(job['cmd'])))
     displayed_infos = False
     while True:
         for job in jobs:
