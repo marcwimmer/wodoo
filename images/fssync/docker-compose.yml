@@ -5,8 +5,6 @@ services:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_fssync
     build: $ODOO_HOME/images/fssync
     restart: unless-stopped
-    env_file:
-      - $HOST_RUN_DIR/settings
     ports:
       - ${FSSYNC_LISTEN_IP}:14122:14122
     command: /run.sh

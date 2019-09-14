@@ -6,8 +6,6 @@ services:
   perftest:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_perftest
     build: $ODOO_HOME/images/perftest
-    env_file:
-        - $HOST_RUN_DIR/settings
     volumes:
         - ${ODOO_HOME}/data/src/customs/${CUSTOMS}/images/perftest.py:/usr/local/bin/tests.py
     environment:

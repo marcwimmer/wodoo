@@ -191,6 +191,7 @@ def _prepare_yml_files_from_template_files(config):
 def _prepare_docker_compose_files(config, dest_file, paths):
     from . import YAML_VERSION
     from . import MyConfigParser
+    from .tools import abort
 
     final_contents = []
 
@@ -219,28 +220,31 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         order = int(order)
 
         j = yaml.safe_load(content)
-        if j:
-            j['version'] = YAML_VERSION
+        if not j:
+            continue
 
-            # set settings environment and the override settings after that
-            if 'services' in j:
-                for service in j['services']:
-                    service = j['services'][service]
-                    if 'env_file' not in service:
-                        service['env_file'] = []
-                    if isinstance(service['env_file'], str):
-                        service['env_file'] = [service['env_file']]
-                    if [x for x in service['env_file'] if x == '$ODOO_HOME/run/settings']:
-                        # no old format valid
-                        raise Exception('stop')
+        # default values in yaml file
+        j['version'] = YAML_VERSION
 
-                    file = '$HOST_RUN_DIR/settings'
-                    if not [x for x in service['env_file'] if x == file]:
-                        service['env_file'].append(file)
+        # set settings environment and the override settings after that
+        for service in j.get('services', []):
+            service = j['services'][service]
+            service.setdefault('env_file', [])
+            if isinstance(service['env_file'], str):
+                service['env_file'] = [service['env_file']]
+            if [x for x in service['env_file'] if x == '$ODOO_HOME/run/settings']:
+                # no old format valid
+                raise Exception('stop')
 
-                j['networks'] = copy.deepcopy(default_network['networks'])
+            file = '$HOST_RUN_DIR/settings'
+            if not [x for x in service['env_file'] if x == file]:
+                service['env_file'].append(file)
 
-            content = yaml.dump(j, default_flow_style=False)
+            service.setdefault('environment', [])
+
+            j['networks'] = copy.deepcopy(default_network['networks'])
+
+        content = yaml.dump(j, default_flow_style=False)
         content = __replace_all_envs_in_str(content, env)
 
         final_contents.append((order, content))

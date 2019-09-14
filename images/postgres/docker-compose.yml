@@ -14,7 +14,6 @@ services:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata
     env_file:
-      - $HOST_RUN_DIR/settings
       - $ODOO_HOME/images/postgres/default.parameters
 
     healthcheck:

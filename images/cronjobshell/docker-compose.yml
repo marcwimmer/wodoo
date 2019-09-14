@@ -7,11 +7,6 @@ services:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_cronjobshell
     command: ['echo', 'goodbye']
     restart: 'no'
-    env_file:
-        - $HOST_RUN_DIR/settings
-    environment:
-        - "PROJECT_NAME=${PROJECT_NAME}"
-        - DOCKER_MACHINE=1
     volumes:
         - "$ODOO_HOME/images/cronjobs/bin/:/usr/local/bin/:ro"
         - "$DUMPS_PATH:/host/dumps"
