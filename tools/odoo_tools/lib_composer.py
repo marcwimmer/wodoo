@@ -70,7 +70,6 @@ def _do_compose(config, customs='', db='', demo=False):
     _prepare_filesystem()
     _execute_after_settings()
     _prepare_yml_files_from_template_files(config)
-    _execute_after_compose()
 
     click.echo("Built the docker-compose file.")
 
@@ -124,7 +123,7 @@ def setup_settings_file(customs, db, demo):
 
     config_compose_minimum.write()
 
-def _execute_after_compose():
+def _execute_after_compose(yml):
     """
     execute local __oncompose.py scripts
     """
@@ -138,7 +137,10 @@ def _execute_after_compose():
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        module.after_compose(config)
+        module.after_compose(config, yml, dict(
+            dirs=dirs,
+        ))
+    return yml
 
 def _execute_after_settings():
     """
@@ -244,40 +246,14 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         """
         This is after calling docker-compose config, which returns the
         complete configuration.
-
-        Aim is to take the volumes defined in odoo_base and append them
-        to all odoo containers.
         """
 
-        odoodc = yaml.safe_load((dirs['odoo_home'] / 'images/odoo/docker-compose.yml').read_text())
-
-        # transfer settings from odoo_base into odoo, odoo_cronjobs
-        for odoomachine in odoodc['services']:
-            if odoomachine == 'odoo_base':
-                continue
-            if odoomachine not in yml['services']:
-                continue
-            machine = yml['services'][odoomachine]
-            for k in ['volumes']:
-                machine[k] = []
-                for x in yml['services']['odoo_base'][k]:
-                    machine[k].append(x)
-            for k in ['environment']:
-                machine.setdefault(k, {})
-                if 'odoo_base' in yml['services']:
-                    for x, v in yml['services']['odoo_base'][k].items():
-                        machine[k][x] = v
-        if 'odoo_base' in yml['services']:
-            yml['services'].pop('odoo_base')
         yml['version'] = YAML_VERSION
 
         # remove restart policies, if not restart allowed:
         if not config.restart_containers:
             for service in yml['services']:
-                # TODO CLEANUP -> more generic instructions ...
-                if 'restart' in yml['services'][service] or \
-                        (service == 'odoo_cronjobs' and not config.run_odoo_cronjobs) or \
-                        (service == 'proxy' and not config.run_proxy):
+                if 'restart' in yml['services'][service]:
                     yml['services'][service].pop('restart')
 
         return yml
@@ -306,14 +282,13 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         d = deepcopy(os.environ)
         d.update(env)
 
-        # have some tries; sometimes the compose files are not completley written
-        # although turning off any buffers
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
-        conf = post_process_complete_yaml_config(yaml.safe_load(conf))
-        conf = yaml.dump(conf, default_flow_style=False)
+        conf = yaml.safe_load(conf)
+        conf = post_process_complete_yaml_config(conf)
+        conf = _execute_after_compose(conf)
 
-        with open(dest_file, 'w') as f:
-            f.write(conf)
+        dest_file.write_text(yaml.dump(conf, default_flow_style=False))
+
     finally:
         # shutil.rmtree(temp_path)
         pass

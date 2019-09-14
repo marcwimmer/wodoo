@@ -4,7 +4,7 @@ import platform
 from pathlib import Path
 import inspect
 
-def after_compose(config):
+def after_settings(config):
     if platform.system() == "Linux":
         pass
     elif platform.system() in ["Darwin", "Windows"]:
