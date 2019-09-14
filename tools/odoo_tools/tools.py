@@ -341,8 +341,11 @@ def __cmd_interactive(*params):
 
 def __empty_dir(dir):
     dir = Path(dir)
-    if dir.is_dir():
-        shutil.rmtree(dir)
+    for x in dir.glob("*"):
+        if x.is_dir():
+            shutil.rmtree(x.absolute())
+        else:
+            x.unlink()
 
 def __file_default_content(path, default_content):
     if not path.exists():

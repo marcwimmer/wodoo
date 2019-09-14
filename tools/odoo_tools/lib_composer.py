@@ -263,7 +263,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
     temp_path = dirs['run'] / '.tmp.compose'
     if temp_path.is_dir():
-        shutil.rmtree(temp_path)
+        __empty_dir(temp_path)
     temp_path.mkdir(parents=True, exist_ok=True)
     try:
         temp_files = []
