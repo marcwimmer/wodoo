@@ -1,3 +1,4 @@
+import platform
 from contextlib import contextmanager
 import re
 try:
@@ -402,11 +403,6 @@ def _remember_customs_and_cry_if_changed(config):
                     click.echo("Customs changed - you need to restart and/or rebuild!")
                     __dc(['stop', '-t 2'])
 
-def _prepare_filesystem():
-    from . import dirs, files
-    for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
-        __makedirs(dirs['run'] / 'subdir')
-
 def _sanity_check(config):
     from . import files
     if config.run_postgres is None:
@@ -456,21 +452,25 @@ def __try_to_set_owner(UID, path, recursive=False):
             if recursive:
                 options += "-R"
 
-            subprocess.call([
-                'sudo',
-                'find',
-                '-not',
-                '-type',
-                'l',
-                '-not',
-                '-user',
-                UID,
-                '-exec',
-                'chown',
-                UID,
-                '{}',
-                '+'
-            ], cwd=path)
+            if platform.system() in ['Linux', 'Darwin']:
+                subprocess.call([
+                    'sudo',
+                    'find',
+                    '-not',
+                    '-type',
+                    'l',
+                    '-not',
+                    '-user',
+                    str(UID),
+                    '-exec',
+                    'chown',
+                    str(UID),
+                    '{}',
+                    '+'
+                ], cwd=str(path))
+
+            else:
+                raise NotImplementedError()
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but

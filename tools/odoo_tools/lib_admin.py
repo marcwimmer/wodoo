@@ -17,7 +17,6 @@ from .tools import __write_file
 from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import _fix_permissions
-from .tools import _prepare_filesystem
 from .tools import remove_webassets
 from .odoo_config import get_odoo_addons_paths
 from . import cli, pass_config, dirs, files, Commands

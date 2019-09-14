@@ -18,19 +18,10 @@ import copy
 import click
 from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
-from .tools import __assert_file_exists
-from .tools import __replace_in_file
-from .tools import __safe_filename
 from .tools import _file2env
-from .tools import __file_get_lines
-from .tools import __empty_dir
-from .tools import __read_file
-from .tools import __write_file
 from .tools import __append_line
-from .tools import __get_odoo_commit
 from .tools import __makedirs
-from .tools import _prepare_filesystem
-from .tools import __rmtree
+from .tools import __try_to_set_owner
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 
@@ -74,44 +65,7 @@ def _do_compose(config, customs='', db='', demo=False):
     os.environ['HOST_RUN_DIR'] = str(HOST_RUN_DIR)
     os.environ['NETWORK_NAME'] = NETWORK_NAME
 
-    def setup_settings_file():
-        """
-        Cleans run/settings and sets minimal settings;
-        Puts default values in settings.d to override any values
-        """
-        config = MyConfigParser(files['settings'])
-        if customs:
-            if config.get('CUSTOMS', '') != customs:
-                config.clear()
-                config['CUSTOMS'] = customs
-                config.write()
-        vals = {}
-        if customs:
-            vals['CUSTOMS'] = customs
-        vals['DBNAME'] = db or customs
-        if demo:
-            vals['ODOO_DEMO'] = "1" if demo else "0"
-
-        for k, v in vals.items():
-            if config.get(k, '') != v:
-                config[k] = v
-                config.write()
-        config_compose_minimum = MyConfigParser(files['settings_auto'])
-        config_compose_minimum.clear()
-        for k in ['CUSTOMS', 'DBNAME', 'ODOO_DEMO']:
-            if k in vals:
-                config_compose_minimum[k] = vals[k]
-
-        if not config_compose_minimum.get("POSTGRES_PORT", ""):
-            # try to use same port again
-            port = random.randint(10001, 30000)
-            if files['settings'].exists():
-                port = MyConfigParser(files['settings']).get("POSTGRES_PORT", str(random.randint(10001, 30000)))
-            config_compose_minimum['POSTGRES_PORT'] = str(port)
-
-        config_compose_minimum.write()
-    setup_settings_file()
-
+    setup_settings_file(customs, db, demo)
     _export_settings(customs)
     _prepare_filesystem()
     _execute_after_settings()
@@ -119,6 +73,56 @@ def _do_compose(config, customs='', db='', demo=False):
     _execute_after_compose()
 
     click.echo("Built the docker-compose file.")
+
+
+def _prepare_filesystem():
+    from . import MyConfigParser
+    fileconfig = MyConfigParser(files['settings'])
+    for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
+        path = dirs['run'] / subdir
+        __makedirs(path)
+        __try_to_set_owner(
+            int(fileconfig['OWNER_UID']),
+            path
+        )
+
+def setup_settings_file(customs, db, demo):
+    """
+    Cleans run/settings and sets minimal settings;
+    Puts default values in settings.d to override any values
+    """
+    from . import MyConfigParser
+    config = MyConfigParser(files['settings'])
+    if customs:
+        if config.get('CUSTOMS', '') != customs:
+            config.clear()
+            config['CUSTOMS'] = customs
+            config.write()
+    vals = {}
+    if customs:
+        vals['CUSTOMS'] = customs
+    vals['DBNAME'] = db or customs
+    if demo:
+        vals['ODOO_DEMO'] = "1" if demo else "0"
+
+    for k, v in vals.items():
+        if config.get(k, '') != v:
+            config[k] = v
+            config.write()
+    config_compose_minimum = MyConfigParser(files['settings_auto'])
+    config_compose_minimum.clear()
+    for k in ['CUSTOMS', 'DBNAME', 'ODOO_DEMO']:
+        if k in vals:
+            config_compose_minimum[k] = vals[k]
+
+    if not config_compose_minimum.get("POSTGRES_PORT", ""):
+        # try to use same port again
+        port = random.randint(10001, 30000)
+        if files['settings'].exists():
+            port = MyConfigParser(files['settings']).get("POSTGRES_PORT", str(random.randint(10001, 30000)))
+        config_compose_minimum['POSTGRES_PORT'] = str(port)
+
+    config_compose_minimum.write()
 
 def _execute_after_compose():
     """
