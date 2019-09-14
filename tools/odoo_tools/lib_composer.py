@@ -234,8 +234,10 @@ def _prepare_docker_compose_files(config, dest_file, paths):
                             if isinstance(service['env_file'], str):
                                 service['env_file'] = [service['env_file']]
 
-                            if not [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
-                                service['env_file'].append('$ODOO_HOME/{}'.format(file))
+                            if [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
+                                raise Exception('stop')
+                            if not [x for x in service['env_file'] if x == '$HOST_RUN_DIR/{}'.format(file.name)]:
+                                service['env_file'].append('$ODOO_RUN_DIR/{}'.format(file.name))
                 j['networks'] = copy.deepcopy(default_network['networks'])
 
             content = yaml.dump(j, default_flow_style=False)
