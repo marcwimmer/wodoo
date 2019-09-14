@@ -223,21 +223,21 @@ def _prepare_docker_compose_files(config, dest_file, paths):
             j['version'] = YAML_VERSION
 
             # set settings environment and the override settings after that
-            for file in ['run/settings']:
-                path = Path(os.environ['ODOO_HOME']) / file
-                if path.exists():
-                    if 'services' in j:
-                        for service in j['services']:
-                            service = j['services'][service]
-                            if 'env_file' not in service:
-                                service['env_file'] = []
-                            if isinstance(service['env_file'], str):
-                                service['env_file'] = [service['env_file']]
+            if 'services' in j:
+                for service in j['services']:
+                    service = j['services'][service]
+                    if 'env_file' not in service:
+                        service['env_file'] = []
+                    if isinstance(service['env_file'], str):
+                        service['env_file'] = [service['env_file']]
+                    if [x for x in service['env_file'] if x == '$ODOO_HOME/run/settings']:
+                        # no old format valid
+                        raise Exception('stop')
 
-                            if [x for x in service['env_file'] if x == '$ODOO_HOME/{}'.format(file)]:
-                                raise Exception('stop')
-                            if not [x for x in service['env_file'] if x == '$HOST_RUN_DIR/{}'.format(file.name)]:
-                                service['env_file'].append('$ODOO_RUN_DIR/{}'.format(file.name))
+                    file = '$HOST_RUN_DIR/settings'
+                    if not [x for x in service['env_file'] if x == file]:
+                        service['env_file'].append(file)
+
                 j['networks'] = copy.deepcopy(default_network['networks'])
 
             content = yaml.dump(j, default_flow_style=False)
