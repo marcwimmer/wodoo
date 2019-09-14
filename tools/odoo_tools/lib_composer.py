@@ -22,6 +22,7 @@ from .tools import _file2env
 from .tools import __append_line
 from .tools import __makedirs
 from .tools import __try_to_set_owner
+from .tools import __empty_dir
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 
