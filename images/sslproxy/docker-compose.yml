@@ -6,9 +6,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - $HOST_RUN_DIR/sslproxy/nginx:/etc/nginx/conf.d
-      - $HOST_RUN_DIR/sslproxy/certbot/conf:/etc/letsencrypt
-      - $HOST_RUN_DIR/sslproxy/certbot/www:/var/www/certbot
+      - $HOST_RUN_DIR/ssl/nginx:/etc/nginx/conf.d
+      - $HOST_RUN_DIR/ssl/certbot/conf:/etc/letsencrypt
+      - $HOST_RUN_DIR/ssl/certbot/www:/var/www/certbot
     restart: unless-stopped
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
   sslproxycertbot:

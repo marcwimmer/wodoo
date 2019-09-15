@@ -1,0 +1,32 @@
+server {
+    listen 80;
+    server_name odoo.sunday.de;
+    location / {
+        return 301 https://$host$request_uri;
+    }    
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+}
+server {
+    listen 443 ssl;
+    server_name odoo.sunday.de;
+
+   proxy_read_timeout 720s;
+   proxy_connect_timeout 720s;
+   proxy_send_timeout 720s;
+   proxy_set_header X-Forwarded-Host $host;
+   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   proxy_set_header X-Forwarded-Proto $scheme;
+   proxy_set_header X-Real-IP $remote_addr;
+
+    
+    location / {
+        proxy_pass http://proxy:80;
+	proxy_redirect off;
+    }
+    ssl_certificate /etc/letsencrypt/live/odoo.sunday.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/odoo.sunday.de/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+}
