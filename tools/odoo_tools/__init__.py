@@ -3,13 +3,13 @@ from datetime import datetime
 import subprocess
 from pathlib import Path
 import imp
-import importlib
 import inspect
 import os
 import glob
 import click
 from .tools import _file2env
 from .lib_clickhelpers import AliasedGroup
+import importlib
 
 dir = Path(inspect.getfile(inspect.currentframe())).resolve().parent
 sys.path.append(dir / '..' / 'module_tools')
@@ -261,3 +261,22 @@ YAML_VERSION = '3.5'
 BACKUPDIR = Path("/host/dumps")
 SAFE_KILL = ['postgres', 'redis']
 
+
+# import container specific commands
+
+from . import abort
+
+fo module in di_install/asterisk_customsextra_install/asterisk_customsrs['images'].glob("**/__commands.py"):
+    if module.is_dir():
+        continue
+    spec = importlib.util.spec_from_file_location(
+        "dynamic_loaded_module", str(module),
+    )
+    module = importlib.util.module_from_spec(spec)
+    from pudb import set_trace
+    set_trace()
+    module.cli = cli
+    module.pass_config = pass_config
+    module.AliasedGroup = AliasedGroup
+    module.abort = abort
+    spec.loader.exec_module(module)

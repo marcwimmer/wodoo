@@ -1,6 +1,6 @@
 version: '3'
 services:
-  nginx:
+  sslproxy:
     image: nginx:1.15-alpine
     ports:
       - "80:80"
@@ -11,7 +11,7 @@ services:
       - $HOST_RUN_DIR/sslproxy/certbot/www:/var/www/certbot
     restart: unless-stopped
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-  certbot:
+  sslproxycertbot:
     image: certbot/certbot
     volumes:
       - $HOST_RUN_DIR/sslproxy/certbot/conf:/etc/letsencrypt
