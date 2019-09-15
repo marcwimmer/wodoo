@@ -6,18 +6,12 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - $HOST_RUN_DIR/sslproxy/nginx:/etc/nginx/conf.d
-      - $HOST_RUN_DIR/sslproxy/certbot/conf:/etc/letsencrypt
-      - $HOST_RUN_DIR/sslproxy/certbot/www:/var/www/certbot
+      - $HOST_RUN_DIR/ssl/nginx:/etc/nginx/conf.d
+      - ${HOST_RUN_DIR}/ssl/letsencrypt:/etc/letsencrypt
+        #- $HOST_RUN_DIR/ssl/certbot/conf:/etc/letsencrypt
+        #- $HOST_RUN_DIR/ssl/certbot/www:/var/www/certbot
     restart: unless-stopped
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-  sslproxycertbot:
-    image: certbot/certbot
-    volumes:
-      - $HOST_RUN_DIR/ssl/certbot/conf:/etc/letsencrypt
-      - $HOST_RUN_DIR/ssl/certbot/www:/var/www/certbot
-    restart: unless-stopped
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
   letsencrypt:
     image: linuxserver/letsencrypt
     container_name: letsencrypt
@@ -28,18 +22,19 @@ services:
       - PGID=${OWNER_UID}
       - TZ=Europe/Berlin
       # yourdomain.com
-      - URL=${SSLPROXY_DOMAIN
+      - URL=${SSLPROXY_DOMAIN}
       # www,
       - SUBDOMAINS=${SSLPROXY_SUBDOMAINS}
       - VALIDATION=http
-      - DNSPLUGIN=cloudflare #optional
-      - DUCKDNSTOKEN=<token> #optional
+      # - DNSPLUGIN=cloudflare #optional
+      # - DUCKDNSTOKEN=<token> #optional
       - EMAIL=${SSLPROXY_EMAIL} #optional
       - DHLEVEL=2048 #optional
-      - ONLY_SUBDOMAINS=false #optional
+      - ONLY_SUBDOMAINS=${SSLPROXY_ONLY_SUBDOMAINS}
       # - EXTRA_DOMAINS=<extradomains> #optional
-      - STAGING=false #optional
+      - STAGING=${SSLPROXY_STAGING} #optional
     volumes:
+      - ${HOST_RUN_DIR}/ssl/letsencrypt:/etc/letsencrypt
       - ${HOST_RUN_DIR}/ssl/config:/config
     ports:
       - 443:443
