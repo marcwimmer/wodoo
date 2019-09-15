@@ -263,10 +263,10 @@ SAFE_KILL = ['postgres', 'redis']
 
 
 # import container specific commands
+from .tools import abort
 
-from . import abort
 
-fo module in di_install/asterisk_customsextra_install/asterisk_customsrs['images'].glob("**/__commands.py"):
+for module in dirs['images'].glob("**/__commands.py"):
     if module.is_dir():
         continue
     spec = importlib.util.spec_from_file_location(
