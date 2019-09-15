@@ -261,10 +261,9 @@ YAML_VERSION = '3.5'
 BACKUPDIR = Path("/host/dumps")
 SAFE_KILL = ['postgres', 'redis']
 
-
 # import container specific commands
-from .tools import abort
-
+from .tools import abort # NOQA
+from .tools import __dcrun # NOQA
 
 for module in dirs['images'].glob("**/__commands.py"):
     if module.is_dir():
@@ -273,10 +272,13 @@ for module in dirs['images'].glob("**/__commands.py"):
         "dynamic_loaded_module", str(module),
     )
     module = importlib.util.module_from_spec(spec)
-    from pudb import set_trace
-    set_trace()
-    module.cli = cli
-    module.pass_config = pass_config
-    module.AliasedGroup = AliasedGroup
-    module.abort = abort
+    module.injected_globals = {
+        'abort': abort,
+        'AliasedGroup': AliasedGroup,
+        'pass_config': pass_config,
+        'cli': cli,
+        'Commands': Commands,
+        '__dcrun': __dcrun,
+        'dirs': dirs,
+    }
     spec.loader.exec_module(module)
