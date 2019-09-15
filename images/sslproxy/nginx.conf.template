@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name odoo.sunday.de;
+    server_name __DOMAIN__;
     location / {
         return 301 https://$host$request_uri;
     }    
@@ -10,7 +10,7 @@ server {
 }
 server {
     listen 443 ssl;
-    server_name odoo.sunday.de;
+    server_name __DOMAIN__;
 
    proxy_read_timeout 720s;
    proxy_connect_timeout 720s;
@@ -23,10 +23,10 @@ server {
     
     location / {
         proxy_pass http://proxy:80;
-	proxy_redirect off;
+	    proxy_redirect off;
     }
-    ssl_certificate /etc/letsencrypt/live/odoo.sunday.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/odoo.sunday.de/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
