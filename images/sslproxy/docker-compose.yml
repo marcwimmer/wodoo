@@ -34,7 +34,8 @@ services:
     volumes:
       - ${HOST_RUN_DIR}/ssl/letsencrypt:/etc/letsencrypt
       - ${HOST_RUN_DIR}/ssl/config:/config
-    ports:
-      - 443:443
-      - 80:80 #optional
-    restart: unless-stopped
+    # is set by python admin script
+    #ports:
+    #- 443:443
+    #  - 80:80 #optional
+    restart: no
