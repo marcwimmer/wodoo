@@ -1,32 +1,37 @@
+upstream odoo {
+    server proxy:80;
+}
+
+## Version 2018/09/12 - Changelog: https://github.com/linuxserver/docker-letsencrypt/commits/master/root/defaults/default
+# listening on port 80 disabled by default, remove the "#" signs to enable
+# redirect all traffic to https
 server {
     listen 80;
     server_name __DOMAIN__;
-    location / {
-        return 301 https://$host$request_uri;
-    }    
-    location /.well-known/acme-challenge/ {
-        root /var/www/certbot;
-    }
+    return 301 https://$host$request_uri;
 }
+# main server block
 server {
     listen 443 ssl;
-    server_name __DOMAIN__;
-
-   proxy_read_timeout 720s;
-   proxy_connect_timeout 720s;
-   proxy_send_timeout 720s;
-   proxy_set_header X-Forwarded-Host $host;
-   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-   proxy_set_header X-Forwarded-Proto $scheme;
-   proxy_set_header X-Real-IP $remote_addr;
-
-    
+    # enable subfolder method reverse proxy confs
+    include /config/nginx/proxy-confs/*.subfolder.conf;
+    # all ssl related config moved to ssl.conf
+    include /config/nginx/ssl.conf;
+ 
+    # enable for ldap auth
+    #include /config/nginx/ldap.conf;
+    client_max_body_size 0;
     location / {
-        proxy_pass http://proxy:80;
-	    proxy_redirect off;
+            proxy_pass         http://odoo;
+            proxy_redirect     off;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
     }
-    ssl_certificate /etc/letsencrypt/live/__DOMAIN__/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN__/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 }
+
+# enable subdomain method reverse proxy confs
+include /config/nginx/proxy-confs/*.subdomain.conf;
+# enable proxy cache for auth
+proxy_cache_path cache/ keys_zone=auth_cache:10m;

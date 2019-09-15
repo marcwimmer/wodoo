@@ -32,13 +32,29 @@ def init(ctx, config, test):
     click.secho("Caution: Port 443 and 80 must be temporarily accessible.", fg='yellow', bold=True)
     composefile = files['docker_compose']
     y = yaml.safe_load(composefile.read_text())
-    y['services']['sslproxy']['ports'] = [
-        {'publish': 443, 'target': 443},
-        {'publish': 80, 'target': 80},
+    y['services']['letsencrypt']['ports'] = [
+        "0.0.0.0:80:80",
+        "0.0.0.0:443:443",
     ]
+    composefile.write_text(yaml.dump(y))
+    __dc([
+        'kill',
+        'sslproxy',
+        'letsencrypt'
+    ])
+    __dc([
+        'rm',
+        '-f',
+        'letsencrypt'
+    ])
 
     __dc([
         'up',
+        'letsencrypt'
+    ])
+    __dc([
+        'rm',
+        '-f',
         'letsencrypt'
     ])
     y['services']['sslproxy']['ports'] = []

@@ -264,6 +264,7 @@ SAFE_KILL = ['postgres', 'redis']
 # import container specific commands
 from .tools import abort # NOQA
 from .tools import __dcrun # NOQA
+from .tools import __dc # NOQA
 
 for module in dirs['images'].glob("**/__commands.py"):
     if module.is_dir():
@@ -272,13 +273,4 @@ for module in dirs['images'].glob("**/__commands.py"):
         "dynamic_loaded_module", str(module),
     )
     module = importlib.util.module_from_spec(spec)
-    module.injected_globals = {
-        'abort': abort,
-        'AliasedGroup': AliasedGroup,
-        'pass_config': pass_config,
-        'cli': cli,
-        'Commands': Commands,
-        '__dcrun': __dcrun,
-        'dirs': dirs,
-    }
     spec.loader.exec_module(module)

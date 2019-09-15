@@ -11,12 +11,12 @@ def after_compose(config, yml, globals):
             print("SSLPROXY_SUBDOMAINS missing")
             sys.exit(1)
 
-    nginx_conf = dirs['run'] / 'ssl' / 'nginx' / 'app.conf'
+    nginx_conf = dirs['run'] / 'ssl' / 'nginx.conf'
     src = (dir / 'nginx.conf.template').read_text()
     domain = config['SSLPROXY_SUBDOMAINS'].split(",")[0] + "." + config['SSLPROXY_DOMAIN']
     src = src.replace("__DOMAIN__", domain)
 
-    nginx_conf.parent.mkdir(parents=True)
+    nginx_conf.parent.mkdir(parents=True, exist_ok=True)
     nginx_conf.write_text(src)
 
     Path(os.environ['HOST_RUN_DIR'])

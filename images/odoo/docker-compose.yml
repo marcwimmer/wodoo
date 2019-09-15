@@ -31,6 +31,7 @@ services:
     environment:
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files
+      - ODOO_HOME=/opt/odoo
       - OUT_DIR=/opt/out_dir
       - RUN_DIR=/opt/run
       - INTERCOM_DIR=/intercom
