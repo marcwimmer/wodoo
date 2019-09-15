@@ -14,7 +14,34 @@ services:
   sslproxycertbot:
     image: certbot/certbot
     volumes:
-      - $HOST_RUN_DIR/sslproxy/certbot/conf:/etc/letsencrypt
-      - $HOST_RUN_DIR/sslproxy/certbot/www:/var/www/certbot
+      - $HOST_RUN_DIR/ssl/certbot/conf:/etc/letsencrypt
+      - $HOST_RUN_DIR/ssl/certbot/www:/var/www/certbot
     restart: unless-stopped
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  letsencrypt:
+    image: linuxserver/letsencrypt
+    container_name: letsencrypt
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=${OWNER_UID}
+      - PGID=${OWNER_UID}
+      - TZ=Europe/Berlin
+      # yourdomain.com
+      - URL=${SSLPROXY_DOMAIN
+      # www,
+      - SUBDOMAINS=${SSLPROXY_SUBDOMAINS}
+      - VALIDATION=http
+      - DNSPLUGIN=cloudflare #optional
+      - DUCKDNSTOKEN=<token> #optional
+      - EMAIL=${SSLPROXY_EMAIL} #optional
+      - DHLEVEL=2048 #optional
+      - ONLY_SUBDOMAINS=false #optional
+      # - EXTRA_DOMAINS=<extradomains> #optional
+      - STAGING=false #optional
+    volumes:
+      - ${HOST_RUN_DIR}/ssl/config:/config
+    ports:
+      - 443:443
+      - 80:80 #optional
+    restart: unless-stopped
