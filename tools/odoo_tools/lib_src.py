@@ -63,7 +63,7 @@ def show_addons_paths():
 
 def _edit_text(file):
     editor = Path(os.environ['EDITOR'])
-    subprocess.call("'{}' '{}'".format(
+    subprocess.check_call("'{}' '{}'".format(
         editor,
         file
     ), shell=True)

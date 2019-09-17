@@ -138,20 +138,19 @@ def __get_dump_type(filepath):
     Thread(target=reader, args=[proc, proc.stdout]).start()
     proc.wait()
 
-    if temp.exists():
+    if temp.exists() and temp.stat().st_size:
         content = temp.read_text()
         if MARKER in content:
             return 'zipped_sql'
         if content.startswith("PGDMP"):
             return "zipped_pgdump"
-    with open(filepath, 'r') as f:
-        for i, line in enumerate(f):
-            if i == 0 and line.startswith("PGDMP"):
-                return 'pgdump'
-            if i > 50:
-                break
-            if MARKER in line:
-                return "plain_text"
+    with open(filepath, 'rb') as f:
+        content = f.read(2048)
+        content = content.decode('utf-8', errors='ignore')
+        if "PGDMP" in content:
+            return 'pgdump'
+        if MARKER in content:
+            return "plain_text"
     return 'unzipped_pgdump'
 
 
