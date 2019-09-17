@@ -308,8 +308,6 @@ def make_customs(path):
         sha = repo.head.object.hexsha
         sha = repo.git.rev_parse(sha)
         click.echo("Copying odoo with sha to local directory [{}]".format(sha))
-        from pudb import set_trace
-        set_trace()
         copy_dir_contents(repo_path, odoo_path, exclude=['.git'])
         manifest['odoo_commit'] = sha
 
@@ -569,7 +567,7 @@ class Modules(object):
             """
             Returns a list of full paths of all manifests
             """
-            for file in customs_dir().glob("**/" + MANIFEST_FILE):
+            for file in customs_dir().glob("**/" + MANIFEST_FILE()):
                 yield file.absolute()
 
         self.modules = {}
@@ -661,8 +659,8 @@ class Module(object):
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
-            if (p / MANIFEST_FILE).exists():
-                self._manifest_path = p / MANIFEST_FILE
+            if (p / MANIFEST_FILE()).exists():
+                self._manifest_path = p / MANIFEST_FILE()
                 break
         if not getattr(self, '_manifest_path', ''):
             raise Module.IsNot("no module found for {}".format(path))

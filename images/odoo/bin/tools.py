@@ -113,7 +113,6 @@ def prepare_run():
             cr.execute(sql)
 
 def get_odoo_bin(for_shell=False):
-
     if is_odoo_cronjob and not config.get('RUN_ODOO_CRONJOBS') == '1':
         print("Cronjobs shall not run. Good-bye!")
         sys.exit(0)
@@ -140,7 +139,7 @@ def get_odoo_bin(for_shell=False):
             if for_shell:
                 EXEC = "openerp-server"
             else:
-                EXEC = "openerp-gevent"
+                EXEC = "openerp-server"
         else:
             if config.get("ODOO_GEVENT_MODE", "") == "1":
                 raise Exception("Dont use GEVENT MODE anymore")
@@ -187,7 +186,6 @@ def __python_exe():
         return "/usr/bin/python3"
 
 def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **kwargs): # NOQA
-
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
     def wait_flag():

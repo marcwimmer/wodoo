@@ -144,3 +144,5 @@ RUN pip install --no-binary psycopg2
 RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
 
 WORKDIR /opt/odoo
+
+RUN pip3 install humanize retrying click pyyaml requests passlib arrow inquirer

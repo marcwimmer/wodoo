@@ -77,6 +77,7 @@ def _needs_dev_mode(config):
 def _is_dirty(repo, check_submodule, assert_clean=False):
     from git import Repo
     from git import InvalidGitRepositoryError
+    from git import NoSuchPathError
 
     def raise_error():
         if assert_clean:
@@ -91,6 +92,8 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
             try:
                 sub_repo = Repo(submodule.path)
             except InvalidGitRepositoryError:
+                click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+            except NoSuchPathError:
                 click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
             else:
                 if _is_dirty(sub_repo, True, assert_clean=assert_clean):
