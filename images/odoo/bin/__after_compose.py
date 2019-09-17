@@ -27,13 +27,13 @@ def after_compose(config, yml, globals):
         for service in yml['services']:
             # TODO CLEANUP -> more generic instructions ...
             if 'restart' in yml['services'][service] or \
-                    (service == 'odoo_cronjobs' and not config.run_odoo_cronjobs) or \
-                    (service == 'proxy' and not config.run_proxy):
+                    (service == 'odoo_cronjobs' and not config['RUN_ODOO_CRONJOBS']) or \
+                    (service == 'proxy' and not config['RUN_PROXY']):
                 yml['services'][service].pop('restart')
         for service in yml['services']:
             for service_name, run in [
-                ('odoo_cronjobs', config.run_odoo_cronjobs),
-                ('odoo_queuejobs', config.run_odoo_queuejobs),
+                ('odoo_cronjobs', config['RUN_ODOO_CRONJOBS']),
+                ('odoo_queuejobs', config['RUN_ODOO_QUEUEJOBS']),
             ]:
                 if service == service_name:
                     if not run:
