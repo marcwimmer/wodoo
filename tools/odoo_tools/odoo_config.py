@@ -38,7 +38,7 @@ def _identify_odoo_addons_paths(show_conflicts=True):
 
     def _get_modules_in_folder(folder):
         # find extra modules without repo
-        for file in folder.glob("**/__manifest__.py"):
+        for file in folder.glob("**/{}".format(MANIFEST_FILE())):
             if '.git' in file.parts:
                 continue
             file = file.resolve().absolute()
@@ -190,7 +190,7 @@ class MANIFEST_CLASS(object):
         def has_url(pattern, x):
             return x.endswith(pattern) or x.endswith(pattern + ".git")
 
-        mods = list(filter(lambda x: any(has_url('/patches', y) for y in x['urls']), d['modules']))
+        mods = list(filter(lambda x: any(has_url('/patches', y) for y in x.get('urls', [])), d['modules']))
         if not mods:
             mods = self['modules']
             mods.append({
@@ -233,7 +233,7 @@ class MANIFEST_CLASS(object):
         d['install'] = list(sorted(d['install']))
         d['OCA'] = list(sorted(d['OCA']))
         for mod in d['modules']:
-            mod['urls'] = list(sorted(filter(lambda x: x, mod['urls'])))
+            mod['urls'] = list(sorted(filter(lambda x: x, mod.get('urls', []))))
             mod['branch'] = str(mod['branch'])
         s = json.dumps(d, indent=4)
         CUSTOMS_MANIFEST_FILE().write_text(s)
@@ -324,13 +324,15 @@ def translate_path_relative_to_customs_root(path):
         raise Exception("No Customs MANIFEST File found. started at: {}".format(path))
 
 
-MANIFEST_FILE = "__manifest__.py"
-try:
-    version = current_version()
-except Exception:
-    pass
-else:
-    if current_version() <= 10.0:
-        MANIFEST_FILE = "__openerp__.py"
+def MANIFEST_FILE():
+    result = "__manifest__.py"
+    try:
+        current_version()
+    except Exception:
+        pass
     else:
-        MANIFEST_FILE = "__manifest__.py"
+        if current_version() <= 10.0:
+            result = "__openerp__.py"
+        else:
+            result = "__manifest__.py"
+    return result

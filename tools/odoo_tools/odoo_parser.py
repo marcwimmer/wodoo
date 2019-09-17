@@ -17,7 +17,6 @@ from .odoo_config import current_customs
 from .odoo_config import plaintextfile
 from .odoo_config import current_version
 from .odoo_config import translate_path_relative_to_customs_root
-from .odoo_config import MANIFEST_FILE
 from .consts import LN_FILE
 modified_filename = ""
 cache_models = {}
