@@ -180,7 +180,7 @@ def restore_db(ctx, config, filename):
         cr.execute("create database {};".format(DBNAME_RESTORING))
     __dc([
         'run',
-        'cronjobs',
+        'cronjobshell',
         'postgres.py',
         'restore',
         DBNAME_RESTORING,
