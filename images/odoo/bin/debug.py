@@ -19,6 +19,7 @@ prepare_run()
 DEBUGGER_WATCH = Path(os.environ["DEBUGGER_WATCH"])
 last_mod = ''
 last_unit_test = ''
+customs_dir = Path(os.environ['CUSTOMS_DIR'])
 
 def watch_file_and_kill():
     while True:
@@ -84,7 +85,7 @@ def endless_loop():
                 kill_odoo()
                 subprocess.call(['/usr/bin/reset'])
                 if action[0] == 'unit_test':
-                    last_unit_test = action[1]
+                    last_unit_test = str(customs_dir / action[1])
                 subprocess.call([
                     "unit_test.py",
                     last_unit_test

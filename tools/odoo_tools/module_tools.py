@@ -398,11 +398,7 @@ def run_test_file(path):
     if not path:
         instruction = 'last_unit_test'
     else:
-        machine_path = translate_path_into_machine_path(path)
-        if os.getenv("DOCKER_MACHINE", "0") == "1":
-            path = machine_path
-        module = Module(path)
-        instruction = 'unit_test:{}:{}'.format(machine_path, module.name)
+        instruction = 'unit_test:{}'.format(path)
     write_debug_instruction(instruction)
 
 def search_qweb(template_name, root_path=None):
