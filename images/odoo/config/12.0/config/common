@@ -1,6 +1,5 @@
 [options]
 addons_path=__ADDONS_PATH__
-admin_passwd = __ODOO_ADMIN_PASSWORD__
 data_dir = __ODOO_DATA_DIR__
 db_host = __DB_HOST__
 db_maxconn = __DB_MAXCONN__
