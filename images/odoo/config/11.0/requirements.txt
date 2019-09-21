@@ -10,6 +10,7 @@ configobj==5.0.6
 unidecode==1.0.22
 qrcode==5.3
 requests_ntlm==1.0.0
+requests-oauthlib==1.2.0
 hubarcode==1.0.0
 pillow==3.4.2
 Weasyprint==0.42.3

@@ -52,7 +52,6 @@ def endless_loop():
             if not first_run and not DEBUGGER_WATCH.exists():
                 time.sleep(0.2)
                 continue
-            print("file there")
             os.chdir(os.environ["ODOOLIB"])
             if not first_run:
                 content = DEBUGGER_WATCH.read_text()
