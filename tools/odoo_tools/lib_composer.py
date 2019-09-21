@@ -160,9 +160,6 @@ def _execute_after_settings():
         module.after_settings(config)
         config.write()
 
-    # constants
-    if 'OWNER_UID' not in config.keys():
-        config['OWNER_UID'] = os.environ['UID']
 
 def _prepare_yml_files_from_template_files(config):
     # replace params in configuration file
@@ -314,6 +311,11 @@ def _export_settings(customs):
 
     setting_files = _collect_settings_files(customs)
     _make_settings_file(files['settings'], setting_files)
+    # constants
+    config = MyConfigParser(files['settings'])
+    if 'OWNER_UID' not in config.keys():
+        config['OWNER_UID'] = os.environ['UID']
+    config.write()
 
 def _collect_settings_files(customs):
     from . import dirs
