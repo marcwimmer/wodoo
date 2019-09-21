@@ -521,8 +521,6 @@ def _fix_permissions(config):
             config.owner_uid and \
             config.owner_uid_as_int != 0:
         __try_to_set_owner(config.owner_uid, Path(config.odoo_files), recursive=True)
-    customs_dir = odoo_config.customs_dir()
-    __try_to_set_owner("1000", customs_dir, recursive=True) # so odoo user has access
 
 def _get_dump_files(backupdir, fnfilter=None):
     _files = list(backupdir.glob("*"))
