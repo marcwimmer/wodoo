@@ -421,10 +421,6 @@ def _sanity_check(config):
         click.echo("RUN_POSTGRES=0")
         sys.exit(1)
 
-    if not config.owner_uid:
-        click.echo("Advise: you should set OWNER_UID so that dump files are marked as the correct owner")
-        time.sleep(3)
-
     if config.odoo_files and Path(config.odoo_files).is_dir():
         if config.owner_uid and Path(config.odoo_files).stat().st_uid != config.owner_uid_as_int:
             _fix_permissions()
