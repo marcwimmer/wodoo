@@ -6,7 +6,8 @@ import inspect
 
 def after_settings(config):
     if platform.system() == "Linux":
-        pass
+        config['RUN_FSSYNC'] = '0'
+        config.write()
     elif platform.system() in ["Darwin", "Windows"]:
         dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
         template = (dir / 'unison.template.py').read_text()

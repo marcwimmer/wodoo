@@ -160,6 +160,10 @@ def _execute_after_settings():
         module.after_settings(config)
         config.write()
 
+    # constants
+    if 'OWNER_UID' not in config.keys():
+        config['OWNER_UID'] = os.environ['UID']
+
 def _prepare_yml_files_from_template_files(config):
     # replace params in configuration file
     # replace variables in docker-compose;
@@ -310,10 +314,6 @@ def _export_settings(customs):
 
     setting_files = _collect_settings_files(customs)
     _make_settings_file(files['settings'], setting_files)
-    fileconfig = MyConfigParser(files['settings'])
-
-    __postprocess_config(fileconfig)
-    fileconfig.write()
 
 def _collect_settings_files(customs):
     from . import dirs
@@ -380,32 +380,6 @@ def _get_settings_directories(customs):
     yield Path('/etc_host/odoo/{}/settings'.format(project_name))
     yield Path('/home/{}/.odoo'.format(os.environ['USER']))
 
-def __postprocess_config(config):
-    """
-    keep if xxx in config queries for the toggle command. It sets
-    a sub config file which does not contain all keys.
-    """
-    from . import odoo_config
-    if "CUSTOMS" in config.keys():
-        config['ODOO_VERSION'] = str(odoo_config.current_version())
-
-    if 'RUN_POSTGRES' in config.keys() and config['RUN_POSTGRES'] == '1':
-        default_values = {
-            "DB_HOST": "postgres",
-            "DB_PORT": "5432",
-            "DB_USER": "odoo",
-            "DB_PWD": "odoo"
-        }
-        for k, v in default_values.items():
-            if config.get(k, "") != v:
-                config[k] = v
-
-    if "RUN_POSTGRES" in config.keys() and config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
-        config['RUN_POSTGRES_IN_RAM'] = "1"
-
-    if "RUN_CALENDAR" in config.keys() and config.get("RUN_CALENDAR", "") == "1":
-        config['RUN_CALENDAR_DB'] = "1"
-
 @composer.command(name='toggle-settings')
 @pass_config
 @click.pass_context
@@ -446,7 +420,6 @@ def toggle_settings(ctx, config):
         return
     for option in choices:
         config_local[option] = '1' if option in answers['run'] else '0'
-    __postprocess_config(config_local)
     config_local.write()
 
     Commands.invoke(ctx, 'reload')

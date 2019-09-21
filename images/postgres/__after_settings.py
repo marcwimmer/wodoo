@@ -5,6 +5,20 @@ from pathlib import Path
 import inspect
 
 def after_settings(config):
+    if 'RUN_POSTGRES' in config.keys() and config['RUN_POSTGRES'] == '1':
+        default_values = {
+            "DB_HOST": "postgres",
+            "DB_PORT": "5432",
+            "DB_USER": "odoo",
+            "DB_PWD": "odoo"
+        }
+        for k, v in default_values.items():
+            if config.get(k, "") != v:
+                config[k] = v
+
+    if "RUN_POSTGRES" in config.keys() and config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
+        config['RUN_POSTGRES_IN_RAM'] = "1"
+
     if config.get('RUN_BTRFS', ""):
         config['RUN_POSTGRES_IN_BTRFS'] = '1'
         config.write()
