@@ -314,7 +314,7 @@ def _export_settings(customs):
     # constants
     config = MyConfigParser(files['settings'])
     if 'OWNER_UID' not in config.keys():
-        config['OWNER_UID'] = os.environ['UID']
+        config['OWNER_UID'] = str(os.getuid())
     config.write()
 
 def _collect_settings_files(customs):
