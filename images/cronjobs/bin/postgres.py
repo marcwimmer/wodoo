@@ -118,25 +118,7 @@ def restore(dbname, host, port, user, password, filepath):
 def __get_dump_type(filepath):
     temp = Path(tempfile.mktemp(suffix='.check'))
     MARKER = "PostgreSQL database dump"
-    FNULL = open(os.devnull, 'w')
-    proc = subprocess.Popen(['gunzip', '-c', filepath], stdout=subprocess.PIPE, stderr=FNULL, bufsize=1)
-
-    def reader(proc, pipe):
-        try:
-            lines = 0
-            with pipe:
-                for line in iter(pipe.readline, ''):
-                    with temp.open('a') as f:
-                        f.write(line.decode("utf-8", errors='ignore'))
-                        lines += 1
-                        if lines > 20:
-                            break
-        finally:
-            if not proc.returncode:
-                proc.kill()
-
-    Thread(target=reader, args=[proc, proc.stdout]).start()
-    proc.wait()
+    os.system("zcat '{}' | head -n 1 > '{}'".format(filepath, temp))
 
     if temp.exists() and temp.stat().st_size:
         content = temp.read_text()

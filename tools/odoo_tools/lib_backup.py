@@ -76,8 +76,7 @@ def backup_calendar(config):
         config.CALENDAR_DB_PORT,
         config.CALENDAR_DB_USER,
         config.CALENDAR_DB_PWD,
-        config.DB_CALENDAR_FILEFORMAT,
-        '/host/dumps/' + config.CALENDAR_DB_NAME + '.dump.gz',
+        '/host/dumps/' + '{}.calendar'.format(config.customs) + '.dump.gz',
     ]
     __dc(cmd)
 
@@ -96,7 +95,7 @@ def backup_db(ctx, config):
         config.DB_PORT,
         config.DB_USER,
         config.DB_PWD,
-        '/host/dumps/' + config.DBNAME + '.dump.gz',
+        '/host/dumps/' + '{}.{}.odoo'.format(config.customs, config.dbname) + '.dump.gz',
     ]
     __dc(cmd)
 
@@ -127,7 +126,7 @@ def __get_default_backup_filename(config):
 @pass_config
 def get_dump_type(config, filename):
     BACKUPDIR = Path(config.dumps_path)
-    filename = _inquirer_dump_file(config)
+    filename = _inquirer_dump_file(config, '', config.dbname)
     if filename:
         dump_file = BACKUPDIR / filename
         dump_type = __get_dump_type(dump_file)
@@ -144,6 +143,25 @@ def list_dumps(config):
 def restore_files(filename):
     __do_restore_files(filename)
 
+@restore.command(name="calendar")
+@click.argument('filename', required=True)
+@pass_config
+@click.pass_context
+def restore_calendar_db(ctx, config, filename):
+    filename = Path(filename)
+
+    __dc([
+        'run',
+        'cronjobshell',
+        'postgres.py',
+        'restore',
+        config.CALENDAR_DB_NAME,
+        config.CALENDAR_DB_HOST,
+        config.CALENDAR_DB_PORT,
+        config.CALENDAR_DB_USER,
+        config.CALENDAR_DB_PWD,
+        '/host/dumps/{}'.format(filename.name),
+    ])
 
 @restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
@@ -157,7 +175,7 @@ def restore_db(ctx, config, filename):
         click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
 
     if not filename:
-        filename = _inquirer_dump_file(config, "Choose filename to restore")
+        filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname)
     if not filename:
         return
 
@@ -196,9 +214,9 @@ def restore_db(ctx, config, filename):
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
     __remove_postgres_connections(conn.clone(dbname=dest_db))
 
-def _inquirer_dump_file(config, message):
+def _inquirer_dump_file(config, message, filter):
     BACKUPDIR = Path(config.dumps_path)
-    __files = _get_dump_files(BACKUPDIR, fnfilter=config.dbname)
+    __files = _get_dump_files(BACKUPDIR, fnfilter=filter)
     filename = inquirer.prompt([inquirer.List('filename', message, choices=__files)])
     if filename:
         filename = filename['filename'][1]
