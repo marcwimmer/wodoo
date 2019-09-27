@@ -543,7 +543,11 @@ def pack(config, branch, refetch, no_dirty_check):
             if 'set_trace' in content:
                 content = content.replace("import pudb; set_trace()", "pass")
                 content = content.replace("import pudb;set_trace()", "pass")
-                content = content.replace("set_trace()", "pass")
+                content = content.split("\n")
+                for i, line in enumerate(content):
+                    if 'set_trace()' in line and line.strip().startswith('set_trace'):
+                        content[i] = content[i].replace("set_trace()", "pass")
+                content = '\n'.join(content)
                 file.write_text(content)
 
         subprocess.check_call([
@@ -577,6 +581,7 @@ def pack(config, branch, refetch, no_dirty_check):
         subprocess.call(["git", "push"], cwd=folder)
     except Exception:
         shutil.rmtree(str(tmp_folder))
+        raise
 
 
 @src.command()
