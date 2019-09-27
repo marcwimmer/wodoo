@@ -181,9 +181,7 @@ def _prepare_yml_files_from_template_files(config):
 
     project_name = os.environ["PROJECT_NAME"]
     for d in [
-        Path('/etc_host/odoo'),
-        Path('/etc_host/odoo') / config.customs,
-        Path('/etc_host/odoo') / project_name,
+        Path(os.environ['HOME']) / '.odoo' / 'docker-compose.' + project_name + '.yml'
     ]:
         if d.exists():
             [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
