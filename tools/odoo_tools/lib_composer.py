@@ -185,6 +185,8 @@ def _prepare_yml_files_from_template_files(config):
     ]:
         if d.exists():
             [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+        else:
+            click.secho("No docker compose configuration found in {}.".format(d), fg=yellow)
 
     _prepare_docker_compose_files(config, files['docker_compose'], _files)
 
