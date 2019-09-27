@@ -38,6 +38,7 @@ def composer(config):
 @pass_config
 @click.pass_context
 def do_reload(ctx, config, db, demo):
+    click.secho("Current Project Name: {}".format(os.environ["PROJECT_NAME"]), bold=True, fg='green')
     from . import MyConfigParser
     CUSTOMS = os.environ['CUSTOMS']
     SETTINGS_FILE = files['settings']
