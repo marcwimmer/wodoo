@@ -38,6 +38,7 @@ def composer(config):
 @pass_config
 @click.pass_context
 def do_reload(ctx, config, db, demo):
+    click.secho("Current Project Name: {}".format(os.environ["PROJECT_NAME"]), bold=True, fg='green')
     from . import MyConfigParser
     CUSTOMS = os.environ['CUSTOMS']
     SETTINGS_FILE = files['settings']
@@ -328,6 +329,8 @@ def _collect_settings_files(customs):
     _files.append(files['user_settings'])
     if files['project_settings'].exists():
         _files.append(files['project_settings'])
+    else:
+        click.secho("No specific configuration file used: {}".format(files['project_settings']), fg='yellow')
 
     for dir in filter(lambda x: x.exists(), _get_settings_directories(customs)):
         click.echo("Searching for settings in: {}".format(dir))
