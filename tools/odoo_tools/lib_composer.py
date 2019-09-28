@@ -25,6 +25,7 @@ from .tools import __try_to_set_owner
 from .tools import __empty_dir
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
+from . import odoo_user_conf_dir
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -181,10 +182,13 @@ def _prepare_yml_files_from_template_files(config):
 
     project_name = os.environ["PROJECT_NAME"]
     for d in [
-        Path(os.environ['HOME']) / '.odoo' / ('docker-compose.' + project_name + '.yml')
+        odoo_user_conf_dir / ('docker-compose.' + project_name + '.yml'),
     ]:
         if d.exists():
-            [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+            if d.is_file():
+                _files.append(d)
+            else:
+                [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
         else:
             click.secho("No docker compose configuration found in {}.".format(d), fg='yellow')
 
@@ -223,6 +227,8 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
         j = yaml.safe_load(content)
         if not j:
+            click.secho("Error loading content: \n{}".format(content), fg='red')
+            sys.exit(-1)
             continue
 
         # default values in yaml file
@@ -430,6 +436,8 @@ def toggle_settings(ctx, config):
     Commands.invoke(ctx, 'reload')
 
 def _use_file(config, path):
+    if str(path.absolute()).startswith(str(odoo_user_conf_dir.absolute())):
+        return True
     if 'etc' in path.parts:
         return True
     if path.parent.parent.name == 'images' and path.name == 'docker-compose.yml':

@@ -17,6 +17,7 @@ from . import module_tools # NOQA
 from .myconfigparser import MyConfigParser  # NOQA
 from . import odoo_config  # NOQA
 from .odoo_config import get_postgres_connection_params # NOQA
+odoo_user_conf_dir = Path(os.environ["HOME"]) / '.odoo'
 
 def _get_customs_root(p):
     # arg_dir = p
@@ -274,3 +275,4 @@ for module in dirs['images'].glob("**/__commands.py"):
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+
