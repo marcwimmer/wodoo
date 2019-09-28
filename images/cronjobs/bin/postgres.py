@@ -118,10 +118,11 @@ def restore(dbname, host, port, user, password, filepath):
 def __get_dump_type(filepath):
     temp = Path(tempfile.mktemp(suffix='.check'))
     MARKER = "PostgreSQL database dump"
-    os.system("zcat '{}' | head -n 1 > '{}'".format(filepath, temp))
+    os.system("zcat '{}' 2>/dev/null | head -n 1 > '{}'".format(filepath, temp))
 
     if temp.exists() and temp.stat().st_size:
-        content = temp.read_text()
+        content = temp.read_bytes()
+        content = content.decode('utf-8', errors='ignore')
         if MARKER in content:
             return 'zipped_sql'
         if content.startswith("PGDMP"):
