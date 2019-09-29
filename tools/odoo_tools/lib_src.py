@@ -575,7 +575,7 @@ def pack(config, branch, refetch, no_dirty_check):
         gitignore = folder / '.gitignore'
         with gitignore.open('w') as f:
             f.write("""
-    *.pyc
+*.pyc
     """)
 
         subprocess.call(["find", '.', "-name", "*.pyc", "-delete"], cwd=folder)
