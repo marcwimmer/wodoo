@@ -88,17 +88,22 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
         raise_error()
         return True
     if check_submodule:
-        for submodule in repo.submodules:
-            try:
-                sub_repo = Repo(submodule.path)
-            except InvalidGitRepositoryError:
-                click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
-            except NoSuchPathError:
-                click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
-            else:
-                if _is_dirty(sub_repo, True, assert_clean=assert_clean):
-                    raise_error()
-                    return True
+        try:
+            repo.submodules
+        except AttributeError:
+            pass
+        else:
+            for submodule in repo.submodules:
+                try:
+                    sub_repo = Repo(submodule.path)
+                except InvalidGitRepositoryError:
+                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+                except NoSuchPathError:
+                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+                else:
+                    if _is_dirty(sub_repo, True, assert_clean=assert_clean):
+                        raise_error()
+                        return True
     return False
 
 class BranchText(object):
@@ -187,7 +192,8 @@ def _get_modules(include_oca=True):
 @click.argument('module', required=False)
 @click.option('--oca', help="Include OCA Modules", is_flag=True)
 @click.option('--depth', default="", help="Depth of git fetch for new modules")
-def pull(oca, depth, module):
+@click.option('-T', '--not-threaded', default=False, help="", is_flag=True)
+def pull(oca, depth, module, not_threaded):
     filter_module = module
     del module
     from git import Repo
@@ -277,8 +283,13 @@ def pull(oca, depth, module):
                 try_again.append(module)
         threads.append(threading.Thread(target=_do_pull, args=(module,)))
         del module
-    [x.start() for x in threads]
-    [x.join() for x in threads]
+    if not not_threaded:
+        [x.start() for x in threads]
+        [x.join() for x in threads]
+    else:
+        for t in threads:
+            t.start()
+            t.join()
 
     for module in try_again:
         print(module['name'])
