@@ -351,6 +351,8 @@ def _collect_settings_files(customs):
                 _files.append(file)
     click.echo("Found following extra settings files:")
     for file in _files:
+        if not file.exists():
+            continue
         if 'images' not in file.parts:
             click.echo(file)
             click.echo(file.read_text())
