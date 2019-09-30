@@ -1,4 +1,5 @@
-FROM debian:stretch
+# use buster for latest postgres client
+FROM debian:buster
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
