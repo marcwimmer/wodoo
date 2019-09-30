@@ -260,8 +260,6 @@ def debug(ctx, config, machine, ports):
 @control.command()
 def proxy_reload():
     pass
-    # if __is_container_running('proxy'):
-    #    __dcexec(['proxy', '/opt/bin/hot_reload.sh'])
 
 
 Commands.register(kill)
