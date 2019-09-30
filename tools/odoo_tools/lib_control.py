@@ -59,7 +59,7 @@ def dev(ctx, config, nobuild, kill):
         ctx,
         'reload',
         proxy_port=proxy_port,
-        dbname=dbname,
+        db=dbname,
         demo=demo,
     )
     if not nobuild:
