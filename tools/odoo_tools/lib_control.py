@@ -35,22 +35,26 @@ def control(config):
 
 @control.command()
 @click.option("-B", "--nobuild", is_flag=True)
+@click.option("-k", "--kill", is_flag=True)
 @pass_config
 @click.pass_context
-def dev(ctx, config, nobuild):
+def dev(ctx, config, nobuild, kill):
     """
     starts developing in the odoo container
     """
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
-    ctx.invoke(kill, brutal=True)
+    ctx.invoke(do_kill, brutal=True)
     ctx.invoke(rm)
     Commands.invoke(ctx, 'reload')
     if not nobuild:
         ctx.invoke(build)
-    click.echo("Killing all docker containers")
-    os.system("docker kill $(docker ps -q)")
+    from pudb import set_trace
+    set_trace()
+    if kill:
+        click.echo("Killing all docker containers")
+        os.system("docker kill $(docker ps -q)")
     __dc(['up', '-d'])
     Commands.invoke(ctx, 'kill', machines=["odoo"])
     if platform.system() in ["Windows", "Darwin"]:
@@ -66,12 +70,12 @@ def execute(machine, args):
     args = [machine] + list(args)
     __dcexec(args)
 
-@control.command()
+@control.command(name='kill')
 @click.argument('machines', nargs=-1)
 @click.option('-b', '--brutal', is_flag=True, help='dont wait')
 @pass_config
 @click.pass_context
-def kill(ctx, config, machines, brutal=False):
+def do_kill(ctx, config, machines, brutal=False):
     """
     kills running machine
     safely shutdowns postgres and redis
@@ -99,7 +103,7 @@ def kill(ctx, config, machines, brutal=False):
 @control.command()
 @click.pass_context
 def force_kill(ctx, machine):
-    ctx.invoke(kill, machine=machine, brutal=True)
+    ctx.invoke(do_kill, machine=machine, brutal=True)
 
 @control.command()
 @pass_config
@@ -151,7 +155,7 @@ def up(ctx, config, machines, daemon):
 @pass_config
 @click.pass_context
 def stop(ctx, config,  machines):
-    ctx.invoke(kill, machines=machines)
+    ctx.invoke(do_kill, machines=machines)
 
 @control.command()
 @click.argument('machines', nargs=-1)
@@ -171,7 +175,7 @@ def restart(ctx, config, machines):
         if config.run_postgres_in_ram:
             machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
-    ctx.invoke(kill, machines=machines)
+    ctx.invoke(do_kill, machines=machines)
     ctx.invoke(up, machines=machines, daemon=True)
     ctx.invoke(proxy_reload)
 
@@ -232,7 +236,7 @@ def debug(ctx, config, machine, ports):
     if not config.devmode:
         _askcontinue(config, "Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine))
     # shutdown current machine and start via run and port-mappings the replacement machine
-    ctx.invoke(kill, machines=[machine])
+    ctx.invoke(do_kill, machines=[machine])
     ctx.invoke(rm, machines=[machine])
     src_files = [files['debugging_template_onlyloop']]
     if ports:
@@ -262,7 +266,7 @@ def proxy_reload():
     pass
 
 
-Commands.register(kill)
+Commands.register(do_kill, 'kill')
 Commands.register(up)
 Commands.register(wait_for_container_postgres)
 Commands.register(build)
