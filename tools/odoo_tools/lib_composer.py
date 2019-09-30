@@ -37,9 +37,10 @@ def composer(config):
 @click.option("--demo", is_flag=True, help="Enabled demo data.")
 @click.option("-d", "--db", required=False)
 @click.option("-p", "--proxy-port", required=False)
+@click.option("-m", "--mailclient-gui-port", required=False, default="8000")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port):
     click.secho("Current Project Name: {}".format(os.environ["PROJECT_NAME"]), bold=True, fg='green')
     from . import MyConfigParser
     CUSTOMS = os.environ['CUSTOMS']
@@ -60,6 +61,7 @@ def do_reload(ctx, config, db, demo, proxy_port):
         'db': db,
         'demo': demo,
         'PROXY_PORT': proxy_port,
+        "ROUNDCUBE_PORT": mailclient_gui_port,
     }
 
     # assuming we are in the odoo directory

@@ -42,26 +42,11 @@ def dev(ctx, config, nobuild, kill):
     """
     starts developing in the odoo container
     """
-    proxy_port, dbname, demo = None, None, None
-    if files['settings'].exists():
-        from .myconfigparser import MyConfigParser  # NOQA
-        myconfig = MyConfigParser(files['settings'])
-        proxy_port = myconfig.get('PROXY_PORT', '')
-        dbname = myconfig.get('DBNAME', '')
-        demo = myconfig.get("DEMO", "")
-        del myconfig
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
     ctx.invoke(do_kill, brutal=True)
     ctx.invoke(rm)
-    Commands.invoke(
-        ctx,
-        'reload',
-        proxy_port=proxy_port,
-        db=dbname,
-        demo=demo,
-    )
     if not nobuild:
         ctx.invoke(build)
     if kill:
