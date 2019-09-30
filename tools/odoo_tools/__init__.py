@@ -19,6 +19,14 @@ from . import odoo_config  # NOQA
 from .odoo_config import get_postgres_connection_params # NOQA
 odoo_user_conf_dir = Path(os.environ["HOME"]) / '.odoo'
 
+def _search_path(filename):
+    filename = Path(filename)
+    filename = filename.name
+    for path in os.environ['PATH'].split(":"):
+        path = Path(path)
+        if (path / filename).exists():
+            return str(path / filename)
+
 def _get_customs_root(p):
     # arg_dir = p
     if p:
@@ -103,7 +111,7 @@ dirs = {
 
 files = {
     'docker_compose': '${run}/docker-compose.yml',
-    'docker_compose_bin': '/usr/local/bin/docker-compose',
+    'docker_compose_bin': _search_path('docker-compose'),
     'debugging_template_withports': 'config/template_withports.yml',
     'debugging_template_onlyloop': 'config/template_onlyloop.yml',
     'debugging_composer': '${run}/debugging.yml',
@@ -119,7 +127,7 @@ files = {
     'project_settings': "~/.odoo/settings.${project_name}",
 }
 commands = {
-    'dc': ["/usr/local/bin/docker-compose", "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
+    'dc': [files['docker_compose_bin'], "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
 }
 
 def make_absolute_paths():
@@ -275,4 +283,3 @@ for module in dirs['images'].glob("**/__commands.py"):
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-
