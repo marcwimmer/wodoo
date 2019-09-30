@@ -50,8 +50,6 @@ def dev(ctx, config, nobuild, kill):
     Commands.invoke(ctx, 'reload')
     if not nobuild:
         ctx.invoke(build)
-    from pudb import set_trace
-    set_trace()
     if kill:
         click.echo("Killing all docker containers")
         os.system("docker kill $(docker ps -q)")
