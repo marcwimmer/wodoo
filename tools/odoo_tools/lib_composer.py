@@ -60,9 +60,11 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port):
         'customs': CUSTOMS,
         'db': db,
         'demo': demo,
-        'PROXY_PORT': proxy_port,
-        "ROUNDCUBE_PORT": mailclient_gui_port,
     }
+    if proxy_port:
+        defaults['PROXY_PORT'] = proxy_port
+    if mailclient_gui_port:
+        defaults["ROUNDCUBE_PORT"] = mailclient_gui_port
 
     # assuming we are in the odoo directory
     _do_compose(**defaults)
