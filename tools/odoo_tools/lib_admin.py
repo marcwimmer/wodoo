@@ -93,7 +93,7 @@ def remove_web_assets(ctx, config):
     if odoo-web interface is broken (css, js) then purging the web-assets helps;
     they are usually recreated when admin login
     """
-    from module_tools.odoo_config import current_version
+    from .odoo_config import current_version
     _askcontinue(config)
     conn = config.get_odoo_conn().clone(dbname=config.dbname)
     remove_webassets(conn)
