@@ -21,6 +21,8 @@ last_mod = ''
 last_unit_test = ''
 customs_dir = Path(os.environ['CUSTOMS_DIR'])
 
+os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
+
 def watch_file_and_kill():
     while True:
         try:

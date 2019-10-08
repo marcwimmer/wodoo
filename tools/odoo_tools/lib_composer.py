@@ -37,9 +37,10 @@ def composer(config):
 @click.option("--demo", is_flag=True, help="Enabled demo data.")
 @click.option("-d", "--db", required=False)
 @click.option("-p", "--proxy-port", required=False)
+@click.option("-m", "--mailclient-gui-port", required=False, default="8000")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port):
     click.secho("Current Project Name: {}".format(os.environ["PROJECT_NAME"]), bold=True, fg='green')
     from . import MyConfigParser
     CUSTOMS = os.environ['CUSTOMS']
@@ -54,15 +55,21 @@ def do_reload(ctx, config, db, demo, proxy_port):
             myconfig['PROXY_PORT'] = proxy_port
         myconfig.write()
 
-    # assuming we are in the odoo directory
-    _do_compose(
-        config=config,
-        customs=CUSTOMS,
-        db=db,
-        demo=demo
-    )
+    defaults = {
+        'config': config,
+        'customs': CUSTOMS,
+        'db': db,
+        'demo': demo,
+    }
+    if proxy_port:
+        defaults['PROXY_PORT'] = proxy_port
+    if mailclient_gui_port:
+        defaults["ROUNDCUBE_PORT"] = mailclient_gui_port
 
-def _do_compose(config, customs='', db='', demo=False):
+    # assuming we are in the odoo directory
+    _do_compose(**defaults)
+
+def _do_compose(config, customs='', db='', demo=False, **defaults):
     """
     builds docker compose, proxy settings, setups odoo instances
     """
@@ -71,7 +78,7 @@ def _do_compose(config, customs='', db='', demo=False):
     os.environ['HOST_RUN_DIR'] = str(HOST_RUN_DIR)
     os.environ['NETWORK_NAME'] = NETWORK_NAME
 
-    setup_settings_file(customs, db, demo)
+    setup_settings_file(customs, db, demo, **defaults)
     _export_settings(customs)
     _prepare_filesystem()
     _execute_after_settings()
@@ -91,7 +98,7 @@ def _prepare_filesystem():
             path
         )
 
-def setup_settings_file(customs, db, demo):
+def setup_settings_file(customs, db, demo, **defaults):
     """
     Cleans run/settings and sets minimal settings;
     Puts default values in settings.d to override any values
@@ -109,6 +116,7 @@ def setup_settings_file(customs, db, demo):
     vals['DBNAME'] = db or customs
     if demo:
         vals['ODOO_DEMO'] = "1" if demo else "0"
+    vals.update(defaults)
 
     for k, v in vals.items():
         if config.get(k, '') != v:
@@ -116,9 +124,8 @@ def setup_settings_file(customs, db, demo):
             config.write()
     config_compose_minimum = MyConfigParser(files['settings_auto'])
     config_compose_minimum.clear()
-    for k in ['CUSTOMS', 'DBNAME', 'ODOO_DEMO']:
-        if k in vals:
-            config_compose_minimum[k] = vals[k]
+    for k in vals.keys():
+        config_compose_minimum[k] = vals[k]
 
     if not config_compose_minimum.get("POSTGRES_PORT", ""):
         # try to use same port again

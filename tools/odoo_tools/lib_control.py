@@ -47,7 +47,6 @@ def dev(ctx, config, nobuild, kill):
         sys.exit(-1)
     ctx.invoke(do_kill, brutal=True)
     ctx.invoke(rm)
-    Commands.invoke(ctx, 'reload')
     if not nobuild:
         ctx.invoke(build)
     if kill:

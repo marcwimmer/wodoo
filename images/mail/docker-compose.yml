@@ -15,8 +15,6 @@ services:
       - ${CUSTOMS}_mailstorage:/home/postmaster/Maildir
       - ${CUSTOMS}_mailsqlite:/rc
       - $ODOO_HOME/images/mail/bin:/opt/bin
-    ports:
-      - "${SMTP_PORT}:25"
 
   roundcube:
     container_name: ${PROJECT_NAME}_${CUSTOMS}_roundcube
