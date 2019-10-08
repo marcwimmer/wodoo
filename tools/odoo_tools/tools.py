@@ -120,11 +120,11 @@ def __get_odoo_commit():
     return commit
 
 def __execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False):
-    # @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
-    # def try_connect():
-        # __execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
-    # if not no_try:
-        # try_connect()
+    @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
+    def try_connect():
+        __execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
+    if not no_try:
+        try_connect()
 
     conn = connection.get_psyco_connection()
     conn.autocommit = notransaction
