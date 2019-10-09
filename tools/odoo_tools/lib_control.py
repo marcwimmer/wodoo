@@ -55,9 +55,9 @@ def dev(ctx, config, nobuild, kill):
     __dc(['up', '-d'])
     Commands.invoke(ctx, 'kill', machines=["odoo"])
     if platform.system() in ["Windows", "Darwin"]:
-        if config.run_fssync and config.fssync_host != '127.0.0.1':
+        if config.run_fssync:
             Commands.invoke(ctx, 'fssync_config')
-        Commands.invoke(ctx, 'fssync_start')
+            Commands.invoke(ctx, 'fssync_start')
     Commands.invoke(ctx, 'debug', machine="odoo")
 
 @control.command(name='exec')
