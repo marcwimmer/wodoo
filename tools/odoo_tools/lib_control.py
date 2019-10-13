@@ -57,8 +57,9 @@ def dev(ctx, config, nobuild, kill):
     __dc(['up', '-d'])
     Commands.invoke(ctx, 'kill', machines=["odoo"])
     if platform.system() in ["Windows", "Darwin"]:
-        if config.run_fssync and config.fssync_host != '127.0.0.1':
-            Commands.invoke(ctx, 'fssync_config')
+        if config.run_fssync:
+            if myconfig['FSSYNC_HOST'] not in ['0.0.0.0', '127.0.0.1']:
+                Commands.invoke(ctx, 'fssync_config')
         Commands.invoke(ctx, 'fssync_start')
     ip = _get_host_ip()
     proxy_port = myconfig['PROXY_PORT']

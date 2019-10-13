@@ -9,8 +9,7 @@ def after_compose(config, yml, globals):
     if config['RUN_SSLPROXY'] != '1':
         return
     if not config.get('SSLPROXY_SUBDOMAINS', ""):
-        print("SSLPROXY_SUBDOMAINS missing")
-        sys.exit(1)
+        print("warn: SSLPROXY_SUBDOMAINS missing")
 
     nginx_conf = dirs['run'] / 'ssl' / 'nginx.conf'
     src = (dir / 'nginx.conf.template').read_text()
