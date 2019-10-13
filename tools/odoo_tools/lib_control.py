@@ -24,6 +24,7 @@ from .tools import __set_db_ownership
 from .tools import __dcexec
 from .tools import _get_machines
 from .tools import __dc
+from .tools import _get_host_ip
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 
@@ -31,7 +32,6 @@ from .lib_clickhelpers import AliasedGroup
 @pass_config
 def control(config):
     pass
-
 
 @control.command()
 @click.option("-B", "--nobuild", is_flag=True)
@@ -42,6 +42,8 @@ def dev(ctx, config, nobuild, kill):
     """
     starts developing in the odoo container
     """
+    from . import MyConfigParser
+    myconfig = MyConfigParser(files['settings'])
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
@@ -58,6 +60,11 @@ def dev(ctx, config, nobuild, kill):
         if config.run_fssync and config.fssync_host != '127.0.0.1':
             Commands.invoke(ctx, 'fssync_config')
         Commands.invoke(ctx, 'fssync_start')
+    ip = _get_host_ip()
+    proxy_port = myconfig['PROXY_PORT']
+    roundcube_port = myconfig['ROUNDCUBE_PORT']
+    click.secho("Proxy Port: http://{}:{}".format(ip, proxy_port), fg='green', bold=True)
+    click.secho("Mailclient : http://{}:{}".format(ip, roundcube_port), fg='green', bold=True)
     Commands.invoke(ctx, 'debug', machine="odoo")
 
 @control.command(name='exec')

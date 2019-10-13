@@ -675,3 +675,9 @@ def copy_dir_contents(dir, dest_dir, exclude=None):
             shutil.copy(str(x.absolute()), str((dest_dir / x.name).absolute()))
         else:
             shutil.copytree(str(x.absolute()), str((dest_dir / x.name).absolute()))
+
+def _get_host_ip():
+    conn = os.getenv("SSH_CONNECTION", "")
+    if conn:
+        conn = [x for x in conn.split(" ") if x]
+        return conn[2]
