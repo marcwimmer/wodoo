@@ -1,3 +1,4 @@
+import yaml
 from pathlib import Path
 import subprocess
 import inquirer
@@ -13,6 +14,7 @@ import tempfile
 import click
 from .odoo_config import current_version
 from .odoo_config import MANIFEST
+from .tools import __dc
 from .tools import __assert_file_exists
 from .tools import __safe_filename
 from .tools import __read_file
@@ -623,6 +625,78 @@ def update_addons_path():
     current_paths = [x for x in current_paths if x in paths]
     m['addons_paths'] = current_paths
     m.rewrite()
+
+@src.command()
+@click.argument('machines', nargs=-1)
+@pass_config
+def regpush(config, machines):
+    if not machines:
+        machines = list(yaml.load(files['docker_compose'].read_text())['services'])
+    for machine in machines:
+        __dc(['push', machine])
+
+@src.command()
+@click.argument('machines', nargs=-1)
+@pass_config
+def regpull(config, machines):
+    if not machines:
+        machines = list(yaml.load(files['docker_compose'].read_text())['services'])
+    for machine in machines:
+        __dc(['pull', machine])
+
+@src.command()
+@pass_config
+def self_sign_hub_certificate(config):
+    if os.getuid() != 0:
+        click.secho("Please execute as root or with sudo!", bold=True, fg='red')
+        sys.exit(-1)
+    url = os.getenv("ODOO_HUB_URL")
+    url_part = url.split(":")[0] + '.crt'
+    cert_filename = Path("/usr/local/share/ca-certificates") / url_part
+    with cert_filename.open("w") as f:
+        proc = subprocess.Popen([
+            "openssl",
+            "s_client",
+            "-connect",
+            url,
+        ], stdin=subprocess.PIPE, stdout=f)
+        proc.stdin.write(b"\n")
+        proc.communicate()
+    print(cert_filename)
+    content = cert_filename.read_text()
+    BEGIN_CERT = "-----BEGIN CERTIFICATE-----"
+    END_CERT = "-----END CERTIFICATE-----"
+    content = BEGIN_CERT + "\n" + content.split(BEGIN_CERT)[1].split(END_CERT)[0] + "\n" + END_CERT + "\n"
+    cert_filename.write_text(content)
+    click.secho("Restarting docker service...", fg='green')
+    subprocess.check_call(['service', 'docker', 'restart'])
+    click.secho("Updating ca certificates...", fg='green')
+    subprocess.check_call(['update-ca-certificates'])
+
+@src.command()
+@pass_config
+def hub_login(config):
+    hub = os.environ['ODOO_HUB_URL']
+
+    def _login():
+        res = subprocess.check_call([
+            'docker', 'login', hub,
+            '-u', os.environ['ODOO_HUB_USER'],
+            '-p', os.environ['ODOO_HUB_PWD'],
+        ])
+        if "Login Succeeded" in res:
+            return True
+        return False
+
+    try:
+        if _login():
+            return
+    except Exception:
+        click.secho("Please self sign certificate for {} with command 'self-sign-hub-certificate'".format(
+            hub
+        ), bold=True, fg='red')
+
+        pass
 
 
 Commands.register(pack)

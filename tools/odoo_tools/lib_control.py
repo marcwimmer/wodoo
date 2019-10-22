@@ -208,9 +208,10 @@ def attach(machine):
 @control.command()
 @click.argument('machines', nargs=-1)
 @click.option('--no-cache', is_flag=True)
-@click.option('--pull', is_flag=False)
+@click.option('--pull', is_flag=True)
+@click.option('--push', is_flag=True)
 @pass_config
-def build(config, machines, pull=False, no_cache=False):
+def build(config, machines, pull, no_cache, push):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """

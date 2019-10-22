@@ -281,6 +281,15 @@ def _prepare_docker_compose_files(config, dest_file, paths):
                 if 'restart' in yml['services'][service]:
                     yml['services'][service].pop('restart')
 
+        # set hub source for all images, that are built:
+        for service_name, service in yml['services'].items():
+            if not service.get('build', False):
+                continue
+            service['image'] = "hub.clear-consulting.de:443/ite_{customs}/{service_name}:latest".format(
+                customs=config.customs,
+                service_name=service_name,
+            )
+
         return yml
 
     # call docker compose config to get the complete config
