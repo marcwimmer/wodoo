@@ -222,7 +222,7 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **
         '-d',
         config["DBNAME"],
     ]
-    print(Path(CONFIG).read_text())
+    # print(Path(CONFIG).read_text())
     if not odoo_shell:
         cmd += [
             '--pidfile={}'.format(pidfile),
