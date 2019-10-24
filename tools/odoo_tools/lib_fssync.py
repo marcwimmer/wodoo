@@ -27,10 +27,12 @@ def _get_remote_homepath(host):
     raise NotImplementedError(platform.system())
 
 def _setup_watchman_for_odoo_source(config, local_status_file):
+    from pudb import set_trace
+    set_trace()
     subprocess.check_output([
         'watchman',
         'watch-project',
-        os.environ['CUSTOMS_DIR'],
+        str(dirs['customs']),
     ])
     (Path(config.customs_dir) / '.watchmanconfig').write_text(json.dumps({
         "root_files": ["MANIFEST"],
@@ -38,30 +40,19 @@ def _setup_watchman_for_odoo_source(config, local_status_file):
         "ignore_dirs": [".git", "__pycache__"],
         "fsevents_try_resync": True,  # MACOS specific
     }))
-    # cmd = [
-        # 'watchman',
-        # '--',
-        # 'trigger',
-        # os.environ['CUSTOMS_DIR'],
-        # 'unison_odoo_src', # name
-        # '**/*',
-        # '--',
-        # config.unison_odoo_src_exe
-    # ]
-    # subprocess.check_output(cmd)
 
-    info = ["trigger", os.environ['CUSTOMS_DIR'], {
+    info = ["trigger", str(dirs['customs']), {
         "name": "unison_odoo_src",
         "expression": ["anyof", ["match", "**/*", "wholename"]],
         "empty_on_fresh_instance": False,
         "command": [config.unison_odoo_src_exe],
-        "stdin": ["name", "exists", "new", "size"],  #mode
+        "stdin": ["name", "exists", "new", "size"],  # mode
         "append_files": False,
         "dedup_results": True
     }]
     subprocess.run(['watchman', '-j'], input=json.dumps(info), encoding='ascii')
 
-    local_status_file.write_text(os.environ['CUSTOMS_DIR'])
+    local_status_file.write_text(str(dirs['customs']))
 
 def _setup_watchman_for_run_dirs(config, local_status_file):
     # synchronized dirs
