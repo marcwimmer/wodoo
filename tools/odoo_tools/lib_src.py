@@ -698,5 +698,25 @@ def hub_login(config):
 
         pass
 
+@src.command()
+@pass_config
+def setup_venv(config):
+    from .odoo_config import current_version
+    dir = customs_dir()
+    os.chdir(dir)
+    venv_dir = dir / '.venv'
+    gitignore = dir / '.gitignore'
+    if '.venv' not in gitignore.read_text().split("\n"):
+        with gitignore.open("a") as f:
+            f.write("\n.venv\n")
+
+    subprocess.check_call(["python3", "-m", "venv", venv_dir.absolute()])
+
+    click.secho("Please execute following commands in your shell:", bold=True)
+    click.secho("source '{}'".format(venv_dir / 'bin' / 'activate'))
+    click.secho("pip3 install -r https://raw.githubusercontent.com/odoo/odoo/{}/requirements.txt".format(current_version()))
+    requirements1 = Path(__file__).parent.parent / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
+    click.secho("pip3 install -r {}".format(requirements1))
+
 
 Commands.register(pack)
