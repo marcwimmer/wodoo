@@ -27,8 +27,6 @@ def _get_remote_homepath(host):
     raise NotImplementedError(platform.system())
 
 def _setup_watchman_for_odoo_source(config, local_status_file):
-    from pudb import set_trace
-    set_trace()
     subprocess.check_output([
         'watchman',
         'watch-project',

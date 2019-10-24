@@ -50,6 +50,10 @@ def update(mode, module):
     if not ONLY_I18N:
         print(mode, module)
         # obj_module = Module.get_by_name(module)
+        if mode == 'i':
+            module = ','.join(x for x in module.split(",") if not DBModules.is_module_installed(x))
+            if not module:
+                return
         params = [
             '-' + mode,
             module,
@@ -136,22 +140,26 @@ def main():
         raise Exception("requires module!")
 
     summary = []
+    MODULE = MODULE.split(",")
 
-    for module in MODULE.split(','):
+    for module in list(MODULE):
         if not DBModules.is_module_installed(module):
             if not DBModules.is_module_listed(module):
                 update_module_list()
                 if not DBModules.is_module_listed(module):
                     raise Exception("After updating module list, module was not found: {}".format(module))
+            from pudb import set_trace
+            set_trace()
             update('i', module)
+            MODULE = [x for x in MODULE if x != module]
             summary.append("INSTALL " + module)
 
     if DELETE_QWEB:
-        for module in MODULE.split(','):
+        for module in MODULE:
             print("Deleting qweb of module {}".format(module))
             delete_qweb(module)
     update('u', MODULE)
-    for module in MODULE.split(","):
+    for module in MODULE:
         summary.append("UPDATE " + module)
 
     # check if at auto installed modules all predecessors are now installed; then install them
