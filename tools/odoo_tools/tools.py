@@ -646,11 +646,23 @@ def __replace_all_envs_in_str(content, env):
             content = content.replace(param, env[name])
     return content
 
+def __remove_tree(dir, retry=3, interval=2):
+    for i in range(retry):
+        try:
+            shutil.rmtree(dir)
+        except Exception as e:
+            E = e
+            time.sleep(interval)
+        else:
+            return
+    raise E
+
 def __hash_odoo_password(pwd):
     from .odoo_config import current_version
     if current_version() in [
             11.0,
             12.0,
+            13.0,
             10.0,
             09.0,
     ]:
@@ -662,6 +674,23 @@ def __hash_odoo_password(pwd):
 def abort(msg, nr=1):
     click.secho(msg, fg='red', bold=True)
     sys.exit(nr)
+
+def sync_folder(dir, dest_dir, excludes=None):
+    dir = Path(dir)
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(exist_ok=True, parents=True)
+    if not dir or not dest_dir or len(str(dir)) < 5 or len(str(dest_dir)) < 5:
+        raise Exception('invalid dirs: {} {}'.format(
+            dir,
+            dest_dir
+        ))
+    if platform.system() in ['Linux', 'Darwin']:
+        cmd = ['rsync', str(dir) + "/", str(dest_dir) + "/", "-r", "--delete-after"]
+        for exclude in (excludes or []):
+            cmd += ["--exclude={}".format(exclude)]
+        subprocess.check_call(cmd)
+    else:
+        raise NotImplementedError()
 
 def copy_dir_contents(dir, dest_dir, exclude=None):
     assert dir.is_dir()
@@ -681,3 +710,35 @@ def _get_host_ip():
     if conn:
         conn = [x for x in conn.split(" ") if x]
         return conn[2]
+
+def _is_dirty(repo, check_submodule, assert_clean=False):
+    from git import Repo
+    from git import InvalidGitRepositoryError
+    from git import NoSuchPathError
+
+    def raise_error():
+        if assert_clean:
+            click.secho("Dirty directory - please cleanup: {}".format(repo.working_dir), bold=True, fg='red')
+            sys.exit(42)
+
+    if repo.is_dirty() or repo.untracked_files:
+        raise_error()
+        return True
+    if check_submodule:
+        try:
+            repo.submodules
+        except AttributeError:
+            pass
+        else:
+            for submodule in repo.submodules:
+                try:
+                    sub_repo = Repo(submodule.path)
+                except InvalidGitRepositoryError:
+                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+                except NoSuchPathError:
+                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+                else:
+                    if _is_dirty(sub_repo, True, assert_clean=assert_clean):
+                        raise_error()
+                        return True
+    return False

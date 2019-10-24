@@ -22,6 +22,7 @@ from .tools import __write_file
 from .tools import _askcontinue
 from .tools import __append_line
 from .tools import __get_odoo_commit
+from .tools import _is_dirty
 from .odoo_config import current_customs
 from .odoo_config import customs_dir
 from . import cli, pass_config, dirs, files, Commands
@@ -76,38 +77,6 @@ def _needs_dev_mode(config):
         sys.exit(-1)
 
 
-def _is_dirty(repo, check_submodule, assert_clean=False):
-    from git import Repo
-    from git import InvalidGitRepositoryError
-    from git import NoSuchPathError
-
-    def raise_error():
-        if assert_clean:
-            click.secho("Dirty directory - please cleanup: {}".format(repo.working_dir), bold=True, fg='red')
-            sys.exit(42)
-
-    if repo.is_dirty() or repo.untracked_files:
-        raise_error()
-        return True
-    if check_submodule:
-        try:
-            repo.submodules
-        except AttributeError:
-            pass
-        else:
-            for submodule in repo.submodules:
-                try:
-                    sub_repo = Repo(submodule.path)
-                except InvalidGitRepositoryError:
-                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
-                except NoSuchPathError:
-                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
-                else:
-                    if _is_dirty(sub_repo, True, assert_clean=assert_clean):
-                        raise_error()
-                        return True
-    return False
-
 class BranchText(object):
     def __init__(self, branch):
         self.path = Path(os.environ['HOME']) / '.odoo/branch_texts' / branch
@@ -159,18 +128,8 @@ def new_branch(config, branch):
     BranchText(branch).new_text()
 
 
-def _get_modules(include_oca=True):
+def _get_modules():
     modules = []
-    v = str(current_version())
-    if include_oca:
-        OCA_PATH = Path('addons_OCA')
-        for OCA in MANIFEST()['OCA']:
-            modules.append({
-                'name': OCA,
-                'branch': v,
-                'url': 'https://github.com/OCA/{}.git'.format(OCA),
-                'subdir': OCA_PATH / OCA,
-            })
 
     for module_path in MANIFEST()['modules']:
         branch = module_path['branch']
@@ -189,13 +148,12 @@ def _get_modules(include_oca=True):
             raise Exception("Too many url exists: {}".format(x['url']))
     return modules
 
-
 @src.command(help="Fetches all defined modules")
 @click.argument('module', required=False)
 @click.option('--oca', help="Include OCA Modules", is_flag=True)
 @click.option('--depth', default="", help="Depth of git fetch for new modules")
 @click.option('-T', '--not-threaded', default=False, help="", is_flag=True)
-def pull(oca, depth, module, not_threaded):
+def pull(depth, module, not_threaded):
     filter_module = module
     del module
     from git import Repo
@@ -203,14 +161,11 @@ def pull(oca, depth, module, not_threaded):
     dir = customs_dir()
     repo = Repo(dir)
     _is_dirty(repo, True, assert_clean=True)
-    if oca and filter_module:
-        click.echo("Either provide module or oca")
-        sys.exit(1)
     subprocess.call([
         "git",
         "pull",
     ], cwd=dir)
-    for module in _get_modules(include_oca=oca):
+    for module in _get_modules():
         if filter_module and module.name != filter_module:
             continue
         full_path = dir / module['subdir']
@@ -250,7 +205,7 @@ def pull(oca, depth, module, not_threaded):
             ], cwd=dir / module['subdir'])
         del module
 
-    for module in _get_modules(include_oca=oca):
+    for module in _get_modules():
         if filter_module and module.name != filter_module:
             continue
         try:
@@ -269,7 +224,7 @@ def pull(oca, depth, module, not_threaded):
 
     threads = []
     try_again = []
-    for module in _get_modules(include_oca=oca):
+    for module in _get_modules():
         if filter_module and module.name != filter_module:
             continue
 
@@ -311,7 +266,7 @@ def push(ctx, config):
     ctx.invoke(pull)
     click.echo("Now trying to push.")
     threads = []
-    for module in _get_modules(include_oca=False):
+    for module in _get_modules():
         def _do_push(module):
             click.echo("Going to push {}".format(module))
             tries = 0
@@ -336,7 +291,7 @@ def push(ctx, config):
     [x.start() for x in threads]
     [x.join() for x in threads]
     try:
-        for module in _get_modules(include_oca=False):
+        for module in _get_modules():
             subprocess.check_call([
                 "git",
                 "add",
@@ -390,7 +345,7 @@ def commit():
         click.echo("Not allowed to commit on {}".format(branch))
 
     text = BranchText(branch).get_text()
-    for module in _get_modules(include_oca=False):
+    for module in _get_modules():
         subdir = dir / module['subdir']
         subprocess.call([
             "git",
