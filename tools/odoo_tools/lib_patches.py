@@ -170,7 +170,7 @@ def _patch_apply(config, filepath):
     filepath = Path(filepath).absolute()
     dir = dirs['customs'] / filepath.parent.relative_to(config.patch_dir)
     with filepath.open() as f:
-        subprocess.check_call(["patch"], cwd=dir, stdin=f)
+        subprocess.check_call(["patch", "-p1"], cwd=dir, stdin=f)
 
 def _patch_list(config, absolute_path=True):
 
