@@ -1,0 +1,3 @@
+log_handler = :ERROR,openerp:ERROR,werkzeug:ERROR
+max_cron_threads = 0
+workers = 8

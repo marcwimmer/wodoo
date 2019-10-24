@@ -1,0 +1,2 @@
+max_cron_threads = __ODOO_MAX_CRON_THREADS__
+workers = 0

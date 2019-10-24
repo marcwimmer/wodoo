@@ -1,0 +1,2 @@
+http_enable = False
+log_level = debug
