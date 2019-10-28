@@ -123,11 +123,15 @@ def _uninstall_marked_modules():
     manifest = MANIFEST()
     modules = manifest.get('uninstall', [])
     for module in modules:
+        print("Uninstalling marked module: {}".format(module))
         DBModules.uninstall_module(module, raise_error=False)
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
-    single_module = MODULE and ',' not in MODULE
+    MODULE = [x for x in MODULE.split(",") if x != 'all']
+    single_module = len(MODULE) == 1
+    if not MODULE:
+        raise Exception("requires module!")
 
     _uninstall_marked_modules()
 
@@ -135,14 +139,7 @@ def main():
     print("Updating Module {}".format(MODULE))
     print("--------------------------------------------------------------------------")
 
-    if MODULE == 'all':
-        MODULE = ''
-
-    if not MODULE:
-        raise Exception("requires module!")
-
     summary = []
-    MODULE = MODULE.split(",")
 
     for module in list(MODULE):
         if not DBModules.is_module_installed(module):
@@ -158,6 +155,7 @@ def main():
         for module in MODULE:
             print("Deleting qweb of module {}".format(module))
             delete_qweb(module)
+
     if MODULE:
         update('u', MODULE)
     for module in MODULE:
@@ -172,7 +170,7 @@ def main():
             print("")
             if INTERACTIVE:
                 input("You should press Ctrl+C NOW to abort")
-            update('i', ','.join(auto_install_modules))
+            update('i', auto_install_modules)
 
     print("--------------------------------------------------------------------------------")
     print("Summary of update module")
