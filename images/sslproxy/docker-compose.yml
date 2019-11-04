@@ -1,15 +1,5 @@
 version: '3'
 services:
-  #sslproxy:
-    #image: nginx:1.15-alpine
-    #ports:
-      #- "80:80"
-      #- "443:443"
-    #volumes:
-      #- $HOST_RUN_DIR/ssl/nginx:/etc/nginx/conf.d
-      #- ${HOST_RUN_DIR}/ssl/letsencrypt:/etc/letsencrypt
-    #restart: unless-stopped
-    #command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
   sslproxy:
     image: linuxserver/letsencrypt
     container_name: ${PROJECT_NAME}_${CUSTOMS}_letsencrypt
