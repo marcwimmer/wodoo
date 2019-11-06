@@ -210,17 +210,6 @@ def start(ctx, config, host):
     else:
         raise NotImplementedError()
 
-    def _get_sysctl(config, default):
-
-        sysctl = subprocess.check_output([
-            'sysctl',
-            '-a',
-        ]).decode('utf-8')
-        v = [x for x in sysctl.split("\n") if x.strip().startswith(config)]
-        if not v:
-            return default
-        return v[0].split(":")[1].strip()
-
     ctx.invoke(stop)
 
     _clear_odoo_watches()

@@ -7,5 +7,5 @@ ignore = Path {__pycache__}
 
 batch=true
 fastcheck=true
-prefer=newer
+force=__SOURCE__
 watch=true
