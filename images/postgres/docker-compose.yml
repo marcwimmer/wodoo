@@ -16,6 +16,7 @@ services:
     env_file:
       - $ODOO_HOME/images/postgres/default.parameters
 
+    shm_size: '1g'
     healthcheck:
         test: ["CMD-SHELL", "pg_isready"]
         interval: 30s

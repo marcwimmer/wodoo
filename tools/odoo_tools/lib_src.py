@@ -150,7 +150,6 @@ def _get_modules():
 
 @src.command(help="Fetches all defined modules")
 @click.argument('module', required=False)
-@click.option('--oca', help="Include OCA Modules", is_flag=True)
 @click.option('--depth', default="", help="Depth of git fetch for new modules")
 @click.option('-T', '--not-threaded', default=False, help="", is_flag=True)
 def pull(depth, module, not_threaded):
