@@ -714,6 +714,7 @@ def setup_venv(config):
 
     click.secho("Please execute following commands in your shell:", bold=True)
     click.secho("source '{}'".format(venv_dir / 'bin' / 'activate'))
+    click.secho("pip3 install cython")
     click.secho("pip3 install -r https://raw.githubusercontent.com/odoo/odoo/{}/requirements.txt".format(current_version()))
     requirements1 = Path(__file__).parent.parent / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
     click.secho("pip3 install -r {}".format(requirements1))
