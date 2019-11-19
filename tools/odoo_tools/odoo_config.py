@@ -294,7 +294,7 @@ def translate_path_relative_to_customs_root(path):
     MANIFEST to indicate the root of the customs
     """
 
-    cmf = CUSTOMS_MANIFEST_FILE().resolve().absolute()
+    cmf = CUSTOMS_MANIFEST_FILE().absolute()
     if not str(path).startswith("/"):
         path = cmf.parent / path
         return path

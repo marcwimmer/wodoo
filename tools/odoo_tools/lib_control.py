@@ -27,6 +27,8 @@ from .tools import __dc
 from .tools import _get_host_ip
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
+from . import odoo_user_conf_dir
+import subprocess
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -56,16 +58,19 @@ def dev(ctx, config, nobuild, kill):
         os.system("docker kill $(docker ps -q)")
     __dc(['up', '-d'])
     Commands.invoke(ctx, 'kill', machines=["odoo"])
-    if platform.system() in ["Windows", "Darwin"]:
-        if config.run_fssync:
-            if myconfig['FSSYNC_HOST'] not in ['0.0.0.0', '127.0.0.1']:
-                Commands.invoke(ctx, 'fssync_config')
-        Commands.invoke(ctx, 'fssync_start')
     ip = _get_host_ip()
     proxy_port = myconfig['PROXY_PORT']
     roundcube_port = myconfig['ROUNDCUBE_PORT']
     click.secho("Proxy Port: http://{}:{}".format(ip, proxy_port), fg='green', bold=True)
     click.secho("Mailclient : http://{}:{}".format(ip, roundcube_port), fg='green', bold=True)
+
+    # execute script
+    ScriptFile = odoo_user_conf_dir / 'start-dev'
+    if not ScriptFile.exists():
+        click.secho("Info: Not found: {} - not executing anything on startup".format(ScriptFile))
+    FNULL = open(os.devnull, 'w')
+    subprocess.Popen([ScriptFile], shell=True, stdout=FNULL)
+
     Commands.invoke(ctx, 'debug', machine="odoo")
 
 @control.command(name='exec')

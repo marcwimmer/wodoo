@@ -264,7 +264,6 @@ from . import lib_module # NOQA
 from . import lib_patches # NOQA
 from . import lib_setup # NOQA
 from . import lib_src # NOQA
-from . import lib_fssync # NOQA
 
 YAML_VERSION = '3.5'
 BACKUPDIR = Path("/host/dumps")
