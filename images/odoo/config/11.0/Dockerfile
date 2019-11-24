@@ -1,4 +1,4 @@
-FROM debian:stretch
+FROM debian:buster
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
 
@@ -75,7 +75,9 @@ apt-get install \
             python3-pip \
             python3-dev \
             python3 \
-            locales-all
+            locales-all \
+            libpoppler-cpp-dev
+
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
@@ -106,6 +108,7 @@ ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
 #pip3 10.0 is in other directories; hash -r clears the cache of the path
+RUN pip3 install wheel
 RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \
