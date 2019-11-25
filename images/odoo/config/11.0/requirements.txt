@@ -1,3 +1,5 @@
+pdftotext==2.1.2
+names==0.3.0
 pymysql==0.9.3
 unicodecsv==0.14.1
 zpl2==1.2

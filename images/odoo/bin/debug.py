@@ -23,6 +23,7 @@ customs_dir = Path(os.environ['CUSTOMS_DIR'])
 
 os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
 
+
 def watch_file_and_kill():
     while True:
         try:
@@ -63,6 +64,7 @@ def endless_loop():
             if first_run or action[0] in ['debug', 'quick_restart']:
                 first_run = False
                 subprocess.call(['/usr/bin/reset'])
+                print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
                 subprocess.call(["run_debug.py"])
                 continue
             elif action[0] == 'update_view_in_db':

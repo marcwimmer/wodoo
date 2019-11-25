@@ -423,7 +423,7 @@ def _sanity_check(config):
 
     if config.odoo_files and Path(config.odoo_files).is_dir():
         if config.owner_uid and Path(config.odoo_files).stat().st_uid != config.owner_uid_as_int:
-            _fix_permissions()
+            _fix_permissions(config)
 
     # make sure the odoo_debug.txt exists; otherwise directory is created
     __file_default_content(files['run/odoo_debug.txt'], "")
