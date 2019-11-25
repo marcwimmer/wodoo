@@ -135,7 +135,7 @@ def get_dump_type(config, filename):
 @restore.command(name='list')
 @pass_config
 def list_dumps(config):
-    rows = _get_dump_files(fnfilter=config.dbname)
+    rows = _get_dump_files()
     click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
 
 @restore.command(name='files')
