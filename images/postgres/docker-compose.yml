@@ -19,7 +19,7 @@ services:
     shm_size: '1g'
     healthcheck:
         test: ["CMD-SHELL", "pg_isready"]
-        interval: 30s
+        interval: 60s
         timeout: 30s
         retries: 3
 
