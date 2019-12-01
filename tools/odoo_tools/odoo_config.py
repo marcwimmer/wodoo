@@ -190,19 +190,7 @@ class MANIFEST_CLASS(object):
         def has_url(pattern, x):
             return x.endswith(pattern) or x.endswith(pattern + ".git")
 
-        mods = list(filter(lambda x: any(has_url('/patches', y) for y in x.get('urls', [])), d['modules']))
-        if not mods:
-            mods = self['modules']
-            mods.append({
-                'path': 'common',
-                'branch': d['version'],
-                'urls': [
-                    "ssh://git@git.clear-consulting.de:50004/odoo/modules/patches",
-                ],
-            })
-            self['modules'] = mods
-        else:
-            self.patch_dir = customs_dir() / mods[0]['path'] / 'patches'
+        self.patch_dir = customs_dir() / 'patches'
 
         if 'not_allowed_commit_branches' not in d:
             self['not_allowed_commit_branches'] = [
@@ -306,7 +294,7 @@ def translate_path_relative_to_customs_root(path):
     MANIFEST to indicate the root of the customs
     """
 
-    cmf = CUSTOMS_MANIFEST_FILE().resolve().absolute()
+    cmf = CUSTOMS_MANIFEST_FILE().absolute()
     if not str(path).startswith("/"):
         path = cmf.parent / path
         return path

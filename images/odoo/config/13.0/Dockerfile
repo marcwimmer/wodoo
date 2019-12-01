@@ -108,6 +108,7 @@ ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
 #pip3 10.0 is in other directories; hash -r clears the cache of the path
+RUN pip3 install wheel
 RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \

@@ -135,7 +135,7 @@ def get_dump_type(config, filename):
 @restore.command(name='list')
 @pass_config
 def list_dumps(config):
-    rows = _get_dump_files(fnfilter=config.dbname)
+    rows = _get_dump_files()
     click.echo(tabulate(rows, ["Nr", 'Filename', 'Age', 'Size']))
 
 @restore.command(name='files')
@@ -216,7 +216,7 @@ def restore_db(ctx, config, filename):
 
 def _inquirer_dump_file(config, message, filter):
     BACKUPDIR = Path(config.dumps_path)
-    __files = _get_dump_files(BACKUPDIR, fnfilter=filter)
+    __files = _get_dump_files(BACKUPDIR)
     filename = inquirer.prompt([inquirer.List('filename', message, choices=__files)])
     if filename:
         filename = filename['filename'][1]

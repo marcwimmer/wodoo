@@ -5,4 +5,4 @@ volumes:
 services:
   odoo_base:
       volumes:
-          - odoo_src:/opt/odoo/data/src/customs/${CUSTOMS}
+          - odoo_src:/opt/odoo/data/src/customs

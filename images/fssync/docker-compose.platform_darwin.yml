@@ -1,5 +1,0 @@
-version: '3.3'
-services:
-  fssync:
-    volumes:
-      - odoo_src:/opt/target

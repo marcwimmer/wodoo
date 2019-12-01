@@ -824,7 +824,7 @@ class Module(object):
                 parent = current_id
             elif 'static' in local_file_path.parts:
                 parent = DEFAULT_ASSETS
-            elif 'report' in local_file_path.parts:
+            elif 'report' in local_file_path.parts or 'reports' in local_file_path.parts:
                 parent = 'web.report_assets_common'
             else:
                 continue

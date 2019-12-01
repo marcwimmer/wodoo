@@ -31,12 +31,12 @@ def _get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules += DBModules.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
     return sorted(list(set(modules)))
 
-def update(mode, module):
+def update(mode, modules):
     assert mode in ['i', 'u']
-    assert module
-    assert isinstance(module, str)
+    assert modules
+    assert isinstance(modules, list)
 
-    if module == 'all':
+    if ','.join(modules) == 'all':
         raise Exception("update 'all' not allowed")
 
     if RUN_TESTS:
@@ -48,28 +48,33 @@ def update(mode, module):
         TESTS = ''
 
     if not ONLY_I18N:
-        print(mode, module)
+        print(mode, modules)
         # obj_module = Module.get_by_name(module)
+        if mode == 'i':
+            modules = [x for x in modules if not DBModules.is_module_installed(x)]
+            if not modules:
+                return
         params = [
             '-' + mode,
-            module,
+            ','.join(modules),
             '--stop-after-init',
         ]
         if TESTS:
             params += [TESTS]
         exec_odoo('config_update', *params)
-        for i_module in module.split(","):
-            if not DBModules.is_module_installed(i_module):
+        for module in modules:
+            if not DBModules.is_module_installed(module):
                 if mode == 'i':
-                    print("{} is not installed - but it was tried to be installed.".format(i_module))
+                    print("{} is not installed - but it was tried to be installed.".format(module))
                 else:
-                    print("{} update error".format(i_module))
+                    print("{} update error".format(module))
                 sys.exit(1)
+            del module
 
     if I18N_OVERWRITE or ONLY_I18N:
-        for i_module in module.split(','):
-            i_module = Module.get_by_name(i_module)
-            if DBModules.is_module_installed(i_module.name):
+        for module in modules:
+            module = Module.get_by_name(module)
+            if DBModules.is_module_installed(module.name):
                 for lang in get_all_langs():
                     if lang == 'en_US':
                         continue
@@ -77,24 +82,25 @@ def update(mode, module):
                     if not lang_file:
                         continue
                     if lang_file.exists():
-                        print("Updating language {} for module {}:".format(lang, i_module))
+                        print("Updating language {} for module {}:".format(lang, module))
                         params = [
                             '-l',
                             lang,
-                            '--i18n-import={}/i18n/{}.po'.format(i_module.name, lang),
+                            '--i18n-import={}/i18n/{}.po'.format(module.name, lang),
                             '--i18n-overwrite',
                             '--stop-after-init',
                         ]
                         exec_odoo('config_update', *params)
-            del i_module
+            del module
 
-    print(mode, module, 'done')
+    print(mode, ','.join(modules), 'done')
 
 def update_module_list():
     MOD = "update_module_list"
     if not DBModules.is_module_installed(MOD):
         print("Update Module List is not installed - installing it...")
-        update('i', MOD)
+        update('i', [MOD])
+        return
 
     if not DBModules.is_module_installed(MOD):
         print("")
@@ -106,7 +112,7 @@ def update_module_list():
         print("")
         print("")
         sys.exit(82)
-    update('u', MOD)
+    update('u', [MOD])
 
 
 def _uninstall_marked_modules():
@@ -117,11 +123,15 @@ def _uninstall_marked_modules():
     manifest = MANIFEST()
     modules = manifest.get('uninstall', [])
     for module in modules:
+        print("Uninstalling marked module: {}".format(module))
         DBModules.uninstall_module(module, raise_error=False)
 
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
-    single_module = MODULE and ',' not in MODULE
+    MODULE = [x for x in MODULE.split(",") if x != 'all']
+    single_module = len(MODULE) == 1
+    if not MODULE:
+        raise Exception("requires module!")
 
     _uninstall_marked_modules()
 
@@ -129,29 +139,26 @@ def main():
     print("Updating Module {}".format(MODULE))
     print("--------------------------------------------------------------------------")
 
-    if MODULE == 'all':
-        MODULE = ''
-
-    if not MODULE:
-        raise Exception("requires module!")
-
     summary = []
 
-    for module in MODULE.split(','):
+    for module in list(MODULE):
         if not DBModules.is_module_installed(module):
             if not DBModules.is_module_listed(module):
                 update_module_list()
                 if not DBModules.is_module_listed(module):
                     raise Exception("After updating module list, module was not found: {}".format(module))
-            update('i', module)
+            update('i', [module])
+            MODULE = [x for x in MODULE if x != module]
             summary.append("INSTALL " + module)
 
     if DELETE_QWEB:
-        for module in MODULE.split(','):
+        for module in MODULE:
             print("Deleting qweb of module {}".format(module))
             delete_qweb(module)
-    update('u', MODULE)
-    for module in MODULE.split(","):
+
+    if MODULE:
+        update('u', MODULE)
+    for module in MODULE:
         summary.append("UPDATE " + module)
 
     # check if at auto installed modules all predecessors are now installed; then install them
@@ -163,7 +170,7 @@ def main():
             print("")
             if INTERACTIVE:
                 input("You should press Ctrl+C NOW to abort")
-            update('i', ','.join(auto_install_modules))
+            update('i', auto_install_modules)
 
     print("--------------------------------------------------------------------------------")
     print("Summary of update module")
