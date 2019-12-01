@@ -1,4 +1,5 @@
 import platform
+import stat
 from contextlib import contextmanager
 import re
 try:
@@ -446,6 +447,10 @@ def __splitcomma(param):
         return list(param)
     raise Exception("not impl")
 
+def __make_file_executable(filepath):
+    st = os.stat(filepath)
+    os.chmod(filepath, st.st_mode | stat.S_IEXEC)
+
 def __try_to_set_owner(UID, path, recursive=False):
     if path.is_dir():
         uid = os.stat(path).st_uid
@@ -743,3 +748,14 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
                         raise_error()
                         return True
     return False
+
+def __assure_gitignore(gitignore_file, content):
+    p = Path(gitignore_file)
+    if not p.exists():
+        p.write(content + "\n")
+        return
+    exists = [l for l in gitignore_file.read_text().split("\n") if l.strip() == content]
+    if not exists:
+        with p.open('a') as f:
+            f.write(content)
+            f.write("\n")

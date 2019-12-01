@@ -18,7 +18,7 @@ is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "0") == "1"
 is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "0") == "1"
 
 def _replace_params_in_config(ADDONS_PATHS, file):
-    if not os.getenv("DB_HOST") or not os.getenv("DB_USER"):
+    if not config.get("DB_HOST", "") or not config.get("DB_USER", ""):
         raise Exception("Please define all DB Env Variables!")
     content = file.read_text()
     content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
@@ -26,7 +26,7 @@ def _replace_params_in_config(ADDONS_PATHS, file):
         content += "\nadmin_passwd = " + config['ODOO_ADMIN_PASSWORD']
     content = content.replace("__ENABLE_DB_MANAGER__", 'True' if config['ODOO_ENABLE_DB_MANAGER'] == '1' else 'False')
 
-    server_wide_modules = (os.environ['SERVER_WIDE_MODULES'] or '').split(',')
+    server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
     if os.getenv("IS_ODOO_QUEUEJOB", "") == "1" and 'debug' not in file.name:
         server_wide_modules += ['queue_job']
     if os.getenv("IS_ODOO_QUEUEJOB", "") != "1" or 'debug' in file.name:
@@ -41,6 +41,8 @@ def _replace_params_in_config(ADDONS_PATHS, file):
         else:
             content = content + "\nwithout_demo=all"
 
+    for key in config.keys():
+        content = content.replace("__{}__".format(key), config[key])
     for key in os.environ.keys():
         content = content.replace("__{}__".format(key), os.getenv(key, ""))
 
@@ -61,7 +63,7 @@ def _run_autosetup():
 
 def _replace_variables_in_config_files():
     config_dir = Path(os.environ['ODOO_CONFIG_DIR'])
-    config_dir_template = Path(os.environ['ODOO_CONFIG_DIR'] + '.template')
+    config_dir_template = Path(os.environ['ODOO_CONFIG_TEMPLATE_DIR'])
     config_dir.mkdir(exist_ok=True, parents=True)
     for file in config_dir_template.glob("*"):
         shutil.copy(str(file), str(config_dir / file.name))
@@ -90,17 +92,19 @@ def prepare_run():
     _run_libreoffice_in_background()
 
     # make sure out dir is owned by odoo user to be writable
-    user_id = int(os.environ['OWNER_UID'])
+    user_id = int(os.getenv('OWNER_UID', os.getuid()))
     for path in [
         os.environ['OUT_DIR'],
         os.environ['RUN_DIR'],
         os.environ['ODOO_DATA_DIR'],
-        os.environ['INTERCOM_DIR'],
+        os.getenv('INTERCOM_DIR', ''),
         Path(os.environ['RUN_DIR']) / 'debug',
         Path(os.environ['ODOO_DATA_DIR']) / 'addons',
         Path(os.environ['ODOO_DATA_DIR']) / 'filestore',
         Path(os.environ['ODOO_DATA_DIR']) / 'sessions',
     ]:
+        if not path:
+            continue
         out_dir = Path(path)
         out_dir.mkdir(parents=True, exist_ok=True)
         if out_dir.exists():
@@ -144,8 +148,11 @@ def get_odoo_bin(for_shell=False):
             else:
                 EXEC = "openerp-server"
         else:
-            if config.get("ODOO_GEVENT_MODE", "") == "1":
-                raise Exception("Dont use GEVENT MODE anymore")
+            try:
+                if config.get("ODOO_GEVENT_MODE", "") == "1":
+                    raise Exception("Dont use GEVENT MODE anymore")
+            except KeyError:
+                pass
 
     EXEC = "{}/{}".format(
         os.environ["SERVER_DIR"],
@@ -186,7 +193,8 @@ def __python_exe():
     if version <= 10.0:
         return "/usr/bin/python"
     else:
-        return "/usr/bin/python3"
+        # return "/usr/bin/python3"
+        return "python3"
 
 def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **kwargs): # NOQA
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
@@ -205,22 +213,30 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **
 
     EXEC, _CONFIG = get_odoo_bin(for_shell=odoo_shell)
     CONFIG = get_config_file(CONFIG or _CONFIG)
-    cmd = [
-        "/usr/bin/sudo",
-        "-E",
-        "-H",
-        "-u",
-        ODOO_USER,
+    cmd = []
+    if os.getenv("ODOO_SUDO_CMD") == "1":
+        cmd = [
+            "/usr/bin/sudo",
+            "-E",
+            "-H",
+            "-u",
+            ODOO_USER,
+        ]
+    cmd += [
         __python_exe(),
         EXEC,
     ]
     if odoo_shell:
         cmd += ['shell']
+    try:
+        DBNAME = config['DBNAME']
+    except KeyError:
+        DBNAME = os.environ['DBNAME']
     cmd += [
         '-c',
         CONFIG,
         '-d',
-        config["DBNAME"],
+        DBNAME
     ]
     # print(Path(CONFIG).read_text())
     if not odoo_shell:

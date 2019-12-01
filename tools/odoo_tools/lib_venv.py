@@ -22,6 +22,8 @@ from .tools import __write_file
 from .tools import _askcontinue
 from .tools import __append_line
 from .tools import __get_odoo_commit
+from .tools import __make_file_executable
+from .tools import __assure_gitignore
 from .odoo_config import current_customs
 from .odoo_config import customs_dir
 from . import cli, pass_config, dirs, files, Commands
@@ -38,18 +40,78 @@ def venv(config):
 def setup(config):
     dir = customs_dir()
     os.chdir(dir)
-    venv_dir = dir / '.venv'
-    gitignore = dir / '.gitignore'
-    if '.venv' not in gitignore.read_text().split("\n"):
-        with gitignore.open("a") as f:
-            f.write("\n.venv\n")
 
-    subprocess.check_call(["python3", "-m", "venv", venv_dir.absolute()])
+    subprocess.check_call(["python3", "-m", "venv", dirs['venv'].absolute()])
 
     click.secho("Please execute following commands in your shell:", bold=True)
-    click.secho("brew install postgresql")
-    click.secho("source '{}'".format(venv_dir / 'bin' / 'activate'))
-    click.secho("pip3 install -r https://raw.githubusercontent.com/odoo/odoo/{}/requirements.txt".format(current_version()))
-    requirements1 = Path(__file__).parent.parent / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
-    click.secho("pip3 install -r {}".format(requirements1))
+    _install_requirements_in_venv()
+    click.secho("debug with: {}".format(files['native_bin_debug']))
+    click.secho("run with: {}".format(files['native_bin_run']))
+    _make_local_bin_files()
 
+def _get_bash_prefix():
+    return """#!/bin/bash
+set -ex
+export ODOO_CONFIG_TEMPLATE_DIR="{0}"
+export ODOO_CONFIG_DIR="{1}"
+export ODOOLIB="{2}"
+export ODOO_USER="$(whoami)"
+export ODOO_DATA_DIR="{odoo_data_dir}"
+export SERVER_DIR="{customs_dir}/odoo"
+export PYTHONPATH="{3}"
+export RUN_DIR="{run_dir}"
+export NO_SOFFICE=1
+export OUT_DIR="{out_dir}"
+export INTERNAL_ODOO_PORT=8069
+source "{venv}/bin/activate"
+
+""".format(
+        dirs['images'] / 'odoo' / 'config' / str(current_version()) / 'config',
+        dirs['run_native_config_dir'],
+        dirs['images'] / 'odoo' / 'bin',
+        dirs['odoo_tools'],
+        venv=dirs['venv'],
+        customs_dir=customs_dir(),
+        dbname=customs_dir().name,
+        run_dir=dirs['run'],
+        out_dir=dirs['run_native_out_dir'],
+        odoo_data_dir=dirs['odoo_data_dir'],
+    )
+
+def _make_local_bin_files():
+    """
+    creates odoo config files in ~/.odoo/run/<..>/configs/config_*
+    """
+    template = _get_bash_prefix()
+    run_content = template + '\npython \"$ODOOLIB/run.py\"'
+    files['native_bin_run'].write_text(run_content)
+    __make_file_executable(files['native_bin_run'])
+    from pudb import set_trace
+    set_trace()
+    bin_dir = customs_dir() / 'bin'
+    if bin_dir.exists():
+        bin_dir.unlink()
+    bin_dir.symlink_to(dirs['run_native_bin_dir'])
+    __assure_gitignore(customs_dir() / '.gitignore', 'bin')
+
+def _install_requirements_in_venv():
+    req_files = [
+        dirs['odoo_home'] / 'requirements.txt',
+        customs_dir() / 'odoo' / 'requirements.txt',
+        dirs['odoo_home'] / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
+    ]
+    file_content = []
+    file_content.append("pip install pip --upgrade")
+    file_content.append("pip install pudb")
+    file_content.append("brew install postgresql")
+    file_content.append("brew install zlib")
+    # brew tells about following lines
+    file_content.append('export CFLAGS="$CFLAGS -I/usr/local/opt/zlib/include"')
+    file_content.append('export LDFLAGS="$LDFLAGS -L/usr/local/opt/zlib/lib"')
+    file_content.append('export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/zlib/include"')
+    file_content.append("pip3 install cython")
+    for req_file in req_files:
+        file_content.append("pip3 install -r '{}'".format(req_file))
+    files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
+    files['native_bin_install_requirements'].write_text(_get_bash_prefix() + "\n" + '\n'.join(file_content))
+    __make_file_executable(files['native_bin_install_requirements'])

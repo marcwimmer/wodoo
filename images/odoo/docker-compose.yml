@@ -32,6 +32,8 @@ services:
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files
       - ODOO_HOME=/opt/odoo
+      - ODOO_CONFIG_TEMPLATE_DIR=/etc/odoo/config.template
+      - ODOO_SUDO_CMD=1
       - OUT_DIR=/opt/out_dir
       - RUN_DIR=/opt/run
       - INTERCOM_DIR=/intercom

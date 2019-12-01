@@ -114,6 +114,12 @@ dirs = {
     'images/proxy': 'images/proxy',
     'customs': '',
     'telegrambot': 'config/telegrambat',
+    'venv': "${run}/venv",
+    'run_native_config_dir': '${run}/configs',
+    'run_native_bin_dir': '${run}/bin',
+    'run_native_out_dir': '${run}/odoo_outdir',
+    'odoo_tools': '$odoo_home/tools',
+    'odoo_data_dir': "~/.odoo/files",
 }
 
 files = {
@@ -132,6 +138,9 @@ files = {
     'settings_auto': "${run}/settings.auto",
     'user_settings': "~/.odoo/settings",
     'project_settings': "~/.odoo/settings.${project_name}",
+    'native_bin_run': "${run_native_bin_dir}/run",
+    'native_bin_debug': "${run_native_bin_dir}/debug",
+    'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
 }
 commands = {
     'dc': [files['docker_compose_bin'], "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
@@ -140,11 +149,16 @@ commands = {
 def make_absolute_paths():
     dirs['odoo_home'] = Path(os.environ['ODOO_HOME'])
 
-    def make_absolute(d):
+    def make_absolute(d, key_values={}):
         for k, v in list(d.items()):
             if not v:
                 continue
             skip = False
+            for k2, v2 in key_values.items():
+                p = "${{{}}}".format(k2)
+                if p in str(v):
+                    v = v.replace(p, str(v2))
+
             for value, name in [
                 (HOST_RUN_DIR, '${run}'),
                 (PROJECT_NAME, '${project_name}'),
@@ -166,7 +180,7 @@ def make_absolute_paths():
             d[k] = Path(v)
 
     make_absolute(dirs)
-    make_absolute(files)
+    make_absolute(files, dirs)
 
     # dirs['host_working_dir'] = os.getenv('LOCAL_WORKING_DIR', "")
     if 'docker_compose' in files:
@@ -271,6 +285,7 @@ from . import lib_module # NOQA
 from . import lib_patches # NOQA
 from . import lib_setup # NOQA
 from . import lib_src # NOQA
+from . import lib_venv # NOQA
 
 YAML_VERSION = '3.5'
 BACKUPDIR = Path("/host/dumps")

@@ -11,4 +11,4 @@ prepare_run()
 
 touch_url = not is_odoo_cronjob and not is_odoo_queuejob
 
-exec_odoo(None, '--log-level={}'.format(os.environ["ODOO_LOG_LEVEL"]), touch_url=touch_url)
+exec_odoo(None, '--log-level={}'.format(os.getenv("ODOO_LOG_LEVEL", "debug")), touch_url=touch_url)

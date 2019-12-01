@@ -1,4 +1,7 @@
 #!/bin/bash
+if [[ "$NO_SOFFICE" == "1" ]]; then
+    exit 0
+fi
 while true;
 do
 	pkill -9 -f soffice.bin.*socket.*port=2002 || break
