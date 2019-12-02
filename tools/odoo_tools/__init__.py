@@ -138,8 +138,6 @@ files = {
     'settings_auto': "${run}/settings.auto",
     'user_settings': "~/.odoo/settings",
     'project_settings': "~/.odoo/settings.${project_name}",
-    'native_bin_run': "${run_native_bin_dir}/run",
-    'native_bin_debug': "${run_native_bin_dir}/debug",
     'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
 }
 commands = {

@@ -14,6 +14,7 @@ from odoo_tools.module_tools import delete_qweb
 from odoo_tools.module_tools import Module, Modules, DBModules
 from odoo_tools.odoo_config import customs_dir
 from odoo_tools.odoo_config import MANIFEST
+from odoo_tools.tools import __exists_table
 from tools import prepare_run
 from tools import exec_odoo
 prepare_run()
@@ -25,6 +26,7 @@ I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
 ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
 DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
 RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
+NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
 
 def _get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
     modules = []
@@ -126,6 +128,7 @@ def _uninstall_marked_modules():
         print("Uninstalling marked module: {}".format(module))
         DBModules.uninstall_module(module, raise_error=False)
 
+
 def main():
     MODULE = PARAMS[0] if PARAMS else ""
     MODULE = [x for x in MODULE.split(",") if x != 'all']
@@ -134,6 +137,22 @@ def main():
         raise Exception("requires module!")
 
     _uninstall_marked_modules()
+
+    if not NO_DANGLING_CHECK:
+        dangling_modules = DBModules.get_dangling_modules()
+        if any(x[1] == 'uninstallable' for x in dangling_modules):
+            for x in dangling_modules:
+                print("{}: {}".format(*x[:2]))
+            if INTERACTIVE and input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+                DBModules.set_uninstallable_uninstalled()
+
+        if DBModules.get_dangling_modules():
+            if INTERACTIVE and not NO_DANGLING_CHECK:
+                DBModules.show_install_state(raise_error=False)
+                input("Abort old upgrade and continue? (Ctrl+c to break)")
+                DBModules.abort_upgrade()
+            else:
+                DBModules.abort_upgrade()
 
     print("--------------------------------------------------------------------------")
     print("Updating Module {}".format(MODULE))

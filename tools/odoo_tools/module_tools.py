@@ -10,6 +10,8 @@ try:
     from psycopg2 import IntegrityError
 except Exception:
     pass
+from .tools import __exists_table
+from .tools import __execute_sql
 from .odoo_config import get_env
 from .odoo_config import odoo_root
 from .odoo_config import run_dir
@@ -144,6 +146,44 @@ class DBModules(object):
             if not clazz.is_module_installed(module):
                 print("Module {} not installed!".format(module))
                 sys.exit(32)
+
+    @classmethod
+    def abort_upgrade(clazz):
+        SQL = """
+            UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
+            UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
+        """
+        with clazz.get_conn_autoclose() as cr:
+            __execute_sql(cr, SQL)
+
+    @classmethod
+    def show_install_state(clazz, raise_error):
+        dangling = clazz.get_dangling_modules()
+        if dangling:
+            print("Displaying dangling modules:")
+        for row in dangling:
+            print("{}: {}".format(row[0], row[1]))
+
+        if dangling and not raise_error:
+            raise Exception("Dangling modules detected - please fix installation problems and retry!")
+
+    @classmethod
+    def set_uninstallable_uninstalled(clazz):
+        with get_conn_autoclose() as cr:
+            __execute_sql(cr, "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+
+    @classmethod
+    def get_dangling_modules(clazz):
+        with get_conn_autoclose() as cr:
+            if not __exists_table(cr, 'ir_module_module'):
+                return []
+
+            rows = __execute_sql(
+                cr,
+                sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled', 'uninstallable');",
+                fetchall=True
+            )
+        return rows
 
     @classmethod
     def get_uninstalled_modules_that_are_auto_install_and_should_be_installed(clazz):

@@ -82,12 +82,18 @@ def _make_local_bin_files():
     """
     creates odoo config files in ~/.odoo/run/<..>/configs/config_*
     """
-    template = _get_bash_prefix()
-    run_content = template + '\npython \"$ODOOLIB/run.py\"'
-    files['native_bin_run'].write_text(run_content)
-    __make_file_executable(files['native_bin_run'])
-    from pudb import set_trace
-    set_trace()
+    for file in [
+        'run.py',
+        'debug.py',
+        'update_modules.py',
+    ]:
+        template = _get_bash_prefix()
+        content = template + '\npython \"$ODOOLIB/{}\" "$@"'.format(file)
+        filepath = dirs['run_native_bin_dir'] / file.replace('.py', '')
+        filepath.write_text(content)
+        __make_file_executable(filepath)
+        del filepath
+
     bin_dir = customs_dir() / 'bin'
     if bin_dir.exists():
         bin_dir.unlink()
