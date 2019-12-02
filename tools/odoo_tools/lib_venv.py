@@ -100,7 +100,19 @@ def _make_local_bin_files():
     bin_dir.symlink_to(dirs['run_native_bin_dir'])
     __assure_gitignore(customs_dir() / '.gitignore', 'bin')
 
-def _install_requirements_in_venv():
+@venv.command()
+def debug():
+    click.echo("Implement")
+    pass
+
+@venv.command()
+def run():
+    click.echo("Implement")
+    pass
+
+@venv.command()
+@pass_config
+def install_requirements_in_venv(config):
     req_files = [
         dirs['odoo_home'] / 'requirements.txt',
         customs_dir() / 'odoo' / 'requirements.txt',
@@ -121,3 +133,4 @@ def _install_requirements_in_venv():
     files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
     files['native_bin_install_requirements'].write_text(_get_bash_prefix() + "\n" + '\n'.join(file_content))
     __make_file_executable(files['native_bin_install_requirements'])
+    subprocess.call([files['native_bin_install_requirements']])

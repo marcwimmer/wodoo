@@ -139,6 +139,7 @@ files = {
     'user_settings': "~/.odoo/settings",
     'project_settings': "~/.odoo/settings.${project_name}",
     'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
+    'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
 }
 commands = {
     'dc': [files['docker_compose_bin'], "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
