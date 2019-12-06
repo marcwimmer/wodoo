@@ -104,7 +104,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     if installed_modules:
         module += __get_installed_modules(config)
     if dangling_modules:
-        module += [x[0] for x in DBModules.__get_dangling_modules()]
+        module += [x[0] for x in DBModules.get_dangling_modules()]
     module = list(filter(lambda x: x, module))
     if not module:
         raise Exception("no modules to update")
@@ -223,7 +223,7 @@ def progress(config):
 @pass_config
 def show_install_state(config, suppress_error=False):
     from .module_tools import DBModules
-    dangling = DBModules.__get_dangling_modules()
+    dangling = DBModules.get_dangling_modules()
     if dangling:
         click.echo("Displaying dangling modules:")
     for row in dangling:

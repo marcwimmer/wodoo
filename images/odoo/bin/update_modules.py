@@ -138,8 +138,6 @@ def main():
     _uninstall_marked_modules()
 
     if not NO_DANGLING_CHECK:
-        from pudb import set_trace
-        set_trace()
         dangling_modules = DBModules.get_dangling_modules()
         if any(x[1] == 'uninstallable' for x in dangling_modules):
             for x in dangling_modules:
