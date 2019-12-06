@@ -13,7 +13,6 @@ import os
 import tempfile
 import click
 from pathlib import Path
-from .tools import DBConnection
 from .tools import _dropdb
 from .tools import __assert_file_exists
 from .tools import __safe_filename

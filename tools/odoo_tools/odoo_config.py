@@ -278,6 +278,7 @@ def get_conn_autoclose(*args, **kwargs):
         yield cr
     except Exception:
         conn.rollback()
+        raise
     else:
         conn.commit()
     finally:

@@ -82,6 +82,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
 
     To update all (custom) modules set "all" here
     """
+    from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
     Commands.invoke(ctx, 'wait_for_container_postgres')
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
@@ -90,12 +91,12 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         module = _get_default_modules_to_update()
 
     if not no_dangling_check:
-        if any(x[1] == 'uninstallable' for x in __get_dangling_modules()):
-            for x in __get_dangling_modules():
+        if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
+            for x in DBModules.get_dangling_modules():
                 click.echo("{}: {}".format(*x[:2]))
             if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
                 _execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
-        if __get_dangling_modules() and not dangling_modules:
+        if DBModules.get_dangling_modules() and not dangling_modules:
             if not no_dangling_check:
                 Commands.invoke(ctx, 'show_install_state', suppress_error=True)
                 input("Abort old upgrade and continue? (Ctrl+c to break)")
@@ -103,7 +104,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     if installed_modules:
         module += __get_installed_modules(config)
     if dangling_modules:
-        module += [x[0] for x in __get_dangling_modules()]
+        module += [x[0] for x in DBModules.__get_dangling_modules()]
     module = list(filter(lambda x: x, module))
     if not module:
         raise Exception("no modules to update")
@@ -221,7 +222,8 @@ def progress(config):
 @odoo_module.command(name='show-install-state')
 @pass_config
 def show_install_state(config, suppress_error=False):
-    dangling = __get_dangling_modules()
+    from .module_tools import DBModules
+    dangling = DBModules.__get_dangling_modules()
     if dangling:
         click.echo("Displaying dangling modules:")
     for row in dangling:
@@ -247,19 +249,6 @@ def __get_subtree_url(type, submodule):
     else:
         raise Exception("impl")
     return url
-
-@pass_config
-def __get_dangling_modules(config):
-    conn = config.get_odoo_conn()
-    if not _exists_table(conn, 'ir_module_module'):
-        return []
-
-    rows = _execute_sql(
-        conn,
-        sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled', 'uninstallable');",
-        fetchall=True
-    )
-    return rows
 
 @odoo_module.command(name='show-addons-paths')
 def show_addons_paths():

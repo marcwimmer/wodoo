@@ -127,24 +127,29 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
     if not no_try:
         try_connect()
 
-    conn = connection.get_psyco_connection()
-    conn.autocommit = notransaction
-    result = None
-    cr = conn.cursor()
-    try:
+    def _call_cr(cr):
         cr.execute(sql)
         if fetchone:
-            result = cr.fetchone()
+            return cr.fetchone()
         elif fetchall:
-            result = cr.fetchall()
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        cr.close()
-        conn.close()
-    return result
+            return cr.fetchall()
+
+    if isinstance(connection, DBConnection):
+        conn = connection.get_psyco_connection()
+        conn.autocommit = notransaction
+        cr = conn.cursor()
+        try:
+            res = _call_cr(cr)
+            conn.commit()
+            return res
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            cr.close()
+            conn.close()
+    else:
+        return _call_cr(connection)
 
 def _exists_db(conn):
     sql = "select count(*) from pg_database where datname='{}'".format(conn.dbname)
