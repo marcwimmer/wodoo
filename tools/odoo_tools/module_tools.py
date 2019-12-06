@@ -10,8 +10,8 @@ try:
     from psycopg2 import IntegrityError
 except Exception:
     pass
-from .tools import __exists_table
-from .tools import __execute_sql
+from .tools import _exists_table
+from .tools import _execute_sql
 from .odoo_config import get_env
 from .odoo_config import odoo_root
 from .odoo_config import run_dir
@@ -154,7 +154,7 @@ class DBModules(object):
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
         with clazz.get_conn_autoclose() as cr:
-            __execute_sql(cr, SQL)
+            _execute_sql(cr, SQL)
 
     @classmethod
     def show_install_state(clazz, raise_error):
@@ -170,15 +170,15 @@ class DBModules(object):
     @classmethod
     def set_uninstallable_uninstalled(clazz):
         with get_conn_autoclose() as cr:
-            __execute_sql(cr, "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+            _execute_sql(cr, "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
 
     @classmethod
     def get_dangling_modules(clazz):
         with get_conn_autoclose() as cr:
-            if not __exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, 'ir_module_module'):
                 return []
 
-            rows = __execute_sql(
+            rows = _execute_sql(
                 cr,
                 sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled', 'uninstallable');",
                 fetchall=True
@@ -262,7 +262,7 @@ class DBModules(object):
     @classmethod
     def is_module_listed(clazz, module):
         with get_conn_autoclose() as cr:
-            if not clazz.__table_exists(cr, 'ir_module_module'):
+            if not _exists_table(cr, 'ir_module_module'):
                 return False
             cr.execute("select count(*) from ir_module_module where name = %s", (module,))
             return bool(cr.fetchone()[0])
@@ -273,7 +273,7 @@ class DBModules(object):
         Gentley uninstalls, without restart
         """
         with get_conn_autoclose() as cr:
-            if not clazz.__table_exists(cr, 'ir_module_module'):
+            if not _exists_table(cr, 'ir_module_module'):
                 return
             cr.execute("select state from ir_module_module where name = %s", (module,))
             state = cr.fetchone()
@@ -284,24 +284,11 @@ class DBModules(object):
                 cr.execute("update ir_module_module set state = 'uninstalled' where name = %s", (module,))
 
     @classmethod
-    def __table_exists(self, cr, tablename):
-        cr.execute("""
-        select exists(
-            select 1
-            from information_schema.tables
-            where table_name = 'ir_module_module'
-        )
-
-        """)
-        rec = cr.fetchone()[0]
-        return rec
-
-    @classmethod
     def is_module_installed(clazz, module):
         if not module:
             raise Exception("no module given")
         with get_conn_autoclose() as cr:
-            if not clazz.__table_exists(cr, 'ir_module_module'):
+            if not _exists_table(cr, 'ir_module_module'):
                 return False
             cr.execute("select name, state from ir_module_module where name = %s", (module,))
             state = cr.fetchone()

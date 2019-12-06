@@ -23,13 +23,13 @@ from .tools import __write_file
 from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import __get_dump_type
-from .tools import __start_postgres_and_wait
+from .tools import _start_postgres_and_wait
 from .tools import __dcrun
-from .tools import __execute_sql
+from .tools import _execute_sql
 from .tools import __set_db_ownership
 from .tools import _askcontinue
 from .tools import __rename_db_drop_target
-from .tools import __remove_postgres_connections
+from .tools import _remove_postgres_connections
 from .tools import _get_dump_files
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
@@ -212,7 +212,7 @@ def restore_db(ctx, config, filename):
     if config.devmode:
         __turn_into_devdb(conn)
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
-    __remove_postgres_connections(conn.clone(dbname=dest_db))
+    _remove_postgres_connections(conn.clone(dbname=dest_db))
 
 def _inquirer_dump_file(config, message, filter):
     BACKUPDIR = Path(config.dumps_path)

@@ -10,7 +10,7 @@ from .tools import __write_file
 from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import __dcrun
-from .tools import __execute_sql
+from .tools import _execute_sql
 from . import cli, pass_config, dirs, files
 from .lib_clickhelpers import AliasedGroup
 
@@ -30,7 +30,7 @@ def export_i18n(lang, modules):
 @lang.command(name='list')
 @pass_config
 def get_all_langs(config):
-    langs = [x[0] for x in __execute_sql(
+    langs = [x[0] for x in _execute_sql(
         user=config.db_user,
         pwd=config.db_pwd,
         host=config.db_host,

@@ -13,14 +13,14 @@ from .tools import __safe_filename
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import __exists_table
+from .tools import _exists_table
 from .tools import __get_odoo_commit
-from .tools import __start_postgres_and_wait
+from .tools import _start_postgres_and_wait
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
-from .tools import __execute_sql
+from .tools import _execute_sql
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -35,7 +35,7 @@ def abort_upgrade(config):
         UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
         UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
     """
-    __execute_sql(config.get_odoo_conn(), SQL)
+    _execute_sql(config.get_odoo_conn(), SQL)
 
 @odoo_module.command(name='unlink')
 def module_unlink():
@@ -94,7 +94,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
             for x in __get_dangling_modules():
                 click.echo("{}: {}".format(*x[:2]))
             if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
-                __execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+                _execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
         if __get_dangling_modules() and not dangling_modules:
             if not no_dangling_check:
                 Commands.invoke(ctx, 'show_install_state', suppress_error=True)
@@ -186,7 +186,7 @@ def remove_old_modules(ctx, config, ask_confirm=True):
     from .odoo_config import get_odoo_addons_paths
     click.echo("Analyzing which modules to remove...")
     Commands.invoke(ctx, 'wait_for_container_postgres')
-    mods = sorted(map(lambda x: x[0], __execute_sql(config.get_odoo_conn(), "select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
+    mods = sorted(map(lambda x: x[0], _execute_sql(config.get_odoo_conn(), "select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
     mods = list(filter(lambda x: x not in ('base'), mods))
     to_remove = []
     for mod in mods:
@@ -206,7 +206,7 @@ def remove_old_modules(ctx, config, ask_confirm=True):
         if not answer or not answer['confirm']:
             return
     for mod in to_remove:
-        __execute_sql(config.get_odoo_conn(), "update ir_module_module set auto_install=false, state = 'uninstalled' where name = '{}'".format(mod))
+        _execute_sql(config.get_odoo_conn(), "update ir_module_module set auto_install=false, state = 'uninstalled' where name = '{}'".format(mod))
         click.echo("Set module {} to uninstalled.".format(mod))
 
 @odoo_module.command()
@@ -215,7 +215,7 @@ def progress(config):
     """
     Displays installation progress
     """
-    for row in __execute_sql(config.get_odoo_conn(), "select state, count(*) from ir_module_module group by state;", fetchall=True):
+    for row in _execute_sql(config.get_odoo_conn(), "select state, count(*) from ir_module_module group by state;", fetchall=True):
         click.echo("{}: {}".format(row[0], row[1]))
 
 @odoo_module.command(name='show-install-state')
@@ -251,10 +251,10 @@ def __get_subtree_url(type, submodule):
 @pass_config
 def __get_dangling_modules(config):
     conn = config.get_odoo_conn()
-    if not __exists_table(conn, 'ir_module_module'):
+    if not _exists_table(conn, 'ir_module_module'):
         return []
 
-    rows = __execute_sql(
+    rows = _execute_sql(
         conn,
         sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled', 'uninstallable');",
         fetchall=True

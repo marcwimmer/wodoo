@@ -120,10 +120,10 @@ def __get_odoo_commit():
         raise Exception("No odoo commit defined.")
     return commit
 
-def __execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False):
+def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False):
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect():
-        __execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
+        _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
     if not no_try:
         try_connect()
 
@@ -146,18 +146,18 @@ def __execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction
         conn.close()
     return result
 
-def __exists_db(conn):
+def _exists_db(conn):
     sql = "select count(*) from pg_database where datname='{}'".format(conn.dbname)
     conn = conn.clone()
     conn.dbname = 'template1'
-    record = __execute_sql(conn, sql, fetchone=True)
+    record = _execute_sql(conn, sql, fetchone=True)
     if not record or not record[0]:
         return False
     return True
 
 
-def __exists_table(conn, table_name):
-    record = __execute_sql(conn, """
+def _exists_table(conn, table_name):
+    record = _execute_sql(conn, """
     select exists(
         select 1
         from information_schema.tables
@@ -166,22 +166,22 @@ def __exists_table(conn, table_name):
     """.format(table_name), fetchone=True)
     return record[0]
 
-def __start_postgres_and_wait(config):
+def _start_postgres_and_wait(config):
     if config.run_postgres:
-        if config.run_postgres_in_ram and __is_container_running('postgres'):
+        if config.run_postgres_in_ram and _is_container_running('postgres'):
             # avoid recreate
             pass
         else:
             __dc(["up", "-d", "postgres"])
         conn = config.get_odoo_conn().clone(dbname='template1')
-        __wait_for_port(conn.host, conn.port, timeout=30)
-        __execute_sql(conn, sql="""
+        _wait_for_port(conn.host, conn.port, timeout=30)
+        _execute_sql(conn, sql="""
         SELECT table_schema,table_name
         FROM information_schema.tables
         ORDER BY table_schema,table_name;
         """)
 
-def __is_container_running(machine_name):
+def _is_container_running(machine_name):
     import docker
     container_id = __dc_out(['ps', '-q', machine_name]).strip()
     if container_id:
@@ -193,9 +193,9 @@ def __is_container_running(machine_name):
 
 def is_up(*machine_name):
     assert len(machine_name) == 1
-    click.echo('Running' if __is_container_running(machine_name[0]) else 'Not Running', machine_name[0])
+    click.echo('Running' if _is_container_running(machine_name[0]) else 'Not Running', machine_name[0])
 
-def __isfloat(x):
+def _isfloat(x):
     try:
         float(x)
     except Exception:
@@ -203,30 +203,30 @@ def __isfloat(x):
     else:
         return True
 
-def __makedirs(path):
+def _makedirs(path):
     path.mkdir(exist_ok=True, parents=True)
 
-def __remove_postgres_connections(connection, sql_afterwards=""):
+def _remove_postgres_connections(connection, sql_afterwards=""):
     click.echo("Removing all current connections from {}".format(connection.dbname))
-    if __exists_db(connection):
+    if _exists_db(connection):
         SQL = """
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = '{}'
             AND pid <> pg_backend_pid();
         """.format(connection.dbname, sql_afterwards)
-        __execute_sql(connection.clone(dbname='template1'), SQL, notransaction=True)
+        _execute_sql(connection.clone(dbname='template1'), SQL, notransaction=True)
         if sql_afterwards:
-            __execute_sql(connection.clone(dbname='template1'), sql_afterwards, notransaction=True)
+            _execute_sql(connection.clone(dbname='template1'), sql_afterwards, notransaction=True)
 
 def __rename_db_drop_target(conn, from_db, to_db):
     if 'to_db' == 'template1':
         raise Exception("Invalid: {}".format(to_db))
-    __remove_postgres_connections(conn.clone(dbname=from_db))
-    __remove_postgres_connections(conn.clone(dbname=to_db))
-    __execute_sql(conn.clone(dbname='template1'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
-    __execute_sql(conn.clone(dbname='template1'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
-    __remove_postgres_connections(conn.clone(dbname=to_db))
+    _remove_postgres_connections(conn.clone(dbname=from_db))
+    _remove_postgres_connections(conn.clone(dbname=to_db))
+    _execute_sql(conn.clone(dbname='template1'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
+    _execute_sql(conn.clone(dbname='template1'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
+    _remove_postgres_connections(conn.clone(dbname=to_db))
 
 def _merge_env_dict(env):
     res = {}
@@ -284,11 +284,11 @@ def __set_db_ownership(config):
     # that accidently accessing the db fails
     if config.devmode:
         if config.run_postgres:
-            __start_postgres_and_wait(config)
+            _start_postgres_and_wait(config)
         from .module_tools import set_ownership_exclusive
         set_ownership_exclusive()
 
-def __wait_for_port(host, port, timeout=None):
+def _wait_for_port(host, port, timeout=None):
     res = tcp_wait.open(port, host=host, timeout=timeout)
     if not res and timeout:
         raise Exception("Timeout elapsed waiting for {}:{}".format(host, port))
@@ -401,7 +401,7 @@ def _get_bash_for_machine(machine):
 def _remember_customs_and_cry_if_changed(config):
     # if customs changed, then restart is required
 
-    if __is_container_running('odoo'):
+    if _is_container_running('odoo'):
         out = __dcexec(['odoo', 'env'])
         out = [x for x in out.split('\n') if x.startswith("CUSTOMS=")]
         if out:
@@ -431,7 +431,7 @@ def _sanity_check(config):
 
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
-    rows = __execute_sql(
+    rows = _execute_sql(
         conn,
         sql="SELECT name, state from ir_module_module where state in ('installed', 'to upgrade');",
         fetchall=True
@@ -591,7 +591,7 @@ def __get_dump_type(filepath):
 
 def _dropdb(config, conn):
     import inquirer
-    if __exists_db(conn):
+    if _exists_db(conn):
         # TODO ask for name
         if not config.force:
             questions = [
@@ -604,7 +604,7 @@ def _dropdb(config, conn):
     else:
         click.echo("Database does not exist yet: {}".format(conn.dbname))
     click.echo("Stopping all services and creating new database")
-    __remove_postgres_connections(conn, 'drop database {};'.format(conn.dbname))
+    _remove_postgres_connections(conn, 'drop database {};'.format(conn.dbname))
 
     click.echo("Database dropped {}".format(conn.dbname))
 

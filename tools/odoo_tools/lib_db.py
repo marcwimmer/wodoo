@@ -16,7 +16,7 @@ from datetime import datetime
 from .tools import __replace_all_envs_in_str
 from .tools import _dropdb
 from .tools import __assert_file_exists
-from .tools import __exists_db
+from .tools import _exists_db
 from .tools import __set_db_ownership
 from .tools import __safe_filename
 from .tools import remove_webassets
@@ -25,8 +25,8 @@ from .tools import __write_file
 from .tools import _askcontinue
 from .tools import __append_line
 from .tools import __get_odoo_commit
-from .tools import __dcrun, __dc, __remove_postgres_connections, __execute_sql, __dcexec
-from .tools import __start_postgres_and_wait
+from .tools import __dcrun, __dc, _remove_postgres_connections, _execute_sql, __dcexec
+from .tools import _start_postgres_and_wait
 from .tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
@@ -209,8 +209,8 @@ def drop_db(config, dbname):
     if not (config.devmode or config.force):
         click.echo("Either DEVMODE or force required")
         sys.exit(-1)
-    __remove_postgres_connections(dbname)
-    __execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
+    _remove_postgres_connections(dbname)
+    _execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
     click.echo("Database {} dropped.".format(dbname))
 
 @db.command()
@@ -270,11 +270,11 @@ def reset_db(ctx, config, dbname):
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
-    __start_postgres_and_wait(config)
+    _start_postgres_and_wait(config)
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
     conn = config.get_odoo_conn().clone(dbname='template1')
-    __execute_sql(
+    _execute_sql(
         conn,
         "create database {}".format(
             dbname
@@ -348,7 +348,7 @@ def __turn_into_devdb(conn):
                 comment = comment[2:-2]
                 if 'if-table-exists' in comment:
                     table = comment.split("if-table-exists")[1].strip()
-                    res = __execute_sql(
+                    res = _execute_sql(
                         conn,
                         "select count(*) from information_schema.tables where table_schema='public' and table_name='{}'".format(table),
                         fetchone=True
@@ -360,7 +360,7 @@ def __turn_into_devdb(conn):
                 continue
         try:
             print(line)
-            __execute_sql(conn, line)
+            _execute_sql(conn, line)
         except Exception:
             if critical:
                 raise

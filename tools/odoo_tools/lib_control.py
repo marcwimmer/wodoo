@@ -13,13 +13,13 @@ from .tools import __append_line
 from .tools import _sanity_check
 from .tools import _askcontinue
 from .tools import __get_odoo_commit
-from .tools import __is_container_running
+from .tools import _is_container_running
 from .tools import _get_bash_for_machine
 from .tools import __cmd_interactive
 from .tools import _display_machine_tips
-from .tools import __start_postgres_and_wait
+from .tools import _start_postgres_and_wait
 from .tools import __replace_in_file
-from .tools import __wait_for_port
+from .tools import _wait_for_port
 from .tools import __set_db_ownership
 from .tools import __dcexec
 from .tools import _get_machines
@@ -100,7 +100,7 @@ def do_kill(ctx, config, machines, brutal=False):
         safe_stop = []
         for machine in SAFE_KILL:
             if not machines or machine in machines:
-                if __is_container_running(machine):
+                if _is_container_running(machine):
                     safe_stop += [machine]
 
         if safe_stop:
@@ -118,12 +118,12 @@ def force_kill(ctx, machine):
 @control.command()
 @pass_config
 def wait_for_container_postgres(config):
-    __start_postgres_and_wait(config)
+    _start_postgres_and_wait(config)
 
 @control.command()
 def wait_for_port(host, port):
     port = int(port)
-    __wait_for_port(host=host, port=port)
+    _wait_for_port(host=host, port=port)
 
 
 @control.command()

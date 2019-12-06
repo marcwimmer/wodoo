@@ -14,7 +14,6 @@ from odoo_tools.module_tools import delete_qweb
 from odoo_tools.module_tools import Module, Modules, DBModules
 from odoo_tools.odoo_config import customs_dir
 from odoo_tools.odoo_config import MANIFEST
-from odoo_tools.tools import __exists_table
 from tools import prepare_run
 from tools import exec_odoo
 prepare_run()

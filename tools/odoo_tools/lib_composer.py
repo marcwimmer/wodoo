@@ -20,7 +20,7 @@ from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
 from .tools import _file2env
 from .tools import __append_line
-from .tools import __makedirs
+from .tools import _makedirs
 from .tools import __try_to_set_owner
 from .tools import __empty_dir
 from . import cli, pass_config, dirs, files, Commands
@@ -95,7 +95,7 @@ def _prepare_filesystem():
     fileconfig = MyConfigParser(files['settings'])
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
         path = dirs['run'] / subdir
-        __makedirs(path)
+        _makedirs(path)
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
             path

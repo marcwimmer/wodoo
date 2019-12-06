@@ -18,7 +18,7 @@ from .tools import __append_line
 from .tools import __get_odoo_commit
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
-from .tools import __execute_sql
+from .tools import _execute_sql
 
 def _migrate(ctx, config, log_file, from_version, to_version, SETTINGS_D_FILE, no_auto_backup=False, git_clean=True, debug=False, module='all', pull_latest=False):
     """

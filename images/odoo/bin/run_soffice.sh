@@ -13,5 +13,5 @@ do
     PID=$(echo $!)
     disown $PID
     sleep 1
-    kill -0 $PID  && break
+    kill -0 $PID 2>/dev/null && break
 done
