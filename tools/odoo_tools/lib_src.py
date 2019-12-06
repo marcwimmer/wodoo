@@ -596,6 +596,7 @@ def regpull(config, machines):
     if not machines:
         machines = list(yaml.load(files['docker_compose'].read_text())['services'])
     for machine in machines:
+        print("Pulling {}".format(machine))
         __dc(['pull', machine])
 
 @src.command()
@@ -655,7 +656,6 @@ def hub_login(config):
 @src.command()
 @pass_config
 def setup_venv(config):
-    from .odoo_config import current_version
     dir = customs_dir()
     os.chdir(dir)
     venv_dir = dir / '.venv'
