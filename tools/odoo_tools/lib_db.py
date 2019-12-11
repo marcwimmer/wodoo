@@ -17,7 +17,6 @@ from .tools import __replace_all_envs_in_str
 from .tools import _dropdb
 from .tools import __assert_file_exists
 from .tools import _exists_db
-from .tools import __set_db_ownership
 from .tools import __safe_filename
 from .tools import remove_webassets
 from .tools import __read_file
@@ -34,15 +33,6 @@ from .tools import __hash_odoo_password
 from . import PROJECT_NAME
 
 
-def _get_cmd_butter_volume():
-    drunc = ["sudo", "runc", "--root", "/run/docker/plugins/runtime-root/plugins.moby/"]
-    container_id = subprocess.check_output(drunc + ["list"]).decode('utf-8').split('\n')[1].split(" ")[0]
-    buttervolume = drunc + ['exec', '-t', container_id, 'buttervolume']
-    return buttervolume
-
-def __get_postgres_volume_name(config):
-    return PROJECT_NAME + "_" + 'ODOO_POSTGRES_VOLUME'
-
 @cli.group(cls=AliasedGroup)
 @pass_config
 def db(config):
@@ -50,156 +40,6 @@ def db(config):
     Database related actions.
     """
     click.echo("database-name: {}, in ram: {}".format(config.dbname, config.run_postgres_in_ram))
-
-@cli.group(cls=AliasedGroup)
-@pass_config
-def snapshot(config):
-    pass
-
-def __assert_btrfs(config):
-    if not config.run_btrfs:
-        click.echo("Please enable RUN_BTRFS=1 and make sure, that volumes are using the anybox/buttervolume docker plugin")
-        sys.exit(-1)
-
-def __get_snapshots(config):
-    snapshots = [x for x in subprocess.check_output(_get_cmd_butter_volume() + ["snapshots"]).decode('utf-8').split("\n") if x]
-    # filter to current customs
-    name = __get_postgres_volume_name(config)
-    snapshots = [x for x in snapshots if name in x in x]
-    return snapshots
-
-def _try_get_date_from_snap(snap_name):
-    try:
-        snap_name = snap_name.split("@")[-1][:19]
-        d = datetime.strptime(snap_name, '%Y-%m-%dT%H:%M:%S')
-        tz = os.getenv("TZ", "")
-        if tz:
-            d = arrow.get(d).to(tz).datetime
-        return d
-    except Exception:
-        return None
-
-def __choose_snapshot(config, take=False):
-    snapshots = __get_snapshots(config)
-    mappings = __get_snapshot_db()
-    snapshots2 = []
-    used_mappings = {}
-    for x in snapshots:
-        snap_name = mappings.get(x, x)
-        if x != snap_name:
-            d = _try_get_date_from_snap(x)
-            if d:
-                d = d.strftime("%Y-%m-%d %H:%M:%S")
-            else:
-                d = '-'
-            snap_name_with_date = "{0:<33} [{1}]".format(snap_name, d)
-            used_mappings[snap_name] = x
-            used_mappings[snap_name_with_date] = x
-            snapshots2.append(snap_name_with_date)
-
-    if take:
-        return used_mappings[take]
-    snapshots2 = list(reversed(snapshots2))
-
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots2)])['snapshot']
-    snapshot = used_mappings[snapshot]
-    return snapshot
-
-def __get_snapshot_db():
-    d = files['run/snapshot_mappings.txt']
-    if not d.exists():
-        __set_snapshot_db({})
-    return yaml.safe_load(d.read_text())
-
-def __set_snapshot_db(values):
-    d = files['run/snapshot_mappings.txt']
-    d.write_text(yaml.dump(values, default_flow_style=False))
-
-@snapshot.command(name="list")
-@pass_config
-def do_list(config):
-    __assert_btrfs(config)
-    snapshots = __get_snapshots(config)
-    mappings = __get_snapshot_db()
-
-    for snap in snapshots:
-        print(mappings.get(snap, snap))
-
-@snapshot.command(name="save")
-@click.argument('name', required=True)
-@pass_config
-def snapshot_make(config, name):
-    __assert_btrfs(config)
-
-    values = __get_snapshot_db()
-    volume_name = __get_postgres_volume_name(config)
-    __dc(['stop', '-t 1'] + ['postgres'])
-
-    # remove existing snaps
-    for snapshot, snapname in list(values.items()):
-        if snapname == name:
-            subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
-            del values[snapshot]
-            __set_snapshot_db(values)
-    snapshot = subprocess.check_output(_get_cmd_butter_volume() + ["snapshot", volume_name]).decode('utf-8').strip()
-    __dc(['up', '-d'] + ['postgres'])
-    if name:
-        values = __get_snapshot_db()
-        values[snapshot] = name
-        __set_snapshot_db(values)
-
-    click.echo("Made snapshot: {}".format(snapshot))
-
-@snapshot.command(name="restore")
-@click.option('-c', '--clear', is_flag=True, help="clears all snapshots afterwards")
-@click.argument('name', required=False)
-@pass_config
-@click.pass_context
-def snapshot_restore(ctx, config, clear, name):
-    __assert_btrfs(config)
-
-    snapshot = __choose_snapshot(config, take=name)
-    if not snapshot:
-        return
-    __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(_get_cmd_butter_volume() + ["restore", snapshot])
-    if clear:
-        ctx.invoke(snapshot_clear_all)
-
-    __dc(['up', '-d'] + ['postgres'])
-
-@snapshot.command(name="remove")
-@click.argument('name', required=False)
-@pass_config
-@click.pass_context
-def snapshot_remove(ctx, config, name):
-    __assert_btrfs(config)
-
-    snapshot = __choose_snapshot(config, take=name)
-    if not snapshot:
-        return
-    __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
-    __dc(['up', '-d'] + ['postgres'])
-    values = __get_snapshot_db()
-    if snapshot in values:
-        del values[snapshot]
-        __set_snapshot_db(values)
-
-@snapshot.command(name="clear", help="Removes all snapshots")
-@pass_config
-@click.pass_context
-def snapshot_clear_all(ctx, config):
-    __assert_btrfs(config)
-
-    snapshots = __get_snapshots(config)
-    if snapshots:
-        __dc(['stop', '-t 1'] + ['postgres'])
-        for snap in snapshots:
-            subprocess.check_call(_get_cmd_butter_volume() + ["rm", snap])
-        __dc(['up', '-d'] + ['postgres'])
-
-    ctx.invoke(do_list)
 
 @db.command()
 @click.argument('dbname', required=True)
@@ -219,14 +59,6 @@ def pgactivity(config):
     if config.run_postgres:
         __dcexec(["postgres", 'pg_activity'])
 
-
-@db.command()
-@pass_config
-def turn_into_dev(config):
-    if not config.devmode:
-        raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
-Please set DEVMODE=1 to allow this""")
-    __turn_into_devdb(config.get_odoo_conn())
 
 @db.command()
 @click.argument('dbname', required=False)
@@ -298,11 +130,6 @@ def reset_db(ctx, config, dbname):
 @click.pass_context
 def set_db_name(ctx, DBNAME):
     Commands.invoke(ctx, 'set_setting', key="DBNAME", value=DBNAME)
-
-@db.command(name='set-ownership')
-@pass_config
-def set_db_ownership(config):
-    __set_db_ownership(config)
 
 def __collect_other_turndb2dev_sql():
     from .odoo_config import customs_dir

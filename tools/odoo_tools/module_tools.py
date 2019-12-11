@@ -42,7 +42,6 @@ import sys
 import threading
 import glob
 
-ODOO_DEBUG_FILE = Path('debug/odoo_debug.txt')
 try:
     current_version()
 except Exception:
@@ -361,10 +360,10 @@ def make_module(parent_path, module_name):
         raise Exception("Path already exists: {}".format(complete_path))
 
     shutil.copytree(str(odoo_root() / 'tools/module_template' / str(version)), complete_path)
-    for root, dirs, files in os.walk(complete_path):
+    for root, dirs, _files in os.walk(complete_path):
         if '.git' in dirs:
             dirs.remove('.git')
-        for filepath in files:
+        for filepath in _files:
             filepath = os.path.join(root, filepath)
             with open(filepath, 'r') as f:
                 content = f.read()
@@ -431,8 +430,8 @@ def run_test_file(path):
 def search_qweb(template_name, root_path=None):
     root_path = root_path or odoo_root()
     pattern = "*.xml"
-    for path, dirs, files in os.walk(str(root_path.resolve().absolute()), followlinks=True):
-        for filename in fnmatch.filter(files, pattern):
+    for path, dirs, _files in os.walk(str(root_path.resolve().absolute()), followlinks=True):
+        for filename in fnmatch.filter(_files, pattern):
             if filename.name.startswith("."):
                 continue
             filename = Path(path) / Path(filename)
@@ -443,17 +442,6 @@ def search_qweb(template_name, root_path=None):
                 for apo in ['"', "'"]:
                     if "t-name={0}{1}{0}".format(apo, template_name) in line and "t-extend" not in line:
                         return filename, idx + 1
-
-
-def set_ownership_exclusive():
-    with get_conn_autoclose(db='template1') as cr:
-        cr.execute("SELECT datname from pg_database")
-        all_dbs = [x[0] for x in cr.fetchall() if not x[0].startswith("template") and x[0] != 'postgres']
-        dbs = [x for x in all_dbs if x != current_db()]
-        for db in dbs:
-            cr.execute("alter database {} owner to postgres".format(db))
-        if current_db() in all_dbs:
-            cr.execute("alter database {} owner to odoo".format(current_db()))
 
 def update_module(filepath, full=False):
     module = Module(filepath)
@@ -863,17 +851,17 @@ class Module(object):
                 files_per_assets[parent]['js'].append(local_file_path)
 
         doc = etree.XML(assets_template)
-        for asset_inherit_id, files in files_per_assets.items():
+        for asset_inherit_id, _files in files_per_assets.items():
             parent = deepcopy(doc.xpath("//template")[0])
             parent.set('inherit_id', asset_inherit_id)
             parent.set('id', asset_inherit_id.split('.')[-1])
             parent_xpath = parent.xpath("xpath")[0]
-            for style in files['stylesheets']:
+            for style in _files['stylesheets']:
                 etree.SubElement(parent_xpath, 'link', {
                     'rel': 'stylesheet',
                     'href': str(style),
                 })
-            for js in files['js']:
+            for js in _files['js']:
                 etree.SubElement(parent_xpath, 'script', {
                     'type': 'text/javascript',
                     'src': str(js),
@@ -980,4 +968,6 @@ class Module(object):
             pp.pprint(data)
 
 def write_debug_instruction(instruction):
-    (run_dir() / ODOO_DEBUG_FILE).write_text(instruction)
+    from . import files
+    print(files['run/odoo_debug.txt'])
+    files['run/odoo_debug.txt'].write_text(instruction)

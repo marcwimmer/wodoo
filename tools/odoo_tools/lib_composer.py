@@ -7,7 +7,6 @@ import subprocess
 import time
 import importlib
 import re
-import yaml
 from datetime import datetime
 import sys
 import shutil
@@ -211,6 +210,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     from . import YAML_VERSION
     from . import MyConfigParser
     from .tools import abort
+    import yaml
 
     final_contents = []
 

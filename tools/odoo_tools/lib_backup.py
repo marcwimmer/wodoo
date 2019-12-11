@@ -1,3 +1,5 @@
+import sys
+import importlib.util
 import re
 from retrying import retry
 import traceback
@@ -25,7 +27,6 @@ from .tools import __get_dump_type
 from .tools import _start_postgres_and_wait
 from .tools import __dcrun
 from .tools import _execute_sql
-from .tools import __set_db_ownership
 from .tools import _askcontinue
 from .tools import __rename_db_drop_target
 from .tools import _remove_postgres_connections
@@ -188,30 +189,57 @@ def restore_db(ctx, config, filename):
     if not config.dbname:
         raise Exception("somehow dbname is missing")
 
-    Commands.invoke(ctx, 'wait_for_container_postgres')
+    Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     conn = conn.clone(dbname=DBNAME_RESTORING)
     with config.forced() as config:
         _dropdb(config, conn)
 
-    with conn.connect(db='template1') as cr:
-        cr.execute("create database {};".format(DBNAME_RESTORING))
-    __dc([
-        'run',
-        'cronjobshell',
-        'postgres.py',
-        'restore',
-        DBNAME_RESTORING,
-        config.db_host,
-        config.db_port,
-        config.db_user,
-        config.db_pwd,
-        '/host/dumps/{}'.format(filename.name),
-    ])
+    _execute_sql(
+        conn.clone(dbname="template1"),
+        "create database {};".format(DBNAME_RESTORING),
+        notransaction=True
+    )
+
+    if config.user_docker:
+        __dc([
+            'run',
+            'cronjobshell',
+            'postgres.py',
+            'restore',
+            DBNAME_RESTORING,
+            config.db_host,
+            config.db_port,
+            config.db_user,
+            config.db_pwd,
+            '/host/dumps/{}'.format(filename.name),
+        ])
+    else:
+        _add_cronjob_scripts()['postgres']._restore(
+            DBNAME_RESTORING,
+            config.db_host,
+            config.db_port,
+            config.db_user,
+            config.db_pwd,
+            Path(config.dumps_path) / filename,
+        )
+
     from .lib_db import __turn_into_devdb
     if config.devmode:
         __turn_into_devdb(conn)
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
     _remove_postgres_connections(conn.clone(dbname=dest_db))
+
+def _add_cronjob_scripts():
+    """
+    Adds scripts from images/cronjobs/bin to sys path to be executed.
+    """
+    spec = importlib.util.spec_from_file_location("bin", dirs['images'] / 'cronjobs' / 'bin' / 'postgres.py')
+    postgres = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(postgres)
+    print(postgres.__get_dump_type)
+    return {
+        'postgres': postgres,
+    }
 
 def _inquirer_dump_file(config, message, filter):
     BACKUPDIR = Path(config.dumps_path)

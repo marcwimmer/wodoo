@@ -37,12 +37,6 @@ def abort_upgrade(config):
     """
     _execute_sql(config.get_odoo_conn(), SQL)
 
-@odoo_module.command(name='unlink')
-def module_unlink():
-    for file in (dirs['customs'] / 'links').glob("*"):
-        if file.is_symlink():
-            file.unlink()
-
 def _get_default_modules_to_update():
     from .module_tools import Modules, DBModules
     mods = Modules()
@@ -84,7 +78,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     """
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
-    Commands.invoke(ctx, 'wait_for_container_postgres')
+    Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
     if not module:
@@ -115,7 +109,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     try:
-        params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
+        params = [','.join(module)]
         if non_interactive:
             params += ['--non-interactive']
         if not no_update_module_list:
@@ -124,7 +118,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
             params += ['no-dangling-check']
         if i18n:
             params += ['--i18n']
-        __cmd_interactive(*params)
+        _exec_update(config, params)
+
     except Exception:
         click.echo(traceback.format_exc())
         ctx.invoke(show_install_state, suppress_error=True)
@@ -133,7 +128,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     if check_install_state:
         ctx.invoke(show_install_state, suppress_error=no_dangling_check)
 
-    if not no_restart:
+    if not no_restart and config.use_docker:
         Commands.invoke(ctx, 'restart', machines=['odoo'])
         if config.run_odoocronjobs:
             Commands.invoke(ctx, 'restart', machines=['odoo_cronjobs'])
@@ -161,12 +156,12 @@ def update_i18n(ctx, config, module, no_restart):
         module = _get_default_modules_to_update()
 
     try:
-        params = ['run', 'odoo_update', '/update_modules.py', ','.join(module)]
+        params = [','.join(module)]
         params += ['--non-interactive']
         params += ['--no-update-modulelist']
         params += ['no-dangling-check']
         params += ['--only-i18n']
-        __cmd_interactive(*params)
+        _exec_update(config, params)
     except Exception:
         click.echo(traceback.format_exc())
         ctx.invoke(show_install_state, suppress_error=True)
@@ -232,50 +227,12 @@ def show_install_state(config, suppress_error=False):
     if dangling and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
-def __get_extra_install_modules():
-    path = dirs['odoo_home'] / 'extra_install' / 'modules'
-    if not path.exxists():
-        return {}
-    with open(path, 'r') as f:
-        return eval(f.read())
-
-def __get_subtree_url(type, submodule):
-    assert type in ['common', 'extra_install']
-    if type == 'common':
-        url = 'git.clear-consulting.de:/odoo/modules/{}'.format(submodule)
-    elif type == 'extra_install':
-        data = __get_extra_install_modules()
-        url = data[submodule]['url']
-    else:
-        raise Exception("impl")
-    return url
-
 @odoo_module.command(name='show-addons-paths')
 def show_addons_paths():
     from .odoo_config import get_odoo_addons_paths
     paths = get_odoo_addons_paths()
     for path in paths:
         click.echo(path)
-
-@odoo_module.command(name='fetch', help="Walks into source code directory and pull latest branch version.")
-def fetch_latest_revision():
-    from .odoo_config import customs_dir
-
-    subprocess.call([
-        "git",
-        "pull",
-    ], cwd=customs_dir())
-
-    subprocess.check_call([
-        "git",
-        "checkout",
-        "-f",
-    ], cwd=customs_dir())
-
-    subprocess.call([
-        "git",
-        "status",
-    ], cwd=customs_dir())
 
 @odoo_module.command(name='pretty-print-manifest')
 def pretty_print_manifest():
@@ -286,6 +243,14 @@ def pretty_print_manifest():
 def show_conflicting_modules():
     from .odoo_config import get_odoo_addons_paths
     get_odoo_addons_paths(show_conflicts=True)
+
+def _exec_update(config, params):
+    if config.use_docker:
+        params = ['run', 'odoo_update', '/update_modules.py'] + params
+        __cmd_interactive(*params)
+    else:
+        from . import lib_control_native
+        lib_control_native._update_command(params)
 
 
 Commands.register(progress)

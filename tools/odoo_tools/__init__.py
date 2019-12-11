@@ -6,9 +6,12 @@ import imp
 import inspect
 import os
 import glob
-import click
+try:
+    import click
+    from .lib_clickhelpers import AliasedGroup
+except Exception:
+    click = None
 from .tools import _file2env
-from .lib_clickhelpers import AliasedGroup
 import importlib
 
 dir = Path(inspect.getfile(inspect.currentframe())).resolve().parent
@@ -96,7 +99,12 @@ class GlobalCommands(object):
             raise Exception()
         self.commands[name] = cmd
 
-    def invoke(self, ctx, cmd, *args, **kwargs):
+    def invoke(self, ctx, cmd, missing_ok=False, *args, **kwargs):
+        if cmd not in self.commands:
+            if not missing_ok:
+                raise Exception("CMD not found: {}".format(cmd))
+            else:
+                return
         return ctx.invoke(self.commands[cmd], *args, **kwargs)
 
 
@@ -131,7 +139,7 @@ files = {
     'settings': '${run}/settings',
     'odoo_instances': '${run}/odoo_instances',
     'config/default_network': 'config/default_network',
-    'run/odoo_debug.txt': '${run}/odoo_debug.txt',
+    'run/odoo_debug.txt': '${run}/debug/odoo_debug.txt',
     'run/snapshot_mappings.txt': '${run}/snapshot_mappings.txt',
     'images/proxy/instance.conf': 'images/proxy/instance.conf',
     'commit': 'odoo.commit',
@@ -263,21 +271,34 @@ class Config(object):
         return conn
 
 
-pass_config = click.make_pass_decorator(Config, ensure=True)
+try:
+    myconfig = MyConfigParser(files['settings'])
+except Exception:
+    USE_DOCKER = True
+else:
+    USE_DOCKER = myconfig.get("USE_DOCKER", "1") == "1"
 
-@click.group(cls=AliasedGroup)
-@click.option("-f", "--force", is_flag=True)
-@pass_config
-def cli(config, force):
-    config.force = force
+
+if click:
+    pass_config = click.make_pass_decorator(Config, ensure=True)
+
+    @click.group(cls=AliasedGroup)
+    @click.option("-f", "--force", is_flag=True)
+    @pass_config
+    def cli(config, force):
+        config.force = force
+        config.use_docker = USE_DOCKER
+
 
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
-from . import lib_admin # NOQA
 from . import lib_backup # NOQA
-from . import lib_control # NOQA
+if USE_DOCKER:
+    from . import lib_control_with_docker # NOQA
+else:
+    from . import lib_control_native # NOQA
 from . import lib_db # NOQA
-from . import lib_global # NOQA
+from . import lib_db_snapshots # NOQA
 from . import lib_lang # NOQA
 from . import lib_migrate # NOQA
 from . import lib_module # NOQA
@@ -285,6 +306,7 @@ from . import lib_patches # NOQA
 from . import lib_setup # NOQA
 from . import lib_src # NOQA
 from . import lib_venv # NOQA
+from . import lib_turnintodev # NOQA
 
 YAML_VERSION = '3.5'
 BACKUPDIR = Path("/host/dumps")

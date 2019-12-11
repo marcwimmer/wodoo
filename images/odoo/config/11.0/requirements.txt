@@ -1,3 +1,4 @@
+pycups==1.9.74
 pdftotext==2.1.2
 names==0.3.0
 pymysql==0.9.3

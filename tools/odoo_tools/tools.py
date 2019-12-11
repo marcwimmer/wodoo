@@ -12,14 +12,19 @@ import json
 import pipes
 import tempfile
 from datetime import datetime
-from retrying import retry
+try:
+    from retrying import retry
+except Exception:
+    retry = None
 from .wait import tcp as tcp_wait
 import shutil
-import click
+try:
+    import click
+except Exception:
+    pass
 import os
 import subprocess
 import time
-import humanize
 import sys
 from threading import Thread
 from queue import Queue
@@ -284,15 +289,6 @@ def _askcontinue(config, msg=None):
         return
     input("Continue? (Ctrl+C to break)")
 
-def __set_db_ownership(config):
-    # in development environments it is safe to set ownership, so
-    # that accidently accessing the db fails
-    if config.devmode:
-        if config.run_postgres:
-            _start_postgres_and_wait(config)
-        from .module_tools import set_ownership_exclusive
-        set_ownership_exclusive()
-
 def _wait_for_port(host, port, timeout=None):
     res = tcp_wait.open(port, host=host, timeout=timeout)
     if not res and timeout:
@@ -372,18 +368,19 @@ def _get_machines():
     out = set(filter(lambda x: x, out.split("\n")))
     return list(sorted(out))
 
-@retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
-def __get_docker_image():
-    """
-    Sometimes this command fails; checked with pudb behind call, hostname matches
-    container id; seems to be race condition or so
-    """
-    hostname = os.environ['HOSTNAME']
-    result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
-    if result:
-        result = result[0].split("sha256:")[-1].split('"')[0]
-        return result[:12]
-    return None
+if retry:
+    @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
+    def __get_docker_image():
+        """
+        Sometimes this command fails; checked with pudb behind call, hostname matches
+        container id; seems to be race condition or so
+        """
+        hostname = os.environ['HOSTNAME']
+        result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
+        if result:
+            result = result[0].split("sha256:")[-1].split('"')[0]
+            return result[:12]
+        return None
 
 def _file2env(filepath, out_dict=None):
     from . import MyConfigParser
@@ -533,6 +530,7 @@ def _fix_permissions(config):
         __try_to_set_owner(config.owner_uid, Path(config.odoo_files), recursive=True)
 
 def _get_dump_files(backupdir, fnfilter=None):
+    import humanize
     _files = list(backupdir.glob("*"))
 
     def _get_ctime(filepath):
@@ -764,3 +762,28 @@ def __assure_gitignore(gitignore_file, content):
         with p.open('a') as f:
             f.write(content)
             f.write("\n")
+
+def __needs_docker(config):
+    if not config.use_docker:
+        click.secho("Docker needed USE_DOCKER=1", fg='red')
+        sys.exit(1)
+
+def exec_file_in_path(filename):
+    def _g():
+        for p in [
+            '/usr/bin',
+            '/usr/local/bin',
+        ]:
+            filepath = Path(p) / filename
+            if filepath.exists():
+                yield filepath
+    return next(_g())
+
+def measure_time(method):
+    def wrapper(*args, **kwargs):
+        started = datetime.now()
+        result = method(*args, **kwargs)
+        ended = datetime.now()
+        click.secho("Took: {} seconds".format((ended - started).total_seconds()), fg='yellow')
+        return result
+    return wrapper

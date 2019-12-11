@@ -43,91 +43,103 @@ def watch_file_and_kill():
 
         time.sleep(0.2)
 
-def endless_loop():
-    t = threading.Thread(target=watch_file_and_kill)
-    t.daemon = True
-    t.start()
 
-    first_run = True
+class Debugger(object):
+    def __init__(self):
+        self.odoolib_path = Path(os.environ['ODOOLIB'])
+        pass
 
-    while True or first_run:
-        try:
-            if not first_run and not DEBUGGER_WATCH.exists():
-                time.sleep(0.2)
-                continue
-            os.chdir(os.environ["ODOOLIB"])
-            if not first_run:
-                content = DEBUGGER_WATCH.read_text()
-                action = content.split(":")
-            if DEBUGGER_WATCH.exists():
-                DEBUGGER_WATCH.unlink()
-            if first_run or action[0] in ['debug', 'quick_restart']:
-                first_run = False
-                subprocess.call(['/usr/bin/reset'])
-                print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
-                subprocess.call(["run_debug.py"])
-                continue
-            elif action[0] == 'update_view_in_db':
-                continue
+    def execpy(self, cmd):
+        os.chdir(self.odoolib_path)
+        if not cmd[0].startswith("/"):
+            cmd = ['python3'] + cmd
+        subprocess.call(cmd, cwd=self.odoolib_path)
 
-            elif action[0] in ["update_module", "update_module_full"]:
-                kill_odoo()
-                module = action[1]
-                PARAMS_CONST = ""
-                if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
-                    PARAMS_CONST = "--delete-qweb"
-                subprocess.call([
-                    "update_modules.py",
-                    module,
-                    "-fast" if action[0] == "update_module" else "",
-                    PARAMS_CONST,
-                ])
-                subprocess.call(["run_debug.py"])
+    def endless_loop(self):
+        t = threading.Thread(target=watch_file_and_kill)
+        t.daemon = True
+        t.start()
 
-            elif action[0] in ['unit_test', 'last_unit_test']:
-                kill_odoo()
-                subprocess.call(['/usr/bin/reset'])
-                if action[0] == 'unit_test':
-                    last_unit_test = str(customs_dir / action[1])
-                subprocess.call([
-                    "unit_test.py",
-                    last_unit_test
-                ])
+        first_run = True
 
-            elif action[0] == 'export_i18n':
-                kill_odoo()
-                subprocess.call(['/usr/bin/reset'])
-                lang = action[1]
-                module = action[2]
-                subprocess.call([
-                    "export_i18n.py",
-                    lang,
-                    module
-                ])
-                action = ('debug',)
-                continue
+        while True or first_run:
+            try:
+                if not first_run and not DEBUGGER_WATCH.exists():
+                    time.sleep(0.2)
+                    continue
+                if not first_run:
+                    content = DEBUGGER_WATCH.read_text()
+                    action = content.split(":")
+                if DEBUGGER_WATCH.exists():
+                    DEBUGGER_WATCH.unlink()
+                if first_run or action[0] in ['debug', 'quick_restart']:
+                    first_run = False
+                    self.execpy(['/usr/bin/reset'])
+                    if os.getenv("PROXY_PORT", ""):
+                        print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
+                    self.execpy(["run_debug.py"])
+                    continue
+                elif action[0] == 'update_view_in_db':
+                    continue
 
-            elif action[0] == 'import_i18n':
-                kill_odoo()
-                subprocess.call(['/usr/bin/reset'])
-                lang = action[1]
-                filepath = action[2]
-                subprocess.call([
-                    "import_i18n.py",
-                    lang,
-                    filepath
-                ])
-                action = ('debug',)
-                continue
-        except Exception:
-            msg = traceback.format_exc()
-            print(msg)
-            time.sleep(1)
+                elif action[0] in ["update_module", "update_module_full"]:
+                    kill_odoo()
+                    module = action[1]
+                    PARAMS_CONST = ""
+                    if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
+                        PARAMS_CONST = "--delete-qweb"
+                    self.execpy([
+                        "update_modules.py",
+                        module,
+                        "-fast" if action[0] == "update_module" else "",
+                        PARAMS_CONST,
+                    ])
+                    self.execpy(["run_debug.py"])
+
+                elif action[0] in ['unit_test', 'last_unit_test']:
+                    kill_odoo()
+                    subprocess.call(['/usr/bin/reset'])
+                    if action[0] == 'unit_test':
+                        last_unit_test = str(customs_dir / action[1])
+                    self.execpy([
+                        "unit_test.py",
+                        last_unit_test
+                    ])
+
+                elif action[0] == 'export_i18n':
+                    kill_odoo()
+                    subprocess.call(['/usr/bin/reset'])
+                    lang = action[1]
+                    module = action[2]
+                    self.execpy([
+                        "export_i18n.py",
+                        lang,
+                        module
+                    ])
+                    action = ('debug',)
+                    continue
+
+                elif action[0] == 'import_i18n':
+                    kill_odoo()
+                    self.execpy(['/usr/bin/reset'])
+                    lang = action[1]
+                    filepath = action[2]
+                    self.execpy([
+                        "import_i18n.py",
+                        lang,
+                        filepath
+                    ])
+                    action = ('debug',)
+                    continue
+            except Exception:
+                msg = traceback.format_exc()
+                print(msg)
+                time.sleep(1)
 
 
 @click.command(name='debug')
 def command_debug():
-    endless_loop()
+    Debugger().endless_loop()
 
 
 if __name__ == '__main__':

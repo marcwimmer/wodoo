@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+import gzip
+import platform
 import psycopg2
 import pipes
 import tempfile
@@ -61,6 +63,9 @@ def backup(dbname, host, port, user, password, filepath):
 @click.argument('password', required=True)
 @click.argument('filepath', required=True)
 def restore(dbname, host, port, user, password, filepath):
+    _restore(dbname, host, port, user, password, filepath)
+
+def _restore(dbname, host, port, user, password, filepath):
     click.echo("Restoring dump on {}:{} as {}".format(host, port, user))
     os.environ['PGPASSWORD'] = password
     args = ["-h", host, "-p", str(port), "-U", user]
@@ -96,7 +101,7 @@ def restore(dbname, host, port, user, password, filepath):
 
     PREFIX = []
     if needs_unzip:
-        PREFIX = ["/bin/gunzip"]
+        PREFIX = [next(_get_file('gunzip'))]
     else:
         PREFIX = []
     started = datetime.now()
@@ -116,25 +121,44 @@ def restore(dbname, host, port, user, password, filepath):
     click.echo("Restore took {} seconds".format((datetime.now() - started).seconds))
 
 def __get_dump_type(filepath):
-    temp = Path(tempfile.mktemp(suffix='.check'))
     MARKER = "PostgreSQL database dump"
-    os.system("zcat '{}' 2>/dev/null | head -n 1 > '{}'".format(filepath, temp))
+    first_line = None
+    zipped = False
+    try:
+        with gzip.open(filepath, 'r') as f:
+            for line in f:
+                first_line = line.decode('utf-8', errors='ignore')
+                zipped = True
+                break
+    except Exception:
+        with open(filepath, 'rb') as f:
+            first_line = ""
+            for i in range(2048):
+                t = f.read(1)
+                t = t.decode("utf-8", errors="ignore")
+                first_line += t
 
-    if temp.exists() and temp.stat().st_size:
-        content = temp.read_bytes()
-        content = content.decode('utf-8', errors='ignore')
-        if MARKER in content:
+    if first_line and zipped:
+        if MARKER in first_line:
             return 'zipped_sql'
-        if content.startswith("PGDMP"):
+        if first_line.startswith("PGDMP"):
             return "zipped_pgdump"
-    with open(filepath, 'rb') as f:
-        content = f.read(2048)
-        content = content.decode('utf-8', errors='ignore')
-        if "PGDMP" in content:
+    elif first_line:
+        if "PGDMP" in first_line:
             return 'pgdump'
-        if MARKER in content:
+        if MARKER in first_line:
             return "plain_text"
     return 'unzipped_pgdump'
+
+def _get_file(filename):
+    paths = [
+        '/usr/local/bin',
+        '/usr/bin',
+    ]
+    for x in paths:
+        f = Path(x) / filename
+        if f.exists():
+            yield str(f)
 
 
 if __name__ == '__main__':

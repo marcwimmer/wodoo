@@ -165,13 +165,20 @@ def kill_odoo():
     if pidfile.exists():
         print("Killing Odoo")
         pid = pidfile.read_text()
-        subprocess.call([
-            '/usr/bin/sudo',
+        cmd = [
             '/bin/kill',
             '-9',
             pid
-        ])
-        pidfile.unlink()
+        ]
+        if os.getenv("DOCKER_MACHINE", "") == "1":
+            cmd = [
+                '/usr/bin/sudo',
+            ] + cmd
+        subprocess.call(cmd)
+        try:
+            pidfile.unlink()
+        except FileNotFoundError:
+            pass
     else:
         if version <= 9.0:
             subprocess.call([
