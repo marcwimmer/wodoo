@@ -469,9 +469,9 @@ def _use_file(config, path):
     if path.parent.parent.name == 'images':
         if not getattr(config, "run_{}".format(path.parent.name)):
             return False
-        if not any(x.startswith("run_") for x in path.parts):
-            if getattr(config, 'run_{}'.format(path.parent.name)):
-                return True
+        if not any(".run_" in x for x in path.parts):
+            # allower postgres/docker-compose.yml
+            return True
 
     if any(x for x in path.parts if 'platform_' in x):
         pl = 'platform_{}'.format(platform.system().lower())
@@ -482,14 +482,17 @@ def _use_file(config, path):
 
     if "run_odoo_version.{}.yml".format(config.odoo_version) in path.name:
         return True
-    run = filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")])
-    for run in run:
-        if getattr(config, run):
-            return True
-    run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
-    for run in run:
-        if not getattr(config, run):
-            return True
+
+    # requires general run:
+    if getattr(config, 'run_{}'.format(path.name)):
+        run = filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")])
+        for run in run:
+            if getattr(config, run):
+                return True
+        run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
+        for run in run:
+            if not getattr(config, run):
+                return True
 
     return False
 

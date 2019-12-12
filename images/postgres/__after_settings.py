@@ -22,6 +22,8 @@ def after_settings(config):
     if config.get('RUN_BTRFS', "") == "1":
         config['RUN_POSTGRES_IN_BTRFS'] = '1'
         config.write()
+    else:
+        config['RUN_POSTGRES_IN_BTRFS'] = '0'
 
     customs = config['CUSTOMS']
     dbname = config['DBNAME']
