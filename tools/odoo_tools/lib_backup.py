@@ -200,7 +200,7 @@ def restore_db(ctx, config, filename):
         notransaction=True
     )
 
-    if config.user_docker:
+    if config.use_docker:
         __dc([
             'run',
             'cronjobshell',
