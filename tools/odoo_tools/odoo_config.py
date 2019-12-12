@@ -246,7 +246,7 @@ def get_postgres_connection_params():
     host = config["DB_HOST"]
     port = int(config.get("DB_PORT", "5432"))
     if os.getenv('DOCKER_MACHINE', "") != "1":
-        if config.get("USER_DOCKER", "1") != "1":
+        if config.get("USE_DOCKER", "1") != "1":
             host = '127.0.0.1'
             port = config['POSTGRES_PORT']
     password = config['DB_PWD']
