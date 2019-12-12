@@ -5,6 +5,7 @@ MAINTAINER marc@itewimmer.de
 
 ENV LANG C.UTF-8
 ADD etc/ /etc/
+RUN sed -i 's|http://deb.debian|http://ftp2.de.debian|g' /etc/apt/sources.list
 RUN apt update --fix-missing && \
 apt-get install \
 	-y \

@@ -20,8 +20,7 @@ services:
       - ${HOST_RUN_DIR}/odoo_outdir:/opt/out_dir
       - ${DUMPS_PATH}:/opt/dumps
       - ${ODOO_FILES}/:/opt/files
-      - ${ODOO_HOME}/tools:/opt/odoo/tools
-      - ${ODOO_HOME}:/opt/odoo
+      - ${ODOO_HOME}/tools:/opt/tools
       - ${HOST_RUN_DIR}/debug:/tmp/debug
       - ${ODOO_HOME}/images/odoo/bin/update_modules.py:/update_modules.py
       - ${ODOO_HOME}/images/odoo/bin:/odoolib:ro
@@ -37,10 +36,10 @@ services:
       - OUT_DIR=/opt/out_dir
       - RUN_DIR=/opt/run
       - INTERCOM_DIR=/intercom
-      - SERVER_DIR=/opt/odoo/data/src/customs/${CUSTOMS}/odoo
-      - CUSTOMS_DIR=/opt/odoo/data/src/customs/${CUSTOMS}
+      - SERVER_DIR=/opt/src/odoo
+      - CUSTOMS_DIR=/opt/src
       - ODOOLIB=/odoolib
-      - PYTHONPATH=/odoolib:/opt/odoo/tools
+      - PYTHONPATH=/odoolib:/opt/tools
       - PATH=/odoolib:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       - LANG=en_US.UTF-8
       - LANGUAGE=en_US:en

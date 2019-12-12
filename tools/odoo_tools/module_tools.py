@@ -123,15 +123,6 @@ def get_all_langs():
         langs = [x[0] for x in cr.fetchall() if x[0]]
     return langs
 
-def get_all_customs():
-    home = odoo_root() / 'data/src/customs'
-
-    customs = []
-    for dir in home.glob("*"):
-        if dir.is_dir():
-            customs.append(dir.name)
-    return customs
-
 def get_modules_from_install_file():
     return MANIFEST()['install']
 

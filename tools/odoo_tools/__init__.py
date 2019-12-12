@@ -44,6 +44,7 @@ def _get_project_name(p):
         return
 
     settings = Path(os.environ['HOME']) / '.odoo' / 'settings'
+    settings_text = ""
     if settings.exists():
         settings_text = settings.read_text()
 

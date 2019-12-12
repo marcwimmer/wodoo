@@ -135,8 +135,6 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         if config.run_queuejobs:
             Commands.invoke(ctx, 'restart', machines=['odoo_queuejobs'])
         Commands.invoke(ctx, 'up', daemon=True)
-        if config.run_proxy:
-            Commands.invoke(ctx, 'proxy_reload')
 
     Commands.invoke(ctx, 'status')
     if config.odoo_update_start_notification_touch_file_in_container:

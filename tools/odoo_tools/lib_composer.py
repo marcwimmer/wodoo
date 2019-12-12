@@ -484,7 +484,7 @@ def _use_file(config, path):
         return True
 
     # requires general run:
-    if getattr(config, 'run_{}'.format(path.name)):
+    if getattr(config, 'run_{}'.format(path.parent.name)):
         run = filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")])
         for run in run:
             if getattr(config, run):

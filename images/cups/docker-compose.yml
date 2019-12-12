@@ -12,7 +12,7 @@ services:
     volumes:
       - ${CUSTOMS}_cupsdatatoprint:/opt/toprint 
       - $ODOO_HOME/data/cups/printed:/opt/printed 
-      - $ODOO_HOME/data/src/customs/${CUSTOMS}/printer_setup:/opt/printer_setup
+      - ${CUSTOMS_DIR}/printer_setup:/opt/printer_setup
     environment:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
