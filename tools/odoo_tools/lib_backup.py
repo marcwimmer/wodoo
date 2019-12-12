@@ -260,10 +260,11 @@ def __restore_check(filepath, config):
     dumpname = filepath.name
 
     if config.dbname not in dumpname and not config.force:
-        raise Exception("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
+        click.sechoe("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
             dumpname,
             config.dbname,
-        ))
+        ), fg='red')
+        sys.exit(1)
 
 def __apply_dump_permissions(filepath):
 

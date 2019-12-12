@@ -46,14 +46,15 @@ def _get_project_name(p):
     settings = Path(os.environ['HOME']) / '.odoo' / 'settings'
     if settings.exists():
         settings_text = settings.read_text()
-        if 'DEVMODE=1' in settings_text:
-            return p.name
 
         project_name_line = [x for x in settings_text.split("\n") if "PROJECT_NAME=" in x]
         if project_name_line:
             project_name = project_name_line[0].replace("PROJECT_NAME=", "").strip()
             if project_name:
                 return project_name
+
+    if 'DEVMODE=1' in settings_text:
+        return p.name
 
     if (p / '.git').exists():
         branch_name = subprocess.check_output([
