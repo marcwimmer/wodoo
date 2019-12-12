@@ -93,7 +93,12 @@ def do_kill(ctx, config, machines, brutal=False):
 
     if not brutal it means softly
     """
-    from . import SAFE_KILL
+    SAFE_KILL = []
+
+    for machine in config.safe_kill.split(","):
+        if getattr(config, 'run_{}'.format(machine)):
+            SAFE_KILL.append(machine)
+
     machines = list(machines)
     if config.run_postgres_in_ram and not machines:
         machines = list(filter(lambda x: x != 'postgres', _get_machines()))
