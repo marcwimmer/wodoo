@@ -310,7 +310,6 @@ from . import lib_turnintodev # NOQA
 
 YAML_VERSION = '3.5'
 BACKUPDIR = Path("/host/dumps")
-SAFE_KILL = ['postgres', 'redis']
 
 # import container specific commands
 from .tools import abort # NOQA

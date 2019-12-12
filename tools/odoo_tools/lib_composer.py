@@ -466,7 +466,7 @@ def _use_file(config, path):
         return True
     if 'etc' in path.parts:
         return True
-    if path.parent.parent.name == 'images' and path.name == 'docker-compose.yml':
+    if path.parent.parent.name == 'images':
         if not getattr(config, "run_{}".format(path.parent.name)):
             return False
         if not any(x.startswith("run_") for x in path.parts):

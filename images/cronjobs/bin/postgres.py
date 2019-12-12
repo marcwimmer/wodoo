@@ -154,6 +154,7 @@ def _get_file(filename):
     paths = [
         '/usr/local/bin',
         '/usr/bin',
+        '/bin',
     ]
     for x in paths:
         f = Path(x) / filename
