@@ -27,6 +27,7 @@ from .tools import __get_odoo_commit
 from .tools import __dcrun, __dc, _remove_postgres_connections, _execute_sql, __dcexec
 from .tools import _start_postgres_and_wait
 from .tools import get_volume_names
+from .tools import exec_file_in_path
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
@@ -66,11 +67,10 @@ def pgactivity(config):
 @pass_config
 def psql(config, dbname, params):
     dbname = dbname or config.dbname
-    os.environ['DOCKER_MACHINE'] = "1"
     conn = config.get_odoo_conn().clone(dbname=dbname)
-    return _psql(conn, params)
+    return _psql(config, conn, params)
 
-def _psql(conn, params):
+def _psql(config, conn, params):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
         if params[0] in ['template1', dbname]:
@@ -79,18 +79,19 @@ def _psql(conn, params):
     params = " ".join(params)
     psql_args = ['-h', conn.host, '-p', str(conn.port), '-U', conn.user]
     try:
-        cmd = [
-            'postgres',
-            'psql',
-        ]
-        cmd += psql_args
+        cmd = psql_args
         cmd += [
             dbname,
         ]
 
-        __dcrun(cmd, interactive=True, env={
-            "PGPASSWORD": conn.pwd,
-        })
+        if config.use_docker and config.run_postgres:
+            __dcrun(['postgres', 'psql'] + cmd, interactive=True, env={
+                "PGPASSWORD": conn.pwd,
+            })
+        else:
+            subprocess.call([
+                exec_file_in_path('psql'),
+            ] + cmd, env={"PGPASSWORD": conn.pwd})
     finally:
         os.environ['PGPASSWORD'] = ""
 

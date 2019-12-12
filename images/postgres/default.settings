@@ -6,3 +6,5 @@ DB_PORT=5432
 DB_USER=odoo
 DB_PWD=odoo
 DB_MAXCONN=1000
+
+SAFE_KILL=postgres

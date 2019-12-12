@@ -771,8 +771,9 @@ def __needs_docker(config):
 def exec_file_in_path(filename):
     def _g():
         for p in [
-            '/usr/bin',
             '/usr/local/bin',
+            '/usr/bin',
+            '/bin',
         ]:
             filepath = Path(p) / filename
             if filepath.exists():
