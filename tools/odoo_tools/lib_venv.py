@@ -100,7 +100,7 @@ def install_requirements_in_venv(config):
     file_content = []
     file_content.append("pip install pip --upgrade")
     file_content.append("pip install pudb")
-    file_content.append("brew install postgresql zlib pv poppler")
+    file_content.append("brew install postgresql zlib pv poppler || true")
     # brew tells about following lines
     file_content.append('export CFLAGS="$CFLAGS -I/usr/local/opt/zlib/include"')
     file_content.append('export LDFLAGS="$LDFLAGS -L/usr/local/opt/zlib/lib"')
