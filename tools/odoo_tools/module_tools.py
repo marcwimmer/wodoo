@@ -143,7 +143,7 @@ class DBModules(object):
             UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
-        with clazz.get_conn_autoclose() as cr:
+        with get_conn_autoclose() as cr:
             _execute_sql(cr, SQL)
 
     @classmethod
@@ -154,7 +154,7 @@ class DBModules(object):
         for row in dangling:
             print("{}: {}".format(row[0], row[1]))
 
-        if dangling and not raise_error:
+        if dangling and raise_error:
             raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
     @classmethod
