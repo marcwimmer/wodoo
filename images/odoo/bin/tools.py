@@ -170,7 +170,7 @@ def kill_odoo():
             '-9',
             pid
         ]
-        if os.getenv("DOCKER_MACHINE", "") == "1":
+        if os.getenv("USE_DOCKER", "") == "1" and os.getenv("DOCKER_MACHINE", "") == "1":
             cmd = [
                 '/usr/bin/sudo',
             ] + cmd
