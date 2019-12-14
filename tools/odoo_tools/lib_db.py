@@ -67,6 +67,8 @@ def pgactivity(config):
 @pass_config
 def psql(config, dbname, params):
     dbname = dbname or config.dbname
+    if config.use_docker:
+        os.environ['DOCKER_MACHINE'] = "1"
     conn = config.get_odoo_conn().clone(dbname=dbname)
     return _psql(config, conn, params)
 
