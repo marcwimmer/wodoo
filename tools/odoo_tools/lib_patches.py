@@ -8,6 +8,7 @@ import hashlib
 import os
 import tempfile
 import click
+import inquirer
 from .odoo_config import MANIFEST
 from .tools import __assert_file_exists
 from .tools import __safe_filename
@@ -155,10 +156,13 @@ def patch_create(config, name):
     name = __safe_filename(name) + ".patch"
 
     for rel_dir, diff in _patch_get_diff(config):
-        dir = config.patch_dir / rel_dir
+        dir = config.patch_dir
         dir.mkdir(parents=True, exist_ok=True)
         PATCHFILE = dir / name
-        PATCHFILE.write_bytes(diff)
+        diff = diff.decode("utf-8")
+        diff = """odoo-path\nrelative_path:{}\n
+""".format(rel_dir) + diff
+        PATCHFILE.write_text(diff)
         click.echo("Created patch file: {}".format(PATCHFILE))
 
     _patch_ungitify(config)
@@ -169,15 +173,17 @@ def _patch_apply(config, filepath):
     """
     filepath = Path(filepath).absolute()
     dir = dirs['customs'] / filepath.parent.relative_to(config.patch_dir)
+    patch_content = filepath.read_text().split("\n")
+    if patch_content[0] != 'odoo-patch':
+        click.secho("Requires odoo-patch in first line; next line must contain relative_path")
+        sys.exit(-1)
+    relative_path = patch_content[1].replace("relative_path:", "").strip("")
     with filepath.open() as f:
-        subprocess.check_call(["patch", "-p1"], cwd=dir, stdin=f)
+        subprocess.check_call(["patch", "-p1"], cwd=dir / relative_path, stdin=f)
 
 def _patch_list(config, absolute_path=True):
 
     filepaths = [x.absolute() for x in config.patch_dir.glob("**/*.patch")]
-    check = [x.absolute() for x in dirs['customs'].glob("**/*.patch") if x.absolute() not in filepaths]
-    if check:
-        raise Exception("unhandled: {}".format(check))
 
     # filter to commits
     def in_commit(path):
@@ -191,6 +197,34 @@ def _patch_list(config, absolute_path=True):
         if not absolute_path:
             filename = filename.relative_to(dirs['customs'])
         yield filename
+
+@patch.command(name="integrate-patch")
+@pass_config
+def intergate_patch(config):
+    """
+    Symlinks patch from modules into the ./patches dir
+    """
+    patches_dir = dirs['customs'] / 'patches'
+    existing_patches = [x.resolve().absolute() for x in patches_dir.glob("**/*.patch")]
+    check = [x.absolute() for x in dirs['customs'].glob("**/*.patch") if not x.is_symlink() and x.parent != patches_dir and x.absolute() not in existing_patches]
+
+    # filter out special patches
+    check = [x for x in check if not any(y in ['migration', 'migrations'] for y in x.parts)]
+    if not check:
+        click.secho("Not any more patches found to add.")
+        sys.exit(-1)
+    questions = [
+        inquirer.Checkbox(
+            'patches',
+            message="Add which patches?",
+            choices=check,
+        )
+    ]
+    answers = inquirer.prompt(questions)
+    for patch in answers['patches']:
+        file_in_patches_dir = (patches_dir / patch.name)
+        file_in_patches_dir.symlink_to(patch.relative_to(dirs['customs']) / patch)
+
 
 @patch.command(name='list')
 @pass_config
