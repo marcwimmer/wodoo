@@ -28,6 +28,7 @@ from .odoo_config import current_customs
 from .odoo_config import customs_dir
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
+from . import PROJECT_NAME
 
 @cli.group(cls=AliasedGroup)
 @pass_config

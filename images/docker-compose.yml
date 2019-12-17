@@ -1,0 +1,26 @@
+# NO-AUTO-COMPOSE
+version: '3.7'
+volumes:
+  mailstorage:
+  mailsqlite:
+
+services:
+
+  # public mail server can receive mails
+  mail:
+    build: mail
+    volumes:
+      - mailstorage:/home/postmaster/Maildir
+      - mailsqlite:/rc
+      - ./mail/bin:/opt/bin
+    ports:
+        - "1025:25"
+    restart: unless-stopped
+
+  roundcube:
+    build: roundcube
+    ports:
+        - "8000:80"
+    environment:
+      MAIL_SERVER: mail
+    restart: unless-stopped

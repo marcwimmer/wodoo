@@ -17,4 +17,5 @@ WORKDIR /usr/local/bin
 ADD requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
 ADD bin/ /usr/local/bin/
+RUN apt install -y telnet
 RUN chmod a+x /usr/local/bin/*.py

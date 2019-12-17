@@ -466,6 +466,8 @@ def _use_file(config, path):
         return True
     if 'etc' in path.parts:
         return True
+    if 'NO-AUTO-COMPOSE' in path.read_text():
+        return False
     if path.parent.parent.name == 'images':
         if not getattr(config, "run_{}".format(path.parent.name)):
             return False
