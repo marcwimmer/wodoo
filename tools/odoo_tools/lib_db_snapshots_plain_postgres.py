@@ -77,6 +77,8 @@ def make_snapshot(config, name):
         name,
         datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
     )
+    conn = config.get_odoo_conn()
+    _remove_postgres_connections(conn)
     subprocess.call([
         exec_file_in_path('createdb'),
         '-T',

@@ -64,10 +64,15 @@ def _path_odoolib():
 
 def _exec_in_virtualenv(cmd):
     filename = Path(tempfile.mktemp(suffix='.sh'))
+    from . import MyConfigParser
+    myconfig = MyConfigParser(files['settings'])
 
     def _quoted(x):
         return "'{}'".format(x)
-    filename.write_text('\n'.join((
+    content = []
+    for key in myconfig.keys():
+        content.append("export {}='{}'".format(key, myconfig.get(key)))
+    filename.write_text('\n'.join(content + list((
         f'set -ex',
         f'export DEBUGGER_WATCH="{files["run/odoo_debug.txt"]}"',
         f'export ODOO_CONFIG_TEMPLATE_DIR="{dirs["images"] / "odoo" / "config" / str(current_version()) / "config"}"',
@@ -85,7 +90,7 @@ def _exec_in_virtualenv(cmd):
         f"which python",
         f"python --version",
         f"{' '.join(map(_quoted, cmd))}",
-    )))
+    ))))
 
     subprocess.call(["/bin/bash", filename])
     print("--------------------------------------")

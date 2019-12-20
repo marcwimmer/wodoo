@@ -50,7 +50,8 @@ def drop_db(config, dbname):
     if not (config.devmode or config.force):
         click.echo("Either DEVMODE or force required")
         sys.exit(-1)
-    _remove_postgres_connections(dbname)
+    conn = config.get_odoo_conn()
+    _remove_postgres_connections(conn)
     _execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
     click.echo("Database {} dropped.".format(dbname))
 
