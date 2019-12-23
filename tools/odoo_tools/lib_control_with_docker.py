@@ -341,6 +341,10 @@ def springclean():
     click.echo("delete unwanted volumes (can pass -dry-run)")
     os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
 
+@docker.command()
+def shell():
+    __cmd_interactive('run', 'odoo', '/usr/bin/python3', '/odoolib/shell.py')
+
 
 Commands.register(run)
 Commands.register(runbash)
