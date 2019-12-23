@@ -15,6 +15,7 @@ services:
       - ./mail/bin:/opt/bin
     ports:
         - "1025:25"
+        - "993:993"
     restart: unless-stopped
 
   roundcube:
