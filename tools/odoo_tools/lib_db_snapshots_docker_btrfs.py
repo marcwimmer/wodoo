@@ -71,11 +71,10 @@ def make_snapshot(config, name):
     return snapshot_name
 
 def restore(config, name):
-    snapshot = config.__choose_snapshot(config, take=name)
-    if not snapshot:
+    if not name:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(_get_cmd_butter_volume() + ["restore", snapshot])
+    subprocess.check_call(_get_cmd_butter_volume() + ["restore", name])
 
     __dc(['up', '-d'] + ['postgres'])
 
