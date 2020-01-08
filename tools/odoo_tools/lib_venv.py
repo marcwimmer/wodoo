@@ -107,6 +107,7 @@ def install_requirements_in_venv(config):
     file_content.append('export LDFLAGS="$LDFLAGS -L/usr/local/opt/zlib/lib"')
     file_content.append('export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/zlib/include"')
     file_content.append("pip3 install cython")
+    file_content.append("pip3 install watchdog")
     for req_file in req_files:
         file_content.append("pip install -r '{}'".format(req_file))
     files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
