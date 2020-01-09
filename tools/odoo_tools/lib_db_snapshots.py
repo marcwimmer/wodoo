@@ -107,10 +107,9 @@ def snapshot_make(config, name):
 @click.pass_context
 def snapshot_restore(ctx, config, name):
     snapshot_manager.assert_environment(config)
+    name = __choose_snapshot(config, take=name)
     if not name:
-        name = __choose_snapshot(config)
-        if not name:
-            return
+        return
     snapshot_manager.restore(config, name)
 
 @snapshot.command(name="remove")
