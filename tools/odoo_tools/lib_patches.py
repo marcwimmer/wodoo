@@ -278,12 +278,13 @@ def patch_reset(config):
     click.echo("Rsyncing odoo-repo...")
     sync_folder(config.odoo_git, config.odoo_dir, excludes=['.git'])
     click.echo("CHOWN odoo-repo...")
-    subprocess.check_call([
-        'chown',
-        '-R',
-        str(config.owner_uid or 0),
-        config.odoo_dir,
-    ], cwd=config.odoo_git)
+    if config.owner_uid:
+        subprocess.check_call([
+            'chown',
+            '-R',
+            str(config.owner_uid or 0),
+            config.odoo_dir,
+        ], cwd=config.odoo_git)
     subprocess.check_call([
         'chmod',
         "-R",

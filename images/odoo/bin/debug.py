@@ -17,6 +17,7 @@ from tools import kill_odoo
 config = get_env()
 prepare_run()
 DEBUGGER_WATCH = Path(os.environ["DEBUGGER_WATCH"])
+print("Watching file {}".format(DEBUGGER_WATCH))
 last_mod = ''
 last_unit_test = ''
 customs_dir = Path(os.environ['CUSTOMS_DIR'])
