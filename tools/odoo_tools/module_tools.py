@@ -937,6 +937,10 @@ class Module(object):
                 content = f.read()
                 if '__openerp__.sequence' in content:
                     sequence = int(re.search(r'__openerp__.sequence[^\d]*(\d*)', content).group(1))
+                elif 'odoo.sequence' in content:
+                    sequence = int(re.search(r'odoo.sequence[^\d]*(\d*)', content).group(1))
+                elif filename.name == 'menu.xml':
+                    sequence = 1000
                 elif filename.name == 'groups.xml':
                     sequence = -999999
                 elif filename.name == 'ir.model.access.csv':
