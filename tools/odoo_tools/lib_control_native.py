@@ -94,7 +94,7 @@ def _exec_in_virtualenv(cmd):
 
     subprocess.call(["/bin/bash", filename])
     print("--------------------------------------")
-    print(filename.read_text())
+    #print(filename.read_text())
     # filename.unlink()
 
 

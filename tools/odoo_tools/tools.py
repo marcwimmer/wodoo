@@ -603,7 +603,8 @@ def _dropdb(config, conn):
             ]
             answer = inquirer.prompt(questions)
             if answer['name'] != conn.dbname:
-                raise Exception("Dropping aborted")
+                click.secho("Dropping aborted - you did not answer: {}".format(conn.dbname), fg='red')
+                sys.exit(1)
     else:
         click.echo("Database does not exist yet: {}".format(conn.dbname))
     click.echo("Stopping all services and creating new database")
