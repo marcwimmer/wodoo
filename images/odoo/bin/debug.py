@@ -62,6 +62,7 @@ class Debugger(object):
         t.start()
 
         first_run = True
+        action = None
 
         while True or first_run:
             try:
@@ -102,6 +103,7 @@ class Debugger(object):
                     subprocess.call(['/usr/bin/reset'])
                     if action[0] == 'unit_test':
                         last_unit_test = str(customs_dir / action[1])
+                    print("Running unit test: ", last_unit_test)
                     self.execpy([
                         "unit_test.py",
                         last_unit_test

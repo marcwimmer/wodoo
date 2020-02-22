@@ -49,7 +49,6 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     file.write_text(content)
 
 def _run_autosetup():
-    print("Executing autosetup...")
     path = customs_dir() / 'autosetup'
     if path.exists():
         for file in path.glob("*.sh"):
@@ -59,7 +58,6 @@ def _run_autosetup():
                 file,
                 os.environ['ODOO_AUTOSETUP_PARAM'],
             ])
-    print("Done autosetup")
 
 def _replace_variables_in_config_files():
     config_dir = Path(os.environ['ODOO_CONFIG_DIR'])
@@ -140,7 +138,6 @@ def get_odoo_bin(for_shell=False):
         CONFIG = 'config_queuejob'
 
     else:
-        print('Starting odoo web')
         CONFIG = 'config_webserver'
         if version <= 9.0:
             if for_shell:
@@ -276,7 +273,6 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **
         print("Touching odoo url to start it")
         t.start()
 
-    print("Executing odoo")
     os.system(cmd)
     if pidfile.exists():
         pidfile.unlink()

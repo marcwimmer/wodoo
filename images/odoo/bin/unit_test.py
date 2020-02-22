@@ -14,7 +14,6 @@ if len(sys.argv) == 1:
     sys.exit(-1)
 prepare_run()
 
-subprocess.check_call(['reset'])
 filepath = Path(sys.argv[1])
 module = Module(filepath)
 
