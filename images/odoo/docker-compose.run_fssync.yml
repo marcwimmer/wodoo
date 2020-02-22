@@ -1,8 +1,0 @@
-# manage-order 1001
-volumes:
-  odoo_src:
-      driver: local
-services:
-  odoo_base:
-      volumes:
-          - odoo_src:/opt/src
