@@ -27,11 +27,6 @@ DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
 RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
 NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
 
-def _get_uninstalled_modules_that_are_auto_install_and_should_be_installed():
-    modules = []
-    modules += DBModules.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
-    return sorted(list(set(modules)))
-
 def update(mode, modules):
     assert mode in ['i', 'u']
     assert modules
@@ -178,17 +173,6 @@ def main():
         update('u', MODULE)
     for module in MODULE:
         summary.append("UPDATE " + module)
-
-    # check if at auto installed modules all predecessors are now installed; then install them
-    if not single_module:
-        auto_install_modules = _get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
-        if auto_install_modules:
-            print("Going to install following modules, that are auto installable modules")
-            print(','.join(auto_install_modules))
-            print("")
-            if INTERACTIVE:
-                input("You should press Ctrl+C NOW to abort")
-            update('i', auto_install_modules)
 
     print("--------------------------------------------------------------------------------")
     print("Summary of update module")

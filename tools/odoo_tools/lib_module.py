@@ -42,7 +42,6 @@ def _get_default_modules_to_update():
     mods = Modules()
     module = mods.get_customs_modules('to_update')
     module += DBModules.get_uninstalled_modules_where_others_depend_on()
-    module += DBModules.get_uninstalled_modules_that_are_auto_install_and_should_be_installed()
     return module
 
 @odoo_module.command(name='update-ast-file')

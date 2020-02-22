@@ -176,35 +176,6 @@ class DBModules(object):
         return rows
 
     @classmethod
-    def get_uninstalled_modules_that_are_auto_install_and_should_be_installed(clazz):
-        sql = """
-            select
-                mprior.name, mprior.state
-            from
-                ir_module_module_dependency d
-            inner join
-                ir_module_module m
-            on
-                m.id = d.module_id
-            inner join
-                ir_module_module mprior
-            on
-                mprior.name = d.name
-            where
-                m.name = '{module}';
-        """
-        with get_conn_autoclose() as cr:
-            result = []
-            cr.execute("select id, name from ir_module_module where state in ('uninstalled') and auto_install;")
-            for mod in [x[1] for x in cr.fetchall()]:
-                cr.execute(sql.format(module=mod))
-                if all(x[1] == 'installed' for x in cr.fetchall()):
-                    # means that all predecessing modules are installed but not the one;
-                    # so it shoule be installed
-                    result.append(mod)
-        return result
-
-    @classmethod
     def get_uninstalled_modules_where_others_depend_on(clazz):
         sql = """
             select
