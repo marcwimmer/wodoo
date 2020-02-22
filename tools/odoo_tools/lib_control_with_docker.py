@@ -308,13 +308,6 @@ def runbash(ctx, config, machine, args, **kwparams):
         cmd += [bash]
     __cmd_interactive(*tuple(cmd))
 
-@cli.command(name='bash')
-def simplebash(*parameters):
-    if not parameters:
-        print("Call commands by just typing odoo<enter>")
-        os.system("bash --noprofile")
-    else:
-        os.system("bash --noprofile -c {}".format(" ".join(parameters)))
 
 @cli.command(name='logs')
 @click.argument('machines', nargs=-1)
@@ -329,17 +322,6 @@ def logall(machines, follow, tail):
     cmd += list(machines)
     __dc(cmd)
 
-@docker.command()
-def springclean():
-    os.system("docker system prune")
-    click.echo("removing dead containers")
-    os.system('docker ps -a -q | while read -r id; do docker rm "$id"; done')
-
-    click.echo("Remove untagged images")
-    os.system('docker images | grep "<none>" | awk \'{ click.echo "docker rmi " $3 }\' | bash')
-
-    click.echo("delete unwanted volumes (can pass -dry-run)")
-    os.system('docker images -q -f="dangling=true" | while read -r id; do docker rmi "$id"; done')
 
 @docker.command()
 def shell():

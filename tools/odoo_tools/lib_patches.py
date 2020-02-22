@@ -33,6 +33,8 @@ def _get_odoo_github_disk_path():
     return url
 
 def _get_all_OCA_modules():
+    from pudb import set_trace
+    set_trace()
     yield from MANIFEST()['OCA']
 
 def _prepare_OCA_source_folder(config, pull=False):
@@ -116,7 +118,6 @@ def patch_prepare(ctx, config):
     from git import Repo
     ctx.invoke(patch_reset)
     _patch_gitify(config)
-    _patch_default_patches(config)
 
     for dir in _get_all_intermediate_repos(config):
         subprocess.check_call(["git", "add", "."], cwd=dir)
@@ -200,7 +201,7 @@ def _patch_list(config, absolute_path=True):
 
 @patch.command(name="integrate-patch")
 @pass_config
-def intergate_patch(config):
+def intrgrate_patch(config):
     """
     Symlinks patch from modules into the ./patches dir
     """
@@ -243,7 +244,6 @@ def apply_all(ctx, config):
     applies all patches; no git repo after-wards
     """
     ctx.invoke(patch_reset)
-    _patch_default_patches(config)
     customs_dir = odoo_config.customs_dir()
     for filepath in _patch_list(config):
         click.secho("Applying patch {}".format(filepath.relative_to(customs_dir)), fg='green')
@@ -337,14 +337,6 @@ def _patch_ungitify(config):
         git_dir = dir / '.git'
         if git_dir.exists():
             __remove_tree(git_dir)
-
-def _patch_default_patches(config):
-    click.echo("Applying default patches")
-    click.echo("-remove module install notfications")
-
-    from .module_tools import remove_module_install_notifications
-    remove_module_install_notifications(dirs['customs'])
-    click.echo("Apply default patches DONE")
 
 def _patch_get_diff(config):
     from git import Repo

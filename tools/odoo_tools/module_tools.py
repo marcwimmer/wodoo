@@ -345,43 +345,6 @@ def restart(quick):
     else:
         write_debug_instruction('restart')
 
-
-def remove_module_install_notifications(path):
-    """
-    entfernt aus /opt/odoo/versions aus den xml dateien records:
-        model:mail.message
-        id: module_install_notification
-
-    entfernt via psql aus der angegebenen datenbank (parameter!), alle
-    vorhandenen mail.messages und ir_model_data.
-
-    versions sollte danach eingecheckt werden!
-    """
-
-    for file in Path(path).glob("**/*.xml"):
-        if 'migration' in file.parts:
-            continue
-        if file.name.startswith('.'):
-            continue
-
-            if not file.stat().st_size:
-                continue
-            try:
-                with path.open('rb') as f:
-                    tree = etree.parse(f)
-            except Exception as e:
-                print("error at {filename}: {e}".format(filename=file, e=e))
-
-            matched = False
-            for n in tree.findall("//record[@model='mail.message']"):
-                if "module_install_notification" in n.get('id'):
-                    n.getparent().remove(n)
-                    matched = True
-            if matched:
-                with file.open("wb") as f:
-                    tree.write(f)
-
-
 def run_test_file(path):
     if not path:
         instruction = 'last_unit_test'

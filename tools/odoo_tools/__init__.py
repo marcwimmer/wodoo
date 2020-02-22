@@ -302,7 +302,6 @@ else:
 from . import lib_db # NOQA
 from . import lib_db_snapshots # NOQA
 from . import lib_lang # NOQA
-from . import lib_migrate # NOQA
 from . import lib_module # NOQA
 from . import lib_patches # NOQA
 from . import lib_setup # NOQA
