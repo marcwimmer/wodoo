@@ -146,7 +146,8 @@ def get_to_delete_files(path_list, days_notouch):
     for files in bins.values():
         arr = sorted(files, key=lambda x: x.stat().st_mtime)
         to_delete += arr[1:]
-        keep.add(arr[0])
+        if arr:
+            keep.add(arr[0])
 
     print("Kept:")
     print_files(keep)
