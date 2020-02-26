@@ -144,6 +144,9 @@ if __name__ == '__main__':
 
     if args.dry_run:
         print("Dry run! Taking no action!", file=sys.stderr)
+        print("Would delete:")
+        for x in deletion_candidates:
+            print(x)
         exit(0)
     else:
         rm(deletion_candidates)
