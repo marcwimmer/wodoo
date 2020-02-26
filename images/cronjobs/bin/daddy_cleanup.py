@@ -159,8 +159,9 @@ if __name__ == '__main__':
         args.PATH,
         args.doNt_touch
     )
-    print("Going to delete:")
-    for path in deletion_candidates:
-        print(path)
+    if deletion_candidates:
+        print("Going to delete:")
+        for path in deletion_candidates:
+            print(path)
 
     rm(deletion_candidates, dry_run=args.dry_run)
