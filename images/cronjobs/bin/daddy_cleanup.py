@@ -161,7 +161,7 @@ if __name__ == '__main__':
     )
     if deletion_candidates:
         size = 0
-        for path in deletion_candidates:
+        for path in list(set(deletion_candidates):
             print(path)
             size += path.stat().st_size
         print("Going to delete ", humanize.naturalsize(size))
