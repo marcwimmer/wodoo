@@ -142,10 +142,24 @@ def get_to_delete_files(path_list, days_notouch):
             to_delete.append(path)
 
     # keep youngest in bins
+    keep = set()
     for files in bins.values():
-        to_delete += sorted(files, key=lambda x: x.stat().st_mtime)[1:]
+        arr = sorted(files, key=lambda x: x.stat().st_mtime)
+        to_delete += arr[1:]
+        keep.add(arr[0])
+
+    print("Kept:")
+    print_files(keep)
+    print("==========================")
 
     return to_delete
+
+def print_files(files):
+    size = 0
+    for path in list(set(files)):
+        print(path)
+        size += path.stat().st_size
+    return size
 
 
 if __name__ == '__main__':
@@ -155,15 +169,11 @@ if __name__ == '__main__':
     if args.verbose:
         log.setLevel(logging.DEBUG)
     log.debug(args)
-    deletion_candidates = get_to_delete_files(
+    deletion_candidates = list(sorted(set(get_to_delete_files(
         args.PATH,
         args.doNt_touch
-    )
+    ))))
     if deletion_candidates:
-        size = 0
-        for path in list(set(deletion_candidates):
-            print(path)
-            size += path.stat().st_size
+        size = print_files(deletion_candidates)
         print("Going to delete ", humanize.naturalsize(size))
-
-    rm(deletion_candidates, dry_run=args.dry_run)
+        rm(deletion_candidates, dry_run=args.dry_run)
