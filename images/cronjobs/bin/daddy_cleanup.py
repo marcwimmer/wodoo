@@ -134,6 +134,7 @@ def get_to_delete_files(path_list, days_notouch):
     to_delete = []
     for path, mt in genPathInfos(path_list):
         if (arrow.utcnow() - mt).days < days_notouch:
+            print("Ignoring", path)
             continue
 
         for key in bins:
