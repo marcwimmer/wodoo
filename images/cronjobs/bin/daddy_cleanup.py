@@ -1,3 +1,6 @@
+import arrow
+import calendar
+import humanize
 import sys
 import glob
 import argparse
@@ -23,34 +26,25 @@ def genPathInfos(arg_paths, recursive=False):
             is_file = path.is_file()
             log.debug(f"{path}: mtime {mtime} dir? {is_dir} file? {is_file} ")
             if is_file:
-                yield (path, mtime)
+                yield (path, arrow.get(mtime))
 
 
-def get_last_quarter(now):
-    quarters = [(1, 3), (4, 6), (7, 9), (10, 12)]
-    quarters.reverse()
-    last_quarter = None
-    for i, q in enumerate(quarters):
-        if now.month >= q[0] and now.month <= q[1]:
-            last_quarter = quarters[(i + 1) % 4]
-            log.debug(f"Last quarter: {last_quarter}")
-            return last_quarter
-    raise f"Quarter selection failed for current timestamp! {now}"
-
-
-def get_start_of_week(ts, delta=0):
-    '''Return the start of the week delta weeks removed frome the one ts is in.'''
-    sow = dt.datetime(year=ts.year,
-            month=ts.month,
-            day=ts.day) - dt.timedelta(days=ts.weekday())
-    return sow + dt.timedelta(weeks=delta)
-
-
-def rm(path_list):
+def rm(path_list, dry_run):
+    now = arrow.utcnow()
     log.info("Starting deletion:")
-    for ts, path in path_list:
-        path.unlink()
-        log.info(f"Deleted: {path}")
+    for path in path_list:
+        if path.is_file():
+            if dry_run:
+                modified = arrow.get(path.stat().st_mtime)
+                print(
+                    "dry run Would delete:",
+                    modified.strftime("%Y-%m-%d %H:%M:%S"),
+                    path,
+                    humanize.naturaldelta(now - modified)
+                )
+            else:
+                path.unlink()
+                log.info(f"Deleted: {path}")
 
 
 def parse_args():
@@ -60,68 +54,98 @@ def parse_args():
     p.add_argument("PATH", nargs="+", help="Paths or glob(s)")
     p.add_argument("--dry-run", action="store_true",
             help="Make no changes, just output information.")
-    p.add_argument("--days", "-d",  metavar="D", action="store", type=int, default=14,
-            help="Keep the last file of the last  N days. This is not relative to X")
     p.add_argument("--doNt-touch", "-n", metavar="N", action="store", type=int, default=1,
             help="Do not touch the last X days from today. Defaults to 1=yesterday")
     p.add_argument("--verbose", "-v", action="store_true",
             help="Produce verbose debug information.")
     return p.parse_args()
 
+def get_bins():
 
-def select_to_bins(path_list, days_bins, days_notouch):
+    def _return(x, y):
+        return _hour_0(x), _hour_235959(y)
+
+    def _hour_0(d):
+        return d.replace(hour=0, minute=0, second=0)
+
+    def _hour_235959(d):
+        return d.replace(hour=23, minute=59, second=59)
+
+    winning_weekday = 6 # sunday?
+    start = arrow.get()
+    while start.weekday() != winning_weekday:
+        start = start.shift(days=-1)
+
+    # last x weeks
+    def get_weeks():
+        X = start
+        for i in range(3):
+            X = X.shift(weeks=-1)
+            yield _return(X.shift(days=-6), X)
+
+    def get_months():
+        X = start
+        for i in range(6):
+            X = X.shift(months=-1)
+            last_of_month = calendar.monthrange(X.year, X.month)[1]
+            yield _return(
+                arrow.get(X.year, X.month, 1),
+                arrow.get(X.year, X.month, last_of_month),
+            )
+
+    def get_quarters():
+        X = start
+        for i in range(12):
+            X = X.shift(months=-1)
+            if X.month not in (3, 6, 9, 12):
+                continue
+            last_of_month = calendar.monthrange(X.year, X.month)[1]
+            yield _return(
+                arrow.get(X.year, X.month, 1),
+                arrow.get(X.year, X.month, last_of_month),
+            )
+
+    def get_years():
+        for i in range(20):
+            year_end = arrow.get().replace(
+                year=arrow.get().year - i,
+                month=12,
+                day=31
+            )
+            yield _return(
+                year_end.replace(day=1, month=1),
+                year_end,
+            )
+
+    yield _return(start, start)
+    yield from get_weeks()
+    yield from get_months()
+    yield from get_quarters()
+    yield from get_years()
+
+def get_to_delete_files(path_list, days_notouch):
     now = dt.datetime.utcnow()
-    start_of_last_week = get_start_of_week(now, -1)
-    start_of_2ndlast_week = get_start_of_week(now, -2)
-    start_of_3rdlast_week = get_start_of_week(now, -3)
-    start_of_month = dt.datetime(year=now.year, month=now.month, day=1)
-    end_of_last_month = start_of_month - dt.timedelta(days=2) # ah well it's late...
-    start_of_last_month = dt.datetime(
-            year=end_of_last_month.year,
-            month=end_of_last_month.month,
-            day=1)
     log.debug(f"Now: {now}")
-    log.debug(f"start of last week: {start_of_last_week}")
-    log.debug(f"last month: {start_of_last_month}-{start_of_month}")
-    bins = collections.defaultdict(lambda: (0, ''))
-    # bins = {
-    #        "2ndlast_week": (0, ''),
-    #        "3rdlast_week": (0, ''),
-    #        "last_month": (0, ''),
-    #        "last_quarter": (0, ''),
-    #        "last_year": (0, '')
-    #        }
-    candidates = []
+    bins = {}
+    for bin in set(get_bins()):
+        bins.setdefault(bin, [])
+
+    to_delete = []
     for path, mt in genPathInfos(path_list):
-        mt_dt = dt.datetime.utcfromtimestamp(mt)
-        days_back = (now - mt_dt).days
-        # Skip all younger than days to not be touched:
-        if days_back < days_notouch:
+        if (arrow.utcnow() - mt).days < days_notouch:
             continue
-        if days_back < days_bins:
-            bins[str(days_back)] = max((mt, path), bins[str(days_back)])
 
-        # select into bins who might be deletion candidates:
-        if start_of_last_week > mt_dt >= start_of_2ndlast_week:
-            bins["2ndlast_week"] = max((mt, path), bins["2ndlast_week"])
-        elif start_of_2ndlast_week > mt_dt >= start_of_3rdlast_week:
-            bins["3rdlast_week"] = max((mt, path), bins["3rdlast_week"])
-        if start_of_month > mt_dt > start_of_last_month:
-            bins["last_month"] = max((mt, path), bins["last_month"])
-        if mt_dt.year == now.year - 1:
-            bins["last_year"] = max((mt, path), bins["last_year"])
-        last_quarter = get_last_quarter(now)
-        if (now.year == mt_dt.year and (last_quarter[0] <= mt_dt.month <= last_quarter[1]) or (last_quarter == (10, 12) and now.year == mt_dt.year + 1)):
-            bins["last_quarter"] = max((mt, path), bins["last_quarter"])
-        candidates.append((mt, path))
-    # remove all those from the candidates that ended up in bins:
-    unbinned = [c for c in candidates if c not in bins.values()]
-    return bins, unbinned
+        for key in bins:
+            if mt >= key[0] and mt <= key[1]:
+                bins[key].append(path)
+        else:
+            to_delete.append(path)
 
-class PathJsonEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, pathlib.PosixPath):
-            return str(obj)
+    # keep youngest in bins
+    for files in bins.values():
+        to_delete += sorted(files, key=lambda x: x.stat().st_mtime)[1:]
+
+    return to_delete
 
 
 if __name__ == '__main__':
@@ -131,22 +155,12 @@ if __name__ == '__main__':
     if args.verbose:
         log.setLevel(logging.DEBUG)
     log.debug(args)
-    bins, deletion_candidates = select_to_bins(
+    deletion_candidates = get_to_delete_files(
         args.PATH,
-        args.days,
         args.doNt_touch
     )
+    print("Going to delete:")
+    for path in deletion_candidates:
+        print(path)
 
-    print(json.dumps({
-        "keep": bins,
-        "delete": deletion_candidates
-    }, cls=PathJsonEncoder))
-
-    if args.dry_run:
-        print("Dry run! Taking no action!", file=sys.stderr)
-        print("Would delete:")
-        for x in deletion_candidates:
-            print(x)
-        exit(0)
-    else:
-        rm(deletion_candidates)
+    rm(deletion_candidates, dry_run=args.dry_run)
