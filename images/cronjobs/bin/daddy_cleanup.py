@@ -160,8 +160,10 @@ if __name__ == '__main__':
         args.doNt_touch
     )
     if deletion_candidates:
-        print("Going to delete:")
+        size = 0
         for path in deletion_candidates:
             print(path)
+            size += path.stat().st_size
+        print("Going to delete ", humanize.naturalsize(size))
 
     rm(deletion_candidates, dry_run=args.dry_run)
