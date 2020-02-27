@@ -31,4 +31,8 @@ def after_settings(config):
     if config['DEVMODE'] != '1':
         config['POSTGRES_VOLUME_NAME'] = "{}_postgres".format(project_name)
     else:
-        config['POSTGRES_VOLUME_NAME'] = "{}_{}_postgres".format(customs, dbname)
+        config['POSTGRES_VOLUME_NAME'] = "{}_{}_{}_postgres".format(
+            os.environ['USER'],
+            customs,
+            dbname
+        )
