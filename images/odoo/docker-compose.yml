@@ -27,6 +27,7 @@ services:
       - ${ODOO_HOME}/images/odoo/config/${ODOO_VERSION}/config:${ODOO_CONFIG_DIR}.template:ro
       - ${HOST_RUN_DIR}/intercom:/intercom
       - ~/.config/pudb:/home/odoo/.config/pudb
+      - ${CUSTOMS_DIR}:/opt/src
     environment:
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files
