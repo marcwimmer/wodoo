@@ -412,10 +412,10 @@ def _get_settings_directories(customs):
     customs_dir = odoo_config.customs_dir()
     project_name = os.environ["PROJECT_NAME"]
     yield customs_dir / 'settings'
-    yield Path('/etc_host/odoo/settings')
-    yield Path('/etc_host/odoo/{}/settings'.format(customs))
-    yield Path('/etc_host/odoo/{}/settings'.format(project_name))
-    yield Path('/home/{}/.odoo'.format(os.environ['USER']))
+    yield Path('/etc/odoo/settings')
+    yield Path('/etc/odoo/{}/settings'.format(customs))
+    yield Path('/etc/odoo/{}/settings'.format(project_name))
+    yield Path('{}/.odoo'.format(os.environ['HOME']))
 
 @composer.command(name='toggle-settings')
 @pass_config
