@@ -80,9 +80,9 @@ def get_bins():
     # last x weeks
     def get_weeks():
         X = start
-        for i in range(3):
-            X = X.shift(weeks=-1)
+        for i in range(4):
             yield _return(X.shift(days=-6), X)
+            X = X.shift(weeks=-1)
 
     def get_months():
         X = start
