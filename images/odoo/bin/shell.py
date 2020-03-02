@@ -11,6 +11,8 @@ from tools import prepare_run
 
 prepare_run()
 
+os.environ['PYTHONBREAKPOINT'] = 'pudb.set_trace'
+
 # make path relative to links, so that test is recognized by odoo
 cmd = [
     '--stop-after-init',
