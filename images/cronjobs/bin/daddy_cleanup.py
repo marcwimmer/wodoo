@@ -131,10 +131,12 @@ def get_to_delete_files(path_list, days_notouch):
     for bin in set(get_bins()):
         bins.setdefault(bin, [])
 
+    keep_safe = set()
     to_delete = []
     for path, mt in genPathInfos(path_list):
         if (arrow.utcnow() - mt).days < days_notouch:
             print("Ignoring", path)
+            keep_safe.add(path)
             continue
 
         for key in bins:
@@ -143,25 +145,28 @@ def get_to_delete_files(path_list, days_notouch):
         else:
             to_delete.append(path)
 
-    # keep youngest in bins
-    keep = set()
-    for files in bins.values():
-        arr = sorted(files, key=lambda x: x.stat().st_mtime)
-        to_delete += arr[1:]
-        if arr:
-            keep.add(arr[0])
+    # sort arrays by date
+    for k in bins.keys():
+        bins[k] = sorted(bins[k], key=lambda x: x.stat().st_mtime, reverse=True)
+    [keep_safe.add(x[0]) for x in bins.values() if x]
 
+    # keep youngest in bins
+    for files in bins.values():
+        to_delete += files[1:]
+
+    print("==========================")
     print("Kept:")
-    print_files(keep)
+    size = print_files(sorted(keep_safe))
+    print("Keeping", humanize.naturalsize(size))
     print("==========================")
 
-    return to_delete
+    return list(set(to_delete) - keep_safe)
 
 def print_files(files):
     size = 0
     for path in list(set(files)):
-        print(path)
         size += path.stat().st_size
+        print(path, arrow.get(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"))
     return size
 
 
@@ -169,8 +174,8 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     log = logging.getLogger()
     args = parse_args()
-    if args.verbose:
-        log.setLevel(logging.DEBUG)
+    #if args.verbose:
+    #    log.setLevel(logging.DEBUG)
     log.debug(args)
     deletion_candidates = list(sorted(set(get_to_delete_files(
         args.PATH,
