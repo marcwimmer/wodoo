@@ -193,7 +193,7 @@ def make_absolute_paths():
 
     # dirs['host_working_dir'] = os.getenv('LOCAL_WORKING_DIR', "")
     if 'docker_compose' in files:
-        commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc']]
+        commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc'] if x]
 
 
 make_absolute_paths()

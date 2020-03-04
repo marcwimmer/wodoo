@@ -288,12 +288,13 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         for service_name, service in yml['services'].items():
             if not service.get('build', False):
                 continue
-            service['image'] = "/".join([
-                os.environ['ODOO_HUB_URL'],
-                os.environ['ODOO_HUB_PREFIX'],
-                config.customs,
-                service_name + ":latest"
-            ])
+            if os.getenv("ODOO_HUB_URL", False):
+                service['image'] = "/".join([
+                    os.environ['ODOO_HUB_URL'],
+                    os.environ['ODOO_HUB_PREFIX'],
+                    config.customs,
+                    service_name + ":latest"
+                ])
 
         return yml
 
