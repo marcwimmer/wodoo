@@ -15,6 +15,26 @@ from datetime import datetime
 def postgres():
     pass
 
+@postgres.command(name='exec')
+@click.argument('dbname', required=True)
+@click.argument('host', required=True)
+@click.argument('port', required=True)
+@click.argument('user', required=True)
+@click.argument('password', required=True)
+@click.argument('sql', required=True)
+def execute(dbname, host, port, user, password, sql):
+    with psycopg2.connect(
+        host=host,
+        database=dbname,
+        port=port,
+        user=user,
+        password=password,
+    ) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cr:
+            print("executing sql: {}".format(sql))
+            cr.execute(sql)
+
 @postgres.command()
 @click.argument('dbname', required=True)
 @click.argument('host', required=True)

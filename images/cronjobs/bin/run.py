@@ -64,6 +64,7 @@ if __name__ == "__main__":
     displayed_infos = False
     while True:
         for job in jobs:
+            print(replace_params(job['cmd']))
             next_run = croniter(job['schedule'], job['base']).get_next(datetime)
             if not displayed_infos or (datetime.now().second == 0 and datetime.now().minute == 0):
                 logging.info("Next run of %s at %s", job['cmd'], next_run)
@@ -71,5 +72,5 @@ if __name__ == "__main__":
                 execute(job['cmd'])
                 job['base'] = next_run
 
-        time.sleep(1)
+        time.sleep(60)
         displayed_infos = True
