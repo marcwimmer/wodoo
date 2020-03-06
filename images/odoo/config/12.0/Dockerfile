@@ -119,4 +119,8 @@ RUN pip3 install -r /root/requirements.txt
 
 RUN apt install -y postgresql-client
 
+RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
+WORKDIR /opt/openupgradelib
+RUN python3 setup.py install
+
 WORKDIR /opt/odoo
