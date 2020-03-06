@@ -159,6 +159,7 @@ def up(ctx, config, machines, daemon):
             machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
     options = [
+        # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
     ]
     if daemon:
         options += ['-d']
