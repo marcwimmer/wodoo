@@ -61,6 +61,16 @@ def pgactivity(config):
     if config.run_postgres:
         __dcexec(["postgres", 'pg_activity'])
 
+@db.command()
+@click.argument('dbname', required=False)
+@click.argument('params', nargs=-1)
+@pass_config
+def pgcli(config, dbname, params):
+    dbname = dbname or config.dbname
+    if config.use_docker:
+        os.environ['DOCKER_MACHINE'] = "1"
+    conn = config.get_odoo_conn().clone(dbname=dbname)
+    return _pgcli(config, conn, params)
 
 @db.command()
 @click.argument('dbname', required=False)
@@ -73,7 +83,7 @@ def psql(config, dbname, params):
     conn = config.get_odoo_conn().clone(dbname=dbname)
     return _psql(config, conn, params)
 
-def _psql(config, conn, params):
+def _psql(config, conn, params, bin='psql'):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
         if params[0] in ['template1', dbname]:
@@ -88,7 +98,7 @@ def _psql(config, conn, params):
         ]
 
         if config.use_docker and config.run_postgres:
-            __dcrun(['postgres', 'psql'] + cmd, interactive=True, env={
+            __dcrun(['postgres', bin] + cmd, interactive=True, env={
                 "PGPASSWORD": conn.pwd,
             })
         else:
@@ -97,6 +107,9 @@ def _psql(config, conn, params):
             ] + cmd, env={"PGPASSWORD": conn.pwd})
     finally:
         os.environ['PGPASSWORD'] = ""
+
+def _pgcli(config, conn, params):
+    _psql(config, conn, params, bin='pgcli')
 
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)
