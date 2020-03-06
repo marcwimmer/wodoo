@@ -25,6 +25,7 @@ from .tools import __empty_dir
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 from . import odoo_user_conf_dir
+from .odoo_config import MANIFEST
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -347,6 +348,10 @@ def _export_settings(customs):
     config = MyConfigParser(files['settings'])
     if 'OWNER_UID' not in config.keys():
         config['OWNER_UID'] = str(os.getuid())
+    # take server wide modules from manifest
+    m = MANIFEST()
+    config['SERVER_WIDE_MODULES'] = ','.join(m['server-wide-modules'])
+
     config.write()
 
 def _collect_settings_files(customs):
