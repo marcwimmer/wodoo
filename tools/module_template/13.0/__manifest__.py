@@ -1,13 +1,12 @@
 
 {
-    'auto_install': False,
     'name': '__module_name__',
     'version': '13.0.1.0',
     'author': 'Marc Wimmer (marc@itewimmer.de)',
-    'depends': ['base'],
-    'demo_xml': [],
+    'depends': [,
     'data': [],
-    'installable': True,
-    'conflicts': [],
+    "external_dependencies": {"python": [], "bin": []},
+    #"uninstall_hook": "uninstall_hook",
+    #'pre_init_hook': 'post_init_hook',
     #'post_init_hook': 'post_init_hook',
 }
