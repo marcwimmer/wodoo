@@ -100,8 +100,6 @@ def do_kill(ctx, config, machines, brutal=False):
             SAFE_KILL.append(machine)
 
     machines = list(machines)
-    if config.run_postgres_in_ram and not machines:
-        machines = list(filter(lambda x: x != 'postgres', _get_machines()))
     if not brutal and not config.devmode:
         safe_stop = []
         for machine in SAFE_KILL:
@@ -139,10 +137,6 @@ def wait_for_port(host, port):
 @click.pass_context
 def recreate(ctx, config, machines):
     machines = list(machines)
-    if not machines and 'postgres' not in machines:
-        if config.run_postgres_in_ram:
-            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
-
     __dc(['up', '--no-start', '--force-recreate'] + machines)
 
 @docker.command()
@@ -154,16 +148,25 @@ def up(ctx, config, machines, daemon):
     _sanity_check(config)
     machines = list(machines)
 
-    if not machines and 'postgres' not in machines:
-        if config.run_postgres_in_ram:
-            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
-
     options = [
         # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
     ]
     if daemon:
         options += ['-d']
     __dc(['up'] + options + machines)
+
+@docker.command()
+@click.argument('machines', nargs=-1)
+@pass_config
+@click.pass_context
+def down(ctx, config, machines):
+    _sanity_check(config)
+    machines = list(machines)
+
+    options = [
+        # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
+    ]
+    __dc(['down'] + options + machines)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -186,9 +189,6 @@ def rebuild(ctx, config, machines):
 @click.pass_context
 def restart(ctx, config, machines):
     machines = list(machines)
-    if not machines and 'postgres' not in machines:
-        if config.run_postgres_in_ram:
-            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
 
     ctx.invoke(do_kill, machines=machines)
     ctx.invoke(up, machines=machines, daemon=True)
@@ -200,9 +200,6 @@ def restart(ctx, config, machines):
 def rm(ctx, config, machines):
     __needs_docker(config)
     machines = list(machines)
-    if not machines and 'postgres' not in machines:
-        if config.run_postgres_in_ram:
-            machines = list(filter(lambda x: x != 'postgres', _get_machines()))
     __dc(['rm', '-f'] + machines)
 
 @docker.command()
