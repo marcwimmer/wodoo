@@ -1,4 +1,5 @@
 import sys
+import psutil
 from datetime import datetime
 import subprocess
 from pathlib import Path
@@ -326,5 +327,8 @@ for module in dirs['images'].glob("**/__commands.py"):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
-tab_title = "odoo - {}".format(os.environ["PROJECT_NAME"])
-print("\033]0;{}\007\c".format(tab_title), file=sys.stdout) # NOQA
+parent = psutil.Process(psutil.Process(os.getpid()).ppid())
+parent_process_name = parent.name()
+if parent_process_name in ['sh', 'bash', 'zsh']:
+    tab_title = "odoo - {}".format(os.environ["PROJECT_NAME"])
+    print("\033]0;{}\007\c".format(tab_title), file=sys.stdout) # NOQA
