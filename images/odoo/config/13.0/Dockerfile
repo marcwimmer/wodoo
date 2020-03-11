@@ -78,7 +78,8 @@ apt-get install \
             python3-pip \
             python3-dev \
             python3 \
-            locales-all
+            locales-all \
+            libpoppler-cpp-dev
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
