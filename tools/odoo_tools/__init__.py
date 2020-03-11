@@ -325,3 +325,6 @@ for module in dirs['images'].glob("**/__commands.py"):
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+
+tab_title = "odoo - {}".format(os.environ["PROJECT_NAME"])
+print("\033]0;{}\007\c".format(tab_title), file=sys.stdout) # NOQA
