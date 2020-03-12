@@ -1,6 +1,4 @@
-HTMLpy
 pymysql==0.9.3
-pdftotext==2.1.2
 striprtf==0.0.5
 polib==1.1.0
 xmltodict==0.12.0
