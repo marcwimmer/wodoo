@@ -1,3 +1,4 @@
+HTMLpy
 pymysql==0.9.3
 pdftotext==2.1.2
 striprtf==0.0.5
