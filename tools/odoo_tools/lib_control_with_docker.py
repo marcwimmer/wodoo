@@ -74,6 +74,11 @@ def dev(ctx, config, nobuild, kill):
 
     Commands.invoke(ctx, 'debug', machine="odoo")
 
+@docker.command(name='ps')
+def ps():
+    args = ['ps', '-a']
+    __dc(args)
+
 @docker.command(name='exec')
 @click.argument('machine', required=True)
 @click.argument('args', nargs=-1)
