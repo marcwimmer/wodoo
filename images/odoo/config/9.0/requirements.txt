@@ -1,3 +1,4 @@
+psutil
 PyYAML==3.12
 PyWebDAV==0.9.4
 caldav==0.5.0
