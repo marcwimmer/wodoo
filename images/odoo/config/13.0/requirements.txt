@@ -1,3 +1,4 @@
+pdftotext==2.1.2
 libsass==0.12.3
 jingtrang==0.1.2
 pymysql==0.9.3
