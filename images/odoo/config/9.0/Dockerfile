@@ -63,7 +63,8 @@ apt-get install \
             zip \
             gpg-agent \
             python3-pip \
-            python3-setuptools
+            python3-setuptools \
+            python3-dev
 
 RUN \
 sudo add-apt-repository ppa:malteworld/ppa && \
@@ -128,7 +129,7 @@ RUN apt install -y \
 	pip install requests[security] && \
 	pip install glob2 && \
 	pip install pip==9.0.3 --upgrade
-RUN pip3 install lxml psycopg2-binary click pudb
+RUN pip3 install lxml psycopg2-binary click pudb psutil
 
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
