@@ -38,7 +38,7 @@ def rm(path_list, dry_run):
             if dry_run:
                 modified = arrow.get(path.stat().st_mtime)
                 print(
-                    "dry run Would delete:",
+                    "dry run -- would delete:",
                     modified.strftime("%Y-%m-%d %H:%M:%S"),
                     path,
                     humanize.naturaldelta(now - modified)
@@ -72,7 +72,7 @@ def get_bins():
     def _hour_235959(d):
         return d.replace(hour=23, minute=59, second=59)
 
-    winning_weekday = 6 # sunday?
+    winning_weekday = 6 # sunday
     start = arrow.get()
     while start.weekday() != winning_weekday:
         start = start.shift(days=-1)
@@ -145,12 +145,15 @@ def get_to_delete_files(path_list, days_notouch):
         else:
             to_delete.append(path)
 
-    # sort arrays by date
+    # sort arrays by date reverse; at position[0] is the file
+    # that will survive
     for k in bins.keys():
         bins[k] = sorted(bins[k], key=lambda x: x.stat().st_mtime, reverse=True)
+    
+    # store pole positions in safe array
     [keep_safe.add(x[0]) for x in bins.values() if x]
 
-    # keep youngest in bins
+    # collect all victims
     for files in bins.values():
         to_delete += files[1:]
 
@@ -171,11 +174,11 @@ def print_files(files):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.ERROR)
     log = logging.getLogger()
     args = parse_args()
-    #if args.verbose:
-    #    log.setLevel(logging.DEBUG)
+    if args.verbose:
+        log.setLevel(logging.DEBUG)
     log.debug(args)
     deletion_candidates = list(sorted(set(get_to_delete_files(
         args.PATH,
