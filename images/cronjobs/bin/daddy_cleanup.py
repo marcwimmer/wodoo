@@ -50,8 +50,12 @@ def rm(path_list, dry_run):
 
 def parse_args():
     p = argparse.ArgumentParser(
-        """Gets the last file created this week, last week, second to last week,
-        third to last week, last month, last quarter and last year by UTC time.""")
+        """Deletes file matching the given glob in PATH and keeps
+           youngest files of last weeks, months, quarters and years.
+           
+           By providing --doNt-touch files can be provided, that are
+           never touched.
+        """)
     p.add_argument("PATH", nargs="+", help="Paths or glob(s)")
     p.add_argument("--dry-run", action="store_true",
             help="Make no changes, just output information.")
