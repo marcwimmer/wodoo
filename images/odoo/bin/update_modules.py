@@ -24,8 +24,12 @@ PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
 I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
 ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
 DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
-RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--run-tests")]
+NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-run-tests")]
 NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
+
+run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
+if NO_RUN_TESTS:
+    run_test = False
 
 def update(mode, modules):
     assert mode in ['i', 'u']
@@ -35,9 +39,9 @@ def update(mode, modules):
     if ','.join(modules) == 'all':
         raise Exception("update 'all' not allowed")
 
-    if RUN_TESTS:
+    if run_test:
         if mode == "i":
-            TESTS = '' # dont run tests at install
+            TESTS = '' # dont run tests at install, automatically run (says docu)
         else:
             TESTS = '--test-enable'
     else:
