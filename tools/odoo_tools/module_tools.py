@@ -229,22 +229,6 @@ class DBModules(object):
             return bool(cr.fetchone()[0])
 
     @classmethod
-    def uninstall_module(clazz, module, raise_error=False):
-        """
-        Gentley uninstalls, without restart
-        """
-        with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
-                return
-            cr.execute("select state from ir_module_module where name = %s", (module,))
-            state = cr.fetchone()
-            if not state:
-                return
-            state = state[0]
-            if state not in ['uninstalled']:
-                cr.execute("update ir_module_module set state = 'uninstalled' where name = %s", (module,))
-
-    @classmethod
     def is_module_installed(clazz, module):
         if not module:
             raise Exception("no module given")

@@ -44,6 +44,10 @@ def setup(config):
     subprocess.check_call(["python3", "-m", "venv", dirs['venv'].absolute()])
     install_requirements_in_venv(config)
 
+    print("Further:")
+    print("If you need redis: brew install redis")
+    print("Advanced mail server with roundcube - todo for marc to make the mail client run in docker isolated")
+
 def _get_bash_prefix():
     return """#!/bin/bash
 set -e

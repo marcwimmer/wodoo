@@ -24,7 +24,7 @@ PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
 I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
 ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
 DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
-NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-run-tests")]
+NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-tests")]
 NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
 
 run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
@@ -119,12 +119,12 @@ def _uninstall_marked_modules():
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
+    # raise Exception("Implement!")
 
     manifest = MANIFEST()
     modules = manifest.get('uninstall', [])
     for module in modules:
         print("Uninstalling marked module: {}".format(module))
-        DBModules.uninstall_module(module, raise_error=False)
 
 
 def main():

@@ -65,10 +65,11 @@ def update_module_file(module):
 @click.option('--check-install-state', default=True, is_flag=True, help="Check for dangling modules afterwards")
 @click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
 @click.option('--no-dangling-check', default=False, is_flag=True, help="Not checking for dangling modules")
+@click.option('--no-tests', default=False, is_flag=True, help="Turns off tests")
 @click.option('--i18n', default=False, is_flag=True, help="Overwrite Translations")
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False):
+def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, no_tests=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
@@ -117,6 +118,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
             params += ['no-dangling-check']
         if i18n:
             params += ['--i18n']
+        if no_tests:
+            params += ['--no-tests']
         _exec_update(config, params)
 
     except Exception:

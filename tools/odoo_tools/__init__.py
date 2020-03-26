@@ -332,4 +332,4 @@ if os.getenv("DOCKER_MACHINE", "") != "1":
     parent_process_name = parent.name()
     if parent_process_name in ['sh', 'bash', 'zsh']:
         tab_title = "odoo - {}".format(os.environ["PROJECT_NAME"])
-        print("\033]0;{}\007\c".format(tab_title), file=sys.stdout) # NOQA
+        print("\033]0;{}\007".format(tab_title), file=sys.stdout) # NOQA
