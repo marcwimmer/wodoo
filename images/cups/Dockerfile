@@ -5,6 +5,7 @@ MAINTAINER Nicolas Delaby "nicolas@ezeep.com"
 # Install cups
 RUN apt-get update && apt-get install cups cups-pdf whois wget samba-client python3 python3-cups rsync python3-pip vim -y \
 && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN pip3 install pip --upgrade
 RUN pip3 install pathlib
 
 # Disbale some cups backend that are unusable within a container

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 from pathlib import Path
 import time
 import uuid
@@ -29,16 +29,16 @@ while True:
 
         for file in PATH.glob("**/*.pdf"):
             printer_queue = file.parent.name
-            id = unicode(uuid.uuid4()).replace(u'-', u'')
+            id = str(uuid.uuid4()).replace(u'-', u'')
             conn = cups.Connection()
             logger.info(u"Printing {} to queue: {}".format(file, printer_queue))
             try:
-                conn.printFile(unicode(printer_queue), str(file), str(id), {})
+                conn.printFile(str(printer_queue), str(file), str(id), {})
                 file.rename(PRINTED / file.name)
-            except Exception as e:
+            except Exception:
                 msg = traceback.format_exc()
                 logger.error(msg)
-    except Exception as e:
+    except Exception:
         msg = traceback.format_exc()
         logger.error(msg)
     time.sleep(2)

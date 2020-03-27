@@ -40,7 +40,8 @@ fi
 
 rsync $CONF_ROOT/ /etc/cups/ -ar
 
-sleep 10 && python /print.py "$WATCHPATH" "$PRINTED_PATH" &
+sleep 10 && python3 /print.py "$WATCHPATH" "$PRINTED_PATH" &
 sleep 5 && /backup_printers.sh &
 
+openssl req -new -x509 -keyout /etc/cups/ssl/server.key -out /etc/cups/ssl/server.crt -days 365 -nodes -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=ssl.raymii.org"
 exec /usr/sbin/cupsd -f
