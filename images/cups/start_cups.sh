@@ -25,6 +25,8 @@ if [[ -d $CONF_ROOT/deb ]]; then
 fi
 
 rsync /opt/printer_setup/ /etc/cups -ra
+rsync /etc/cups.template/ /etc/cups/ -arP
+mkdir -p /etc/cups/ssl
 
 # samba printing auth
 PRINTAUTH=/etc/samba/printing.auth
@@ -43,5 +45,5 @@ rsync $CONF_ROOT/ /etc/cups/ -ar
 sleep 10 && python3 /print.py "$WATCHPATH" "$PRINTED_PATH" &
 sleep 5 && /backup_printers.sh &
 
-openssl req -new -x509 -keyout /etc/cups/ssl/server.key -out /etc/cups/ssl/server.crt -days 365 -nodes -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=ssl.raymii.org"
+openssl req -new -x509 -keyout /etc/cups/ssl/server.key -out /etc/cups/ssl/server.crt -days 365 -nodes -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=ssl.raymii.org" || true
 exec /usr/sbin/cupsd -f

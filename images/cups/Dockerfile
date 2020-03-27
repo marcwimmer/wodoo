@@ -13,10 +13,8 @@ RUN mv /usr/lib/cups/backend/parallel /usr/lib/cups/backend-available/
 RUN mv /usr/lib/cups/backend/serial /usr/lib/cups/backend-available/
 #RUN mv /usr/lib/cups/backend/usb /usr/lib/cups/backend-available/
 
-ADD etc-cups /etc/cups
-RUN mkdir -p /etc/cups/ssl
+ADD etc-cups/ /etc/cups.template/
 VOLUME /etc/cups/
-VOLUME /var/log/cups
 VOLUME /var/spool/cups
 VOLUME /var/cache/cups
 

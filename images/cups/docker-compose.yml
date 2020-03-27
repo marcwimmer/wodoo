@@ -10,9 +10,9 @@ services:
     ports:
       - "${CUPS_PORT}:631"
     volumes:
-      - ${CUSTOMS}_cupsdatatoprint:/opt/toprint 
-      - $ODOO_HOME/data/cups/printed:/opt/printed 
-      - ${CUSTOMS_DIR}/printer_setup:/opt/printer_setup
+      - ${HOST_RUN_DIR}/cups/to_print:/opt/toprint 
+      - ${HOST_RUN_DIR}/cups/printed:/opt/printed 
+      - ${HOST_RUN_DIR}/cups/printer_setup:/opt/printer_setup
     environment:
       WATCHPATH: /opt/toprint
       PRINTED_PATH: /opt/printed
