@@ -64,7 +64,10 @@ def _replace_variables_in_config_files():
     config_dir_template = Path(os.environ['ODOO_CONFIG_TEMPLATE_DIR'])
     config_dir.mkdir(exist_ok=True, parents=True)
     for file in config_dir_template.glob("*"):
-        shutil.copy(str(file), str(config_dir / file.name))
+        path = str(config_dir / file.name)
+        shutil.copy(str(file), path)
+        subprocess.call(['chmod', 'a+r', path])
+        del path
     ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths())))
 
     config_dir = Path(os.getenv("ODOO_CONFIG_DIR"))

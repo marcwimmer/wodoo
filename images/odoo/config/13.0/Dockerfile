@@ -102,7 +102,6 @@ RUN curl -o wkhtmltox.tar.xz -SL https://github.com/wkhtmltopdf/wkhtmltopdf/rele
 
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
-ADD sysroot/ /
 RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
