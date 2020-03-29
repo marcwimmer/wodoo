@@ -1,8 +1,12 @@
+import base64
+import click
 import yaml
 
 def after_compose(config, yml, globals):
     dirs = globals['dirs']
     odoodc = yaml.safe_load((dirs['odoo_home'] / 'images/odoo/docker-compose.yml').read_text())
+
+    odoo_machines = set()
 
     # transfer settings from odoo_base into odoo, odoo_cronjobs
     for odoomachine in odoodc['services']:
@@ -10,6 +14,7 @@ def after_compose(config, yml, globals):
             continue
         if odoomachine not in yml['services']:
             continue
+        odoo_machines.add(odoomachine)
         machine = yml['services'][odoomachine]
         for k in ['volumes']:
             machine[k] = []
@@ -40,4 +45,13 @@ def after_compose(config, yml, globals):
                     if not run:
                         yml['services'][service].pop('restart')
 
-    config['ODOO_REQUIREMENTS'] = "fun;pygame"
+    # fetch the external python dependencies
+    python_dependencies = globals['Modules'].get_all_python_dependencies()
+    if python_dependencies:
+        click.secho("Detected python dependencies: {}".format(
+            ', '.join(map(str, python_dependencies))
+        ), fg='green')
+    for odoo_machine in odoo_machines:
+        service = yml['services'][odoo_machine]
+        service['build'].setdefault('args', [])
+        service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(python_dependencies).encode('utf-8')).decode('utf-8')

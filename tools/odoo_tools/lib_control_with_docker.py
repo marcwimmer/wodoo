@@ -237,7 +237,7 @@ def build(config, machines, pull, no_cache, push):
         options += ['--pull']
 
     __dc(['build'] + options + list(machines), env={
-        'ODOO_VERSION': config.odoo_version
+        'ODOO_VERSION': config.odoo_version,  # at you developer: do not mismatch with build args
     })
 
 @docker.command()

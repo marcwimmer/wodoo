@@ -144,6 +144,7 @@ def _execute_after_compose(yml):
     execute local __oncompose.py scripts
     """
     from . import MyConfigParser
+    from .module_tools import Modules
     config = MyConfigParser(files['settings'])
     for module in dirs['images'].glob("**/__after_compose.py"):
         if module.is_dir():
@@ -155,6 +156,7 @@ def _execute_after_compose(yml):
         spec.loader.exec_module(module)
         module.after_compose(config, yml, dict(
             dirs=dirs,
+            Modules=Modules(),
         ))
     config.write()
     return yml

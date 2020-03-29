@@ -482,13 +482,20 @@ def update_view_in_db(filepath, lineno):
 class Modules(object):
 
     def __init__(self):
+        modnames = set()
+        from .odoo_config import get_odoo_addons_paths
 
         def get_all_manifests():
             """
             Returns a list of full paths of all manifests
             """
-            for file in customs_dir().glob("**/" + MANIFEST_FILE()):
-                yield file.absolute()
+            for path in get_odoo_addons_paths():
+                for file in path.glob("**/" + MANIFEST_FILE()):
+                    modname = file.parent.name
+                    if modname in modnames:
+                        continue
+                    modnames.add(file.absolute())
+                    yield file.absolute()
 
         self.modules = {}
         for m in get_all_manifests():
@@ -506,31 +513,14 @@ class Modules(object):
         """
         assert mode in [None, 'to_update', 'to_install']
 
-        modules_from_file = get_modules_from_install_file()
-        modules = sorted(list(set(DBModules.get_all_installed_modules() + modules_from_file)))
-
-        installed_modules = set(list(DBModules.get_all_installed_modules()))
-        all_non_odoo = list(map(lambda x: x.name, self.get_all_non_odoo_modules()))
-
-        modules = [x for x in all_non_odoo if x in installed_modules]
-        modules += modules_from_file
-        modules = list(set(modules))
+        modules = get_modules_from_install_file()
 
         if mode == 'to_install':
             modules = [x for x in modules if not DBModules.is_module_installed(x)]
 
         return modules
 
-    def get_all_non_odoo_modules(self):
-        """
-        Returns module names of all modules, that are from customs or OCA.
-        """
-        for m in self.modules.values():
-            if any(x in m.manifest_path.parts for x in ['common', 'modules', 'OCA']):
-                yield m
-
-    @classmethod
-    def get_module_dependency_tree(clazz, module):
+    def get_module_dependency_tree(self, module):
         """
         Dict of dicts
 
@@ -548,26 +538,64 @@ class Modules(object):
             for dep in mod.manifest_dict['depends']:
                 if dep == 'base':
                     continue
-                dep_mod = [x for x in clazz.modules if x.name == dep]
-                if dep_mod:
-                    data[mod.name][dep_mod] = {}
-                    append_deps(dep_mod[0], data[mod.name][dep_mod])
+                dep_mod = [x for x in self.modules.values() if x.name == dep][0]
+                data[mod.name][dep] = {}
+                append_deps(dep_mod, data[mod.name][dep])
 
         append_deps(module, result)
         return result
 
-    @classmethod
-    def get_module_flat_dependency_tree(clazz, module):
-        deptree = clazz.get_module_dependency_tree(module)
+    def get_module_flat_dependency_tree(self, module):
+        deptree = self.get_module_dependency_tree(module)
         result = set()
 
         def x(d):
             for k, v in d.items():
-                result.add(k)
+                if isinstance(k, str):
+                    result.add(k)
+                else:
+                    result.add(k.name)
                 x(v)
 
         x(deptree)
+        assert all(isinstance(x, str) for x in result)
         return sorted(list(result))
+
+    def get_all_used_modules(self):
+        """
+        Returns all modules that are directly or indirectly installed.
+        """
+        result = set()
+        modules = self.get_customs_modules()
+
+        for module in modules:
+            module = Module.get_by_name(module)
+            result.add(module.name)
+            dependencies = self.get_module_flat_dependency_tree(module)
+            for dep in dependencies:
+                result.add(dep)
+        return list(result)
+
+    def get_all_python_dependencies(self):
+        modules = self.get_all_used_modules()
+        pydeps = []
+        for module in modules:
+            module = self.modules[module]
+            pydeps += module.manifest_dict.get('external_dependencies', {}).get('python', [])
+
+        pydeps = list(set(pydeps))
+        # check for conflicts
+        for pydep in pydeps:
+            x = pydep.split("="[0])
+            others = [y for y in pydeps if y != x and y.split("=")[0] == x]
+            if others:
+                raise Exception("Not unique dependency: {}".format(
+                    '\n'.join([x] + others)
+                ))
+                sys.exit(-1)
+        print(pydeps)
+        return pydeps
+
 
 class Module(object):
 
@@ -644,7 +672,7 @@ class Module(object):
         raise Exception("Module not found or not linked: {}".format(name))
 
     @property
-    def dependent_moduless(self):
+    def dependent_modules(self):
         """
         per modulename all dependencies - no hierarchy
         """

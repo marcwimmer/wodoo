@@ -1,10 +1,8 @@
 # use buster for latest postgres client
 FROM debian:buster
 ARG ODOO_VERSION
-ARG CUSTOMS_REQUIREMENTS
+ARG ODOO_REQUIREMENTS
 MAINTAINER marc@itewimmer.de
-
-#RUN [[ -z "$CUSTOMS_REQUIREMENTS" && exit -1 ]]
 
 # used at a customer to fix proxy; can destroy public keys so no update works
 ADD etc/apt/apt.conf.d/99fixbadproxy /etc/apt/apt.conf.d/99fixbadproxy
@@ -99,7 +97,6 @@ RUN curl -o wkhtmltox.tar.xz -SL https://github.com/wkhtmltopdf/wkhtmltopdf/rele
         && cp wkhtmltox/bin/* /usr/local/bin/ \
         && cp -r wkhtmltox/share/man/man1 /usr/local/share/man/
 
-
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
 RUN \
@@ -107,7 +104,6 @@ chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
-ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 # PYTHON 3 and PIP
@@ -121,12 +117,15 @@ RUN hash -r && \
 	pip3 install --upgrade setuptools cython 
 RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
 RUN pip3 install -r /root/odoo_requirements.txt
-RUN pip3 install -r /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
-
 
 RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
+
+
+RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/customs_requirements.txt
+RUN cat /root/customs_requirements.txt
+RUN pip3 install -r /root/customs_requirements.txt
 
 WORKDIR /opt/odoo
