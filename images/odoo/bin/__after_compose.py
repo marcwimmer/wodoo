@@ -30,6 +30,7 @@ def after_compose(config, yml, globals):
                     (service == 'odoo_cronjobs' and not config['RUN_ODOO_CRONJOBS']) or \
                     (service == 'proxy' and not config['RUN_PROXY']):
                 yml['services'][service].pop('restart')
+
         for service in yml['services']:
             for service_name, run in [
                 ('odoo_cronjobs', config['RUN_ODOO_CRONJOBS']),
@@ -38,3 +39,5 @@ def after_compose(config, yml, globals):
                 if service == service_name:
                     if not run:
                         yml['services'][service].pop('restart')
+
+    config['ODOO_REQUIREMENTS'] = "fun;pygame"

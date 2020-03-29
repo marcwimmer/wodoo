@@ -1,9 +1,8 @@
 #!/bin/bash
-set -x
+set -xe
 CONFIG="$(sed 's/^/-c/' /config)"
-if [[ "$INRAM" == "1" ]]; then
-    CONFIG="$CONFIG $(sed 's/^/-c/' /config.ram)"
-else
-    CONFIG="$CONFIG $(sed 's/^/-c/' /config.noram)"
-fi
+
+# volume mount safe (if odoo is mounted into virtual box)
+cp /tmp/docker-entrypoint-initdb.d/* /docker-entrypoint-initdb.d
+chown -R postgres:postgres /docker-entrypoint-initdb.d 
 exec gosu postgres /docker-entrypoint.sh postgres $CONFIG

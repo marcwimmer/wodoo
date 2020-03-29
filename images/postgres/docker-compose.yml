@@ -8,19 +8,13 @@ services:
         - 127.0.0.1:${POSTGRES_PORT}:5432
     volumes:
       - $DUMPS_PATH:/opt/dumps
-      - $ODOO_HOME/images/postgres/init:/docker-entrypoint-initdb.d/
+      # volume mount safe (if odoo is mounted into virtual box)
+      - $ODOO_HOME/images/postgres/init:/tmp/docker-entrypoint-initdb.d/
       - $HOST_RUN_DIR/postgresout:/tmp/out
     environment:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata
-    env_file:
-      - $ODOO_HOME/images/postgres/default.parameters
 
     shm_size: '1g'
-    healthcheck:
-        test: ["CMD-SHELL", "pg_isready"]
-        interval: 60s
-        timeout: 30s
-        retries: 3
 
     command: /bin/bash /run.sh

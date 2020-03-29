@@ -234,6 +234,7 @@ def build(config, machines, pull, no_cache, push):
         options += ['--pull']
     if no_cache:
         options += ['--no-cache']
+        options += ['--pull']
 
     __dc(['build'] + options + list(machines), env={
         'ODOO_VERSION': config.odoo_version

@@ -1,7 +1,5 @@
 FROM debian:buster
 ENV DOCKER_VERSION=docker-18.09.3
-RUN sed -i 's|http://deb.debian|http://ftp2.de.debian|g' /etc/apt/sources.list
-RUN cat /etc/apt/sources.list
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
 apt install -y python3-pip python3 curl rsync locales \

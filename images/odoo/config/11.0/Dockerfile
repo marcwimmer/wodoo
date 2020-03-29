@@ -1,7 +1,12 @@
 FROM debian:buster
 ARG ODOO_VERSION
+#ARG CUSTOMS_REQUIREMENTS
 MAINTAINER marc@itewimmer.de
 
+# used at a customer to fix proxy; can destroy public keys so no update works
+ADD etc/apt/apt.conf.d/99fixbadproxy /etc/apt/apt.conf.d/99fixbadproxy
+
+#RUN [[ -z "$CUSTOMS_REQUIREMENTS" && exit -1 ]]
 ENV LANG C.UTF-8
 RUN apt update --fix-missing && \
 apt-get install \

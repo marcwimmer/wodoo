@@ -156,6 +156,7 @@ def _execute_after_compose(yml):
         module.after_compose(config, yml, dict(
             dirs=dirs,
         ))
+    config.write()
     return yml
 
 def _execute_after_settings():

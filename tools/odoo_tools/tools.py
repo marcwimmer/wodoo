@@ -523,6 +523,8 @@ def __do_command(cmd, *params, **kwparams):
     return globals()[cmd](*params, **kwparams)
 
 def _fix_permissions(config):
+    from pudb import set_trace
+    set_trace()
     from . import odoo_config
     if config.odoo_files and Path(config.odoo_files).is_dir() and \
             config.owner_uid and \

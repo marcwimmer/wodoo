@@ -1,9 +1,0 @@
-shared_buffers=128kB
-wal_buffers=32kB
-maintenance_work_mem=1024kB
-work_mem=64kB
-temp_buffers=800kB
-fsync=off
-seq_page_cost=0.01
-random_page_cost=0.01
-effective_cache_size=64kB

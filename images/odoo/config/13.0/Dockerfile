@@ -1,13 +1,17 @@
 # use buster for latest postgres client
 FROM debian:buster
 ARG ODOO_VERSION
+ARG CUSTOMS_REQUIREMENTS
 MAINTAINER marc@itewimmer.de
 
+#RUN [[ -z "$CUSTOMS_REQUIREMENTS" && exit -1 ]]
+
+# used at a customer to fix proxy; can destroy public keys so no update works
+ADD etc/apt/apt.conf.d/99fixbadproxy /etc/apt/apt.conf.d/99fixbadproxy
+
 ENV LANG C.UTF-8
-ADD etc/ /etc/
-RUN sed -i 's|http://deb.debian|http://ftp2.de.debian|g' /etc/apt/sources.list
-RUN apt update --fix-missing && \
-apt-get install \
+RUN apt update
+RUN apt-get install \
 	-y \
 	--no-install-recommends \
 			software-properties-common \
@@ -79,7 +83,8 @@ apt-get install \
             python3-dev \
             python3 \
             locales-all \
-            libpoppler-cpp-dev
+            libpoppler-cpp-dev \
+            postgresql-client
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
@@ -120,7 +125,6 @@ RUN pip3 install -r /root/odoo_requirements.txt
 RUN pip3 install -r /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
-RUN apt install -y postgresql-client
 
 RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib

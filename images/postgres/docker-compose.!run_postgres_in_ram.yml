@@ -4,7 +4,5 @@ volumes:
         name: ${POSTGRES_VOLUME_NAME}
 services:
   postgres:
-    environment:
-      INRAM: 0
     volumes:
       - ODOO_POSTGRES_VOLUME:/var/lib/postgresql/data

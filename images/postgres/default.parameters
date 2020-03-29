@@ -1,3 +1,0 @@
-DEFAULT_POSTGRES_PARAMETERS=-c max_connections=1000 -c logging_collector=off -c track_activity_query_size=16384
-POSTGRES_PARAMETERS_RAM=-c shared_buffers=128kB -c wal_buffers=32kB -c maintenance_work_mem=1024kB -c work_mem=64kB -c temp_buffers=800kB -c fsync=off -c seq_page_cost=0.01 -c random_page_cost=0.01 -c effective_cache_size=64kB
-POSTGRES_PARAMETERS_NORAM=

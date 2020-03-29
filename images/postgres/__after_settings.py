@@ -16,9 +16,6 @@ def after_settings(config):
             if config.get(k, "") != v:
                 config[k] = v
 
-    if "RUN_POSTGRES" in config.keys() and config.get("RUN_POSTGRES", "") != "1" and config.get("RUN_POSTGRES_IN_RAM", "") == "1":
-        config['RUN_POSTGRES_IN_RAM'] = "1"
-
     if config.get('RUN_BTRFS', "") == "1":
         config['RUN_POSTGRES_IN_BTRFS'] = '1'
         config.write()
