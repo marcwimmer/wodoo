@@ -84,7 +84,9 @@ def backup_calendar(config):
 @backup.command(name='odoo-db')
 @pass_config
 @click.pass_context
-def backup_db(ctx, config):
+@click.argument('filename', required=False, default="")
+def backup_db(ctx, config, filename):
+    filename = filename or '{}.{}.odoo'.format(config.customs, config.dbname) + '.dump.gz'
     cmd = [
         'run',
         'cronjobshell',
@@ -95,7 +97,7 @@ def backup_db(ctx, config):
         config.DB_PORT,
         config.DB_USER,
         config.DB_PWD,
-        '/host/dumps/' + '{}.{}.odoo'.format(config.customs, config.dbname) + '.dump.gz',
+        '/host/dumps/' + filename,
     ]
     __dc(cmd)
 
