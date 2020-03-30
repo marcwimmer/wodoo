@@ -792,3 +792,9 @@ def measure_time(method):
         click.secho("Took: {} seconds".format((ended - started).total_seconds()), fg='yellow')
         return result
     return wrapper
+
+def _extract_python_libname(x):
+    regex = re.compile(r'[\w\-\_]*')
+    x = x.replace('-', '_')
+    match = re.findall(regex, x)[0]
+    return match

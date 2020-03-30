@@ -10,6 +10,7 @@ try:
     from psycopg2 import IntegrityError
 except Exception:
     pass
+from .tools import _extract_python_libname
 from .tools import _exists_table
 from .tools import _execute_sql
 from .odoo_config import get_env
@@ -586,11 +587,12 @@ class Modules(object):
         pydeps = list(set(pydeps))
         # check for conflicts
         for pydep in pydeps:
-            x = pydep.split("="[0])
-            others = [y for y in pydeps if y != x and y.split("=")[0] == x]
+            x = _extract_python_libname(pydep)
+            others = [y for y in pydeps if y != pydep and _extract_python_libname(y) == x]
             if others:
+                # TODO evaluate >= instructions...not seen by now
                 raise Exception("Not unique dependency: {}".format(
-                    '\n'.join([x] + others)
+                    '\n'.join([pydep] + others)
                 ))
                 sys.exit(-1)
         print(pydeps)

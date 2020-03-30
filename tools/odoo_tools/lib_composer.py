@@ -15,6 +15,7 @@ import os
 import tempfile
 import copy
 import click
+from . import tools
 from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
 from .tools import _file2env
@@ -157,6 +158,7 @@ def _execute_after_compose(yml):
         module.after_compose(config, yml, dict(
             dirs=dirs,
             Modules=Modules(),
+            tools=tools,
         ))
     config.write()
     return yml

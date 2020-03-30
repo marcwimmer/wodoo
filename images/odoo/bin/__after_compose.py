@@ -56,14 +56,10 @@ def after_compose(config, yml, globals):
             ', '.join(map(str, python_dependencies))
         ), fg='green')
 
-    regex = re.compile(r'[\w\-\_]*')
-
-    def _extract_libname(x):
-        match = re.findall(regex, x)[0]
-        return match
+    tools = globals['tools']
 
     for libpy in lib_python_dependencies:
-        if _extract_libname(libpy) not in (_extract_libname(x) for x in python_dependencies):
+        if tools._extract_python_libname(libpy) not in (tools._extract_python_libname(x) for x in python_dependencies):
             python_dependencies.append(libpy)
 
     for odoo_machine in odoo_machines:
