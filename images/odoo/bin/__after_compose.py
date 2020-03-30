@@ -1,3 +1,4 @@
+import re
 import base64
 import click
 import yaml
@@ -46,14 +47,25 @@ def after_compose(config, yml, globals):
                         yml['services'][service].pop('restart')
 
     # fetch dependencies from odoo lib requirements
-    python_dependencies = (dirs['odoo_home'] / 'requirements.txt').read_text().split("\n")
+    lib_python_dependencies = (dirs['odoo_home'] / 'requirements.txt').read_text().split("\n")
 
     # fetch the external python dependencies
-    python_dependencies += globals['Modules'].get_all_python_dependencies()
+    python_dependencies = globals['Modules'].get_all_python_dependencies()
     if python_dependencies:
         click.secho("Detected python dependencies: {}".format(
             ', '.join(map(str, python_dependencies))
         ), fg='green')
+
+    regex = re.compile(r'[\w\-\_]*')
+
+    def _extract_libname(x):
+        match = re.findall(regex, x)[0]
+        return match
+
+    for libpy in lib_python_dependencies:
+        if _extract_libname(libpy) not in (_extract_libname(x) for x in python_dependencies):
+            python_dependencies.append(libpy)
+
     for odoo_machine in odoo_machines:
         service = yml['services'][odoo_machine]
         service['build'].setdefault('args', [])

@@ -28,6 +28,7 @@ services:
       - ${HOST_RUN_DIR}/intercom:/intercom
       - ~/.config/pudb:/home/odoo/.config/pudb
       - ${CUSTOMS_DIR}:/opt/src
+      - ${ODOO_HOME}/images/odoo/odoo_modules/${ODOO_VERSION}:/opt/odoo_server_tools
     environment:
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files
@@ -46,6 +47,7 @@ services:
       - LANGUAGE=en_US:en
       - LC_ALL=en_US.UTF-8
       - PYTHONBREAKPOINT=0
+      - ODOO_SERVER_TOOLS_MODULES=/opt/odoo_server_tools
     command: /usr/bin/python3 /odoolib/run.py
     entrypoint: ["/odoolib/entrypoint.py"]
     logging:

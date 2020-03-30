@@ -24,6 +24,8 @@ def get_odoo_addons_paths(relative=False):
     m = MANIFEST()
     c = customs_dir()
     res = []
+    if os.getenv("ODOO_SERVER_TOOLS_MODULES", ""):
+        res.append(os.environ['ODOO_SERVER_TOOLS_MODULES'])
     for x in m['addons_paths']:
         if relative:
             res.append(x)

@@ -95,7 +95,7 @@ def update(mode, modules):
 
     print(mode, ','.join(modules), 'done')
 
-def update_module_list():
+def _install_module(modname):
     MOD = "update_module_list"
     if not DBModules.is_module_installed(MOD):
         print("Update Module List is not installed - installing it...")
@@ -113,6 +113,9 @@ def update_module_list():
         print("")
         sys.exit(82)
     update('u', [MOD])
+
+def update_module_list():
+    _install_module("update_module_list")
 
 
 def _uninstall_marked_modules():
@@ -167,6 +170,9 @@ def main():
             update('i', [module])
             MODULE = [x for x in MODULE if x != module]
             summary.append("INSTALL " + module)
+
+    if float(os.getenv("ODOO_VERSION")) >= 13.0:
+        _install_module("server_tools_uninstaller")
 
     if DELETE_QWEB:
         for module in MODULE:
