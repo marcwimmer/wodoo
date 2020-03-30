@@ -45,8 +45,11 @@ def after_compose(config, yml, globals):
                     if not run:
                         yml['services'][service].pop('restart')
 
+    # fetch dependencies from odoo lib requirements
+    python_dependencies = (dirs['odoo_home'] / 'requirements.txt').read_text().split("\n")
+
     # fetch the external python dependencies
-    python_dependencies = globals['Modules'].get_all_python_dependencies()
+    python_dependencies += globals['Modules'].get_all_python_dependencies()
     if python_dependencies:
         click.secho("Detected python dependencies: {}".format(
             ', '.join(map(str, python_dependencies))

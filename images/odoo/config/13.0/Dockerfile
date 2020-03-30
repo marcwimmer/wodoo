@@ -125,7 +125,6 @@ RUN python3 setup.py install
 
 
 RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/customs_requirements.txt
-RUN cat /root/customs_requirements.txt
 RUN pip3 install -r /root/customs_requirements.txt
 
 WORKDIR /opt/odoo
