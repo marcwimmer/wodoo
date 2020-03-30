@@ -4,7 +4,7 @@ import os
 import shutil
 from pathlib import Path
 
-os.system("usermod -u {} 1000".format(os.environ['OWNER_UID']))
+os.system("usermod -u {} odoo".format(os.environ['OWNER_UID']))
 
 print("Setting ownership of /opt/files to {}".format(os.environ['OWNER_UID']))
 os.system("chown '{owner}:{owner}' /opt/files".format(owner=os.environ['OWNER_UID']))
