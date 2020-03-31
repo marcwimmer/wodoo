@@ -1,3 +1,4 @@
+import random
 import stat
 import os
 import platform
@@ -15,6 +16,11 @@ def after_settings(config):
         for k, v in default_values.items():
             if config.get(k, "") != v:
                 config[k] = v
+
+        if not config.get("POSTGRES_PORT", ""):
+            # try to use same port again
+            port = random.randint(10001, 30000)
+            config['POSTGRES_PORT'] = str(port)
 
     if config.get('RUN_BTRFS', "") == "1":
         config['RUN_POSTGRES_IN_BTRFS'] = '1'
