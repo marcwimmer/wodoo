@@ -1,4 +1,5 @@
 import json
+import click
 from pathlib import Path
 from datetime import datetime
 from copy import deepcopy
@@ -577,12 +578,23 @@ class Modules(object):
                 result.add(dep)
         return list(result)
 
-    def get_all_python_dependencies(self):
+    def get_all_external_dependencies(self):
         modules = self.get_all_used_modules()
         pydeps = []
+        deb_deps = []
         for module in modules:
             module = self.modules[module]
-            pydeps += module.manifest_dict.get('external_dependencies', {}).get('python', [])
+            # TODO save eval
+            file = (module.path / 'external_dependencies.txt')
+            if file.exists():
+                try:
+                    content = json.loads(file.read_text())
+                except Exception as e:
+                    click.secho("Error parsing json in\n{}:\n{}".format(file, e), fg='red')
+                    click.secho(file.read_text(), fg='red')
+                    sys.exit(1)
+                pydeps += content.get("pip", [])
+                deb_deps += content.get('deb', [])
 
         pydeps = list(set(pydeps))
         # check for conflicts
@@ -595,8 +607,11 @@ class Modules(object):
                     '\n'.join([pydep] + others)
                 ))
                 sys.exit(-1)
-        print(pydeps)
-        return pydeps
+
+        return {
+            'pip': pydeps,
+            'deb': deb_deps
+        }
 
 
 class Module(object):
@@ -628,9 +643,10 @@ class Module(object):
             content = '\n'.join(filter(lambda x: not x.strip().startswith("#"), content.split("\n")))
             return eval(content) # TODO safe
         except SyntaxError:
+            click.secho("error at file: %s" % self.manifest_path, fg='red')
             raise
         except Exception:
-            print("error at file: %s" % self.manifest_path)
+            click.secho("error at file: %s" % self.manifest_path, fg='red')
             raise
 
     def __make_path_relative(self, path):

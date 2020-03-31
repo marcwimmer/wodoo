@@ -23,6 +23,11 @@ from . import odoo_config  # NOQA
 from .odoo_config import get_postgres_connection_params # NOQA
 odoo_user_conf_dir = Path(os.environ["HOME"]) / '.odoo'
 
+settings_files = {
+    'etc_settings': Path('/etc/odoo/settings'),
+    'user_settings': Path(os.path.expanduser("~/.odoo/settings")),
+}
+
 def _search_path(filename):
     filename = Path(filename)
     filename = filename.name
@@ -44,18 +49,14 @@ def _get_project_name(p):
     if not p:
         return
 
-    settings = Path(os.environ['HOME']) / '.odoo' / 'settings'
-    settings_text = ""
-    if settings.exists():
-        settings_text = settings.read_text()
+    from .settings import _get_settings
+    with _get_settings(None, settings_files, None) as config:
+        project_name = config.get("PROJECT_NAME", "")
+        if project_name:
+            return project_name
+        DEVMODE = config.get("DEVMODE", "") == "1"
 
-        project_name_line = [x for x in settings_text.split("\n") if "PROJECT_NAME=" in x]
-        if project_name_line:
-            project_name = project_name_line[0].replace("PROJECT_NAME=", "").strip()
-            if project_name:
-                return project_name
-
-    if 'DEVMODE=1' in settings_text:
+    if DEVMODE:
         return p.name
 
     if (p / '.git').exists():
@@ -133,7 +134,10 @@ dirs = {
     'odoo_data_dir': "~/.odoo/files",
 }
 
-files = {
+files = settings_files
+files.update({
+    'settings_auto': "${run}/settings.auto",
+    'project_settings': "~/.odoo/settings.${project_name}",
     'docker_compose': '${run}/docker-compose.yml',
     'docker_compose_bin': _search_path('docker-compose'),
     'debugging_template_withports': 'config/template_withports.yml',
@@ -146,12 +150,9 @@ files = {
     'run/snapshot_mappings.txt': '${run}/snapshot_mappings.txt',
     'images/proxy/instance.conf': 'images/proxy/instance.conf',
     'commit': 'odoo.commit',
-    'settings_auto': "${run}/settings.auto",
-    'user_settings': "~/.odoo/settings",
-    'project_settings': "~/.odoo/settings.${project_name}",
     'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
     'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
-}
+})
 commands = {
     'dc': [files['docker_compose_bin'], "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
 }

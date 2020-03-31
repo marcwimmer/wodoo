@@ -51,19 +51,25 @@ def after_compose(config, yml, globals):
         lib_python_dependencies = (dirs['odoo_home'] / 'requirements.txt').read_text().split("\n")
 
         # fetch the external python dependencies
-        python_dependencies = globals['Modules'].get_all_python_dependencies()
-        if python_dependencies:
-            click.secho("Detected python dependencies: {}".format(
-                ', '.join(map(str, python_dependencies))
-            ), fg='green')
+        external_dependencies = globals['Modules'].get_all_external_dependencies()
+        if external_dependencies:
+            for key in external_dependencies:
+                click.secho("Detected external dependencies {}: {}".format(
+                    key,
+                    ', '.join(map(str, external_dependencies[key]))
+                ), fg='green')
 
         tools = globals['tools']
 
+        external_dependencies.setdefault('pip', [])
+        external_dependencies.setdefault('deb', [])
+
         for libpy in lib_python_dependencies:
-            if tools._extract_python_libname(libpy) not in (tools._extract_python_libname(x) for x in python_dependencies):
-                python_dependencies.append(libpy)
+            if tools._extract_python_libname(libpy) not in (tools._extract_python_libname(x) for x in external_dependencies.get('pip', [])):
+                external_dependencies['pip'].append(libpy)
 
         for odoo_machine in odoo_machines:
             service = yml['services'][odoo_machine]
             service['build'].setdefault('args', [])
-            service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(python_dependencies).encode('utf-8')).decode('utf-8')
+            service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(external_dependencies['pip']).encode('utf-8')).decode('utf-8')
+            service['build']['args']['ODOO_DEB_REQUIREMENTS'] = base64.encodebytes('\n'.join(external_dependencies['deb']).encode('utf-8')).decode('utf-8')

@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import platform
 from pathlib import Path
 import importlib.util
@@ -76,6 +77,7 @@ def _do_compose(config, customs='', db='', demo=False, **defaults):
     """
     from . import MyConfigParser
     from . import HOST_RUN_DIR, NETWORK_NAME
+    from .settings import _export_settings
     os.environ['HOST_RUN_DIR'] = str(HOST_RUN_DIR)
     os.environ['NETWORK_NAME'] = NETWORK_NAME
 
@@ -234,7 +236,6 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
     paths = list(filter(lambda x: _use_file(config, x), paths))
     for path in paths:
-        click.echo(path)
         content = path.read_text()
 
         # dont matter if written manage-order: or manage-order
@@ -338,95 +339,6 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     finally:
         # shutil.rmtree(temp_path)
         pass
-
-def _export_settings(customs):
-    from . import files
-    from . import odoo_config
-    from . import MyConfigParser
-
-    if not files['settings'].exists():
-        raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
-
-    setting_files = _collect_settings_files(customs)
-    _make_settings_file(files['settings'], setting_files)
-    # constants
-    config = MyConfigParser(files['settings'])
-    if 'OWNER_UID' not in config.keys():
-        config['OWNER_UID'] = str(os.getuid())
-    # take server wide modules from manifest
-    m = MANIFEST()
-    config['SERVER_WIDE_MODULES'] = ','.join(m['server-wide-modules'])
-
-    config.write()
-
-def _collect_settings_files(customs):
-    from . import dirs
-    _files = []
-    _files.append(dirs['odoo_home'] / 'images/defaults')
-    # optimize
-    for filename in dirs['images'].glob("**/default.settings"):
-        _files.append(dirs['images'] / filename)
-    _files.append(files['settings_auto'])
-    _files.append(files['user_settings'])
-    if files['project_settings'].exists():
-        _files.append(files['project_settings'])
-    else:
-        click.secho("No specific configuration file used: {}".format(files['project_settings']), fg='yellow')
-
-    for dir in filter(lambda x: x.exists(), _get_settings_directories(customs)):
-        click.echo("Searching for settings in: {}".format(dir))
-        if dir.is_dir() and 'settings' not in dir.name:
-            continue
-        if dir.is_file():
-            _files.append(dir)
-        elif dir.is_dir():
-            for file in dir.glob("*"):
-                if file.is_dir():
-                    continue
-                _files.append(file)
-    click.echo("Found following extra settings files:")
-    for file in _files:
-        if not file.exists():
-            continue
-        if 'images' not in file.parts:
-            click.echo(file)
-            click.echo(file.read_text())
-
-    return _files
-
-def _make_settings_file(outfile, setting_files):
-    """
-    Puts all settings into one settings file
-    """
-    from . import MyConfigParser
-    c = MyConfigParser(outfile)
-    for file in setting_files:
-        if not file:
-            continue
-        c2 = MyConfigParser(file)
-        c.apply(c2)
-
-    # expand variables
-    for key in list(c.keys()):
-        value = c[key]
-        if "~" in value:
-            c[key] = os.path.expanduser(value)
-
-    c.write()
-
-def _get_settings_directories(customs):
-    """
-    Returns list of paths or files
-    """
-    from . import odoo_config
-    from . import dirs
-    customs_dir = odoo_config.customs_dir()
-    project_name = os.environ["PROJECT_NAME"]
-    yield customs_dir / 'settings'
-    yield Path('/etc/odoo/settings')
-    yield Path('/etc/odoo/{}/settings'.format(customs))
-    yield Path('/etc/odoo/{}/settings'.format(project_name))
-    yield Path('{}/.odoo'.format(os.environ['HOME']))
 
 @composer.command(name='toggle-settings')
 @pass_config

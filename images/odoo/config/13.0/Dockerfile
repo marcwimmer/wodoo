@@ -2,6 +2,8 @@
 FROM debian:buster
 ARG ODOO_VERSION
 ARG ODOO_REQUIREMENTS
+ARG ODOO_DEB_REQUIREMENTS
+
 MAINTAINER marc@itewimmer.de
 
 # used at a customer to fix proxy; can destroy public keys so no update works
@@ -124,8 +126,11 @@ WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
 
 
-RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/customs_requirements.txt
-RUN pip3 install -r /root/customs_requirements.txt
+RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/pip_requirements.txt
+RUN pip3 install -r /root/pip_requirements.txt
 RUN pip3 install libsass==0.19.4
+
+RUN echo "$ODOO_DEB_REQUIREMENTS"  | base64 --decode > /root/deb_requirements.txt
+RUN apt install -y  $(grep -vE "^\s*#" /root/deb_requirements  | tr "\n" " ")
 
 WORKDIR /opt/odoo
