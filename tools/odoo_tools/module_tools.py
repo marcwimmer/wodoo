@@ -572,6 +572,8 @@ class Modules(object):
         result = set()
         modules = self.get_customs_modules()
 
+        click.secho("Needs implementation: add auto installed modules", fg='red')
+
         for module in modules:
             module = Module.get_by_name(module)
             result.add(module.name)
