@@ -231,11 +231,13 @@ class DBModules(object):
             return bool(cr.fetchone()[0])
 
     @classmethod
-    def is_module_installed(clazz, module):
+    def is_module_installed(clazz, module, raise_exception_not_initialized=False):
         if not module:
             raise Exception("no module given")
         with get_conn_autoclose() as cr:
             if not _exists_table(cr, 'ir_module_module'):
+                if raise_exception_not_initialized:
+                    raise UserWarning("Database not initialized")
                 return False
             cr.execute("select name, state from ir_module_module where name = %s", (module,))
             state = cr.fetchone()

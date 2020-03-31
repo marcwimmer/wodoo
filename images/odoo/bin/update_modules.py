@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import click
 import os
 import datetime
 import sys
@@ -26,6 +27,8 @@ ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
 DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
 NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-tests")]
 NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
+
+ODOO_VERSION = float(os.getenv("ODOO_VERSION"))
 
 run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
 if NO_RUN_TESTS:
@@ -96,13 +99,15 @@ def update(mode, modules):
     print(mode, ','.join(modules), 'done')
 
 def _install_module(modname):
-    MOD = "update_module_list"
-    if not DBModules.is_module_installed(MOD):
+    if not DBModules.is_module_listed(modname):
+        if modname not in ['update_module_list']:
+            update_module_list()
+    if not DBModules.is_module_installed(modname):
         print("Update Module List is not installed - installing it...")
-        update('i', [MOD])
+        update('i', [modname])
         return
 
-    if not DBModules.is_module_installed(MOD):
+    if not DBModules.is_module_installed(modname):
         print("")
         print("")
         print("")
@@ -112,22 +117,25 @@ def _install_module(modname):
         print("")
         print("")
         sys.exit(82)
-    update('u', [MOD])
+    update('u', [modname])
 
 def update_module_list():
     _install_module("update_module_list")
-
 
 def _uninstall_marked_modules():
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
-    # raise Exception("Implement!")
-
-    manifest = MANIFEST()
-    modules = manifest.get('uninstall', [])
-    for module in modules:
-        print("Uninstalling marked module: {}".format(module))
+    if ODOO_VERSION < 13.0:
+        return
+    module = 'server_tools_uninstaller'
+    try:
+        DBModules.is_module_installed(module, raise_exception_not_initialized=True)
+    except UserWarning:
+        click.secho("Nothing to uninstall - db not initialized yet.", fg='yellow')
+        return
+    else:
+        _install_module(module)
 
 
 def main():
@@ -162,17 +170,20 @@ def main():
     summary = []
 
     for module in list(MODULE):
-        if not DBModules.is_module_installed(module):
-            if not DBModules.is_module_listed(module):
-                update_module_list()
+        try:
+            if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module != 'base')):
                 if not DBModules.is_module_listed(module):
-                    raise Exception("After updating module list, module was not found: {}".format(module))
-            update('i', [module])
-            MODULE = [x for x in MODULE if x != module]
-            summary.append("INSTALL " + module)
+                    if module != 'base':
+                        update_module_list()
+                        if not DBModules.is_module_listed(module):
+                            raise Exception("After updating module list, module was not found: {}".format(module))
+                update('i', [module])
+                MODULE = [x for x in MODULE if x != module]
+                summary.append("INSTALL " + module)
+        except UserWarning:
+            click.secho("Database not setup. Not installed modules other than base.", fg='yellow')
 
-    if float(os.getenv("ODOO_VERSION")) >= 13.0:
-        _install_module("server_tools_uninstaller")
+    _uninstall_marked_modules()
 
     if DELETE_QWEB:
         for module in MODULE:

@@ -28,7 +28,8 @@ services:
       - ${HOST_RUN_DIR}/intercom:/intercom
       - ~/.config/pudb:/home/odoo/.config/pudb
       - ${CUSTOMS_DIR}:/opt/src
-      - ${ODOO_HOME}/images/odoo/odoo_modules/${ODOO_VERSION}:/opt/odoo_server_tools
+      # copied by entrpoint to destination and correct UID/GID
+      - ${ODOO_HOME}/images/odoo/odoo_modules/${ODOO_VERSION}:/tmp/odoo_server_tools.template
     environment:
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files

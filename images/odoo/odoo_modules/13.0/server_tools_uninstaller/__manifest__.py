@@ -4,6 +4,6 @@
     'version': '13.0.1.0',
     'author': 'Marc Wimmer (marc@itewimmer.de)',
     'depends': ['base'],
-    'data': [],
+    'data': ['data.xml'],
     "external_dependencies": {"python": [], "bin": []},
 }
