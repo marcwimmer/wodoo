@@ -599,6 +599,8 @@ class Modules(object):
                     sys.exit(1)
                 pydeps += content.get("pip", [])
                 deb_deps += content.get('deb', [])
+            else:
+                pydeps += module.manifest_dict.get('external_dependencies', {}).get('python', [])
 
         pydeps = list(set(pydeps))
         # check for conflicts
@@ -673,7 +675,6 @@ class Module(object):
 
     @classmethod
     def get_by_name(clazz, name):
-        from .odoo_config import customs_dir
         from .odoo_config import get_odoo_addons_paths
         path = None
         for addon_path in get_odoo_addons_paths():
@@ -681,6 +682,8 @@ class Module(object):
             if dir.exists():
                 path = dir
             del dir
+        if not path:
+            raise Exception("Could not get path for {}".format(name))
         if path.exists():
             path = path.resolve()
 
