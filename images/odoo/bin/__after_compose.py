@@ -64,6 +64,13 @@ def after_compose(config, yml, globals):
         external_dependencies.setdefault('pip', [])
         external_dependencies.setdefault('deb', [])
 
+        requirements_odoo = globals['dirs']['customs'] / 'odoo' / 'requirements.txt'
+        if requirements_odoo.exists():
+            for libpy in requirements_odoo.read_text().split("\n"):
+                libpy = libpy.strip()
+                if tools._extract_python_libname(libpy) not in (tools._extract_python_libname(x) for x in external_dependencies.get('pip', [])):
+                    external_dependencies['pip'].append(libpy)
+
         for libpy in lib_python_dependencies:
             if tools._extract_python_libname(libpy) not in (tools._extract_python_libname(x) for x in external_dependencies.get('pip', [])):
                 external_dependencies['pip'].append(libpy)

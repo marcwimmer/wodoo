@@ -41,7 +41,7 @@ def __collect_other_turndb2dev_sql():
     if not dir.exists():
         return ""
     sqls = []
-    for file in dir.glob("**/*.sql"):
+    for file in dir.glob("turn-into-dev.sql"):
         sqls.append(file.read_text())
     return "\n\n".join(sqls)
 
