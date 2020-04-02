@@ -126,6 +126,8 @@ def _uninstall_marked_modules():
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
+    if os.getenv("USE_DOCKER", "1") == "0":
+        return
     if ODOO_VERSION < 13.0:
         return
     module = 'server_tools_uninstaller'
