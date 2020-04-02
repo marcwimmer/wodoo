@@ -128,7 +128,6 @@ RUN python3 setup.py install
 
 RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/pip_requirements.txt
 RUN pip3 install -r /root/pip_requirements.txt
-RUN pip3 install libsass==0.12.3
 
 RUN echo "$ODOO_DEB_REQUIREMENTS"  | base64 --decode > /root/deb_requirements.txt
 RUN apt install -y  $(grep -vE "^\s*#" /root/deb_requirements  | tr "\n" " ")
