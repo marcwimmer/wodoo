@@ -48,6 +48,7 @@ def after_compose(config, yml, globals):
 
     if float(yml['services']['odoo']['environment']['ODOO_VERSION']) >= 13.0:
         # fetch dependencies from odoo lib requirements
+        # requirements from odoo framework
         lib_python_dependencies = (dirs['odoo_home'] / 'requirements.txt').read_text().split("\n")
 
         # fetch the external python dependencies

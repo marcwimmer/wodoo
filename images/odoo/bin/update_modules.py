@@ -34,6 +34,8 @@ run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
 if NO_RUN_TESTS:
     run_test = False
 
+manifest = MANIFEST()
+
 def update(mode, modules):
     assert mode in ['i', 'u']
     assert modules

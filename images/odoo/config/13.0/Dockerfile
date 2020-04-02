@@ -117,7 +117,7 @@ RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \
 	pip3 install --upgrade setuptools cython 
-RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
+# RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
 RUN pip3 install -r /root/odoo_requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
