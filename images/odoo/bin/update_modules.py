@@ -139,7 +139,12 @@ def _uninstall_marked_modules():
         click.secho("Nothing to uninstall - db not initialized yet.", fg='yellow')
         return
     else:
-        _install_module(module)
+        # check if something is todo
+        to_uninstall = manifest.get('uninstall', [])
+        to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
+        if to_uninstall:
+            click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
+            _install_module(module)
 
 
 def main():
