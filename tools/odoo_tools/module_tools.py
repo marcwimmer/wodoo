@@ -582,7 +582,7 @@ class Modules(object):
             for dep in dependencies:
                 result.add(dep)
 
-        # check for auto install modules, up to 5 times - auto install could refer to other auto install
+        # check for auto install modules - auto install could refer to other auto install
         while True:
             changed = False
             for module in list(auto_install_modules):
