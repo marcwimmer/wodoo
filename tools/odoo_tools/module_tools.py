@@ -567,19 +567,33 @@ class Modules(object):
 
     def get_all_used_modules(self):
         """
-        Returns all modules that are directly or indirectly installed.
+        Returns all modules that are directly or indirectly (auto install, depends) installed.
         """
         result = set()
         modules = self.get_customs_modules()
 
-        click.secho("Needs implementation: add auto installed modules", fg='red')
-
+        auto_install_modules = []
         for module in modules:
             module = Module.get_by_name(module)
             result.add(module.name)
+            if module.manifest_dict.get('auto_install', False):
+                auto_install_modules.append(module)
             dependencies = self.get_module_flat_dependency_tree(module)
             for dep in dependencies:
                 result.add(dep)
+
+        # check for auto install modules, up to 5 times - auto install could refer to other auto install
+        while True:
+            changed = False
+            for module in list(auto_install_modules):
+                depends = [x for x in module.manifest_dict.get('depends', []) if x != 'base']
+                if all(x in modules for x in depends) and module.name not in result:
+                    changed = True
+                    result.append(module.name)
+                    auto_install_modules.remove(module)
+            if not changed:
+                break
+
         return list(result)
 
     def get_all_external_dependencies(self):
@@ -588,7 +602,6 @@ class Modules(object):
         deb_deps = []
         for module in modules:
             module = self.modules[module]
-            # TODO save eval
             file = (module.path / 'external_dependencies.txt')
             if file.exists():
                 try:
