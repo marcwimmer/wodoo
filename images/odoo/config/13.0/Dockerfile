@@ -132,4 +132,6 @@ RUN pip3 install -r /root/pip_requirements.txt
 RUN echo "$ODOO_DEB_REQUIREMENTS"  | base64 --decode > /root/deb_requirements.txt
 RUN apt install -y  $(grep -vE "^\s*#" /root/deb_requirements  | tr "\n" " ")
 
+RUN pip3 install pudb
+
 WORKDIR /opt/odoo
