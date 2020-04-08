@@ -315,14 +315,14 @@ def runbash(ctx, config, machine, args, **kwparams):
 
 @cli.command(name='logs')
 @click.argument('machines', nargs=-1)
-@click.option('-t', '--tail', required=False, type=int, default=200)
+@click.option('-n', '--lines', required=False, type=int, default=200)
 @click.option('-f', '--follow', is_flag=True)
-def logall(machines, follow, tail):
+def logall(machines, follow, lines):
     cmd = ['logs']
     if follow:
         cmd += ['-f']
-    if tail:
-        cmd += ['--tail={}'.format(tail)]
+    if lines:
+        cmd += ['--tail={}'.format(lines)]
     cmd += list(machines)
     __dc(cmd)
 
