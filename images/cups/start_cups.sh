@@ -25,7 +25,11 @@ if [[ -d $CONF_ROOT/deb ]]; then
 fi
 
 rsync /opt/printer_setup/ /etc/cups -ra
-rsync /etc/cups.template/ /etc/cups/ -arP
+if [[ ! -f /etc/cups/cupsd.conf ]]; then
+    rsync /etc/cups.template/ /etc/cups/ -arP
+else
+    echo "/etc/cups/cupsd.conf already exists - not applying default config"
+fi
 mkdir -p /etc/cups/ssl
 
 # samba printing auth
@@ -45,5 +49,5 @@ rsync $CONF_ROOT/ /etc/cups/ -ar
 sleep 10 && python3 /print.py "$WATCHPATH" "$PRINTED_PATH" &
 sleep 5 && /backup_printers.sh &
 
-openssl req -new -x509 -keyout /etc/cups/ssl/server.key -out /etc/cups/ssl/server.crt -days 365 -nodes -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=ssl.raymii.org" || true
+# openssl req -new -x509 -keyout /etc/cups/ssl/server.key -out /etc/cups/ssl/server.crt -days 365 -nodes -subj "/C=NL/ST=Zuid Holland/L=Rotterdam/O=Sparkling Network/OU=IT Department/CN=ssl.raymii.org" || true
 exec /usr/sbin/cupsd -f

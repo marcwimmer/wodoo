@@ -14,7 +14,6 @@ RUN mv /usr/lib/cups/backend/serial /usr/lib/cups/backend-available/
 #RUN mv /usr/lib/cups/backend/usb /usr/lib/cups/backend-available/
 
 ADD etc-cups/ /etc/cups.template/
-VOLUME /etc/cups/
 VOLUME /var/spool/cups
 VOLUME /var/cache/cups
 
@@ -33,3 +32,7 @@ RUN chmod a+x /backup_printers.sh
 ADD start_cups.sh /root/start_cups.sh
 RUN chmod +x /root/start_cups.sh
 CMD ["/root/start_cups.sh"]
+
+# Trigger initial apply of configs; you can also map the /etc/cups directory to your own folder
+RUN rm -Rf /etc/cups/cupsd.conf
+RUN ls /etc/cups -lhtra

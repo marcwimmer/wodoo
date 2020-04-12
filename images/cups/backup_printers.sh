@@ -9,7 +9,9 @@ do
 	cd /etc/cups || exit -1
 	latest_file="$(ls -lta|grep printers.conf |head -n1| awk '{print $(NF-0)}')"
 
-	rsync "$latest_file" "$CONF_ROOT/printers.conf"
+    if [[ -f "$latest_file" ]]; then
+        rsync "$latest_file" "$CONF_ROOT/printers.conf"
+    fi
 
 	sleep 1
 done
