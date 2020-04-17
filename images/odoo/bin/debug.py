@@ -88,15 +88,15 @@ class Debugger(object):
                 elif action[0] in ["update_module", "update_module_full"]:
                     kill_odoo()
                     module = action[1]
-                    PARAMS_CONST = ""
+                    PARAMS_CONST = []
                     if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
-                        PARAMS_CONST = "--delete-qweb"
+                        PARAMS_CONST += ["--delete-qweb"]
+                    if action[0] == 'update_module':
+                        PARAMS_CONST += ['--no-tests']
                     self.execpy([
                         "update_modules.py",
                         module,
-                        "-fast" if action[0] == "update_module" else "",
-                        PARAMS_CONST,
-                    ])
+                    ] + PARAMS_CONST)
                     self.execpy(["run_debug.py"])
 
                 elif action[0] in ['unit_test', 'last_unit_test']:
