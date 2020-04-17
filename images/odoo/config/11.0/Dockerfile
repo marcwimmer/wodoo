@@ -81,8 +81,9 @@ apt-get install \
             python3-dev \
             python3 \
             locales-all \
-            libpoppler-cpp-dev
-
+            libpoppler-cpp-dev \
+            default-jre \
+            libreoffice-java-common
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
