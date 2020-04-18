@@ -61,16 +61,10 @@ def _collect_settings_files(dirs, files, customs, quiet=False):
             _files.append(dirs['images'] / filename)
     if 'settings_auto' in _files:
         _files.append(files['settings_auto'])
-    _files.append(files['user_settings'])
-    if files and 'project_settings' in files:
-        if files['project_settings'].exists():
-            _files.append(files['project_settings'])
-        else:
-            click.secho("No specific configuration file used: {}".format(files['project_settings']), fg='yellow')
 
     if customs:
         for dir in filter(lambda x: x.exists(), _get_settings_directories(customs)):
-            click.echo("Searching for settings in: {}".format(dir))
+            click.secho("Searching for settings in: {}".format(dir), fg='cyan')
             if dir.is_dir() and 'settings' not in dir.name:
                 continue
             if dir.is_file():
@@ -80,11 +74,20 @@ def _collect_settings_files(dirs, files, customs, quiet=False):
                     if file.is_dir():
                         continue
                     _files.append(file)
+
+    _files.append(files['user_settings'])
+    if files and 'project_settings' in files:
+        if files['project_settings'].exists():
+            _files.append(files['project_settings'])
+        else:
+            click.secho("No specific configuration file used: {}".format(files['project_settings']), fg='yellow')
+
     if not quiet:
-        click.echo("Found following extra settings files:")
+        click.secho("Found following extra settings files:", fg='cyan')
     for file in _files:
         if not Path(file).exists():
             continue
+        click.secho(f"Using setting file: {file}", fg='blue')
         if 'images' not in Path(file).parts:
             if not quiet:
                 click.echo(file)
