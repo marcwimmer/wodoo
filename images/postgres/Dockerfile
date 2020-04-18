@@ -7,7 +7,7 @@ RUN git clone https://github.com/julmon/pg_activity.git  && \
 cd pg_activity/ && \
 python setup.py install --with-man
 ADD config* /
-RUN pip3 install pgcli
+RUN pip3 install pgcli==2.2.0
 ADD keyring.config /root/.local/share/python_keyring/keyringrc.cfg
 ADD keyring.config /home/postgres/.local/share/python_keyring/keyringrc.cfg
 ADD run.sh /run.sh
