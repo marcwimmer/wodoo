@@ -457,30 +457,7 @@ def __try_to_set_owner(UID, path, recursive=False):
     if path.is_dir():
         uid = os.stat(path).st_uid
         if str(uid) != str(UID) or recursive:
-            click.echo("Trying to set correct permissions on {}".format(path))
-            options = ""
-            if recursive:
-                options += "-R"
-
-            if platform.system() in ['Linux', 'Darwin']:
-                subprocess.call([
-                    'sudo',
-                    'find',
-                    '-not',
-                    '-type',
-                    'l',
-                    '-not',
-                    '-user',
-                    str(UID),
-                    '-exec',
-                    'chown',
-                    str(UID),
-                    '{}',
-                    '+'
-                ], cwd=str(path))
-
-            else:
-                raise NotImplementedError()
+            click.secho(f"WARNING: Wrong User {uid} on {path} - please execute:\nfind -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} +", fg='yellow')
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but
