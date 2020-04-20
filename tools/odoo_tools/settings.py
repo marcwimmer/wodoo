@@ -87,7 +87,7 @@ def _collect_settings_files(dirs, files, customs, quiet=False):
     for file in _files:
         if not Path(file).exists():
             continue
-        click.secho(f"Using setting file: {file}", fg='blue')
+        # click.secho(f"Using setting file: {file}", fg='blue')
         if 'images' not in Path(file).parts:
             if not quiet:
                 click.echo(file)
