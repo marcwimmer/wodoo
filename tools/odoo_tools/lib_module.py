@@ -81,6 +81,15 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
+    if not no_restart:
+        Commands.invoke(ctx, 'kill', [
+            'odoo',
+            'odoo_queuejobs',
+            'odoo_cronjobs',
+        ])
+        Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
+        Commands.invoke(ctx, 'wait_for_container_postgres')
+
     if not module:
         module = _get_default_modules_to_update()
 
