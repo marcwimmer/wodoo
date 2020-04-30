@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+from collections import defaultdict
 import click
 import os
 import datetime
@@ -36,6 +37,11 @@ if NO_RUN_TESTS:
 
 manifest = MANIFEST()
 
+mode_text = {
+    'i': 'installing',
+    'u': 'updating',
+}
+
 def update(mode, modules):
     assert mode in ['i', 'u']
     assert modules
@@ -66,15 +72,17 @@ def update(mode, modules):
         ]
         if TESTS:
             params += [TESTS]
-        exec_odoo('config_update', *params)
+        rc = exec_odoo('config_update', *params)
+        if rc:
+            click.secho(f"Error at {mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
         for module in modules:
             if not DBModules.is_module_installed(module):
                 if mode == 'i':
-                    print("{} is not installed - but it was tried to be installed.".format(module))
+                    click.secho("{} is not installed - but it was tried to be installed.".format(module), fg='red')
                 else:
-                    print("{} update error".format(module))
-                sys.exit(1)
+                    click.secho("{} update error".format(module), fg='red')
             del module
+        rc and sys.exit(rc)
 
     if I18N_OVERWRITE or ONLY_I18N:
         for module in modules:
@@ -95,7 +103,9 @@ def update(mode, modules):
                             '--i18n-overwrite',
                             '--stop-after-init',
                         ]
-                        exec_odoo('config_update', *params)
+                        rc = exec_odoo('config_update', *params)
+                        click.secho(f"Error at updating translations at {module} {lang}", red=True)
+                        rc and sys.exit(rc)
             del module
 
     print(mode, ','.join(modules), 'done')
@@ -172,11 +182,12 @@ def main():
             else:
                 DBModules.abort_upgrade()
 
-    print("--------------------------------------------------------------------------")
-    print("Updating Module {}".format(MODULE))
-    print("--------------------------------------------------------------------------")
+    c = 'yellow'
+    click.secho("--------------------------------------------------------------------------", fg=c)
+    click.secho(f"Updating Module {','.join(MODULE)}", fg=c)
+    click.secho("--------------------------------------------------------------------------", fg=c)
 
-    summary = []
+    summary = defaultdict(list)
 
     for module in list(MODULE):
         try:
@@ -188,7 +199,7 @@ def main():
                             raise Exception("After updating module list, module was not found: {}".format(module))
                 update('i', [module])
                 MODULE = [x for x in MODULE if x != module]
-                summary.append("INSTALL " + module)
+                summary['installed'].append(module)
         except UserWarning:
             click.secho("Database not setup. Not installed modules other than base.", fg='yellow')
 
@@ -202,13 +213,16 @@ def main():
     if MODULE:
         update('u', MODULE)
     for module in MODULE:
-        summary.append("UPDATE " + module)
+        summary['updated'].append(module)
 
-    print("--------------------------------------------------------------------------------")
-    print("Summary of update module")
-    print("--------------------------------------------------------------------------------")
-    for line in summary:
-        print(line)
+    c = 'green'
+    click.secho("================================================================================", fg=c)
+    click.secho(f"Summary of update module", fg=c)
+    click.secho("--------------------------------------------------------------------------------", fg=c)
+    for key, value in summary.items():
+        click.secho(f'{key}: {",".join(value)}', fg=c)
+
+    click.secho("================================================================================", fg=c)
 
     if not single_module:
         DBModules.check_if_all_modules_from_install_are_installed()

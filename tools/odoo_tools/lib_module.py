@@ -1,3 +1,4 @@
+import sys
 import subprocess
 import inquirer
 import traceback
@@ -82,7 +83,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
     if not no_restart:
-        Commands.invoke(ctx, 'kill', [
+        Commands.invoke(ctx, 'kill', machines=[
             'odoo',
             'odoo_queuejobs',
             'odoo_cronjobs',

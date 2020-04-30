@@ -877,10 +877,9 @@ class Module(object):
             DATA_NAME = 'update_xml'
 
         mod[DATA_NAME] = []
-        mod["qweb"] = []
-        mod["js"] = []
-        mod["demo_xml"] = []
+        mod["demo"] = []
         mod["css"] = []
+        is_web = False
 
         for f in all_files:
             local_path = str(f.relative_to(self.path))
@@ -888,13 +887,14 @@ class Module(object):
                 continue
             if f.suffix in ['.xml', '.csv', '.yml']:
                 if f.name.startswith("demo%s" % os.sep):
-                    mod["demo_xml"].append(local_path)
+                    mod["demo"].append(local_path)
                 elif 'static' in f.parts:
-                    mod["qweb"].append(local_path)
+                    # contains qweb file
+                    is_web = True
                 else:
                     mod[DATA_NAME].append(local_path)
             elif f.suffix == '.js':
-                mod["js"].append(local_path)
+                pass
             elif f.suffix in ['.css', '.less']:
                 mod["css"].append(local_path)
 
@@ -903,7 +903,6 @@ class Module(object):
 
         # sort
         mod[DATA_NAME].sort()
-        mod["js"].sort()
         mod["css"].sort()
         if 'depends' in mod:
             mod["depends"].sort()
@@ -934,7 +933,7 @@ class Module(object):
         sorted_by_index = sorted(sorted_by_index, key=lambda x: x[0])
         mod[DATA_NAME] = [x[1] for x in sorted_by_index]
 
-        if mod["qweb"]:
+        if is_web:
             mod["web"] = True
         if "application" not in mod:
             mod["application"] = False

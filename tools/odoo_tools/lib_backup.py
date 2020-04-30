@@ -3,7 +3,6 @@ import importlib.util
 import re
 from retrying import retry
 import traceback
-import humanize
 from threading import Thread
 import subprocess
 import pipes

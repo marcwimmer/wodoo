@@ -1,3 +1,4 @@
+import tempfile
 import shutil
 import requests
 import time
@@ -276,8 +277,19 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **
         print("Touching odoo url to start it")
         t.start()
 
+    filename = Path(tempfile.mktemp(suffix='.exitcode'))
+    cmd += f' || echo $? > {filename}'
+
     os.system(cmd)
     if pidfile.exists():
         pidfile.unlink()
     if on_done:
         on_done()
+
+    rc = 0
+    if filename.exists():
+        try:
+            rc = int(filename.read_text().strip())
+        except ValueError:
+            rc = -1 # undefined return code
+    return rc
