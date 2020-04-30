@@ -368,6 +368,7 @@ def _get_machines():
     out = set(filter(lambda x: x, out.split("\n")))
     return list(sorted(out))
 
+
 if retry:
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def __get_docker_image():
@@ -457,7 +458,8 @@ def __try_to_set_owner(UID, path, recursive=False):
     if path.is_dir():
         uid = os.stat(path).st_uid
         if str(uid) != str(UID) or recursive:
-            click.secho(f"WARNING: Wrong User {uid} on {path} - please execute:\nfind -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} +", fg='yellow')
+            click.secho("WARNING: Wrong User ", fg='yellow')
+            click.secho("find -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}}", fg='yellow')
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but
