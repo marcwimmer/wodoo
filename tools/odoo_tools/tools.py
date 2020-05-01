@@ -458,8 +458,10 @@ def __try_to_set_owner(UID, path, recursive=False):
     if path.is_dir():
         uid = os.stat(path).st_uid
         if str(uid) != str(UID) or recursive:
-            click.secho("WARNING: Wrong User ", fg='yellow')
-            click.secho("find -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}}", fg='yellow')
+            click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
+            click.secho("Probably execute: ", fg='yellow')
+            click.secho(f"find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\;", fg='yellow')
+            sys.exit(-1)
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but
