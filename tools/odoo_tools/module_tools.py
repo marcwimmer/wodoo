@@ -542,7 +542,12 @@ class Modules(object):
             for dep in mod.manifest_dict['depends']:
                 if dep == 'base':
                     continue
-                dep_mod = [x for x in self.modules.values() if x.name == dep][0]
+                dep_mod = [x for x in self.modules.values() if x.name == dep]
+                try:
+                    dep_mod = dep_mod[0]
+                except Exception:
+                    click.secho(f"Module not found: {mod.name}", fg='red', bold=True)
+                    sys.exit(-1)
                 data[mod.name][dep] = {}
                 append_deps(dep_mod, data[mod.name][dep])
 
