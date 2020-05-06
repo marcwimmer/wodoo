@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import sys
+import time
 import os
 import inspect
 
@@ -11,6 +12,7 @@ if os.getenv("DOCKER_MACHINE", "") == "1":
     raise Exception("Cannot execute this script in docker container.")
 os.environ['HOST_HOME'] = os.environ['HOME']
 os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
+
 
 sys.path.append(str(SCRIPT_DIRECTORY / 'tools'))
 from odoo_tools import cli # NOQA
@@ -23,6 +25,11 @@ os.environ['RUN_DIR'] = str(HOST_RUN_DIR)
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+
+    if os.getenv("UID", "") == "0":
+        import click
+        click.secho("If you this odoo in root account, please set OWNER_UID=1000 in ~/.odoo/settings!", fg='red', bold=True)
+        time.sleep(1)
 
     if len(sys.argv) > 1 and sys.argv[1] == 'init':
         if len(sys.argv) > 2:
