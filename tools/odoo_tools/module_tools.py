@@ -706,7 +706,12 @@ class Module(object):
             path = path.resolve()
 
         if path.is_dir():
-            return Module(path)
+            try:
+                return Module(path)
+            except Module.IsNot:
+                # perhaps empty dir
+                pass
+
         # could be an odoo module then
         for path in get_odoo_addons_paths():
             print(path)
