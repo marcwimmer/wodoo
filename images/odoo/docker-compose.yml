@@ -30,6 +30,7 @@ services:
       - ${CUSTOMS_DIR}:/opt/src
       # copied by entrpoint to destination and correct UID/GID
       - ${ODOO_HOME}/images/odoo/odoo_modules/${ODOO_VERSION}:/tmp/odoo_server_tools.template
+      - ${HOST_RUN_DIR}/odoo-shell-ipython:/home/odoo/.ipython
     environment:
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files
