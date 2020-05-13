@@ -1,5 +1,6 @@
 import json
 import click
+import iscompatible
 from pathlib import Path
 from datetime import datetime
 from copy import deepcopy
@@ -546,7 +547,7 @@ class Modules(object):
                 try:
                     dep_mod = dep_mod[0]
                 except Exception:
-                    click.secho(f"Module not found: {mod.name}", fg='red', bold=True)
+                    click.secho(f"Module not found: {dep}", fg='red', bold=True)
                     sys.exit(-1)
                 data[mod.name][dep] = {}
                 append_deps(dep_mod, data[mod.name][dep])
@@ -620,23 +621,71 @@ class Modules(object):
             else:
                 pydeps += module.manifest_dict.get('external_dependencies', {}).get('python', [])
 
-        pydeps = list(set(pydeps))
-        # check for conflicts
-        for pydep in pydeps:
-            x = _extract_python_libname(pydep)
-            others = [y for y in pydeps if y != pydep and _extract_python_libname(y) == x]
-            if others:
-                # TODO evaluate >= instructions...not seen by now
-                raise Exception("Not unique dependency: {}".format(
-                    '\n'.join([pydep] + others)
-                ))
-                sys.exit(-1)
-
+        pydeps = self.resolve_pydeps(pydeps)
         return {
             'pip': pydeps,
             'deb': deb_deps
         }
 
+    def resolve_pydeps(self, pydeps):
+        pydeps = list(set(pydeps))
+        libnames = [_extract_python_libname(x) for x in pydeps]
+        result = set()
+
+        # keep highest version and or leaveout loosers
+        def _map(x):
+            arr = iscompatible.parse_requirements(x)
+            for arr in arr:
+                if arr:
+                    arr = list(arr)
+                    arr[1] = iscompatible.string_to_tuple(arr[1])
+                yield tuple(arr)
+
+        parsed_requirements = []
+        for inst in pydeps:
+            libname = _extract_python_libname(inst)
+            for parsed in [_map(x) for x in pydeps if _extract_python_libname(x) == libname]:
+                for x in parsed:
+                    parsed_requirements.append((libname, x))
+        """
+        parsed_requirements ilike
+        [
+        ('>=', '1.0.0'),
+        ('>=', '1.2.0')
+        ]
+        """
+
+        allowed = ['==', '>=']
+        unallowed = [x for x in parsed_requirements if x[1][0] not in allowed]
+        if unallowed:
+            raise Exception(f"Unhandled: {unallowed} - only {allowed} allowed")
+
+        for libname in libnames:
+            # mixed == and >=
+            reqs = list(set([x[1] for x in parsed_requirements if x[0] == libname]))
+            ge = sorted([x for x in reqs if x[0] == '>='], key=lambda x: x[1])
+            eq = [x for x in reqs if x[1][0] == '==']
+            no = [x for x in reqs if not x]
+
+            if ge or eq and no:
+                no = []
+
+            if eq and len(eq) > 1 and not all(x[1] == eq[0][1] for x in eq):
+                click.secho(f"Dependency conflict: {libname} {eq[0]} - {eq[1:]}", fg='red')
+                sys.exit(-1)
+
+            if eq and ge:
+                if eq[0][1] < ge[0][1]:
+                    click.secho(f"Dependency conflict: {libname} {ge[0]} - {eq[0]}", fg='red')
+                    sys.exit(-1)
+
+            if eq:
+                result.add(f"{libname}{eq[0][0]}{'.'.join(eq[0][1])}")
+            elif ge:
+                result.add(f"{libname}{ge[-1][0]}{'.'.join(map(str, ge[-1][1]))}")
+            else:
+                result.add(libname)
+        return list(result)
 
 class Module(object):
 
