@@ -140,7 +140,7 @@ def _uninstall_marked_modules():
     """
     if os.getenv("USE_DOCKER", "1") == "0":
         return
-    if ODOO_VERSION < 13.0:
+    if ODOO_VERSION < 11.0:
         return
     module = 'server_tools_uninstaller'
     try:
