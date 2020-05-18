@@ -83,7 +83,8 @@ apt-get install \
             locales-all \
             libpoppler-cpp-dev \
             default-jre \
-            libreoffice-java-common
+            libreoffice-java-common \
+            postgresql-client
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
