@@ -27,6 +27,7 @@ from .odoo_config import current_customs
 from .odoo_config import customs_dir
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
+from .tools import split_hub_url
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -397,168 +398,6 @@ def _ask_deploy(config, branch):
         branch = inquirer.prompt([question])['branch']
     return branch
 
-@src.command()
-@click.argument("branch", required=False)
-@click.option("--refetch", is_flag=True)
-@click.option("-D", "--no-dirty-check", is_flag=True)
-@pass_config
-def pack(config, branch, refetch, no_dirty_check):
-    from . import odoo_config
-    from git import Repo
-    m = MANIFEST()
-    dir = customs_dir()
-    repo = Repo(dir)
-    if repo.active_branch.name not in ['master', 'stage']:
-        click.secho("Must be on branch master or stage please.", bold=True, fg='red')
-        sys.exit(1)
-    if not no_dirty_check:
-        _is_dirty(repo, True, True)
-
-    dest_branch = branch
-    branch = repo.active_branch.name
-    deploy_url = m['deploy'][branch]
-    folder = Path(os.environ['HOME']) / '.odoo' / 'pack_for_deploy' / 'odoo-deployments' / config.customs
-    folder = folder.absolute()
-    folder.parent.mkdir(parents=True, exist_ok=True)
-
-    if refetch:
-        shutil.rmtree(str(folder))
-
-    if not folder.exists():
-        subprocess.check_call([
-            "git",
-            "clone",
-            deploy_url,
-            folder.name,
-        ], cwd=folder.parent)
-
-    subprocess.check_call([
-        "git",
-        "pull",
-    ], cwd=folder)
-
-    def checkout(option):
-        subprocess.check_call([
-            "git",
-            "checkout",
-            option,
-            dest_branch
-        ], cwd=folder)
-    try:
-        checkout('-f')
-        subprocess.call([
-            "git",
-            "pull",
-        ], cwd=folder)
-    except Exception:
-        checkout('-b')
-        subprocess.call([
-            "git",
-            "push",
-            "--set-upstream",
-            "origin",
-            dest_branch,
-        ], cwd=folder)
-        subprocess.call([
-            "git",
-            "push",
-            "--set-upstream-to=origin/{}".format(branch),
-            dest_branch,
-        ], cwd=folder)
-
-    # clone to tmp directory and cleanup - remove unstaged and so on
-    tmp_folder = Path(tempfile.mktemp(suffix='.'))
-    try:
-        subprocess.check_call([
-            "rsync",
-            str(odoo_config.customs_dir()) + "/",
-            str(tmp_folder) + "/",
-            '-ar',
-            '--exclude=.pyc',
-            '--exclude=.git',
-            '--delete-after',
-        ], cwd=odoo_config.customs_dir())
-
-        # remove set_traces and other
-        # remove ignore file to make ag find everything
-        for f in [
-            '.ignore',
-            '.agignore',
-            '.customsroot',
-            '.module_paths',
-            '.version',
-            '.watchman_config',
-            'submodules',
-            'install',
-            '.gitmodules',
-            '.odoo.ast',
-            '.idea',
-        ]:
-            f = tmp_folder / f
-            if f.is_dir():
-                shutil.rmtree(f)
-            elif f.exists():
-                f.unlink()
-        output = subprocess.check_output(["ag", "-l", "set_trace", "-G", ".py"], cwd=tmp_folder).decode('utf-8')
-        for file in output.split("\n"):
-            file = tmp_folder / file
-            if file.is_dir():
-                continue
-            if file.name.startswith("."):
-                continue
-            content = file.read_text()
-            if 'set_trace' in content:
-                content = content.replace("import pudb; set_trace()", "pass")
-                content = content.replace("import pudb;set_trace()", "pass")
-                content = content.split("\n")
-                for i, line in enumerate(content):
-                    if 'set_trace()' in line and line.strip().startswith('set_trace'):
-                        content[i] = content[i].replace("set_trace()", "pass")
-                content = '\n'.join(content)
-                file.write_text(content)
-
-        subprocess.check_call([
-            "rsync",
-            str(tmp_folder) + "/",
-            str(folder) + "/",
-            '-ar',
-            '--exclude=.git',
-            '--exclude=.pyc',
-            '--delete-after',
-        ], cwd=odoo_config.customs_dir())
-
-        # remove .gitignore - could contain odoo for example
-        gitignore = folder / '.gitignore'
-        with gitignore.open('w') as f:
-            f.write("""
-*.pyc
-    """)
-
-        subprocess.call(["find", '.', "-name", "*.pyc", "-delete"], cwd=folder)
-
-        subprocess.call(["git", "add", "."], cwd=folder)
-        subprocess.call(["git", "commit", "-am 'new deployment - details found in development branch'"], cwd=folder)
-        subprocess.call([
-            "git",
-            "push",
-            "--set-upstream",
-            "origin",
-            branch,
-        ], cwd=folder)
-        subprocess.call(["git", "push"], cwd=folder)
-    except Exception:
-        shutil.rmtree(str(tmp_folder))
-        raise
-
-
-@src.command()
-def show_current_ticket():
-    from git import Repo
-    repo = Repo(customs_dir())
-    branch = repo.active_branch.name
-    text = BranchText(branch).get_text(interactive=False)
-    click.echo(text)
-
 @src.command(name="update-addons-path", help="Sets addons paths in manifest file. Can be edited there (order)")
 def update_addons_path():
     from .odoo_config import _identify_odoo_addons_paths
@@ -596,7 +435,7 @@ def regpull(config, machines):
     if not machines:
         machines = list(yaml.load(files['docker_compose'].read_text())['services'])
     for machine in machines:
-        print("Pulling {}".format(machine))
+        click.secho(f"Pulling {machine}")
         __dc(['pull', machine])
 
 @src.command()
@@ -605,15 +444,15 @@ def self_sign_hub_certificate(config):
     if os.getuid() != 0:
         click.secho("Please execute as root or with sudo!", bold=True, fg='red')
         sys.exit(-1)
-    url = os.getenv("ODOO_HUB_URL")
-    url_part = url.split(":")[0] + '.crt'
+    hub = split_hub_url()
+    url_part = hub['url'].split(":")[0] + '.crt'
     cert_filename = Path("/usr/local/share/ca-certificates") / url_part
     with cert_filename.open("w") as f:
         proc = subprocess.Popen([
             "openssl",
             "s_client",
             "-connect",
-            url,
+            hub['url'],
         ], stdin=subprocess.PIPE, stdout=f)
         proc.stdin.write(b"\n")
         proc.communicate()
@@ -631,13 +470,13 @@ def self_sign_hub_certificate(config):
 @src.command()
 @pass_config
 def hub_login(config):
-    hub = os.environ['ODOO_HUB_URL']
+    hub = split_hub_url()
 
     def _login():
         res = subprocess.check_call([
             'docker', 'login', hub,
-            '-u', os.environ['ODOO_HUB_USER'],
-            '-p', os.environ['ODOO_HUB_PWD'],
+            '-u', hub['username'],
+            '-p', hub['password'],
         ])
         if "Login Succeeded" in res:
             return True
@@ -672,6 +511,3 @@ def setup_venv(config):
     click.secho("pip3 install -r https://raw.githubusercontent.com/odoo/odoo/{}/requirements.txt".format(current_version()))
     requirements1 = Path(__file__).parent.parent / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
     click.secho("pip3 install -r {}".format(requirements1))
-
-
-Commands.register(pack)

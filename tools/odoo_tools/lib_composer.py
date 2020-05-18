@@ -28,6 +28,7 @@ from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 from . import odoo_user_conf_dir
 from .odoo_config import MANIFEST
+from .tools import split_hub_url
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -295,10 +296,12 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         for service_name, service in yml['services'].items():
             if not service.get('build', False):
                 continue
-            if os.getenv("ODOO_HUB_URL", False):
+            hub = split_hub_url()
+            if hub:
+                # click.secho(f"Adding reference to hub {hub}")
                 service['image'] = "/".join([
-                    os.environ['ODOO_HUB_URL'],
-                    os.environ['ODOO_HUB_PREFIX'],
+                    hub['url'],
+                    hub['prefix'],
                     config.customs,
                     service_name + ":latest"
                 ])
