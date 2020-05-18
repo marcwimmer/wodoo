@@ -162,15 +162,17 @@ def up(ctx, config, machines, daemon):
 
 @docker.command()
 @click.argument('machines', nargs=-1)
+@click.option('-v', '--volumes', is_flag=True)
 @pass_config
 @click.pass_context
-def down(ctx, config, machines):
+def down(ctx, config, machines, volumes):
     _sanity_check(config)
     machines = list(machines)
 
-    options = [
-        # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
-    ]
+    options = []
+    # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
+    if volumes:
+        options += ['--volumes']
     __dc(['down'] + options + machines)
 
 @docker.command()
