@@ -599,11 +599,11 @@ def remove_webassets(conn):
     cr = conn.cursor()
     try:
         cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%';")
-        #cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
-        #cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
-        #cr.execute("delete from ir_attachment where name ilike '%.less'")
-        #cr.execute("delete from ir_attachment where name ilike 'web_icon_data'")
-        #cr.execute("delete from ir_attachment where name ilike 'web_editor.summernote.%'")
+        # cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
+        # cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
+        # cr.execute("delete from ir_attachment where name ilike '%.less'")
+        # cr.execute("delete from ir_attachment where name ilike 'web_icon_data'")
+        # cr.execute("delete from ir_attachment where name ilike 'web_editor.summernote.%'")
         conn.commit()
     finally:
         cr.close()
@@ -777,3 +777,22 @@ def _extract_python_libname(x):
     x = x.replace('-', '_')
     match = re.findall(regex, x)[0]
     return match
+
+def split_hub_url():
+    """
+    Splits hub url into user, password and url and prefix
+    user:password@registry.itewimmer.de:443/prefix
+    """
+    url = os.getenv("ODOO_HUB_URL", "")
+    if not url:
+        return None
+    username, password = url.split(":", 1)
+    password = password.split("@")[0]
+    url = url.split("@")[1]
+    url, prefix = url.split("/", 1)
+    return {
+        'url': url,
+        'password': password,
+        'username': username,
+        'prefix': prefix,
+    }
