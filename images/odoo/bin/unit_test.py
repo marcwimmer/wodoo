@@ -9,6 +9,9 @@ from pathlib import Path
 from tools import exec_odoo
 from tools import prepare_run
 
+os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
+os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
+
 if len(sys.argv) == 1:
     print("Missing test file!")
     sys.exit(-1)
