@@ -11,7 +11,16 @@ def after_compose(config, yml, globals):
 
     nginx_conf = dirs['run'] / 'ssl' / 'nginx.conf'
     src = (dir / 'nginx.conf.template').read_text()
-    domain = config['SSLPROXY_SUBDOMAINS'].split(",")[0] + "." + config['SSLPROXY_DOMAIN']
+    subdomains = config.get('SSLPROXY_SUBDOMAINS', "")
+    if subdomains:
+        subdomains = subdomains.split(",")
+        if len(subdomains) > 1:
+            raise Exception("only one subdomain supported")
+
+        domain = subdomains[0] + "." + config['SSLPROXY_DOMAIN']
+    else:
+        domain = config['SSLPROXY_DOMAIN']
+
     src = src.replace("__DOMAIN__", domain)
 
     nginx_conf.parent.mkdir(parents=True, exist_ok=True)
