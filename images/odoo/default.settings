@@ -22,3 +22,6 @@ SERVER_WIDE_MODULES=web,field_onchange
 DEBUGGER_WATCH=/tmp/debug/odoo_debug.txt
 
 DEFAULT_DEV_PASSWORD=1
+
+
+ODOO_QUEUEJOBS_CHANNELS=root:12,serialized:1
