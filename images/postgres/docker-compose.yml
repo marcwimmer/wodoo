@@ -11,6 +11,8 @@ services:
       # volume mount safe (if odoo is mounted into virtual box)
       - $ODOO_HOME/images/postgres/init:/tmp/docker-entrypoint-initdb.d/
       - $HOST_RUN_DIR/postgresout:/tmp/out
+      # is created in after_compose
+      - $HOST_RUN_DIR/pgcli_history:/root/.config/pgcli/history
     environment:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata
