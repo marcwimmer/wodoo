@@ -23,6 +23,8 @@ from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 
+class UpdateException(Exception): pass
+
 @cli.group(cls=AliasedGroup)
 @pass_config
 def odoo_module(config):
@@ -56,6 +58,31 @@ def update_module_file(module):
     from .module_tools import Module
     for module in module:
         Module.get_by_name(module).update_module_file()
+
+@odoo_module.command(name='run-tests')
+@pass_config
+@click.pass_context
+def run_tests(ctx, config):
+    if not config.devmode:
+        click.secho("Devmode required to run unit tests. Database will be destroyed.", fg='red')
+        sys.exit(-1)
+
+    if not config.force:
+        click.secho("Please provide parameter -f - database will be dropped.\n\nodoo -f run-tests", fg='red')
+        sys.exit(-1)
+    config.force = True
+    from .odoo_config import MANIFEST
+    tests = MANIFEST().get('tests', [])
+    if not tests:
+        click.secho("No test files found!")
+        return
+    Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
+
+    Commands.invoke(ctx, 'reset-db')
+    update.invoke(ctx, config, "", tests=False)
+    for module in tests:
+        update.invoke(ctx, config, module, tests=True)
+
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
@@ -130,8 +157,12 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
             params += ['--i18n']
         if not tests:
             params += ['--no-tests']
-        _exec_update(config, params)
+        rc = _exec_update(config, params)
+        if not rc:
+            raise UpdateException(module)
 
+    except UpdateException:
+        raise
     except Exception:
         click.echo(traceback.format_exc())
         ctx.invoke(show_install_state, suppress_error=True)
@@ -257,10 +288,10 @@ def show_conflicting_modules():
 def _exec_update(config, params):
     if config.use_docker:
         params = ['run', 'odoo_update', '/update_modules.py'] + params
-        __cmd_interactive(*params)
+        return __cmd_interactive(*params)
     else:
         from . import lib_control_native
-        lib_control_native._update_command(params)
+        return lib_control_native._update_command(params)
 
 
 Commands.register(progress)

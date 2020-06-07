@@ -32,11 +32,6 @@ def _get_odoo_github_disk_path():
         sys.exit(-1)
     return url
 
-def _get_all_OCA_modules():
-    from pudb import set_trace
-    set_trace()
-    yield from MANIFEST()['OCA']
-
 def _prepare_OCA_source_folder(config, pull=False):
     """
     Fetches all OCA modules into single directory.

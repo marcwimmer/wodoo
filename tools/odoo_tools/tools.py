@@ -337,6 +337,7 @@ def __cmd_interactive(*params):
     cmd = __get_cmd() + list(params)
     proc = subprocess.Popen(cmd)
     proc.wait()
+    return proc.returncode
     # ctrl+c leads always to error otherwise
     # if proc.returncode:
     # raise Exception("command failed: {}".format(" ".join(params)))
