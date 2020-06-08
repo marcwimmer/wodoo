@@ -1,6 +1,7 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 ARG ODOO_VERSION
 MAINTAINER marc@itewimmer.de
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt update --fix-missing && \
 apt-get install \
@@ -64,23 +65,8 @@ apt-get install \
             gpg-agent \
             python3-pip \
             python3-setuptools \
-            python3-dev
-
-RUN \
-sudo add-apt-repository ppa:malteworld/ppa && \
-sudo apt update && \
-sudo apt install -y pdftk
-
-ADD liberation-sans /usr/share/fonts/
-# rebuild font cache
-RUN fc-cache -f -v
-
-
-# Install nodejs and npm
-RUN \
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash - && \
-curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -  && \
-apt update && apt install -y nodejs yarn 
+            python3-dev \
+            pdftk
 
 RUN \
 locale-gen en_US.UTF-8 && \
@@ -88,6 +74,13 @@ update-locale && \
 echo 'LC_ALL=en_US.UTF-8' >> /etc/environment && \
 echo 'LANG=en_US.UTF-8' >> /etc/environment && \
 echo 'LANGUAGE=en_US.UTF-8' >> /etc/environment 
+
+ADD liberation-sans /usr/share/fonts/
+# rebuild font cache
+RUN fc-cache -f -v
+
+# Install nodejs and npm
+RUN apt install -y nodejs yarn
 
 # libreoffice
 #RUN apt-get update && \
@@ -109,26 +102,16 @@ useradd -ms /bin/bash odoo
 RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
+RUN apt install -y libpython2-dev python2 python-dev python-lxml python-magic
+RUN curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+RUN python get-pip.py
+RUN pip install pip --upgrade
 
-RUN apt install -y \
-		libpython-dev \
-		python \
-		python-pip \
-		python-pyinotify \
-		python-renderpm \
-		python-dev \
-		python-lxml \
-		python-pychart \
-		python-gevent \
-		python-ldap \
-		python-cups \
-		python-psycopg2 \
-		python-wand  \
-		python-magic && \
+RUN \
 	pip install requests[security] && \
 	pip install glob2 && \
 	pip install pip==9.0.3 --upgrade
-RUN pip3 install lxml psycopg2-binary click pudb psutil
+RUN pip install lxml psycopg2-binary click pudb psutil
 
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
@@ -143,6 +126,10 @@ RUN pip uninstall -y psycopg2
 RUN pip install --no-binary psycopg2
 RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
 
-WORKDIR /opt
 
+RUN curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+RUN python3 get-pip.py
 RUN pip3 install humanize retrying click pyyaml requests passlib arrow inquirer tabulate
+
+
+WORKDIR /opt
