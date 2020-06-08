@@ -70,7 +70,7 @@ def run_tests(ctx, config):
     if not config.force:
         click.secho("Please provide parameter -f - database will be dropped.\n\nodoo -f run-tests", fg='red')
         sys.exit(-1)
-    config.force = True
+
     from .odoo_config import MANIFEST
     tests = MANIFEST().get('tests', [])
     if not tests:
@@ -78,6 +78,7 @@ def run_tests(ctx, config):
         return
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
 
+    config.force = True
     Commands.invoke(ctx, 'reset-db')
     update.invoke(ctx, config, "", tests=False)
     for module in tests:
