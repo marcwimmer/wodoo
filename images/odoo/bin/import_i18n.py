@@ -19,7 +19,7 @@ if len(sys.argv) == 2:
 LANG = sys.argv[1]
 FILEPATH = sys.argv[2]
 
-print("Importing lang file $FILEPATH")
+print(f"Importing lang file {FILEPATH}")
 
 exec_odoo(
     'config_i18n',
