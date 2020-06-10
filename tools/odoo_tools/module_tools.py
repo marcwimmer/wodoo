@@ -938,6 +938,7 @@ class Module(object):
         mod[DATA_NAME] = []
         mod["demo"] = []
         mod["css"] = []
+        mod['qweb'] = []
         is_web = False
 
         for f in all_files:
@@ -950,6 +951,8 @@ class Module(object):
                 elif 'static' in f.parts:
                     # contains qweb file
                     is_web = True
+                    if f.suffix == '.xml':
+                        mod['qweb'].append(local_path)
                 else:
                     mod[DATA_NAME].append(local_path)
             elif f.suffix == '.js':
