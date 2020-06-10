@@ -159,7 +159,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         if not tests:
             params += ['--no-tests']
         rc = _exec_update(config, params)
-        if not rc:
+        if rc:
             raise UpdateException(module)
 
     except UpdateException:
