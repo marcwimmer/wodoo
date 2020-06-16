@@ -129,7 +129,12 @@ RUN rm /bin/sh; mv /bin/sh.bak /bin/sh
 
 RUN curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
 RUN python3 get-pip.py
-RUN pip3 install humanize retrying click pyyaml requests passlib arrow inquirer tabulate
+RUN pip2 install psycopg2
+RUN pip3 install humanize retrying click pyyaml requests passlib arrow inquirer tabulate psutil iscompatible lxml psycopg2
 
 
 WORKDIR /opt
+
+ENV PYTHONIOENCODING=utf8
+
+RUN echo "\nimport sys; sys.setdefaultencoding('utf-8')" >> /etc/python2.7/sitecustomize.py
