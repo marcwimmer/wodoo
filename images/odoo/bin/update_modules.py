@@ -104,7 +104,7 @@ def update(mode, modules):
                             '--stop-after-init',
                         ]
                         rc = exec_odoo('config_update', *params)
-                        click.secho(f"Error at updating translations at {module} {lang}", red=True)
+                        click.secho(f"Error at updating translations at {module} {lang}", fg='red')
                         rc and sys.exit(rc)
             del module
 
