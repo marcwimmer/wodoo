@@ -265,7 +265,7 @@ def __dcexec(cmd, interactive=True):
     else:
         return subprocess.check_output(cmd)
 
-def __dcrun(cmd, interactive=False, raise_exception=True, env={}):
+def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=False):
     from . import dirs
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ['run']
@@ -280,7 +280,12 @@ def __dcrun(cmd, interactive=False, raise_exception=True, env={}):
     if interactive:
         subprocess.call(cmd, stdin=sys.stdin)
     else:
-        return subprocess.check_output(cmd)
+        if returncode:
+            process = subprocess.Popen(cmd)
+            process.wait()
+            return process.returncode
+        else:
+            return subprocess.check_output(cmd)
 
 def _askcontinue(config, msg=None):
     if msg:

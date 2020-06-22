@@ -9,6 +9,7 @@ import hashlib
 import os
 import tempfile
 import click
+from .tools import __dcrun
 from .tools import __assert_file_exists
 from .tools import __safe_filename
 from .tools import __read_file
@@ -79,10 +80,41 @@ def run_tests(ctx, config):
     if config.force:
         Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
         Commands.invoke(ctx, 'reset-db')
-        update.invoke(ctx, config, "", tests=False)
+        Commands.invoke(ctx, 'update', "", tests=False, no_dangling_check=True)
 
+    from .module_tools import Module
+    from .odoo_config import customs_dir
+
+    failed = []
     for module in tests:
-        update.invoke(ctx, config, module, tests=True)
+        module = Module.get_by_name(module)
+        testfiles = list(module.get_all_files_of_module())
+        testfiles = [x for x in testfiles if str(x).startswith("tests/")]
+        testfiles = [x for x in testfiles if str(x).endswith('.py')]
+        testfiles = [x for x in testfiles if x.name != '__init__.py']
+        testfiles = [x for x in testfiles if x.name != 'common.py']
+
+        # identify test files and run them, otherwise tests of dependent modules are run
+        for file in sorted(testfiles):
+            mfpath = module.manifest_path.parent
+            file = mfpath.relative_to(customs_dir()) / file
+            if config.use_docker:
+                params = ['odoo', '/odoolib/unit_test.py', f'{file}']
+                click.secho(f"Running test: {file}", fg='yellow', bold=True)
+                res = __dcrun(params + ['--log-level=error', '--not-interactive'], raise_exception=True, returncode=True)
+
+                print(res)
+
+                if res:
+                    failed.append(file)
+                    click.secho(f"Failed, running again with debug on: {file}", fg='red', bold=True)
+                    res = __cmd_interactive(*(['run'] + params + ['--log-level=debug']))
+
+    if failed:
+        click.secho("Tests failed: ", fg='red')
+        for mod in failed:
+            click.secho(mod, fg='red')
+        sys.exit(-1)
 
 
 @odoo_module.command()

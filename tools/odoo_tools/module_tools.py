@@ -916,6 +916,7 @@ class Module(object):
 
     def get_all_files_of_module(self):
         for file in self.path.glob("**/*"):
+            file = file.relative_to(self.path)
             if file.name.startswith("."):
                 continue
             if ".git" in file.parts:

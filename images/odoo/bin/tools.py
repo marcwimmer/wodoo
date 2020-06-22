@@ -300,4 +300,6 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, **
             rc = int(filename.read_text().strip())
         except ValueError:
             rc = -1 # undefined return code
+        finally:
+            filename.unlink()
     return rc
