@@ -102,9 +102,6 @@ def run_tests(ctx, config):
                 params = ['odoo', '/odoolib/unit_test.py', f'{file}']
                 click.secho(f"Running test: {file}", fg='yellow', bold=True)
                 res = __dcrun(params + ['--log-level=error', '--not-interactive'], raise_exception=True, returncode=True)
-
-                print(res)
-
                 if res:
                     failed.append(file)
                     click.secho(f"Failed, running again with debug on: {file}", fg='red', bold=True)
@@ -115,7 +112,6 @@ def run_tests(ctx, config):
         for mod in failed:
             click.secho(mod, fg='red')
         sys.exit(-1)
-
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
