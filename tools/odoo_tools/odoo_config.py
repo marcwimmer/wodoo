@@ -197,13 +197,6 @@ class MANIFEST_CLASS(object):
 
         self.patch_dir = customs_dir() / 'patches'
 
-        if 'not_allowed_commit_branches' not in d:
-            self['not_allowed_commit_branches'] = [
-                'master',
-                'stage',
-                'deploy',
-            ]
-
         if 'version' not in d:
             self['version'] = float(d['version'])
 
