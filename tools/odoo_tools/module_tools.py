@@ -863,11 +863,9 @@ class Module(object):
             if str(module_path).endswith("/{}".format(current_version())):
                 module_path = "/".join(str(module_path).split("/")[:-1])
 
-        for file in all_files:
-            if file.name.startswith('.'):
+        for local_file_path in all_files:
+            if local_file_path.name.startswith('.'):
                 continue
-
-            local_file_path = Path("/") / Path(self.path.name) / file.relative_to(self.path)
 
             if current_id:
                 parent = current_id
@@ -879,9 +877,9 @@ class Module(object):
                 continue
             files_per_assets.setdefault(parent, default_dict())
 
-            if file.suffix in ['.less', '.css']:
+            if local_file_path.suffix in ['.less', '.css']:
                 files_per_assets[parent]['stylesheets'].append(local_file_path)
-            elif file.suffix in ['.js']:
+            elif local_file_path.suffix in ['.js']:
                 files_per_assets[parent]['js'].append(local_file_path)
 
         doc = etree.XML(assets_template)
@@ -942,23 +940,22 @@ class Module(object):
         mod['qweb'] = []
         is_web = False
 
-        for f in all_files:
-            local_path = str(f.relative_to(self.path))
-            if 'test' in f.parts:
+        for local_path in all_files:
+            if 'test' in local_path.parts:
                 continue
-            if f.suffix in ['.xml', '.csv', '.yml']:
-                if f.name.startswith("demo%s" % os.sep):
+            if local_path.suffix in ['.xml', '.csv', '.yml']:
+                if local_path.name.startswith("demo%s" % os.sep):
                     mod["demo"].append(local_path)
-                elif 'static' in f.parts:
+                elif 'static' in local_path.parts:
                     # contains qweb file
                     is_web = True
-                    if f.suffix == '.xml':
+                    if local_path.suffix == '.xml':
                         mod['qweb'].append(local_path)
                 else:
                     mod[DATA_NAME].append(local_path)
-            elif f.suffix == '.js':
+            elif local_path.suffix == '.js':
                 pass
-            elif f.suffix in ['.css', '.less']:
+            elif local_path.suffix in ['.css', '.less']:
                 mod["css"].append(local_path)
 
         # keep test empty: use concrete call to test-file instead of testing on every module update

@@ -25,7 +25,6 @@ else:
 not_interactive = bool([x for x in sys.argv[1:] if x.startswith("--not-interactive")])
 if not not_interactive:
     os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
-    os.system('reset')
 else:
     os.environ["PYTHONBREAKPOINT"] = ""
 

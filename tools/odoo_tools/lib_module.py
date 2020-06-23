@@ -92,7 +92,7 @@ def run_tests(ctx, config):
         testfiles = [x for x in testfiles if str(x).startswith("tests/")]
         testfiles = [x for x in testfiles if str(x).endswith('.py')]
         testfiles = [x for x in testfiles if x.name != '__init__.py']
-        testfiles = [x for x in testfiles if x.name != 'common.py']
+        testfiles = [x for x in testfiles if x.name.startswith("test_")]
 
         # identify test files and run them, otherwise tests of dependent modules are run
         for file in sorted(testfiles):
@@ -105,12 +105,12 @@ def run_tests(ctx, config):
                 if res:
                     failed.append(file)
                     click.secho(f"Failed, running again with debug on: {file}", fg='red', bold=True)
-                    res = __cmd_interactive(*(['run'] + params + ['--log-level=debug']))
+                    res = __cmd_interactive(*(['run', '--rm'] + params + ['--log-level=debug']))
 
     if failed:
         click.secho("Tests failed: ", fg='red')
         for mod in failed:
-            click.secho(mod, fg='red')
+            click.secho(str(mod), fg='red')
         sys.exit(-1)
 
 @odoo_module.command()
