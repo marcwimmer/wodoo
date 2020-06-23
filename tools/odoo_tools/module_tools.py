@@ -945,18 +945,18 @@ class Module(object):
                 continue
             if local_path.suffix in ['.xml', '.csv', '.yml']:
                 if local_path.name.startswith("demo%s" % os.sep):
-                    mod["demo"].append(local_path)
+                    mod["demo"].append(str(local_path))
                 elif 'static' in local_path.parts:
                     # contains qweb file
                     is_web = True
                     if local_path.suffix == '.xml':
-                        mod['qweb'].append(local_path)
+                        mod['qweb'].append(str(local_path))
                 else:
-                    mod[DATA_NAME].append(local_path)
+                    mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == '.js':
                 pass
             elif local_path.suffix in ['.css', '.less']:
-                mod["css"].append(local_path)
+                mod["css"].append(str(local_path))
 
         # keep test empty: use concrete call to test-file instead of testing on every module update
         mod["test"] = []
