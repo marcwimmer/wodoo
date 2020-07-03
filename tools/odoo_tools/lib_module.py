@@ -64,6 +64,7 @@ def update_module_file(module):
 @pass_config
 @click.pass_context
 def run_tests(ctx, config):
+    started = datetime.now()
     if not config.devmode:
         click.secho("Devmode required to run unit tests. Database will be destroyed.", fg='red')
         sys.exit(-1)
@@ -85,7 +86,7 @@ def run_tests(ctx, config):
     from .module_tools import Module
     from .odoo_config import customs_dir
 
-    failed = []
+    success, failed = [], []
     for module in tests:
         module = Module.get_by_name(module)
         testfiles = list(module.get_all_files_of_module())
@@ -106,12 +107,21 @@ def run_tests(ctx, config):
                     failed.append(file)
                     click.secho(f"Failed, running again with debug on: {file}", fg='red', bold=True)
                     res = __cmd_interactive(*(['run', '--rm'] + params + ['--log-level=debug']))
+                else:
+                    success.append(file)
 
     if failed:
         click.secho("Tests failed: ", fg='red')
         for mod in failed:
             click.secho(str(mod), fg='red')
         sys.exit(-1)
+    else:
+        for mod in success:
+            click.secho(str(mod), fg='green')
+        click.secho("Tests OK", fg='green')
+
+    elapsed = datetime.now() - started
+    click.secho(f"Time: {elapsed}", fg='yellow')
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
