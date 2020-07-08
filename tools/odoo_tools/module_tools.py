@@ -863,6 +863,7 @@ class Module(object):
             if str(module_path).endswith("/{}".format(current_version())):
                 module_path = "/".join(str(module_path).split("/")[:-1])
 
+        prefix_static = f"/{self.name}/"
         for local_file_path in all_files:
             if local_file_path.name.startswith('.'):
                 continue
@@ -877,10 +878,13 @@ class Module(object):
                 continue
             files_per_assets.setdefault(parent, default_dict())
 
+            url = prefix_static + str(local_file_path)
             if local_file_path.suffix in ['.less', '.css']:
-                files_per_assets[parent]['stylesheets'].append(local_file_path)
+                files_per_assets[parent]['stylesheets'].append(url)
             elif local_file_path.suffix in ['.js']:
-                files_per_assets[parent]['js'].append(local_file_path)
+                files_per_assets[parent]['js'].append(url)
+            del local_file_path
+            del url
 
         doc = etree.XML(assets_template)
         for asset_inherit_id, _files in files_per_assets.items():
