@@ -2,10 +2,12 @@
 import traceback
 import time
 import os
+import sys
 import threading
 import subprocess
 import click
 from pathlib import Path
+import tools
 from tools import prepare_run
 from tools import get_config_file
 from odoo_tools.odoo_config import current_version
@@ -24,6 +26,10 @@ customs_dir = Path(os.environ['CUSTOMS_DIR'])
 
 os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
+
+profiling = False
+if any(x in ['--profile', '-profile', 'profile'] for x in sys.argv):
+    profiling = True
 
 
 def watch_file_and_kill():
@@ -44,6 +50,13 @@ def watch_file_and_kill():
             print(msg)
 
         time.sleep(0.2)
+
+        # force odoo profiler to output profiling info
+        if profiling:
+            pidfile = Path(tools.pidfile)
+            if pidfile.exists():
+                pid = pidfile.read_text().strip()
+                os.system(f"kill -3 {pid}")
 
 
 class Debugger(object):
