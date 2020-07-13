@@ -1,1 +1,1 @@
-password is odoo2000
+password is odoo3000
