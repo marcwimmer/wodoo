@@ -85,8 +85,12 @@ PROJECT_NAME = _get_project_name(WORKING_DIR)
 SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
 CUSTOMS = WORKING_DIR and WORKING_DIR.name or None
 HOST_RUN_DIR = None
-if "HOST_HOME" in os.environ and PROJECT_NAME:
-    HOST_RUN_DIR = Path(os.environ['HOST_HOME']) / '.odoo' / 'run' / PROJECT_NAME
+if "HOST_HOME" in os.environ:
+    HOME_DIR = Path(os.environ['HOST_HOME'])
+else:
+    HOME_DIR = Path(os.path.expanduser("~"))
+if HOME_DIR and PROJECT_NAME:
+    HOST_RUN_DIR = HOME_DIR / '.odoo' / 'run' / PROJECT_NAME
 NETWORK_NAME = "{}_default".format(PROJECT_NAME)
 os.environ['CUSTOMS'] = CUSTOMS or ""
 os.environ['PROJECT_NAME'] = PROJECT_NAME or ''

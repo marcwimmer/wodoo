@@ -116,9 +116,17 @@ def backup_files(config):
         shutil.move(BACKUP_FILEPATH, second_path)
         del second
         del second_path
-    __dcrun(["odoo", "/odoolib/backup_files.py", BACKUP_FILENAME])
+    files_dir = dirs['odoo_data_dir'] / config.dbname
+    if not files_dir.exists():
+        return
+    subprocess.check_call([
+        'tar',
+        'cfz',
+        BACKUP_FILEPATH,
+        '.'
+    ], cwd=files_dir)
     __apply_dump_permissions(BACKUP_FILEPATH)
-    click.echo("Backup files done to {}".format(BACKUP_FILENAME))
+    click.secho("Backup files done to {}".format(BACKUP_FILENAME), fg='green')
 
 def __get_default_backup_filename(config):
     return datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(config.customs))
@@ -255,7 +263,13 @@ def __do_restore_files(filepath):
     if filepath.startswith("/"):
         raise Exception("No absolute path allowed")
     filepath = Path(filepath)
-    __dcrun(['odoo', '/odoolib/restore_files.py', filepath.name])
+    files_dir = dirs['odoo_data_dir'] / config.dbname
+    subprocess.check_call([
+        'tar',
+        'xfz',
+        filepath,
+    ], cwd=files_dir)
+    click.secho("Files restored {}".format(filepath), fg='green')
 
 def __restore_check(filepath, config):
     dumpname = filepath.name

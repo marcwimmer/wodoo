@@ -609,6 +609,7 @@ class Modules(object):
         for module in modules:
             module = self.modules[module]
             file = (module.path / 'external_dependencies.txt')
+            new_deps = []
             if file.exists():
                 try:
                     content = json.loads(file.read_text())
@@ -616,10 +617,15 @@ class Modules(object):
                     click.secho("Error parsing json in\n{}:\n{}".format(file, e), fg='red')
                     click.secho(file.read_text(), fg='red')
                     sys.exit(1)
-                pydeps += content.get("pip", [])
+                new_deps = content.get("pip", [])
+                pydeps += new_deps
                 deb_deps += content.get('deb', [])
             else:
-                pydeps += module.manifest_dict.get('external_dependencies', {}).get('python', [])
+                new_deps = module.manifest_dict.get('external_dependencies', {}).get('python', [])
+                pydeps += new_deps
+
+            if new_deps:
+                click.secho(f"Adding python dependencies {','.join(new_deps)} from {module.name}", fg='yellow')
 
         pydeps = self.resolve_pydeps(pydeps)
         return {
