@@ -605,6 +605,8 @@ def remove_webassets(conn):
     cr = conn.cursor()
     try:
         cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%';")
+        cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%web_editor.summernote%';")
+        cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%variables.less%';")
         # cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
         # cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
         # cr.execute("delete from ir_attachment where name ilike '%.less'")
