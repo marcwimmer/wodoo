@@ -12,6 +12,17 @@ services:
         environment:
             # 8 places
             - "PASSWORD=${BROWSER_PWD}"
-              #- "GEOMETRY=1440x960"
             - "GEOMETRY=${BROWSER_GEOMETRY}"
             - "DEPTH=${BROWSER_DEPTH}"
+    browser_large:
+        build: $ODOO_HOME/images/browser
+        ports:
+            - "$VNC_PORT_LARGE:5901"
+        cap_add:
+            - SYS_ADMIN
+        shm_size: 4gb
+        environment:
+            # 8 places
+            - "PASSWORD=${BROWSER_PWD}"
+            - "GEOMETRY=${BROWSER_GEOMETRY_LARGE}"
+            - "DEPTH=${BROWSER_DEPTH_LARGE}"
