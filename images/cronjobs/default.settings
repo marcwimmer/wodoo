@@ -3,3 +3,4 @@ JOB_BACKUP_ODOO_DB=postgres.py backup $DBNAME $DB_HOST $DB_PORT $DB_USER $DB_PWD
 JOB_BACKUP_CALENDAR_DB=postgres.py backup $CALENDAR_DB_NAME $CALENDAR_DB_HOST $CALENDAR_DB_PORT $CALENDAR_DB_USER $CALENDAR_DB_PWD /host/dumps/$DB_CALENDAR_FILEFORMAT
 JOB_DADDY_CLEANUP=daddy_cleanup.py /host/dumps/$DB_ODOO_SEARCHFORMAT --doNt-touch 1
 JOB_VACUUM=postgres.py exec $DBNAME $DB_HOST $DB_PORT $DB_USER $DB_PWD "vacuum full"\;
+JOB_CLEAN_LONG_RUNNING_QUERIES=postgres.py exec $DBNAME $DB_HOST $DB_PORT $DB_USER $DB_PWD "SELECT pid, now() - pg_stat_activity.query_start AS duration, query, state INTO temp_pids FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '120 minutes';select * from temp_pids; select pg_cancel_backend(pid) from temp_pids;"\;

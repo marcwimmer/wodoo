@@ -34,6 +34,9 @@ def execute(dbname, host, port, user, password, sql):
         with conn.cursor() as cr:
             print("executing sql: {}".format(sql))
             cr.execute(sql)
+            res = cr.fetchall()
+            return res
+
 
 @postgres.command()
 @click.argument('dbname', required=True)
