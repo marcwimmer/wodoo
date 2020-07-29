@@ -138,5 +138,5 @@ WORKDIR /opt
 ENV PYTHONIOENCODING=utf8
 
 RUN pip3 install pudb
-
+RUN pip install pudb ipython
 RUN echo "\nimport sys; sys.setdefaultencoding('utf-8')" >> /etc/python2.7/sitecustomize.py
