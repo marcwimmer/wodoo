@@ -154,7 +154,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
             'odoo_queuejobs',
             'odoo_cronjobs',
         ])
-        Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
+        if config.run_redis:
+            Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
         Commands.invoke(ctx, 'wait_for_container_postgres')
 
     if not module:
