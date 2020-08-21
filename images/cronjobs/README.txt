@@ -1,9 +1,4 @@
-Place *.job files anywhere (/etc/ or in customs)
+To debug a job:
 
-They are executed.
-
-Format:
-
-{
-    'schedule':
-}
+odoo attach cronjobshell
+run.py <name of job>

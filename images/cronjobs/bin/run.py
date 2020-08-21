@@ -23,6 +23,7 @@ def get_jobs():
             schedule = " ".join(job[:5])
             job_command = job[-1]
             yield {
+                'name': key.replace("CRONJOB_", ""),
                 'schedule': schedule,
                 'cmd': job_command,
                 'base': datetime.now()
@@ -51,11 +52,17 @@ def execute(job_cmd):
 
 
 if __name__ == "__main__":
+    jobs = list(get_jobs())
+    for job in jobs:
+        logging.info(f"Job: {job}")
     if len(sys.argv) > 1:
-        execute(sys.argv[1])
+        job = [x for x in jobs if x['name'] == sys.argv[1]]
+        if not job:
+            logger.error(f"Job not found: {sys.argv[1]}")
+        cmd = job[0]['cmd']
+        execute(cmd)
         sys.exit(0)
 
-    jobs = list(get_jobs())
     next_dates = []
 
     for job in jobs:
@@ -64,7 +71,7 @@ if __name__ == "__main__":
     displayed_infos = False
     while True:
         for job in jobs:
-            print(replace_params(job['cmd']))
+            logger.info(replace_params(job['cmd']))
             next_run = croniter(job['schedule'], job['base']).get_next(datetime)
             if not displayed_infos or (datetime.now().second == 0 and datetime.now().minute == 0):
                 logging.info("Next run of %s at %s", job['cmd'], next_run)
