@@ -54,11 +54,12 @@ def execute(job_cmd):
 if __name__ == "__main__":
     jobs = list(get_jobs())
     for job in jobs:
-        logging.info(f"Job: {job}")
+        logging.info(f"Job: {job['name']}")
     if len(sys.argv) > 1:
         job = [x for x in jobs if x['name'] == sys.argv[1]]
         if not job:
             logger.error(f"Job not found: {sys.argv[1]}")
+            sys.exit(-1)
         cmd = job[0]['cmd']
         execute(cmd)
         sys.exit(0)

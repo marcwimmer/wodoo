@@ -52,7 +52,7 @@ def parse_args():
     p = argparse.ArgumentParser(
         """Deletes file matching the given glob in PATH and keeps
            youngest files of last weeks, months, quarters and years.
-           
+
            By providing --doNt-touch files can be provided, that are
            never touched.
         """)
@@ -153,7 +153,7 @@ def get_to_delete_files(path_list, days_notouch):
     # that will survive
     for k in bins.keys():
         bins[k] = sorted(bins[k], key=lambda x: x.stat().st_mtime, reverse=True)
-    
+
     # store pole positions in safe array
     [keep_safe.add(x[0]) for x in bins.values() if x]
 
