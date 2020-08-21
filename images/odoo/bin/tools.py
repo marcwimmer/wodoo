@@ -36,21 +36,6 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     server_wide_modules = ','.join(server_wide_modules)
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 
-    # replace any env variable
-    if os.getenv("ODOO_QUEUEJOBS_CHANNELS", ""):
-        channels = [(x, int(y)) for x, y in list(map(lambda x: x.strip().split(':'), [X for X in os.environ['ODOO_QUEUEJOBS_CHANNELS'].split(",")]))]
-        channels_no_root = [x for x in channels if x[0] != 'root']
-        if channels_no_root:
-            Sum = sum(x[1] for x in channels_no_root)
-        elif channels:
-            Sum = sum(x[1] for x in channels)
-        else:
-            raise Exception("Please define at least on root channel for odoo queue jobs.")
-
-        channels = ','.join(f"{x[0]:x[1]}" for x in [('root', Sum)] + [channels_no_root])
-
-        os.environ['ODOO_QUEUEJOBS_WORKERS'] = str(Sum)
-
     for key, value in os.environ.items():
         key = f'__{key}__'
         content = content.replace(key, value)
