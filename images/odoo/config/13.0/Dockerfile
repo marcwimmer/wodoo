@@ -84,7 +84,8 @@ RUN apt-get install \
             python3 \
             locales-all \
             libpoppler-cpp-dev \
-            postgresql-client
+            postgresql-client \
+            sassc
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
