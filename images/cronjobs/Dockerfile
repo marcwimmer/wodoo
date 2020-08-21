@@ -3,7 +3,7 @@ ENV DOCKER_VERSION=docker-18.09.3
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
 apt install -y python3-pip python3 curl rsync locales \
-postgresql-client pv pigz
+postgresql-client pv pigz telnet
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && dpkg-reconfigure --frontend=noninteractive locales \
@@ -21,5 +21,4 @@ WORKDIR /usr/local/bin
 ADD requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
 ADD bin/ /usr/local/bin/
-RUN apt install -y telnet
 RUN chmod a+x /usr/local/bin/*.py
