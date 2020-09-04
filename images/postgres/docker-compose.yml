@@ -9,7 +9,6 @@ services:
     volumes:
       - $DUMPS_PATH:/opt/dumps
       # volume mount safe (if odoo is mounted into virtual box)
-      - $ODOO_HOME/images/postgres/init:/tmp/docker-entrypoint-initdb.d/
       - $HOST_RUN_DIR/postgresout:/tmp/out
       # is created in after_compose
       - $HOST_RUN_DIR/pgcli_history:/root/.config/pgcli/history
@@ -18,5 +17,3 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
 
     shm_size: '1g'
-
-    command: /bin/bash /run.sh
