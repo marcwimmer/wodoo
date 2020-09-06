@@ -36,11 +36,6 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     server_wide_modules = ','.join(server_wide_modules)
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 
-    # replace any env variable
-    if os.getenv("ODOO_QUEUEJOBS_CHANNELS", ""):
-        channels = [(x, int(y)) for x, y in list(map(lambda x: x.strip().split(':'), [X for X in os.environ['ODOO_QUEUEJOBS_CHANNELS'].split(",")]))]
-        os.environ['ODOO_QUEUEJOBS_WORKERS'] = str(sum(x[1] for x in channels if x[0] != 'root'))
-
     for key, value in os.environ.items():
         key = f'__{key}__'
         content = content.replace(key, value)
