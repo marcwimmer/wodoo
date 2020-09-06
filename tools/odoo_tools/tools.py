@@ -62,6 +62,7 @@ class DBConnection(object):
             password=self.pwd,
             host=self.host,
             port=self.port,
+            connect_timeout=3,
         )
         return conn
 
