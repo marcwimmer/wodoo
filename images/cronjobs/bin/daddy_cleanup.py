@@ -138,7 +138,7 @@ def get_to_delete_files(path_list, days_notouch):
     keep_safe = set()
     to_delete = []
     for path, mt in genPathInfos(path_list):
-        if (arrow.utcnow() - mt).days < days_notouch:
+        if (arrow.utcnow() - mt).days <= days_notouch:
             print("Ignoring", path)
             keep_safe.add(path)
             continue
