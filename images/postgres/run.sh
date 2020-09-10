@@ -1,8 +1,9 @@
 #!/bin/bash
-set -x
 set -e
 CONFIG="$(sed 's/^/-c/' /config)"
 
-
-#exec gosu postgres /usr/local/bin/docker-entrypoint.sh postgres $CONFIG
-echo "BYE"
+if [[ "$1" == "postgres" ]]; then
+    exec gosu postgres bash /usr/local/bin/docker-entrypoint.sh postgres $CONFIG
+else
+    exec gosu postgres "$@"
+fi
