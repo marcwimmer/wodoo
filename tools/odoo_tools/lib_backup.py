@@ -174,9 +174,10 @@ def restore_calendar_db(ctx, config, filename):
 
 @restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
+@click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
 @pass_config
 @click.pass_context
-def restore_db(ctx, config, filename):
+def restore_db(ctx, config, filename, latest):
     conn = config.get_odoo_conn()
     dest_db = conn.dbname
 
@@ -184,13 +185,13 @@ def restore_db(ctx, config, filename):
         click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
 
     if not filename:
-        filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname)
+        filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
     if not filename:
         return
 
     BACKUPDIR = Path(config.dumps_path)
     filename = BACKUPDIR / filename
-    if not config.force:
+    if not config.force and not latest:
         __restore_check(filename, config)
 
     DBNAME_RESTORING = config.DBNAME + "_restoring"
@@ -250,15 +251,20 @@ def _add_cronjob_scripts():
         'postgres': postgres,
     }
 
-def _inquirer_dump_file(config, message, filter):
+def _inquirer_dump_file(config, message, filter, latest=False):
     BACKUPDIR = Path(config.dumps_path)
     __files = _get_dump_files(BACKUPDIR)
+    if latest:
+        if not __files:
+            click.secho("No dump file found - option latest given.", fg='red')
+            sys.exit(1)
+        return __files[0][1]
     filename = inquirer.prompt([inquirer.List('filename', message, choices=__files)])
     if filename:
         filename = filename['filename'][1]
         return filename
 
-def __do_restore_files(filepath):
+def __do_restore_files(config, filepath):
     # remove the postgres volume and reinit
     if filepath.startswith("/"):
         raise Exception("No absolute path allowed")
