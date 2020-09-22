@@ -10,11 +10,12 @@ RUN git clone https://github.com/julmon/pg_activity.git  && \
 cd pg_activity/ && \
 python setup.py install --with-man
 
-RUN pip3 install pgcli==3.0.0
-ADD pgcli.config /var/lib/postgresql/.config/pgcli/config
+ENV PGCLIRC /var/lib/postgresql/.pgcli.config
+RUN pip3 install pgcli==3.0.0 tabulate
+ADD pgcli.config "$PGCLIRC"
 ADD keyring.config /var/lib/postgresql/.local/share/python_keyring/keyringrc.cfg
 RUN chown postgres:postgres /var/lib/postgresql/.local/share/python_keyring/keyringrc.cfg && \
-    chown -R postgres:postgres /var/lib/postgresql/.config
+    chown -R postgres:postgres "$PGCLIRC"
 
 ADD config* /
 ADD run.sh /run.sh

@@ -16,5 +16,6 @@ services:
     environment:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata
+      PGCLIRC: /var/lib/postgresql/.pgcli.config
 
     shm_size: '1g'
