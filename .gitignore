@@ -29,3 +29,4 @@ settings.override
 .agignore
 .tmp.compose
 ._*
+.vimhook.syncdestination
