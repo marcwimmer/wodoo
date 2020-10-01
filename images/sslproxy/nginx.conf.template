@@ -1,5 +1,9 @@
 upstream odoo {
-    server proxy:80;
+    server odoo:8069;
+}
+
+upstream odoo_longpolling {
+    server odoo:8072;
 }
 
 ## Version 2018/09/12 - Changelog: https://github.com/linuxserver/docker-letsencrypt/commits/master/root/defaults/default
@@ -21,18 +25,35 @@ server {
     # enable for ldap auth
     #include /config/nginx/ldap.conf;
     client_max_body_size 0;
+
+    proxy_set_header   Host $host;
+    proxy_set_header   X-Real-IP $remote_addr;
+    proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header   X-Forwarded-Host $server_name;
+    proxy_connect_timeout       300;
+    proxy_send_timeout          300;
+    proxy_read_timeout          300;
+    send_timeout                300;
+
     location / {
             proxy_pass         http://odoo;
             proxy_redirect     off;
-            proxy_set_header   Host $host;
-            proxy_set_header   X-Real-IP $remote_addr;
-            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header   X-Forwarded-Host $server_name;
-            proxy_connect_timeout       300;
-            proxy_send_timeout          300;
-            proxy_read_timeout          300;
-            send_timeout                300;
     }
+
+    location /longpolling {
+       proxy_pass http://odoo-chat;
+    }
+
+    location ~* /web/static/ {
+       proxy_cache_valid 200 90m;
+       proxy_buffering    on;
+       expires 864000;
+       proxy_pass http://odoo;
+    }
+
+    # gzip
+    gzip_types text/css text/less text/plain text/xml application/xml application/json application/javascript;
+    gzip on;
 }
 
 # enable subdomain method reverse proxy confs
