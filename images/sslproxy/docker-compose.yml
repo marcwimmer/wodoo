@@ -1,7 +1,7 @@
 version: '3'
 services:
   sslproxy:
-    image: linuxserver/letsencrypt
+    image: linuxserver/swag
     container_name: ${PROJECT_NAME}_${CUSTOMS}_letsencrypt
     cap_add:
       - NET_ADMIN
