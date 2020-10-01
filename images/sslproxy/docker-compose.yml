@@ -2,7 +2,7 @@ version: '3'
 services:
   sslproxy:
     image: linuxserver/swag
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_letsencrypt
+    container_name: ${PROJECT_NAME}_sslproxy
     cap_add:
       - NET_ADMIN
     environment:
@@ -22,8 +22,8 @@ services:
       # - EXTRA_DOMAINS=<extradomains> #optional
       - STAGING=${SSLPROXY_STAGING} #optional
     volumes:
-      - ${HOST_RUN_DIR}/ssl/config:/config 
-      - ${HOST_RUN_DIR}/ssl/nginx.conf:/config/nginx/site-confs/default
+      - ${HOST_RUN_DIR}/ssl:/config 
+        # - ${HOST_RUN_DIR}/ssl/nginx.conf:/config/nginx/site-confs/default
     ports:
       - 443:443
       - 80:80 #optional

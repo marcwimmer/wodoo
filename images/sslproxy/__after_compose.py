@@ -1,4 +1,5 @@
 import sys
+import shutil
 from pathlib import Path
 from odoo_tools import dirs
 import inspect
@@ -9,7 +10,7 @@ def after_compose(config, yml, globals):
     if config['RUN_SSLPROXY'] != '1':
         return
 
-    nginx_conf = dirs['run'] / 'ssl' / 'nginx.conf'
+    nginx_conf = dirs['run'] / 'ssl' / 'nginx' / 'site-confs' / 'default'
     src = (dir / 'nginx.conf.template').read_text()
     subdomains = config.get('SSLPROXY_SUBDOMAINS', "")
     if subdomains:
@@ -25,5 +26,3 @@ def after_compose(config, yml, globals):
 
     nginx_conf.parent.mkdir(parents=True, exist_ok=True)
     nginx_conf.write_text(src)
-
-    Path(os.environ['HOST_RUN_DIR'])

@@ -20,11 +20,6 @@ from odoo_tools import files
 def sslproxy(config):
     pass
 
-def _safe_delete(f):
-    if f.exists():
-        f.unlink()
-
-
 @sslproxy.command(help="Removes existing SSL certificates; restart to renew them")
 @pass_config
 @click.pass_context
