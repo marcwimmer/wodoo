@@ -1,4 +1,4 @@
-FROM postgres:12
+FROM postgres:11
 ENTRYPOINT ["/run.sh"]
 CMD ["postgres"]
 RUN sed -i 's|http://deb.debian|http://ftp2.de.debian|g' /etc/apt/sources.list
@@ -11,7 +11,8 @@ cd pg_activity/ && \
 python setup.py install --with-man
 
 ENV PGCLIRC /var/lib/postgresql/.pgcli.config
-RUN pip3 install pgcli==3.0.0 tabulate
+RUN pip3 install pgcli==3.0.0
+RUN pip3 install tabulate
 ADD pgcli.config "$PGCLIRC"
 ADD keyring.config /var/lib/postgresql/.local/share/python_keyring/keyringrc.cfg
 RUN chown postgres:postgres /var/lib/postgresql/.local/share/python_keyring/keyringrc.cfg && \
