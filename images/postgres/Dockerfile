@@ -1,4 +1,4 @@
-FROM postgres:11
+FROM postgres:12
 ENTRYPOINT ["/run.sh"]
 CMD ["postgres"]
 RUN sed -i 's|http://deb.debian|http://ftp2.de.debian|g' /etc/apt/sources.list

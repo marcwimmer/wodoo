@@ -48,7 +48,7 @@ def db(config):
 def drop_db(config, dbname):
 
     if not (config.devmode or config.force):
-        click.echo("Either DEVMODE or force required")
+        click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
     conn = config.get_odoo_conn()
     _remove_postgres_connections(conn)
@@ -136,6 +136,25 @@ def reset_db(ctx, config, dbname):
         ctx,
         'update',
         module=['base'],
+        no_restart=True,
+        no_dangling_check=True,
+        no_update_module_list=True,
+        non_interactive=True,
+    )
+
+@db.command(name='anonymize')
+@pass_config
+@click.pass_context
+def anonymize(ctx, config):
+    if not (config.devmode or config.force):
+        click.secho("Either DEVMODE or force required", fg='red')
+        sys.exit(-1)
+
+    # since odoo version 12 "-i base -d <name>" is required
+    Commands.invoke(
+        ctx,
+        'update',
+        module=['anonymize', 'cleardb'],
         no_restart=True,
         no_dangling_check=True,
         no_update_module_list=True,
