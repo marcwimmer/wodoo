@@ -15,7 +15,6 @@ except Exception:
 from .tools import _extract_python_libname
 from .tools import _exists_table
 from .tools import _execute_sql
-from .odoo_config import get_env
 from .odoo_config import odoo_root
 from .odoo_config import run_dir
 from .odoo_config import get_conn_autoclose

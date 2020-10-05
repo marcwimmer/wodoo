@@ -38,8 +38,8 @@ def dev(ctx, config, nobuild, kill):
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
-    do_kill(ctx, config, brutal=True)
-    rm(ctx, config)
+    do_kill(ctx, config, machines=[], brutal=True)
+    rm(ctx, config, machines=[])
     if not nobuild:
         build(ctx, config)
     if kill:
@@ -70,7 +70,7 @@ def execute(machine, args):
     args = [machine] + list(args)
     __dcexec(args)
 
-def do_kill(ctx, config, machines, brutal=False):
+def do_kill(ctx, config, machines=[], brutal=False):
     """
     kills running machine
     safely shutdowns postgres and redis
@@ -110,11 +110,11 @@ def wait_for_port(host, port):
     _wait_for_port(host=host, port=port)
 
 
-def recreate(ctx, config, machines):
+def recreate(ctx, config, machines=[]):
     machines = list(machines)
     __dc(['up', '--no-start', '--force-recreate'] + machines)
 
-def up(ctx, config, machines, daemon):
+def up(ctx, config, machines=[], daemon=False):
     _sanity_check(config)
     machines = list(machines)
 
@@ -125,7 +125,7 @@ def up(ctx, config, machines, daemon):
         options += ['-d']
     __dc(['up'] + options + machines)
 
-def down(ctx, config, machines, volumes):
+def down(ctx, config, machines=[], volumes=False):
     _sanity_check(config)
     machines = list(machines)
 
@@ -135,20 +135,20 @@ def down(ctx, config, machines, volumes):
         options += ['--volumes']
     __dc(['down'] + options + machines)
 
-def stop(ctx, config,  machines):
+def stop(ctx, config,  machines=[]):
     do_kill(ctx, config, machines=machines)
 
-def rebuild(ctx, config, machines):
+def rebuild(ctx, config, machines=[]):
     Commands.invoke(ctx, 'compose', customs=config.customs)
     build(ctx, config, machines=machines, no_cache=True)
 
-def restart(ctx, config, machines):
+def restart(ctx, config, machines=[]):
     machines = list(machines)
 
     do_kill(ctx, config, machines=machines)
     up(ctx, config, machines=machines, daemon=True)
 
-def rm(ctx, config, machines):
+def rm(ctx, config, machines=[]):
     __needs_docker(config)
     machines = list(machines)
     __dc(['rm', '-f'] + machines)
@@ -162,7 +162,7 @@ def attach(ctx, config, machine):
     bash = _get_bash_for_machine(machine)
     __cmd_interactive('exec', machine, bash)
 
-def build(ctx, config, machines, pull, no_cache, push):
+def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """

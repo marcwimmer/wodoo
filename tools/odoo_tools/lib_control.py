@@ -146,10 +146,11 @@ def attach(ctx, config, machine):
 @click.option('--pull', is_flag=True)
 @click.option('--push', is_flag=True)
 @pass_config
-def build(config, machines, pull, no_cache, push):
+@click.pass_context
+def build(ctx, config, machines, pull, no_cache, push):
     if config.use_docker:
         from .lib_control_with_docker import build as lib_build
-    lib_build(config, machines, pull, no_cache, push)
+    lib_build(ctx, config, machines, pull, no_cache, push)
 
 @docker.command()
 @click.argument('machine', required=True)

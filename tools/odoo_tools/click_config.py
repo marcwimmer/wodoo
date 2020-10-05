@@ -40,6 +40,9 @@ class Config(object):
         self.CUSTOMS = self.WORKING_DIR and self.WORKING_DIR.name or None
         self.PROJECT_NAME = _get_project_name(self, self.WORKING_DIR)
         self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self.WORKING_DIR, self.PROJECT_NAME)
+        if not os.getenv("RUN_DIR"):
+            # needed for get_env for example
+            os.environ['RUN_DIR'] = str(self.HOST_RUN_DIR)
         self.NETWORK_NAME = "{}_default".format(self.PROJECT_NAME)
         self.use_docker = get_use_docker(self.files)
         make_absolute_paths(self, self.dirs, self.files, self.commands)

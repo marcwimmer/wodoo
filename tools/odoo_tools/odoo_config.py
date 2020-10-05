@@ -168,7 +168,7 @@ def get_env():
     # if no run_dir provided, then provide minimal file
     if "RUN_DIR" in os.environ:
         file = Path(os.environ['RUN_DIR']) / 'settings'
-        conf = MyConfigParser(file)
+        return MyConfigParser(file)
     else:
         conf = MyConfigParser({
             "CUSTOMS": os.getenv("CUSTOMS"),
