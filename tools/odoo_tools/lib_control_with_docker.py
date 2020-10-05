@@ -193,12 +193,14 @@ def debug(ctx, config, machine, ports):
     if ports:
         src_files += [config.files['debugging_template_withports']]
 
+    cmd_prefix = []
     for i, filepath in enumerate(src_files):
         dest = config.files['debugging_composer']
         dest = dest.parent / dest.name.replace(".yml", ".{}.yml".format(i))
         shutil.copy(filepath, dest)
         __replace_in_file(dest, "${CUSTOMS}", config.customs)
         __replace_in_file(dest, "${NAME}", machine)
+        __replace_in_file(dest, "${DOCKER_COMPOSE_VERSION}", config.YAML_VERSION)
 
         # TODO make configurable in machines
         PORT = str({
@@ -207,9 +209,9 @@ def debug(ctx, config, machine, ports):
         }.get(machine, 80))
         __replace_in_file(dest, "{machine_main_port}", PORT)
 
-        config.commands['dc'] += ['-f', dest]
+        cmd_prefix = ['-f', dest]
 
-    __dc(['up', '-d', machine])
+    __dc(cmd_prefix + ['up', '-d', machine])
     attach(ctx, config, machine=machine)
 
 def run(ctx, config, volume, machine, args, **kwparams):

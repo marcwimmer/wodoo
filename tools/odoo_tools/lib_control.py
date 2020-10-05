@@ -162,7 +162,6 @@ def debug(ctx, config, machine, ports):
         from .lib_control_with_docker import debug as lib_debug
     lib_debug(ctx, config, machine, ports)
 
-
 @cli.command()
 @click.argument('machine', required=True)
 @click.argument('args', nargs=-1)

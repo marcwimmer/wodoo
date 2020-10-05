@@ -7,10 +7,7 @@ How to use
 
 How to use::
 
-   pudb.set_trace()
-
    self.env['...']
-
 
 .. image:: /__module_name__/static/sample.png
 
