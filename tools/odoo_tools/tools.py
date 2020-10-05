@@ -807,9 +807,6 @@ def split_hub_url():
     }
 
 def _get_missing_click_config():
-    from pudb import set_trace
-    set_trace()
     from .click_config import Config
     config = Config()
     return config
-

@@ -47,5 +47,5 @@ default_files = {
 }
 
 default_commands = {
-    'dc': ['$docker_compose_bin', "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
+    'dc': ['${docker_compose_bin}', "-p", "${PROJECT_NAME}", "-f",  "${docker_compose}"],
 }

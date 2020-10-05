@@ -1,3 +1,4 @@
+from collections import ChainMap
 import sys
 import psutil
 import importlib
@@ -107,15 +108,20 @@ def make_absolute_paths(config, dirs, files, commands):
 
     dirs['odoo_home'] = Path(os.environ['ODOO_HOME'])
 
+    def replace_keys(value, key_values):
+        for k, v in key_values.items():
+            p = ["${" + k + "}", f"${k}"]
+            for p in p:
+                if p in str(value):
+                    value = value.replace(p, str(v))
+        return value
+
     def make_absolute(d, key_values={}):
         for k, v in list(d.items()):
             if not v:
                 continue
             skip = False
-            for k2, v2 in key_values.items():
-                p = "${{{}}}".format(k2)
-                if p in str(v):
-                    v = v.replace(p, str(v2))
+            v = replace_keys(v, key_values)
 
             for value, name in [
                 (config.HOST_RUN_DIR, '${run}'),
@@ -135,14 +141,12 @@ def make_absolute_paths(config, dirs, files, commands):
 
             if not str(v).startswith('/'):
                 v = dirs['odoo_home'] / v
-            d[k] = Path(v)
+            d[k] = v
 
     make_absolute(dirs)
     make_absolute(files, dirs)
-
-    # dirs['host_working_dir'] = os.getenv('LOCAL_WORKING_DIR', "")
-    if 'docker_compose' in files:
-        commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc'] if x]
+    for k in commands:
+        commands[k] = [replace_keys(x, ChainMap(config.__dict__, files, dirs)) for x in commands[k]]
 
 def set_shell_table_title(PROJECT_NAME):
     if os.getenv("DOCKER_MACHINE", "") != "1":
