@@ -90,7 +90,7 @@ def _set_host_run_dir(config, local):
         if local_config_dir.exists():
             if not click.confirm(click.style(f"If you continue the local existing run directory {local_config_dir} is erased.", fg='red')):
                 sys.exit(-1)
-            shutil.rmtree(dir)
+            shutil.rmtree(local_config_dir)
             click.secho("Please reload again.", fg='green')
             sys.exit(-1)
 

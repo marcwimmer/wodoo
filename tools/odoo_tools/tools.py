@@ -488,16 +488,15 @@ def _check_working_dir_customs_mismatch(config):
 Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
                      )
 
-def _display_machine_tips(machine_name):
-    from . import dirs
-    dir = dirs['images'] / machine_name
+def _display_machine_tips(config, machine_name):
+    dir = config.dirs['images'] / machine_name
     if not dir.is_dir():
         return
 
-    for filename in dirs['images'].glob("**/tips.txt"):
-        filepath = dirs['images'] / filename
+    for filename in config.dirs['images'].glob("**/tips.txt"):
+        filepath = config.dirs['images'] / filename
         if filepath.parent.name == machine_name:
-            content = (dirs['images'] / filename).read_text()
+            content = (config.dirs['images'] / filename).read_text()
             click.echo("")
             click.echo("Please note:")
             click.echo("---------------")

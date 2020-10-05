@@ -9,7 +9,6 @@ from pathlib import Path
 from .odoo_config import current_version
 from .odoo_config import customs_dir
 from .tools import _sanity_check
-from .tools import _display_machine_tips
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 import subprocess
@@ -26,7 +25,7 @@ def dev(ctx, config):
     """
     starts developing in the odoo container
     """
-    from . import MyConfigParser
+    from .myconfigparser import MyConfigParser
     myconfig = MyConfigParser(files['settings'])
     proxy_port = myconfig['PROXY_PORT']
     roundcube_port = myconfig['ROUNDCUBE_PORT']
@@ -63,7 +62,7 @@ def _path_odoolib():
 
 def _exec_in_virtualenv(cmd):
     filename = Path(tempfile.mktemp(suffix='.sh'))
-    from . import MyConfigParser
+    from .myconfigparser import MyConfigParser
     myconfig = MyConfigParser(files['settings'])
 
     def _quoted(x):

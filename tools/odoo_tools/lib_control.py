@@ -14,16 +14,16 @@ def docker(config):
 @click.pass_context
 def dev(ctx, config, nobuild, kill):
     if config.use_docker:
-        from .lib_control_with_docker import dev# NOQA
-    return dev(ctx, config, nobuild, kill)
+        from .lib_control_with_docker import dev as lib_dev
+    return lib_dev(ctx, config, nobuild, kill)
 
 
 @docker.command(name='ps')
 @pass_config
 def ps(config):
     if config.use_docker:
-        from .lib_control_with_docker import ps
-    return ps()
+        from .lib_control_with_docker import ps as lib_ps
+    return lib_ps()
 
 @docker.command(name='exec')
 @click.argument('machine', required=True)
@@ -31,8 +31,8 @@ def ps(config):
 @pass_config
 def execute(config, machine, args):
     if config.use_docker:
-        from .lib_control_with_docker import execute
-    execute(machine, args)
+        from .lib_control_with_docker import execute as lib_execute
+    lib_execute(machine, args)
 
 @docker.command(name='kill')
 @click.argument('machines', nargs=-1)
@@ -41,30 +41,30 @@ def execute(config, machine, args):
 @click.pass_context
 def do_kill(ctx, config, machines, brutal=False):
     if config.use_docker:
-        from .lib_control_with_docker import do_kill
-    do_kill(ctx, config, machines, brutal=False)
+        from .lib_control_with_docker import do_kill as lib_do_kill
+    lib_do_kill(ctx, config, machines, brutal=False)
 
 @docker.command()
 @pass_config
 @click.pass_context
 def force_kill(ctx, config, machine):
     if config.use_docker:
-        from .lib_control_with_docker import force_kill
-    force_kill(ctx, machine)
+        from .lib_control_with_docker import force_kill as lib_force_kill
+    lib_force_kill(ctx, config, machine)
 
 @docker.command()
 @pass_config
 def wait_for_container_postgres(config):
     if config.use_docker:
-        from .lib_control_with_docker import wait_for_container_postgres
-    wait_for_container_postgres(config)
+        from .lib_control_with_docker import wait_for_container_postgres as lib_wait_for_container_postgres
+    lib_wait_for_container_postgres(config)
 
 @docker.command()
 @pass_config
 def wait_for_port(config, host, port):
     if config.use_docker:
-        from .lib_control_with_docker import wait_for_port
-    wait_for_port(host, port)
+        from .lib_control_with_docker import wait_for_port as lib_wait_for_port
+    lib_wait_for_port(host, port)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -72,8 +72,8 @@ def wait_for_port(config, host, port):
 @click.pass_context
 def recreate(ctx, config, machines):
     if config.use_docker:
-        from .lib_control_with_docker import recreate
-    recreate(ctx, config, machines)
+        from .lib_control_with_docker import recreate as lib_recreate
+    lib_recreate(ctx, config, machines)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -82,8 +82,8 @@ def recreate(ctx, config, machines):
 @click.pass_context
 def up(ctx, config, machines, daemon):
     if config.use_docker:
-        from .lib_control_with_docker import up
-    up(ctx, config, machines, daemon)
+        from .lib_control_with_docker import up as lib_up
+    lib_up(ctx, config, machines, daemon)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -92,8 +92,8 @@ def up(ctx, config, machines, daemon):
 @click.pass_context
 def down(ctx, config, machines, volumes):
     if config.use_docker:
-        from .lib_control_with_docker import down
-    down(ctx, config, machines, volumes)
+        from .lib_control_with_docker import down as lib_down
+    lib_down(ctx, config, machines, volumes)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -101,8 +101,8 @@ def down(ctx, config, machines, volumes):
 @click.pass_context
 def stop(ctx, config,  machines):
     if config.use_docker:
-        from .lib_control_with_docker import stop
-    stop(ctx, config,  machines)
+        from .lib_control_with_docker import stop as lib_stop
+    lib_stop(ctx, config,  machines)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -110,8 +110,8 @@ def stop(ctx, config,  machines):
 @click.pass_context
 def rebuild(ctx, config, machines):
     if config.use_docker:
-        from .lib_control_with_docker import rebuild
-    rebuild(ctx, config, machines)
+        from .lib_control_with_docker import rebuild as lib_rebuild
+    lib_rebuild(ctx, config, machines)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -119,8 +119,8 @@ def rebuild(ctx, config, machines):
 @click.pass_context
 def restart(ctx, config, machines):
     if config.use_docker:
-        from .lib_control_with_docker import restart
-    restart(ctx, config, machines)
+        from .lib_control_with_docker import restart as lib_restart
+    lib_restart(ctx, config, machines)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -128,16 +128,17 @@ def restart(ctx, config, machines):
 @click.pass_context
 def rm(ctx, config, machines):
     if config.use_docker:
-        from .lib_control_with_docker import rm
-    rm(ctx, config, machines)
+        from .lib_control_with_docker import rm as lib_rm
+    lib_rm(ctx, config, machines)
 
 @docker.command()
 @click.argument('machine', required=True)
 @pass_config
-def attach(config, machine):
+@click.pass_context
+def attach(ctx, config, machine):
     if config.use_docker:
-        from .lib_control_with_docker import attach
-    attach(config, machine)
+        from .lib_control_with_docker import attach as lib_attach
+    lib_attach(ctx, config, machine)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -147,8 +148,8 @@ def attach(config, machine):
 @pass_config
 def build(config, machines, pull, no_cache, push):
     if config.use_docker:
-        from .lib_control_with_docker import build
-    build(config, machines, pull, no_cache, push)
+        from .lib_control_with_docker import build as lib_build
+    lib_build(config, machines, pull, no_cache, push)
 
 @docker.command()
 @click.argument('machine', required=True)
@@ -157,8 +158,8 @@ def build(config, machines, pull, no_cache, push):
 @click.pass_context
 def debug(ctx, config, machine, ports):
     if config.use_docker:
-        from .lib_control_with_docker import debug
-    debug(ctx, config, machine, ports)
+        from .lib_control_with_docker import debug as lib_debug
+    lib_debug(ctx, config, machine, ports)
 
 
 @cli.command()
@@ -168,8 +169,8 @@ def debug(ctx, config, machine, ports):
 @click.pass_context
 def run(ctx, config, volume, machine, args, **kwparams):
     if config.use_docker:
-        from .lib_control_with_docker import run
-    run(ctx, config, volume, machine, args, **kwparams)
+        from .lib_control_with_docker import run as lib_run
+    lib_run(ctx, config, volume, machine, args, **kwparams)
 
 @cli.command()
 @click.argument('machine', required=True)
@@ -178,8 +179,8 @@ def run(ctx, config, volume, machine, args, **kwparams):
 @click.pass_context
 def runbash(ctx, config, machine, args, **kwparams):
     if config.use_docker:
-        from .lib_control_with_docker import runbash
-    runbash(ctx, config, machine, args, **kwparams)
+        from .lib_control_with_docker import runbash as lib_runbash
+    lib_runbash(ctx, config, machine, args, **kwparams)
 
 @cli.command(name='logs')
 @click.argument('machines', nargs=-1)
@@ -188,15 +189,15 @@ def runbash(ctx, config, machine, args, **kwparams):
 @pass_config
 def logall(config, machines, follow, lines):
     if config.use_docker:
-        from .lib_control_with_docker import logall
-    logall(machines, follow, lines)
+        from .lib_control_with_docker import logall as lib_logall
+    lib_logall(machines, follow, lines)
 
 @docker.command()
 @pass_config
 def shell(config):
     if config.use_docker:
-        from .lib_control_with_docker import shell
-    shell()
+        from .lib_control_with_docker import shell as lib_shell
+    lib_shell()
 
 
 Commands.register(run)

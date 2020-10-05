@@ -141,7 +141,7 @@ def make_absolute_paths(config, dirs, files, commands):
 
             if not str(v).startswith('/'):
                 v = dirs['odoo_home'] / v
-            d[k] = v
+            d[k] = Path(v)
 
     make_absolute(dirs)
     make_absolute(files, dirs)

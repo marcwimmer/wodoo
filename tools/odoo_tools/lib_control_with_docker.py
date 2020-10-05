@@ -33,15 +33,15 @@ def dev(ctx, config, nobuild, kill):
     """
     starts developing in the odoo container
     """
-    from . import MyConfigParser
+    from .myconfigparser import MyConfigParser
     myconfig = MyConfigParser(config.files['settings'])
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
-    ctx.invoke(do_kill, brutal=True)
-    ctx.invoke(rm)
+    do_kill(ctx, config, brutal=True)
+    rm(ctx, config)
     if not nobuild:
-        ctx.invoke(build)
+        build(ctx, config)
     if kill:
         click.echo("Killing all docker containers")
         os.system("docker kill $(docker ps -q)")
@@ -98,8 +98,8 @@ def do_kill(ctx, config, machines, brutal=False):
     else:
         __dc(['stop', '-t 2'] + list(machines))
 
-def force_kill(ctx, machine):
-    ctx.invoke(do_kill, machine=machine, brutal=True)
+def force_kill(ctx, config, machine):
+    do_kill(ctx, config, machine=machine, brutal=True)
 
 def wait_for_container_postgres(config):
     if config.USE_DOCKER:
@@ -136,33 +136,33 @@ def down(ctx, config, machines, volumes):
     __dc(['down'] + options + machines)
 
 def stop(ctx, config,  machines):
-    ctx.invoke(do_kill, machines=machines)
+    do_kill(ctx, config, machines=machines)
 
 def rebuild(ctx, config, machines):
     Commands.invoke(ctx, 'compose', customs=config.customs)
-    ctx.invoke(build, machines=machines, no_cache=True)
+    build(ctx, config, machines=machines, no_cache=True)
 
 def restart(ctx, config, machines):
     machines = list(machines)
 
-    ctx.invoke(do_kill, machines=machines)
-    ctx.invoke(up, machines=machines, daemon=True)
+    do_kill(ctx, config, machines=machines)
+    up(ctx, config, machines=machines, daemon=True)
 
 def rm(ctx, config, machines):
     __needs_docker(config)
     machines = list(machines)
     __dc(['rm', '-f'] + machines)
 
-def attach(config, machine):
+def attach(ctx, config, machine):
     """
     attaches to running machine
     """
     __needs_docker(config)
-    _display_machine_tips(machine)
+    _display_machine_tips(config, machine)
     bash = _get_bash_for_machine(machine)
     __cmd_interactive('exec', machine, bash)
 
-def build(config, machines, pull, no_cache, push):
+def build(ctx, config, machines, pull, no_cache, push):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """
@@ -181,15 +181,13 @@ def debug(ctx, config, machine, ports):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     """
-    from . import commands
-
     # puts endless loop into container command and then attaches to it;
     # by this, name resolution to the container still works
     if not config.devmode:
         _askcontinue(config, "Current machine {} is dropped and restartet with service ports in bash. Usually you have to type /debug.sh then.".format(machine))
     # shutdown current machine and start via run and port-mappings the replacement machine
-    ctx.invoke(do_kill, machines=[machine])
-    ctx.invoke(rm, machines=[machine])
+    do_kill(ctx, config, machines=[machine])
+    rm(ctx, config, machines=[machine])
     src_files = [config.files['debugging_template_onlyloop']]
     if ports:
         src_files += [config.files['debugging_template_withports']]
@@ -208,10 +206,10 @@ def debug(ctx, config, machine, ports):
         }.get(machine, 80))
         __replace_in_file(dest, "{machine_main_port}", PORT)
 
-        commands['dc'] += ['-f', dest]
+        config.commands['dc'] += ['-f', dest]
 
     __dc(['up', '-d', machine])
-    ctx.invoke(attach, machine=machine)
+    attach(ctx, config, machine=machine)
 
 def run(ctx, config, volume, machine, args, **kwparams):
     """
@@ -219,12 +217,12 @@ def run(ctx, config, volume, machine, args, **kwparams):
 
     """
     if args and args[0] == 'bash' and len(args) == 1:
-        ctx.invoke(runbash, machine=machine)
+        runbash(ctx, config, machine=machine)
         return
     __dcrun([machine] + list(args), **kwparams)
 
 def runbash(ctx, config, machine, args, **kwparams):
-    _display_machine_tips(machine)
+    _display_machine_tips(config, machine)
     bash = _get_bash_for_machine(machine)
     cmd = ['run', machine]
     if args:
