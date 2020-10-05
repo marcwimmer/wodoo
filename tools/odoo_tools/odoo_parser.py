@@ -24,11 +24,6 @@ cache_xml_ids = {}
 SEP_FILE = ":::"
 SEP_LINENO = "::"
 
-try:
-    VERSION = current_version()
-except Exception:
-    VERSION = None
-
 def try_to_get_filepath(filepath):
     filepath = Path(filepath)
     if not filepath.is_file():

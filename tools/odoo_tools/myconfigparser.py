@@ -1,5 +1,4 @@
 # used to read and write to settings
-import os
 import sys
 from pathlib import Path
 

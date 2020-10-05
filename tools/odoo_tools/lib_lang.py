@@ -11,7 +11,7 @@ from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import __dcrun
 from .tools import _execute_sql
-from . import cli, pass_config, dirs, files
+from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 
 @cli.group(cls=AliasedGroup)

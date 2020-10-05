@@ -1,6 +1,6 @@
 # db access (define if you dont use RUN_POSTGRES=1)
 
-# external directory where files are stored (when using file storage)
+# external directory where files are stored (when using file storage); is overwritten with --local-settings flag
 ODOO_FILES=~/.odoo/files
 
 NO_QWEB_DELETE=0

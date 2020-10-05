@@ -19,7 +19,7 @@ services:
       - ${HOST_RUN_DIR}:/opt/run
       - ${HOST_RUN_DIR}/odoo_outdir:/opt/out_dir
       - ${DUMPS_PATH}:/opt/dumps
-      - ${ODOO_FILES}/:/opt/files
+      - ${ODOO_FILES}:/opt/files
       - ${ODOO_HOME}/tools:/opt/tools
       - ${HOST_RUN_DIR}/debug:/tmp/debug
       - ${ODOO_HOME}/images/odoo/bin/update_modules.py:/update_modules.py

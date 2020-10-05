@@ -25,7 +25,7 @@ from .tools import __get_odoo_commit
 from .tools import _is_dirty
 from .odoo_config import current_customs
 from .odoo_config import customs_dir
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import split_hub_url
 

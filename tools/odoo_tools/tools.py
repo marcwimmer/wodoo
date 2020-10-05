@@ -334,8 +334,8 @@ def __safeget(array, index, exception_on_missing, file_options=None):
     return array[index]
 
 def __get_cmd():
-    from . import commands
-    cmd = commands['dc']
+    config = _get_missing_click_config()
+    cmd = config.commands['dc']
     cmd = [os.path.expandvars(x) for x in cmd]
     return cmd
 
@@ -626,9 +626,9 @@ def get_dockercompose():
     return compose
 
 def get_volume_names():
+    from . import PROJECT_NAME
     vols = get_dockercompose()['volumes'].keys()
-    project_name = os.environ['PROJECT_NAME']
-    return ["{}_{}".format(project_name, x) for x in vols]
+    return ["{}_{}".format(PROJECT_NAME, x) for x in vols]
 
 def __running_as_root_or_sudo():
     output = subprocess.check_output(["/usr/bin/id", '-u']).strip().decode('utf-8')
@@ -805,3 +805,11 @@ def split_hub_url():
         'username': username,
         'prefix': prefix,
     }
+
+def _get_missing_click_config():
+    from pudb import set_trace
+    set_trace()
+    from .click_config import Config
+    config = Config()
+    return config
+

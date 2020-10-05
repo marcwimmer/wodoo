@@ -26,3 +26,5 @@ def after_settings(config):
         config['ODOO_QUEUEJOBS_WORKERS'] = str(Sum)
         config['ODOO_QUEUEJOBS_CHANNELS'] = channels
 
+    if config['LOCAL_SETTINGS'] == '1':
+        config['ODOO_FILES'] = str(Path(config['HOST_RUN_DIR']) / 'files')

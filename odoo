@@ -17,11 +17,8 @@ os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
 sys.path.append(str(SCRIPT_DIRECTORY / 'tools'))
 from odoo_tools import cli # NOQA
 from odoo_tools import Commands # NOQA
-from odoo_tools import HOST_RUN_DIR # NOQA
 from odoo_tools.myconfigparser import MyConfigParser # NOQA
 from odoo_tools.module_tools import make_customs # NOQA
-
-os.environ['RUN_DIR'] = str(HOST_RUN_DIR)
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -38,11 +35,4 @@ if __name__ == '__main__':
             path = Path(os.getcwd())
         make_customs(path)
 
-    if not HOST_RUN_DIR:
-        import click
-        click.echo("Please enter into an odoo directory, which contains a MANIFEST file.")
-        sys.exit(1)
-    if not HOST_RUN_DIR.exists():
-        with cli.make_context('odoo', ['-f']) as ctx:
-            Commands.invoke(ctx, 'reload')
     cli()

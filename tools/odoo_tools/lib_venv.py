@@ -26,9 +26,8 @@ from .tools import __make_file_executable
 from .tools import __assure_gitignore
 from .odoo_config import current_customs
 from .odoo_config import customs_dir
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-from . import PROJECT_NAME
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -41,14 +40,14 @@ def venv(config):
 def setup(config):
     dir = customs_dir()
     os.chdir(dir)
-    subprocess.check_call(["python3", "-m", "venv", dirs['venv'].absolute()])
+    subprocess.check_call(["python3", "-m", "venv", config.dirs['venv'].absolute()])
     install_requirements_in_venv(config)
 
     print("Further:")
     print("If you need redis: brew install redis")
     print("Advanced mail server with roundcube - todo for marc to make the mail client run in docker isolated")
 
-def _get_bash_prefix():
+def _get_bash_prefix(config):
     return """#!/bin/bash
 set -e
 set +x
@@ -64,17 +63,17 @@ export INTERNAL_ODOO_PORT=8069
 source "{venv}/bin/activate"
 
 """.format(
-        dirs['images'] / 'odoo' / 'bin',
-        dirs['odoo_tools'],
-        venv=dirs['venv'],
+        config.dirs['images'] / 'odoo' / 'bin',
+        config.dirs['odoo_tools'],
+        venv=config.dirs['venv'],
         customs_dir=customs_dir(),
         dbname=customs_dir().name,
-        run_dir=dirs['run'],
-        out_dir=dirs['run_native_out_dir'],
-        odoo_data_dir=dirs['odoo_data_dir'],
+        run_dir=config.dirs['run'],
+        out_dir=config.dirs['run_native_out_dir'],
+        odoo_data_dir=config.dirs['odoo_data_dir'],
     )
 
-def _make_local_bin_files():
+def _make_local_bin_files(config):
     """
     creates odoo config files in ~/.odoo/run/<..>/configs/config_*
     """
@@ -83,9 +82,9 @@ def _make_local_bin_files():
         'debug.py',
         'update_modules.py',
     ]:
-        template = _get_bash_prefix()
+        template = _get_bash_prefix(config)
         content = template + '\npython \"$ODOOLIB/{}\" "$@"'.format(file)
-        filepath = dirs['run_native_bin_dir'] / file.replace('.py', '')
+        filepath = config.dirs['run_native_bin_dir'] / file.replace('.py', '')
         filepath.write_text(content)
         __make_file_executable(filepath)
         del filepath
@@ -93,14 +92,14 @@ def _make_local_bin_files():
     bin_dir = customs_dir() / 'bin'
     if bin_dir.exists():
         bin_dir.unlink()
-    bin_dir.symlink_to(dirs['run_native_bin_dir'])
+    bin_dir.symlink_to(config.dirs['run_native_bin_dir'])
     __assure_gitignore(customs_dir() / '.gitignore', 'bin')
 
 def install_requirements_in_venv(config):
     req_files = [
-        dirs['odoo_home'] / 'requirements.txt',
+        config.dirs['odoo_home'] / 'requirements.txt',
         customs_dir() / 'odoo' / 'requirements.txt',
-        dirs['odoo_home'] / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
+        config.dirs['odoo_home'] / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
     ]
     file_content = []
     file_content.append("pip install pip --upgrade")
@@ -114,7 +113,7 @@ def install_requirements_in_venv(config):
     file_content.append("pip3 install watchdog")
     for req_file in req_files:
         file_content.append("pip install -r '{}'".format(req_file))
-    files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
-    files['native_bin_install_requirements'].write_text(_get_bash_prefix() + "\n" + '\n'.join(file_content))
-    __make_file_executable(files['native_bin_install_requirements'])
-    subprocess.call([files['native_bin_install_requirements']])
+    config.files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
+    config.files['native_bin_install_requirements'].write_text(_get_bash_prefix() + "\n" + '\n'.join(file_content))
+    __make_file_executable(config.files['native_bin_install_requirements'])
+    subprocess.call([config.files['native_bin_install_requirements']])

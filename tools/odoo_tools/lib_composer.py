@@ -24,9 +24,8 @@ from .tools import __append_line
 from .tools import _makedirs
 from .tools import __try_to_set_owner
 from .tools import __empty_dir
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-from . import odoo_user_conf_dir
 from .odoo_config import MANIFEST
 from .tools import split_hub_url
 
@@ -41,28 +40,37 @@ def composer(config):
 @click.option("-d", "--db", required=False)
 @click.option("-p", "--proxy-port", required=False)
 @click.option("-m", "--mailclient-gui-port", required=False, default="8000")
+@click.option("-l", "--local", is_flag=True, help="Puts all files and settings into .odoo directory of source code")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port):
-    click.secho("Current Project Name: {}".format(os.environ["PROJECT_NAME"]), bold=True, fg='green')
-    from . import MyConfigParser
-    CUSTOMS = os.environ['CUSTOMS']
-    SETTINGS_FILE = files['settings']
-    if SETTINGS_FILE.exists():
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local):
+    from .myconfigparser import MyConfigParser
+
+    click.secho("Current Project Name: {}".format(config.PROJECT_NAME), bold=True, fg='green')
+    SETTINGS_FILE = config.files.get('settings')
+    if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
 
+    _set_host_run_dir(config, local)
+    # Reload config
+    from .click_config import Config
+    config = Config()
+
+    SETTINGS_FILE = config.files.get('settings')
     myconfig = MyConfigParser(SETTINGS_FILE)
     if not SETTINGS_FILE.exists():
-        myconfig['CUSTOMS'] = CUSTOMS
+        myconfig['CUSTOMS'] = config.CUSTOMS
         if proxy_port:
             myconfig['PROXY_PORT'] = proxy_port
         myconfig.write()
 
     defaults = {
         'config': config,
-        'customs': CUSTOMS,
+        'customs': config.CUSTOMS,
         'db': db,
         'demo': demo,
+        'LOCAL_SETTINGS': '1' if local else '0',
+        'CUSTOMS_DIR': config.WORKING_DIR,
     }
     if proxy_port:
         defaults['PROXY_PORT'] = proxy_port
@@ -72,51 +80,68 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port):
     # assuming we are in the odoo directory
     _do_compose(**defaults)
 
+def _set_host_run_dir(config, local):
+    from .init_functions import make_absolute_paths
+    local_config_dir = (config.WORKING_DIR / '.odoo')
+    if local:
+        local_config_dir.mkdir(exist_ok=True)
+    else:
+        # remove probably existing local run dir
+        if local_config_dir.exists():
+            if not click.confirm(click.style(f"If you continue the local existing run directory {local_config_dir} is erased.", fg='red')):
+                sys.exit(-1)
+            shutil.rmtree(dir)
+            click.secho("Please reload again.", fg='green')
+            sys.exit(-1)
+
+def _set_defaults(config, defaults):
+    defaults['HOST_RUN_DIR'] = config.HOST_RUN_DIR
+    defaults['NETWORK_NAME'] = config.NETWORK_NAME
+    defaults['PROJECT_NAME'] = config.PROJECT_NAME
+
 def _do_compose(config, customs='', db='', demo=False, **defaults):
     """
     builds docker compose, proxy settings, setups odoo instances
     """
-    from . import MyConfigParser
-    from . import HOST_RUN_DIR, NETWORK_NAME
+    from .myconfigparser import MyConfigParser
     from .settings import _export_settings
-    os.environ['HOST_RUN_DIR'] = str(HOST_RUN_DIR)
-    os.environ['NETWORK_NAME'] = NETWORK_NAME
 
-    setup_settings_file(customs, db, demo, **defaults)
-    _export_settings(customs)
-    _prepare_filesystem()
-    _execute_after_settings()
+    _set_defaults(config, defaults)
+    setup_settings_file(config, customs, db, demo, **defaults)
+    _export_settings(config, customs)
+    _prepare_filesystem(config)
+    _execute_after_settings(config)
 
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
     if myconfig.get("USE_DOCKER", "1") == "1":
         _prepare_yml_files_from_template_files(config)
 
     click.echo("Built the docker-compose file.")
 
 
-def _prepare_filesystem():
-    from . import MyConfigParser
-    fileconfig = MyConfigParser(files['settings'])
+def _prepare_filesystem(config):
+    from .myconfigparser import MyConfigParser
+    fileconfig = MyConfigParser(config.files['settings'])
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
-        path = dirs['run'] / subdir
+        path = config.dirs['run'] / subdir
         _makedirs(path)
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
             path
         )
 
-def setup_settings_file(customs, db, demo, **defaults):
+def setup_settings_file(config, customs, db, demo, **defaults):
     """
     Cleans run/settings and sets minimal settings;
     Puts default values in settings.d to override any values
     """
-    from . import MyConfigParser
-    config = MyConfigParser(files['settings'])
+    from .myconfigparser import MyConfigParser
+    settings = MyConfigParser(config.files['settings'])
     if customs:
-        if config.get('CUSTOMS', '') != customs:
-            config.clear()
-            config['CUSTOMS'] = customs
-            config.write()
+        if settings.get('CUSTOMS', '') != customs:
+            settings.clear()
+            settings['CUSTOMS'] = customs
+            settings.write()
     vals = {}
     if customs:
         vals['CUSTOMS'] = customs
@@ -126,31 +151,24 @@ def setup_settings_file(customs, db, demo, **defaults):
     vals.update(defaults)
 
     for k, v in vals.items():
-        if config.get(k, '') != v:
-            config[k] = v
-            config.write()
-    config_compose_minimum = MyConfigParser(files['settings_auto'])
+        if settings.get(k, '') != v:
+            settings[k] = v
+            settings.write()
+    config_compose_minimum = MyConfigParser(config.files['settings_auto'])
     config_compose_minimum.clear()
     for k in vals.keys():
         config_compose_minimum[k] = vals[k]
 
-    if not config_compose_minimum.get("POSTGRES_PORT", ""):
-        # try to use same port again
-        port = random.randint(10001, 30000)
-        if files['settings'].exists():
-            port = MyConfigParser(files['settings']).get("POSTGRES_PORT", str(random.randint(10001, 30000)))
-        config_compose_minimum['POSTGRES_PORT'] = str(port)
-
     config_compose_minimum.write()
 
-def _execute_after_compose(yml):
+def _execute_after_compose(config, yml):
     """
     execute local __oncompose.py scripts
     """
-    from . import MyConfigParser
+    from .myconfigparser import MyConfigParser
     from .module_tools import Modules
-    config = MyConfigParser(files['settings'])
-    for module in dirs['images'].glob("**/__after_compose.py"):
+    settings = MyConfigParser(config.files['settings'])
+    for module in config.dirs['images'].glob("*/__after_compose.py"):
         if module.is_dir():
             continue
         spec = importlib.util.spec_from_file_location(
@@ -158,21 +176,20 @@ def _execute_after_compose(yml):
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        module.after_compose(config, yml, dict(
-            dirs=dirs,
+        module.after_compose(config, settings, yml, dict(
             Modules=Modules(),
             tools=tools,
         ))
-    config.write()
+    settings.write()
     return yml
 
-def _execute_after_settings():
+def _execute_after_settings(config):
     """
     execute local __oncompose.py scripts
     """
-    from . import MyConfigParser
-    config = MyConfigParser(files['settings'])
-    for module in dirs['images'].glob("**/__after_settings.py"):
+    from .myconfigparser import MyConfigParser
+    settings = MyConfigParser(config.files['settings'])
+    for module in config.dirs['images'].glob("**/__after_settings.py"):
         if module.is_dir():
             continue
         spec = importlib.util.spec_from_file_location(
@@ -180,8 +197,8 @@ def _execute_after_settings():
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        module.after_settings(config)
-        config.write()
+        module.after_settings(settings)
+        settings.write()
 
 
 def _prepare_yml_files_from_template_files(config):
@@ -196,14 +213,13 @@ def _prepare_yml_files_from_template_files(config):
     # - also replace all environment variables
     _files = []
     for dir in [
-        dirs['images'],
+        config.dirs['images'],
         odoo_config.customs_dir(),
     ]:
         [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
 
-    project_name = os.environ["PROJECT_NAME"]
     for d in [
-        odoo_user_conf_dir / ('docker-compose.' + project_name + '.yml'),
+        config.files['project_docker_compose'],
     ]:
         if d.exists():
             if d.is_file():
@@ -213,11 +229,10 @@ def _prepare_yml_files_from_template_files(config):
         else:
             click.secho("No docker compose configuration found in {}".format(d), fg='yellow')
 
-    _prepare_docker_compose_files(config, files['docker_compose'], _files)
+    _prepare_docker_compose_files(config, config.files['docker_compose'], _files)
 
 def _prepare_docker_compose_files(config, dest_file, paths):
-    from . import YAML_VERSION
-    from . import MyConfigParser
+    from .myconfigparser import MyConfigParser
     from .tools import abort
     import yaml
 
@@ -229,11 +244,11 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     with dest_file.open('w') as f:
         f.write("#Composed {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         f.write("version: '{}'\n".format(config.compose_version))
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
 
     # add static yaml content to each machine
-    default_network = yaml.safe_load(files['config/default_network'].read_text())
+    default_network = yaml.safe_load(config.files['config/default_network'].read_text())
 
     paths = list(filter(lambda x: _use_file(config, x), paths))
     for path in paths:
@@ -253,7 +268,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
             continue
 
         # default values in yaml file
-        j['version'] = YAML_VERSION
+        j['version'] = config.YAML_VERSION
 
         # set settings environment and the override settings after that
         for service in j.get('services', []):
@@ -284,7 +299,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         complete configuration.
         """
 
-        yml['version'] = YAML_VERSION
+        yml['version'] = config.YAML_VERSION
 
         # remove restart policies, if not restart allowed:
         if not config.restart_containers:
@@ -311,7 +326,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     # call docker compose config to get the complete config
     final_contents.sort(key=lambda x: x[0])
 
-    temp_path = dirs['run'] / '.tmp.compose'
+    temp_path = config.dirs['run'] / '.tmp.compose'
     if temp_path.is_dir():
         __empty_dir(temp_path)
     temp_path.mkdir(parents=True, exist_ok=True)
@@ -325,7 +340,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
             temp_files.append(path.name)
 
         cmdline = []
-        cmdline.append(str(files['docker_compose_bin']))
+        cmdline.append(str(config.files['docker_compose_bin']))
         cmdline += temp_files
         cmdline.append('config')
 
@@ -335,7 +350,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         conf = yaml.safe_load(conf)
         conf = post_process_complete_yaml_config(conf)
-        conf = _execute_after_compose(conf)
+        conf = _execute_after_compose(config, conf)
 
         dest_file.write_text(yaml.dump(conf, default_flow_style=False))
 
@@ -353,8 +368,8 @@ def toggle_settings(ctx, config):
         click.echo("sudo -E odoo toggle")
         sys.exit(1)
     from . import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
-    config_local = MyConfigParser(files['settings_etc_default_file'])
+    myconfig = MyConfigParser(config.files['settings'])
+    config_local = MyConfigParser(config.files['settings_etc_default_file'])
 
     choices = [
         "DEVMODE",
@@ -388,7 +403,7 @@ def toggle_settings(ctx, config):
     Commands.invoke(ctx, 'reload')
 
 def _use_file(config, path):
-    if str(path.absolute()).startswith(str(odoo_user_conf_dir.absolute())):
+    if str(path.absolute()).startswith(str(config.dirs['user_conf_dir'].absolute())):
         return True
     if 'etc' in path.parts:
         return True

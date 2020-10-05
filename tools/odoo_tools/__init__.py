@@ -1,290 +1,30 @@
+import time
 import sys
-import psutil
 from datetime import datetime
-import subprocess
 from pathlib import Path
 import imp
 import inspect
 import os
 import glob
+# from .myconfigparser import MyConfigParser  # NOQA load this module here, otherwise following lines and sublines get error
+from .init_functions import load_dynamic_modules
+from .click_config import Config
+
+from .click_global_commands import GlobalCommands
 try:
     import click
     from .lib_clickhelpers import AliasedGroup
-except Exception:
+except ImportError:
     click = None
 from .tools import _file2env
-import importlib
 
 dir = Path(inspect.getfile(inspect.currentframe())).resolve().parent
 sys.path.append(dir / '..' / 'module_tools')
 from . import module_tools # NOQA
-from .myconfigparser import MyConfigParser  # NOQA
 from . import odoo_config  # NOQA
-from .odoo_config import get_postgres_connection_params # NOQA
-odoo_user_conf_dir = Path(os.environ["HOME"]) / '.odoo'
-
-settings_files = {
-    'etc_settings': Path('/etc/odoo/settings'),
-    'user_settings': Path(os.path.expanduser("~/.odoo/settings")),
-}
-
-def _search_path(filename):
-    filename = Path(filename)
-    filename = filename.name
-    for path in os.environ['PATH'].split(":"):
-        path = Path(path)
-        if (path / filename).exists():
-            return str(path / filename)
-
-def _get_customs_root(p):
-    # arg_dir = p
-    if p:
-        while len(p.parts) > 1:
-            if (p / 'MANIFEST').exists():
-                return p
-            p = p.parent
-    # click.echo("Missing MANIFEST - file here in {}".format(arg_dir))
-
-def _get_project_name(p):
-    if not p:
-        return
-
-    from .settings import _get_settings
-    with _get_settings(None, settings_files, None) as config:
-        project_name = config.get("PROJECT_NAME", "")
-        if project_name:
-            return project_name
-        DEVMODE = config.get("DEVMODE", "") == "1"
-
-    if DEVMODE:
-        return p.name
-
-    if (p / '.git').exists():
-        branch_name = subprocess.check_output([
-            'git',
-            'rev-parse',
-            '--abbrev-ref',
-            'HEAD'
-        ], cwd=str(p)).decode('utf-8').strip()
-    else:
-        branch_name = ""
-    if branch_name and branch_name not in [
-        'master',
-        'deploy',
-        'stage',
-    ]:
-        branch_name = 'dev'
-    return "_".join(x for x in [
-        p.name,
-        branch_name
-    ] if x)
-
-
-WORKING_DIR = _get_customs_root(Path(os.getcwd()))
-PROJECT_NAME = _get_project_name(WORKING_DIR)
 SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
-CUSTOMS = WORKING_DIR and WORKING_DIR.name or None
-HOST_RUN_DIR = None
-if "HOST_HOME" in os.environ:
-    HOME_DIR = Path(os.environ['HOST_HOME'])
-else:
-    HOME_DIR = Path(os.path.expanduser("~"))
-if HOME_DIR and PROJECT_NAME:
-    HOST_RUN_DIR = HOME_DIR / '.odoo' / 'run' / PROJECT_NAME
-NETWORK_NAME = "{}_default".format(PROJECT_NAME)
-os.environ['CUSTOMS'] = CUSTOMS or ""
-os.environ['PROJECT_NAME'] = PROJECT_NAME or ''
-os.environ['CUSTOMS_DIR'] = WORKING_DIR and str(WORKING_DIR) or os.getenv("CUSTOMS_DIR", "")
-
-class GlobalCommands(object):
-    # so commands can call other commands
-    def __init__(self):
-        self.commands = {}
-
-    def register(self, cmd, force_name=None):
-        name = force_name or cmd.callback.__name__
-        if name in self.commands:
-            raise Exception()
-        self.commands[name] = cmd
-
-    def invoke(self, ctx, cmd, missing_ok=False, *args, **kwargs):
-        if cmd not in self.commands:
-            if not missing_ok:
-                raise Exception("CMD not found: {}".format(cmd))
-            else:
-                return
-        return ctx.invoke(self.commands[cmd], *args, **kwargs)
-
 
 Commands = GlobalCommands()
-
-dirs = {
-    'admin': 'admin',
-    'odoo_home': '',
-    'proxy_configs_dir': '${run}/proxy',
-    'host_working_dir': '',
-    'run': '${run}',
-    'run/proxy': '${run}/proxy',
-    'run/restore': '${run}/restore',
-    'images': 'images',
-    'images/proxy': 'images/proxy',
-    'customs': '',
-    'telegrambot': 'config/telegrambat',
-    'venv': "${run}/venv",
-    'run_native_config_dir': '${run}/configs',
-    'run_native_bin_dir': '${run}/bin',
-    'run_native_out_dir': '${run}/odoo_outdir',
-    'odoo_tools': '$odoo_home/tools',
-    'odoo_data_dir': "~/.odoo/files",
-}
-
-files = settings_files
-files.update({
-    'settings_auto': "${run}/settings.auto",
-    'project_settings': "~/.odoo/settings.${project_name}",
-    'docker_compose': '${run}/docker-compose.yml',
-    'docker_compose_bin': _search_path('docker-compose'),
-    'debugging_template_withports': 'config/template_withports.yml',
-    'debugging_template_onlyloop': 'config/template_onlyloop.yml',
-    'debugging_composer': '${run}/debugging.yml',
-    'settings': '${run}/settings',
-    'odoo_instances': '${run}/odoo_instances',
-    'config/default_network': 'config/default_network',
-    'run/odoo_debug.txt': '${run}/debug/odoo_debug.txt',
-    'run/snapshot_mappings.txt': '${run}/snapshot_mappings.txt',
-    'images/proxy/instance.conf': 'images/proxy/instance.conf',
-    'commit': 'odoo.commit',
-    'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
-    'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
-})
-commands = {
-    'dc': [files['docker_compose_bin'], "-p", "$PROJECT_NAME", "-f",  "$docker_compose_file"],
-}
-
-def make_absolute_paths():
-    dirs['odoo_home'] = Path(os.environ['ODOO_HOME'])
-
-    def make_absolute(d, key_values={}):
-        for k, v in list(d.items()):
-            if not v:
-                continue
-            skip = False
-            for k2, v2 in key_values.items():
-                p = "${{{}}}".format(k2)
-                if p in str(v):
-                    v = v.replace(p, str(v2))
-
-            for value, name in [
-                (HOST_RUN_DIR, '${run}'),
-                (PROJECT_NAME, '${project_name}'),
-            ]:
-                if name in str(v):
-                    if value:
-                        v = str(v).replace(name, str(value))
-                    else:
-                        del d[k]
-                        skip = True
-                        break
-            if skip:
-                continue
-            if str(v).startswith("~"):
-                v = Path(os.path.expanduser(str(v)))
-
-            if not str(v).startswith('/'):
-                v = dirs['odoo_home'] / v
-            d[k] = Path(v)
-
-    make_absolute(dirs)
-    make_absolute(files, dirs)
-
-    # dirs['host_working_dir'] = os.getenv('LOCAL_WORKING_DIR', "")
-    if 'docker_compose' in files:
-        commands['dc'] = [x.replace("$docker_compose_file", str(files['docker_compose'])) for x in commands['dc'] if x]
-
-
-make_absolute_paths()
-
-class Config(object):
-    class Forced:
-        def __init__(self, config):
-            self.config = config
-            self.force = config.force
-
-        def __enter__(self):
-            self.config.force = True
-            return self.config
-
-        def __exit__(self, type, value, traceback):
-            self.config.force = self.force
-
-    def __init__(self):
-        self.verbose = False
-        self.force = False
-        self.compose_version = YAML_VERSION
-        self.dirs = dirs
-        self.files = files
-        dirs['customs'] = odoo_config.customs_dir()
-
-        if dirs['customs']:
-            files['commit'] = dirs['customs'] / files['commit'].name
-        else:
-            files['commit'] = None
-
-    def forced(self):
-        return Config.Forced(self)
-
-    def __getattribute__(self, name):
-
-        try:
-            value = super(Config, self).__getattribute__(name)
-            return value
-        except AttributeError:
-            myconfig = MyConfigParser(files['settings'])
-
-            convert = None
-            if name.endswith('_as_int'):
-                convert = 'asint'
-                name = name[:-len('_as_int')]
-            elif name.endswith('_as_bool'):
-                convert = 'asbool'
-                name = name[:-len('_as_bool')]
-
-            for tries in [name, name.lower(), name.upper()]:
-                value = ''
-                if tries not in myconfig.keys():
-                    continue
-                value = myconfig.get(tries, "")
-                if convert:
-                    if convert == 'asint':
-                        value = int(value or '0')
-
-                if value == "1":
-                    value = True
-                elif value == "0":
-                    value = False
-            return value
-        except Exception:
-            raise
-
-    def get_odoo_conn(self):
-        from .tools import DBConnection
-        host, port, user, password = get_postgres_connection_params()
-        conn = DBConnection(
-            self.dbname,
-            host,
-            port,
-            user,
-            password
-        )
-        return conn
-
-
-try:
-    myconfig = MyConfigParser(files['settings'])
-except Exception:
-    USE_DOCKER = True
-else:
-    USE_DOCKER = myconfig.get("USE_DOCKER", "1") == "1"
 
 
 if click:
@@ -295,16 +35,20 @@ if click:
     @pass_config
     def cli(config, force):
         config.force = force
-        config.use_docker = USE_DOCKER
+        if not config.WORKING_DIR:
+            click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
+            sys.exit(1)
+
+        # TODO
+        # if not HOST_RUN_DIR.exists():
+            # with cli.make_context('odoo', ['-f']) as ctx:
+                # Commands.invoke(ctx, 'reload')
 
 
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
 from . import lib_backup # NOQA
-if USE_DOCKER:
-    from . import lib_control_with_docker # NOQA
-else:
-    from . import lib_control_native # NOQA
+from . import lib_control # NOQA
 from . import lib_db # NOQA
 from . import lib_db_snapshots # NOQA
 from . import lib_lang # NOQA
@@ -315,26 +59,9 @@ from . import lib_src # NOQA
 from . import lib_venv # NOQA
 from . import lib_turnintodev # NOQA
 
-YAML_VERSION = '3.5'
-BACKUPDIR = Path("/host/dumps")
-
 # import container specific commands
 from .tools import abort # NOQA
 from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
 
-for module in dirs['images'].glob("**/__commands.py"):
-    if module.is_dir():
-        continue
-    spec = importlib.util.spec_from_file_location(
-        "dynamic_loaded_module", str(module),
-    )
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-
-if os.getenv("DOCKER_MACHINE", "") != "1":
-    parent = psutil.Process(psutil.Process(os.getpid()).ppid())
-    parent_process_name = parent.name()
-    if parent_process_name in ['sh', 'bash', 'zsh']:
-        tab_title = "odoo - {}".format(os.environ["PROJECT_NAME"])
-        print("\033]0;{}\007".format(tab_title), file=sys.stdout) # NOQA
+load_dynamic_modules((SCRIPT_DIRECTORY / 'images'))

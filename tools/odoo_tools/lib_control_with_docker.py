@@ -26,27 +26,15 @@ from .tools import _get_machines
 from .tools import __dc
 from .tools import _get_host_ip
 from .tools import __needs_docker
-from . import cli, pass_config, dirs, files, Commands
-from .lib_clickhelpers import AliasedGroup
-from . import odoo_user_conf_dir
 import subprocess
+from . import Commands
 
-@cli.group(cls=AliasedGroup)
-@pass_config
-def docker(config):
-    pass
-
-@docker.command()
-@click.option("-B", "--nobuild", is_flag=True)
-@click.option("-k", "--kill", is_flag=True)
-@pass_config
-@click.pass_context
 def dev(ctx, config, nobuild, kill):
     """
     starts developing in the odoo container
     """
     from . import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
@@ -66,7 +54,7 @@ def dev(ctx, config, nobuild, kill):
     click.secho("Mailclient : http://{}:{}".format(ip, roundcube_port), fg='green', bold=True)
 
     # execute script
-    ScriptFile = odoo_user_conf_dir / 'start-dev'
+    ScriptFile = config.files['start-dev']
     if not ScriptFile.exists():
         click.secho("Info: Not found: {} - not executing anything on startup".format(ScriptFile))
     FNULL = open(os.devnull, 'w')
@@ -74,23 +62,14 @@ def dev(ctx, config, nobuild, kill):
 
     Commands.invoke(ctx, 'debug', machine="odoo")
 
-@docker.command(name='ps')
 def ps():
     args = ['ps', '-a']
     __dc(args)
 
-@docker.command(name='exec')
-@click.argument('machine', required=True)
-@click.argument('args', nargs=-1)
 def execute(machine, args):
     args = [machine] + list(args)
     __dcexec(args)
 
-@docker.command(name='kill')
-@click.argument('machines', nargs=-1)
-@click.option('-b', '--brutal', is_flag=True, help='dont wait')
-@pass_config
-@click.pass_context
 def do_kill(ctx, config, machines, brutal=False):
     """
     kills running machine
@@ -119,36 +98,22 @@ def do_kill(ctx, config, machines, brutal=False):
     else:
         __dc(['stop', '-t 2'] + list(machines))
 
-@docker.command()
-@click.pass_context
 def force_kill(ctx, machine):
     ctx.invoke(do_kill, machine=machine, brutal=True)
 
-@docker.command()
-@pass_config
 def wait_for_container_postgres(config):
     if config.USE_DOCKER:
         _start_postgres_and_wait(config)
 
-@docker.command()
 def wait_for_port(host, port):
     port = int(port)
     _wait_for_port(host=host, port=port)
 
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-@click.pass_context
 def recreate(ctx, config, machines):
     machines = list(machines)
     __dc(['up', '--no-start', '--force-recreate'] + machines)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@click.option('-d', '--daemon', is_flag=True)
-@pass_config
-@click.pass_context
 def up(ctx, config, machines, daemon):
     _sanity_check(config)
     machines = list(machines)
@@ -160,11 +125,6 @@ def up(ctx, config, machines, daemon):
         options += ['-d']
     __dc(['up'] + options + machines)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@click.option('-v', '--volumes', is_flag=True)
-@pass_config
-@click.pass_context
 def down(ctx, config, machines, volumes):
     _sanity_check(config)
     machines = list(machines)
@@ -175,43 +135,24 @@ def down(ctx, config, machines, volumes):
         options += ['--volumes']
     __dc(['down'] + options + machines)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-@click.pass_context
 def stop(ctx, config,  machines):
     ctx.invoke(do_kill, machines=machines)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-@click.pass_context
 def rebuild(ctx, config, machines):
     Commands.invoke(ctx, 'compose', customs=config.customs)
     ctx.invoke(build, machines=machines, no_cache=True)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-@click.pass_context
 def restart(ctx, config, machines):
     machines = list(machines)
 
     ctx.invoke(do_kill, machines=machines)
     ctx.invoke(up, machines=machines, daemon=True)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-@click.pass_context
 def rm(ctx, config, machines):
     __needs_docker(config)
     machines = list(machines)
     __dc(['rm', '-f'] + machines)
 
-@docker.command()
-@click.argument('machine', required=True)
-@pass_config
 def attach(config, machine):
     """
     attaches to running machine
@@ -221,12 +162,6 @@ def attach(config, machine):
     bash = _get_bash_for_machine(machine)
     __cmd_interactive('exec', machine, bash)
 
-@docker.command()
-@click.argument('machines', nargs=-1)
-@click.option('--no-cache', is_flag=True)
-@click.option('--pull', is_flag=True)
-@click.option('--push', is_flag=True)
-@pass_config
 def build(config, machines, pull, no_cache, push):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
@@ -242,11 +177,6 @@ def build(config, machines, pull, no_cache, push):
         'ODOO_VERSION': config.odoo_version,  # at you developer: do not mismatch with build args
     })
 
-@docker.command()
-@click.argument('machine', required=True)
-@click.option('-p', '--ports', is_flag=True, help='With Port 33824')
-@pass_config
-@click.pass_context
 def debug(ctx, config, machine, ports):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
@@ -260,12 +190,12 @@ def debug(ctx, config, machine, ports):
     # shutdown current machine and start via run and port-mappings the replacement machine
     ctx.invoke(do_kill, machines=[machine])
     ctx.invoke(rm, machines=[machine])
-    src_files = [files['debugging_template_onlyloop']]
+    src_files = [config.files['debugging_template_onlyloop']]
     if ports:
-        src_files += [files['debugging_template_withports']]
+        src_files += [config.files['debugging_template_withports']]
 
     for i, filepath in enumerate(src_files):
-        dest = files['debugging_composer']
+        dest = config.files['debugging_composer']
         dest = dest.parent / dest.name.replace(".yml", ".{}.yml".format(i))
         shutil.copy(filepath, dest)
         __replace_in_file(dest, "${CUSTOMS}", config.customs)
@@ -283,12 +213,6 @@ def debug(ctx, config, machine, ports):
     __dc(['up', '-d', machine])
     ctx.invoke(attach, machine=machine)
 
-
-@cli.command()
-@click.argument('machine', required=True)
-@click.argument('args', nargs=-1)
-@pass_config
-@click.pass_context
 def run(ctx, config, volume, machine, args, **kwparams):
     """
     extract volume mounts
@@ -299,11 +223,6 @@ def run(ctx, config, volume, machine, args, **kwparams):
         return
     __dcrun([machine] + list(args), **kwparams)
 
-@cli.command()
-@click.argument('machine', required=True)
-@click.argument('args', nargs=-1)
-@pass_config
-@click.pass_context
 def runbash(ctx, config, machine, args, **kwparams):
     _display_machine_tips(machine)
     bash = _get_bash_for_machine(machine)
@@ -315,10 +234,6 @@ def runbash(ctx, config, machine, args, **kwparams):
     __cmd_interactive(*tuple(cmd))
 
 
-@cli.command(name='logs')
-@click.argument('machines', nargs=-1)
-@click.option('-n', '--lines', required=False, type=int, default=200)
-@click.option('-f', '--follow', is_flag=True)
 def logall(machines, follow, lines):
     cmd = ['logs']
     if follow:
@@ -329,18 +244,5 @@ def logall(machines, follow, lines):
     __dc(cmd)
 
 
-@docker.command()
 def shell():
     __cmd_interactive('run', 'odoo', '/usr/bin/python3', '/odoolib/shell.py')
-
-
-Commands.register(run)
-Commands.register(runbash)
-Commands.register(do_kill, 'kill')
-Commands.register(up)
-Commands.register(wait_for_container_postgres)
-Commands.register(build)
-Commands.register(rm)
-Commands.register(recreate)
-Commands.register(debug)
-Commands.register(restart)

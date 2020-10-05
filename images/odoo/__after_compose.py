@@ -3,8 +3,8 @@ import base64
 import click
 import yaml
 
-def after_compose(config, yml, globals):
-    dirs = globals['dirs']
+def after_compose(config, settings, yml, globals):
+    dirs = config.dirs
     odoodc = yaml.safe_load((dirs['odoo_home'] / 'images/odoo/docker-compose.yml').read_text())
 
     odoo_machines = set()
@@ -29,18 +29,18 @@ def after_compose(config, yml, globals):
     if 'odoo_base' in yml['services']:
         yml['services'].pop('odoo_base')
 
-    if config['RESTART_CONTAINERS'] != "1":
+    if settings['RESTART_CONTAINERS'] != "1":
         for service in yml['services']:
             # TODO CLEANUP -> more generic instructions ...
             if 'restart' in yml['services'][service] or \
-                    (service == 'odoo_cronjobs' and not config['RUN_ODOO_CRONJOBS']) or \
-                    (service == 'proxy' and not config['RUN_PROXY']):
+                    (service == 'odoo_cronjobs' and not settings['RUN_ODOO_CRONJOBS']) or \
+                    (service == 'proxy' and not settings['RUN_PROXY']):
                 yml['services'][service].pop('restart')
 
         for service in yml['services']:
             for service_name, run in [
-                ('odoo_cronjobs', config['RUN_ODOO_CRONJOBS']),
-                ('odoo_queuejobs', config['RUN_ODOO_QUEUEJOBS']),
+                ('odoo_cronjobs', settings['RUN_ODOO_CRONJOBS']),
+                ('odoo_queuejobs', settings['RUN_ODOO_QUEUEJOBS']),
             ]:
                 if service == service_name:
                     if not run:
@@ -65,7 +65,7 @@ def after_compose(config, yml, globals):
         external_dependencies.setdefault('pip', [])
         external_dependencies.setdefault('deb', [])
 
-        requirements_odoo = globals['dirs']['customs'] / 'odoo' / 'requirements.txt'
+        requirements_odoo = config.dirs['customs'] / 'odoo' / 'requirements.txt'
         if requirements_odoo.exists():
             for libpy in requirements_odoo.read_text().split("\n"):
                 libpy = libpy.strip()

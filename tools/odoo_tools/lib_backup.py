@@ -30,7 +30,7 @@ from .tools import _askcontinue
 from .tools import __rename_db_drop_target
 from .tools import _remove_postgres_connections
 from .tools import _get_dump_files
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 try:
     import tabulate
@@ -75,7 +75,7 @@ def backup_calendar(config):
         config.CALENDAR_DB_PORT,
         config.CALENDAR_DB_USER,
         config.CALENDAR_DB_PWD,
-        '/host/dumps/' + '{}.calendar'.format(config.customs) + '.dump.gz',
+        '/host/dumps/' + f'{config.project_name}.calendar' + '.dump.gz',
     ]
     __dc(cmd)
 
@@ -85,7 +85,7 @@ def backup_calendar(config):
 @click.pass_context
 @click.argument('filename', required=False, default="")
 def backup_db(ctx, config, filename):
-    filename = filename or '{}.{}.odoo'.format(config.customs, config.dbname) + '.dump.gz'
+    filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
     cmd = [
         'run',
         'cronjobshell',
@@ -105,8 +105,8 @@ def backup_db(ctx, config, filename):
 @pass_config
 def backup_files(config):
     BACKUPDIR = Path(config.dumps_path)
-    BACKUP_FILENAME = "{CUSTOMS}.files.tar.gz".format(CUSTOMS=config.customs)
-    BACKUP_FILEPATH = BACKUPDIR / BACKUP_FILENAME
+    BACKUP_FILENAME = f"{config.project_name}.files.tar.gz"
+    BACKUP_FILEPATH = config.dirs['backup_dir'] / BACKUP_FILENAME
 
     if BACKUP_FILEPATH.exists():
         second = BACKUP_FILENAME + ".bak"
@@ -116,7 +116,7 @@ def backup_files(config):
         shutil.move(BACKUP_FILEPATH, second_path)
         del second
         del second_path
-    files_dir = dirs['odoo_data_dir'] / config.dbname
+    files_dir = config.dirs['odoo_data_dir'] / config.dbname
     if not files_dir.exists():
         return
     subprocess.check_call([
@@ -129,7 +129,7 @@ def backup_files(config):
     click.secho("Backup files done to {}".format(BACKUP_FILENAME), fg='green')
 
 def __get_default_backup_filename(config):
-    return datetime.now().strftime("{}.odoo.%Y%m%d%H%M%S.dump.gz".format(config.customs))
+    return datetime.now().strftime(f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz")
 
 @restore.command('show-dump-type')
 @pass_config
@@ -224,7 +224,7 @@ def restore_db(ctx, config, filename, latest):
             '/host/dumps/{}'.format(filename.name),
         ])
     else:
-        _add_cronjob_scripts()['postgres']._restore(
+        _add_cronjob_scripts(config)['postgres']._restore(
             DBNAME_RESTORING,
             config.db_host,
             config.db_port,
@@ -235,15 +235,15 @@ def restore_db(ctx, config, filename, latest):
 
     from .lib_db import __turn_into_devdb
     if config.devmode:
-        __turn_into_devdb(conn)
+        __turn_into_devdb(config, conn)
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
     _remove_postgres_connections(conn.clone(dbname=dest_db))
 
-def _add_cronjob_scripts():
+def _add_cronjob_scripts(config):
     """
     Adds scripts from images/cronjobs/bin to sys path to be executed.
     """
-    spec = importlib.util.spec_from_file_location("bin", dirs['images'] / 'cronjobs' / 'bin' / 'postgres.py')
+    spec = importlib.util.spec_from_file_location("bin", config.dirs['images'] / 'cronjobs' / 'bin' / 'postgres.py')
     postgres = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(postgres)
     print(postgres.__get_dump_type)
@@ -269,7 +269,7 @@ def __do_restore_files(config, filepath):
     if filepath.startswith("/"):
         raise Exception("No absolute path allowed")
     filepath = Path(filepath)
-    files_dir = dirs['odoo_data_dir'] / config.dbname
+    files_dir = config.dirs['odoo_data_dir'] / config.dbname
     subprocess.check_call([
         'tar',
         'xfz',

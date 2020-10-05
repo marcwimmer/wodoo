@@ -17,10 +17,9 @@ from .tools import remove_webassets
 from .tools import __replace_all_envs_in_str
 from .tools import _execute_sql
 from .tools import get_volume_names
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
-from . import PROJECT_NAME
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -33,7 +32,7 @@ def turn_into_dev(config):
     if not config.devmode:
         raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
 Please set DEVMODE=1 to allow this""")
-    __turn_into_devdb(config.get_odoo_conn())
+    __turn_into_devdb(config, config.get_odoo_conn())
 
 def __collect_other_turndb2dev_sql():
     from .odoo_config import customs_dir
@@ -45,16 +44,16 @@ def __collect_other_turndb2dev_sql():
         sqls.append(file.read_text())
     return "\n\n".join(sqls)
 
-def __turn_into_devdb(conn):
+def __turn_into_devdb(config, conn):
     from .odoo_config import current_version
     from . import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
 
     # encrypt password
     env['DEFAULT_DEV_PASSWORD'] = __hash_odoo_password(env['DEFAULT_DEV_PASSWORD'])
 
-    sql_file = dirs['images'] / 'odoo' / 'config' / str(current_version()) / 'turndb2dev.sql'
+    sql_file = config.dirs['images'] / 'odoo' / 'config' / str(current_version()) / 'turndb2dev.sql'
     sql = sql_file.read_text()
 
     sql += __collect_other_turndb2dev_sql() or ""

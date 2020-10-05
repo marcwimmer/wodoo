@@ -14,7 +14,7 @@ from .tools import __get_odoo_commit
 from .tools import _fix_permissions
 from .tools import _askcontinue
 from .tools import remove_webassets
-from . import cli, pass_config, dirs, files
+from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from . import Commands
 

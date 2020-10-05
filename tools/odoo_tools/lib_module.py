@@ -20,7 +20,7 @@ from .tools import __get_odoo_commit
 from .tools import _start_postgres_and_wait
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 

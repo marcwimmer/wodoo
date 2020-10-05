@@ -13,7 +13,6 @@ import os
 import time
 import subprocess
 from os.path import expanduser
-from .myconfigparser import MyConfigParser
 from .consts import VERSIONS
 try:
     import psycopg2
@@ -126,7 +125,12 @@ def _detect_duplicate_modules(folders, modules):
     time.sleep(2)
 
 def customs_dir():
-    return Path(os.environ['CUSTOMS_DIR'])
+    env_customs_dir = os.getenv("CUSTOMS_DIR")
+    if not env_customs_dir:
+        manifest_file = Path(os.getcwd()) / 'MANIFEST'
+        if manifest_file.exists():
+            return manifest_file.parent
+    return Path(env_customs_dir)
 
 def run_dir():
     "returns ~/odoo/run"
@@ -159,6 +163,7 @@ def _read_file(path, default=None):
         return default
 
 def get_env():
+    from .myconfigparser import MyConfigParser
     # on docker machine self use environment variables; otherwise read from config file
     # if no run_dir provided, then provide minimal file
     if "RUN_DIR" in os.environ:

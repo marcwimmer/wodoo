@@ -12,7 +12,6 @@ from .tools import _sanity_check
 from .tools import _display_machine_tips
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
-from . import odoo_user_conf_dir
 import subprocess
 
 @cli.group(cls=AliasedGroup)
@@ -96,6 +95,3 @@ def _exec_in_virtualenv(cmd):
     print("--------------------------------------")
     # print(filename.read_text())
     # filename.unlink()
-
-
-Commands.register(up)

@@ -20,7 +20,7 @@ from .tools import __remove_tree
 from .tools import sync_folder
 from .tools import _is_dirty
 from . import odoo_config
-from . import cli, pass_config, dirs, files
+from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 
 DATEFORMAT = "%Y-%m-%d"

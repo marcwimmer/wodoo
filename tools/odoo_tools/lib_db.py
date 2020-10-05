@@ -28,10 +28,9 @@ from .tools import __dcrun, __dc, _remove_postgres_connections, _execute_sql, __
 from .tools import _start_postgres_and_wait
 from .tools import get_volume_names
 from .tools import exec_file_in_path
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
-from . import PROJECT_NAME
 
 
 @cli.group(cls=AliasedGroup)
@@ -177,16 +176,16 @@ def __collect_other_turndb2dev_sql():
         sqls.append(file.read_text())
     return "\n\n".join(sqls)
 
-def __turn_into_devdb(conn):
+def __turn_into_devdb(config, conn):
     from .odoo_config import current_version
     from . import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
 
     # encrypt password
     env['DEFAULT_DEV_PASSWORD'] = __hash_odoo_password(env['DEFAULT_DEV_PASSWORD'])
 
-    sql_file = dirs['images'] / 'odoo' / 'config' / str(current_version()) / 'turndb2dev.sql'
+    sql_file = config.dirs['images'] / 'odoo' / 'config' / str(current_version()) / 'turndb2dev.sql'
     sql = sql_file.read_text()
 
     sql += __collect_other_turndb2dev_sql() or ""
