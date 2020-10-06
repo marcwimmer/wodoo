@@ -81,10 +81,12 @@ def restore(config, name):
     __dc(['up', '-d'] + ['postgres'])
 
 def remove(config, snapshot):
-    __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
-    __dc(['up', '-d'] + ['postgres'])
-    values = config.__get_snapshot_db()
+    snapshots = __get_snapshots(config)
+    if snapshot in snapshots:
+        __dc(['stop', '-t 1'] + ['postgres'])
+        subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
+        __dc(['up', '-d'] + ['postgres'])
+    values = config.__get_snapshot_db(config)
     if snapshot in values:
         del values[snapshot]
-        config.__set_snapshot_db(values)
+        config.__set_snapshot_db(config, values)

@@ -24,8 +24,16 @@ from .tools import _remove_postgres_connections, _execute_sql
 def __get_snapshot_db(config):
     d = config.files['run/snapshot_mappings.txt']
     if not d.exists():
-        __set_snapshot_db({})
-    return yaml.safe_load(d.read_text())
+        __set_snapshot_db(config, {})
+    data = yaml.safe_load(d.read_text())
+    # filter out non existing snapshots
+    if config.use_docker:
+        from . import lib_db_snapshots_docker_btrfs as snaps
+        snapshots = snaps.__get_snapshots(config)
+        data = {x: y for (x, y) in data.items() if x in snapshots}
+    else:
+        raise NotImplementedError("")
+    return data
 
 def __set_snapshot_db(config, values):
     d = config.files['run/snapshot_mappings.txt']
@@ -84,6 +92,8 @@ def do_list(config):
 @click.argument('name', required=True)
 @pass_config
 def snapshot_make(config, name):
+    from pudb import set_trace
+    set_trace()
     config.snapshot_manager.assert_environment(config)
     # remove existing snaps
     values = config.__get_snapshot_db(config)
