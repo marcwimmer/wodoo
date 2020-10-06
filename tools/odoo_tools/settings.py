@@ -23,9 +23,9 @@ def _get_settings_files(config, customs):
     yield Path(os.environ['HOME']) / '.odoo' / 'settings'
 
 @contextmanager
-def _get_settings(config, customs):
+def _get_settings(config, customs, quiet=False):
     from .myconfigparser import MyConfigParser  # NOQA
-    files = _collect_settings_files(config, customs=None, quiet=True)
+    files = _collect_settings_files(config, customs=None, quiet=quiet)
     filename = tempfile.mktemp(suffix='.')
     _make_settings_file(filename, files)
     c = MyConfigParser(filename)
@@ -65,7 +65,8 @@ def _collect_settings_files(config, customs, quiet=False):
         _files.append(config.files['settings_auto'])
 
     for dir in filter(lambda x: x.exists(), _get_settings_files(config, customs)):
-        click.secho("Searching for settings in: {}".format(dir), fg='cyan')
+        if not quiet:
+            click.secho("Searching for settings in: {}".format(dir), fg='cyan')
         if dir.is_file():
             _files.append(dir)
         elif dir.is_dir():

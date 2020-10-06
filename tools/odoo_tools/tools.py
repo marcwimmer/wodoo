@@ -807,5 +807,5 @@ def split_hub_url():
 
 def _get_missing_click_config():
     from .click_config import Config
-    config = Config()
+    config = Config(quiet=True)
     return config

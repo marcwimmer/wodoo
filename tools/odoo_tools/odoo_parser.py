@@ -457,9 +457,6 @@ def update_cache(arg_modified_filename=None):
         except Module.IsNot:
             return
 
-    customs = current_customs()
-    if not customs:
-        raise Exception("Customs required!")
     global cache_models
     global modified_filename
     modified_filename = arg_modified_filename

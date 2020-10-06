@@ -10,11 +10,12 @@ try:
     import click
 except ImportError: click = None
 
-def _get_default_anticipated_host_run_dir(WORKING_DIR, PROJECT_NAME):
+def _get_default_anticipated_host_run_dir(config, WORKING_DIR, PROJECT_NAME):
     if WORKING_DIR and (WORKING_DIR / '.odoo').exists():
-        if click:
-            click.secho("Using local run-directory - should only be used for non productive setups!", fg='yellow')
-            click.secho("If this is not intended, then remove the .odoo sub-directory please!", fg='yellow')
+        # if click:
+            # if not config.quiet:
+                # click.secho("Using local run-directory - should only be used for non productive setups!", fg='yellow')
+                # click.secho("If this is not intended, then remove the .odoo sub-directory please!", fg='yellow')
         return WORKING_DIR / '.odoo' / 'run'
     if "HOST_HOME" in os.environ:
         HOME_DIR = Path(os.environ['HOST_HOME'])
@@ -66,7 +67,7 @@ def _get_project_name(config, p):
         return
 
     from .settings import _get_settings
-    with _get_settings(config, None) as config:
+    with _get_settings(config, None, quiet=True) as config:
         project_name = config.get("PROJECT_NAME", "")
         if project_name:
             return project_name

@@ -43,6 +43,7 @@ import inspect
 import sys
 import threading
 import glob
+from .tools import _get_missing_click_config
 
 LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
 host = "http://localhost:8069"
@@ -1007,6 +1008,5 @@ class Module(object):
             pp.pprint(data)
 
 def write_debug_instruction(instruction):
-    from . import files
-    print(files['run/odoo_debug.txt'])
-    files['run/odoo_debug.txt'].write_text(instruction)
+    config = _get_missing_click_config()
+    config.files['run/odoo_debug.txt'].write_text(instruction)
