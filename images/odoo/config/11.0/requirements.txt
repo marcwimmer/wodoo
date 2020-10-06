@@ -1,4 +1,4 @@
-pypostal
+postal
 pandas==1.0.3
 polib==1.1.0
 pycups==1.9.74
