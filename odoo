@@ -10,8 +10,6 @@ SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().pare
 
 if os.getenv("DOCKER_MACHINE", "") == "1":
     raise Exception("Cannot execute this script in docker container.")
-os.environ['HOST_HOME'] = os.environ['HOME']
-os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
 
 
 sys.path.append(str(SCRIPT_DIRECTORY / 'tools'))

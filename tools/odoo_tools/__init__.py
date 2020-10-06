@@ -2,6 +2,7 @@ import time
 import sys
 from datetime import datetime
 from pathlib import Path
+from .click_config import Config
 import imp
 import inspect
 import os
@@ -27,6 +28,8 @@ SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().pare
 
 Commands = GlobalCommands()
 
+os.environ['HOST_HOME'] = os.environ['HOME']
+os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
 
 if click:
     pass_config = click.make_pass_decorator(Config, ensure=True)
@@ -39,12 +42,6 @@ if click:
         if not config.WORKING_DIR:
             click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
             sys.exit(1)
-
-        # TODO
-        # if not HOST_RUN_DIR.exists():
-            # with cli.make_context('odoo', ['-f']) as ctx:
-                # Commands.invoke(ctx, 'reload')
-
 
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
@@ -66,3 +63,6 @@ from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
 
 load_dynamic_modules((SCRIPT_DIRECTORY / '..' / '..' / 'images'))
+
+# init config to setup required env variables
+Config()
