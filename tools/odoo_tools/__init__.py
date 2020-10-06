@@ -65,4 +65,4 @@ from .tools import abort # NOQA
 from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
 
-load_dynamic_modules((SCRIPT_DIRECTORY / 'images'))
+load_dynamic_modules((SCRIPT_DIRECTORY / '..' / '..' / 'images'))

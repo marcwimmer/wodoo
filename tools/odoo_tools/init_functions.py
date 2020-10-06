@@ -36,7 +36,7 @@ def get_use_docker(files):
     return USE_DOCKER
 
 def load_dynamic_modules(parent_dir):
-    for module in parent_dir.glob("**/__commands.py"):
+    for module in parent_dir.glob("*/__commands.py"):
         if module.is_dir():
             continue
         spec = importlib.util.spec_from_file_location(

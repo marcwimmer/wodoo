@@ -178,7 +178,7 @@ def __collect_other_turndb2dev_sql():
 
 def __turn_into_devdb(config, conn):
     from .odoo_config import current_version
-    from . import MyConfigParser
+    from .myconfigparser import MyConfigParser
     myconfig = MyConfigParser(config.files['settings'])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
 

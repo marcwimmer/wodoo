@@ -17,13 +17,12 @@ from .tools import remove_webassets
 from .tools import _askcontinue
 from .tools import __dc
 from .tools import get_volume_names
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
-from . import PROJECT_NAME
 
 def __get_postgres_volume_name(config):
-    return PROJECT_NAME + "_" + 'ODOO_POSTGRES_VOLUME'
+    return config.PROJECT_NAME + "_" + 'ODOO_POSTGRES_VOLUME'
 
 
 def _get_cmd_butter_volume():

@@ -14,14 +14,12 @@ import tempfile
 from datetime import datetime
 try:
     from retrying import retry
-except Exception:
-    retry = None
+except ImportError: retry = None
 from .wait import tcp as tcp_wait
 import shutil
 try:
     import click
-except Exception:
-    pass
+except ImportError: pass
 import os
 import subprocess
 import time
@@ -267,7 +265,6 @@ def __dcexec(cmd, interactive=True):
         return subprocess.check_output(cmd)
 
 def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=False):
-    from . import dirs
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ['run']
     if not interactive:
@@ -312,12 +309,12 @@ def __rm_file_if_exists(path):
         path.unlink()
 
 def __rmtree(path):
-    from . import dirs
+    config = _get_missing_click_config()
     if not path or path == '/':
         raise Exception("Not allowed: {}".format(path))
     if not path.startswith("/"):
         raise Exception("Not allowed: {}".format(path))
-    if not any(path.startswith(dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
+    if not any(path.startswith(config.dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
         if "/tmp" in path:
             pass
         else:
@@ -369,9 +366,9 @@ def __file_get_lines(path):
     return path.read_text().strip().split("\n")
 
 def _get_machines():
-    from . import commands, dirs
-    cmd = commands['dc'] + ['ps', '--services']
-    out = subprocess.check_output(cmd, cwd=dirs['odoo_home'])
+    config = _get_missing_click_config()
+    cmd = config.commands['dc'] + ['ps', '--services']
+    out = subprocess.check_output(cmd, cwd=config.dirs['odoo_home'])
     out = set(filter(lambda x: x, out.split("\n")))
     return list(sorted(out))
 
@@ -422,7 +419,6 @@ def _remember_customs_and_cry_if_changed(config):
                     __dc(['stop', '-t 2'])
 
 def _sanity_check(config):
-    from . import files
     if config.run_postgres is None:
         raise Exception("Please define RUN_POSTGRES")
 
@@ -437,7 +433,7 @@ def _sanity_check(config):
             _fix_permissions(config)
 
     # make sure the odoo_debug.txt exists; otherwise directory is created
-    __file_default_content(files['run/odoo_debug.txt'], "")
+    __file_default_content(config.files['run/odoo_debug.txt'], "")
 
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
