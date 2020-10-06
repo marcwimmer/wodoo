@@ -86,6 +86,16 @@ apt-get install \
             libreoffice-java-common \
             postgresql-client
 
+# https://github.com/openvenues/pypostal postal lib for address checking
+RUN apt install -y curl autoconf automake libtool python-dev pkg-config
+RUN git clone https://github.com/openvenues/libpostal && \
+cd libpostal && \
+./bootstrap.sh && \
+./configure  && \
+make && \
+make install && \
+ldconfig
+
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
 RUN fc-cache -f -v
