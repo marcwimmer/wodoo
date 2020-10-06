@@ -10,7 +10,6 @@ import glob
 # from .myconfigparser import MyConfigParser  # NOQA load this module here, otherwise following lines and sublines get error
 from .init_functions import load_dynamic_modules
 from .init_functions import _get_customs_root
-from .click_config import Config
 
 from .click_global_commands import GlobalCommands
 try:
@@ -29,7 +28,7 @@ SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().pare
 Commands = GlobalCommands()
 
 os.environ['HOST_HOME'] = os.environ['HOME']
-os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
+os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY.parent.parent)
 
 if click:
     pass_config = click.make_pass_decorator(Config, ensure=True)
