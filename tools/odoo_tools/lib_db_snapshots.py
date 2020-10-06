@@ -92,8 +92,6 @@ def do_list(config):
 @click.argument('name', required=True)
 @pass_config
 def snapshot_make(config, name):
-    from pudb import set_trace
-    set_trace()
     config.snapshot_manager.assert_environment(config)
     # remove existing snaps
     values = config.__get_snapshot_db(config)
