@@ -65,6 +65,9 @@ def after_compose(config, settings, yml, globals):
         external_dependencies.setdefault('pip', [])
         external_dependencies.setdefault('deb', [])
 
+        # TODO hard coded default dependencies for framework modules like anonymization
+        external_dependencies['pip'].append('names')
+
         requirements_odoo = config.dirs['customs'] / 'odoo' / 'requirements.txt'
         if requirements_odoo.exists():
             for libpy in requirements_odoo.read_text().split("\n"):
