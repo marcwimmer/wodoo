@@ -42,10 +42,16 @@ def composer(config):
 @click.option("-m", "--mailclient-gui-port", required=False, default="8000")
 @click.option("-l", "--local", is_flag=True, help="Puts all files and settings into .odoo directory of source code")
 @click.option("-P", '--project-name', help="Set Project-Name")
+@click.option("--headless", is_flag=True, help="Dont start a web-server")
+@click.option("--devmode", is_flag=True)
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name, headless, devmode):
     from .myconfigparser import MyConfigParser
+
+    if headless and proxy_port:
+        click.secho("Proxy Port and headless together not compatible.", fg='red')
+        sys.exit(-1)
 
     click.secho("Current Project Name: {}".format(project_name or config.PROJECT_NAME), bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
@@ -67,6 +73,16 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
         'LOCAL_SETTINGS': '1' if local else '0',
         'CUSTOMS_DIR': config.WORKING_DIR,
     }
+    if devmode:
+        defaults['DEVMODE'] = 1
+    if headless:
+        defaults.update({
+            'RUN_PROXY': 0,
+            'RUN_SSLPROXY': 0,
+            'RUN_ROUNDCUBE': 0,
+            'RUN_MAIL': 0,
+            'RUN_CUPS': 0,
+        })
     if proxy_port:
         defaults['PROXY_PORT'] = proxy_port
     if mailclient_gui_port:
