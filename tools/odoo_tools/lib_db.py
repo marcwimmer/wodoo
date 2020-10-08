@@ -151,6 +151,16 @@ def anonymize(ctx, config):
 
     Commands.invoke(
         ctx,
+        'update',
+        module=['anonymize'],
+        no_restart=False,
+        no_dangling_check=True,
+        no_update_module_list=False,
+        non_interactive=True,
+    )
+
+    Commands.invoke(
+        ctx,
         'odoo-shell',
         command=[
             'env["frameworktools.anonymizer"]._run()',
@@ -165,6 +175,16 @@ def cleardb(ctx, config):
     if not (config.devmode or config.force):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
+
+    Commands.invoke(
+        ctx,
+        'update',
+        module=['cleardb'],
+        no_restart=False,
+        no_dangling_check=True,
+        no_update_module_list=False,
+        non_interactive=True,
+    )
 
     Commands.invoke(
         ctx,
