@@ -2,7 +2,10 @@
 anonymize
 =======================================
 
-description
+This script is usually called with:
+
+
+odoo anonymize
 
 
 

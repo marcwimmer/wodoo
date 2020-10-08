@@ -19,8 +19,16 @@ cmd = [
 ]
 if current_version() >= 11.0:
     cmd += ["--shell-interface=ipython"]
+
+odoo_cmd = sys.argv[1]
+os.environ["ODOO_SHELL_CMD"] = odoo_cmd
+stdin = None
+if odoo_cmd:
+    stdin = 'echo "$ODOO_SHELL_CMD"'
+
 exec_odoo(
     "config_shell",
     *cmd,
     odoo_shell=True,
+    stdin=stdin,
 )

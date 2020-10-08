@@ -193,11 +193,13 @@ def logall(config, machines, follow, lines):
     lib_logall(machines, follow, lines)
 
 @docker.command()
+@click.argument('command', nargs=-1)
 @pass_config
-def shell(config):
+def shell(config, command):
+    command = "\n".join(command)
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
-    lib_shell()
+    lib_shell(command)
 
 
 Commands.register(run)
@@ -210,3 +212,4 @@ Commands.register(rm)
 Commands.register(recreate)
 Commands.register(debug)
 Commands.register(restart)
+Commands.register(shell, 'odoo-shell')

@@ -245,5 +245,11 @@ def logall(machines, follow, lines):
     __dc(cmd)
 
 
-def shell():
-    __cmd_interactive('run', 'odoo', '/usr/bin/python3', '/odoolib/shell.py')
+def shell(command=""):
+    __cmd_interactive(
+        'run',
+        'odoo',
+        '/usr/bin/python3',
+        '/odoolib/shell.py',
+        command,
+    )

@@ -141,7 +141,7 @@ def reset_db(ctx, config, dbname):
         non_interactive=True,
     )
 
-@db.command(name='anonymize')
+@db.command()
 @pass_config
 @click.pass_context
 def anonymize(ctx, config):
@@ -149,15 +149,30 @@ def anonymize(ctx, config):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
 
-    # since odoo version 12 "-i base -d <name>" is required
     Commands.invoke(
         ctx,
-        'update',
-        module=['anonymize', 'cleardb'],
-        no_restart=True,
-        no_dangling_check=True,
-        no_update_module_list=True,
-        non_interactive=True,
+        'odoo-shell',
+        command=[
+            'env["frameworktools.anonymizer"]._run()'
+            'env.cr.commit()',
+        ],
+    )
+
+@db.command()
+@pass_config
+@click.pass_context
+def cleardb(ctx, config):
+    if not (config.devmode or config.force):
+        click.secho("Either DEVMODE or force required", fg='red')
+        sys.exit(-1)
+
+    Commands.invoke(
+        ctx,
+        'odoo-shell',
+        command=[
+            'env["frameworktools.cleardb"]._run()',
+            'env.cr.commit()',
+        ],
     )
 
 @db.command(name='setname')

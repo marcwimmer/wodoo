@@ -6,7 +6,7 @@ import random
 
 
 class Anonymizer(models.AbstractModel):
-    _name = 'anonymizer'
+    _name = 'frameworktools.anonymizer'
     _domains = ["hotmail.com", "gmail.com", "aol.com", "mail.com", "mail.kz", "yahoo.com"]
 
     @api.model
@@ -29,9 +29,10 @@ class Anonymizer(models.AbstractModel):
         return names.get_full_name().replace(' ', '.') + "@" + self.get_one_random_domain(self._domains)
 
     @api.model
-    def _anonymize(self):
+    def _run(self):
         if os.environ['DEVMODE'] != "1":
             return
+
         name_fields = {}
         for dbfield in self.env['ir.model.fields'].search([]):
             if any(x in dbfield.name for x in [
