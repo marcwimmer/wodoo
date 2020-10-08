@@ -149,8 +149,6 @@ def setup_settings_file(config, customs, db, demo, **defaults):
         if settings.get(k, '') != v:
             settings[k] = v
             settings.write()
-    from pudb import set_trace
-    set_trace()
     config_compose_minimum = MyConfigParser(config.files['settings_auto'])
     config_compose_minimum.clear()
     for k in vals.keys():
