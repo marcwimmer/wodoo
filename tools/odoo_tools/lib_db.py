@@ -153,7 +153,7 @@ def anonymize(ctx, config):
         ctx,
         'odoo-shell',
         command=[
-            'env["frameworktools.anonymizer"]._run()'
+            'env["frameworktools.anonymizer"]._run()',
             'env.cr.commit()',
         ],
     )
