@@ -82,5 +82,5 @@ def after_compose(config, settings, yml, globals):
         for odoo_machine in odoo_machines:
             service = yml['services'][odoo_machine]
             service['build'].setdefault('args', [])
-            service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(external_dependencies['pip']).encode('utf-8')).decode('utf-8')
-            service['build']['args']['ODOO_DEB_REQUIREMENTS'] = base64.encodebytes('\n'.join(external_dependencies['deb']).encode('utf-8')).decode('utf-8')
+            service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(sorted(external_dependencies['pip'])).encode('utf-8')).decode('utf-8')
+            service['build']['args']['ODOO_DEB_REQUIREMENTS'] = base64.encodebytes('\n'.join(sorted(external_dependencies['deb'])).encode('utf-8')).decode('utf-8')
