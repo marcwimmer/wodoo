@@ -23,6 +23,7 @@ class MyConfigParser:
     def clear(self):
         self.configOptions.clear()
         if self.fileName:
+            self.fileName.parent.mkdir(exist_ok=True, parents=True)
             self.fileName.write_text("")
 
     def keys(self):
