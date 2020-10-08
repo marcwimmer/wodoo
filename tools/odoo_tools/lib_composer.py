@@ -41,12 +41,13 @@ def composer(config):
 @click.option("-p", "--proxy-port", required=False)
 @click.option("-m", "--mailclient-gui-port", required=False, default="8000")
 @click.option("-l", "--local", is_flag=True, help="Puts all files and settings into .odoo directory of source code")
+@click.option("-P", '--project-name', help="Set Project-Name")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name):
     from .myconfigparser import MyConfigParser
 
-    click.secho("Current Project Name: {}".format(config.PROJECT_NAME), bold=True, fg='green')
+    click.secho("Current Project Name: {}".format(project_name or config.PROJECT_NAME), bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
@@ -55,14 +56,8 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local):
     # Reload config
     from .click_config import Config
     config = Config()
-
-    SETTINGS_FILE = config.files.get('settings')
-    myconfig = MyConfigParser(SETTINGS_FILE)
-    if not SETTINGS_FILE.exists():
-        myconfig['CUSTOMS'] = config.CUSTOMS
-        if proxy_port:
-            myconfig['PROXY_PORT'] = proxy_port
-        myconfig.write()
+    if project_name:
+        config.PROJECT_NAME = project_name
 
     defaults = {
         'config': config,
@@ -154,6 +149,8 @@ def setup_settings_file(config, customs, db, demo, **defaults):
         if settings.get(k, '') != v:
             settings[k] = v
             settings.write()
+    from pudb import set_trace
+    set_trace()
     config_compose_minimum = MyConfigParser(config.files['settings_auto'])
     config_compose_minimum.clear()
     for k in vals.keys():
