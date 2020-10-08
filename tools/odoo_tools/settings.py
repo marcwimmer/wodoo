@@ -34,7 +34,7 @@ def _get_settings(config, customs, quiet=False):
     finally:
         Path(filename).unlink()
 
-def _export_settings(config, customs):
+def _export_settings(config, customs, forced_values):
     from . import odoo_config
     from .myconfigparser import MyConfigParser
 
@@ -50,6 +50,10 @@ def _export_settings(config, customs):
     # take server wide modules from manifest
     m = MANIFEST()
     config['SERVER_WIDE_MODULES'] = ','.join(m['server-wide-modules'])
+
+    # forced values:
+    for k, v in forced_values.items():
+        config[k] = v
 
     config.write()
 

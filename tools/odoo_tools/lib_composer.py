@@ -78,6 +78,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     if headless:
         defaults.update({
             'RUN_PROXY': 0,
+            'RUN_PROXY_PUBLISHED': 0,
             'RUN_SSLPROXY': 0,
             'RUN_ROUNDCUBE': 0,
             'RUN_MAIL': 0,
@@ -110,16 +111,17 @@ def _set_defaults(config, defaults):
     defaults['NETWORK_NAME'] = config.NETWORK_NAME
     defaults['PROJECT_NAME'] = config.PROJECT_NAME
 
-def _do_compose(config, customs='', db='', demo=False, **defaults):
+def _do_compose(config, customs='', db='', demo=False, **forced_values):
     """
     builds docker compose, proxy settings, setups odoo instances
     """
     from .myconfigparser import MyConfigParser
     from .settings import _export_settings
 
+    defaults = {}
     _set_defaults(config, defaults)
     setup_settings_file(config, customs, db, demo, **defaults)
-    _export_settings(config, customs)
+    _export_settings(config, customs, forced_values)
     _prepare_filesystem(config)
     _execute_after_settings(config)
 
@@ -141,7 +143,7 @@ def _prepare_filesystem(config):
             path
         )
 
-def setup_settings_file(config, customs, db, demo, **defaults):
+def setup_settings_file(config, customs, db, demo, **forced_values):
     """
     Cleans run/settings and sets minimal settings;
     Puts default values in settings.d to override any values
@@ -159,7 +161,7 @@ def setup_settings_file(config, customs, db, demo, **defaults):
     vals['DBNAME'] = db or customs
     if demo:
         vals['ODOO_DEMO'] = "1" if demo else "0"
-    vals.update(defaults)
+    vals.update(forced_values)
 
     for k, v in vals.items():
         if settings.get(k, '') != v:
