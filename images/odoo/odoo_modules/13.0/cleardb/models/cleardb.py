@@ -113,5 +113,6 @@ SELECT table_schema
 ORDER BY total_bytes DESC;
         """)
         recs = self.env.cr.fetchall()[:10]
+        logger.info("Table Disk Sizes")
         for line in recs:
             print(f"{line[1]}: {line[3]}")
