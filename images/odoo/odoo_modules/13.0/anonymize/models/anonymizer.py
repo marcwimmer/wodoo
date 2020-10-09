@@ -3,6 +3,8 @@ from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import names
 import random
+import logging
+logger = logging.getLogger(__name__)
 
 
 class Anonymizer(models.AbstractModel):
@@ -84,6 +86,8 @@ class Anonymizer(models.AbstractModel):
                 continue
 
             cr.execute("select id, {} from {} order by id desc".format(','.join(cols), table))
+            recs = cr.fetchall()
+            logger.info(f"Anonymizing {len(recs)} records of {table}")
             for rec in cr.fetchall():
                 values = []
                 for icol, col in enumerate(cols):
@@ -100,7 +104,6 @@ class Anonymizer(models.AbstractModel):
                         else:
                             v = names.get_full_name()
                     values.append(v)
-                print("Anonymizing: {} {}".format(rec[0], values))
 
                 sets = []
                 for icol, col in enumerate(cols):
