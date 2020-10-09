@@ -1,7 +1,6 @@
 import os
 from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
-import names
 import logging
 from odoo.tools.sql import table_exists
 from odoo.tools import config
