@@ -228,7 +228,10 @@ def _prepare_yml_files_from_template_files(config):
     for dir in [
         config.dirs['images'],
         odoo_config.customs_dir(),
+        Path("/etc/odoo/"),
     ]:
+        if not dir.exists():
+            continue
         [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
 
     for d in [
