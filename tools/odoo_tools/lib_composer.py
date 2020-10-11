@@ -61,9 +61,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     _set_host_run_dir(config, local)
     # Reload config
     from .click_config import Config
-    config = Config()
-    if project_name:
-        config.PROJECT_NAME = project_name
+    config = Config(project_name=project_name)
 
     defaults = {
         'config': config,
@@ -235,15 +233,17 @@ def _prepare_yml_files_from_template_files(config):
         [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
 
     for d in [
-        config.files['project_docker_compose'],
+        config.files['project_docker_compose.local'],
+        config.files['project_docker_compose.home'],
+        config.files['project_docker_compose.home.project'],
     ]:
-        if d.exists():
-            if d.is_file():
-                _files.append(d)
-            else:
-                [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+        if not d.exists():
+            click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
+            continue
+        if d.is_file():
+            _files.append(d)
         else:
-            click.secho("No docker compose configuration found in {}".format(d), fg='yellow')
+            [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
 
     _prepare_docker_compose_files(config, config.files['docker_compose'], _files)
 
@@ -267,6 +267,16 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     default_network = yaml.safe_load(config.files['config/default_network'].read_text())
 
     paths = list(filter(lambda x: _use_file(config, x), paths))
+    click.secho(f"\nUsing docker-compose files:", fg='green', bold=True)
+    for path in paths:
+        click.secho(str(path), fg='green')
+    # collect further networks
+    for path in paths:
+        content = path.read_text()
+        j = yaml.safe_load(content)
+        for networkname, network in j.get('networks', {}).items():
+            default_network['networks'][networkname] = network
+
     for path in paths:
         content = path.read_text()
 
@@ -302,7 +312,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
             service.setdefault('environment', [])
 
-            j['networks'] = copy.deepcopy(default_network['networks'])
+        j['networks'] = copy.deepcopy(default_network['networks'])
 
         content = yaml.dump(j, default_flow_style=False)
         content = __replace_all_envs_in_str(content, env)

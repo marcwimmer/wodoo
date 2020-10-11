@@ -126,6 +126,7 @@ def make_absolute_paths(config, dirs, files, commands):
 
             for value, name in [
                 (config.HOST_RUN_DIR, '${run}'),
+                (config.WORKING_DIR, '${working_dir}'),
                 (config.PROJECT_NAME, '${project_name}'),
             ]:
                 if name in str(v):

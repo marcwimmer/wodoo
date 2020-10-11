@@ -28,7 +28,9 @@ default_dirs = {
 default_files = {
     'settings_auto': "${run}/settings.auto",
     'project_settings': "~/.odoo/settings.${project_name}",
-    'project_docker_compose': "~/.odoo/docker-compose.${project_name}.yml",
+    'project_docker_compose.home': "~/.odoo/docker-compose.yml",
+    'project_docker_compose.home.project': "~/.odoo/docker-compose.${project_name}.yml",
+    'project_docker_compose.local': "${working_dir}/.odoo/docker-compose.${project_name}.yml",
     'docker_compose': '${run}/docker-compose.yml',
     'docker_compose_bin': _search_path('docker-compose'),
     'debugging_template_withports': 'config/template_withports.yml',

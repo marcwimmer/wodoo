@@ -14,10 +14,11 @@ class Config(object):
         def __exit__(self, type, value, traceback):
             self.config.force = self.force
 
-    def __init__(self, quiet=False):
+    def __init__(self, quiet=False, project_name=None):
         from .consts import YAML_VERSION
         from . import odoo_config  # NOQA
 
+        self.PROJECT_NAME = project_name
         self.YAML_VERSION = YAML_VERSION
         self.verbose = False
         self.force = False
@@ -39,7 +40,8 @@ class Config(object):
 
         self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
         self.CUSTOMS = self.WORKING_DIR and self.WORKING_DIR.name or None
-        self.PROJECT_NAME = _get_project_name(self, self.WORKING_DIR)
+        if not self.PROJECT_NAME:
+            self.PROJECT_NAME = _get_project_name(self, self.WORKING_DIR)
         self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.PROJECT_NAME)
         if not os.getenv("RUN_DIR"):
             # needed for get_env for example

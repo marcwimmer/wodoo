@@ -4,9 +4,9 @@ services:
     container_name: ${PROJECT_NAME}_sslproxy
     image: 'jc21/nginx-proxy-manager:latest'
     ports:
-      - '80:80'
-      - '${SSLPROXY_ADMIN_IP}:81:81'
-      - '443:443'
+      - '${SSLPROXY_LISTEN_NON_SSL}:80'
+      - '${SSLPROXY_LISTEN_ADMIN}:81'
+      - '${SSLPROXY_LISTEN_SSL}:443'
     volumes:
       - ${HOST_RUN_DIR}/sslproxy/config.json:/app/config/production.json
       - ${HOST_RUN_DIR}/sslproxy/data:/data

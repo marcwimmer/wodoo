@@ -55,7 +55,9 @@ def after_compose(config, settings, yml, globals):
         external_dependencies = globals['Modules'].get_all_external_dependencies()
         if external_dependencies:
             for key in external_dependencies:
-                click.secho("Detected external dependencies {}: {}".format(
+                if not external_dependencies[key]:
+                    continue
+                click.secho("\nDetected external dependencies {}: {}".format(
                     key,
                     ', '.join(map(str, external_dependencies[key]))
                 ), fg='green')

@@ -17,7 +17,7 @@ def after_compose(config, settings, yml, globals):
         dest,
     )
 
-    click.secho(f"Default SSL Proxy credentials:", fg='green', bold=True)
+    click.secho(f"\nDefault SSL Proxy credentials:", fg='green', bold=True)
     click.secho(f"user:\t\t {settings['SSLPROXY_LOGIN']}", fg='green')
     click.secho(f"password:\todoosslproxy", fg='green')
     click.secho(f"IMPORTANT:", fg='green', bold=True)

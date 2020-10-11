@@ -616,8 +616,8 @@ class Modules(object):
                 new_deps = module.manifest_dict.get('external_dependencies', {}).get('python', [])
                 pydeps += new_deps
 
-            if new_deps:
-                click.secho(f"Adding python dependencies {','.join(new_deps)} from {module.name}", fg='yellow')
+            #if new_deps:
+            #    click.secho(f"Adding python dependencies {','.join(new_deps)} from {module.name}", fg='yellow')
 
         pydeps = self.resolve_pydeps(pydeps)
         return {

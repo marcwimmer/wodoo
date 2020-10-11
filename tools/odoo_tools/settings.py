@@ -85,18 +85,18 @@ def _collect_settings_files(config, customs, quiet=False):
             if config.files['project_settings'].exists():
                 _files.append(config.files['project_settings'])
             else:
-                click.secho("No specific configuration file used: {}".format(config.files['project_settings']), fg='yellow')
+                click.secho("Hint: file for configuration can be used: {}".format(config.files['project_settings']), fg='magenta')
 
     if not quiet:
-        click.secho("Found following extra settings files:", fg='cyan')
+        click.secho("\n\nFound following extra settings files:\n", fg='cyan', bold=True)
     for file in _files:
         if not Path(file).exists():
             continue
         # click.secho(f"Using setting file: {file}", fg='blue')
         if 'images' not in Path(file).parts:
             if not quiet:
-                click.echo(file)
-                click.echo(file.read_text())
+                click.secho(f">>>>>>>>>>>>>>>>>>> {file} <<<<<<<<<<<<<<<<<", fg='cyan')
+                click.secho(file.read_text())
 
     return _files
 
