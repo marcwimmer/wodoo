@@ -54,8 +54,9 @@ def update_ast():
     click.echo("Updated ast - took {} seconds".format((datetime.now() - started).seconds))
 
 @src.command()
-def rmpyc():
-    for file in dirs['customs'].glob("**/*.pyc"):
+@pass_config
+def rmpyc(config):
+    for file in config.dirs['customs'].glob("**/*.pyc"):
         file.unlink()
 
 @src.command(name='show-addons-paths')
@@ -149,166 +150,166 @@ def _get_modules():
             raise Exception("Too many url exists: {}".format(x['url']))
     return modules
 
-@src.command(help="Fetches all defined modules")
-@click.argument('module', required=False)
-@click.option('--depth', default="", help="Depth of git fetch for new modules")
-@click.option('-T', '--not-threaded', default=False, help="", is_flag=True)
-def pull(depth, module, not_threaded):
-    filter_module = module
-    del module
-    from git import Repo
-    from git import InvalidGitRepositoryError
-    dir = customs_dir()
-    repo = Repo(dir)
-    _is_dirty(repo, True, assert_clean=True)
-    subprocess.call([
-        "git",
-        "pull",
-    ], cwd=dir)
-    for module in _get_modules():
-        if filter_module and module.name != filter_module:
-            continue
-        full_path = dir / module['subdir']
-        if not str(module['subdir']).endswith("/."):
-            if not full_path.parent.exists():
-                full_path.parent.mkdir(exist_ok=True, parents=True)
+# @src.command(help="Fetches all defined modules")
+# @click.argument('module', required=False)
+# @click.option('--depth', default="", help="Depth of git fetch for new modules")
+# @click.option('-T', '--not-threaded', default=False, help="", is_flag=True)
+# def pull(depth, module, not_threaded):
+    # filter_module = module
+    # del module
+    # from git import Repo
+    # from git import InvalidGitRepositoryError
+    # dir = customs_dir()
+    # repo = Repo(dir)
+    # _is_dirty(repo, True, assert_clean=True)
+    # subprocess.call([
+        # "git",
+        # "pull",
+    # ], cwd=dir)
+    # for module in _get_modules():
+        # if filter_module and module.name != filter_module:
+            # continue
+        # full_path = dir / module['subdir']
+        # if not str(module['subdir']).endswith("/."):
+            # if not full_path.parent.exists():
+                # full_path.parent.mkdir(exist_ok=True, parents=True)
 
-        if not full_path.is_dir():
-            cmd = [
-                "git",
-                "submodule",
-                "add",
-                "--force",
-            ]
-            if depth:
-                cmd += [
-                    '--depth',
-                    str(depth),
-                ]
-            cmd += [
-                "-b",
-                module['branch'],
-                module['url'],
-                Path(module['subdir']),
-            ]
-            subprocess.check_call(cmd, cwd=dir)
-            subprocess.check_call([
-                "git",
-                "checkout",
-                module['branch'],
-            ], cwd=dir / module['subdir'])
-            subprocess.check_call([
-                "git",
-                "submodule",
-                "update",
-                "--init"
-            ], cwd=dir / module['subdir'])
-        del module
+        # if not full_path.is_dir():
+            # cmd = [
+                # "git",
+                # "submodule",
+                # "add",
+                # "--force",
+            # ]
+            # if depth:
+                # cmd += [
+                    # '--depth',
+                    # str(depth),
+                # ]
+            # cmd += [
+                # "-b",
+                # module['branch'],
+                # module['url'],
+                # Path(module['subdir']),
+            # ]
+            # subprocess.check_call(cmd, cwd=dir)
+            # subprocess.check_call([
+                # "git",
+                # "checkout",
+                # module['branch'],
+            # ], cwd=dir / module['subdir'])
+            # subprocess.check_call([
+                # "git",
+                # "submodule",
+                # "update",
+                # "--init"
+            # ], cwd=dir / module['subdir'])
+        # del module
 
-    for module in _get_modules():
-        if filter_module and module.name != filter_module:
-            continue
-        try:
-            module_dir = dir / module['subdir']
-            if module_dir.exists():
-                try:
-                    repo = Repo(module_dir)
-                except InvalidGitRepositoryError:
-                    click.secho("Invalid Repo: {}".format(module['subdir']), bold=True, fg='red')
-                else:
-                    repo.git.checkout(module['branch'])
-        except Exception:
-            click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['branch']), bold=True, fg="red"))
-            raise
-        del module
+    # for module in _get_modules():
+        # if filter_module and module.name != filter_module:
+            # continue
+        # try:
+            # module_dir = dir / module['subdir']
+            # if module_dir.exists():
+                # try:
+                    # repo = Repo(module_dir)
+                # except InvalidGitRepositoryError:
+                    # click.secho("Invalid Repo: {}".format(module['subdir']), bold=True, fg='red')
+                # else:
+                    # repo.git.checkout(module['branch'])
+        # except Exception:
+            # click.echo(click.style("Error switching submodule {} to Version: {}".format(module['name'], module['branch']), bold=True, fg="red"))
+            # raise
+        # del module
 
-    threads = []
-    try_again = []
-    for module in _get_modules():
-        if filter_module and module.name != filter_module:
-            continue
+    # threads = []
+    # try_again = []
+    # for module in _get_modules():
+        # if filter_module and module.name != filter_module:
+            # continue
 
-        def _do_pull(module):
-            click.echo("Pulling {}".format(module))
-            try:
-                subprocess.check_call([
-                    "git",
-                    "pull",
-                    "--no-edit",
-                ], cwd=dir / module['subdir'])
-            except Exception:
-                try_again.append(module)
-        threads.append(threading.Thread(target=_do_pull, args=(module,)))
-        del module
-    if not not_threaded:
-        [x.start() for x in threads]
-        [x.join() for x in threads]
-    else:
-        for t in threads:
-            t.start()
-            t.join()
+        # def _do_pull(module):
+            # click.echo("Pulling {}".format(module))
+            # try:
+                # subprocess.check_call([
+                    # "git",
+                    # "pull",
+                    # "--no-edit",
+                # ], cwd=dir / module['subdir'])
+            # except Exception:
+                # try_again.append(module)
+        # threads.append(threading.Thread(target=_do_pull, args=(module,)))
+        # del module
+    # if not not_threaded:
+        # [x.start() for x in threads]
+        # [x.join() for x in threads]
+    # else:
+        # for t in threads:
+            # t.start()
+            # t.join()
 
-    for module in try_again:
-        print(module['name'])
-        subprocess.check_call([
-            "git",
-            "pull",
-            "--no-edit",
-        ], cwd=dir / module['subdir'])
-        del module
+    # for module in try_again:
+        # print(module['name'])
+        # subprocess.check_call([
+            # "git",
+            # "pull",
+            # "--no-edit",
+        # ], cwd=dir / module['subdir'])
+        # del module
 
-@src.command(help="Pushes to allowed submodules")
-@pass_config
-@click.pass_context
-def push(ctx, config):
-    dir = customs_dir()
-    click.echo("Pulling before...")
-    ctx.invoke(pull)
-    click.echo("Now trying to push.")
-    threads = []
-    for module in _get_modules():
-        def _do_push(module):
-            click.echo("Going to push {}".format(module))
-            tries = 0
-            while True:
-                try:
-                    subprocess.check_call([
-                        "git",
-                        "push",
-                    ], cwd=dir / module['subdir'])
-                except Exception:
-                    print("Failed ")
-                    time.sleep(1)
-                    tries += 1
-                    if tries > 5:
-                        msg = traceback.format_exc()
-                        click.echo(click.style(module['name'] + "\n" + msg, bold=True, fg='red'))
-                        raise
-                else:
-                    break
-        threads.append(threading.Thread(target=_do_push, args=(module,)))
+# @src.command(help="Pushes to allowed submodules")
+# @pass_config
+# @click.pass_context
+# def push(ctx, config):
+    # dir = customs_dir()
+    # click.echo("Pulling before...")
+    # ctx.invoke(pull)
+    # click.echo("Now trying to push.")
+    # threads = []
+    # for module in _get_modules():
+        # def _do_push(module):
+            # click.echo("Going to push {}".format(module))
+            # tries = 0
+            # while True:
+                # try:
+                    # subprocess.check_call([
+                        # "git",
+                        # "push",
+                    # ], cwd=dir / module['subdir'])
+                # except Exception:
+                    # print("Failed ")
+                    # time.sleep(1)
+                    # tries += 1
+                    # if tries > 5:
+                        # msg = traceback.format_exc()
+                        # click.echo(click.style(module['name'] + "\n" + msg, bold=True, fg='red'))
+                        # raise
+                # else:
+                    # break
+        # threads.append(threading.Thread(target=_do_push, args=(module,)))
 
-    [x.start() for x in threads]
-    [x.join() for x in threads]
-    try:
-        for module in _get_modules():
-            subprocess.check_call([
-                "git",
-                "add",
-                module['subdir']
-            ], cwd=dir)
-        subprocess.check_call([
-            "git",
-            "commit",
-            '-m',
-            '.',
-        ], cwd=dir)
-    except Exception:
-        pass
-    subprocess.check_call([
-        "git",
-        "push",
-    ], cwd=dir)
+    # [x.start() for x in threads]
+    # [x.join() for x in threads]
+    # try:
+        # for module in _get_modules():
+            # subprocess.check_call([
+                # "git",
+                # "add",
+                # module['subdir']
+            # ], cwd=dir)
+        # subprocess.check_call([
+            # "git",
+            # "commit",
+            # '-m',
+            # '.',
+        # ], cwd=dir)
+    # except Exception:
+        # pass
+    # subprocess.check_call([
+        # "git",
+        # "push",
+    # ], cwd=dir)
 
 
 @src.command(name="update-addons-path", help="Sets addons paths in manifest file. Can be edited there (order)")
@@ -331,79 +332,6 @@ def update_addons_path():
     current_paths = [x for x in current_paths if x in paths]
     m['addons_paths'] = current_paths
     m.rewrite()
-
-@src.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-def regpush(config, machines):
-    if not machines:
-        machines = list(yaml.load(files['docker_compose'].read_text())['services'])
-    for machine in machines:
-        __dc(['push', machine])
-
-@src.command()
-@click.argument('machines', nargs=-1)
-@pass_config
-def regpull(config, machines):
-    if not machines:
-        machines = list(yaml.load(files['docker_compose'].read_text())['services'])
-    for machine in machines:
-        click.secho(f"Pulling {machine}")
-        __dc(['pull', machine])
-
-@src.command()
-@pass_config
-def self_sign_hub_certificate(config):
-    if os.getuid() != 0:
-        click.secho("Please execute as root or with sudo!", bold=True, fg='red')
-        sys.exit(-1)
-    hub = split_hub_url()
-    url_part = hub['url'].split(":")[0] + '.crt'
-    cert_filename = Path("/usr/local/share/ca-certificates") / url_part
-    with cert_filename.open("w") as f:
-        proc = subprocess.Popen([
-            "openssl",
-            "s_client",
-            "-connect",
-            hub['url'],
-        ], stdin=subprocess.PIPE, stdout=f)
-        proc.stdin.write(b"\n")
-        proc.communicate()
-    print(cert_filename)
-    content = cert_filename.read_text()
-    BEGIN_CERT = "-----BEGIN CERTIFICATE-----"
-    END_CERT = "-----END CERTIFICATE-----"
-    content = BEGIN_CERT + "\n" + content.split(BEGIN_CERT)[1].split(END_CERT)[0] + "\n" + END_CERT + "\n"
-    cert_filename.write_text(content)
-    click.secho("Restarting docker service...", fg='green')
-    subprocess.check_call(['service', 'docker', 'restart'])
-    click.secho("Updating ca certificates...", fg='green')
-    subprocess.check_call(['update-ca-certificates'])
-
-@src.command()
-@pass_config
-def hub_login(config):
-    hub = split_hub_url()
-
-    def _login():
-        res = subprocess.check_call([
-            'docker', 'login', hub,
-            '-u', hub['username'],
-            '-p', hub['password'],
-        ])
-        if "Login Succeeded" in res:
-            return True
-        return False
-
-    try:
-        if _login():
-            return
-    except Exception:
-        click.secho("Please self sign certificate for {} with command 'self-sign-hub-certificate'".format(
-            hub
-        ), bold=True, fg='red')
-
-        pass
 
 @src.command()
 @pass_config

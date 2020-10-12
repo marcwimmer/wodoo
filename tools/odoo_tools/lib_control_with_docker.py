@@ -114,7 +114,7 @@ def recreate(ctx, config, machines=[]):
     machines = list(machines)
     __dc(['up', '--no-start', '--force-recreate'] + machines)
 
-def up(ctx, config, machines=[], daemon=False):
+def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
     _sanity_check(config)
     machines = list(machines)
 
@@ -123,6 +123,8 @@ def up(ctx, config, machines=[], daemon=False):
     ]
     if daemon:
         options += ['-d']
+    if remove_orphans:
+        options += ['--remove-orphans']
     __dc(['up'] + options + machines)
 
 def down(ctx, config, machines=[], volumes=False):

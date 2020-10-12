@@ -53,6 +53,7 @@ from . import lib_module # NOQA
 from . import lib_patches # NOQA
 from . import lib_setup # NOQA
 from . import lib_src # NOQA
+from . import lib_docker_registry # NOQA
 from . import lib_venv # NOQA
 from . import lib_turnintodev # NOQA
 

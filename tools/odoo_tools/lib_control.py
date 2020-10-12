@@ -83,7 +83,7 @@ def recreate(ctx, config, machines):
 def up(ctx, config, machines, daemon):
     if config.use_docker:
         from .lib_control_with_docker import up as lib_up
-    lib_up(ctx, config, machines, daemon)
+    lib_up(ctx, config, machines, daemon, remove_orphans=True)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
