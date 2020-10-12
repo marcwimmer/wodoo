@@ -8,15 +8,9 @@
     "start": "node --inspect=0.0.0.0:9229 server.js"
   },
   "dependencies": {
-    "body-parser-xml": "^1.1.0",
-    "xml-stringify": "^1.1.4",
-    "xml-parser": "^1.2.1", 
+    "http-proxy": "^1.18.1",
     "express": "^4.17.1",
-    "http-proxy": "^1.17.0",
-    "unzip": "^0.1.11",
-    "xml-parser": "^1.2.1",
-    "body-parser": "1.19.0",
-    "natives": "1.1.6",
-    "graceful-fs": "4.2.1"
+    "express-mung": "0.5.1",
+    "cookie-parser": "1.4.5"
   }
 }

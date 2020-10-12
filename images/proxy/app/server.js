@@ -3,10 +3,28 @@ var net = require('net');
 var bodyParser = require('body-parser');
 var app      = express();
 var httpProxy = require('http-proxy');
+var cookieParser = require("cookie-parser");
 var proxy = httpProxy.createProxyServer();
 const web_o = Object.values(require('http-proxy/lib/http-proxy/passes/web-outgoing'));
 app.use(bodyParser.raw({limit: '1024mb'}));
 
+app.use(cookieParser());
+
+app.use(function(req, res, next) {
+
+    // set a cookie so that a central redirector can redirect the 
+    // odoo session 
+    // SETTINGS: SET_CICD_COOKIE
+    if (process.env.set_cicd_cookie) {
+        var cookie = req.cookies['CICD_ID'];
+        if (cookie === undefined) {
+            res.cookie('CICD_ID', process.env.dbname, { maxAge: 900000, httpOnly: true });
+            console.log('CICD_ID cookie created for ' + process.env.dbname);
+        }
+    }
+
+    next();
+})
 
 const options = {
     odoo_tcp_check: true
