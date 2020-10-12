@@ -37,7 +37,7 @@ def docker_registry(config):
 @docker_registry.command()
 @pass_config
 def login(config):
-    hub = split_hub_url()
+    hub = split_hub_url(config)
 
     def _login():
         click.secho(f"Using {hub['username']} with {hub['password']}", fg='blue')
@@ -85,7 +85,7 @@ def self_sign_hub_certificate(config):
     if os.getuid() != 0:
         click.secho("Please execute as root or with sudo! Docker service is restarted after that.", bold=True, fg='red')
         sys.exit(-1)
-    hub = split_hub_url()
+    hub = split_hub_url(config)
     url_part = hub['url'].split(":")[0] + '.crt'
     cert_filename = Path("/usr/local/share/ca-certificates") / url_part
     with cert_filename.open("w") as f:

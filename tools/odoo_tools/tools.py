@@ -782,12 +782,12 @@ def _extract_python_libname(x):
     match = re.findall(regex, x)[0]
     return match
 
-def split_hub_url():
+def split_hub_url(config):
     """
     Splits hub url into user, password and url and prefix
     user:password@registry.itewimmer.de:443/prefix
     """
-    url = os.getenv("ODOO_HUB_URL", "")
+    url = config.HUB_URL
     if not url:
         return None
     username, password = url.split(":", 1)

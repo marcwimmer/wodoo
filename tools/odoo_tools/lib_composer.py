@@ -337,7 +337,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
         for service_name, service in yml['services'].items():
             if not service.get('build', False):
                 continue
-            hub = split_hub_url()
+            hub = split_hub_url(config)
             if hub:
                 # click.secho(f"Adding reference to hub {hub}")
                 service['image'] = "/".join([
