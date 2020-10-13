@@ -39,7 +39,7 @@ def composer(config):
 @click.option("--demo", is_flag=True, help="Enabled demo data.")
 @click.option("-d", "--db", required=False)
 @click.option("-p", "--proxy-port", required=False)
-@click.option("-m", "--mailclient-gui-port", required=False, default="8000")
+@click.option("-m", "--mailclient-gui-port", required=False, default=None)
 @click.option("-l", "--local", is_flag=True, help="Puts all files and settings into .odoo directory of source code")
 @click.option("-P", '--project-name', help="Set Project-Name")
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
