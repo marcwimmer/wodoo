@@ -110,6 +110,13 @@ def run_tests(ctx, config):
                 else:
                     success.append(file)
 
+    elapsed = datetime.now() - started
+    click.secho(f"Time: {elapsed}", fg='yellow')
+
+    # in force-mode shut down
+    if config.force:
+        Commands.invoke(ctx, 'down', volumes=True)
+
     if failed:
         click.secho("Tests failed: ", fg='red')
         for mod in failed:
@@ -120,8 +127,6 @@ def run_tests(ctx, config):
             click.secho(str(mod), fg='green')
         click.secho("Tests OK", fg='green')
 
-    elapsed = datetime.now() - started
-    click.secho(f"Time: {elapsed}", fg='yellow')
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
