@@ -36,3 +36,9 @@ CMD ["/root/start_cups.sh"]
 # Trigger initial apply of configs; you can also map the /etc/cups directory to your own folder
 RUN rm -Rf /etc/cups/cupsd.conf
 RUN ls /etc/cups -lhtra
+
+# install proprietary drivers
+RUN dpkg --add-architecture i386
+ADD drivers /drivers
+RUN dpkg -i --force-all /drivers/ql720nwpdrv-3.1.5-0.i386.deb
+RUN dpkg -i --force-all /drivers/ql820nwbpdrv-3.1.5-0.i386.deb
