@@ -39,6 +39,7 @@ RUN ls /etc/cups -lhtra
 
 # install proprietary drivers
 RUN dpkg --add-architecture i386
-ADD drivers /drivers
+COPY drivers/ /drivers/
+RUN ls -lhtra /drivers
 RUN dpkg -i --force-all /drivers/ql720nwpdrv-3.1.5-0.i386.deb
 RUN dpkg -i --force-all /drivers/ql820nwbpdrv-3.1.5-0.i386.deb
