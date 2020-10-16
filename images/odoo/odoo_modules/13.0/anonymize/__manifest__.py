@@ -11,4 +11,4 @@
     'name': 'anonymize',
     'qweb': [],
     'test': [],
-    'version': '11.0.1.0'}
+    'version': '13.0.1.0'}
