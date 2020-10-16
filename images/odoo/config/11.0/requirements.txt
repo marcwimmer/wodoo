@@ -1,3 +1,5 @@
+pylibdmtx
+pylibdmtx[scripts]
 postal
 pandas==1.0.3
 polib==1.1.0
