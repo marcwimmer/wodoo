@@ -82,6 +82,8 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
             'RUN_MAIL': 0,
             'RUN_CUPS': 0,
         })
+        if os.getuid() == 0:
+            defaults.update({'OWNER_UID': 1000})
     if proxy_port:
         defaults['PROXY_PORT'] = proxy_port
     if mailclient_gui_port:
@@ -138,7 +140,8 @@ def _prepare_filesystem(config):
         _makedirs(path)
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
-            path
+            path,
+            autofix=config.devmode
         )
 
 def setup_settings_file(config, customs, db, demo, **forced_values):

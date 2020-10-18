@@ -457,13 +457,16 @@ def __make_file_executable(filepath):
     st = os.stat(filepath)
     os.chmod(filepath, st.st_mode | stat.S_IEXEC)
 
-def __try_to_set_owner(UID, path, recursive=False):
+def __try_to_set_owner(UID, path, recursive=False, autofix=False):
     if path.is_dir():
+        repair_command = f"find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\;"
+        if autofix:
+            os.system(repair_command)
         uid = os.stat(path).st_uid
         if str(uid) != str(UID) or recursive:
             click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
             click.secho("Probably execute: ", fg='yellow')
-            click.secho(f"find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\;", fg='yellow')
+            click.secho(repair_command, fg='yellow')
             sys.exit(-1)
 
 def _check_working_dir_customs_mismatch(config):
@@ -510,7 +513,12 @@ def _fix_permissions(config):
     if config.odoo_files and Path(config.odoo_files).is_dir() and \
             config.owner_uid and \
             config.owner_uid_as_int != 0:
-        __try_to_set_owner(config.owner_uid, Path(config.odoo_files), recursive=True)
+        __try_to_set_owner(
+            config.owner_uid,
+            Path(config.odoo_files),
+            recursive=True,
+            autofix=config.devmode,
+        )
 
 def _get_dump_files(backupdir, fnfilter=None):
     import humanize
