@@ -211,7 +211,7 @@ def debug(ctx, config, machine, ports):
         }.get(machine, 80))
         __replace_in_file(dest, "{machine_main_port}", PORT)
 
-        cmd_prefix = ['-f', dest]
+        cmd_prefix += ['-f', dest]
 
     __dc(cmd_prefix + ['up', '-d', machine])
     attach(ctx, config, machine=machine)
