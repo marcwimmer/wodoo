@@ -175,13 +175,14 @@ def restore_calendar_db(ctx, config, filename):
 @restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
 @click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
+@click.option('--no-dev-scripts', default=False, is_flag=True)
 @pass_config
 @click.pass_context
-def restore_db(ctx, config, filename, latest):
+def restore_db(ctx, config, filename, latest, no_dev_scripts):
     conn = config.get_odoo_conn()
     dest_db = conn.dbname
 
-    if config.devmode:
+    if config.devmode and not no_dev_scripts:
         click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
 
     if not filename:
@@ -234,7 +235,7 @@ def restore_db(ctx, config, filename, latest):
         )
 
     from .lib_db import __turn_into_devdb
-    if config.devmode:
+    if config.devmode and not no_dev_scripts:
         __turn_into_devdb(config, conn)
     __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
     _remove_postgres_connections(conn.clone(dbname=dest_db))
