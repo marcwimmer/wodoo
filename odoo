@@ -5,6 +5,7 @@ import time
 import os
 import inspect
 
+VERSION = '0.3b'
 
 SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
 
@@ -20,6 +21,8 @@ from odoo_tools.module_tools import make_customs # NOQA
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+
+    print(f"Version: {VERSION}")
 
     if os.getenv("UID", "") == "0":
         import click

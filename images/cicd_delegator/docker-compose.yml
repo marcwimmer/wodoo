@@ -3,7 +3,23 @@ services:
   cicd_delegator:
     image: nginx
     volumes:
-        - ${ODOO_HOME}/images/cicd_delegator/nginx.conf:/etc/nginx/nginx.conf:ro
+        # cicd delegator is stored in ~/.odoo/cicd_delegator globally
+        - ./nginx.conf:/etc/nginx/nginx.conf:ro
+        - ./nginx.upstreams.conf:/etc/nginx/conf.d/upstreams.conf:ro
+        - ./nginx.locations.conf:/etc/nginx/conf.locations.d/locations.conf:ro
     ports:
-        - 10.10.173.111:10250:80
+        - 10250:80
           #command: [nginx-debug, '-g', 'daemon-off;']
+    networks:
+        - cicd_delegator
+  cicd_index:
+    build: ./registry_webserver
+    networks:
+        - cicd_delegator
+    environment:
+        FLASK_ENV: development
+    volumes:
+        - ./registry.json:/registry.json
+networks:
+    cicd_delegator:
+        name: __CICD_NETWORK_NAME__

@@ -23,6 +23,7 @@ default_dirs = {
     'odoo_data_dir': "~/.odoo/files",
     'user_conf_dir': "~/.odoo",
     "backup_dir": "/host/dumps",
+    'cicd_delegator': '~/.odoo/cicd_delegator',
 }
 
 default_files = {
@@ -39,6 +40,7 @@ default_files = {
     'settings': '${run}/settings',
     'odoo_instances': '${run}/odoo_instances',
     'config/default_network': 'config/default_network',
+    'config/cicd_network': 'config/cicd_network_for_project.yml',
     'run/odoo_debug.txt': '${run}/debug/odoo_debug.txt',
     'run/snapshot_mappings.txt': '${run}/snapshot_mappings.txt',
     'images/proxy/instance.conf': 'images/proxy/instance.conf',
@@ -46,6 +48,7 @@ default_files = {
     'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
     'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
     'start-dev': '~/.odoo/start-dev',
+    'cicd_delegator_registry': '${cicd_delegator}/registry.json',
 }
 
 default_commands = {
