@@ -1,4 +1,3 @@
-import docker
 import shutil
 import subprocess
 import hashlib
@@ -68,6 +67,7 @@ def status(config):
     click.secho(config.odoo_version, fg=color, bold=True)
     click.secho("db: ", nl=False)
     click.secho(config.dbname, fg=color, bold=True)
+    import docker
     client = docker.from_env()
     if config.use_docker:
         from .tools import __dc_out, __dc
