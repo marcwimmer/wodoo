@@ -18,7 +18,7 @@ except Exception:
     pass
 from odoo_tools.lib_clickhelpers import AliasedGroup
 from odoo_tools.tools import __empty_dir, __dc, sync_folder
-from odoo_tools import cli, pass_config
+from odoo_tools import cli, pass_config, Commands
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -74,6 +74,20 @@ def register(ctx, config):
         existing = site
     existing['updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     set_registry(config, reg)
+
+    # reload current odoo
+    Commands.invoke(
+        ctx,
+        'reload',
+        db=odoo_project_name,
+        demo=False,
+        proxy_port=False,
+        headless=True,
+        mailclient_gui_port=False,
+        local=True,
+        project_name=odoo_project_name,
+        devmode=True
+    )
     ctx.invoke(do_list)
 
 @cicd.command()
@@ -86,21 +100,29 @@ def rebuild(config):
     ], cwd=config.dirs['cicd_delegator'])
 
 @cicd.command()
-@click.argument('odoo-project-name', required=True)
+@click.option("-D", "--no-daemon", is_flag=True)
 @pass_config
-def start(config):
+def start(config, no_daemon):
+    registry = get_registry(config)
+    update_nginx_configs(config, registry)
     subprocess.check_call([
         'docker-compose',
         'build',
-    ], cwd=config.dirs['cicd_delegator'])
-    subprocess.check_call([
-        'docker-compose',
-        'up',
-        '-d',
+        'cicd_index',
     ], cwd=config.dirs['cicd_delegator'])
 
+    cmd = [
+        'docker-compose',
+        'up',
+    ]
+    if not no_daemon:
+        cmd += ['-d']
+    subprocess.check_call(
+        cmd,
+        cwd=config.dirs['cicd_delegator']
+    )
+
 @cicd.command()
-@click.argument('odoo-project-name', required=True)
 @contextmanager
 @pass_config
 def stop(config, context):
@@ -147,6 +169,9 @@ def _update_docker_compose(config, registry):
     )
     dc.write_text(template)
 
+    # make the empty file
+    (config.dirs['cicd_delegator'] / 'empty').write_text('# disabled nginx conf')
+
 def _update_nginx_conf(config, registry):
     nginx_conf = config.dirs['cicd_delegator'] / 'nginx.conf'
     template = config.dirs['images'] / 'cicd_delegator' / 'nginx.conf'
@@ -158,14 +183,20 @@ def _update_locations_and_upstreams(config, registry):
 
     locations, upstreams = [], []
 
+    # get proxy container name from docker compose
+    compose = yaml.load(config.files['docker_compose'].read_text())
+
     for site in registry['sites']:
         settings = {
             "__PROJECT_NAME__": site['name'],
             "__CICD_NETWORK_NAME__": registry['network_name'],
+            "__PROXY_NAME__": f"{compose['services']['proxy']['container_name']}",
         }
+        upstream = template_upstream
+        location = template_location
         for k, v in settings.items():
-            upstream = template_upstream.replace(k, v)
-            location = template_location.replace(k, v)
+            upstream = upstream.replace(k, v)
+            location = location.replace(k, v)
 
         upstreams.append(upstream)
         locations.append(location)

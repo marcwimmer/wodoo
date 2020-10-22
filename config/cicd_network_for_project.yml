@@ -5,4 +5,4 @@ services:
 networks:
     cicd_network:
         external:
-            name: __CICD-NETWORK_NAME__
+            name: __CICD_NETWORK_NAME__
