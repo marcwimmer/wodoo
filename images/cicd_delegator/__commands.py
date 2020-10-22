@@ -39,6 +39,8 @@ def set_registry(config, values):
     path = config.files['cicd_delegator_registry']
     path.parent.mkdir(exist_ok=True, parents=True)
     path.write_text(json.dumps(values))
+    if not values:
+        return
 
     update_nginx_configs(config, values)
     update_project_configs(config, values)

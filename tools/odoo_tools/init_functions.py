@@ -13,9 +13,9 @@ except ImportError: click = None
 def _get_default_anticipated_host_run_dir(config, WORKING_DIR, PROJECT_NAME):
     if WORKING_DIR and (WORKING_DIR / '.odoo').exists():
         # if click:
-            # if not config.quiet:
-                # click.secho("Using local run-directory - should only be used for non productive setups!", fg='yellow')
-                # click.secho("If this is not intended, then remove the .odoo sub-directory please!", fg='yellow')
+        #   # if not config.quiet:
+        #       # click.secho("Using local run-directory - should only be used for non productive setups!", fg='yellow')
+        #       # click.secho("If this is not intended, then remove the .odoo sub-directory please!", fg='yellow')
         return WORKING_DIR / '.odoo' / 'run'
     if "HOST_HOME" in os.environ:
         HOME_DIR = Path(os.environ['HOST_HOME'])
@@ -65,6 +65,9 @@ def _get_customs_root(p):
 def _get_project_name(config, p):
     if not p:
         return
+
+    if '--project-name' in sys.argv:
+        return sys.argv[sys.argv.index('--project-name') + 1]
 
     from .settings import _get_settings
     with _get_settings(config, None, quiet=True) as config:

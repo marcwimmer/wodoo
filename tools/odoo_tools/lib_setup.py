@@ -1,4 +1,6 @@
+import docker
 import shutil
+import subprocess
 import hashlib
 import os
 import tempfile
@@ -60,20 +62,21 @@ def remove_web_assets(ctx, config):
 @pass_config
 def status(config):
     color = 'yellow'
-    click.echo("customs: ", nl=False)
-    click.echo(click.style(config.customs, color, bold=True))
-    click.echo("version: ", nl=False)
-    click.echo(click.style(config.odoo_version, color, bold=True))
-    click.echo("db: ", nl=False)
-    click.echo(click.style(config.dbname, color, bold=True))
+    click.secho("projectname: ", nl=False)
+    click.secho(config.PROJECT_NAME, fg=color, bold=True)
+    click.secho("version: ", nl=False)
+    click.secho(config.odoo_version, fg=color, bold=True)
+    click.secho("db: ", nl=False)
+    click.secho(config.dbname, fg=color, bold=True)
+    client = docker.from_env()
     if config.use_docker:
-        from .tools import __dc
+        from .tools import __dc_out, __dc
         if config.run_postgres:
             print("dockerized postgres")
             if config.run_postgres_in_ram:
                 print("postgres is in-ram")
         else:
-            print("postgres: {}:{}/{}".format(
+            click.secho("postgres: {}:{}/{}".format(
                 config.db_host,
                 config.db_port,
                 config.dbname,
@@ -81,7 +84,12 @@ def status(config):
         cmd = ['config', '--services']
         __dc(cmd)
         cmd = ['config', '--volumes']
-        __dc(cmd)
+        volumes = __dc_out(cmd).decode('utf-8').strip().split("\n")
+        for volume in volumes:
+            for v in client.volumes.list():
+                if 'postg' in v.name.lower():
+                    if v.name == f'{config.PROJECT_NAME}_ODOO_POSTGRES_VOLUME':
+                        click.secho(f"{v.name}: {v.attrs['Mountpoint']})")
 
 @setup.command()
 @pass_config

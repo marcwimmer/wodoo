@@ -75,7 +75,7 @@ def backup_calendar(config):
         config.CALENDAR_DB_PORT,
         config.CALENDAR_DB_USER,
         config.CALENDAR_DB_PWD,
-        '/host/dumps/' + f'{config.project_name}.calendar' + '.dump.gz',
+        '/host/dumps/' + f'{config.PROJECT_NAME}.calendar' + '.dump.gz',
     ]
     __dc(cmd)
 
@@ -85,7 +85,7 @@ def backup_calendar(config):
 @click.pass_context
 @click.argument('filename', required=False, default="")
 def backup_db(ctx, config, filename):
-    filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
+    filename = filename or f'{config.PROJECT_NAME}.{config.dbname}.odoo' + '.dump.gz'
     cmd = [
         'run',
         'cronjobshell',
@@ -105,7 +105,7 @@ def backup_db(ctx, config, filename):
 @pass_config
 def backup_files(config):
     BACKUPDIR = Path(config.dumps_path)
-    BACKUP_FILENAME = f"{config.project_name}.files.tar.gz"
+    BACKUP_FILENAME = f"{config.PROJECT_NAME}.files.tar.gz"
     BACKUP_FILEPATH = config.dirs['backup_dir'] / BACKUP_FILENAME
 
     if BACKUP_FILEPATH.exists():
@@ -129,7 +129,7 @@ def backup_files(config):
     click.secho("Backup files done to {}".format(BACKUP_FILENAME), fg='green')
 
 def __get_default_backup_filename(config):
-    return datetime.now().strftime(f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz")
+    return datetime.now().strftime(f"{config.PROJECT_NAME}.odoo.%Y%m%d%H%M%S.dump.gz")
 
 @restore.command('show-dump-type')
 @pass_config

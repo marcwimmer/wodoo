@@ -21,6 +21,7 @@ def _get_settings_files(config, customs):
         yield Path(f'/etc/odoo/{config.PROJECT_NAME}/settings')
     yield customs_dir / '.odoo' / 'settings'
     yield Path(os.environ['HOME']) / '.odoo' / 'settings'
+    yield customs_dir / '.odoo' / 'run' / 'settings'
 
 @contextmanager
 def _get_settings(config, customs, quiet=False):

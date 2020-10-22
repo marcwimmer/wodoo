@@ -75,7 +75,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
         defaults['DEVMODE'] = 1
     if headless:
         defaults.update({
-            'RUN_PROXY': 0,
+            'RUN_PROXY': 1,
             'RUN_PROXY_PUBLISHED': 0,
             'RUN_SSLPROXY': 0,
             'RUN_ROUNDCUBE': 0,
