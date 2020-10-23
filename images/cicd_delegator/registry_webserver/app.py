@@ -10,8 +10,8 @@ def index():
     reg = json.loads(Path("/registry.json").read_text())
 
     links = []
-    for reg in reg['sites']:
-        links.append(f"<a href='/{reg['name']}'>{reg['name']}</a>")
+    for reg in sorted(reg['sites'], reverse=True):
+        links.append(f"<a href='/{reg['name']}'>{reg['name']}: {reg.get('description')}</a>")
 
     return (
         f"Available Sites:<br/>"

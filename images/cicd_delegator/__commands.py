@@ -59,9 +59,10 @@ def do_list(config):
         click.secho(f"\t{site['name']}", fg='green')
 
 @cicd.command(help="Register new odoo")
+@click.argument("desc", required=False)
 @pass_config
 @click.pass_context
-def register(ctx, config):
+def register(ctx, config, desc):
     reg = get_registry(config)
     reg.setdefault('sites', [])
     odoo_project_name = config.PROJECT_NAME
@@ -73,6 +74,8 @@ def register(ctx, config):
         reg['sites'].append(site)
         existing = site
     existing['updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if desc:
+        existing['description'] = desc
     set_registry(config, reg)
 
     # reload current odoo
@@ -174,8 +177,12 @@ def _update_docker_compose(config, registry):
 
 def _update_nginx_conf(config, registry):
     nginx_conf = config.dirs['cicd_delegator'] / 'nginx.conf'
-    template = config.dirs['images'] / 'cicd_delegator' / 'nginx.conf'
-    nginx_conf.write_text(template.read_text())
+    template = (config.dirs['images'] / 'cicd_delegator' / 'nginx.conf').read_text()
+    template = template.replace(
+        "__PROJECT_NAMES_PIPED__",
+        "|".join(x['name'] for x in registry['sites']),
+    )
+    nginx_conf.write_text(template)
 
 def _update_locations_and_upstreams(config, registry):
     template_upstream = (config.dirs['images'] / 'cicd_delegator' / 'nginx.upstream.template.conf').read_text()
