@@ -4,7 +4,10 @@ from flask import render_template
 import json
 from pathlib import Path
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder='/_static_index_files',
+)
 
 @app.route('/')
 def index():
