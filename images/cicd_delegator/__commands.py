@@ -60,9 +60,10 @@ def do_list(config):
 
 @cicd.command(help="Register new odoo")
 @click.argument("desc", required=False)
+@click.argument("author", required=False)
 @pass_config
 @click.pass_context
-def register(ctx, config, desc):
+def register(ctx, config, desc, author):
     reg = get_registry(config)
     reg.setdefault('sites', [])
     odoo_project_name = config.PROJECT_NAME
@@ -76,6 +77,8 @@ def register(ctx, config, desc):
     existing['updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if desc:
         existing['description'] = desc
+    if author:
+        existing['author'] = author
     set_registry(config, reg)
 
     # reload current odoo
