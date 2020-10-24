@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+    <head>
+        <title>CICD</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <table>
+        <thead>
+            <tr>
+                <th>Ticket</th>
+                <th>Description</th>
+                <th>Last Author</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for link in sites %}
+            <tr>
+                <td>
+                    <a href="/{{link['name']}}/web/login">
+                    {{link['name']}}
+                    </a>
+                </td>
+                <td>{{link.get('description')}}</td>
+                <td>{{link.get('author')}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</html>

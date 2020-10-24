@@ -28,7 +28,7 @@ DATEFORMAT = "%Y-%m-%d"
 def _get_odoo_github_disk_path():
     url = Path(os.environ['ODOO_REPO']).absolute()
     if not Path(url).exists() and not Path(url).absolute().is_dir():
-        click.echo("Requires odoo on from github cloned to disk.")
+        click.secho("Requires odoo on from github cloned to disk.", fg='red')
         sys.exit(-1)
     return url
 
@@ -91,6 +91,7 @@ def patch(config):
 
       *./odoo patch apply-all
     """
+    dirs = config.dirs
     M = odoo_config.MANIFEST()
     config.odoo_dir = dirs['customs'] / 'odoo'
     config.ignore_file = dirs['customs'] / '.gitignore'
@@ -178,6 +179,14 @@ def _patch_apply(config, filepath):
         subprocess.check_call(["patch", "-p1"], cwd=dir / relative_path, stdin=f)
 
 def _patch_list(config, absolute_path=True):
+    """
+    Iterate all modules and search for *.patch files
+    """
+    from .module_tools import Modules
+    all_modules = Modules.get_customs_modules()
+    from pudb import set_trace
+    set_trace()
+
 
     filepaths = [x.absolute() for x in config.patch_dir.glob("**/*.patch")]
 

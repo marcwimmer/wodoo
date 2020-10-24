@@ -1,4 +1,6 @@
 from flask import Flask
+from flask import render_template
+
 import json
 from pathlib import Path
 
@@ -9,11 +11,4 @@ def index():
 
     reg = json.loads(Path("/registry.json").read_text())
 
-    links = []
-    for reg in sorted(reg['sites'], reverse=True):
-        links.append(f"<a href='/{reg['name']}'>{reg['name']}: {reg.get('description')}</a>")
-
-    return (
-        f"Available Sites:<br/>"
-        f"{'<br/>'.join(links)}"
-    )
+    return render_template('index.html', sites=reg['sites'])
