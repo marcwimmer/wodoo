@@ -149,9 +149,8 @@ def start(config, no_daemon):
     )
 
 @cicd.command()
-@contextmanager
 @pass_config
-def stop(config, context):
+def stop(config):
 
     subprocess.check_call([
         'docker-compose',
