@@ -94,7 +94,27 @@ def register(ctx, config, desc, author):
         project_name=odoo_project_name,
         devmode=True
     )
+    Commands.invoke(
+        ctx,
+        'up',
+        daemon=True,
+    )
     ctx.invoke(do_list)
+    ctx.invoke(start, no_daemon=False)
+    ctx.invoke(reload)
+
+
+@cicd.command()
+@pass_config
+def reload(config):
+    subprocess.check_call([
+        'docker-compose',
+        'exec',
+        'cicd_delegator',
+        'nginx',
+        '-s',
+        'reload',
+    ], cwd=config.dirs['cicd_delegator'])
 
 @cicd.command()
 @pass_config
