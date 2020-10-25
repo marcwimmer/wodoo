@@ -101,12 +101,12 @@ def register(ctx, config, desc, author):
     )
     ctx.invoke(do_list)
     ctx.invoke(start, no_daemon=False)
-    ctx.invoke(reload)
+    ctx.invoke(reload_nginx)
 
 
 @cicd.command()
 @pass_config
-def reload(config):
+def reload_nginx(config):
     subprocess.check_call([
         'docker-compose',
         'exec',
