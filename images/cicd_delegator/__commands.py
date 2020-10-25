@@ -212,18 +212,17 @@ def _update_locations_and_upstreams(config, registry):
 
     locations, upstreams = [], []
 
-    # get proxy container name from docker compose
-    if not config.files['docker_compose'].exists():
-        click.secho("Please reload the current branch for example with: ", fg='red')
-        click.secho("odoo reload --local --devmode --headless --project-name 'unique_name'", fg='red')
-        sys.exit(-1)
-    compose = yaml.load(config.files['docker_compose'].read_text())
+    # # get proxy container name from docker compose
+    # if not config.files['docker_compose'].exists():
+    # click.secho("Please reload the current branch for example with: ", fg='red')
+    # click.secho("odoo reload --local --devmode --headless --project-name 'unique_name'", fg='red')
+    # sys.exit(-1)
 
     for site in registry['sites']:
         settings = {
             "__PROJECT_NAME__": site['name'],
             "__CICD_NETWORK_NAME__": registry['network_name'],
-            "__PROXY_NAME__": f"{compose['services']['proxy']['container_name']}",
+            "__PROXY_NAME__": f"{site['name']}_{site['name']}_proxy",
         }
         upstream = template_upstream
         location = template_location
