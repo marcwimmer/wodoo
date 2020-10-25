@@ -214,6 +214,10 @@ def _update_locations_and_upstreams(config, registry):
     locations, upstreams = [], []
 
     # get proxy container name from docker compose
+    if not config.files['docker_compose'].exists():
+        click.secho("Please reload the current branch for example with: ", fg='red')
+        click.secho("odoo reload --local --devmode --headless --project-name 'unique_name'", fg='red')
+        sys.exit(-1)
     compose = yaml.load(config.files['docker_compose'].read_text())
 
     for site in registry['sites']:
