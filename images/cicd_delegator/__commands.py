@@ -127,6 +127,15 @@ def rebuild(config):
 
 @cicd.command()
 @click.option("-D", "--no-daemon", is_flag=True)
+@click.pass_context
+@pass_config
+def restart(config, ctx, no_daemon):
+    ctx.invoke(stop)
+    ctx.invoke(start)
+
+
+@cicd.command()
+@click.option("-D", "--no-daemon", is_flag=True)
 @pass_config
 def start(config, no_daemon):
     registry = get_registry(config)
@@ -177,7 +186,6 @@ def update_nginx_configs(config, registry):
     _update_nginx_conf(config, registry)
     _update_locations_and_upstreams(config, registry)
 
-
 def _copy_index_webapp(config, registry):
     dest_path = config.dirs['cicd_delegator'] / 'registry_webserver'
     sync_folder(
@@ -222,7 +230,7 @@ def _update_locations_and_upstreams(config, registry):
         settings = {
             "__PROJECT_NAME__": site['name'],
             "__CICD_NETWORK_NAME__": registry['network_name'],
-            "__PROXY_NAME__": f"{site['name']}_{site['name']}_proxy",
+            "__PROXY_NAME__": f"{site['name']}_proxy",
         }
         upstream = template_upstream
         location = template_location

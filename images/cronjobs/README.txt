@@ -1,4 +1,4 @@
 To debug a job:
 
-odoo attach cronjobshell
+odoo runbash cronjobshell
 run.py <name of job>
