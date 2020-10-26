@@ -36,6 +36,10 @@ class MyConfigParser:
         for line in content.split("\n"):
             # If it isn't a comment get the variable and value and put it on a dict
             if not line.startswith("#") and len(line) > 1:
+                if '=' not in line:
+                    import click
+                    click.secho(f"Invalid configuration option '{line}' ignored.", fg='red')
+                    continue
                 (key, val) = line.rstrip('\n').split('=', 1)
                 val = val.strip()
                 val = val.strip('\"')

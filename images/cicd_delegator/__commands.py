@@ -59,19 +59,34 @@ def do_list(config):
         click.secho(f"\t{site['name']}", fg='green')
 
 @cicd.command(help="Register new odoo")
+@click.argument("project_name", required=True)
 @click.argument("desc", required=False)
 @click.argument("author", required=False)
 @pass_config
 @click.pass_context
-def register(ctx, config, desc, author):
+def register(ctx, config, project_name, desc, author):
+    # reload current odoo
+    Commands.invoke(
+        ctx,
+        'reload',
+        db=project_name,
+        demo=False,
+        proxy_port=False,
+        headless=True,
+        mailclient_gui_port=False,
+        local=True,
+        project_name=project_name,
+        devmode=True
+    )
+
     reg = get_registry(config)
     reg.setdefault('sites', [])
-    odoo_project_name = config.PROJECT_NAME
-    existing = [x for x in reg['sites'] if x['name'] == odoo_project_name]
+    config.PROJECT_NAME = project_name
+    existing = [x for x in reg['sites'] if x['name'] == project_name]
     if existing:
         existing = existing[0]
     else:
-        site = {'name': odoo_project_name}
+        site = {'name': project_name}
         reg['sites'].append(site)
         existing = site
     existing['updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -81,19 +96,6 @@ def register(ctx, config, desc, author):
         existing['author'] = author
     set_registry(config, reg)
 
-    # reload current odoo
-    Commands.invoke(
-        ctx,
-        'reload',
-        db=odoo_project_name,
-        demo=False,
-        proxy_port=False,
-        headless=True,
-        mailclient_gui_port=False,
-        local=True,
-        project_name=odoo_project_name,
-        devmode=True
-    )
     Commands.invoke(
         ctx,
         'up',
