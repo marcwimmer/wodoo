@@ -95,16 +95,17 @@ def update(mode, modules):
                     if not lang_file:
                         continue
                     if lang_file.exists():
-                        print("Updating language {} for module {}:".format(lang, module))
+                        print(f"Updating language {lang} for module {module}:")
                         params = [
                             '-l',
                             lang,
-                            '--i18n-import={}/i18n/{}.po'.format(module.name, lang),
+                            f'--i18n-import={module.path}/i18n/{lang}.po',
                             '--i18n-overwrite',
                             '--stop-after-init',
                         ]
                         rc = exec_odoo('config_update', *params)
-                        click.secho(f"Error at updating translations at {module} {lang}", fg='red')
+                        if rc:
+                            click.secho(f"Error at updating translations at {module} {lang}", fg='red')
                         rc and sys.exit(rc)
             del module
 
