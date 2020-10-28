@@ -12,9 +12,11 @@ class ClearDB(models.AbstractModel):
 
     _complete_clear = [
         'queue.job', 'mail.followers', 'mail_followers_mail_message_subtype_rel',
-        'bus.bus', 'auditlog.log', 'auditlog.log.line', 'mail_message'
+        'bus.bus', 'auditlog.log', 'auditlog.log.line', 'mail_message', 'ir_attachment',
     ]
-    _nullify_columns = ['ir.attachment:db_datas']
+    _nullify_columns = [
+        # 'ir.attachment:db_datas', 'ir.attachment:index_content',
+    ]
 
     @api.model
     def _run(self):
@@ -63,7 +65,7 @@ class ClearDB(models.AbstractModel):
                 logger.info(f"Nullifying column {field}: Table {table} does not exist, continuing")
                 continue
             logger.info(f"Clearing {field} at {table}")
-            self.env.cr.execute(f"update {table} set {field} = null; ")
+            self.env.cr.execute(f"update {table} set {field} = null where {field} is not null; ")
 
     @api.model
     def show_sizes(self):
