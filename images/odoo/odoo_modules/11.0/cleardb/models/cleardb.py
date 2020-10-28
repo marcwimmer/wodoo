@@ -12,7 +12,7 @@ class ClearDB(models.AbstractModel):
 
     _complete_clear = [
         'queue.job', 'mail.followers', 'mail_followers_mail_message_subtype_rel',
-        'bus.bus', 'auditlog.log', 'auditlog.log.line',
+        'bus.bus', 'auditlog.log', 'auditlog.log.line', 'mail_message'
     ]
     _nullify_columns = ['ir.attachment:db_datas']
 
