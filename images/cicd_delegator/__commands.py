@@ -66,6 +66,13 @@ def do_list(config):
 @click.pass_context
 def register(ctx, config, project_name, desc, author):
     # reload current odoo
+    dbname = project_name
+
+    if dbname[0] in "0123456789":
+        dbname = 'db' + dbname
+    for c in '?:/*\\!@#$%^&*()':
+        dbname = dbname.replace(c, "")
+
     Commands.invoke(
         ctx,
         'reload',
