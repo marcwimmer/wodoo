@@ -76,7 +76,7 @@ def register(ctx, config, project_name, desc, author):
     Commands.invoke(
         ctx,
         'reload',
-        db=project_name,
+        db=dbname,
         demo=False,
         proxy_port=False,
         headless=True,
