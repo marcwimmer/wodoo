@@ -72,6 +72,7 @@ def register(ctx, config, project_name, desc, author):
         dbname = 'db' + dbname
     for c in '?:/*\\!@#$%^&*()-':
         dbname = dbname.replace(c, "")
+    dbname = dbname.lower()
 
     Commands.invoke(
         ctx,
