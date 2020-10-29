@@ -42,8 +42,8 @@ def set_registry(config, values):
     if not values:
         return
 
-    update_nginx_configs(config, values)
     update_project_configs(config, values)
+    update_nginx_configs(config, values)
 
 @cicd.command()
 @pass_config
@@ -73,6 +73,9 @@ def register(ctx, config, project_name, desc, author):
     for c in '?:/*\\!@#$%^&*()-':
         dbname = dbname.replace(c, "")
     dbname = dbname.lower()
+
+    reg = get_registry(config)
+    update_project_configs(config, reg)
 
     Commands.invoke(
         ctx,
