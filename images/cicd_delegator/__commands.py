@@ -127,13 +127,14 @@ def rebuild(config):
         '--no-cache',
     ], cwd=config.dirs['cicd_delegator'])
 
-@cicd.command()
-@click.option("-D", "--no-daemon", is_flag=True)
-@click.pass_context
-@pass_config
-def restart(config, ctx, no_daemon):
-    ctx.invoke(stop)
-    ctx.invoke(start)
+# name conflict with docker
+# @cicd.command()
+# @click.option("-D", "--no-daemon", is_flag=True)
+# @click.pass_context
+# @pass_config
+# def restart(config, ctx, no_daemon):
+    # ctx.invoke(stop)
+    # ctx.invoke(start)
 
 
 @cicd.command()
