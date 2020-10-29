@@ -70,7 +70,7 @@ def register(ctx, config, project_name, desc, author):
 
     if dbname[0] in "0123456789":
         dbname = 'db' + dbname
-    for c in '?:/*\\!@#$%^&*()':
+    for c in '?:/*\\!@#$%^&*()-':
         dbname = dbname.replace(c, "")
 
     Commands.invoke(
