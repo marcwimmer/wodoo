@@ -66,6 +66,9 @@ def do_list(config):
 @click.pass_context
 def register(ctx, config, project_name, desc, author):
     # reload current odoo
+    from odoo_tools.click_config import Config
+    config = Config(project_name=project_name)
+
     dbname = project_name
 
     if dbname[0] in "0123456789":
