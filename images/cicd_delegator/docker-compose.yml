@@ -9,7 +9,7 @@ services:
         - ./nginx.upstreams.conf:/etc/nginx/conf.d/upstreams.conf:ro
         - ./nginx.locations.conf:/etc/nginx/conf.locations.d/locations.conf:ro
     ports:
-        - 10250:80
+        - __CICD_BINDING__:80
           #command: [nginx-debug, '-g', 'daemon-off;']
     networks:
         - cicd_delegator

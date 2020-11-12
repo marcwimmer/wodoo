@@ -58,6 +58,23 @@ def do_list(config):
     for site in reg.get('sites', []):
         click.secho(f"\t{site['name']}", fg='green')
 
+@cicd.command()
+@pass_config
+@click.pass_context
+def unregister(ctx, config):
+    reg = get_registry(config)
+    reg['sites'] = [x for x in reg['sites'] if x['name'] != config.project_name]
+    set_registry(config, reg)
+
+    files = []
+    files.append(config.files['project_docker_compose.home.project'])
+    files.append(config.dirs['cicd_delegator'] / 'nginx.upstreams.conf')
+    files.append(config.dirs['cicd_delegator'] / 'nginx.locations.conf')
+    for file in files:
+        if file.exists():
+            file.unlink()
+    ctx.invoke(reload_nginx)
+
 @cicd.command(help="Register new odoo")
 @click.argument("project_name", required=True)
 @click.argument("desc", required=False)
@@ -244,10 +261,13 @@ def _update_locations_and_upstreams(config, registry):
     # sys.exit(-1)
 
     for site in registry['sites']:
+        from pudb import set_trace
+        set_trace()
         settings = {
             "__PROJECT_NAME__": site['name'],
             "__CICD_NETWORK_NAME__": registry['network_name'],
             "__PROXY_NAME__": f"{site['name']}_proxy",
+            "__CICD_BINDING__": config.CICD_BINDING,
         }
         upstream = template_upstream
         location = template_location
