@@ -154,7 +154,7 @@ def build(ctx, config, machines, pull, no_cache, push):
 
 @docker.command()
 @click.argument('machine', required=True)
-@click.option('-p', '--ports', is_flag=True, help='With Port 33824')
+@click.option('-p', '--ports', is_flag=True, help='With Port 33284')
 @pass_config
 @click.pass_context
 def debug(ctx, config, machine, ports):

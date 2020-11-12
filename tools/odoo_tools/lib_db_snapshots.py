@@ -1,4 +1,5 @@
 import subprocess
+from git import Repo
 import yaml
 import arrow
 import json
@@ -73,7 +74,10 @@ def __choose_snapshot(config, take=False):
         return used_mappings[take]
     snapshots2 = list(reversed(snapshots2))
 
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots2)])['snapshot']
+    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots2)])
+    if not snapshot:
+        sys.exit(0)
+    snapshot = snapshot['snapshot']
     snapshot = used_mappings[snapshot]
     return snapshot
 
@@ -89,10 +93,15 @@ def do_list(config):
         print(mappings.get(snap, snap))
 
 @snapshot.command(name="save")
-@click.argument('name', required=True)
+@click.argument('name', required=False)
 @pass_config
 def snapshot_make(config, name):
     config.snapshot_manager.assert_environment(config)
+    if not name:
+        repo = Repo(os.getcwd())
+        name = repo.active_branch.name
+        click.secho(f"Using {name} as snapshot name")
+
     # remove existing snaps
     values = config.__get_snapshot_db(config)
     for snapshot, snapname in list(values.items()):
