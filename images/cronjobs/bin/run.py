@@ -101,7 +101,5 @@ if __name__ == "__main__":
                 execute(job['cmd'])
                 job['next'] = job['itr'].get_next(datetime)
 
-            logger.info(f"{job['name']} at {job['next']} now is {datetime.now()}")
-
         time.sleep(1)
         displayed_infos = True
