@@ -6,8 +6,8 @@ import time
 import logging
 import subprocess
 from croniter import croniter
+from croniter import CroniterBadCronError
 from datetime import datetime
-
 FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -16,17 +16,32 @@ logger = logging.getLogger('')  # root handler
 logger.info("Starting cronjobs")
 
 def get_jobs():
+    now = datetime.now()
     for key in os.environ.keys():
         if key.startswith("CRONJOB_"):
             job = os.environ[key]
-            job = job.split(" ", 6)
-            schedule = " ".join(job[:5])
-            job_command = job[-1]
+
+            # either 5 or 6 columns; it supports seconds
+            logger.info(job)
+            schedule = job
+            while schedule:
+                try:
+                    croniter(schedule, now)
+                except Exception:
+                    schedule = schedule[:-1]
+                else:
+                    break
+            if not schedule:
+                raise Exception(f"Invalid schedule: {job}")
+            job_command = job[len(schedule):].strip()
+            itr = croniter(schedule, now)
             yield {
                 'name': key.replace("CRONJOB_", ""),
                 'schedule': schedule,
                 'cmd': job_command,
-                'base': datetime.now()
+                'base': now,
+                'itr': itr,
+                'next': itr.get_next(datetime),
             }
 
 def replace_params(text):
@@ -70,15 +85,23 @@ if __name__ == "__main__":
         logging.info("Scheduling Job: {}".format(job))
         logging.info("With replaced values in looks like: {}".format(replace_params(job['cmd'])))
     displayed_infos = False
-    while True:
-        for job in jobs:
-            logger.info(replace_params(job['cmd']))
-            next_run = croniter(job['schedule'], job['base']).get_next(datetime)
-            if not displayed_infos or (datetime.now().second == 0 and datetime.now().minute == 0):
-                logging.info("Next run of %s at %s", job['cmd'], next_run)
-            if next_run < datetime.now():
-                execute(job['cmd'])
-                job['base'] = next_run
 
-        time.sleep(60)
+    logger.info("--------------------- JOBS ------------------------")
+    for job in jobs:
+        logger.info(replace_params(job['cmd']))
+
+    while True:
+        now = datetime.now()
+
+        for job in jobs:
+            if not displayed_infos or (datetime.now().second == 0 and datetime.now().minute == 0):
+                logging.info("Next run of %s at %s", job['cmd'], job['next'])
+
+            if job['next'] < now:
+                execute(job['cmd'])
+                job['next'] = job['itr'].get_next(datetime)
+
+            logger.info(f"{job['name']} at {job['next']} now is {datetime.now()}")
+
+        time.sleep(1)
         displayed_infos = True

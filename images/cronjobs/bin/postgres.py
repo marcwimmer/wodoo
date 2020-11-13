@@ -10,6 +10,11 @@ import os
 import click
 from pathlib import Path
 from datetime import datetime
+import logging
+FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
+logging.basicConfig(format=FORMAT)
+logging.getLogger().setLevel(logging.DEBUG)
+logger = logging.getLogger('')  # root handler
 
 @click.group()
 def postgres():
@@ -32,9 +37,10 @@ def execute(dbname, host, port, user, password, sql):
     ) as conn:
         conn.autocommit = True
         with conn.cursor() as cr:
-            print("executing sql: {}".format(sql))
+            logger.info("executing sql: {}".format(sql))
             cr.execute(sql)
             res = cr.fetchall()
+            logger.info(res)
             return res
 
 

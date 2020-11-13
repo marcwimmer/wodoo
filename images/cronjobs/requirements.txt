@@ -1,7 +1,7 @@
 passlib
 pathlib
 arrow
-croniter
+croniter==0.3.36
 pyyaml
 docker
 tabulate
