@@ -29,7 +29,7 @@ from .tools import __needs_docker
 import subprocess
 from . import Commands
 
-def dev(ctx, config, nobuild, kill):
+def dev(ctx, config, build, kill):
     """
     starts developing in the odoo container
     """
@@ -38,13 +38,12 @@ def dev(ctx, config, nobuild, kill):
     if not config.devmode:
         click.echo("Requires dev mode.")
         sys.exit(-1)
-    do_kill(ctx, config, machines=[], brutal=True)
-    rm(ctx, config, machines=[])
-    if not nobuild:
+    if build:
         build(ctx, config)
     if kill:
         click.echo("Killing all docker containers")
-        os.system("docker kill $(docker ps -q)")
+        do_kill(ctx, config, machines=[], brutal=True)
+        rm(ctx, config, machines=[])
     __dc(['up', '-d'])
     Commands.invoke(ctx, 'kill', machines=["odoo"])
     ip = _get_host_ip()
@@ -56,9 +55,10 @@ def dev(ctx, config, nobuild, kill):
     # execute script
     ScriptFile = config.files['start-dev']
     if not ScriptFile.exists():
-        click.secho("Info: Not found: {} - not executing anything on startup".format(ScriptFile))
-    FNULL = open(os.devnull, 'w')
-    subprocess.Popen([ScriptFile], shell=True, stdout=FNULL)
+        click.secho(f"Info: you may provide a startup script here: {ScriptFile}", fg='yellow')
+    else:
+        FNULL = open(os.devnull, 'w')
+        subprocess.Popen([ScriptFile], shell=True, stdout=FNULL)
 
     Commands.invoke(ctx, 'debug', machine="odoo")
 

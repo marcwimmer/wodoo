@@ -8,14 +8,14 @@ def docker(config):
     pass
 
 @docker.command()
-@click.option("-B", "--nobuild", is_flag=True)
+@click.option("-b", "--build", is_flag=True)
 @click.option("-k", "--kill", is_flag=True)
 @pass_config
 @click.pass_context
-def dev(ctx, config, nobuild, kill):
+def dev(ctx, config, build, kill):
     if config.use_docker:
         from .lib_control_with_docker import dev as lib_dev
-    return lib_dev(ctx, config, nobuild, kill)
+    return lib_dev(ctx, config, build, kill)
 
 
 @docker.command(name='ps')
