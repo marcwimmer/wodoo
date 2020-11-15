@@ -110,3 +110,6 @@ if __name__ == "__main__":
     t = threading.Thread(target=run_job, args=(job,))
     t.daemon = True
     t.start()
+
+    while True:
+        time.sleep(10000000)
