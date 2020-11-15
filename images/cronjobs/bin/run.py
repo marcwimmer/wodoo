@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import threading
 import string
 import os
 import sys
@@ -65,6 +66,22 @@ def execute(job_cmd):
     job_cmd = replace_params(job_cmd)
     os.system(job_cmd)
 
+def run_job(job):
+    i = 0
+    while True:
+        now = datetime.now()
+
+        if i > 300:
+            logging.info("Next run of %s at %s", job['cmd'], job['next'])
+            i = 0
+
+        if job['next'] < now:
+            execute(job['cmd'])
+            job['next'] = job['itr'].get_next(datetime)
+
+        time.sleep(1)
+        i += 1
+
 
 if __name__ == "__main__":
     jobs = list(get_jobs())
@@ -90,16 +107,6 @@ if __name__ == "__main__":
     for job in jobs:
         logger.info(replace_params(job['cmd']))
 
-    while True:
-        now = datetime.now()
-
-        for job in jobs:
-            if not displayed_infos or (datetime.now().second == 0 and datetime.now().minute == 0):
-                logging.info("Next run of %s at %s", job['cmd'], job['next'])
-
-            if job['next'] < now:
-                execute(job['cmd'])
-                job['next'] = job['itr'].get_next(datetime)
-
-        time.sleep(1)
-        displayed_infos = True
+    t = threading.Thread(target=run_job, args=(job,))
+    t.daemon = True
+    t.start()
