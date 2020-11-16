@@ -107,9 +107,9 @@ if __name__ == "__main__":
     for job in jobs:
         logger.info(replace_params(job['cmd']))
 
-    t = threading.Thread(target=run_job, args=(job,))
-    t.daemon = True
-    t.start()
+        t = threading.Thread(target=run_job, args=(job,))
+        t.daemon = True
+        t.start()
 
     while True:
         time.sleep(10000000)
