@@ -136,4 +136,10 @@ RUN pip3 install -r /root/requirements.txt
 
 RUN apt install -y libdmtx0b
 
+RUN ipython profile create && \
+echo "c.TerminalInteractiveShell.editing_mode = 'vi'" >> /root/.ipython/profile_default/ipython_config.py && \
+rsync /root/.ipython/ /home/odoo/.ipython/ -arP && \
+chown odoo:odoo -R /home/odoo/.ipython
+
+
 WORKDIR /opt/odoo

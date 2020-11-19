@@ -133,4 +133,9 @@ RUN apt install -y  $(grep -vE "^\s*#" /root/deb_requirements  | tr "\n" " ")
 
 RUN pip3 install pudb ipython
 
+RUN ipython profile create && \
+echo "c.TerminalInteractiveShell.editing_mode = 'vi'" >> /root/.ipython/profile_default/ipython_config.py && \
+rsync /root/.ipython/ /home/odoo/.ipython/ -arP && \
+chown odoo:odoo -R /home/odoo/.ipython
+
 WORKDIR /opt/odoo
