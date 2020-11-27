@@ -338,6 +338,40 @@ def _exec_update(config, params):
         from . import lib_control_native
         return lib_control_native._update_command(params)
 
+@odoo_module.command()
+@click.option('-r', '--repeat', is_flag=True)
+@pass_config
+def unittest(config, repeat):
+    """
+    Collects unittest files and offers to run
+    """
+    from .odoo_config import MANIFEST, CUSTOMS_MANIFEST_FILE
+    from .module_tools import Module
+    from pathlib import Path
+    last_unittest = config.runtime_settings.get('last_unittest')
+
+    if repeat and last_unittest:
+        filename = last_unittest
+    else:
+        testfiles = []
+
+        for testmodule in MANIFEST().get('tests', []):
+            testmodule = Module.get_by_name(testmodule)
+            for file in testmodule.path.glob("tests/test*.py"):
+                testfiles.append(file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
+
+        testfiles = sorted(testfiles)
+        message = "Please choose the unittest to run."
+        filename = inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')
+
+    if not filename:
+        return
+    config.runtime_settings.set('last_unittest', filename)
+    click.secho(str(filename), fg='green', bold=True)
+    container_file = Path('/opt/src/') / filename
+    params = ['odoo', '/odoolib/unit_test.py', f'{container_file}']
+    __dcrun(params + ['--log-level=debug'], interactive=True)
+
 
 Commands.register(progress)
 Commands.register(remove_old_modules)

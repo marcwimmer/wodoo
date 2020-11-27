@@ -49,6 +49,7 @@ default_files = {
     'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
     'start-dev': '~/.odoo/start-dev',
     'cicd_delegator_registry': '${cicd_delegator}/registry.json',
+    'runtime_settings': '~/.odoo/.script_settings',
 }
 
 default_commands = {

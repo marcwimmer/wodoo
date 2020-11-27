@@ -11,4 +11,5 @@ services:
       - ${HOST_RUN_DIR}/sslproxy/config.json:/app/config/production.json
       - ${HOST_RUN_DIR}/sslproxy/data:/data
       - ${HOST_RUN_DIR}/sslproxy/letsencrypt:/etc/letsencrypt
+        #- ${HOST_RUN_DIR}/sslproxy/server.conf:/data/nginx/custom/server_proxy.conf
     restart: unless-stopped

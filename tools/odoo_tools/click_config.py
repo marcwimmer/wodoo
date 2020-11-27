@@ -57,6 +57,9 @@ class Config(object):
             self.files['commit'] = None
         set_shell_table_title(self.PROJECT_NAME)
 
+        from .program_settings import ProgramSettings
+        self.runtime_settings = ProgramSettings(self.files['runtime_settings'])
+
     def forced(self):
         return Config.Forced(self)
 
