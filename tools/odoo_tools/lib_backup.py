@@ -195,7 +195,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     if not config.force and not latest:
         __restore_check(filename, config)
 
-    DBNAME_RESTORING = config.DBNAME + "_restoring"
+    DBNAME_RESTORING = config.dbname + "_restoring"
 
     if not config.dbname:
         raise Exception("somehow dbname is missing")

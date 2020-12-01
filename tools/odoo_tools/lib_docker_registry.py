@@ -80,8 +80,6 @@ def regpull(config, machines):
 @docker_registry.command()
 @pass_config
 def self_sign_hub_certificate(config):
-    from pudb import set_trace
-    set_trace()
     if os.getuid() != 0:
         click.secho("Please execute as root or with sudo! Docker service is restarted after that.", bold=True, fg='red')
         sys.exit(-1)

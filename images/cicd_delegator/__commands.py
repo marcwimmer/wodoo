@@ -88,12 +88,6 @@ def register(ctx, config, project_name, desc, author):
 
     dbname = project_name
 
-    if dbname[0] in "0123456789":
-        dbname = 'db' + dbname
-    for c in '?:/*\\!@#$%^&*()-':
-        dbname = dbname.replace(c, "")
-    dbname = dbname.lower()
-
     reg = get_registry(config)
     update_project_configs(config, reg)
 
@@ -230,10 +224,12 @@ def _copy_index_webapp(config, registry):
 def _update_docker_compose(config, registry):
     dc = config.dirs['cicd_delegator'] / 'docker-compose.yml'
     template = (config.dirs['images'] / 'cicd_delegator' / 'docker-compose.yml').read_text()
-    template = template.replace(
-        "__CICD_NETWORK_NAME__",
-        registry['network_name'],
-    )
+    values = {
+        "__CICD_NETWORK_NAME__": registry['network_name'],
+        "__CICD_BINDING__": config.CICD_BINDING,
+    }
+    for k, v in values.items():
+        template = template.replace(k, v)
     dc.write_text(template)
 
     # make the empty file
@@ -261,8 +257,6 @@ def _update_locations_and_upstreams(config, registry):
     # sys.exit(-1)
 
     for site in registry['sites']:
-        from pudb import set_trace
-        set_trace()
         settings = {
             "__PROJECT_NAME__": site['name'],
             "__CICD_NETWORK_NAME__": registry['network_name'],

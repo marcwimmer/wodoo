@@ -144,6 +144,16 @@ def _prepare_filesystem(config):
             autofix=config.devmode
         )
 
+def get_db_name(db, customs):
+    db = db or customs
+
+    if db[0] in "0123456789":
+        db = 'db' + db
+    for c in '?:/*\\!@#$%^&*()-':
+        db = db.replace(c, "_")
+    db = db.lower()
+    return db
+
 def setup_settings_file(config, customs, db, demo, **forced_values):
     """
     Cleans run/settings and sets minimal settings;
@@ -159,7 +169,7 @@ def setup_settings_file(config, customs, db, demo, **forced_values):
     vals = {}
     if customs:
         vals['CUSTOMS'] = customs
-    vals['DBNAME'] = db or customs
+    vals['DBNAME'] = get_db_name(db, customs)
     if demo:
         vals['ODOO_DEMO'] = "1" if demo else "0"
     vals.update(forced_values)
