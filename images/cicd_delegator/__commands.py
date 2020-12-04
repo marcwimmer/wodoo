@@ -137,6 +137,7 @@ def reload_nginx(config):
     subprocess.check_call([
         'docker-compose',
         'exec',
+        '-T',
         'cicd_delegator',
         'nginx',
         '-s',
