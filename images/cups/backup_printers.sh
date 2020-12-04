@@ -11,6 +11,7 @@ do
 
     if [[ -f "$latest_file" ]]; then
         rsync "$latest_file" "$CONF_ROOT/printers.conf"
+        rsync /etc/cups/ppd "$CONF_ROOT/" -ar --delete-after
     fi
 
 	sleep 1
