@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record model="data.police" id="orderpoints">
+      <field name="model">product.product</field>
+      <field name="name">Missing Orderpoints</field>
+      <field name="domain">[('type', '=', 'product')]</field>
+      <field name="checkdef"></field>
+	  <field name="expr">bool(self.env["stock.warehouse.orderpoint"].search([('product_id', '=', self.id)]))</field>
+    </record>
+    <record model="data.police" id="zombi_stock_move">
+      <field name="model">stock.move</field>
+	  <field name="checkdef"></field>
+	  <field name="expr">not self.env["purchase.order"].search([('origin', '=', self.name), ('state', '=', 'cancel')])</field>
+      <field name="name">Stock move is not done/cancelled but purchase order is cancelled</field>
+      <field name="domain">[('name', 'ilike', 'OP%'), ('state', 'not in', ['done', 'cancel'])]</field>
+    </record>
+    <record model="data.police" id="stock_quants_reserved_on_not_internal">
+      <field name="model">stock.quant</field>
+	  <field name="checkdef"></field>
+      <field name="expr">True</field>
+      <field name="name">Reservation on not internal stocks</field>
+      <field name="domain">[('location_id.usage', 'not in', ['internal', 'transfer']), ('reserved_quantity', '>', 0)]</field>
+    </record>
+  </data>
+</odoo>

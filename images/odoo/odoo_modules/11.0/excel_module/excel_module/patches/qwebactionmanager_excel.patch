@@ -1,0 +1,23 @@
+diff --git a/addons/web/static/src/js/report/qwebactionmanager.js b/addons/web/static/src/js/report/qwebactionmanager.js
+index 1c9e680..125355a 100644
+--- a/addons/web/static/src/js/report/qwebactionmanager.js
++++ b/addons/web/static/src/js/report/qwebactionmanager.js
+@@ -134,6 +134,18 @@ ActionManager.include({
+                     return self.do_action('report.client_action', client_action_options);
+                 }
+             });
++
++        } else if (action.report_type === 'excel') {
++            var res_id = '';
++            var res_model = '';
++            if (!action.menu_id) {
++                res_id = self.inner_widget.env.currentId || (action.context ? action.context.active_ids : action.context.active_id);
++                res_model = self.inner_widget.env.currentId ? self.inner_widget.action.res_model : '';
++            }
++            var url = "/excel_report/" + action.report_name + "?model=" + res_model + "&res_id=" + (res_id ? res_id : '');
++            window.location.href = url;
++            return;
++
+         } else {
+             self.do_warn(_t('Error'), _t('Non qweb reports are not anymore supported.'), true);
+             return;

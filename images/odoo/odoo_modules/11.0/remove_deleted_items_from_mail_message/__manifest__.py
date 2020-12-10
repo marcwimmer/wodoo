@@ -1,0 +1,16 @@
+{   'application': False,
+    'author': 'Marc Wimmer (marc@itewimmer.de)',
+    'auto_install': False,
+    'conflicts': [],
+    'css': [],
+    'data': ['cronjob.xml'],
+    'demo_xml': [],
+    'depends': ['base', 'mail'],
+    'installable': True,
+    'js': [],
+    'name': 'remove_deleted_items_from_mail_message',
+    'qweb': [],
+    'test': [],
+    'version': '11.0.1.0',
+    "external_dependencies": {"python" : ["arrow"]}
+}

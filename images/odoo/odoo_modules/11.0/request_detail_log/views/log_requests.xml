@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_log_request_tree" model="ir.ui.view">
+      <field name="model">log.request</field>
+      <field name="arch" type="xml">
+        <tree default_order="" string="">
+          <field name="date"/>
+          <field name="user_id"/>
+          <field name="model"/>
+          <field name="method"/>
+          <field name="duration"/>
+          <field name="duration_max" />
+          <field name="duration_min" />
+          <field name="args"/>
+          <field name="url" invisible='1'/>
+          <field name="url_display"/>
+        </tree>
+      </field>
+    </record>
+    <record id="view_log_request_search" model="ir.ui.view">
+      <field name="model">log.request</field>
+      <field name="arch" type="xml">
+        <search string="">
+          <filter name="today" domain="[('date', '&gt;=', context_today().strftime('%%Y-%%m-%%d') + ' 00:00:00')]" string="Today"/>
+          <field name="user_id"/>
+          <field name="url"/>
+          <field name="args"/>
+          <filter name="groupby_url" string="Url" domain="[]" context="{'group_by':'url_display'}"/>
+          <filter name="groupby_user" string="User" domain="[]" context="{'group_by':'user_id'}"/>
+          <filter name="groupby_day" string="Day" domain="[]" context="{'group_by':'date:day'}"/>
+        </search>
+      </field>
+    </record>
+  </data>
+</odoo>

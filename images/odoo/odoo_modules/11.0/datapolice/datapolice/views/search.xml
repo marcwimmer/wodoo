@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_data_police_search" model="ir.ui.view">
+      <field name="model">data.police</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="name" filter_domain="['|', '|', ('expr', 'ilike', self), ('checkdef', 'ilike', self), ('name', 'ilike', self)]"/>
+          <filter name='inactive' domain="[('active', '=', False)]" string='Inactive'/>
+        </search>
+      </field>
+    </record>
+  </data>
+</odoo>

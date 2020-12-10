@@ -1,0 +1,231 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+#	* datapolice
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 11.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-03-15 07:59+0000\n"
+"PO-Revision-Date: 2019-03-15 07:59+0000\n"
+"Last-Translator: <>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_active
+msgid "Active"
+msgstr "Aktiv"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_mrp_bom
+msgid "Bill of Material"
+msgstr "Stückliste"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_res_partner
+msgid "Contact"
+msgstr "Kontakt"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_errors
+msgid "Count Errors"
+msgstr "Count Errors"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_create_uid
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_create_uid
+msgid "Created by"
+msgstr "Angelegt von"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_create_date
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_create_date
+msgid "Created on"
+msgstr "Angelegt am"
+
+#. module: datapolice
+#: model:ir.actions.act_window,name:datapolice.act_datapolice_window
+msgid "Data-Police"
+msgstr "Data-Police"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_checkdef
+msgid "Def to call"
+msgstr "Def to call"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_fixdef
+msgid "Def to fix error"
+msgstr "Def to fix error"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_display_name
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_display_name
+msgid "Display Name"
+msgstr "Angezeigter Name"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_domain
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+msgid "Domain"
+msgstr "Domain"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_enabled
+msgid "Enabled"
+msgstr "Enabled"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+msgid "Example: obj.name != 'not allowed'\n"
+"                  # must evaluate to true, otherwise it will become an error-entry"
+msgstr "Example: obj.name != 'not allowed'\n"
+"                  # must evaluate to true, otherwise it will become an error-entry"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+msgid "Expression"
+msgstr "Expression"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_expr
+msgid "Expression (using obj)"
+msgstr "Expression (using obj)"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+msgid "Fix Errors"
+msgstr "Fix Errors"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_format
+msgid "Format"
+msgstr "Format"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_id
+#: model:ir.model.fields,field_description:datapolice.field_data_police_id
+msgid "ID"
+msgstr "ID"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_search
+msgid "Inactive"
+msgstr "Inaktiv"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_product_supplierinfo
+msgid "Information about a product vendor"
+msgstr "Information about a product vendor"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_account_invoice
+msgid "Invoice"
+msgstr "Rechnung"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_last_errors
+msgid "Last Error Log"
+msgstr "Last Error Log"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+msgid "Last Errors"
+msgstr "Last Errors"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police___last_update
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter___last_update
+msgid "Last Modified on"
+msgstr "Zuletzt geändert am"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_write_uid
+#: model:ir.model.fields,field_description:datapolice.field_data_police_write_uid
+msgid "Last Updated by"
+msgstr "Zuletzt aktualisiert durch"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_write_date
+#: model:ir.model.fields,field_description:datapolice.field_data_police_write_date
+msgid "Last Updated on"
+msgstr "Zuletzt aktualisiert am"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_recipients
+msgid "Mail-Recipients"
+msgstr "Mail-Recipients"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_mrp_production
+msgid "Manufacturing Order"
+msgstr "Fertigungsauftrag"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_formatter_model
+#: model:ir.model.fields,field_description:datapolice.field_data_police_model
+msgid "Model"
+msgstr "Modell"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_name
+msgid "Name"
+msgstr "Bezeichnung"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_product_product
+msgid "Product"
+msgstr "Produkt"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_user_ids
+msgid "Recipients (users)"
+msgstr "Recipients (users)"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_tree
+msgid "Run"
+msgstr "Starte"
+
+#. module: datapolice
+#: model:ir.model.fields,field_description:datapolice.field_data_police_src_model
+msgid "Source Model"
+msgstr "Quelle"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_stock_move
+msgid "Stock Move"
+msgstr "Bestandsbuchung"
+
+#. module: datapolice
+#: model:ir.ui.view,arch_db:datapolice.view_data_police_form
+msgid "[('name', 'ilike', 'its me')]"
+msgstr "[('name', 'ilike', 'its me')]"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_data_police
+msgid "data.police"
+msgstr "data.police"
+
+#. module: datapolice
+#: model:ir.model,name:datapolice.model_data_police_formatter
+msgid "data.police.formatter"
+msgstr "data.police.formatter"
+
+#. module: datapolice
+#: model:ir.cron,cron_name:datapolice.datapolicerun
+#: model:ir.cron,name:datapolice.datapolicerun
+#: model:ir.model,name:datapolice.model_datapolice
+msgid "datapolice"
+msgstr "datapolice"
+
+#. module: datapolice
+#: model:ir.model.fields,help:datapolice.field_data_police_src_model
+msgid "if given, then the checkdef is called at this model. Expects erroneous items of type 'model'"
+msgstr "if given, then the checkdef is called at this model. Expects erroneous items of type 'model'"
+

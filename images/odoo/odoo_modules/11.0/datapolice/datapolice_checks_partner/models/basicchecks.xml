@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record model="data.police" id="partner_company">
+      <field name="model">res.partner</field>
+      <field name="checkdef"></field>
+      <field name="fixdef">fix_check_customer_company</field>
+	  <field name="expr">self.is_company</field>
+      <field name="name">Customer must be company</field>
+      <field name="domain">[('customer', '=', True), ('is_company', '=', False)]</field>
+    </record>
+  </data>
+</odoo>

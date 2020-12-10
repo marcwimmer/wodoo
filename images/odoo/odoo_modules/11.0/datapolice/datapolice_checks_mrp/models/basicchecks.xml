@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record model="data.police" id="bom_recursion">
+      <field name="model">product.product</field>
+      <field name="checkdef">check_recursion_in_bom</field>
+      <field name="name">Recursion in BoM</field>
+      <field name="domain">[]</field>
+    </record>
+    <record model="data.police" id="missing_bom">
+      <field name="model">product.product</field>
+	  <field name="checkdef"></field>
+	  <field name="expr">bool(obj.env["mrp.bom"].search([('product_id', '=', obj.id)]))</field>
+      <field name="name">Missing BoM</field>
+      <field name="domain">[('active', '=', True), ('type', '=', 'product'), ('route_ids.pull_ids.action', '=', 'manufacture')]</field>
+    </record>
+    <record model="data.police" id="production_empty_move">
+      <field name="model">mrp.production</field>
+      <field name="checkdef">check_productions_empty_moves</field>
+      <field name="name">Production has empty moves</field>
+      <field name="domain">[('state', '!=', ['done', 'cancel', 'cancelled'])]</field>
+    </record>
+    <record model="data.police" id="inactive_products_in_bom">
+      <field name="model">mrp.bom</field>
+      <field name="checkdef">check_inactive_products_in_boms</field>
+      <field name="name">Inactive Products in BoM</field>
+      <field name="domain">[('product_id.active', '=', True), ('active', '=', True)]</field>
+    </record>
+  </data>
+</odoo>

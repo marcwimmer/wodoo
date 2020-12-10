@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record model="data.police" id="products1">
+      <field name="model">product.product</field>
+      <field name="checkdef">check_incoming_noproduction_nopicking</field>
+      <field name="name">Incoming stock moves, that have no production or picking-in</field>
+    </record>
+  </data>
+</odoo>
