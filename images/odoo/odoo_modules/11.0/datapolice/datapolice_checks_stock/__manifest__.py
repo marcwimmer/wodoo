@@ -4,6 +4,7 @@
     'auto_install': True,
     'css': [],
     'data': ['models/basicchecks.xml'],
+    'demo': [],
     'demo_xml': [],
     'depends': ['base', 'datapolice', 'stock'],
     'description': '',
