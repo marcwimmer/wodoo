@@ -24,7 +24,12 @@ def get_odoo_addons_paths(relative=False):
     c = customs_dir()
     res = []
     if os.getenv("ODOO_SERVER_TOOLS_MODULES", ""):
-        res.append(Path(os.environ['ODOO_SERVER_TOOLS_MODULES']))
+        common_server_tools = Path(os.environ['ODOO_SERVER_TOOLS_MODULES'])
+        res.append(common_server_tools)
+        if (common_server_tools / 'addons_paths').exists():
+            # append subdirs for datapolice and so on
+            for path in json.loads((common_server_tools / 'addons_paths').read_text()):
+                res.append(common_server_tools / path)
     for x in m['addons_paths']:
         if relative:
             res.append(x)
