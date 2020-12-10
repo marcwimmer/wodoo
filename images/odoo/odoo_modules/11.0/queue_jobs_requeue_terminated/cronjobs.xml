@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="requeue_terminated" model="ir.cron">
+      <field name="name">requeue terminated queue-jobs</field>
+      <field name="interval_number">1</field>
+      <field name="interval_type">hours</field>
+      <field name="model_id" ref="model_queue_job"/>
+      <field name="state">code</field>
+      <field name="code">model.requeue_terminated()</field>
+      <field name="nextcall" eval="'2000-01-01 20:15:00'"/>
+      <field name="numbercall">-1</field>
+    </record>
+  </data>
+</odoo>
