@@ -3,8 +3,7 @@ from .dttools import str2date
 
 # def replace(string_with_params, params):
     # new_params = []
-    # for p in params:
-        # if not p:
+    # for p in params: if not p:
             # new_params.append("")
         # else:
             # new_params.append(p.decode("utf-8"))
@@ -35,3 +34,16 @@ def replace_placholders(string, obj=False, parser=False, dict=False):
         except Exception:
             raise
     return string
+
+def remove_double_space(txt):
+    while "  " in txt:
+        txt = txt.replace("  ", " ")
+    return txt
+
+def split_chars(to_split, chars, remove_double_space_before=True):
+    if remove_double_space_before:
+        to_split = remove_double_space(to_split)
+    unique_string = "88assad!#!#!#!#!#df8fdsf$@14'12"
+    for c in chars:
+        to_split = to_split.replace(c, unique_string)
+    return to_split.split(unique_string)
