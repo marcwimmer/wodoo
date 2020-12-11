@@ -93,6 +93,8 @@ class Debugger(object):
                     self.execpy(['/usr/bin/reset'])
                     if os.getenv("PROXY_PORT", ""):
                         print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
+
+                    self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
                     self.execpy(["run_debug.py"])
                     continue
                 elif action[0] == 'update_view_in_db':
