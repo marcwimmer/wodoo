@@ -615,12 +615,14 @@ def remove_webassets(conn):
         cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
         cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
         cr.execute("delete from ir_attachment where name ilike '%.less'")
+        cr.execute("delete from ir_attachment where name ilike '%.scss'")
         cr.execute("delete from ir_attachment where name ilike 'web_icon_data'")
         cr.execute("delete from ir_attachment where name ilike 'web_editor.summernote.%'")
         conn.commit()
     finally:
         cr.close()
         conn.close()
+    click.secho("A restart is usually required.", fg='green')
 
 def get_dockercompose():
     from . import files
