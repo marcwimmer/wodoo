@@ -34,7 +34,7 @@ def sanity_check(config):
 @click.pass_context
 def show_effective_settings(ctx, config):
     from . import MyConfigParser
-    config = MyConfigParser(files['settings'])
+    config = MyConfigParser(config.files['settings'])
     for k in sorted(config.keys()):
         click.echo("{}={}".format(
             k,
@@ -67,29 +67,6 @@ def status(config):
     click.secho(config.odoo_version, fg=color, bold=True)
     click.secho("db: ", nl=False)
     click.secho(config.dbname, fg=color, bold=True)
-    import docker
-    client = docker.from_env()
-    if config.use_docker:
-        from .tools import __dc_out, __dc
-        if config.run_postgres:
-            print("dockerized postgres")
-            if config.run_postgres_in_ram:
-                print("postgres is in-ram")
-        else:
-            click.secho("postgres: {}:{}/{}".format(
-                config.db_host,
-                config.db_port,
-                config.dbname,
-            ))
-        cmd = ['config', '--services']
-        __dc(cmd)
-        cmd = ['config', '--volumes']
-        volumes = __dc_out(cmd).decode('utf-8').strip().split("\n")
-        for volume in volumes:
-            for v in client.volumes.list():
-                if 'postg' in v.name.lower():
-                    if v.name == f'{config.PROJECT_NAME}_ODOO_POSTGRES_VOLUME':
-                        click.secho(f"{v.name}: {v.attrs['Mountpoint']})")
 
 @setup.command()
 @pass_config
