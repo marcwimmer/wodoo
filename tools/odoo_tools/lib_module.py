@@ -336,7 +336,7 @@ def _exec_update(config, params):
         return __cmd_interactive(*params)
     else:
         from . import lib_control_native
-        return lib_control_native._update_command(params)
+        return lib_control_native._update_command(config, params)
 
 @odoo_module.command()
 @click.option('-r', '--repeat', is_flag=True)

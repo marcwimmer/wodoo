@@ -29,6 +29,12 @@ from .odoo_config import customs_dir
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 
+PROTECTED_PIP_PACKAGES = [
+    'lxml', 'python-dateutil', 'requests',
+    'greenlet', 'reportlab', 'psycopg2',
+    'gevent', 'passlib', 'pdftotext'
+]
+
 @cli.group(cls=AliasedGroup)
 @pass_config
 def venv(config):
@@ -46,6 +52,18 @@ def setup(config):
     print("Further:")
     print("If you need redis: brew install redis")
     print("Advanced mail server with roundcube - todo for marc to make the mail client run in docker isolated")
+
+@venv.command()
+@pass_config
+def delete(config):
+    if config.dirs['venv'].exists():
+        shutil.rmtree(config.dirs['venv'])
+        click.secho(f"Deleted {config.dirs['venv']}")
+
+@venv.command()
+@pass_config
+def activate(config):
+    click.secho(f"source {config.dirs['venv']}/bin/activate")
 
 def _get_bash_prefix(config):
     return """#!/bin/bash
@@ -104,16 +122,30 @@ def install_requirements_in_venv(config):
     file_content = []
     file_content.append("pip install pip --upgrade")
     file_content.append("pip install pudb")
-    file_content.append("brew install postgresql zlib pv poppler pkg-config|| true")
+    file_content.append("brew install geos postgresql zlib pv poppler pkg-config|| true")
     # brew tells about following lines
     file_content.append('export CFLAGS="$CFLAGS -I/usr/local/opt/zlib/include"')
     file_content.append('export LDFLAGS="$LDFLAGS -L/usr/local/opt/zlib/lib"')
     file_content.append('export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/zlib/include"')
     file_content.append("pip3 install cython")
     file_content.append("pip3 install watchdog")
-    for req_file in req_files:
-        file_content.append("pip install -r '{}'".format(req_file))
+    # filter out lxml; problematic on venv and macos
+    req_files_dir = config.dirs['run_native_requirements']
+    for i, req_file in enumerate(req_files):
+        filename = req_files_dir / f"{i}.txt"
+        content = req_file.read_text().split("\n")
+        content = [x for x in content if all(y not in x for y in PROTECTED_PIP_PACKAGES)]
+        filename.parent.mkdir(exist_ok=True, parents=True)
+        filename.write_text('\n'.join(content))
+        file_content.append("pip install -r '{}'".format(filename))
+        del filename
+
     config.files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
-    config.files['native_bin_install_requirements'].write_text(_get_bash_prefix() + "\n" + '\n'.join(file_content))
+    config.files['native_bin_install_requirements'].write_text(_get_bash_prefix(config) + "\n" + '\n'.join(file_content))
     __make_file_executable(config.files['native_bin_install_requirements'])
     subprocess.call([config.files['native_bin_install_requirements']])
+
+    click.secho((
+        f"The following pip packages were taken from system and were not touched:"
+        f"{', '.join(PROTECTED_PIP_PACKAGES)}"
+    ), fg='green')
