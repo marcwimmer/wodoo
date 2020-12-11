@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_queue_job_severity_rule_tree" model="ir.ui.view">
+      <field name="model">queue.job.severity_rule</field>
+      <field name="arch" type="xml">
+        <tree default_order="" string="" editable="bottom">
+          <field name="priority" widget="handle"/>
+          <field name="regex"/>
+          <field name="severity"/>
+          <field name="text_in_exception"/>
+        </tree>
+      </field>
+    </record>
+  </data>
+</odoo>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_ir_model_access_tree" model="ir.ui.view">
+      <field name="model">ir.model.access</field>
+      <field name="type">tree</field>
+      <field name="inherit_id" ref="base.ir_access_view_tree"/>
+      <field name="arch" type="xml">
+        <field name="perm_unlink" position="after">
+          <field name="xml_id"/>
+        </field>
+      </field>
+    </record>
+  </data>
+</odoo>
