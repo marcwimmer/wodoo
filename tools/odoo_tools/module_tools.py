@@ -877,7 +877,7 @@ class Module(object):
             files_per_assets.setdefault(parent, default_dict())
 
             url = prefix_static + str(local_file_path)
-            if local_file_path.suffix in ['.less', '.css']:
+            if local_file_path.suffix in ['.less', '.css', '.scss']:
                 files_per_assets[parent]['stylesheets'].append(url)
             elif local_file_path.suffix in ['.js']:
                 files_per_assets[parent]['js'].append(url)
@@ -957,7 +957,7 @@ class Module(object):
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == '.js':
                 pass
-            elif local_path.suffix in ['.css', '.less']:
+            elif local_path.suffix in ['.css', '.less', '.scss']:
                 mod["css"].append(str(local_path))
 
         # keep test empty: use concrete call to test-file instead of testing on every module update
