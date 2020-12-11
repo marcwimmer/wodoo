@@ -26,7 +26,7 @@ def dev(ctx, config):
     starts developing in the odoo container
     """
     from .myconfigparser import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
     proxy_port = myconfig['PROXY_PORT']
     roundcube_port = myconfig['ROUNDCUBE_PORT']
     ip = '127.0.0.1'
@@ -39,18 +39,13 @@ def _update_command(config, params):
     _exec_in_virtualenv(config, ['python', _path_odoolib() / 'update_modules.py'] + params)
 
 
-@control.command()
-@click.argument('machines', nargs=-1)
-@click.option('-d', '--daemon', is_flag=True)
-@pass_config
-@click.pass_context
-def up(ctx, config, machines, daemon):
+def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
     _sanity_check(config)
     _exec_in_virtualenv(config, ['python', _path_odoolib() / 'run.py'])
 
 
 @control.command()
-def shell():
+def shell(config):
     subprocess.call([
         'python',
         ''

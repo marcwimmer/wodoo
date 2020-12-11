@@ -31,8 +31,8 @@ from .lib_clickhelpers import AliasedGroup
 
 PROTECTED_PIP_PACKAGES = [
     'lxml', 'python-dateutil', 'requests',
-    'greenlet', 'psycopg2', 'reportlab',
-    'gevent', 'passlib', 'pdftotext'
+    'greenlet', 'psycopg2', 'pillow',
+    'passlib', 'pdftotext', 'gevent',
 ]
 
 @cli.group(cls=AliasedGroup)
@@ -122,7 +122,7 @@ def install_requirements_in_venv(config):
     file_content = []
     file_content.append("pip install pip --upgrade")
     file_content.append("pip install pudb")
-    file_content.append("brew install geos postgresql zlib pv poppler pkg-config|| true")
+    file_content.append("brew install geos postgresql zlib pv poppler pkg-config freetype|| true")
     # brew tells about following lines
     file_content.append('export CFLAGS="$CFLAGS -I/usr/local/opt/zlib/include"')
     file_content.append('export LDFLAGS="$LDFLAGS -L/usr/local/opt/zlib/lib"')
@@ -131,6 +131,7 @@ def install_requirements_in_venv(config):
     # filter out lxml; problematic on venv and macos
     req_files_dir = config.dirs['run_native_requirements']
     for i, req_file in enumerate(req_files):
+        # filter out some packages
         filename = req_files_dir / f"{i}.txt"
         content = req_file.read_text().split("\n")
         content = [x for x in content if all(y not in x for y in PROTECTED_PIP_PACKAGES)]
@@ -138,6 +139,8 @@ def install_requirements_in_venv(config):
         filename.write_text('\n'.join(content))
         file_content.append("pip install -r '{}'".format(filename))
         del filename
+    for pip in PROTECTED_PIP_PACKAGES:
+        file_content.append(f"pip install {pip} --upgrade")
 
     config.files['native_bin_install_requirements'].parent.mkdir(exist_ok=True, parents=True)
     config.files['native_bin_install_requirements'].write_text(_get_bash_prefix(config) + "\n" + '\n'.join(file_content))

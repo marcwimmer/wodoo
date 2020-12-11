@@ -42,7 +42,7 @@ def execute(config, machine, args):
 def do_kill(ctx, config, machines, brutal=False):
     if config.use_docker:
         from .lib_control_with_docker import do_kill as lib_do_kill
-    lib_do_kill(ctx, config, machines, brutal=False)
+        lib_do_kill(ctx, config, machines, brutal=False)
 
 @docker.command()
 @pass_config
@@ -83,6 +83,8 @@ def recreate(ctx, config, machines):
 def up(ctx, config, machines, daemon):
     if config.use_docker:
         from .lib_control_with_docker import up as lib_up
+    else:
+        from .lib_control_native import up as lib_up
     lib_up(ctx, config, machines, daemon, remove_orphans=True)
 
 @docker.command()
