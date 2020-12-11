@@ -31,7 +31,7 @@ from .lib_clickhelpers import AliasedGroup
 
 PROTECTED_PIP_PACKAGES = [
     'lxml', 'python-dateutil', 'requests',
-    'greenlet', 'reportlab', 'psycopg2',
+    'greenlet', 'psycopg2', 'reportlab',
     'gevent', 'passlib', 'pdftotext'
 ]
 
@@ -127,8 +127,7 @@ def install_requirements_in_venv(config):
     file_content.append('export CFLAGS="$CFLAGS -I/usr/local/opt/zlib/include"')
     file_content.append('export LDFLAGS="$LDFLAGS -L/usr/local/opt/zlib/lib"')
     file_content.append('export CPPFLAGS="$CPPFLAGS -I/usr/local/opt/zlib/include"')
-    file_content.append("pip3 install cython")
-    file_content.append("pip3 install watchdog")
+    file_content.append("pip3 install cython wheel setuptools watchdog")
     # filter out lxml; problematic on venv and macos
     req_files_dir = config.dirs['run_native_requirements']
     for i, req_file in enumerate(req_files):
