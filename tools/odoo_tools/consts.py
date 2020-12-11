@@ -18,6 +18,7 @@ default_dirs = {
     'venv': "${run}/venv",
     'run_native_config_dir': '${run}/configs',
     'run_native_bin_dir': '${run}/bin',
+    'run_native_requirements': '${run}/requirements', # requirement files
     'run_native_out_dir': '${run}/odoo_outdir',
     'odoo_tools': '$odoo_home/tools',
     'odoo_data_dir': "~/.odoo/files",

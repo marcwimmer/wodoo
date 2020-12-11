@@ -47,8 +47,8 @@ class Config(object):
             # needed for get_env for example
             os.environ['RUN_DIR'] = str(self.HOST_RUN_DIR)
         self.NETWORK_NAME = "{}_default".format(self.PROJECT_NAME)
-        self.use_docker = get_use_docker(self.files)
         make_absolute_paths(self, self.dirs, self.files, self.commands)
+        self.use_docker = get_use_docker(self.files)
         self.dirs['customs'] = self.WORKING_DIR
 
         if self.dirs['customs']:
@@ -64,7 +64,6 @@ class Config(object):
         return Config.Forced(self)
 
     def __getattribute__(self, name):
-
         try:
             value = super(Config, self).__getattribute__(name)
             return value

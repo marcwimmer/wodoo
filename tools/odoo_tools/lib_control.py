@@ -57,7 +57,7 @@ def force_kill(ctx, config, machine):
 def wait_for_container_postgres(config):
     if config.use_docker:
         from .lib_control_with_docker import wait_for_container_postgres as lib_wait_for_container_postgres
-    lib_wait_for_container_postgres(config)
+        lib_wait_for_container_postgres(config)
 
 @docker.command()
 @pass_config

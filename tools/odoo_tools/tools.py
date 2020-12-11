@@ -125,11 +125,18 @@ def __get_odoo_commit():
     return commit
 
 def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False):
+
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
-    def try_connect():
-        _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", 'template1', no_try=True)
+    def try_connect(connection):
+        try:
+            if hasattr(connection, 'clone'):
+                connection = connection.clone(dbname='template1')
+            _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True)
+        except Exception as e:
+            click.secho(str(e), fg='red')
+
     if not no_try:
-        try_connect()
+        try_connect(connection)
 
     def _call_cr(cr):
         cr.execute(sql)
@@ -176,6 +183,7 @@ def _exists_table(conn, table_name):
     return record[0]
 
 def _start_postgres_and_wait(config):
+    return
     if config.run_postgres:
         if config.run_postgres_in_ram and _is_container_running('postgres'):
             # avoid recreate

@@ -9,7 +9,7 @@ from pathlib import Path
 from .odoo_config import current_version
 from .odoo_config import customs_dir
 from .tools import _sanity_check
-from . import cli, pass_config, dirs, files, Commands
+from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 import subprocess
 
@@ -32,11 +32,11 @@ def dev(ctx, config):
     ip = '127.0.0.1'
     click.secho("Proxy Port: http://{}:{}".format(ip, proxy_port), fg='green', bold=True)
     click.secho("Mailclient : http://{}:{}".format(ip, roundcube_port), fg='green', bold=True)
-    _exec_in_virtualenv(['python', _path_odoolib() / 'debug.py'])
+    _exec_in_virtualenv(config, ['python', _path_odoolib() / 'debug.py'])
 
 
-def _update_command(params):
-    _exec_in_virtualenv(['python', _path_odoolib() / 'update_modules.py'] + params)
+def _update_command(config, params):
+    _exec_in_virtualenv(config, ['python', _path_odoolib() / 'update_modules.py'] + params)
 
 
 @control.command()
@@ -46,7 +46,7 @@ def _update_command(params):
 @click.pass_context
 def up(ctx, config, machines, daemon):
     _sanity_check(config)
-    _exec_in_virtualenv(['python', _path_odoolib() / 'run.py'])
+    _exec_in_virtualenv(config, ['python', _path_odoolib() / 'run.py'])
 
 
 @control.command()
@@ -55,21 +55,24 @@ def shell():
         'python',
         ''
     ])
-    _exec_in_virtualenv(['python', _path_odoolib() / 'shell.py'])
+    _exec_in_virtualenv(config, ['python', _path_odoolib() / 'shell.py'])
 
 def _path_odoolib():
     return Path(os.environ['ODOO_HOME']) / 'images' / 'odoo' / 'bin'
 
-def _exec_in_virtualenv(cmd):
+def _exec_in_virtualenv(config, cmd):
     filename = Path(tempfile.mktemp(suffix='.sh'))
     from .myconfigparser import MyConfigParser
-    myconfig = MyConfigParser(files['settings'])
+    myconfig = MyConfigParser(config.files['settings'])
 
     def _quoted(x):
         return "'{}'".format(x)
     content = []
     for key in myconfig.keys():
         content.append("export {}='{}'".format(key, myconfig.get(key)))
+    files = config.files
+    dirs = config.dirs
+
     filename.write_text('\n'.join(content + list((
         f'set -ex',
         f'export DEBUGGER_WATCH="{files["run/odoo_debug.txt"]}"',
