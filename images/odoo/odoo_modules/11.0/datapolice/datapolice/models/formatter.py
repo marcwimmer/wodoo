@@ -4,7 +4,7 @@ from mako.template import Template
 class Formatter(models.Model):
     _name = 'data.police.formatter'
     model = fields.Char("Model", size=128)
-    format = fields.Char('Format', size=128)
+    format = fields.Char('Format')
 
     @api.model
     def do_format(self, instance):
@@ -15,4 +15,5 @@ class Formatter(models.Model):
         formatter = formatter[0]
 
         t = Template(formatter['format'])
-        return t.render(obj=instance)
+        res = t.render(obj=instance)
+        return res

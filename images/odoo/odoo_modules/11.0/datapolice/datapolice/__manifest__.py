@@ -9,6 +9,7 @@
                 'views/menu.xml',
                 'views/search.xml',
                 'views/tree.xml',
+                'views/formatters_tree.xml',
                 'security/ir.model.access.csv'],
     'demo_xml': [],
     'depends': ['base', 'mrp', 'product', 'purchase', 'sale', 'stock'],
