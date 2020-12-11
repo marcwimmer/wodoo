@@ -28,7 +28,7 @@ def __get_postgres_volume_name(config):
 def _get_cmd_butter_volume():
     # sudoer entry:
     # Cmnd_Alias BUTTERVOLUME = /usr/bin/runc --root /run/docker/plugins/runtime-root/plugins.moby/ *
-    # odoo-caetec ALL=(ALL) NOPASSWD: BUTTERVOLUME
+    # odoo-xxxxx ALL=(ALL) NOPASSWD: BUTTERVOLUME
     drunc = ["sudo", "runc", "--root", "/run/docker/plugins/runtime-root/plugins.moby/"]
     container_id = subprocess.check_output(drunc + ["list"]).decode('utf-8').split('\n')[1].split(" ")[0]
     buttervolume = drunc + ['exec', '-t', container_id, 'buttervolume']

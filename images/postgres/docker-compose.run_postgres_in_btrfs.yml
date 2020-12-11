@@ -1,4 +1,6 @@
 # manage-order: 551
 volumes:
     ODOO_POSTGRES_VOLUME:
-        driver: anybox/buttervolume:latest
+        # use docker plugin create btrfs .  - README installing anybox butter volume
+        # driver: anybox/buttervolume
+        driver: btrfs
