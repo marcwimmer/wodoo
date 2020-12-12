@@ -26,13 +26,18 @@ def __get_postgres_volume_name(config):
 
 
 def _get_cmd_butter_volume():
+    # 12.12.2020 Docker version 20.10.0, build 7287ab3
+    # Docker version installed and running with the container simply does not work,
+    # because that container does not start. Using the buttervolume pypi plugin works,
+    # so switching to that.
+    # buttervolume==3.7
     # sudoer entry:
-    # Cmnd_Alias BUTTERVOLUME = /usr/bin/runc --root /run/docker/plugins/runtime-root/plugins.moby/ *
-    # odoo-xxxxx ALL=(ALL) NOPASSWD: BUTTERVOLUME
-    drunc = ["sudo", "runc", "--root", "/run/docker/plugins/runtime-root/plugins.moby/"]
-    container_id = subprocess.check_output(drunc + ["list"]).decode('utf-8').split('\n')[1].split(" ")[0]
-    buttervolume = drunc + ['exec', '-t', container_id, 'buttervolume']
-    return buttervolume
+    ## Cmnd_Alias BUTTERVOLUME = /usr/bin/runc --root /run/docker/plugins/runtime-root/plugins.moby/ *
+    ## odoo-xxxxx ALL=(ALL) NOPASSWD: BUTTERVOLUME
+    #drunc = ["sudo", "runc", "--root", "/run/docker/plugins/runtime-root/plugins.moby/"]
+    #container_id = subprocess.check_output(drunc + ["list"]).decode('utf-8').split('\n')[1].split(" ")[0]
+    # buttervolume = drunc + ['exec', '-t', container_id, 'buttervolume']
+    return ["sudo", "/usr/local/bin/buttervolume"]
 
 @cli.group(cls=AliasedGroup)
 @pass_config
