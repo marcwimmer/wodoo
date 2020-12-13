@@ -5,7 +5,6 @@ config/docker-compose.odoo.yml
 config/docker-compose.asterisk.yml
 .DS_Store
 *.swp
-data
 dumps
 customs.env
 support_data

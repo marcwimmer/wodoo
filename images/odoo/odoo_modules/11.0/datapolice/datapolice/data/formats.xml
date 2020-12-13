@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record model="data.police.formatter" id="format_product">
+      <field name="model">product.product</field>
+      <field name="format">[${obj.default_code}] ${obj.name}</field>
+    </record>
+    <record model="data.police.formatter" id="format_product_template">
+      <field name="model">product.template</field>
+      <field name="format">[${obj.default_code}] ${obj.name}</field>
+    </record>
+    <record model="data.police.formatter" id="format_product_supplierinfo">
+      <field name="model">product.supplierinfo</field>
+      <field name="format">Supplier: ${obj.name.name}, Product: ${obj.product_id.name}</field>
+    </record>
+  </data>
+</odoo>
