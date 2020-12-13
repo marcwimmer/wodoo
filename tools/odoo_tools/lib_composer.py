@@ -125,9 +125,7 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
     _prepare_filesystem(config)
     _execute_after_settings(config)
 
-    myconfig = MyConfigParser(config.files['settings'])
-    if myconfig.get("USE_DOCKER", "1") == "1":
-        _prepare_yml_files_from_template_files(config)
+    _prepare_yml_files_from_template_files(config)
 
     click.echo("Built the docker-compose file.")
 

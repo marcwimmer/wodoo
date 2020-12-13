@@ -48,6 +48,7 @@ default_files = {
     'commit': 'odoo.commit',
     'native_bin_install_requirements': "${run_native_bin_dir}/install-requirements",
     'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
+    'native_collected_requirements_from_modules': "${run_native_bin_dir}/customs-requirements.txt",
     'start-dev': '~/.odoo/start-dev',
     'cicd_delegator_registry': '${cicd_delegator}/registry.json',
     'runtime_settings': '~/.odoo/.script_settings',

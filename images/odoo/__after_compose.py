@@ -4,6 +4,7 @@ import click
 import yaml
 
 def after_compose(config, settings, yml, globals):
+    # store also in clear text the requirements
     dirs = config.dirs
     odoodc = yaml.safe_load((dirs['odoo_home'] / 'images/odoo/docker-compose.yml').read_text())
 
@@ -86,3 +87,5 @@ def after_compose(config, settings, yml, globals):
             service['build'].setdefault('args', [])
             service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(sorted(external_dependencies['pip'])).encode('utf-8')).decode('utf-8')
             service['build']['args']['ODOO_DEB_REQUIREMENTS'] = base64.encodebytes('\n'.join(sorted(external_dependencies['deb'])).encode('utf-8')).decode('utf-8')
+
+        config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))

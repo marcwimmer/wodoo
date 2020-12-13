@@ -117,7 +117,8 @@ def install_requirements_in_venv(config):
     req_files = [
         config.dirs['odoo_home'] / 'requirements.txt',
         customs_dir() / 'odoo' / 'requirements.txt',
-        config.dirs['odoo_home'] / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt'
+        config.dirs['odoo_home'] / 'images' / 'odoo' / 'config' / str(current_version()) / 'requirements.txt',
+        config.files['native_collected_requirements_from_modules'],
     ]
     file_content = []
     file_content.append("pip install pip --upgrade")
