@@ -88,4 +88,5 @@ def after_compose(config, settings, yml, globals):
             service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(sorted(external_dependencies['pip'])).encode('utf-8')).decode('utf-8')
             service['build']['args']['ODOO_DEB_REQUIREMENTS'] = base64.encodebytes('\n'.join(sorted(external_dependencies['deb'])).encode('utf-8')).decode('utf-8')
 
+        config.files['native_collected_requirements_from_modules'].parent.mkdir(exist_ok=True, parents=True)
         config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))

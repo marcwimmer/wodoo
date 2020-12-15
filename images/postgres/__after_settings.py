@@ -24,12 +24,6 @@ def after_settings(config):
             port = random.randint(10001, 30000)
             config['POSTGRES_PORT'] = str(port)
 
-    if config.get('RUN_BTRFS', "") == "1":
-        config['RUN_POSTGRES_IN_BTRFS'] = '1'
-        config.write()
-    else:
-        config['RUN_POSTGRES_IN_BTRFS'] = '0'
-
     customs = config['CUSTOMS']
     dbname = config['DBNAME']
     project_name = config['PROJECT_NAME']

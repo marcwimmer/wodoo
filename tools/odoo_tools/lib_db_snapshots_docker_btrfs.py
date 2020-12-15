@@ -20,24 +20,20 @@ from .tools import get_volume_names
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
+from pathlib import Path
+try:
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError:
+    from yaml import Loader, Dumper
+
+SNAPSHOT_DIR = Path("/var/lib/docker/subvolumes")
 
 def __get_postgres_volume_name(config):
-    return config.PROJECT_NAME + "_" + 'ODOO_POSTGRES_VOLUME'
-
+    volume_name = yaml.load(config.files['docker_compose'].read_text(), Loader=Loader)['volumes']['ODOO_POSTGRES_VOLUME']['name']
+    return volume_name
 
 def _get_cmd_butter_volume():
-    # 12.12.2020 Docker version 20.10.0, build 7287ab3
-    # Docker version installed and running with the container simply does not work,
-    # because that container does not start. Using the buttervolume pypi plugin works,
-    # so switching to that.
-    # buttervolume==3.7
-    # sudoer entry:
-    ## Cmnd_Alias BUTTERVOLUME = /usr/bin/runc --root /run/docker/plugins/runtime-root/plugins.moby/ *
-    ## odoo-xxxxx ALL=(ALL) NOPASSWD: BUTTERVOLUME
-    #drunc = ["sudo", "runc", "--root", "/run/docker/plugins/runtime-root/plugins.moby/"]
-    #container_id = subprocess.check_output(drunc + ["list"]).decode('utf-8').split('\n')[1].split(" ")[0]
-    # buttervolume = drunc + ['exec', '-t', container_id, 'buttervolume']
-    return ["sudo", "/usr/local/bin/buttervolume"]
+    return ["sudo", "/usr/bin/btrfs", "subvolume"]
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -45,15 +41,22 @@ def snapshot(config):
     pass
 
 def __assert_btrfs(config):
-    if not config.run_btrfs:
-        click.echo("Please enable RUN_BTRFS=1 and make sure, that volumes are using the anybox/buttervolume docker plugin")
-        sys.exit(-1)
+    # TODO check if volumes of docker is in a subvolume
+    pass
+
+def _get_subvolume_dir(config):
+    subvolume_dir = SNAPSHOT_DIR / __get_postgres_volume_name(config)
+    if not subvolume_dir.exists():
+        subprocess.check_call([
+            'sudo',
+            'mkdir',
+            '-p',
+            subvolume_dir,
+        ])
+    return subvolume_dir
 
 def __get_snapshots(config):
-    snapshots = [x for x in subprocess.check_output(_get_cmd_butter_volume() + ["snapshots"]).decode('utf-8').split("\n") if x]
-    # filter to current customs
-    name = __get_postgres_volume_name(config)
-    snapshots = [x for x in snapshots if name in x in x]
+    snapshots = list(_get_subvolume_dir(config).glob("*"))
     return snapshots
 
 def _try_get_date_from_snap(snap_name):
@@ -70,10 +73,50 @@ def _try_get_date_from_snap(snap_name):
 def assert_environment(config):
     __assert_btrfs(config)
 
+def _turn_into_subvolume(path):
+    """
+    Makes a subvolume out of a path. Docker restart required?
+    """
+    process = subprocess.Popen(['sudo', 'btrfs', 'subvolume', 'show', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    std_out, std_err = process.communicate()
+    if process.returncode != 0:
+        if 'Not a Btrfs subvolume' in std_err.decode('utf-8'):
+            click.secho(f"Turning {path} into a subvolume.")
+            filename = tempfile.mktemp(suffix='.')
+            subprocess.check_call(['sudo', '/usr/bin/mv', path, filename])
+            try:
+                subprocess.check_output(['sudo', 'btrfs', 'subvolume', 'create', path])
+                click.secho("Writing back the files to original position")
+                subprocess.check_call([
+                    'sudo',
+                    'rsync',
+                    str(filename) + '/',
+                    str(path) + '/',
+                    '-ar',
+                ])
+            finally:
+                subprocess.check_call(['sudo', 'rm', '-Rf', filename])
+            click.secho("For safety: please restart docker now; the volume {path} is now a subvolume")
+            sys.exit(-1)
+        else:
+            raise
+    else:
+        return
+
 def make_snapshot(config, name):
     volume_name = __get_postgres_volume_name(config)
     __dc(['stop', '-t 1'] + ['postgres'])
-    snapshot_name = subprocess.check_output(_get_cmd_butter_volume() + ["snapshot", volume_name]).decode('utf-8').strip()
+    path = _get_subvolume_dir(config)
+    _turn_into_subvolume(Path('/var/lib/docker/volumes') / __get_postgres_volume_name(config))
+
+    snapshot_name = f"{name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    subprocess.check_output(
+        _get_cmd_butter_volume() + [
+            "snapshot",
+            "-r", # readonly
+            f'/var/lib/docker/volumes/{volume_name}',
+            str(path / snapshot_name),
+        ]).decode('utf-8').strip()
     __dc(['up', '-d'] + ['postgres'])
     return snapshot_name
 
@@ -81,7 +124,21 @@ def restore(config, name):
     if not name:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    subprocess.check_call(_get_cmd_butter_volume() + ["restore", name])
+    volume_path = Path("/var/lib/docker/volumes") / __get_postgres_volume_name(config)
+    if volume_path.exists():
+        subprocess.check_call(
+            _get_cmd_butter_volume() + [
+                'delete',
+                volume_path,
+            ]
+        )
+    subprocess.check_call(
+        _get_cmd_butter_volume() + [
+            'snapshot',
+            name,
+            str(volume_path)
+        ]
+    )
 
     __dc(['up', '-d'] + ['postgres'])
 

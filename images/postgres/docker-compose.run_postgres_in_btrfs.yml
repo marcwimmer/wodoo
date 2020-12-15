@@ -1,4 +1,0 @@
-# manage-order: 551
-volumes:
-    ODOO_POSTGRES_VOLUME:
-        driver: anybox/buttervolume:latest
