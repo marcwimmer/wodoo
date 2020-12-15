@@ -630,7 +630,7 @@ def remove_webassets(conn):
     finally:
         cr.close()
         conn.close()
-    click.secho("A restart is usually required.", fg='green')
+    click.secho("A restart is usually required, when deleting web assets.", fg='green')
 
 def get_dockercompose():
     from . import files

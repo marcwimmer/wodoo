@@ -85,8 +85,6 @@ def _turn_into_subvolume(path):
                 ])
             finally:
                 subprocess.check_call(['sudo', 'rm', '-Rf', filename])
-            click.secho("For safety: please restart docker now; the volume {path} is now a subvolume")
-            sys.exit(-1)
         else:
             raise
     else:
