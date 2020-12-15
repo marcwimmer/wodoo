@@ -41,17 +41,6 @@ def __get_snapshots(config):
     )]
     return snapshots
 
-def _try_get_date_from_snap(snap_name):
-    try:
-        snap_name = snap_name.split("_snapshot_", 1)[-1][:19]
-        d = datetime.strptime(snap_name, '%Y-%m-%dT%H:%M:%S')
-        tz = os.getenv("TZ", "")
-        if tz:
-            d = arrow.get(d).to(tz).datetime
-        return d
-    except Exception:
-        return None
-
 def assert_environment(config):
     exec_file_in_path('createdb')
     exec_file_in_path('psql')

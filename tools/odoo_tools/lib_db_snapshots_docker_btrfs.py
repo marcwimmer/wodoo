@@ -59,17 +59,6 @@ def __get_snapshots(config):
     snapshots = list(_get_subvolume_dir(config).glob("*"))
     return snapshots
 
-def _try_get_date_from_snap(snap_name):
-    try:
-        snap_name = snap_name.split("@")[-1][:19]
-        d = datetime.strptime(snap_name, '%Y-%m-%dT%H:%M:%S')
-        tz = os.getenv("TZ", "")
-        if tz:
-            d = arrow.get(d).to(tz).datetime
-        return d
-    except Exception:
-        return None
-
 def assert_environment(config):
     __assert_btrfs(config)
 
@@ -145,10 +134,9 @@ def restore(config, name):
 def remove(config, snapshot):
     snapshots = __get_snapshots(config)
     if snapshot in snapshots:
-        __dc(['stop', '-t 1'] + ['postgres'])
-        subprocess.check_call(_get_cmd_butter_volume() + ["rm", snapshot])
-        __dc(['up', '-d'] + ['postgres'])
-    values = config.__get_snapshot_db(config)
-    if snapshot in values:
-        del values[snapshot]
-        config.__set_snapshot_db(config, values)
+        subprocess.check_call(
+            _get_cmd_butter_volume() + [
+                'delete',
+                str(snapshot),
+            ]
+        )
