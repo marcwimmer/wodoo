@@ -56,7 +56,7 @@ def _get_subvolume_dir(config):
     return subvolume_dir
 
 def __get_snapshots(config):
-    snapshots = list(_get_subvolume_dir(config).glob("*"))
+    snapshots = list(reversed(list(_get_subvolume_dir(config).glob("*"))))
     return snapshots
 
 def assert_environment(config):
