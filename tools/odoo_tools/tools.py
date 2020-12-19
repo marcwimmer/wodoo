@@ -183,7 +183,6 @@ def _exists_table(conn, table_name):
     return record[0]
 
 def _start_postgres_and_wait(config):
-    return
     if config.run_postgres:
         if config.run_postgres_in_ram and _is_container_running('postgres'):
             # avoid recreate
