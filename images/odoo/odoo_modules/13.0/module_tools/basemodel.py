@@ -9,6 +9,8 @@ from .logtools import *
 from .dbtools import *
 from .pdftools import *
 from .other import *
+from .action_window_tools import *
+
 
 class Tools(object):
 
