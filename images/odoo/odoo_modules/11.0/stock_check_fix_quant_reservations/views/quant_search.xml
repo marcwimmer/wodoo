@@ -7,6 +7,7 @@
       <field name="arch" type="xml">
         <filter name="reserved" position="after">
           <filter name="over_reservation" domain="[('reserved_quantity', '>', 0), ('location_id.usage', '=', 'internal'), ('over_reservation', '=', True)]" string="Problem: Too much reserved"/>
+          <filter name="needs_fix_reservation" domain="[('needs_fix_reservation', '=', True)]" string="Needs Fix"/>
         </filter>
       </field>
     </record>

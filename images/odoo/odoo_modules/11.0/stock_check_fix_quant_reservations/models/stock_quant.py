@@ -7,7 +7,7 @@ class StockQuant(models.Model):
     _inherit = 'stock.quant'
 
     calculated_reservations = fields.Float(compute="_compute_calculated_reservations", store=False)
-    needs_fix_reservation = fields.Boolean(compute="_compute_calculated_reservations", store=False)
+    needs_fix_reservation = fields.Boolean(compute="_compute_calculated_reservations", store=False, search="_search_needs_fix")
     over_reservation = fields.Boolean(compute="_compute_over_reservation", store=True)
 
     @api.depends("quantity", "reserved_quantity")
@@ -15,6 +15,57 @@ class StockQuant(models.Model):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         for self in self:
             self.over_reservation = round(self.reserved_quantity, digits) > round(self.quantity, digits)
+
+    def _search_needs_fix(self, operator, value):
+        self.env.cr.execute("""
+
+            select
+                sm.product_id,
+                l.location_id,
+                l.lot_id,
+                sum(l.product_uom_qty)
+            from
+                stock_move_line l
+            inner join
+                stock_move sm
+            on
+                sm.id = l.move_id
+            inner join
+                stock_location loc
+            on
+                loc.id = l.location_id
+            where
+                sm.state in ('assigned', 'partially_available')
+            and
+                loc.usage = 'internal'
+
+            group by
+                sm.product_id, l.location_id, l.lot_id
+            order by
+                1, 2, 3
+
+        """)
+        ids = []
+        for rec in self.env.cr.fetchall():
+            product_id, location_id, lot_id, qty = rec
+            self.env.cr.execute("""
+                select sum(reserved_quantity)
+                from stock_quant
+                where
+                    product_id=%s
+                and
+                    location_id=%s
+                and
+                    coalesce(lot_id, 0) = %s
+            """, (
+                product_id,
+                location_id,
+                lot_id or 0
+            ))
+            qty2 = self.env.cr.fetchone()[0]
+            if qty2 != qty:
+                ids += [product_id]
+        return [('product_id', 'in', list(set(ids)))]
 
     @api.constrains("reserved_quantity", "quantity")
     def _check_over_reservation(self):
@@ -65,10 +116,12 @@ class StockQuant(models.Model):
         self._merge_quants()
 
     @api.model
-    def _fix_all_reservations(self):
-        for product in self.env['product.product'].search([('type', '=', 'product')]):
-            q = self.env['stock.quant'].search([('product_id', '=', product.id)], order='id desc').with_context(prefetch_fields=False)
-            q.with_delay().fix_reservation()
+    def _fix_all_reservations(self, commit=False):
+        for quant in self.search([('needs_fix_reservation', '=', True)]):
+            print(f"{quant.id} {quant.product_id.default_code}")
+            quant.fix_reservation()
+            if commit:
+                self.env.cr.commit()
 
     @api.model
     def _get_status(self, fix, product=None, raise_error=False, expects_stock_at_location=0):
