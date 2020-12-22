@@ -117,8 +117,9 @@ class StockQuant(models.Model):
 
     @api.model
     def _fix_all_reservations(self, commit=False):
-        for quant in self.search([('needs_fix_reservation', '=', True)]):
-            print(f"{quant.id} {quant.product_id.default_code}")
+        quants = self.search([('needs_fix_reservation', '=', True)])
+        for i, quant in enumerate(quants):
+            print(f"{quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
             quant.fix_reservation()
             if commit:
                 self.env.cr.commit()
