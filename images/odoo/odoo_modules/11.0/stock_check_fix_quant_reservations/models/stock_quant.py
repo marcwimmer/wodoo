@@ -69,6 +69,8 @@ class StockQuant(models.Model):
 
     @api.constrains("reserved_quantity", "quantity")
     def _check_over_reservation(self):
+        from pudb import set_trace
+        set_trace()
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         for self in self:
             if self.location_id.usage == 'internal':
@@ -110,7 +112,17 @@ class StockQuant(models.Model):
 
     @job
     def fix_reservation(self):
+        breakpoint()
+        self._merge_quants()
         for self in self:
+            if self.reserved_quantity > self.quantity:
+                self.env['stock.move.line']._model_make_quick_inventory(
+                    self.location_id,
+                    0,
+                    self.product_id,
+                    self.lot_id,
+                    add=self.quantity - self.reserved_quantity
+                )
             if self.reserved_quantity != self.calculated_reservations:
                 self.sudo().reserved_quantity = self.calculated_reservations
         self._merge_quants()
@@ -120,9 +132,10 @@ class StockQuant(models.Model):
         quants = self.search([('needs_fix_reservation', '=', True)])
         for i, quant in enumerate(quants):
             print(f"{quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
-            quant.fix_reservation()
-            if commit:
-                self.env.cr.commit()
+            if quant.calculated_reservations != quant.reserved_quantity:
+                quant.fix_reservation()
+                if commit:
+                    self.env.cr.commit()
 
     @api.model
     def _get_status(self, fix, product=None, raise_error=False, expects_stock_at_location=0):
@@ -204,14 +217,3 @@ class StockQuant(models.Model):
         self.env['stock.quant'].search([('lot_id', '=', lot.id)]).fix_reservation()
 
         return inv
-
-    # @api.model
-    # def _fix_result_package_id(self, filter=None):
-        # for q in self.env['stock.quant'].search(filter or [], order='id desc'):
-            # print("checking ", q.id)
-            # package = q.package_id
-            # falsy = package.quant_ids.filtered(lambda x: x.location_id != q.location_id)
-            # if falsy:
-                # package.quant_ids = [[3, x.id] for x in falsy]
-                # print("Fixed falsy packages")
-                # self.env.cr.commit()
