@@ -9,7 +9,7 @@
                 'views/menu.xml'],
     'demo': [],
     'demo_xml': [],
-    'depends': ['datapolice', 'stock', 'stock_quick_inventur_on_need'],
+    'depends': ['datapolice', 'stock', 'stock_quickinventur_on_need'],
     'installable': True,
     'js': [],
     'name': 'stock_check_fix_quant_reservations',

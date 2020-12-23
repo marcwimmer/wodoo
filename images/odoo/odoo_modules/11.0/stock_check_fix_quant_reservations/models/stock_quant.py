@@ -69,8 +69,6 @@ class StockQuant(models.Model):
 
     @api.constrains("reserved_quantity", "quantity")
     def _check_over_reservation(self):
-        from pudb import set_trace
-        set_trace()
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         for self in self:
             if self.location_id.usage == 'internal':
@@ -115,14 +113,17 @@ class StockQuant(models.Model):
         breakpoint()
         self._merge_quants()
         for self in self:
-            if self.reserved_quantity > self.quantity:
+            if not self.exists():
+                continue
+            if self.calculated_reservations > self.quantity:
                 self.env['stock.move.line']._model_make_quick_inventory(
                     self.location_id,
                     0,
                     self.product_id,
                     self.lot_id,
-                    add=self.quantity - self.reserved_quantity
+                    add=self.calculated_reservations - self.quantity
                 )
+                self._merge_quants()
             if self.reserved_quantity != self.calculated_reservations:
                 self.sudo().reserved_quantity = self.calculated_reservations
         self._merge_quants()
