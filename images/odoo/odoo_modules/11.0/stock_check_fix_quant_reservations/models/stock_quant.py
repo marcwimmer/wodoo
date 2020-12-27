@@ -65,8 +65,10 @@ class StockQuant(models.Model):
             qty2 = self.env.cr.fetchone()[0]
             if qty2 is None and qty:
                 print(f"inventory {lot_id}")
+                lot = self.env['stock.production.lot'].browse(lot_id)
                 self._fix_missing_quant(
-                    self.env['stock.production.lot'].browse(lot_id),
+                    lot,
+                    self.env['product.product'].browse(product_id),
                     location_id,
                     round(qty, digits)
                 )
@@ -189,7 +191,7 @@ class StockQuant(models.Model):
                         if raise_error:
                             raise UserError(error)
                         if fix:
-                            self._fix_missing_quant(lot=lot, location_id=S[1], quantity=S[0])
+                            self._fix_missing_quant(lot=lot, product=product, location_id=S[1], quantity=S[0])
 
                     elif quants and quants[0][0] != S[0]:
                         error = f"Reservation deviation: {product.default_code}-{lot.name}"
@@ -198,24 +200,29 @@ class StockQuant(models.Model):
                             self.fix_reservation()
             self.env.cr.commit()
 
-    def _fix_missing_quant(self, lot, location_id, quantity):
+    def _fix_missing_quant(self, lot, product, location_id, quantity):
+        assert product
+        assert isinstance(location_id, int)
         location = self.env['stock.location'].browse(location_id)
         inv = self.env['stock.inventory'].create({
             "location_id": location.id,
-            "filter": "lot",
+            "filter": "product",
             "company_id": self.env.user.company_id.id,
-            "name": "Fix Quant Inventory {}: {} [{}]".format(location.name, lot.name, lot.product_id.default_code),
-            "lot_id": lot.id,
+            "name": "Fix Quant Inventory {}: {} [{}]".format(location.name, lot.name, product.default_code),
+            "product_id": product.id,
         })
         inv.action_start()
-        line = inv.line_ids.filtered(lambda x: x.prod_lot_id == lot and x.location_id == location_id)
+        if lot:
+            line = inv.line_ids.filtered(lambda x: x.prod_lot_id == lot and x.location_id == location_id)
+        else:
+            line = inv.line_ids.filtered(lambda x: x.product_id == product and x.location_id == location_id)
         if line:
             quantity += line.product_qty
 
         inv.line_ids.unlink()
         inv.line_ids = [[0, 0, {
             'prod_lot_id': lot.id,
-            'product_id': lot.product_id.id,
+            'product_id': product.id,
             'location_id': location.id,
             'product_qty': quantity,
         }]]
@@ -223,9 +230,12 @@ class StockQuant(models.Model):
 
         # also still broken after that
         if lot.id:
-            self.env['stock.quant'].search([
+            domain = [
                 ('location_id.usage', '=', 'internal'),
-                ('lot_id', '=', lot.id)
-            ]).fix_reservation()
+                ('product_id', '=', product.id),
+            ]
+            if lot:
+                domain += [('lot_id', '=', lot.id)]
+            self.env['stock.quant'].search(domain).fix_reservation()
 
         return inv
