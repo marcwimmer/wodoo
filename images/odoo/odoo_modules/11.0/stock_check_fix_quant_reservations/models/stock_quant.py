@@ -125,14 +125,17 @@ class StockQuant(models.Model):
         for self in self:
             if self.location_id.usage not in ['internal']:
                 continue
-            if self.reserved_quantity > self.quantity:
+            if not self.exists():
+                continue
+            if self.calculated_reservations > self.quantity:
                 self.env['stock.move.line']._model_make_quick_inventory(
                     self.location_id,
                     0,
                     self.product_id,
                     self.lot_id,
-                    add=self.quantity - self.reserved_quantity
+                    add=self.calculated_reservations - self.quantity
                 )
+                self._merge_quants()
             if round(self.reserved_quantity, digits) != round(self.calculated_reservations, digits):
                 self.sudo().reserved_quantity = self.calculated_reservations
         self._merge_quants()
