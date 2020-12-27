@@ -23,7 +23,7 @@ class StockQuant(models.Model):
                 sm.product_id,
                 l.location_id,
                 l.lot_id,
-                sum(l.product_uom_qty)
+                sum(l.product_qty)
             from
                 stock_move_line l
             inner join
@@ -154,6 +154,7 @@ class StockQuant(models.Model):
 
     @api.model
     def _fix_all_reservations(self, commit=False):
+        breakpoint()
         quants = self.search([('needs_fix_reservation', '=', True)])
         for i, quant in enumerate(quants):
             print(f"{quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
