@@ -34,10 +34,20 @@ class StockQuant(models.Model):
                 stock_location loc
             on
                 loc.id = l.location_id
+            inner join
+                product_product pp
+            on
+                pp.id = l.product_id
+            inner join
+                product_template pt
+            on
+                pt.id = pp.product_tmpl_id
             where
                 sm.state in ('assigned', 'partially_available')
             and
                 loc.usage = 'internal'
+            and
+                pt.type = 'product'
 
             group by
                 sm.product_id, l.location_id, l.lot_id
@@ -123,6 +133,8 @@ class StockQuant(models.Model):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         self._merge_quants()
         for self in self:
+            if self.product_id.type not in ['product']:
+                continue
             if self.location_id.usage not in ['internal']:
                 continue
             if not self.exists():
