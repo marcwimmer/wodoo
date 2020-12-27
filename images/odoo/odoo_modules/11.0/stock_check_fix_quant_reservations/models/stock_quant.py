@@ -17,8 +17,8 @@ class StockQuant(models.Model):
             self.over_reservation = round(self.reserved_quantity, digits) > round(self.quantity, digits)
 
     def _search_needs_fix(self, operator, value):
+        digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         self.env.cr.execute("""
-
             select
                 sm.product_id,
                 l.location_id,
@@ -57,20 +57,25 @@ class StockQuant(models.Model):
                     location_id=%s
                 and
                     coalesce(lot_id, 0) = %s
-            """, (
+            """.format(digits), (
                 product_id,
                 location_id,
                 lot_id or 0
             ))
             qty2 = self.env.cr.fetchone()[0]
-            if qty2 != qty:
+            if qty2 is None and qty:
+                print(f"inventory {lot_id}")
+                self._fix_missing_quant(
+                    self.env['stock.production.lot'].browse(lot_id),
+                    location_id,
+                    round(qty, digits)
+                )
+            elif round(qty2 or 0.0, digits) != round(qty or 0.0, digits):
                 ids += [product_id]
         return [('product_id', 'in', list(set(ids)))]
 
     @api.constrains("reserved_quantity", "quantity")
     def _check_over_reservation(self):
-        from pudb import set_trace
-        set_trace()
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         for self in self:
             if self.location_id.usage == 'internal':
@@ -113,8 +118,11 @@ class StockQuant(models.Model):
     @job
     def fix_reservation(self):
         breakpoint()
+        digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         self._merge_quants()
         for self in self:
+            if self.location_id.usage not in ['internal']:
+                continue
             if self.reserved_quantity > self.quantity:
                 self.env['stock.move.line']._model_make_quick_inventory(
                     self.location_id,
@@ -123,7 +131,7 @@ class StockQuant(models.Model):
                     self.lot_id,
                     add=self.quantity - self.reserved_quantity
                 )
-            if self.reserved_quantity != self.calculated_reservations:
+            if round(self.reserved_quantity, digits) != round(self.calculated_reservations, digits):
                 self.sudo().reserved_quantity = self.calculated_reservations
         self._merge_quants()
 
@@ -214,6 +222,10 @@ class StockQuant(models.Model):
         inv.action_done()
 
         # also still broken after that
-        self.env['stock.quant'].search([('lot_id', '=', lot.id)]).fix_reservation()
+        if lot.id:
+            self.env['stock.quant'].search([
+                ('location_id.usage', '=', 'internal'),
+                ('lot_id', '=', lot.id)
+            ]).fix_reservation()
 
         return inv
