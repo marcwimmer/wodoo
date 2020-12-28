@@ -17,13 +17,6 @@ logging.getLogger().setLevel(logging.DEBUG)
 logger = logging.getLogger('')  # root handler
 logger.info("Starting cicd delegator reverse-proxy")
 
-hostname = 'en.wikipedia.org'
-
-def merge_two_dicts(x, y):
-    z = x.copy()   # start with x's keys and values
-    z.update(y)    # modifies z with y's keys and values & returns None
-    return z
-
 class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.0'
 
@@ -166,10 +159,10 @@ def parse_args(argv=sys.argv[1:]):
 
 def main(argv=sys.argv[1:]):
     args = parse_args(argv)
-    print('http server is starting on port {}...'.format(args.port))
+    logger.info('http server is starting on port {}...'.format(args.port))
     server_address = ('0.0.0.0', args.port)
     httpd = ThreadingHTTPServer(server_address, ProxyHTTPRequestHandler)
-    print('http server is running as reverse proxy')
+    logger.info('http server is running as reverse proxy')
     logger.info(f"Starting reverse proxy on {server_address}")
     httpd.serve_forever()
 
