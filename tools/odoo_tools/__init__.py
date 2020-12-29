@@ -56,6 +56,7 @@ from . import lib_src # NOQA
 from . import lib_docker_registry # NOQA
 from . import lib_venv # NOQA
 from . import lib_turnintodev # NOQA
+# from . import lib_setup # NOQA
 
 # import container specific commands
 from .tools import abort # NOQA

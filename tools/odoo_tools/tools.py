@@ -426,21 +426,38 @@ def _remember_customs_and_cry_if_changed(config):
                     __dc(['stop', '-t 2'])
 
 def _sanity_check(config):
+    owner_uid = config.owner_uid_as_int
+
+    errors = False
     if config.run_postgres is None:
-        raise Exception("Please define RUN_POSTGRES")
+        click.secho("Please define RUN_POSTGRES", fg='red')
 
     if config.run_postgres and config.db_host != 'postgres':
-        click.echo("You are using the docker postgres container, but you do not have the DB_HOST set to use it.")
-        click.echo("Either configure DB_HOST to point to the docker container or turn it off by: ")
-        click.echo("RUN_POSTGRES=0")
-        sys.exit(1)
+        click.secho("You are using the docker postgres container, but you do not have the DB_HOST set to use it.", fg='red')
+        click.secho("Either configure DB_HOST to point to the docker container or turn it off by: ", fg='red')
+        click.secho("RUN_POSTGRES=0", fg='red')
 
     if config.odoo_files and Path(config.odoo_files).is_dir():
-        if config.owner_uid and Path(config.odoo_files).stat().st_uid != config.owner_uid_as_int:
+        if owner_uid and Path(config.odoo_files).stat().st_uid != owner_uid:
             _fix_permissions(config)
+
+    if owner_uid and config.dirs['run'].exists():
+        for file in config.dirs['run'].glob("**/*"):
+            if not file.is_dir():
+                continue
+            if file.stat().st_uid != owner_uid:
+                __try_to_set_owner(
+                    owner_uid,
+                    file,
+                    recursive=True,
+                    autofix=True,
+                )
 
     # make sure the odoo_debug.txt exists; otherwise directory is created
     __file_default_content(config.files['run/odoo_debug.txt'], "")
+
+    if errors:
+        sys.exit(-1)
 
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
@@ -466,15 +483,23 @@ def __make_file_executable(filepath):
 
 def __try_to_set_owner(UID, path, recursive=False, autofix=False):
     if path.is_dir():
-        repair_command = f"find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\;"
-        if autofix:
-            os.system(repair_command)
-        uid = os.stat(path).st_uid
-        if str(uid) != str(UID) or recursive:
-            click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
-            click.secho("Probably execute: ", fg='yellow')
-            click.secho(repair_command, fg='yellow')
-            sys.exit(-1)
+        for run in ["sudo", ""]:
+            repair_command = f"{run} find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\; 2>/dev/null;"
+            if autofix:
+                os.system(repair_command)
+            uid = UID
+            if recursive:
+                for test in path.glob("**/*"):
+                    uid = os.stat(path).st_uid
+                    if str(uid) != str(UID):
+                        break
+            else:
+                uid = os.stat(path).st_uid
+            if str(uid) != str(UID):
+                click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
+                click.secho("Probably execute: ", fg='yellow')
+                click.secho(repair_command, fg='yellow')
+                sys.exit(-1)
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but

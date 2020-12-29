@@ -26,7 +26,7 @@ def setup(config):
 
 @setup.command()
 @pass_config
-def sanity_check(config):
+def doctor(config):
     _sanity_check(config)
 
 @setup.command()
