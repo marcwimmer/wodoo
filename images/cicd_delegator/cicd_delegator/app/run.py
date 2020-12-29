@@ -139,9 +139,9 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         respheaders = resp.headers
         logger.debug('Response Header')
         for key in respheaders:
-            if key not in [
-                'Content-Encoding', 'Transfer-Encoding', 'content-encoding',
-                'transfer-encoding', 'content-length', 'Content-Length'
+            if (key or '').lower() not in [
+                'content-encoding', 'transfer-encoding', 'transfer-encoding',
+                'content-length'
             ]:
                 self.send_header(key, respheaders[key])
         self.send_header('Content-Length', len(resp.content))
@@ -152,8 +152,10 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
 def parse_args(argv=sys.argv[1:]):
     parser = argparse.ArgumentParser(description='Proxy HTTP requests')
-    parser.add_argument('--port', dest='port', type=int, default=80,
-                        help='serve HTTP requests on specified port (default: 80)')
+    parser.add_argument(
+        '--port', dest='port', type=int,
+        default=80, help='serve HTTP requests on specified port (default: 80)'
+    )
     args = parser.parse_args(argv)
     return args
 
