@@ -686,6 +686,11 @@ def __replace_all_envs_in_str(content, env):
     return content
 
 def __remove_tree(dir, retry=3, interval=2):
+    if retry == 0:
+        retry = 1
+        interval = 0
+
+    E = None
     for i in range(retry):
         try:
             shutil.rmtree(dir)
@@ -694,7 +699,8 @@ def __remove_tree(dir, retry=3, interval=2):
             time.sleep(interval)
         else:
             return
-    raise E
+    if E:
+        raise E
 
 def __hash_odoo_password(pwd):
     from .odoo_config import current_version

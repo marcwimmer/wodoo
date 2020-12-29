@@ -24,6 +24,7 @@ from .tools import __append_line
 from .tools import _makedirs
 from .tools import __try_to_set_owner
 from .tools import __empty_dir
+from .tools import __remove_tree
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
@@ -104,7 +105,15 @@ def _set_host_run_dir(ctx, config, local):
                 sys.exit(-1)
             if config.files['docker_compose'].exists():
                 Commands.invoke(ctx, 'down', volumes=True)
-            shutil.rmtree(local_config_dir)
+            if local_config_dir.exists():
+                if local_config_dir.stat().st_uid == 0:
+                    __try_to_set_owner(
+                        config.owner_uid_as_int,
+                        local_config_dir,
+                        recursive=True,
+                        autofix=True
+                    )
+                __remove_tree(local_config_dir, retry=0)
             click.secho("Please reload again.", fg='green')
             sys.exit(-1)
 
