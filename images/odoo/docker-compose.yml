@@ -49,7 +49,6 @@ services:
       - LANGUAGE=en_US:en
       - LC_ALL=en_US.UTF-8
       - PYTHONBREAKPOINT=0
-      - ODOO_SERVER_TOOLS_MODULES=/opt/odoo_server_tools
     command: /usr/bin/python3 /odoolib/run.py
     entrypoint: ["/odoolib/entrypoint.py"]
     logging:
