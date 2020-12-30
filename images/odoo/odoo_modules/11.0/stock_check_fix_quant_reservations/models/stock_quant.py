@@ -84,19 +84,25 @@ class StockQuant(models.Model):
                 )
             elif round(qty2 or 0.0, digits) != round(qty or 0.0, digits):
                 ids += [product_id]
-        return [('product_id', 'in', list(set(ids)))]
+        ids = self.search([
+            ('location_id.usage', '=', 'internal'),
+            ('product_id', 'in', list(set(ids))),
+        ]).ids
+        return [('id', 'in', ids)]
 
-    @api.constrains("reserved_quantity", "quantity")
-    def _check_over_reservation(self):
-        digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
-        for self in self:
-            if self.location_id.usage == 'internal':
-                if round(self.quantity, digits) < round(self.reserved_quantity, digits):
-                    raise ValidationError(_("Cannot reserve {} for {}. Available {}.").format(
-                        self.reserved_quantity,
-                        self.product_id.default_code,
-                        self.quantity,
-                    ))
+    # im regulaeren ablauf bei action_done stock.move hat das gestoert; danach kein quant fehler
+    # @api.constrains("reserved_quantity", "quantity")
+    # def _check_over_reservation(self):
+        # digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
+        # for self in self:
+            # if self.location_id.usage == 'internal':
+                # if round(self.quantity, digits) < round(self.reserved_quantity, digits):
+                    # breakpoint()
+                    # raise ValidationError(_("Cannot reserve {} for {}. Available {}.").format(
+                        # self.reserved_quantity,
+                        # self.product_id.default_code,
+                        # self.quantity,
+                    # ))
 
     def _compute_calculated_reservations(self):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
@@ -133,14 +139,14 @@ class StockQuant(models.Model):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
         self._merge_quants()
         for self in self:
+            if not self.exists():
+                continue
             if self.product_id.type not in ['product']:
                 continue
             if self.location_id.usage not in ['internal']:
                 continue
-            if not self.exists():
-                continue
             if self.calculated_reservations > self.quantity:
-                self.env['stock.move.line']._model_make_quick_inventory(
+                self.env['stock.move.line'].with_context(test_queue_job_no_delay=True)._model_make_quick_inventory(
                     self.location_id,
                     0,
                     self.product_id,
@@ -155,66 +161,16 @@ class StockQuant(models.Model):
     @api.model
     def _fix_all_reservations(self, commit=False):
         breakpoint()
-        quants = self.search([('needs_fix_reservation', '=', True)])
-        for i, quant in enumerate(quants):
+        quants = self.search([('needs_fix_reservation', '=', True)], order='product_id, location_id')
+        for i, quant in enumerate(quants.with_context(prefetch_fields=False)):
+            quant = quant.browse(quant.id)
+            if not quant.exists():
+                continue
             print(f"{quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
             if quant.calculated_reservations != quant.reserved_quantity:
                 quant.fix_reservation()
                 if commit:
                     self.env.cr.commit()
-
-    @api.model
-    def _get_status(self, fix, product=None, raise_error=False, expects_stock_at_location=0):
-        products = product or self.env['product.product'].search([('type', '=', 'product')])
-        for product in products:
-            for lot in self.env['stock.production.lot'].search([('product_id', '=', product.id)]):
-
-                self.env.cr.execute("""
-                    select sum(product_uom_qty), stock_move_line.location_id, lot_id
-                    from stock_move_line
-                    inner join stock_location l
-                    on l.id = stock_move_line.location_id
-                    where lot_id=%s
-                    and state in ('assigned', 'partially_available')
-                    and l.usage in ('internal')
-                    group by stock_move_line.location_id, lot_id
-                """, (lot.id,))
-                sums = self.env.cr.fetchall()
-
-                # missing the quant for zero stock but reserved
-                if not [x for x in sums if x[1] == expects_stock_at_location]:
-                    sums += [(0, expects_stock_at_location, lot.id)]
-
-                for S in sums:
-                    tries = 0
-                    while True:
-                        tries += 1
-
-                        self.env.cr.execute("""
-                            select reserved_quantity
-                            from stock_quant
-                            where lot_id=%s and location_id=%s
-                        """, (lot.id, S[1]))
-                        quants = self.env.cr.fetchall()
-                        if len(quants) > 1:
-                            if tries > 1:
-                                raise Exception(f"Cannot merge duplicate quants {product.default_code}")
-                            self._merge_quants()
-                        else:
-                            break
-                    if len(quants) == 0 and S[0]:
-                        error = f"Quant missing: {product.default_code}-{lot.name}"
-                        if raise_error:
-                            raise UserError(error)
-                        if fix:
-                            self._fix_missing_quant(lot=lot, product=product, location_id=S[1], quantity=S[0])
-
-                    elif quants and quants[0][0] != S[0]:
-                        error = f"Reservation deviation: {product.default_code}-{lot.name}"
-                        if raise_error: raise UserError(error)
-                        if fix:
-                            self.fix_reservation()
-            self.env.cr.commit()
 
     def _fix_missing_quant(self, lot, product, location_id, quantity):
         assert product
