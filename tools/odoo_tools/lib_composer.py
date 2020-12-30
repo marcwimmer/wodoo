@@ -24,6 +24,7 @@ from .tools import __append_line
 from .tools import _makedirs
 from .tools import __try_to_set_owner
 from .tools import __empty_dir
+from .tools import __remove_tree
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
@@ -58,7 +59,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
 
-    _set_host_run_dir(config, local)
+    _set_host_run_dir(ctx, config, local)
     # Reload config
     from .click_config import Config
     config = Config(project_name=project_name)
@@ -92,7 +93,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     # assuming we are in the odoo directory
     _do_compose(**defaults)
 
-def _set_host_run_dir(config, local):
+def _set_host_run_dir(ctx, config, local):
     from .init_functions import make_absolute_paths
     local_config_dir = (config.WORKING_DIR / '.odoo')
     if local:
@@ -102,7 +103,17 @@ def _set_host_run_dir(config, local):
         if local_config_dir.exists():
             if not click.confirm(click.style(f"If you continue the local existing run directory {local_config_dir} is erased.", fg='red')):
                 sys.exit(-1)
-            shutil.rmtree(local_config_dir)
+            if config.files['docker_compose'].exists():
+                Commands.invoke(ctx, 'down', volumes=True)
+            if local_config_dir.exists():
+                if local_config_dir.stat().st_uid == 0:
+                    __try_to_set_owner(
+                        config.owner_uid_as_int,
+                        local_config_dir,
+                        recursive=True,
+                        autofix=True
+                    )
+                __remove_tree(local_config_dir, retry=0)
             click.secho("Please reload again.", fg='green')
             sys.exit(-1)
 

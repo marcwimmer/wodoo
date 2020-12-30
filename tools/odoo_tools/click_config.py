@@ -63,6 +63,10 @@ class Config(object):
     def forced(self):
         return Config.Forced(self)
 
+    def _get_default_value(self, name_lower):
+        if name_lower == 'owner_uid':
+            return os.getuid()
+
     def __getattribute__(self, name):
         try:
             value = super(Config, self).__getattribute__(name)
@@ -85,15 +89,20 @@ class Config(object):
                 value = ''
                 if tries not in myconfig.keys():
                     continue
-                value = myconfig.get(tries, "")
-                if convert:
-                    if convert == 'asint':
-                        value = int(value or '0')
 
-                if value == "1":
-                    value = True
-                elif value == "0":
-                    value = False
+                value = myconfig.get(tries, "")
+                break
+            else:
+                value = self._get_default_value(name.lower())
+
+            if convert:
+                if convert == 'asint':
+                    value = int(value or '0')
+
+            if value == "1":
+                value = True
+            elif value == "0":
+                value = False
             return value
         except Exception:
             raise

@@ -1,4 +1,5 @@
 {   'active': False,
+ "auto_install": True,
     'application': False,
     'author': 'Marc Wimmer',
     'category': 'Tools',

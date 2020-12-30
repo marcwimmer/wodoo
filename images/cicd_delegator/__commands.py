@@ -28,11 +28,15 @@ def cicd(config):
 def get_registry(config):
     path = config.files['cicd_delegator_registry']
     result = {}
-    if not path.exists():
-        result = {}
-    else:
-        result = json.loads(path.read_text())
-    result.setdefault('network_name', f'cicd_default_{uuid.uuid4().hex}')
+    if path.exists():
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            result = json.loads(path.read_text())
+    if 'network_name' not in result:
+        result.setdefault('network_name', f'cicd_default_{uuid.uuid4().hex}')
+        set_registry(config, result)
+        os.system(f"docker network create {result['network_name']}")
     return result
 
 def set_registry(config, values):
@@ -43,7 +47,7 @@ def set_registry(config, values):
         return
 
     update_project_configs(config, values)
-    update_nginx_configs(config, values)
+    update_configs(config, values)
 
 @cicd.command()
 @pass_config
@@ -68,12 +72,9 @@ def unregister(ctx, config):
 
     files = []
     files.append(config.files['project_docker_compose.home.project'])
-    files.append(config.dirs['cicd_delegator'] / 'nginx.upstreams.conf')
-    files.append(config.dirs['cicd_delegator'] / 'nginx.locations.conf')
     for file in files:
         if file.exists():
             file.unlink()
-    ctx.invoke(reload_nginx)
 
 @cicd.command(help="Register new odoo")
 @click.argument("project_name", required=True)
@@ -127,22 +128,8 @@ def register(ctx, config, project_name, desc, author):
         daemon=True,
     )
     ctx.invoke(do_list)
-    ctx.invoke(start, no_daemon=False)
-    ctx.invoke(reload_nginx)
+    ctx.invoke(start)
 
-
-@cicd.command()
-@pass_config
-def reload_nginx(config):
-    subprocess.check_call([
-        'docker-compose',
-        'exec',
-        '-T',
-        'cicd_delegator',
-        'nginx',
-        '-s',
-        'reload',
-    ], cwd=config.dirs['cicd_delegator'])
 
 @cicd.command()
 @pass_config
@@ -154,33 +141,83 @@ def rebuild(config):
     ], cwd=config.dirs['cicd_delegator'])
 
 # name conflict with docker
-# @cicd.command()
-# @click.option("-D", "--no-daemon", is_flag=True)
-# @click.pass_context
-# @pass_config
-# def restart(config, ctx, no_daemon):
-    # ctx.invoke(stop)
-    # ctx.invoke(start)
+@cicd.command(name='cicd-restart')
+@click.pass_context
+@pass_config
+def restart(config, ctx):
+    ctx.invoke(stop)
+    ctx.invoke(start)
 
 
 @cicd.command()
-@click.option("-D", "--no-daemon", is_flag=True)
 @pass_config
-def start(config, no_daemon):
+def start(config):
     registry = get_registry(config)
-    update_nginx_configs(config, registry)
+    update_configs(config, registry)
     subprocess.check_call([
         'docker-compose',
         'build',
-        'cicd_index',
     ], cwd=config.dirs['cicd_delegator'])
 
     cmd = [
         'docker-compose',
-        'up',
     ]
-    if not no_daemon:
-        cmd += ['-d']
+    cmd += ['up', '-d']
+
+    subprocess.check_call(
+        cmd,
+        cwd=config.dirs['cicd_delegator']
+    )
+
+@cicd.command(name='cicd-debug')
+@click.argument("machine", required=True)
+@pass_config
+def debug(config, machine):
+    registry = get_registry(config)
+    update_configs(config, registry)
+    allowed = [
+        'cicd_index',
+        'cicd_delegator'
+    ]
+    if machine not in allowed:
+        click.secho(f"Please use one of {','.join(allowed)}", fg='red')
+        sys.exit(-1)
+
+    subprocess.check_call(
+        ['docker-compose', 'kill', machine],
+        cwd=config.dirs['cicd_delegator']
+    )
+    subprocess.check_call([
+        'docker-compose',
+        'build',
+        machine,
+    ], cwd=config.dirs['cicd_delegator'])
+
+    cmd = ['docker-compose', 'run', '--rm', '--service-ports', machine]
+
+    subprocess.check_call(
+        cmd,
+        cwd=config.dirs['cicd_delegator']
+    )
+
+@cicd.command()
+@pass_config
+def shell(config):
+    cmd = ['docker-compose', 'run', '--rm', 'cicd_test', 'bash']
+
+    subprocess.check_call(
+        cmd,
+        cwd=config.dirs['cicd_delegator']
+    )
+
+@cicd.command()
+@click.argument('machine', required=False)
+@pass_config
+def logs(config, machine):
+    cmd = ['docker-compose', 'logs', '-f']
+    if machine:
+        cmd += [machine]
+
     subprocess.check_call(
         cmd,
         cwd=config.dirs['cicd_delegator']
@@ -208,19 +245,22 @@ def update_project_configs(config, registry):
     )
     config.files['project_docker_compose.home.project'].write_text(def_network)
 
-def update_nginx_configs(config, registry):
-    _copy_index_webapp(config, registry)
-
+def update_configs(config, registry):
+    _copy_folders(config, registry)
     _update_docker_compose(config, registry)
-    _update_nginx_conf(config, registry)
-    _update_locations_and_upstreams(config, registry)
 
-def _copy_index_webapp(config, registry):
-    dest_path = config.dirs['cicd_delegator'] / 'registry_webserver'
-    sync_folder(
-        config.dirs['images'] / 'cicd_delegator' / 'registry_webserver',
-        dest_path,
-    )
+def _copy_folders(config, registry):
+    for path in [
+        'cicd_delegator',
+        'cicd_tester',
+        'cicd_index',
+
+    ]:
+        dest_path = config.dirs['cicd_delegator'] / path
+        sync_folder(
+            config.dirs['images'] / 'cicd_delegator' / path,
+            dest_path,
+        )
 
 def _update_docker_compose(config, registry):
     dc = config.dirs['cicd_delegator'] / 'docker-compose.yml'
@@ -232,50 +272,3 @@ def _update_docker_compose(config, registry):
     for k, v in values.items():
         template = template.replace(k, v)
     dc.write_text(template)
-
-    # make the empty file
-    (config.dirs['cicd_delegator'] / 'empty').write_text('# disabled nginx conf')
-
-def _update_nginx_conf(config, registry):
-    nginx_conf = config.dirs['cicd_delegator'] / 'nginx.conf'
-    template = (config.dirs['images'] / 'cicd_delegator' / 'nginx.conf').read_text()
-    template = template.replace(
-        "__PROJECT_NAMES_PIPED__",
-        "|".join(x['name'] for x in registry['sites']),
-    )
-    nginx_conf.write_text(template)
-
-def _update_locations_and_upstreams(config, registry):
-    template_upstream = (config.dirs['images'] / 'cicd_delegator' / 'nginx.upstream.template.conf').read_text()
-    template_location = (config.dirs['images'] / 'cicd_delegator' / 'nginx.location.template.conf').read_text()
-
-    locations, upstreams = [], []
-
-    # # get proxy container name from docker compose
-    # if not config.files['docker_compose'].exists():
-    # click.secho("Please reload the current branch for example with: ", fg='red')
-    # click.secho("odoo reload --local --devmode --headless --project-name 'unique_name'", fg='red')
-    # sys.exit(-1)
-
-    for site in registry['sites']:
-        settings = {
-            "__PROJECT_NAME__": site['name'],
-            "__CICD_NETWORK_NAME__": registry['network_name'],
-            "__PROXY_NAME__": f"{site['name']}_proxy",
-            "__CICD_BINDING__": config.CICD_BINDING,
-        }
-        upstream = template_upstream
-        location = template_location
-        for k, v in settings.items():
-            upstream = upstream.replace(k, v)
-            location = location.replace(k, v)
-
-        upstreams.append(upstream)
-        locations.append(location)
-
-    (config.dirs['cicd_delegator'] / 'nginx.upstreams.conf').write_text(
-        '\n\n'.join(upstreams)
-    )
-    (config.dirs['cicd_delegator'] / 'nginx.locations.conf').write_text(
-        '\n\n'.join(locations)
-    )

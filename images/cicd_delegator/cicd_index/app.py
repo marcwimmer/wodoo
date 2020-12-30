@@ -15,3 +15,7 @@ def index():
     reg = json.loads(Path("/registry.json").read_text())
 
     return render_template('index.html', sites=reg['sites'])
+
+@app.route('/__start_cicd')
+def start_cicd():
+    return render_template('start_cicd.html')

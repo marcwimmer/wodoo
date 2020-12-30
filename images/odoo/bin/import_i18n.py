@@ -20,7 +20,7 @@ if len(sys.argv) == 2:
 LANG = sys.argv[1]
 FILEPATH = sys.argv[2]
 
-addon_paths = get_odoo_addons_paths
+addon_paths = get_odoo_addons_paths()
 for path in addon_paths():
     if (path / FILEPATH).exists():
         filepath = path / FILEPATH

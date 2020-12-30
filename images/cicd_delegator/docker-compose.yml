@@ -1,25 +1,26 @@
 version: '3.7'
 services:
   cicd_delegator:
-    image: nginx
-    volumes:
-        # cicd delegator is stored in ~/.odoo/cicd_delegator globally
-        - ./empty:/etc/nginx/conf.d/default.conf
-        - ./nginx.conf:/etc/nginx/nginx.conf:ro
-        - ./nginx.upstreams.conf:/etc/nginx/conf.d/upstreams.conf:ro
-        - ./nginx.locations.conf:/etc/nginx/conf.locations.d/locations.conf:ro
+    build: ./cicd_delegator
+    #volumes:
+    #    # cicd delegator is stored in ~/.odoo/cicd_delegator globally
+    #    - ./empty:/etc/nginx/conf.d/default.conf
+    #    - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    #    - ./nginx.upstreams.conf:/etc/nginx/conf.d/upstreams.conf:ro
+    #    - ./nginx.locations.conf:/etc/nginx/conf.locations.d/locations.conf:ro
     ports:
         - __CICD_BINDING__:80
-          #command: [nginx-debug, '-g', 'daemon-off;']
     networks:
         - cicd_delegator
-  cicd_ubuntu:
-    image: ubuntu:20.04
+    volumes:
+        - ./registry.json:/registry.json
+  cicd_test:
+    build: ./cicd_tester
     networks:
         - cicd_delegator
     command: "bash -c 'while true; do sleep 1;done'"
   cicd_index:
-    build: ./registry_webserver
+    build: ./cicd_index
     networks:
         - cicd_delegator
     environment:
