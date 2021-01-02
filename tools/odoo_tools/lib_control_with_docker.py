@@ -11,7 +11,6 @@ from .tools import __safe_filename
 from .tools import __read_file
 from .tools import __write_file
 from .tools import __append_line
-from .tools import _sanity_check
 from .tools import _askcontinue
 from .tools import __get_odoo_commit
 from .tools import _is_container_running
@@ -115,7 +114,6 @@ def recreate(ctx, config, machines=[]):
     __dc(['up', '--no-start', '--force-recreate'] + machines)
 
 def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
-    _sanity_check(config)
     machines = list(machines)
 
     options = [
@@ -128,7 +126,6 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
     __dc(['up'] + options + machines)
 
 def down(ctx, config, machines=[], volumes=False):
-    _sanity_check(config)
     machines = list(machines)
 
     options = []

@@ -127,6 +127,7 @@ def restore(config, name):
         ]
     )
 
+    __dc(['rm', '-f'] + ['postgres'])
     __dc(['up', '-d'] + ['postgres'])
 
 def remove(config, snapshot):

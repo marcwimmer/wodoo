@@ -483,8 +483,10 @@ def __make_file_executable(filepath):
 
 def __try_to_set_owner(UID, path, recursive=False, autofix=False):
     if path.is_dir():
-        for run in ["sudo", ""]:
+        for run in ["", "sudo"]:
             repair_command = f"{run} find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\; 2>/dev/null;"
+            if run == 'sudo':
+                click.secho(f"Executing: {repair_command}")
             if autofix:
                 os.system(repair_command)
             uid = UID

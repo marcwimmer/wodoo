@@ -200,7 +200,7 @@ def debug(config, machine):
         cwd=config.dirs['cicd_delegator']
     )
 
-@cicd.command()
+@cicd.command(name="cicd-shell")
 @pass_config
 def shell(config):
     cmd = ['docker-compose', 'run', '--rm', 'cicd_test', 'bash']

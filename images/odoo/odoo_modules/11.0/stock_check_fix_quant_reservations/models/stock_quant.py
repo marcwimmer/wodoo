@@ -74,7 +74,9 @@ class StockQuant(models.Model):
             ))
             qty2 = self.env.cr.fetchone()[0]
             if qty2 is None and qty:
-                print(f"inventory {lot_id}")
+                breakpoint()
+                lot = self.env['stock.production.lot'].browse(lot_id)
+                print(f"inventory {lot.product_id.default_code} {lot.name}")
                 lot = self.env['stock.production.lot'].browse(lot_id)
                 self._fix_missing_quant(
                     lot,
@@ -184,13 +186,6 @@ class StockQuant(models.Model):
             "product_id": product.id,
         })
         inv.action_start()
-        if lot:
-            line = inv.line_ids.filtered(lambda x: x.prod_lot_id == lot and x.location_id == location_id)
-        else:
-            line = inv.line_ids.filtered(lambda x: x.product_id == product and x.location_id == location_id)
-        if line:
-            quantity += line.product_qty
-
         inv.line_ids.unlink()
         inv.line_ids = [[0, 0, {
             'prod_lot_id': lot.id,
@@ -205,6 +200,7 @@ class StockQuant(models.Model):
             domain = [
                 ('location_id.usage', '=', 'internal'),
                 ('product_id', '=', product.id),
+                ('location_id', '=', location_id),
             ]
             if lot:
                 domain += [('lot_id', '=', lot.id)]

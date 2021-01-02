@@ -25,9 +25,7 @@ class StockMoveLine(models.Model):
         return result
 
     def _make_quick_inventory_on_need(self):
-        from pudb import set_trace
-        set_trace()
-        for self in self:
+        for self in self.with_context(test_queue_job_no_delay=True):
             if self.state == 'assigned' and self.product_uom_qty < self.qty_done and self.qty_done > 0:
                 diff = self.qty_done - self.product_uom_qty
                 if diff < 0:
