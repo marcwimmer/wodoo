@@ -19,18 +19,20 @@ class StockQuant(models.Model):
 
     def _check_stock_quants(self, products):
         breakpoint()
-        quants = self.search([
-            ('product_id', 'in', products.ids),
-            ('needs_fix_reservation', '=', True),
-        ])
-        job_priority = int(self.env['ir.config_parameter'].get_param(key="fix_reservations.priority", default="2"))
-        job_channel = self.env['ir.config_parameter'].get_param(key="fix_reservations.channel", default="fix_reservations")
-        job_shift_minutes = self.env['ir.config_parameter'].get_param(key="fix_reservations.shift_minutes", default="10")
-        quants.with_delay(
-            eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
-            channel=job_channel,
-            priority=job_priority,
-        ).fix_reservation()
+        for product in products:
+            quants = self.search([
+                ('product_id', '=', product.id),
+                ('needs_fix_reservation', '=', True),
+            ])
+            job_priority = int(self.env['ir.config_parameter'].get_param(key="fix_reservations.priority", default="2"))
+            job_channel = self.env['ir.config_parameter'].get_param(key="fix_reservations.channel", default="fix_reservations")
+            job_shift_minutes = self.env['ir.config_parameter'].get_param(key="fix_reservations.shift_minutes", default="10")
+            quants.with_delay(
+                eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
+                channel=job_channel,
+                priority=job_priority,
+                identity_key=f"fix_reservation_{product.default_code or '#' + str(product.id)}",
+            ).fix_reservation()
 
     def _get_quant_deviations(self, product_id):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
@@ -123,16 +125,16 @@ class StockQuant(models.Model):
     # im regulaeren ablauf bei action_done stock.move hat das gestoert; danach kein quant fehler
     # @api.constrains("reserved_quantity", "quantity")
     # def _check_over_reservation(self):
-        # digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
-        # for self in self:
-            # if self.location_id.usage == 'internal':
-                # if round(self.quantity, digits) < round(self.reserved_quantity, digits):
-                    # breakpoint()
-                    # raise ValidationError(_("Cannot reserve {} for {}. Available {}.").format(
-                        # self.reserved_quantity,
-                        # self.product_id.default_code,
-                        # self.quantity,
-                    # ))
+    # digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
+    # for self in self:
+    # if self.location_id.usage == 'internal':
+    # if round(self.quantity, digits) < round(self.reserved_quantity, digits):
+    # breakpoint()
+    # raise ValidationError(_("Cannot reserve {} for {}. Available {}.").format(
+    # self.reserved_quantity,
+    # self.product_id.default_code,
+    # self.quantity,
+    # ))
 
     def _compute_calculated_reservations(self):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
