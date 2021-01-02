@@ -168,7 +168,7 @@ class StockQuant(models.Model):
             quant = quant.browse(quant.id)
             if not quant.exists():
                 continue
-            print(f"{quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
+            print(f"SKU {quant.product_id.default_code}; {quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
             if quant.calculated_reservations != quant.reserved_quantity:
                 quant.fix_reservation()
                 if commit:
