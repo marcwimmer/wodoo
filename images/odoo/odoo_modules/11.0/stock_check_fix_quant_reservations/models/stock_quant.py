@@ -1,3 +1,4 @@
+import arrow
 from odoo.addons import decimal_precision as dp
 from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
@@ -16,8 +17,28 @@ class StockQuant(models.Model):
         for self in self:
             self.over_reservation = round(self.reserved_quantity, digits) > round(self.quantity, digits)
 
-    def _search_needs_fix(self, operator, value):
+    def _check_stock_quants(self, products):
+        breakpoint()
+        quants = self.search([
+            ('product_id', 'in', products.ids),
+            ('needs_fix_reservation', '=', True),
+        ])
+        job_priority = int(self.env['ir.config_parameter'].get_param(key="fix_reservations.priority", default="2"))
+        job_channel = self.env['ir.config_parameter'].get_param(key="fix_reservations.channel", default="fix_reservations")
+        job_shift_minutes = self.env['ir.config_parameter'].get_param(key="fix_reservations.shift_minutes", default="10")
+        quants.with_delay(
+            eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
+            channel=job_channel,
+            priority=job_priority,
+        ).fix_reservation()
+
+    def _get_quant_deviations(self, product_id):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
+        if product_id:
+            self.env.cr.execute("select id into temporary table _filter_products from product_product where id=%s;", (product_id,))
+        else:
+            self.env.cr.execute("select id into temporary table _filter_products from product_product")
+
         self.env.cr.execute("""
             select
                 sm.product_id,
@@ -54,7 +75,9 @@ class StockQuant(models.Model):
             order by
                 1, 2, 3
 
-        """)
+        """, (
+            product_id, product_id
+        ))
         ids = []
         for rec in self.env.cr.fetchall():
             product_id, location_id, lot_id, qty = rec
@@ -86,9 +109,14 @@ class StockQuant(models.Model):
                 )
             elif round(qty2 or 0.0, digits) != round(qty or 0.0, digits):
                 ids += [product_id]
+        self.env.cr.execute("drop table _filter_products;")
+        return ids
+
+    def _search_needs_fix(self, operator, value):
+        product_ids = self._get_quant_deviations(None)
         ids = self.search([
             ('location_id.usage', '=', 'internal'),
-            ('product_id', 'in', list(set(ids))),
+            ('product_id', 'in', list(set(product_ids))),
         ]).ids
         return [('id', 'in', ids)]
 
@@ -163,6 +191,9 @@ class StockQuant(models.Model):
     @api.model
     def _fix_all_reservations(self, commit=False):
         breakpoint()
+        job_priority = int(self.env['ir.config_parameter'].get_param(key="fix_reservations.priority", default="2"))
+        job_channel = self.env['ir.config_parameter'].get_param(key="fix_reservations.channel", default="fix_reservations")
+
         quants = self.search([('needs_fix_reservation', '=', True)], order='product_id, location_id')
         for i, quant in enumerate(quants.with_context(prefetch_fields=False)):
             quant = quant.browse(quant.id)
@@ -170,7 +201,10 @@ class StockQuant(models.Model):
                 continue
             print(f"{quant.id} {quant.product_id.default_code} {i} of {len(quants)}")
             if quant.calculated_reservations != quant.reserved_quantity:
-                quant.fix_reservation()
+                quant.with_delay(
+                    channel=job_channel,
+                    priority=job_priority,
+                ).fix_reservation()
                 if commit:
                     self.env.cr.commit()
 

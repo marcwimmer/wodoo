@@ -11,6 +11,7 @@
       <field name="view_type">form</field>
       <field name="view_id" ref="quants_reservations_fix_tree"/>
       <field name="domain">[('location_id.usage', '=', 'internal')]</field>
+      <field name="context">{'search_default_needs_fix_reservation': 1}</field>
     </record>
     <menuitem parent="stock.menu_warehouse_report" id="menu_show_quants_to_fix" action="act_show_quants_to_fix_window"/>
   </data>

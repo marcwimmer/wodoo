@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record model="ir.config_parameter" id="fix_res_priority1">
+      <field name="key">fix_reservations.priority</field>
+      <field name="value">3</field>
+    </record>
+    <record model="ir.config_parameter" id="fix_res_priority1">
+      <field name="key">fix_reservations.channel</field>
+      <field name="value">fix_reservation</field>
+    </record>
+    <record model="ir.config_parameter" id="fix_res_shift_minutes">
+      <field name="key">fix_reservations.shift_minutes</field>
+      <field name="value">10</field>
+    </record>
+  </data>
+</odoo>
