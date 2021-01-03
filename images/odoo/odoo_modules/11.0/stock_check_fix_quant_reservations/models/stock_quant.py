@@ -65,6 +65,10 @@ class StockQuant(models.Model):
                 product_template pt
             on
                 pt.id = pp.product_tmpl_id
+            inner join
+                _filter_products fp
+            on
+                fp.id = pp.id
             where
                 sm.state in ('assigned', 'partially_available')
             and
@@ -77,14 +81,17 @@ class StockQuant(models.Model):
             order by
                 1, 2, 3
 
-        """, (
-            product_id, product_id
-        ))
+        """)
         ids = []
-        for rec in self.env.cr.fetchall():
+        locations_per_product = {}
+        records = self.env.cr.fetchall()
+        for rec in records:
             product_id, location_id, lot_id, qty = rec
+            locations_per_product.setdefault((product_id, lot_id), set())
+            locations_per_product[(product_id, lot_id)].add(location_id)
+
             self.env.cr.execute("""
-                select sum(reserved_quantity)
+                select sum(coalesce(reserved_quantity, 0))
                 from stock_quant
                 where
                     product_id=%s
@@ -99,7 +106,6 @@ class StockQuant(models.Model):
             ))
             qty2 = self.env.cr.fetchone()[0]
             if qty2 is None and qty:
-                breakpoint()
                 lot = self.env['stock.production.lot'].browse(lot_id)
                 print(f"inventory {lot.product_id.default_code} {lot.name}")
                 lot = self.env['stock.production.lot'].browse(lot_id)
@@ -111,6 +117,26 @@ class StockQuant(models.Model):
                 )
             elif round(qty2 or 0.0, digits) != round(qty or 0.0, digits):
                 ids += [product_id]
+
+        # there may be left overs quants; check them, too
+        breakpoint()
+        for product_id, locations in locations_per_product.items():
+            product_id, lot_id = product_id
+            if product_id in ids:
+                continue
+            self.env.cr.execute("""
+                select stock_quant.id
+                from stock_quant
+                inner join stock_location l
+                on l.id = stock_quant.location_id
+                where product_id=%s
+                and coalesce(stock_quant.lot_id, 0) = %s
+                and stock_quant.location_id not in %s
+                and l.usage = 'internal'
+            """, (product_id, lot_id, tuple(locations)))
+            quant_ids = [x[0] for x in self.env.cr.fetchall()]
+            ids += list(self.env['stock.quant'].browse(quant_ids).mapped('product_id').ids)
+
         self.env.cr.execute("drop table _filter_products;")
         return ids
 
