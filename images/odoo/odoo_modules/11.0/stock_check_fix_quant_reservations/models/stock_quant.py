@@ -130,11 +130,14 @@ class StockQuant(models.Model):
                 inner join stock_location l
                 on l.id = stock_quant.location_id
                 where product_id=%s
+                and reserved_quantity > 0
                 and coalesce(stock_quant.lot_id, 0) = %s
                 and stock_quant.location_id not in %s
                 and l.usage = 'internal'
             """, (product_id, lot_id, tuple(locations)))
             quant_ids = [x[0] for x in self.env.cr.fetchall()]
+            if quant_ids:
+                breakpoint()
             ids += list(self.env['stock.quant'].browse(quant_ids).mapped('product_id').ids)
 
         self.env.cr.execute("drop table _filter_products;")
