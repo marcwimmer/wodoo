@@ -20,13 +20,13 @@ class StockQuant(models.Model):
     def _check_stock_quants(self, products):
         breakpoint()
         for product in products:
-            quants = self.search([
+            quants = self.sudo().search([
                 ('product_id', '=', product.id),
                 ('needs_fix_reservation', '=', True),
             ])
-            job_priority = int(self.env['ir.config_parameter'].get_param(key="fix_reservations.priority", default="2"))
-            job_channel = self.env['ir.config_parameter'].get_param(key="fix_reservations.channel", default="fix_reservations")
-            job_shift_minutes = self.env['ir.config_parameter'].get_param(key="fix_reservations.shift_minutes", default="10")
+            job_priority = int(self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.priority", default="2"))
+            job_channel = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.channel", default="fix_reservations")
+            job_shift_minutes = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.shift_minutes", default="10")
             quants.with_delay(
                 eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
                 channel=job_channel,
@@ -193,8 +193,8 @@ class StockQuant(models.Model):
     @api.model
     def _fix_all_reservations(self, commit=False):
         breakpoint()
-        job_priority = int(self.env['ir.config_parameter'].get_param(key="fix_reservations.priority", default="2"))
-        job_channel = self.env['ir.config_parameter'].get_param(key="fix_reservations.channel", default="fix_reservations")
+        job_priority = int(self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.priority", default="2"))
+        job_channel = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.channel", default="fix_reservations")
 
         quants = self.search([('needs_fix_reservation', '=', True)], order='product_id, location_id')
         for i, quant in enumerate(quants.with_context(prefetch_fields=False)):
