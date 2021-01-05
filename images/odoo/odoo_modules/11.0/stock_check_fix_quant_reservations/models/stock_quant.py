@@ -20,19 +20,15 @@ class StockQuant(models.Model):
     def _check_stock_quants(self, products):
         breakpoint()
         for product in products:
-            quants = self.sudo().search([
-                ('product_id', '=', product.id),
-                ('needs_fix_reservation', '=', True),
-            ])
             job_priority = int(self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.priority", default="2"))
             job_channel = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.channel", default="fix_reservations")
             job_shift_minutes = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.shift_minutes", default="10")
-            quants.with_delay(
+            self.with_delay(
                 eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
                 channel=job_channel,
                 priority=job_priority,
                 identity_key=f"fix_reservation_{product.default_code or '#' + str(product.id)}",
-            ).fix_reservation()
+            )._fix_reservation_job(product)
 
     def _get_quant_deviations(self, product_id):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
@@ -193,6 +189,13 @@ class StockQuant(models.Model):
             sums = [convert(x) for x in self.env.cr.fetchall()]
             self.calculated_reservations = sum(x[0] for x in sums)
             self.needs_fix_reservation = self.calculated_reservations != self.reserved_quantity
+
+    @job
+    def _fix_reservation_job(self, product):
+        self.sudo().search([
+            ('product_id', '=', product.id),
+            ('needs_fix_reservation', '=', True),
+        ]).fix_reservation()
 
     @job
     def fix_reservation(self):
