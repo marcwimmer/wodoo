@@ -483,8 +483,15 @@ def __make_file_executable(filepath):
 
 def __try_to_set_owner(UID, path, recursive=False, autofix=False):
     if path.is_dir():
+        filename = tempfile.mktemp(suffix='.findoutput')
+        find_command = f"find '{path}' -not -type l -not -user {UID}"
+        os.system(f"{find_command} > '{filename}'")
+        res = Path(filename).read_text().strip()
+        if not res:
+            return
+
         for run in ["", "sudo"]:
-            repair_command = f"{run} find '{path}' -not -type l -not -user {UID} -exec chown {UID}:{UID} {{}} \\; 2>/dev/null;"
+            repair_command = f"{run} {find_command} -exec chown {UID}:{UID} {{}} \\; 2>/dev/null;"
             if run == 'sudo':
                 click.secho(f"Executing: {repair_command}")
             if autofix:
