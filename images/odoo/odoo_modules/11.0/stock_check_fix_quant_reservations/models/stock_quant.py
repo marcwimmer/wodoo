@@ -223,7 +223,7 @@ class StockQuant(models.Model):
                 self.sudo().reserved_quantity = self.calculated_reservations
         self._merge_quants()
 
-    @api.model
+    @job
     def _fix_all_reservations(self, commit=False):
         breakpoint()
         job_priority = int(self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.priority", default="2"))
