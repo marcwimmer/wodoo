@@ -239,6 +239,7 @@ class StockQuant(models.Model):
                 quant.with_delay(
                     channel=job_channel,
                     priority=job_priority,
+                    identity_key=f"fix quant: {quant.product_id.default_code} - {quant.location_id.name} - {quant.lot_id.name or ''}", # TODO add package
                 ).fix_reservation()
                 if commit:
                     self.env.cr.commit()
