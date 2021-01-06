@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <odoo>
-  <data noupdate="0">
+  <data noupdate="1">
     <record id="fix_reservations" model="ir.cron">
       <field name="name">fix_reservations</field>
       <field name="interval_number">20</field>

@@ -17,18 +17,19 @@ class StockQuant(models.Model):
         for self in self:
             self.over_reservation = round(self.reserved_quantity, digits) > round(self.quantity, digits)
 
-    def _check_stock_quants(self, products):
-        breakpoint()
-        for product in products:
-            job_priority = int(self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.priority", default="2"))
-            job_channel = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.channel", default="fix_reservations")
-            job_shift_minutes = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.shift_minutes", default="10")
-            self.with_delay(
-                eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
-                channel=job_channel,
-                priority=job_priority,
-                identity_key=f"fix_reservation_{product.default_code or '#' + str(product.id)}",
-            )._fix_reservation_job(product)
+    # def _check_stock_quants(self, products):
+        # # done by cronjobs now
+        # breakpoint()
+        # for product in products:
+            # job_priority = int(self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.priority", default="2"))
+            # job_channel = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.channel", default="fix_reservations")
+            # job_shift_minutes = self.env['ir.config_parameter'].sudo().get_param(key="fix_reservations.shift_minutes", default="10")
+            # self.with_delay(
+                # eta=arrow.get().shift(minutes=int(job_shift_minutes)).datetime,
+                # channel=job_channel,
+                # priority=job_priority,
+                # identity_key=f"fix_reservation_{product.default_code or '#' + str(product.id)}",
+            # )._fix_reservation_job(product)
 
     def _get_quant_deviations(self, product_id):
         digits = dp.get_precision('Product Unit of Measure')(self.env.cr)[1]
