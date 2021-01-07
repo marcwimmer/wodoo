@@ -24,14 +24,5 @@ def after_settings(config):
             port = random.randint(10001, 30000)
             config['POSTGRES_PORT'] = str(port)
 
-    customs = config['CUSTOMS']
-    dbname = config['DBNAME']
     project_name = config['PROJECT_NAME']
-    if config['DEVMODE'] != '1':
-        config['POSTGRES_VOLUME_NAME'] = "{}_postgres".format(project_name)
-    else:
-        config['POSTGRES_VOLUME_NAME'] = "{}_{}_{}_postgres".format(
-            os.environ['USER'],
-            customs,
-            dbname
-        )
+    config['POSTGRES_VOLUME_NAME'] = "{}_postgres".format(project_name)
