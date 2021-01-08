@@ -8,5 +8,5 @@ def after_settings(config):
     config['RUN_PROXY_PUBLISHED'] = '0'
 
     if not config.get('SSLPROXY_DOMAINS', False):
-        click.secho("Please configure SSLPROXY_DOMAINS, comma separated list.", fg='red')
-        sys.exit(-1)
+        click.secho("It is possible to configure SSLPROXY_DOMAINS, comma separated list.", fg='yellow')
+        click.secho("Otherwise configure the ssl proxy on your own.", fg='yellow')

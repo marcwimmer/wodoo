@@ -53,7 +53,10 @@ def proxy_conn(config):
 @pass_config
 @click.pass_context
 def reset(ctx, config):
-    domain = config.SSLPROXY_SUBDOMAINS.split(",")
+    domain = (config.SSLPROXY_SUBDOMAINS or '').split(",")
+    if not domain:
+        domain = ["example.com"]
+
     if not config.force:
         if not click.confirm(click.style("Removes certificates and all proxy settings/ forwards.", fg='red')):
             sys.exit(-1)
