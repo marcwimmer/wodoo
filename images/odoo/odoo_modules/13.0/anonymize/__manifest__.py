@@ -2,6 +2,7 @@
     'author': 'Marc Wimmer (marc@itewimmer.de)',
     'auto_install': True,
     'conflicts': [],
+    'external_dependencies': {'bin': [], 'python': ['names']},
     'css': [],
     'data': [],
     'demo_xml': [],
