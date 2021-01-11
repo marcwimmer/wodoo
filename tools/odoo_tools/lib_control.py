@@ -1,7 +1,7 @@
 import click
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-# from .tools import execute_script
+from .tools import execute_script
 import subprocess
 
 @cli.group(cls=AliasedGroup)
