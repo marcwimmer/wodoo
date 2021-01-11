@@ -1,6 +1,8 @@
 import click
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
+# from .tools import execute_script
+import subprocess
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -202,6 +204,31 @@ def shell(config, command):
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
     lib_shell(command)
+
+@docker.command()
+@pass_config
+def show_volumes(config):
+    import yaml
+    from tabulate import tabulate
+    volumes = subprocess.check_output(["docker", "volume", "ls"]).decode('utf-8').split("\n")[1:]
+    volumes = [x.split(" ")[-1] for x in volumes]
+    volumes = [[x] for x in volumes if '_' in x]  # named volumes
+    volumes = [x for x in volumes if config.PROJECT_NAME in x[0]]
+    for volume in volumes:
+        size = subprocess.check_output([
+            "/usr/bin/sudo",
+            "/usr/bin/du",
+            "-sh",
+            f"/var/lib/docker/volumes/{volume[0]}"
+        ]).decode('utf-8')
+        size = size.split("\t")[0]
+        volume.append(size)
+    click.echo(tabulate(volumes, ["Volume", "Size"]))
+
+    click.secho("\ndocker-compose file:", bold=True)
+    compose = yaml.safe_load(config.files['docker_compose'].read_text())
+    for volume in compose['volumes']:
+        click.secho(f"docker-compose volume: {volume}")
 
 
 Commands.register(run)
