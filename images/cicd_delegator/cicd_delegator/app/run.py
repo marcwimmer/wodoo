@@ -2,6 +2,7 @@
 
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from http.cookies import SimpleCookie
+import arrow
 import argparse
 import os
 import random
@@ -35,12 +36,22 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_error(501, str(ex))
 
     def _rewrite_path(self, header):
-        cookie = SimpleCookie(header['Cookie'])
         url = ""
-        delegator_path = cookie.get('delegator-path', "")
-        delegator_path = delegator_path and delegator_path.value
+        if "Cookie" in header:
+            cookie = SimpleCookie(header['Cookie'])
+            delegator_path = cookie.get('delegator-path', "")
+            delegator_path = delegator_path and delegator_path.value
+        else:
+            delegator_path = 'not-set'
         if delegator_path == 'not-set':
             delegator_path = ""
+
+        if delegator_path:
+            # set touched date:
+            path = Path(os.environ['REGISTRY_SITES']) / delegator_path / 'last_access'
+            path.parent.mkdir(exist_ok=True)
+            path.write_text(arrow.get().strftime("%Y-%m-%d %H:%M:%S"))
+            del path
 
         logger.debug(f"rewrite path: self.path: {self.path}, delegator_path: {delegator_path}")
 
@@ -75,6 +86,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_resp_headers(resp)
             if body:
                 self.wfile.write(resp.content)
+
             return
         except Exception as ex:
             self._handle_error(ex)
@@ -140,8 +152,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         logger.debug('Response Header')
         for key in respheaders:
             if (key or '').lower() not in [
-                'content-encoding', 'transfer-encoding', 'transfer-encoding',
-                'content-length'
+                'content-encoding', 'transfer-encoding', 'content-length'
             ]:
                 self.send_header(key, respheaders[key])
         self.send_header('Content-Length', len(resp.content))

@@ -1,3 +1,4 @@
+import collections
 from contextlib import contextmanager
 import platform
 from pathlib import Path
@@ -29,11 +30,47 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
 from .tools import split_hub_url
+from .tools import execute_script
 
 @cli.group(cls=AliasedGroup)
 @pass_config
 def composer(config):
     pass
+
+@composer.command()
+@click.option("--full", is_flag=True, help="Otherwise environment is shortened.")
+@click.argument('service-name', required=False)
+@pass_config
+@click.pass_context
+def config(ctx, config, service_name, full=True):
+    import yaml
+    content = yaml.safe_load(config.files['docker_compose'].read_text())
+
+    def minimize(d):
+        if isinstance(d, dict):
+            for k in list(d.keys()):
+                if k in ['environment']:
+                    d.pop(k)
+                    continue
+                minimize(d[k])
+
+        if isinstance(d, list):
+            for item in d:
+                minimize(item)
+
+    if not full:
+        minimize(content)
+
+    if service_name:
+        content = {service_name: content['services'][service_name]}
+
+    content = yaml.dump(content, default_flow_style=False)
+    process = subprocess.Popen(
+        ["/usr/bin/less"],
+        stdin=subprocess.PIPE
+    )
+    process.stdin.write(content.encode('utf-8'))
+    process.communicate()
 
 
 @composer.command(name='reload', help="Switches to project in current working directory.")
@@ -54,7 +91,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
         click.secho("Proxy Port and headless together not compatible.", fg='red')
         sys.exit(-1)
 
-    click.secho("Current Project Name: {}".format(project_name or config.PROJECT_NAME), bold=True, fg='green')
+    click.secho("Current Project Name: {}".format(project_name or config.project_name), bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
@@ -62,7 +99,10 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     _set_host_run_dir(ctx, config, local)
     # Reload config
     from .click_config import Config
-    config = Config(project_name=project_name)
+    config = Config(project_name=project_name, verbose=config.verbose, force=config.force)
+    internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port)
+
+def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port):
 
     defaults = {
         'config': config,
@@ -93,6 +133,11 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     # assuming we are in the odoo directory
     _do_compose(**defaults)
 
+    _execute_after_reload(config)
+
+def _execute_after_reload(config):
+    execute_script(config, config.files['after_reload_script'], "You may provide a custom after reload script here:")
+
 def _set_host_run_dir(ctx, config, local):
     from .init_functions import make_absolute_paths
     local_config_dir = (config.WORKING_DIR / '.odoo')
@@ -101,8 +146,6 @@ def _set_host_run_dir(ctx, config, local):
     else:
         # remove probably existing local run dir
         if local_config_dir.exists():
-            if not click.confirm(click.style(f"If you continue the local existing run directory {local_config_dir} is erased.", fg='red')):
-                sys.exit(-1)
             if config.files['docker_compose'].exists():
                 Commands.invoke(ctx, 'down', volumes=True)
             if local_config_dir.exists():
@@ -120,7 +163,7 @@ def _set_host_run_dir(ctx, config, local):
 def _set_defaults(config, defaults):
     defaults['HOST_RUN_DIR'] = config.HOST_RUN_DIR
     defaults['NETWORK_NAME'] = config.NETWORK_NAME
-    defaults['PROJECT_NAME'] = config.PROJECT_NAME
+    defaults['project_name'] = config.project_name
 
 def _do_compose(config, customs='', db='', demo=False, **forced_values):
     """
@@ -269,37 +312,26 @@ def _prepare_yml_files_from_template_files(config):
 
     _prepare_docker_compose_files(config, config.files['docker_compose'], _files)
 
-def _prepare_docker_compose_files(config, dest_file, paths):
-    from .myconfigparser import MyConfigParser
-    from .tools import abort
+def __resolve_custom_merge(whole_content, value):
+    for k in list(value.keys()):
+        if k == '__custom_merge':
+            insert = whole_content['services'][value[k]]
+            dict_merge(value, insert)
+            value.pop(k)
+            continue
+
+        if isinstance(value[k], dict):
+            __resolve_custom_merge(whole_content, value[k])
+        elif isinstance(value[k], list):
+            for item in value[k]:
+                if isinstance(item, dict):
+                    __resolve_custom_merge(whole_content, item)
+
+def __get_sorted_contents(paths):
     import yaml
-
-    final_contents = []
-
-    if not dest_file:
-        raise Exception('require destination path')
-
-    with dest_file.open('w') as f:
-        f.write("#Composed {}\n".format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        f.write("version: '{}'\n".format(config.compose_version))
-    myconfig = MyConfigParser(config.files['settings'])
-    env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
-
-    # add static yaml content to each machine
-    default_network = yaml.safe_load(config.files['config/default_network'].read_text())
-
-    paths = list(filter(lambda x: _use_file(config, x), paths))
-    click.secho(f"\nUsing docker-compose files:", fg='green', bold=True)
+    contents = []
     for path in paths:
-        click.secho(str(path), fg='green')
-    # collect further networks
-    for path in paths:
-        content = path.read_text()
-        j = yaml.safe_load(content)
-        for networkname, network in j.get('networks', {}).items():
-            default_network['networks'][networkname] = network
-
-    for path in paths:
+        # now probably not needed anymore
         content = path.read_text()
 
         # dont matter if written manage-order: or manage-order
@@ -309,102 +341,218 @@ def _prepare_docker_compose_files(config, dest_file, paths):
             order = content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
         order = int(order)
 
-        j = yaml.safe_load(content)
-        if not j:
-            click.secho("Error loading content: \n{}".format(content), fg='red')
-            sys.exit(-1)
+        contents.append((order, yaml.safe_load(content), path))
+
+    contents = list(map(lambda x: x[1], sorted(contents, key=lambda x: x[0])))
+    return contents
+
+def __set_environment_in_services(content):
+    for service in content.get('services', []):
+        service = content['services'][service]
+        service.setdefault('env_file', [])
+        if isinstance(service['env_file'], str):
+            service['env_file'] = [service['env_file']]
+
+        file = '$HOST_RUN_DIR/settings'
+        if not [x for x in service['env_file'] if x == file]:
+            service['env_file'].append(file)
+
+        service.setdefault('environment', [])
+
+def post_process_complete_yaml_config(config, yml):
+    """
+    This is after calling docker-compose config, which returns the
+    complete configuration.
+    """
+
+    yml['version'] = config.YAML_VERSION
+
+    # remove restart policies, if not restart allowed:
+    if not config.restart_containers:
+        for service in yml['services']:
+            if 'restart' in yml['services'][service]:
+                yml['services'][service].pop('restart')
+
+    # set hub source for all images, that are built:
+    for service_name, service in yml['services'].items():
+        if not service.get('build', False):
             continue
+        hub = split_hub_url(config)
+        if hub:
+            # click.secho(f"Adding reference to hub {hub}")
+            service['image'] = "/".join([
+                hub['url'],
+                hub['prefix'],
+                config.customs,
+                service_name + ":latest"
+            ])
 
-        # default values in yaml file
-        j['version'] = config.YAML_VERSION
+    # set container name to service name (to avoid dns names with _1)
+    for service in yml['services']:
+        yml['services'][service]['container_name'] = f"{config.project_name}_{service}"
+        # yml['services'][service]['hostname'] = service # otherwise odoo pgcli does not work
 
-        # set settings environment and the override settings after that
-        for service in j.get('services', []):
-            service = j['services'][service]
-            service.setdefault('env_file', [])
-            if isinstance(service['env_file'], str):
-                service['env_file'] = [service['env_file']]
-            if [x for x in service['env_file'] if x == '$ODOO_HOME/run/settings']:
-                # no old format valid
-                raise Exception('stop')
+    return yml
 
-            file = '$HOST_RUN_DIR/settings'
-            if not [x for x in service['env_file'] if x == file]:
-                service['env_file'].append(file)
-
-            service.setdefault('environment', [])
-
-        j['networks'] = copy.deepcopy(default_network['networks'])
-
-        content = yaml.dump(j, default_flow_style=False)
-        content = __replace_all_envs_in_str(content, env)
-
-        final_contents.append((order, content))
-
-    def post_process_complete_yaml_config(yml):
-        """
-        This is after calling docker-compose config, which returns the
-        complete configuration.
-        """
-
-        yml['version'] = config.YAML_VERSION
-
-        # remove restart policies, if not restart allowed:
-        if not config.restart_containers:
-            for service in yml['services']:
-                if 'restart' in yml['services'][service]:
-                    yml['services'][service].pop('restart')
-
-        # set hub source for all images, that are built:
-        for service_name, service in yml['services'].items():
-            if not service.get('build', False):
-                continue
-            hub = split_hub_url(config)
-            if hub:
-                # click.secho(f"Adding reference to hub {hub}")
-                service['image'] = "/".join([
-                    hub['url'],
-                    hub['prefix'],
-                    config.customs,
-                    service_name + ":latest"
-                ])
-
-        return yml
-
-    # call docker compose config to get the complete config
-    final_contents.sort(key=lambda x: x[0])
-
+def __run_docker_compose_config(config, contents, env):
+    import yaml
     temp_path = config.dirs['run'] / '.tmp.compose'
     if temp_path.is_dir():
         __empty_dir(temp_path)
     temp_path.mkdir(parents=True, exist_ok=True)
+
+    files = []
+    for i, content in enumerate(contents):
+        file_path = (temp_path / f'docker-compose-{str(i).zfill(5)}.yml')
+        file_path.write_text(yaml.dump(content, default_flow_style=False))
+        files.append(file_path)
+        del file_path
+
     try:
-        temp_files = []
-        for i, filecontent in enumerate(final_contents):
-            path = temp_path / (str(i).zfill(10) + '.yml')
-            with path.open('wb') as f:
-                f.write(filecontent[1].encode('utf-8'))
-            temp_files.append("-f")
-            temp_files.append(path.name)
-
-        cmdline = []
-        cmdline.append(str(config.files['docker_compose_bin']))
-        cmdline += temp_files
-        cmdline.append('config')
-
+        cmdline = [
+            str(config.files['docker_compose_bin']),
+        ]
+        for file_path in files:
+            cmdline += [
+                "-f",
+                file_path,
+            ]
+        cmdline += ['config']
         d = deepcopy(os.environ)
         d.update(env)
 
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         conf = yaml.safe_load(conf)
-        conf = post_process_complete_yaml_config(conf)
-        conf = _execute_after_compose(config, conf)
+        shutil.rmtree(temp_path)
+        return conf
 
-        dest_file.write_text(yaml.dump(conf, default_flow_style=False))
-
+    except Exception:
+        raise
     finally:
-        # shutil.rmtree(temp_path)
         pass
+
+
+def dict_merge(dct, merge_dct, keep_source_scalars=True):
+    """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
+    updating only top-level keys, dict_merge recurses down into dicts nested
+    to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
+    ``dct``.
+    :param dct: dict onto which the merge is executed
+    :param merge_dct: dct merged into dct
+    :return: None
+    """
+
+    def _make_dict_if_possible(d, k):
+        if k not in d:
+            return
+        if isinstance(d[k], list) and all(isinstance(x, str) for x in d[k]):
+            new_d = {}
+            for list_item in d[k]:
+                if '=' in list_item:
+                    key, value = list_item.split("=")
+                elif ':' in list_item:
+                    key, value = list_item.split(":", 1)
+                else:
+                    key, value = list_item, None
+                new_d[key] = value
+            d[k] = new_d
+
+    for k, v in merge_dct.items():
+        # handle
+        # environment:
+        #   A: B
+        #   - A=B
+
+        _make_dict_if_possible(merge_dct, k)
+        if (k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], collections.Mapping)):
+            dict_merge(dct[k], merge_dct[k])
+        else:
+
+            # merging lists of tuples and lists
+            if k in dct:
+                _make_dict_if_possible(dct, k)
+
+            if k not in dct:
+                dct[k] = merge_dct[k]
+
+def _prepare_docker_compose_files(config, dest_file, paths):
+    from .myconfigparser import MyConfigParser
+    from .tools import abort
+    import yaml
+
+    if not dest_file:
+        raise Exception('require destination path')
+
+    myconfig = MyConfigParser(config.files['settings'])
+    env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
+
+    paths = list(filter(lambda x: _use_file(config, x), paths))
+    click.secho(f"\nUsing docker-compose files:", fg='green', bold=True)
+    for path in paths:
+        click.secho(str(path), fg='green')
+        del path
+
+    # make one big compose file
+    contents = __get_sorted_contents(paths)
+    contents = list(_apply_variables(config, contents, env))
+    _explode_referenced_machines(contents)
+
+    # call docker compose config to get the complete config
+    content = __run_docker_compose_config(config, contents, env)
+    content = post_process_complete_yaml_config(config, content)
+    content = _execute_after_compose(config, content)
+    dest_file.write_text(yaml.dump(content, default_flow_style=False))
+
+def _explode_referenced_machines(contents):
+    """
+    with:
+    service:
+      machine:
+        labels:
+          compose.merge: service-name
+
+    a service is referenced; this service is copied in its own file to match later that reference by its service
+    name in docker compose config
+    """
+    import yaml
+    needs_explosion = {}
+
+    for content in contents:
+        for service in content.get('services'):
+            labels = content['services'][service].get('labels')
+            if labels:
+                if labels.get('compose.merge'):
+                    needs_explosion.setdefault(labels['compose.merge'], set())
+                    needs_explosion[labels['compose.merge']].add(service)
+
+    for content in contents:
+        for explode, to_explode in needs_explosion.items():
+            if explode in content.get('services', []):
+                for to_explode in to_explode:
+                    if to_explode in content['services']:
+                        raise Exception(f"Already exists: {to_explode}\n{yaml.dump(content, default_flow_style=False)}")
+                    content['services'][to_explode] = deepcopy(content['services'][explode])
+
+def _apply_variables(config, contents, env):
+    import yaml
+    # add static yaml content to each machine
+    default_network = yaml.safe_load(config.files['config/default_network'].read_text())
+
+    # extract further networks
+    for content in contents:
+        for networkname, network in content.get('networks', {}).items():
+            default_network['networks'][networkname] = network
+
+        content['version'] = config.YAML_VERSION
+
+        # set settings environment and the override settings after that
+        __set_environment_in_services(content)
+        content['networks'] = copy.deepcopy(default_network['networks'])
+
+        content = yaml.dump(content, default_flow_style=False)
+        content = __replace_all_envs_in_str(content, env)
+        content = yaml.safe_load(content)
+        yield content
 
 @composer.command(name='toggle-settings')
 @pass_config
@@ -451,41 +599,54 @@ def toggle_settings(ctx, config):
     Commands.invoke(ctx, 'reload')
 
 def _use_file(config, path):
-    if str(path.absolute()).startswith(str(config.dirs['user_conf_dir'].absolute())):
-        return True
-    if 'etc' in path.parts:
-        return True
-    if 'NO-AUTO-COMPOSE' in path.read_text():
-        return False
-    if path.parent.parent.name == 'images':
-        if not getattr(config, "run_{}".format(path.parent.name)):
+    from . import odoo_config
+
+    def check():
+        if 'etc' in path.parts:
+            return True
+        if 'NO-AUTO-COMPOSE' in path.read_text():
             return False
-        if not any(".run_" in x for x in path.parts):
-            # allower postgres/docker-compose.yml
+        if 'images' in path.parts:
+            if not getattr(config, "run_{}".format(path.parent.name)):
+                return False
+            if not any(".run_" in x for x in path.parts):
+                # allower postgres/docker-compose.yml
+                return True
+
+        if any(x for x in path.parts if 'platform_' in x):
+            pl = 'platform_{}'.format(platform.system().lower())
+            if not any(pl in x for x in path.parts):
+                return False
+            run_key = 'RUN_{}'.format(path.parent.name).upper()
+            return getattr(config, run_key)
+
+        if "run_odoo_version.{}.yml".format(config.odoo_version) in path.name:
             return True
 
-    if any(x for x in path.parts if 'platform_' in x):
-        pl = 'platform_{}'.format(platform.system().lower())
-        if not any(pl in x for x in path.parts):
+        # requires general run:
+        if getattr(config, 'run_{}'.format(path.parent.name)):
+            run = list(filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")]))
+            for run in run:
+                if getattr(config, run):
+                    return True
+            run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
+            for run in run:
+                if not getattr(config, run):
+                    return True
             return False
-        run_key = 'RUN_{}'.format(path.parent.name).upper()
-        return getattr(config, run_key)
 
-    if "run_odoo_version.{}.yml".format(config.odoo_version) in path.name:
+        if path.absolute() == config.files['docker_compose'].absolute():
+            return False
+        if str(path.absolute()).startswith(str(config.files['docker_compose'].parent.absolute())):
+            return False
+
         return True
 
-    # requires general run:
-    if getattr(config, 'run_{}'.format(path.parent.name)):
-        run = filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")])
-        for run in run:
-            if getattr(config, run):
-                return True
-        run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
-        for run in run:
-            if not getattr(config, run):
-                return True
-
-    return False
+    res = check()
+    if not res:
+        if config.verbose:
+            click.secho(f"ignoring file: {path}", fg='yellow')
+    return res
 
 
 Commands.register(do_reload, 'reload')

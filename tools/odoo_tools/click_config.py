@@ -14,14 +14,14 @@ class Config(object):
         def __exit__(self, type, value, traceback):
             self.config.force = self.force
 
-    def __init__(self, quiet=False, project_name=None):
+    def __init__(self, quiet=False, project_name=None, force=False, verbose=False):
         from .consts import YAML_VERSION
         from . import odoo_config  # NOQA
 
-        self.PROJECT_NAME = project_name
+        self.project_name = project_name
         self.YAML_VERSION = YAML_VERSION
-        self.verbose = False
-        self.force = False
+        self.verbose = verbose
+        self.force = force
         self.compose_version = YAML_VERSION
         self.setup_files_and_folders()
         self.quiet = quiet
@@ -40,13 +40,13 @@ class Config(object):
 
         self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
         self.CUSTOMS = self.WORKING_DIR and self.WORKING_DIR.name or None
-        if not self.PROJECT_NAME:
-            self.PROJECT_NAME = _get_project_name(self, self.WORKING_DIR)
-        self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.PROJECT_NAME)
+        if not self.project_name:
+            self.project_name = _get_project_name(self, self.WORKING_DIR)
+        self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.project_name)
         if not os.getenv("RUN_DIR"):
             # needed for get_env for example
             os.environ['RUN_DIR'] = str(self.HOST_RUN_DIR)
-        self.NETWORK_NAME = "{}_default".format(self.PROJECT_NAME)
+        self.NETWORK_NAME = self.project_name
         make_absolute_paths(self, self.dirs, self.files, self.commands)
         self.use_docker = get_use_docker(self.files)
         self.dirs['customs'] = self.WORKING_DIR
@@ -55,7 +55,7 @@ class Config(object):
             self.files['commit'] = self.dirs['customs'] / self.files['commit'].name
         else:
             self.files['commit'] = None
-        set_shell_table_title(self.PROJECT_NAME)
+        set_shell_table_title(self.project_name)
 
         from .program_settings import ProgramSettings
         self.runtime_settings = ProgramSettings(self.files['runtime_settings'])

@@ -2,18 +2,16 @@ version: '3.7'
 services:
   cicd_delegator:
     build: ./cicd_delegator
-    #volumes:
-    #    # cicd delegator is stored in ~/.odoo/cicd_delegator globally
-    #    - ./empty:/etc/nginx/conf.d/default.conf
-    #    - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    #    - ./nginx.upstreams.conf:/etc/nginx/conf.d/upstreams.conf:ro
-    #    - ./nginx.locations.conf:/etc/nginx/conf.locations.d/locations.conf:ro
     ports:
         - __CICD_BINDING__:80
     networks:
         - cicd_delegator
+    environment:
+        REGISTRY_SITES: /registry_sites
     volumes:
         - ./registry.json:/registry.json
+        - ./registry_sites:/registry_sites
+    restart: "unless-stopped"
   cicd_test:
     build: ./cicd_tester
     networks:
@@ -23,10 +21,15 @@ services:
     build: ./cicd_index
     networks:
         - cicd_delegator
+    restart: "unless-stopped"
     environment:
         FLASK_ENV: development
+        REGISTRY_SITES: /registry_sites
+        DISPLAY_TIMEZONE: Europe/Berlin
+        DATE_FORMAT: '_d._m._Y _H:_M:_S'
     volumes:
         - ./registry.json:/registry.json
+        - ./registry_sites:/registry_sites
 networks:
     cicd_delegator:
         name: __CICD_NETWORK_NAME__

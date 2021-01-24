@@ -62,7 +62,7 @@ def remove_web_assets(ctx, config):
 def status(config):
     color = 'yellow'
     click.secho("projectname: ", nl=False)
-    click.secho(config.PROJECT_NAME, fg=color, bold=True)
+    click.secho(config.project_name, fg=color, bold=True)
     click.secho("version: ", nl=False)
     click.secho(config.odoo_version, fg=color, bold=True)
     click.secho("db: ", nl=False)

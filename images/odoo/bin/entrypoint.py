@@ -4,6 +4,7 @@ import os
 import shutil
 from pathlib import Path
 
+
 owner = os.environ['OWNER_UID']
 
 os.system(f"usermod -u {owner} odoo")

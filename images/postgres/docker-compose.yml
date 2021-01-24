@@ -1,7 +1,8 @@
 # manage-order: 500
+volumes:
+    odoo_postgres_volume:
 services:
   postgres:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_postgres
     build: $ODOO_HOME/images/postgres
     restart: unless-stopped
     stdin_open: true
@@ -13,6 +14,7 @@ services:
       - $HOST_RUN_DIR/postgresout:/tmp/out
       # is created in after_compose
       - $HOST_RUN_DIR/pgcli_history:/root/.config/pgcli/history
+      - odoo_postgres_volume:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: nobody_knows_what_it_is_like_to_be_the_db_admin
       PGDATA: /var/lib/postgresql/data/pgdata

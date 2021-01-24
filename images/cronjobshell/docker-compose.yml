@@ -4,7 +4,6 @@ services:
   cronjobshell:
     build: $ODOO_HOME/images/cronjobs
     privileged: true
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_cronjobshell
     command: ['echo', 'goodbye']
     restart: 'no'
     volumes:

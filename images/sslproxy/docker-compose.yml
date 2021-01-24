@@ -1,7 +1,6 @@
 version: '3'
 services:
   sslproxy:
-    container_name: ${PROJECT_NAME}_sslproxy
     image: 'jc21/nginx-proxy-manager:latest'
     ports:
       - '${SSLPROXY_LISTEN_NON_SSL}:80'

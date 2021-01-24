@@ -3,6 +3,7 @@ FROM debian:buster
 ARG ODOO_VERSION
 ARG ODOO_REQUIREMENTS
 ARG ODOO_DEB_REQUIREMENTS
+ARG ODOO_PYTHON_VERSION
 
 MAINTAINER marc@itewimmer.de
 
@@ -104,7 +105,15 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
-ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
+# Install specific Python version; example: 3.7.3 has email bug:
+# https://github.com/SpamScope/mail-parser/issues/49
+RUN apt update && apt install -y libncurses5 libncurses5-dev libncursesw5
+ADD python/Python-$ODOO_PYTHON_VERSION.tgz /usr/local/src
+WORKDIR /usr/local/src/Python-${ODOO_PYTHON_VERSION}
+RUN ./configure --enable-optimizations
+RUN make -j4
+RUN make install
+RUN rm /usr/bin/python3 /usr/bin/pip3
 
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 # PYTHON 3 and PIP
@@ -117,7 +126,6 @@ RUN hash -r && \
 	hash -r && \
 	pip3 install --upgrade setuptools cython 
 # RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
-RUN pip3 install -r /root/odoo_requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
 RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
@@ -137,5 +145,9 @@ RUN ipython profile create && \
 echo "c.TerminalInteractiveShell.editing_mode = 'vi'" >> /root/.ipython/profile_default/ipython_config.py && \
 rsync /root/.ipython/ /home/odoo/.ipython/ -arP && \
 chown odoo:odoo -R /home/odoo/.ipython
+
+WORKDIR /usr/local/src
+ADD patches/python_3.8.email.patch /usr/local/src
+RUN bash python_3.8.email.patch
 
 WORKDIR /opt/odoo

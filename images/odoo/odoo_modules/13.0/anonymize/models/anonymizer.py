@@ -1,7 +1,6 @@
 import os
 from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
-import names
 import random
 import logging
 logger = logging.getLogger(__name__)
@@ -28,12 +27,14 @@ class Anonymizer(models.AbstractModel):
 
     @api.model
     def generate_random_email(self):
+        import names
         return names.get_full_name().replace(' ', '.') + "@" + self.get_one_random_domain(self._domains)
 
     @api.model
     def _run(self):
         if os.environ['DEVMODE'] != "1":
             return
+        import names
 
         name_fields = {}
         for dbfield in self.env['ir.model.fields'].search([]):

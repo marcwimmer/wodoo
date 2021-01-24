@@ -34,10 +34,15 @@ if click:
     pass_config = click.make_pass_decorator(Config, ensure=True)
 
     @click.group(cls=AliasedGroup)
+    @click.option("--project-name", is_flag=False)  # CHECK with init functions on default value
     @click.option("-f", "--force", is_flag=True)
+    @click.option("-v", "--verbose", is_flag=True)
     @pass_config
-    def cli(config, force):
+    def cli(config, force, verbose, project_name):
         config.force = force
+        config.verbose = verbose
+        if project_name:
+            config.project_name = project_name
         if not config.WORKING_DIR:
             click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
             sys.exit(1)

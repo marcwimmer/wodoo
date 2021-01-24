@@ -1,0 +1,7 @@
+#manage-order: 8000
+services:
+  proxy:
+    labels:
+        compose.merge: 'proxy_abstract'
+    environment:
+        ODOO_HOST: ${project_name}_odoo

@@ -60,7 +60,7 @@ class DBConnection(object):
             password=self.pwd,
             host=self.host,
             port=self.port,
-            connect_timeout=3,
+            connect_timeout=int(os.getenv("PSYCOPG_TIMEOUT", "3")),
         )
         return conn
 
@@ -124,7 +124,7 @@ def __get_odoo_commit():
         raise Exception("No odoo commit defined.")
     return commit
 
-def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False):
+def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False, params=None):
 
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect(connection):
@@ -139,7 +139,7 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
         try_connect(connection)
 
     def _call_cr(cr):
-        cr.execute(sql)
+        cr.execute(sql, params)
         if fetchone:
             return cr.fetchone()
         elif fetchall:
@@ -673,9 +673,9 @@ def get_dockercompose():
     return compose
 
 def get_volume_names():
-    from . import PROJECT_NAME
+    from . import project_name
     vols = get_dockercompose()['volumes'].keys()
-    return ["{}_{}".format(PROJECT_NAME, x) for x in vols]
+    return [f"{project_name}_{x}" for x in vols]
 
 def __running_as_root_or_sudo():
     output = subprocess.check_output(["/usr/bin/id", '-u']).strip().decode('utf-8')
@@ -862,4 +862,29 @@ def split_hub_url(config):
 def _get_missing_click_config():
     from .click_config import Config
     config = Config(quiet=True)
+    for stack in inspect.stack():
+        frame = stack.frame
+        if 'ctx' in frame.f_locals and 'config' in frame.f_locals:
+            config = frame.f_locals['config']
     return config
+
+def execute_script(config, script, message):
+    if script.exists():
+        click.secho(f"Executing reload script: {script}", fg='green')
+        os.system(script)
+    else:
+        if config.verbose:
+            click.secho(f"{message}\n{script}", fg='yellow')
+
+def get_services(config, based_on, yml=None):
+    import yaml
+    content = yml or yaml.safe_load(config.files['docker_compose'].read_text())
+
+    def collect():
+        for service_name, service in content['services'].items():
+            merge = service.get('labels', {}).get('compose.merge')
+            if merge and based_on in merge or merge == based_on:
+                yield service_name
+
+    res = list(set(collect()))
+    return res

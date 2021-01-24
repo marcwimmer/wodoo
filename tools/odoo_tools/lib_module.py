@@ -23,6 +23,7 @@ from .tools import __get_installed_modules
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
+from .tools import get_services
 
 class UpdateException(Exception): pass
 
@@ -155,11 +156,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
 
     if not no_restart:
         if config.use_docker:
-            Commands.invoke(ctx, 'kill', machines=[
-                'odoo',
-                'odoo_queuejobs',
-                'odoo_cronjobs',
-            ])
+            Commands.invoke(ctx, 'kill', machines=get_services(config, 'odoo_base'))
             if config.run_redis:
                 Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
             Commands.invoke(ctx, 'wait_for_container_postgres')
@@ -372,6 +369,27 @@ def unittest(config, repeat):
     container_file = Path('/opt/src/') / filename
     params = ['odoo', '/odoolib/unit_test.py', f'{container_file}']
     __dcrun(params + ['--log-level=debug'], interactive=True)
+
+@odoo_module.command()
+@click.argument("name", required=True)
+@pass_config
+@click.pass_context
+def set_ribbon(ctx, config, name):
+    SQL = """
+        Select state from ir_module_module where name = 'web_environment_ribbon';
+    """
+    res = _execute_sql(config.get_odoo_conn(), SQL, fetchone=True)
+    if not (res and res[0] == 'installed'):
+        Commands.invoke(ctx, 'update', module=['web_environment_ribbon'])
+
+    _execute_sql(config.get_odoo_conn(), """
+        UPDATE
+            ir_config_parameter
+        SET
+            value = %s
+        WHERE
+            key = 'ribbon.name';
+    """, params=(name,))
 
 
 Commands.register(progress)

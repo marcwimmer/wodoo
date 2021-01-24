@@ -5,10 +5,16 @@ import threading
 import subprocess
 import time
 import os
+import logging
+
 INPUT = os.getenv("INPUT")
 OUTPUT = os.getenv("OUTPUT")
+FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
+logging.basicConfig(format=FORMAT)
+logging.getLogger().setLevel(logging.DEBUG)
+logger = logging.getLogger('')  # root handler
 
-print("Starting libreoffice converter daemon")
+logger.info("Starting libreoffice converter daemon")
 
 def setup_dir(d):
     if not os.path.exists(d):
@@ -36,7 +42,7 @@ while True:
                 filepath
             ], timeout=10)
         except Exception:
-            print("Error converting File: {}".format(filename))
+            logger.error("Error converting File: {}".format(filename))
         finally:
             os.unlink(filepath)
         del filename

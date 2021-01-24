@@ -16,13 +16,10 @@ def after_settings(config):
             "DB_PWD": "odoo"
         }
         for k, v in default_values.items():
-            if config.get(k, "") != v:
+            if not config.get(k, ""):
                 config[k] = v
 
         if not config.get("POSTGRES_PORT", ""):
             # try to use same port again
             port = random.randint(10001, 30000)
             config['POSTGRES_PORT'] = str(port)
-
-    project_name = config['PROJECT_NAME']
-    config['POSTGRES_VOLUME_NAME'] = "{}_postgres".format(project_name)

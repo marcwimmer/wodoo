@@ -19,6 +19,7 @@ except Exception:
 from odoo_tools.lib_clickhelpers import AliasedGroup
 from odoo_tools.tools import __empty_dir, __dc, sync_folder
 from odoo_tools import cli, pass_config, Commands
+from odoo_tools.lib_composer import internal_reload
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -33,16 +34,12 @@ def get_registry(config):
             shutil.rmtree(path)
         else:
             result = json.loads(path.read_text())
-    if 'network_name' not in result:
-        result.setdefault('network_name', f'cicd_default_{uuid.uuid4().hex}')
-        set_registry(config, result)
-        os.system(f"docker network create {result['network_name']}")
     return result
 
 def set_registry(config, values):
     path = config.files['cicd_delegator_registry']
     path.parent.mkdir(exist_ok=True, parents=True)
-    path.write_text(json.dumps(values))
+    path.write_text(json.dumps(values, indent=4))
     if not values:
         return
 
@@ -77,45 +74,34 @@ def unregister(ctx, config):
             file.unlink()
 
 @cicd.command(help="Register new odoo")
-@click.argument("project_name", required=True)
-@click.argument("desc", required=False)
-@click.argument("author", required=False)
+@click.option("-d", "--desc", required=False)
+@click.option("-a", "--author", required=False)
+@click.option("-l", "--local", is_flag=True)
 @pass_config
 @click.pass_context
-def register(ctx, config, project_name, desc, author):
+def register(ctx, config, desc, author, local):
     # reload current odoo
     from odoo_tools.click_config import Config
-    config = Config(project_name=project_name)
-
-    dbname = project_name
 
     reg = get_registry(config)
+    # prepare network configuration
     update_project_configs(config, reg)
-
-    Commands.invoke(
-        ctx,
-        'reload',
-        db=dbname,
-        demo=False,
-        proxy_port=False,
-        headless=True,
-        mailclient_gui_port=False,
-        local=True,
-        project_name=project_name,
-        devmode=True
+    internal_reload(
+        config, config.dbname, demo=False,
+        devmode=config.devmode_as_bool, headless=True, local=False,
+        proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
     )
 
     reg = get_registry(config)
     reg.setdefault('sites', [])
-    config.PROJECT_NAME = project_name
-    existing = [x for x in reg['sites'] if x['name'] == project_name]
+    existing = [x for x in reg['sites'] if x['name'] == config.project_name]
     if existing:
         existing = existing[0]
     else:
-        site = {'name': project_name}
+        site = {'name': config.project_name}
         reg['sites'].append(site)
         existing = site
-    existing['updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    existing['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     if desc:
         existing['description'] = desc
     if author:
@@ -154,6 +140,7 @@ def restart(config, ctx):
 def start(config):
     registry = get_registry(config)
     update_configs(config, registry)
+    os.system(f"docker network create {config.CICD_NETWORK}")
     subprocess.check_call([
         'docker-compose',
         'build',
@@ -238,10 +225,13 @@ def update_project_configs(config, registry):
     Creates ~/.odoo/docker-compose.<project>.yml files, to add
     the cicd default network
     """
+    if not config.CICD_NETWORK:
+        click.secho("Please provide CICD_NETWORK parameter.", fg='red')
+        sys.exit(-1)
     def_network = config.files['config/cicd_network'].read_text()
     def_network = def_network.replace(
         "__CICD_NETWORK_NAME__",
-        registry['network_name'],
+        config.CICD_NETWORK,
     )
     config.files['project_docker_compose.home.project'].write_text(def_network)
 
@@ -266,7 +256,7 @@ def _update_docker_compose(config, registry):
     dc = config.dirs['cicd_delegator'] / 'docker-compose.yml'
     template = (config.dirs['images'] / 'cicd_delegator' / 'docker-compose.yml').read_text()
     values = {
-        "__CICD_NETWORK_NAME__": registry['network_name'],
+        "__CICD_NETWORK_NAME__": config.CICD_NETWORK,
         "__CICD_BINDING__": config.CICD_BINDING,
     }
     for k, v in values.items():

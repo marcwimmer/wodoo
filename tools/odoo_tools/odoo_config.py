@@ -243,8 +243,9 @@ def get_postgres_connection_params():
     config = get_env()
     host = config["DB_HOST"]
     port = int(config.get("DB_PORT", "5432"))
+    # using the linked port: For what? disturbs using an external database
     if os.getenv('DOCKER_MACHINE', "") != "1":
-        if config.get("USE_DOCKER", "1") != "0":
+        if config.get("USE_DOCKER", "1") != "0" and config.get("RUN_POSTGRES", "") == "1":
             host = '127.0.0.1'
             port = config['POSTGRES_PORT']
     password = config['DB_PWD']

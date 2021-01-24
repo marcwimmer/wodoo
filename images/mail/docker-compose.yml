@@ -1,39 +1,22 @@
 # manage-order: 5000
-# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
 version: '3.3'
 volumes:
-  ${CUSTOMS}_mailstorage:
-  ${CUSTOMS}_mailsqlite:
+  mailstorage:
+  mailsqlite:
 
 services:
 
   # public mail server can receive mails
   mail:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_mail
     build: $ODOO_HOME/images/mail
     volumes:
-      - ${CUSTOMS}_mailstorage:/home/postmaster/Maildir
-      - ${CUSTOMS}_mailsqlite:/rc
+      - mailstorage:/home/postmaster/Maildir
+      - mailsqlite:/rc
       - $ODOO_HOME/images/mail/bin:/opt/bin
 
   roundcube:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_roundcube
     build: $ODOO_HOME/images/roundcube
     ports:
       - "${ROUNDCUBE_IP}:${ROUNDCUBE_PORT}:80"
     environment:
       MAIL_SERVER: mail
-
-  # internal mail server to check outgoing odoo mails
-  roundcube_check_sent_mails:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_roundcube_check_sent_mails
-    build: $ODOO_HOME/images/roundcube
-    environment:
-      MAIL_SERVER: mail_check_sent_mails
-
-  mail_check_sent_mails:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_mail_check_sent_mails
-    build: $ODOO_HOME/images/mail
-    volumes:
-      - $ODOO_HOME/data/mail/odoo_sent_mails/maildir:/home/postmaster/Maildir
-      - $ODOO_HOME/data/mail/odoo_sent_mails/sqlite:/rc

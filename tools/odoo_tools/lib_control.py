@@ -88,16 +88,18 @@ def up(ctx, config, machines, daemon):
     else:
         from .lib_control_native import up as lib_up
     lib_up(ctx, config, machines, daemon, remove_orphans=True)
+    execute_script(config, config.files['after_up_script'], 'Possible after up script here:')
 
 @docker.command()
 @click.argument('machines', nargs=-1)
 @click.option('-v', '--volumes', is_flag=True)
+@click.option('--remove-orphans', is_flag=True)
 @pass_config
 @click.pass_context
-def down(ctx, config, machines, volumes):
+def down(ctx, config, machines, volumes, remove_orphans):
     if config.use_docker:
         from .lib_control_with_docker import down as lib_down
-    lib_down(ctx, config, machines, volumes)
+    lib_down(ctx, config, machines, volumes, remove_orphans)
 
 @docker.command()
 @click.argument('machines', nargs=-1)
@@ -206,22 +208,20 @@ def shell(config, command):
     lib_shell(command)
 
 @docker.command()
+@click.option('-f', '--filter')
 @pass_config
-def show_volumes(config):
+def show_volumes(config, filter):
     import yaml
     from tabulate import tabulate
+    from .lib_control_with_docker import _get_volume_size
     volumes = subprocess.check_output(["docker", "volume", "ls"]).decode('utf-8').split("\n")[1:]
     volumes = [x.split(" ")[-1] for x in volumes]
     volumes = [[x] for x in volumes if '_' in x]  # named volumes
-    volumes = [x for x in volumes if config.PROJECT_NAME in x[0]]
+    volumes = [x for x in volumes if config.project_name in x[0]]
+    if filter:
+        volumes = [x for x in volumes if filter in x]
     for volume in volumes:
-        size = subprocess.check_output([
-            "/usr/bin/sudo",
-            "/usr/bin/du",
-            "-sh",
-            f"/var/lib/docker/volumes/{volume[0]}"
-        ]).decode('utf-8')
-        size = size.split("\t")[0]
+        size = _get_volume_size(volume[0])
         volume.append(size)
     click.echo(tabulate(volumes, ["Volume", "Size"]))
 
@@ -229,6 +229,103 @@ def show_volumes(config):
     compose = yaml.safe_load(config.files['docker_compose'].read_text())
     for volume in compose['volumes']:
         click.secho(f"docker-compose volume: {volume}")
+
+@docker.command()
+@click.option('-a', '--show-all', is_flag=True)
+@click.option('-f', '--filter')
+@click.option('-B', '--no-backup', is_flag=True)
+@pass_config
+@click.pass_context
+def transfer_volume_content(context, config, show_all, filter, no_backup):
+    import shutil
+    import inquirer
+    from pathlib import Path
+    from .lib_control_with_docker import _get_volume_size
+    from .lib_control_with_docker import _get_volume_hostpath
+    volumes = subprocess.check_output(["docker", "volume", "ls"]).decode('utf-8').split("\n")[1:]
+    volumes = [x.split(" ")[-1] for x in volumes]
+    volumes = [x for x in volumes if '_' in x]  # named volumes
+
+    if filter:
+        volumes = [x for x in volumes if filter in x]
+
+    def add_size(volume):
+        size = _get_volume_size(volume)
+        return f"{volume} [{size}]"
+
+    if show_all:
+        volumes = list(map(add_size, volumes))
+        volumes_filtered_to_project = [x for x in volumes if config.project_name in x]
+
+        volumes1 = volumes
+        volumes2 = volumes_filtered_to_project
+
+    else:
+        volumes_filtered_to_project = [x for x in volumes if config.project_name in x]
+        volumes_filtered_to_project = list(map(add_size, volumes_filtered_to_project))
+
+        volumes1 = volumes_filtered_to_project
+        volumes2 = volumes_filtered_to_project
+
+    questions = [
+        inquirer.List(
+            'volume',
+            message="Select source:".format(config.customs, config.dbname),
+            choices=volumes1,
+        ),
+    ]
+    answers = inquirer.prompt(questions)
+    if not answers or not answers['volume']:
+        return
+
+    source = answers['volume']
+    volumes2.pop(volumes2.index(source))
+    questions = [
+        inquirer.List(
+            'volume',
+            message="Select Destination:".format(config.customs, config.dbname),
+            choices=volumes2,
+        ),
+    ]
+    answers = inquirer.prompt(questions)
+    if not answers or not answers['volume']:
+        return
+    source = _get_volume_hostpath(source.split(" [")[0])
+    dest = _get_volume_hostpath(answers['volume'].split(" [")[0])
+
+    tasks = []
+    tasks.append(f'rsync -ar --delete-after {source.name} to {dest.name}')
+    for i, task in enumerate(tasks):
+        click.secho(f"{i}. {task}")
+    answer = inquirer.prompt([inquirer.Confirm('continue', message=("Continue?"))])
+    if not answer['continue']:
+        return
+    Commands.invoke(context, 'down')
+
+    if not no_backup:
+        click.secho("Rsyncing files to /tmp as backup...")
+        backup_name = str(Path("/tmp/") / dest.name) + ".bak"
+        subprocess.check_call([
+            '/usr/bin/sudo',
+            'rsync',
+            '-ar',
+            str(dest / '_data') + '/',
+            backup_name + '/',
+        ])
+        click.secho(f"Made backup in {backup_name}")
+
+    click.secho(f"Rsyncing files from old source to {dest}")
+
+    command = [
+        'rsync',
+        '-arP',
+        '--delete-after',
+        str(source / '_data') + '/',
+        str(dest / '_data') + '/',
+    ]
+    subprocess.check_call([
+        '/usr/bin/sudo',
+    ] + command)
 
 
 Commands.register(run)

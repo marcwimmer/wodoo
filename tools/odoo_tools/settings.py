@@ -17,8 +17,8 @@ def _get_settings_files(config, customs):
     yield Path('/etc/odoo/settings')
     if customs: # catch what goes; if no customs given, then perhaps first init run done or so
         yield Path(f'/etc/odoo/{config.CUSTOMS}/settings')
-    if config.PROJECT_NAME:
-        yield Path(f'/etc/odoo/{config.PROJECT_NAME}/settings')
+    if config.project_name:
+        yield Path(f'/etc/odoo/{config.project_name}/settings')
     yield customs_dir / '.odoo' / 'settings'
     yield Path(os.environ['HOME']) / '.odoo' / 'settings'
     yield customs_dir / '.odoo' / 'run' / 'settings'
@@ -48,9 +48,6 @@ def _export_settings(config, customs, forced_values):
     config = MyConfigParser(config.files['settings'])
     if 'OWNER_UID' not in config.keys():
         config['OWNER_UID'] = str(os.getuid())
-    # take server wide modules from manifest
-    m = MANIFEST()
-    config['SERVER_WIDE_MODULES'] = ','.join(m['server-wide-modules'])
 
     # forced values:
     for k, v in forced_values.items():

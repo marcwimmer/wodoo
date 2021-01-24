@@ -1,20 +1,18 @@
 # manage-order: 5000
-# so that ./manage.sh attach {machinename} works: container_name == prefix + service-name
 version: '3.3'
 volumes:
-  ${CUSTOMS}_mosquitto_logs:
-  ${CUSTOMS}_mosquitto_data:
+  mosquitto_logs:
+  mosquitto_data:
 
 services:
 
   # public mail server can receive mails
   mosquitto:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_mosquitto
     build: $ODOO_HOME/images/mosquitto
     volumes:
         - $ODOO_HOME/images/mosquitto/config:/mosquitto/config
-        - ${CUSTOMS}_mosquitto_logs:/mosquitto/logs
-        - ${CUSTOMS}_mosquitto_data:/mosquitto/data
+        - mosquitto_logs:/mosquitto/logs
+        - mosquitto_data:/mosquitto/data
     ports:
         - "1883:1883"
         - "9001:9001"

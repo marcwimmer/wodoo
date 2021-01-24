@@ -3,7 +3,6 @@ version: '3.3'
 
 services:
   admin:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_admin
     build: $ODOO_HOME/images/admin
     security_opt:
       - apparmor:unconfined

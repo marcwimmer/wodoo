@@ -17,8 +17,10 @@
         <thead>
             <tr>
                 <th>Ticket</th>
+                <th>Updated</th>
                 <th>Description</th>
                 <th>Last Author</th>
+                <th>Last Accessed</th>
             </tr>
         </thead>
         <tbody>
@@ -29,8 +31,10 @@
                     {{link['name']}}
                     </a>
                 </td>
+                <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
                 <td>{{link.get('description')}}</td>
                 <td>{{link.get('author')}}</td>
+                <td>{{link.get('last_access') and link.get('last_access').strftime(DATE_FORMAT)}}</td>
             </tr>
             {% endfor %}
         </tbody>

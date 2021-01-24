@@ -1,20 +1,13 @@
 # manage-order 1000
-version: '3.3'
 services:
-  odoo_base: &odoo_base
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_base
+  odoo_base:
     build:
         context: $ODOO_HOME/images/odoo
         dockerfile: $ODOO_HOME/images/odoo/config/${ODOO_VERSION}/Dockerfile
         args:
           ODOO_VERSION: ${ODOO_VERSION}
-    security_opt:
-      - apparmor:unconfined
-      - seccomp:unconfined
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-      - DAC_READ_SEARCH
+          ODOO_PYTHON_VERSION: ${ODOO_PYTHON_VERSION}
+    restart: unless-stopped
     volumes:
       - ${HOST_RUN_DIR}:/opt/run
       - ${HOST_RUN_DIR}/odoo_outdir:/opt/out_dir
@@ -49,51 +42,9 @@ services:
       - LANGUAGE=en_US:en
       - LC_ALL=en_US.UTF-8
       - PYTHONBREAKPOINT=0
-    command: /usr/bin/python3 /odoolib/run.py
+      - ODOO_SERVER_TOOLS_MODULES=/opt/odoo_server_tools
+    command: /usr/bin/env python3 /odoolib/run.py
     entrypoint: ["/odoolib/entrypoint.py"]
     logging:
         options:
             max-size: 1g
-
-  odoo: &odoo
-    <<: *odoo_base
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo
-    restart: unless-stopped
-    environment:
-      IS_ODOO_WEBSERVER: 1
-    environment:
-      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
-      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
-
-  odoo_debug:
-    <<: *odoo_base
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_debug
-    environment:
-      ENDLESS_LOOP: 1
-      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
-      DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
-      
-  odoo_cronjobs:
-    <<: *odoo_base
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_cronjobs
-    restart: unless-stopped
-    environment:
-      IS_ODOO_CRONJOB: 1
-    logging:
-        options:
-            max-size: 3g
-
-  odoo_queuejobs:
-    <<: *odoo_base
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_queuejobs
-    restart: unless-stopped
-    environment:
-      IS_ODOO_QUEUEJOB: 1
-    logging:
-        options:
-            max-size: 3g
-
-  odoo_update:
-    <<: *odoo_base
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_odoo_updater
-    command: echo 'good bye - it is ok!'

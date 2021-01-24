@@ -6,6 +6,10 @@ import inspect
 
 def after_settings(config):
     from odoo_tools import odoo_config
+
+    m = odoo_config.MANIFEST()
+    config['SERVER_WIDE_MODULES'] = ','.join(m['server-wide-modules'])
+
     if "CUSTOMS" in config.keys():
         config['ODOO_VERSION'] = str(odoo_config.current_version())
         config.write()

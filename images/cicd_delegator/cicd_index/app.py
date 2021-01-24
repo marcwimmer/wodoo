@@ -1,3 +1,5 @@
+import os
+import arrow
 from flask import Flask
 from flask import render_template
 
@@ -9,12 +11,30 @@ app = Flask(
     static_folder='/_static_index_files',
 )
 
+def augment_reg(reg):
+    for site in reg['sites']:
+        last_access_file = Path(os.environ['REGISTRY_SITES']) / site['name'] / 'last_access'
+        if last_access_file.exists():
+            site['last_access'] = arrow.get(last_access_file.read_text()).to(os.environ['DISPLAY_TIMEZONE'])
+
+
 @app.route('/')
 def index():
 
     reg = json.loads(Path("/registry.json").read_text())
 
-    return render_template('index.html', sites=reg['sites'])
+    augment_reg(reg)
+
+    for site in reg['sites']:
+        if site.get('updated'):
+            site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
+    reg['sites'] = sorted(reg['sites'], key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
+
+    return render_template(
+        'index.html',
+        sites=reg['sites'],
+        DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
+    )
 
 @app.route('/__start_cicd')
 def start_cicd():

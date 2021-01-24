@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 import os
 import sys
 import subprocess
@@ -20,7 +20,11 @@ cmd = [
 if current_version() >= 11.0:
     cmd += ["--shell-interface=ipython"]
 
-odoo_cmd = sys.argv[1]
+if len(sys.argv) > 1:
+    odoo_cmd = sys.argv[1]
+else:
+    odoo_cmd = ""
+
 os.environ["ODOO_SHELL_CMD"] = odoo_cmd
 stdin = None
 if odoo_cmd:

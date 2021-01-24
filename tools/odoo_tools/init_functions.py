@@ -10,7 +10,7 @@ try:
     import click
 except ImportError: click = None
 
-def _get_default_anticipated_host_run_dir(config, WORKING_DIR, PROJECT_NAME):
+def _get_default_anticipated_host_run_dir(config, WORKING_DIR, project_name):
     if WORKING_DIR and (WORKING_DIR / '.odoo').exists():
         # if click:
         #   # if not config.quiet:
@@ -21,9 +21,9 @@ def _get_default_anticipated_host_run_dir(config, WORKING_DIR, PROJECT_NAME):
         HOME_DIR = Path(os.environ['HOST_HOME'])
     else:
         HOME_DIR = Path(os.path.expanduser("~"))
-    if not PROJECT_NAME:
+    if not project_name:
         return None
-    return HOME_DIR / '.odoo' / 'run' / PROJECT_NAME
+    return HOME_DIR / '.odoo' / 'run' / project_name
 
 def get_use_docker(files):
     try:
@@ -130,7 +130,7 @@ def make_absolute_paths(config, dirs, files, commands):
             for value, name in [
                 (config.HOST_RUN_DIR, '${run}'),
                 (config.WORKING_DIR, '${working_dir}'),
-                (config.PROJECT_NAME, '${project_name}'),
+                (config.project_name, '${project_name}'),
             ]:
                 if name in str(v):
                     if value:
@@ -153,10 +153,10 @@ def make_absolute_paths(config, dirs, files, commands):
     for k in commands:
         commands[k] = [replace_keys(x, ChainMap(config.__dict__, files, dirs)) for x in commands[k]]
 
-def set_shell_table_title(PROJECT_NAME):
+def set_shell_table_title(project_name):
     if os.getenv("DOCKER_MACHINE", "") != "1":
         parent = psutil.Process(psutil.Process(os.getpid()).ppid())
         parent_process_name = parent.name()
         if parent_process_name in ['sh', 'bash', 'zsh']:
-            tab_title = "odoo - {}".format(PROJECT_NAME)
+            tab_title = f"odoo - {project_name}"
             print("\033]0;{}\007".format(tab_title), file=sys.stdout) # NOQA

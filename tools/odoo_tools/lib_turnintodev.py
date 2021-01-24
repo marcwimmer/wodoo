@@ -1,3 +1,4 @@
+import click
 import re
 import traceback
 from datetime import datetime
@@ -12,6 +13,12 @@ from .tools import __hash_odoo_password
 @pass_config
 def turn_into_dev(config):
     pass
+
+@turn_into_dev.command()
+@click.argument('password')
+@pass_config
+def hash_password(config, password):
+    click.secho(__hash_odoo_password(password))
 
 @turn_into_dev.command()
 @pass_config

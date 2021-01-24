@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import arrow
 import threading
 import string
 import os
@@ -21,6 +22,8 @@ def get_jobs():
     for key in os.environ.keys():
         if key.startswith("CRONJOB_"):
             job = os.environ[key]
+            if not job:
+                continue
 
             # either 5 or 6 columns; it supports seconds
             logger.info(job)
@@ -41,7 +44,6 @@ def get_jobs():
                 'schedule': schedule,
                 'cmd': job_command,
                 'base': now,
-                'itr': itr,
                 'next': itr.get_next(datetime),
             }
 
@@ -61,26 +63,32 @@ def replace_params(text):
     return text
 
 def execute(job_cmd):
-    logger.info("Executing: {}".format(job_cmd))
+    logger.info(f"Executing: {job_cmd}")
 
     job_cmd = replace_params(job_cmd)
     os.system(job_cmd)
 
 def run_job(job):
     i = 0
-    while True:
-        now = datetime.now()
+    try:
+        while True:
+            now = datetime.now()
 
-        if i > 300:
-            logging.info("Next run of %s at %s", job['cmd'], job['next'])
-            i = 0
+            if i > 300:
+                logging.info("Next run of %s at %s", job['cmd'], job['next'])
+                i = 0
 
-        if job['next'] < now:
-            execute(job['cmd'])
-            job['next'] = job['itr'].get_next(datetime)
+            if job['next'] < now:
+                execute(job['cmd'])
 
+                itr = croniter(job['schedule'], arrow.get().naive)
+                job['next'] = itr.get_next(datetime)
+
+            time.sleep(1)
+            i += 1
+    except Exception as ex:
+        logger.error(ex)
         time.sleep(1)
-        i += 1
 
 
 if __name__ == "__main__":
@@ -99,8 +107,8 @@ if __name__ == "__main__":
     next_dates = []
 
     for job in jobs:
-        logging.info("Scheduling Job: {}".format(job))
-        logging.info("With replaced values in looks like: {}".format(replace_params(job['cmd'])))
+        logging.info(f"Scheduling Job: {job}")
+        logging.info(f"With replaced values in looks like: {replace_params(job['cmd'])}")
     displayed_infos = False
 
     logger.info("--------------------- JOBS ------------------------")

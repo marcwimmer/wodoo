@@ -2,6 +2,20 @@
 import sys
 from pathlib import Path
 
+def _get_ignore_case_item(d, k):
+    try:
+        return d[k]
+    except KeyError:
+        if isinstance(k, str):
+            for i in d.keys():
+                if i.lower() == k.lower():
+                    return d[i]
+            else:
+                raise
+        else:
+            raise
+
+
 class MyConfigParser:
 
     def __init__(self, fileName, debug=False):
@@ -90,11 +104,11 @@ class MyConfigParser:
 
     def __getitem__(self, key):
         try:
-            return self.configOptions.__getitem__(key)
+            return _get_ignore_case_item(self.configOptions, key)
         except KeyError:
             if isinstance(key, int):
                 keys = self.configOptions.keys()
-                return self.configOptions[keys[key]]
+                return _get_ignore_case_item(self.configOptions[keys[key]])
             else:
                 raise KeyError("Key " + key + " doesn't exist")
 

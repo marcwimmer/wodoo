@@ -1,8 +1,7 @@
 #manage-order: 5000
 version: '3.3'
 services:
-  proxy:
-    container_name: ${PROJECT_NAME}_proxy
+  proxy_abstract:
     build: $ODOO_HOME/images/proxy
     restart: unless-stopped
     networks:

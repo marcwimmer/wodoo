@@ -1,8 +1,0 @@
-# manage-order: 550
-volumes:
-    ODOO_POSTGRES_VOLUME:
-        name: ${POSTGRES_VOLUME_NAME}
-services:
-  postgres:
-    volumes:
-      - ODOO_POSTGRES_VOLUME:/var/lib/postgresql/data

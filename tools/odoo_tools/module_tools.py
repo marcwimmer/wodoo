@@ -594,8 +594,9 @@ class Modules(object):
 
         return list(result)
 
-    def get_all_external_dependencies(self):
+    def get_all_external_dependencies(self, additional_modules=[]):
         modules = self.get_all_used_modules()
+        modules = list(sorted(set(modules) | set(additional_modules)))
         pydeps = []
         deb_deps = []
         for module in modules:

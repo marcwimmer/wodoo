@@ -21,7 +21,7 @@ from .tools import get_volume_names
 from . import cli, pass_config, dirs, files, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
-from . import PROJECT_NAME
+from . import project_name
 from .tools import _remove_postgres_connections, _execute_sql
 
 @cli.group(cls=AliasedGroup)

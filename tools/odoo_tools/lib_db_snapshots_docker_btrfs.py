@@ -21,16 +21,11 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from pathlib import Path
-try:
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError:
-    from yaml import Loader, Dumper
 
 SNAPSHOT_DIR = Path("/var/lib/docker/subvolumes")
 
 def __get_postgres_volume_name(config):
-    volume_name = yaml.load(config.files['docker_compose'].read_text(), Loader=Loader)['volumes']['ODOO_POSTGRES_VOLUME']['name']
-    return volume_name
+    return f"{config.project_name}_odoo_postgres_volume"
 
 def _get_cmd_butter_volume():
     return ["sudo", "/usr/bin/btrfs", "subvolume"]

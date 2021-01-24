@@ -57,9 +57,9 @@ class MigrateAttachments(models.AbstractModel):
                         set_trace()
                         raise NotImplementedError()
                     else:
-                        filenamefield = [x for x in obj._fields if field.name in x and x != field.name]
+                        filenamefield = [x for x in obj._fields if field.name in x and x != field.name and obj._fields[x].type == 'char']
                         if not filenamefield:
-                            filenamefield = [x for x in obj._fields if field.name.replace("_doc", "_filename") in x and x != field.name]
+                            filenamefield = [x for x in obj._fields if field.name.replace("_doc", "_filename") in x and x != field.name and obj._fields[x].type == 'char']
                         if not filenamefield:
                             from pudb import set_trace
                             set_trace()

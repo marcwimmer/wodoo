@@ -15,13 +15,13 @@ app.use(function(req, res, next) {
     // set a cookie so that a central redirector can redirect the 
     // odoo session 
     // SETTINGS: SET_CICD_COOKIE
-    if (process.env.set_cicd_cookie) {
-        var cookie = req.cookies['CICD_ID'];
-        if (cookie === undefined) {
-            res.cookie('CICD_ID', process.env.dbname, { maxAge: 900000, httpOnly: true });
-            console.log('CICD_ID cookie created for ' + process.env.dbname);
-        }
-    }
+    //if (process.env.set_cicd_cookie) {
+        //var cookie = req.cookies['CICD_ID'];
+        //if (cookie === undefined) {
+            //res.cookie('CICD_ID', process.env.dbname, { maxAge: 900000, httpOnly: true });
+            //console.log('CICD_ID cookie created for ' + process.env.dbname);
+        //}
+    //}
 
     next();
 })
@@ -32,8 +32,8 @@ const options = {
 
 const server_odoo = {
     protocol: 'http',
-    port: Number(process.env.INTERNAL_ODOO_PORT),
-    host: process.env.INTERNAL_ODOO_HOST,
+    host: process.env.ODOO_HOST,
+    port: 8069,
 };
 console.log(server_odoo);
 
@@ -45,7 +45,7 @@ const server_calendar = {
 
 const server_longpolling = {
     protocol: 'http',
-    host: 'odoo',
+    host: process.env.ODOO_HOST,
     port: 8072
 };
 
@@ -125,6 +125,6 @@ app.all("/*", (req, res, next) => {
 });
 
 var server = app.listen(80, '0.0.0.0', () => {
-    console.log('Proxy server listening on 80 all interfaces.');
+    console.log('Proxy server listening on 0.0.0.0:80.');
 });
 server.setTimeout(3600 * 1000);

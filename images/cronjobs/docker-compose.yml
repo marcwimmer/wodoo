@@ -4,7 +4,6 @@ services:
   cronjobs:
     build: $ODOO_HOME/images/cronjobs
     privileged: true
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_cronjobs
     command: ["/usr/bin/python3", "/usr/local/bin/run.py"]
     restart: 'unless-stopped'
     volumes:

@@ -10,8 +10,6 @@ DEVMODE=0
 
 DUMPS_PATH=~/odoo_dumps
 
-RESTART_CONTAINERS=1
-
 DB_ODOO_FILEFORMAT={customs}.odoo.{date:%Y%m%d%H%M%S}.dump.gz
 DB_ODOO_SEARCHFORMAT={customs}.odoo.*.dump.gz
 DB_CALENDAR_FILEFORMAT={customs}.calendar.{date:%Y%m%d%H%M%S}.dump.gz

@@ -21,3 +21,37 @@ Setup as jenkins job for anonymizing database:
 Setup to be part of cicd framework:
 
     odoo cicd register <branch-name>
+
+
+
+
+How to extend an existing service:
+------------------------------------
+
+Provide a local docker-compose file.
+
+services:
+  odoo3:
+    labels:
+      compose.merge: base-machine
+    
+
+Example for fixed ip addresses:
+---------------------------------
+services:     
+    proxy:    
+        networks:    
+            network1:    
+                ipv4_address: 10.5.0.6    
+networks:    
+    network1:    
+        driver: bridge    
+        ipam:    
+            config:    
+                - subnet: 10.5.0.0/16
+
+
+
+Useful links:
+----------------------------
+  * UFW and Docker: https://github.com/chaifeng/ufw-docker

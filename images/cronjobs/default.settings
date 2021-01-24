@@ -5,3 +5,8 @@ JOB_DADDY_CLEANUP=daddy_cleanup.py /host/dumps/$DB_ODOO_SEARCHFORMAT --doNt-touc
 JOB_VACUUM=postgres.py exec $DBNAME $DB_HOST $DB_PORT $DB_USER $DB_PWD "vacuum full"\;
 JOB_CLEAN_LONG_RUNNING_QUERIES=postgres.py exec $DBNAME $DB_HOST $DB_PORT $DB_USER $DB_PWD "SELECT pid, now() - pg_stat_activity.query_start AS duration, query, state INTO temp_pids FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '120 minutes';select * from temp_pids; select pg_cancel_backend(pid) from temp_pids;"\;
 JOB_KILL_DB_LOCKS=postgres.py exec $DBNAME $DB_HOST $DB_PORT $DB_USER $DB_PWD "select * into temporary table locks from lock_monitor where blocked_query not ilike 'ir_cron' and extract(epoch from waiting_duration) > 20; select * from locks; select pg_terminate_backend(blocked_pid) from locks; select * from locks;"\;
+
+#JOB_TESTJOB=echo test cronjob
+#JOB_TESTJOB1=echo test cronjobi1
+#CRONJOB_TEST=* * * * * * ${JOB_TESTJOB}
+#CRONJOB_TEST1=* * * * * * ${JOB_TESTJOB1}

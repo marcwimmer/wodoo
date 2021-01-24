@@ -28,6 +28,34 @@ from .tools import __needs_docker
 import subprocess
 from . import Commands
 
+def _get_volume_hostpath(volume):
+    from pathlib import Path
+    path = Path(subprocess.check_output([
+        "/usr/bin/sudo",
+        "/usr/bin/docker",
+        "volume",
+        "inspect",
+        "--format",
+        "{{ .Mountpoint }}",
+        volume,
+    ]).decode('utf-8').strip())
+    if path.name == '_data':
+        path = path.parent
+    return path
+
+def _get_volume_size(volume):
+    try:
+        size = subprocess.check_output([
+            "/usr/bin/sudo",
+            "/usr/bin/du",
+            "-sh",
+            _get_volume_hostpath(volume),
+        ]).decode('utf-8')
+        size = size.split("\t")[0]
+        return size
+    except Exception:
+        return 'n/a'
+
 def dev(ctx, config, build, kill):
     """
     starts developing in the odoo container
@@ -125,13 +153,15 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
         options += ['--remove-orphans']
     __dc(['up'] + options + machines)
 
-def down(ctx, config, machines=[], volumes=False):
+def down(ctx, config, machines=[], volumes=False, remove_orphans=True):
     machines = list(machines)
 
     options = []
     # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
     if volumes:
         options += ['--volumes']
+    if remove_orphans:
+        options += ['--remove-orphans']
     __dc(['down'] + options + machines)
 
 def stop(ctx, config,  machines=[]):
@@ -226,7 +256,7 @@ def run(ctx, config, volume, machine, args, **kwparams):
 def runbash(ctx, config, machine, args, **kwparams):
     _display_machine_tips(config, machine)
     bash = _get_bash_for_machine(machine)
-    cmd = ['run', machine]
+    cmd = ['run', '--rm', machine]
     if args:
         cmd += args
     else:
@@ -248,7 +278,7 @@ def shell(command=""):
     __cmd_interactive(
         'run',
         'odoo',
-        '/usr/bin/python3',
+        'python3',
         '/odoolib/shell.py',
         command,
     )

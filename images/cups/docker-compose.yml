@@ -5,7 +5,6 @@ volumes:
 
 services:
   cups:
-    container_name: ${PROJECT_NAME}_${CUSTOMS}_cups
     build: $ODOO_HOME/images/cups
     ports:
       - "${CUPS_PORT}:631"
