@@ -392,6 +392,15 @@ def set_ribbon(ctx, config, name):
     """, params=(name,))
 
 
+@odoo_module.command(help="For directly installed odoos.")
+@pass_config
+@click.pass_context
+def generate_update_command(ctx, config):
+    modules = _get_default_modules_to_update()
+
+    click.secho(f"-u {','.join(modules)}")
+
+
 Commands.register(progress)
 Commands.register(remove_old_modules)
 Commands.register(update)
