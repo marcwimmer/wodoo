@@ -86,9 +86,11 @@ def unregister(ctx, config):
 @click.option("-d", "--desc", required=False)
 @click.option("-a", "--author", required=False)
 @click.option("-l", "--local", is_flag=True)
+@click.option("--instance-name")
+@click.option("--instance-author")
 @pass_config
 @click.pass_context
-def register(ctx, config, desc, author, local):
+def register(ctx, config, desc, author, local, instance_name, instance_author):
     # reload current odoo
     from odoo_tools.click_config import Config
 
@@ -106,10 +108,11 @@ def register(ctx, config, desc, author, local):
     site = {'name': config.project_name}
     reg['sites'].append(site)
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    if
     if desc:
-        existing['description'] = desc
+        site['description'] = desc
     if author:
-        existing['author'] = author
+        site['author'] = author
     set_registry(config, reg)
 
     Commands.invoke(
