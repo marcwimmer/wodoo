@@ -52,6 +52,8 @@ def set_registry(config, values):
 def next_instance_number(config, instance_name):
     json = get_registry()
     sites = [x for x in json.get('sites') if x['name'] == config.project_name]
+    click.secho(len(sites))
+    sys.exit(0)
 
 
 @cicd.command()
