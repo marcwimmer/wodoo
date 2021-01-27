@@ -103,14 +103,9 @@ def register(ctx, config, desc, author, local):
 
     reg = get_registry(config)
     reg.setdefault('sites', [])
-    existing = [x for x in reg['sites'] if x['name'] == config.project_name]
-    if existing:
-        existing = existing[0]
-    else:
-        site = {'name': config.project_name}
-        reg['sites'].append(site)
-        existing = site
-    existing['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    site = {'name': config.project_name}
+    reg['sites'].append(site)
+    site['started'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     if desc:
         existing['description'] = desc
     if author:
