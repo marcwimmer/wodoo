@@ -105,7 +105,7 @@ def register(ctx, config, desc, author, local):
     reg.setdefault('sites', [])
     site = {'name': config.project_name}
     reg['sites'].append(site)
-    site['started'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     if desc:
         existing['description'] = desc
     if author:
