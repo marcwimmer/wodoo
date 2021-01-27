@@ -50,6 +50,8 @@ def set_registry(config, values):
 @click.argument("instance-name")
 @pass_config
 def next_instance_number(config, instance_name):
+    json = get_registry()
+
 
 @cicd.command()
 @pass_config
