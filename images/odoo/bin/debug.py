@@ -60,9 +60,11 @@ def watch_file_and_kill():
 
 
 class Debugger(object):
-    def __init__(self):
+    def __init__(self, sync_common_modules):
         self.odoolib_path = Path(os.environ['ODOOLIB'])
-        pass
+        self.sync_common_modules = sync_common_modules
+        self.first_run = True
+        self.last_unit_test = None
 
     def execpy(self, cmd):
         os.chdir(self.odoolib_path)
@@ -70,86 +72,119 @@ class Debugger(object):
             cmd = ['python3'] + cmd
         subprocess.call(cmd, cwd=self.odoolib_path)
 
+    def action_debug(self):
+        self.first_run = False
+        self.execpy(['/usr/bin/reset'])
+        if os.getenv("PROXY_PORT", ""):
+            print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
+
+        if self.sync_common_modules:
+            self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
+        self.execpy(["run_debug.py"])
+
+    def action_update_module(self, cmd, module):
+        kill_odoo()
+        PARAMS_CONST = []
+        if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
+            PARAMS_CONST += ["--delete-qweb"]
+        if cmd == 'update_module':
+            PARAMS_CONST += ['--no-tests']
+        self.execpy([
+            "update_modules.py",
+            module,
+        ] + PARAMS_CONST)
+        self.trigger_restart()
+
+    def action_last_unittest(self):
+        if not self.last_unit_test:
+            self.trigger_restart()
+        self.execpy([
+            "unit_test.py",
+            self.last_unit_test
+        ])
+
+    def action_unittest(self, filepath):
+        kill_odoo()
+        subprocess.call(['/usr/bin/reset'])
+        self.last_unit_test = str(customs_dir / filepath)
+        print(f"Running unit test: {last_unit_test}")
+        self.execpy([
+            "unit_test.py",
+            self.last_unit_test
+        ])
+
+    def action_export_lang(self, lang, module):
+        kill_odoo()
+        subprocess.call(['/usr/bin/reset'])
+        self.execpy([
+            "export_i18n.py",
+            lang,
+            module
+        ])
+        self.trigger_restart()
+
+    def action_import_lang(self, lang, filepath):
+        kill_odoo()
+        self.execpy(['/usr/bin/reset'])
+        self.execpy([
+            "import_i18n.py",
+            lang,
+            filepath
+        ])
+        self.trigger_restart()
+
+    def trigger_restart(self):
+        DEBUGGER_WATCH.write_text("debug")
+
     def endless_loop(self):
         t = threading.Thread(target=watch_file_and_kill)
         t.daemon = True
         t.start()
 
-        first_run = True
         action = None
 
-        while True or first_run:
+        while True:
             try:
-                if not first_run and not DEBUGGER_WATCH.exists():
+                if not self.first_run and not DEBUGGER_WATCH.exists():
                     time.sleep(0.2)
                     continue
-                if not first_run:
+                if not self.first_run:
                     content = DEBUGGER_WATCH.read_text()
                     action = content.split(":")
                 if DEBUGGER_WATCH.exists():
                     DEBUGGER_WATCH.unlink()
-                if first_run or action[0] in ['debug', 'quick_restart']:
-                    first_run = False
-                    self.execpy(['/usr/bin/reset'])
-                    if os.getenv("PROXY_PORT", ""):
-                        print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
 
-                    self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
-                    self.execpy(["run_debug.py"])
+                if self.first_run or action[0] in ['debug', 'quick_restart']:
+                    self.action_debug()
                     continue
                 elif action[0] == 'update_view_in_db':
                     continue
 
                 elif action[0] in ["update_module", "update_module_full"]:
-                    kill_odoo()
-                    module = action[1]
-                    PARAMS_CONST = []
-                    if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
-                        PARAMS_CONST += ["--delete-qweb"]
-                    if action[0] == 'update_module':
-                        PARAMS_CONST += ['--no-tests']
-                    self.execpy([
-                        "update_modules.py",
-                        module,
-                    ] + PARAMS_CONST)
-                    self.execpy(["run_debug.py"])
+                    self.action_update_module(
+                        cmd=action[0],
+                        module=action[1]
+                    )
 
-                elif action[0] in ['unit_test', 'last_unit_test']:
-                    kill_odoo()
-                    subprocess.call(['/usr/bin/reset'])
-                    if action[0] == 'unit_test':
-                        last_unit_test = str(customs_dir / action[1])
-                    print("Running unit test: ", last_unit_test)
-                    self.execpy([
-                        "unit_test.py",
-                        last_unit_test
-                    ])
+                elif action[0] in ['last_unit_test']:
+                    self.action_last_unittest()
 
+                elif action[0] in ['unit_test']:
+                    self.action_unittest(
+                        filepath=action[1],
+                    )
                 elif action[0] == 'export_i18n':
-                    kill_odoo()
-                    subprocess.call(['/usr/bin/reset'])
-                    lang = action[1]
-                    module = action[2]
-                    self.execpy([
-                        "export_i18n.py",
-                        lang,
-                        module
-                    ])
-                    action = ('debug',)
-                    continue
-
+                    self.action_export_lang(
+                        lang=action[1],
+                        module=action[2]
+                    )
                 elif action[0] == 'import_i18n':
-                    kill_odoo()
-                    self.execpy(['/usr/bin/reset'])
-                    lang = action[1]
-                    filepath = action[2]
-                    self.execpy([
-                        "import_i18n.py",
-                        lang,
-                        filepath
-                    ])
-                    action = ('debug',)
-                    continue
+                    self.action_import_lang(
+                        lang=action[1],
+                        filepath=action[2],
+                    )
+
+                self.first_run = False
             except Exception:
                 msg = traceback.format_exc()
                 print(msg)
@@ -157,8 +192,11 @@ class Debugger(object):
 
 
 @click.command(name='debug')
-def command_debug():
-    Debugger().endless_loop()
+@click.option("--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
+def command_debug(sync_common_modules):
+    Debugger(
+        sync_common_modules=sync_common_modules,
+    ).endless_loop()
 
 
 if __name__ == '__main__':
