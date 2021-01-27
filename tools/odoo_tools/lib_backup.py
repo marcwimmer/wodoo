@@ -84,14 +84,15 @@ def backup_calendar(config):
 @pass_config
 @click.pass_context
 @click.argument('filename', required=False, default="")
-def backup_db(ctx, config, filename):
+@click.option('dbname', required=False)
+def backup_db(ctx, config, filename, dbname):
     filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
     cmd = [
         'run',
         'cronjobshell',
         'postgres.py',
         'backup',
-        config.DBNAME,
+        dbname or config.DBNAME,
         config.DB_HOST,
         config.DB_PORT,
         config.DB_USER,
