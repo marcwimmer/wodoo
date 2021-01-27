@@ -197,7 +197,6 @@ def main():
     dangling_check()
     _uninstall_marked_modules()
 
-
     c = 'yellow'
     click.secho("--------------------------------------------------------------------------", fg=c)
     click.secho(f"Updating Module {','.join(modules)}", fg=c)
