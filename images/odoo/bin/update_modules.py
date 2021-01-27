@@ -194,9 +194,9 @@ def main():
     if not modules:
         raise Exception("requires module!")
 
+    dangling_check()
     _uninstall_marked_modules()
 
-    dangling_check()
 
     c = 'yellow'
     click.secho("--------------------------------------------------------------------------", fg=c)
