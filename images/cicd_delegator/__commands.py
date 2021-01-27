@@ -47,6 +47,11 @@ def set_registry(config, values):
     update_configs(config, values)
 
 @cicd.command()
+@click.argument("instance-name")
+@pass_config
+def next_instance_number(config, instance_name):
+
+@cicd.command()
 @pass_config
 def clear(config):
     set_registry(config, {})
