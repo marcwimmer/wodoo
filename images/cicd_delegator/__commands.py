@@ -48,7 +48,7 @@ def set_registry(config, values):
 
 @cicd.command()
 @pass_config
-def highest_instance_number(config, instance_name):
+def count_instances(config):
     json = get_registry()
     sites = [x for x in json.get('sites') if x['name'] == config.project_name]
     click.secho(len(sites))
