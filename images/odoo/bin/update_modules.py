@@ -157,16 +157,20 @@ def _uninstall_marked_modules():
             click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
             _install_module(module)
 
+def _get_to_install_modules(modules):
+    for module in modules:
+        if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module != 'base')):
+            if not DBModules.is_module_listed(module):
+                if module != 'base':
+                    update_module_list()
+                    if not DBModules.is_module_listed(module):
+                        raise Exception("After updating module list, module was not found: {}".format(module))
+            yield module
 
-def main():
-    MODULE = PARAMS[0] if PARAMS else ""
-    MODULE = [x for x in MODULE.split(",") if x != 'all']
-    single_module = len(MODULE) == 1
-    if not MODULE:
-        raise Exception("requires module!")
+def install_new_modules(modules, summary):
+    update('i', modules)
 
-    _uninstall_marked_modules()
-
+def dangling_check():
     if not NO_DANGLING_CHECK:
         dangling_modules = DBModules.get_dangling_modules()
         if any(x[1] == 'uninstallable' for x in dangling_modules):
@@ -183,38 +187,40 @@ def main():
             else:
                 DBModules.abort_upgrade()
 
-    c = 'yellow'
-    click.secho("--------------------------------------------------------------------------", fg=c)
-    click.secho(f"Updating Module {','.join(MODULE)}", fg=c)
-    click.secho("--------------------------------------------------------------------------", fg=c)
-
-    summary = defaultdict(list)
-
-    for module in list(MODULE):
-        try:
-            if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module != 'base')):
-                if not DBModules.is_module_listed(module):
-                    if module != 'base':
-                        update_module_list()
-                        if not DBModules.is_module_listed(module):
-                            raise Exception("After updating module list, module was not found: {}".format(module))
-                update('i', [module])
-                MODULE = [x for x in MODULE if x != module]
-                summary['installed'].append(module)
-        except UserWarning:
-            click.secho("Database not setup. Not installed modules other than base.", fg='yellow')
+def main():
+    modules = PARAMS[0] if PARAMS else ""
+    modules = [x for x in modules.split(",") if x != 'all']
+    single_module = len(modules) == 1
+    if not modules:
+        raise Exception("requires module!")
 
     _uninstall_marked_modules()
 
+    dangling_check()
+
+    c = 'yellow'
+    click.secho("--------------------------------------------------------------------------", fg=c)
+    click.secho(f"Updating Module {','.join(modules)}", fg=c)
+    click.secho("--------------------------------------------------------------------------", fg=c)
+
+    summary = defaultdict(list)
+    _uninstall_marked_modules()
+
+    to_install_modules = list(_get_to_install_modules(list(modules)))
+    install_new_modules(
+        to_install_modules,
+    )
+    summary['installed'] += to_install_modules
+    modules = list(filter(lambda x: x not in summary['installed'], modules))
+
     if DELETE_QWEB:
-        for module in MODULE:
+        for module in modules:
             print("Deleting qweb of module {}".format(module))
             delete_qweb(module)
 
-    if MODULE:
-        update('u', MODULE)
-    for module in MODULE:
-        summary['updated'].append(module)
+    if modules:
+        update('u', modules)
+        summary['update'] += modules
 
     c = 'green'
     click.secho("================================================================================", fg=c)
