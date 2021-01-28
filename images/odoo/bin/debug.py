@@ -91,11 +91,11 @@ class Debugger(object):
             PARAMS_CONST += ['--no-tests']
         import pudb
         pudb.set_trace()
-        self.execpy([
-            "update_modules.py",
-            module,
-        ] + PARAMS_CONST)
-        self.trigger_restart()
+        if self.execpy([
+                "update_modules.py",
+                module,
+            ] + PARAMS_CONST):
+            self.trigger_restart()
 
     def action_last_unittest(self):
         if not self.last_unit_test:
