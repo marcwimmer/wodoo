@@ -199,7 +199,7 @@ def main():
 
     # install server wide modules and/or update them
     c = 'magenta'
-    server_wide_modules = manifest['server_wide_modules']
+    server_wide_modules = manifest['server-wide-modules']
     click.secho("--------------------------------------------------------------------------", fg=c)
     click.secho(f"Installing/Updating Server wide modules {','.join(server_wide_modules)}", fg=c)
     click.secho("--------------------------------------------------------------------------", fg=c)
