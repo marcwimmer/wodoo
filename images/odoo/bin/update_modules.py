@@ -201,17 +201,18 @@ def main():
     to_install_modules = list(_get_to_install_modules(list(modules)))
 
     # install server wide modules and/or update them
-    c = 'magenta'
-    server_wide_modules = manifest['server-wide-modules']
-    click.secho("--------------------------------------------------------------------------", fg=c)
-    click.secho(f"Installing/Updating Server wide modules {','.join(server_wide_modules)}", fg=c)
-    click.secho("--------------------------------------------------------------------------", fg=c)
-    to_install_swm = list(filter(lambda x: x in to_install_modules, server_wide_modules))
-    to_update_swm = list(filter(lambda x: x not in to_install_swm, server_wide_modules))
-    click.secho(f"Installing {','.join(to_install_swm)}", fg=c)
-    update('i', to_install_swm)
-    click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
-    update('u', to_update_swm)
+    if not modules:
+        c = 'magenta'
+        server_wide_modules = manifest['server-wide-modules']
+        click.secho("--------------------------------------------------------------------------", fg=c)
+        click.secho(f"Installing/Updating Server wide modules {','.join(server_wide_modules)}", fg=c)
+        click.secho("--------------------------------------------------------------------------", fg=c)
+        to_install_swm = list(filter(lambda x: x in to_install_modules, server_wide_modules))
+        to_update_swm = list(filter(lambda x: x not in to_install_swm, server_wide_modules))
+        click.secho(f"Installing {','.join(to_install_swm)}", fg=c)
+        update('i', to_install_swm)
+        click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
+        update('u', to_update_swm)
 
     _uninstall_marked_modules()
 
