@@ -196,8 +196,6 @@ def main():
         raise Exception("requires module!")
 
     dangling_check()
-    import pudb
-    pudb.set_trace()
     to_install_modules = list(_get_to_install_modules(list(modules)))
 
     # install server wide modules and/or update them
