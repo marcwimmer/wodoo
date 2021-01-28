@@ -5,7 +5,7 @@ import time
 import os
 import inspect
 
-VERSION = '0.4-2021-01-27'
+VERSION = '0.5-2021-01-27-test'
 
 SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
 
