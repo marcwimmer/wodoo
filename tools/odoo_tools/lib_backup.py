@@ -84,7 +84,7 @@ def backup_calendar(config):
 @pass_config
 @click.pass_context
 @click.argument('filename', required=False, default="")
-@click.option('dbname', required=False)
+@click.option('--dbname', required=False)
 def backup_db(ctx, config, filename, dbname):
     filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
     cmd = [
