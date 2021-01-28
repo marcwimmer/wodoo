@@ -197,7 +197,11 @@ def main():
     dangling_check()
 
     # install server wide modules and/or update them
+    c = 'magenta'
     server_wide_modules = manifest['server_wide_modules']
+    click.secho("--------------------------------------------------------------------------", fg=c)
+    click.secho(f"Installing/Updating Server wide modules {','.join(modules)}", fg=c)
+    click.secho("--------------------------------------------------------------------------", fg=c)
     to_install_swm = []
     to_update_swm = []
     update('i', to_install_swm)
