@@ -43,10 +43,10 @@ mode_text = {
 }
 
 def update(mode, modules):
-    if not module:
-        return
     assert mode in ['i', 'u']
     assert isinstance(modules, list)
+    if not modules:
+        return
 
     if ','.join(modules) == 'all':
         raise Exception("update 'all' not allowed")
