@@ -89,6 +89,8 @@ class Debugger(object):
             PARAMS_CONST += ["--delete-qweb"]
         if cmd == 'update_module':
             PARAMS_CONST += ['--no-tests']
+        import pudb
+        pudb.set_trace()
         self.execpy([
             "update_modules.py",
             module,
