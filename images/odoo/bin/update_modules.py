@@ -203,8 +203,8 @@ def main():
     click.secho("--------------------------------------------------------------------------", fg=c)
     click.secho(f"Installing/Updating Server wide modules {','.join(server_wide_modules)}", fg=c)
     click.secho("--------------------------------------------------------------------------", fg=c)
-    to_install_swm = []
-    to_update_swm = []
+    to_install_swm = list(filter(lambda x: x in to_install_modules, server_wide_modules))
+    to_update_swm = list(filter(lambda x: x in to_update_modules, server_wide_modules))
     update('i', to_install_swm)
     update('u', to_install_swm)
 
