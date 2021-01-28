@@ -168,7 +168,7 @@ def _get_to_install_modules(modules):
                         raise Exception("After updating module list, module was not found: {}".format(module))
             yield module
 
-def install_new_modules(modules, summary):
+def install_new_modules(modules):
     update('i', modules)
 
 def dangling_check():
@@ -221,9 +221,7 @@ def main():
     summary = defaultdict(list)
     _uninstall_marked_modules()
 
-    install_new_modules(
-        to_install_modules,
-    )
+    update('i', to_install_modules)
     summary['installed'] += to_install_modules
     modules = list(filter(lambda x: x not in summary['installed'], modules))
 
