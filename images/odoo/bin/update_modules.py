@@ -198,7 +198,10 @@ def main():
 
     # install server wide modules and/or update them
     server_wide_modules = manifest['server_wide_modules']
-
+    to_install_swm = []
+    to_update_swm = []
+    update('i', to_install_swm)
+    update('u', to_install_swm)
 
     _uninstall_marked_modules()
 
