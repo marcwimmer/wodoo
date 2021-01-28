@@ -189,8 +189,6 @@ def dangling_check():
                 DBModules.abort_upgrade()
 
 def main():
-    import pudb
-    pudb.set_trace()
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",") if x != 'all']
     summary = defaultdict(list)
@@ -222,8 +220,6 @@ def main():
     click.secho(f"Updating Module {','.join(modules)}", fg=c)
     click.secho("--------------------------------------------------------------------------", fg=c)
 
-    import pudb
-    pudb.set_trace()
     update('i', to_install_modules)
     summary['installed'] += to_install_modules
     modules = list(filter(lambda x: x not in summary['installed'], modules))
