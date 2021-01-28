@@ -43,8 +43,9 @@ mode_text = {
 }
 
 def update(mode, modules):
+    if not module:
+        return
     assert mode in ['i', 'u']
-    assert modules
     assert isinstance(modules, list)
 
     if ','.join(modules) == 'all':
