@@ -83,8 +83,6 @@ class Debugger(object):
         self.execpy(["run_debug.py"])
 
     def action_update_module(self, cmd, module):
-        import pudb
-        pudb.set_trace()
         kill_odoo()
         PARAMS_CONST = []
         if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
@@ -155,6 +153,7 @@ class Debugger(object):
                     action = content.split(":")
                 if DEBUGGER_WATCH.exists():
                     DEBUGGER_WATCH.unlink()
+                print(action)
 
                 if self.first_run or action[0] in ['debug', 'quick_restart']:
                     self.action_debug()
