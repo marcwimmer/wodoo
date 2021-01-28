@@ -70,6 +70,8 @@ class Debugger(object):
         os.chdir(self.odoolib_path)
         if not cmd[0].startswith("/"):
             cmd = ['python3'] + cmd
+        import pudb
+        pudb.set_trace()
         res = subprocess.call(cmd, cwd=self.odoolib_path)
 
     def action_debug(self):
