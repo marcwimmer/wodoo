@@ -161,6 +161,8 @@ class Debugger(object):
                     continue
 
                 elif action[0] in ["update_module", "update_module_full"]:
+                    import pudb
+                    pudb.set_trace()
                     self.action_update_module(
                         cmd=action[0],
                         module=action[1]
