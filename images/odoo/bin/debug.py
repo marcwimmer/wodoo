@@ -83,6 +83,8 @@ class Debugger(object):
         self.execpy(["run_debug.py"])
 
     def action_update_module(self, cmd, module):
+        import pudb
+        pudb.set_trace()
         kill_odoo()
         PARAMS_CONST = []
         if config['DEVMODE'] == "1" and config.get("NO_QWEB_DELETE", "") != "1":
