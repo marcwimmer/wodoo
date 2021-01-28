@@ -193,6 +193,7 @@ def main():
     pudb.set_trace()
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",") if x != 'all']
+    summary = defaultdict(list)
     single_module = len(modules) == 1
     if not modules:
         raise Exception("requires module!")
@@ -214,15 +215,13 @@ def main():
         click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
         update('u', to_update_swm)
 
-    _uninstall_marked_modules()
+        _uninstall_marked_modules()
 
     c = 'yellow'
     click.secho("--------------------------------------------------------------------------", fg=c)
     click.secho(f"Updating Module {','.join(modules)}", fg=c)
     click.secho("--------------------------------------------------------------------------", fg=c)
 
-    summary = defaultdict(list)
-    _uninstall_marked_modules()
 
     update('i', to_install_modules)
     summary['installed'] += to_install_modules
