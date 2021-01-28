@@ -51,6 +51,7 @@ def set_registry(config, values):
 def ask(config):
     data = get_registry(config)
     sites = [x for x in data.get('sites') if x['name'] == config.project_name]
+    click.secho("---")
     click.secho(json.dumps(sites))
     sys.exit(0)
 
