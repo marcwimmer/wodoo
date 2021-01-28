@@ -129,6 +129,13 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     ctx.invoke(do_list)
     ctx.invoke(start)
 
+@cicd.command()
+@pass_config
+def notify_created(config):
+    reg = get_registry(config)
+    site = [x for x in reg if x['name'] == config.project_name][0]
+    site['updated'] = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
+    set_registry(config, reg)
 
 @cicd.command()
 @pass_config
