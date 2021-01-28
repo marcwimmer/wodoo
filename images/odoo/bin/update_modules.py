@@ -195,6 +195,11 @@ def main():
         raise Exception("requires module!")
 
     dangling_check()
+
+    # install server wide modules and/or update them
+    server_wide_modules = manifest['server_wide_modules']
+
+
     _uninstall_marked_modules()
 
     c = 'yellow'
