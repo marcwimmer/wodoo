@@ -49,8 +49,6 @@ def set_registry(config, values):
 @cicd.command()
 @pass_config
 def ask_info(config):
-    import pudb
-    pudb.set_trace()
     json = get_registry(config)
     sites = [x for x in json.get('sites') if x['name'] == config.project_name]
     click.secho(json.dumps(sites))
