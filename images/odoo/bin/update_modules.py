@@ -44,8 +44,9 @@ mode_text = {
 
 def update(mode, modules):
     assert mode in ['i', 'u']
-    assert modules
     assert isinstance(modules, list)
+    if not modules:
+        return
 
     if ','.join(modules) == 'all':
         raise Exception("update 'all' not allowed")
@@ -167,7 +168,7 @@ def _get_to_install_modules(modules):
                         raise Exception("After updating module list, module was not found: {}".format(module))
             yield module
 
-def install_new_modules(modules, summary):
+def install_new_modules(modules):
     update('i', modules)
 
 def dangling_check():
@@ -195,6 +196,21 @@ def main():
         raise Exception("requires module!")
 
     dangling_check()
+    to_install_modules = list(_get_to_install_modules(list(modules)))
+
+    # install server wide modules and/or update them
+    c = 'magenta'
+    server_wide_modules = manifest['server-wide-modules']
+    click.secho("--------------------------------------------------------------------------", fg=c)
+    click.secho(f"Installing/Updating Server wide modules {','.join(server_wide_modules)}", fg=c)
+    click.secho("--------------------------------------------------------------------------", fg=c)
+    to_install_swm = list(filter(lambda x: x in to_install_modules, server_wide_modules))
+    to_update_swm = list(filter(lambda x: x not in to_install_swm, server_wide_modules))
+    click.secho(f"Installing {','.join(to_install_swm)}", fg=c)
+    update('i', to_install_swm)
+    click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
+    update('u', to_update_swm)
+
     _uninstall_marked_modules()
 
     c = 'yellow'
@@ -205,10 +221,7 @@ def main():
     summary = defaultdict(list)
     _uninstall_marked_modules()
 
-    to_install_modules = list(_get_to_install_modules(list(modules)))
-    install_new_modules(
-        to_install_modules,
-    )
+    update('i', to_install_modules)
     summary['installed'] += to_install_modules
     modules = list(filter(lambda x: x not in summary['installed'], modules))
 

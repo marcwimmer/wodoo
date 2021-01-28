@@ -137,6 +137,8 @@ class Debugger(object):
         DEBUGGER_WATCH.write_text("debug")
 
     def endless_loop(self):
+        import pudb
+        pudb.set_trace()
         t = threading.Thread(target=watch_file_and_kill)
         t.daemon = True
         t.start()
