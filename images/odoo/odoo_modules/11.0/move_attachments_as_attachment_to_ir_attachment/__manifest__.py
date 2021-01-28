@@ -1,7 +1,7 @@
 
 {
     'name': 'move_attachments_as_attachment_to_ir_attachment',
-    'version': '13.0.1.0',
+    'version': '11.0.1.0',
     'author': 'Marc Wimmer (marc@itewimmer.de)',
     'depends': [],
     'data': [],
