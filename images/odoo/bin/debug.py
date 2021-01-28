@@ -94,7 +94,7 @@ class Debugger(object):
         if self.execpy([
                 "update_modules.py",
                 module,
-            ] + PARAMS_CONST):
+        ] + PARAMS_CONST):
             self.trigger_restart()
 
     def action_last_unittest(self):
