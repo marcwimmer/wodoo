@@ -195,6 +195,7 @@ def main():
         raise Exception("requires module!")
 
     dangling_check()
+    to_install_modules = list(_get_to_install_modules(list(modules)))
 
     # install server wide modules and/or update them
     c = 'magenta'
@@ -217,7 +218,6 @@ def main():
     summary = defaultdict(list)
     _uninstall_marked_modules()
 
-    to_install_modules = list(_get_to_install_modules(list(modules)))
     install_new_modules(
         to_install_modules,
     )
