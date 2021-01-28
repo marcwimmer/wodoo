@@ -137,6 +137,8 @@ class Debugger(object):
         DEBUGGER_WATCH.write_text("debug")
 
     def endless_loop(self):
+        import pudb
+        pudb.set_trace()
         t = threading.Thread(target=watch_file_and_kill)
         t.daemon = True
         t.start()
@@ -153,7 +155,6 @@ class Debugger(object):
                     action = content.split(":")
                 if DEBUGGER_WATCH.exists():
                     DEBUGGER_WATCH.unlink()
-                print(action)
 
                 if self.first_run or action[0] in ['debug', 'quick_restart']:
                     self.action_debug()
