@@ -179,7 +179,7 @@ def restart(config, ctx):
 def start(config):
     registry = get_registry(config)
     update_configs(config, registry)
-    os.system(f"docker network create {config.CICD_NETWORK}")
+    os.system(f"docker network create {config.CICD_NETWORK} 2>/dev/null")
     subprocess.check_call([
         'docker-compose',
         'build',
