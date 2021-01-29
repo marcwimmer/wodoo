@@ -91,11 +91,9 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
     )
 
-    site = {'name': config.project_name}
-    current_instance = list(filter(lambda x: x.get('branch', {}).get('branch') == git_branch, reg['sites']))
-    if current_instance:
-        current_instance = current_instance[-1]
-    reg['sites'].append(site)
+    prev_instance = requests.get("/previous_instance", params={"branch": git_branch}).json()
+    site = {}
+    site['name'] = config.project_name
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['title'] = title
     site['initiator'] = initiator
