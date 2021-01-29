@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from pymongo import MongoClient
+c = MongoClient('mongo', 27017)
 
 
 app = Flask(
