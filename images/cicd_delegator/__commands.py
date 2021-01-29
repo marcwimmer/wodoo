@@ -124,7 +124,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 @pass_config
 def notify_created(config):
     _require_project(config)
-    requests.get("/activate", params={"site": config.project_name})
+    requests.get(url + "/activate", params={"site": config.project_name})
 
 @cicd.command()
 @pass_config
