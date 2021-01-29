@@ -21,6 +21,7 @@ services:
     build: ./cicd_index
     networks:
         - cicd_delegator
+        - internal
     restart: "unless-stopped"
     ports:
         - 127.0.0.1:8889:5000
@@ -39,6 +40,8 @@ services:
   mongo:
     image: mongo
     restart: "unless-stopped"
+    networks:
+        - internal
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: 1
@@ -49,10 +52,13 @@ services:
     image: mongo-express
     restart: "unless-stopped"
     ports:
-      - 8081:8081
+        - 8081:8081
+    networks:
+        - internal
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: 1
 networks:
     cicd_delegator:
         name: __CICD_NETWORK_NAME__
+    internal:
