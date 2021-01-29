@@ -53,6 +53,10 @@ def register_site(**kwargs):
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance(branch_name):
     sites = db.sites.find({"git_branch": branch_name})
+    sites = sorted(sites, key=lambda x: x['index'])
+    site = {}
+    if sites:
+        site = sites[-1]
 
 
 @app.route('/')
