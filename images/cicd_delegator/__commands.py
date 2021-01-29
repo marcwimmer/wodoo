@@ -298,8 +298,6 @@ def _update_docker_compose(config, registry):
         "__CICD_NETWORK_NAME__": config.CICD_NETWORK,
         "__CICD_BINDING__": config.CICD_BINDING,
     }
-    import pudb
-    pudb.set_trace()
     for k, v in values.items():
         template = template.replace(k, v)
     dc.write_text(template)
