@@ -52,7 +52,7 @@ def register_site(**kwargs):
 
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance(branch_name):
-    sites = db.sites.find_one({"git_branch": branch_name})
+    sites = db.sites.find({"git_branch": branch_name})
 
 
 @app.route('/')
