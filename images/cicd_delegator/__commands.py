@@ -43,7 +43,7 @@ def ask(config):
         data = response.json()
     except Exception:
         raise Exception(response.text)
-    click.secho(json.dumps(data, indent=4))
+    click.secho(json.dumps(data or {}, indent=4))
 
 @cicd.command()
 @pass_config
