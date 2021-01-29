@@ -3,6 +3,8 @@ import arrow
 from flask import Flask
 from flask import render_template
 from datetime import datetime
+from flask import request
+
 
 import json
 from pathlib import Path
@@ -44,6 +46,9 @@ def register_site(**kwargs):
     if request.method == 'POST':
         data = request.form
         db.sites.insert_one(data['site'])
+
+@app.route("/previous_instance", methods=["GET"])
+def previous_instance(branch_name):
 
 
 @app.route('/')
