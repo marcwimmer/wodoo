@@ -408,7 +408,7 @@ def list_changed_modules_sind(ctx, config, _from):
     files = subprocess.check_output([
         'git',
         'diff',
-        f"{from}..HEAD",
+        f"{_from}..HEAD",
         "--name-only",
     ]).decode('utf-8').split("\n")
 
