@@ -405,12 +405,16 @@ def generate_update_command(ctx, config):
 @click.option('-s', '--start')
 @click.pass_context
 def list_changed_modules_sind(ctx, config, start):
-    files = subprocess.check_output([
+    filepaths = subprocess.check_output([
         'git',
         'diff',
         f"{start}..HEAD",
         "--name-only",
     ]).decode('utf-8').split("\n")
+    modules = []
+    root = Path(os.getcwd())
+    for filepath in filespaths:
+        filepath = root / filepath
 
 
 
