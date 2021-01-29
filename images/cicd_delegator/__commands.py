@@ -20,7 +20,7 @@ from odoo_tools.lib_clickhelpers import AliasedGroup
 from odoo_tools.tools import __empty_dir, __dc, sync_folder
 from odoo_tools import cli, pass_config, Commands
 from odoo_tools.lib_composer import internal_reload
-from .tools import _askcontinue
+from tools import _askcontinue
 
 url = "http://127.0.0.1:8889"
 
