@@ -380,7 +380,7 @@ def list_changed_modules_sind(ctx, config, start):
     ]).decode('utf-8').split("\n")
     modules = []
     root = Path(os.getcwd())
-    for filepath in filespaths:
+    for filepath in filepaths:
         filepath = root / filepath
 
 
