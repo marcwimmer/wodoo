@@ -29,6 +29,7 @@ def index():
         if site.get('updated'):
             site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
     reg['sites'] = sorted(reg['sites'], key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
+    reg['sites'] list(filter(lambda x: x.get('enabled'), reg['sites']))
 
     return render_template(
         'index.html',
