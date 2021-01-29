@@ -134,9 +134,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     if current_instance:
         current_sha = current_instance.get('git', {}).get('sha')
         if current_sha:
-            site['modules_updates'] = Modules.get_changed_modules(current_sha):
-
-
+            site['modules_updates'] = Modules.get_changed_modules(current_sha)
 
     set_registry(config, reg)
 
