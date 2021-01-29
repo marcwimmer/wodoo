@@ -389,7 +389,7 @@ def list_changed_modules_sind(ctx, config, start):
         else:
             modules.append(module.name)
     for module in modules:
-        click.secho("
+        click.secho(module)
 
 
 Commands.register(progress)
