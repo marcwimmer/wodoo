@@ -6,6 +6,9 @@ from flask import render_template
 import json
 from pathlib import Path
 
+from pymongo import MongoClient
+
+
 app = Flask(
     __name__,
     static_folder='/_static_index_files',
@@ -16,6 +19,10 @@ def augment_reg(reg):
         last_access_file = Path(os.environ['REGISTRY_SITES']) / site['name'] / 'last_access'
         if last_access_file.exists():
             site['last_access'] = arrow.get(last_access_file.read_text()).to(os.environ['DISPLAY_TIMEZONE'])
+
+@app.route("/sites"):
+def show_sites():
+
 
 @app.route('/register/site')
 def register_site(**kwargs):
