@@ -37,6 +37,7 @@ def cicd(config):
 @cicd.command()
 @pass_config
 def ask(config):
+    os.environ['no_proxy'] = '*'
     click.secho("---")
     response = requests.get(url + '/site', params={'site': config.project_name})
     raise Exception(response.text)
