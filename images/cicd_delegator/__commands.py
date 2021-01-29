@@ -34,6 +34,10 @@ def _require_project(config):
 def cicd(config):
     pass
 
+@cicd.command()
+@pass_config
+def ask(config):
+
 
 @cicd.command()
 @pass_config
