@@ -42,7 +42,7 @@ def ask(config):
     try:
         data = response.json()
     except Exception:
-        raise Exception(data.text)
+        raise Exception(response.text)
     click.secho(json.dumps(data, indent=4))
 
 @cicd.command()
