@@ -38,7 +38,7 @@ def cicd(config):
 @pass_config
 def ask(config):
     click.secho("---")
-    requests.get(url + '/sites'
+    requests.get(url + '/site'
 
 
 
