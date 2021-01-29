@@ -36,9 +36,10 @@ def show_sites():
     return jsonify(db.sites.find())
 
 @app.route("/activate", methods=['GET'])
-def active(site):
-    import pudb
-    pudb.set_trace()
+def active():
+    site = request.args.get('site')
+    if not site:
+        raise Exception("Site missing")
     site = db.sites.find_one({'name': site})
     if not site:
         raise Exception(f"site not found: {site}")
@@ -48,7 +49,7 @@ def active(site):
     }, upsert=False)
 
 @app.route('/register', methods=['POST'])
-def register_site(**kwargs):
+def register_site():
     import pudb
     pudb.set_trace()
     if request.method == 'POST':
