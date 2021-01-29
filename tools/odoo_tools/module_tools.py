@@ -498,6 +498,24 @@ class Modules(object):
         for m in get_all_manifests():
             self.modules[m.parent.name] = Module(m)
 
+    def get_changed_modules(self, sha_start):
+        filepaths = subprocess.check_output([
+            'git',
+            'diff',
+            f"{start}..HEAD",
+            "--name-only",
+        ]).decode('utf-8').split("\n")
+        modules = []
+        root = Path(os.getcwd())
+        for filepath in filepaths:
+            filepath = root / filepath
+            try:
+                module = Module(filepath)
+            except Module.IsNot:
+                pass
+            else:
+                modules.append(module.name)
+
     def get_customs_modules(self, mode=None):
         """
         Called by odoo update
