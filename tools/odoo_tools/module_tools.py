@@ -686,6 +686,7 @@ class Modules(object):
                 result.add(libname)
         return list(result)
 
+
 class Module(object):
 
     class IsNot(Exception): pass
