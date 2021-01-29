@@ -38,7 +38,7 @@ def cicd(config):
 def clear(config):
     _askcontinue(config)
     subprocess.check_call(
-        ['docker-compose', 'down', 'mongo', '-v', machine],
+        ['docker-compose', 'down', '-v', 'mongo'],
         cwd=config.dirs['cicd_delegator']
     )
 
