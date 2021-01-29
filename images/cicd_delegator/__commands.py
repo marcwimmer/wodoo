@@ -114,6 +114,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     reg = get_registry(config)
     reg.setdefault('sites', [])
     site = {'name': config.project_name}
+    current_instance = list(filter(lambda x: x.get('branch', {}).get('branch') == git_branch, reg['sites']))
     reg['sites'].append(site)
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['title'] = title
