@@ -21,6 +21,11 @@ from odoo_tools.tools import __empty_dir, __dc, sync_folder
 from odoo_tools import cli, pass_config, Commands
 from odoo_tools.lib_composer import internal_reload
 
+def _require_project(config):
+    if not config.project_name:
+        click.secho("Missing project name.")
+        sys.exit(1)
+
 @cli.group(cls=AliasedGroup)
 @pass_config
 def cicd(config):
@@ -133,6 +138,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 @cicd.command()
 @pass_config
 def notify_created(config):
+    _require_project(config)
     reg = get_registry(config)
     site = [x for x in reg if x['name'] == config.project_name][0]
     site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
