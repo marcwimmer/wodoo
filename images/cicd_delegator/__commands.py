@@ -131,8 +131,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 
     # get the previous instance by branch
 
-
-
     set_registry(config, reg)
 
     Commands.invoke(
