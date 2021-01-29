@@ -37,6 +37,7 @@ def cicd(config):
 @cicd.command()
 @pass_config
 def ask(config):
+    click.secho("---")
 
 
 @cicd.command()
