@@ -29,6 +29,8 @@ services:
         REGISTRY_SITES: /registry_sites
         DISPLAY_TIMEZONE: Europe/Berlin
         DATE_FORMAT: '_d._m._Y _H:_M:_S'
+        MONGO_INITDB_ROOT_USERNAME: admin
+        MONGO_INITDB_ROOT_PASSWORD: 1
     volumes:
         - ./registry.json:/registry.json
         - ./registry_sites:/registry_sites
