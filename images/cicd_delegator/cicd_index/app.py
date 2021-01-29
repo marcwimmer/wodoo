@@ -45,11 +45,14 @@ def register_site(**kwargs):
     pudb.set_trace()
     if request.method == 'POST':
         data = request.form
+        site = data['site']
+        index = db.sites.find({'git_branch': site['git_branch']}).Count() + 1
+        site['index'] = index
         db.sites.insert_one(data['site'])
 
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance(branch_name):
-    db.sites.find_one({"
+    sites = db.sites.find_one({"git_branch": branch_name})
 
 
 @app.route('/')
