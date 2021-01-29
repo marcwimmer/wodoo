@@ -31,15 +31,6 @@ def _require_project(config):
 def cicd(config):
     pass
 
-def get_registry(config):
-    path = config.files['cicd_delegator_registry']
-    result = {}
-    if path.exists():
-        if path.is_dir():
-            shutil.rmtree(path)
-        else:
-            result = json.loads(path.read_text())
-    return result
 
 def set_registry(config, values):
     path = config.files['cicd_delegator_registry']
