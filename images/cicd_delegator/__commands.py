@@ -60,7 +60,7 @@ def do_list(config):
 @pass_config
 @click.pass_context
 def unregister(ctx, config):
-    requests.post(url + "/site/unregister", params={"site": config.project_name})
+    requests.post(url + "/site/unregister", params={"site": config.project_name}).raise_for_status()
 
     files = []
     files.append(config.files['project_docker_compose.home.project'])
