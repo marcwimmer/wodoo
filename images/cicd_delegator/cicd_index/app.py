@@ -67,6 +67,9 @@ def previous_instance(branch_name):
         site = sites[-1]
     return jsonify(site)
 
+@app.route("/site", methods=["GET"])
+def site(site):
+
 
 @app.route('/')
 def index():
