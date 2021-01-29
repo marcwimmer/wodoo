@@ -60,7 +60,10 @@ def register_site():
         db.sites.insert_one(data['site'])
 
 @app.route("/previous_instance", methods=["GET"])
-def previous_instance(branch_name):
+def previous_instance():
+    branch_name = request.args.get('branch_name')
+    if not branch_name:
+        raise Exception("Missing branch_name")
     sites = db.sites.find({"git_branch": branch_name})
     sites = sorted(sites, key=lambda x: x['index'])
     site = {}
