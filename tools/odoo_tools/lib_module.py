@@ -385,6 +385,5 @@ def list_changed_modules_sind(ctx, config, start):
 
 
 Commands.register(progress)
-Commands.register(remove_old_modules)
 Commands.register(update)
 Commands.register(show_install_state)
