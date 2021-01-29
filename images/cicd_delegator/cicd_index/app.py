@@ -72,7 +72,10 @@ def previous_instance():
     return jsonify(site)
 
 @app.route("/site", methods=["GET"])
-def site(site):
+def site():
+    site = request.args.get('site')
+    if not site:
+        raise Exception("Missing site")
     site = db.sites.find_one({'name': site})
     return jsonify(site)
 
