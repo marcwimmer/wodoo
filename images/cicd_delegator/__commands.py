@@ -41,6 +41,10 @@ def clear(config):
         ['docker-compose', 'down', '-v', 'mongo'],
         cwd=config.dirs['cicd_delegator']
     )
+    subprocess.check_call(
+        ['docker-compose', 'up', '-d', 'mongo'],
+        cwd=config.dirs['cicd_delegator']
+    )
 
 @cicd.command(name="list")
 @pass_config
