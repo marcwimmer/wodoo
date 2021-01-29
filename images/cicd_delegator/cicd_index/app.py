@@ -51,8 +51,6 @@ def active():
 
 @app.route('/register', methods=['POST'])
 def register_site():
-    import pudb
-    pudb.set_trace()
     if request.method == 'POST':
         data = request.form
         site = data['site']
