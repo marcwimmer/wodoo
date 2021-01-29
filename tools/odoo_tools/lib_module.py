@@ -391,6 +391,7 @@ def list_changed_modules(ctx, config, start):
             pass
         else:
             modules.append(module.name)
+    click.secho("---")
     for module in sorted(set(modules)):
         click.secho(module)
 
