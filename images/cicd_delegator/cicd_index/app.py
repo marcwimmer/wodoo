@@ -49,6 +49,7 @@ def register_site(**kwargs):
 
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance(branch_name):
+    db.sites.find_one({"
 
 
 @app.route('/')
