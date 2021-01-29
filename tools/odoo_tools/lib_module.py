@@ -368,9 +368,10 @@ def generate_update_command(ctx, config):
     click.secho(f"-u {','.join(modules)}")
 
 
-@pass_config
+@click.command()
 @click.option('-s', '--start')
 @click.pass_context
+@pass_config
 def list_changed_modules(ctx, config, start):
     from .lib_module import Module
 
