@@ -37,8 +37,12 @@ def show_sites():
 
 @app.route("/activate", methods=['GET'])
 def active(site):
+    import pudb
+    pudb.set_trace()
     site = db.sites.find_one({'name': site})
-    db.sites.update_one({'name': site}, {
+    if not site:
+        raise Exception(f"site not found: {site}")
+    db.sites.update_one({'_id': site['_id']}, {
         'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         'enabled': True,
     }, upsert=False)
