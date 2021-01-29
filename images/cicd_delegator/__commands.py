@@ -119,6 +119,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         'branch': git_branch,
         'sha': git_sha,
     }
+    site['enabled'] = False
     set_registry(config, reg)
 
     Commands.invoke(
