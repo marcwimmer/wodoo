@@ -382,6 +382,14 @@ def list_changed_modules_sind(ctx, config, start):
     root = Path(os.getcwd())
     for filepath in filepaths:
         filepath = root / filepath
+        try:
+            module = Module(filepath)
+        except Module.IsNot:
+            pass
+        else:
+            modules.append(module.name)
+    for module in modules:
+        click.secho("
 
 
 Commands.register(progress)
