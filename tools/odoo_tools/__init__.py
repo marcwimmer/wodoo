@@ -44,8 +44,10 @@ if click:
         if project_name:
             config.project_name = project_name
         if not config.WORKING_DIR:
-            click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
-            sys.exit(1)
+            # usually all need a working except cicd
+            if 'cicd' not in sys.argv:
+                click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
+                sys.exit(1)
 
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
