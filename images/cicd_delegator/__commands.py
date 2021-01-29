@@ -286,8 +286,10 @@ def _copy_folders(config, registry):
 
     ]:
         dest_path = config.dirs['cicd_delegator'] / path
+        source = config.dirs['images'] / 'cicd_delegator' / path
+        click.secho(f"Syncing folder from {source} to {dest_path}")
         sync_folder(
-            config.dirs['images'] / 'cicd_delegator' / path,
+            source,
             dest_path,
         )
 
