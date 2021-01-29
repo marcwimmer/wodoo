@@ -22,6 +22,8 @@ from odoo_tools import cli, pass_config, Commands
 from odoo_tools.lib_composer import internal_reload
 from .tools import _askcontinue
 
+url = "http://127.0.0.1:8889"
+
 def _require_project(config):
     if not config.project_name:
         click.secho("Missing project name.")
@@ -49,6 +51,7 @@ def clear(config):
 @cicd.command(name="list")
 @pass_config
 def do_list(config):
+    requests.get(url + "/sites")
     click.secho("Registered Sites: ", fg='green')
     reg = get_registry(config)
     for site in reg.get('sites', []):
