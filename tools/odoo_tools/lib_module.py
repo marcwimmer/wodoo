@@ -24,6 +24,7 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
+from pathlib import Path
 
 class UpdateException(Exception): pass
 
