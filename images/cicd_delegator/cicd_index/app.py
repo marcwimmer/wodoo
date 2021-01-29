@@ -27,7 +27,7 @@ def augment_reg(reg):
         if last_access_file.exists():
             site['last_access'] = arrow.get(last_access_file.read_text()).to(os.environ['DISPLAY_TIMEZONE'])
 
-@app.route("/sites"):
+@app.route("/sites")
 def show_sites():
     db.sites
 
