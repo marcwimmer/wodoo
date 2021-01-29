@@ -62,7 +62,7 @@ def register_site():
 
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance():
-    branch_name = request.args.get('branch_name')
+    branch_name = request.args.get('branch')
     if not branch_name:
         raise Exception("Missing branch_name")
     sites = db.sites.find({"git_branch": branch_name})
