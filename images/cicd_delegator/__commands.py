@@ -148,7 +148,7 @@ def restart(config, ctx):
 @pass_config
 def start(config):
     registry = get_registry(config)
-    update_configs(config, registry)
+    update_configs(config)
     os.system(f"docker network create {config.CICD_NETWORK} 2>/dev/null")
     subprocess.check_call([
         'docker-compose',
@@ -245,11 +245,11 @@ def update_project_configs(config):
     )
     config.files['project_docker_compose.home.project'].write_text(def_network)
 
-def update_configs(config, registry):
-    _copy_folders(config, registry)
-    _update_docker_compose(config, registry)
+def update_configs(config):
+    _copy_folders(config)
+    _update_docker_compose(config)
 
-def _copy_folders(config, registry):
+def _copy_folders(config):
     for path in [
         'cicd_delegator',
         'cicd_tester',
@@ -264,7 +264,7 @@ def _copy_folders(config, registry):
             dest_path,
         )
 
-def _update_docker_compose(config, registry):
+def _update_docker_compose(config):
     dc = config.dirs['cicd_delegator'] / 'docker-compose.yml'
     template = (config.dirs['images'] / 'cicd_delegator' / 'docker-compose.yml').read_text()
     values = {
