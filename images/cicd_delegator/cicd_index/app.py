@@ -29,6 +29,10 @@ def augment_reg(reg):
 @app.route("/sites"):
 def show_sites():
 
+@app.route("/activate")
+def active():
+    site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    site['enabled'] = True
 
 @app.route('/register/site')
 def register_site(**kwargs):
