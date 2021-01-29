@@ -29,6 +29,7 @@ def augment_reg(reg):
 
 @app.route("/sites"):
 def show_sites():
+    db.sites
 
 @app.route("/activate")
 def active():
@@ -37,7 +38,9 @@ def active():
 
 @app.route('/register/site')
 def register_site(**kwargs):
-    raise Exception(kwargs)
+    import pudb
+    pudb.set_trace()
+    db.sites.insert_one(site)
 
 
 @app.route('/')
