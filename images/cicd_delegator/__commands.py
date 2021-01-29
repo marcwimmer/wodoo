@@ -168,7 +168,6 @@ def start(config):
 @click.argument("machine", required=True)
 @pass_config
 def debug(config, machine):
-    registry = get_registry(config)
     update_configs(config, registry)
     allowed = [
         'cicd_index',
