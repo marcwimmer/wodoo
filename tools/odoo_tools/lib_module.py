@@ -405,6 +405,7 @@ def generate_update_command(ctx, config):
 @click.pass_context
 def list_changed_modules_sind(ctx, config):
 
+
 Commands.register(progress)
 Commands.register(remove_old_modules)
 Commands.register(update)
