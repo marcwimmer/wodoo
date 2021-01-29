@@ -12,8 +12,8 @@ from pathlib import Path
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
-    'mongo',
-    27017,
+    os.environ["MONGO_HOST"],
+    int(os.environ['MONGO_PORT']),
     username=os.environ['MONGO_USERNAME'],
     password=os.environ['MONGO_PASSWORD'],
 )
