@@ -84,15 +84,13 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     from lib_modules import Modules
 
     # prepare network configuration
-    update_project_configs(config, reg)
+    update_project_configs(config)
     internal_reload(
         config, config.dbname, demo=False,
         devmode=config.devmode_as_bool, headless=True, local=False,
         proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
     )
 
-    reg = get_registry(config)
-    reg.setdefault('sites', [])
     site = {'name': config.project_name}
     current_instance = list(filter(lambda x: x.get('branch', {}).get('branch') == git_branch, reg['sites']))
     if current_instance:
@@ -239,7 +237,7 @@ def stop(config):
     proc.communicate()
 
 
-def update_project_configs(config, registry):
+def update_project_configs(config):
     """
     Creates ~/.odoo/docker-compose.<project>.yml files, to add
     the cicd default network
