@@ -255,10 +255,11 @@ def logs(config, machine):
 @pass_config
 def stop(config):
 
-    subprocess.check_call([
+    proc = subprocess.Popen([
         'docker-compose',
         'kill',
     ], cwd=config.dirs['cicd_delegator'])
+    proc.communicate()
 
 
 def update_project_configs(config, registry):
