@@ -38,6 +38,8 @@ def cicd(config):
 @pass_config
 def ask(config):
     click.secho("---")
+    requests.get(url + '/sites'
+
 
 
 @cicd.command()
