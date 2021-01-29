@@ -31,8 +31,8 @@ def augment_reg(reg):
 def show_sites():
     db.sites
 
-@app.route("/activate")
-def active():
+@app.route("/activate", methods=['GET'])
+def active(site):
     site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['enabled'] = True
 
