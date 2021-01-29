@@ -22,6 +22,8 @@ services:
     networks:
         - cicd_delegator
     restart: "unless-stopped"
+    ports:
+        - 127.0.0.1:8889:80
     environment:
         FLASK_ENV: development
         REGISTRY_SITES: /registry_sites
