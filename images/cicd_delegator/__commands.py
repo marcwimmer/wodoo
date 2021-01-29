@@ -124,10 +124,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 @pass_config
 def notify_created(config):
     _require_project(config)
-    reg = get_registry(config)
-    site = [x for x in reg if x['name'] == config.project_name][0]
-    site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-    site['enabled'] = True
+    requests.get("/activate", params={"site": config.project_name})
     set_registry(config, reg)
 
 @cicd.command()
