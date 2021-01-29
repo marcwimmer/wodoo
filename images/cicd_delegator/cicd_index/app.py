@@ -33,7 +33,7 @@ def augment_reg(reg):
 
 @app.route("/sites")
 def show_sites():
-    db.sites
+    return jsonify(db.sites.find())
 
 @app.route("/activate", methods=['GET'])
 def active(site):
