@@ -60,6 +60,7 @@ def do_list(config):
 @pass_config
 @click.pass_context
 def unregister(ctx, config):
+    requests.get(url + "/site/unregister")
     reg = get_registry(config)
     reg['sites'] = [x for x in reg['sites'] if x['name'] != config.project_name]
     set_registry(config, reg)
