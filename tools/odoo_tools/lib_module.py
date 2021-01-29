@@ -372,6 +372,7 @@ def generate_update_command(ctx, config):
 @click.option('-s', '--start')
 @click.pass_context
 def list_changed_modules_sind(ctx, config, start):
+    from .lib_module import Module
     filepaths = subprocess.check_output([
         'git',
         'diff',
