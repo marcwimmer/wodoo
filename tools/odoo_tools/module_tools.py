@@ -502,7 +502,7 @@ class Modules(object):
         filepaths = subprocess.check_output([
             'git',
             'diff',
-            f"{shastart}..HEAD",
+            f"{sha_start}..HEAD",
             "--name-only",
         ]).decode('utf-8').split("\n")
         modules = []
