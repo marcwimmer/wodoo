@@ -36,7 +36,7 @@ def active():
     site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['enabled'] = True
 
-@app.route('/register/site')
+@app.route('/register')
 def register_site(**kwargs):
     import pudb
     pudb.set_trace()
