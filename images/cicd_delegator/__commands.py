@@ -39,7 +39,6 @@ def cicd(config):
 def ask(config):
     click.secho("---")
     response = requests.get(url + '/site', params={'site': config.project_name})
-    raise Exception(response.text)
     data = response.json()
     click.secho(json.dumps(data, indent=4))
 
