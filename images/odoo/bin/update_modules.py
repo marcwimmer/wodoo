@@ -204,7 +204,7 @@ def main():
         c = 'magenta'
         server_wide_modules = manifest['server-wide-modules']
         # leave out base modules
-        server_wide_modules = list(filter(lambda x: x not in ['web']: server_wide_modules))
+        server_wide_modules = list(filter(lambda x: x not in ['web'], server_wide_modules))
         click.secho("--------------------------------------------------------------------------", fg=c)
         click.secho(f"Installing/Updating Server wide modules {','.join(server_wide_modules)}", fg=c)
         click.secho("--------------------------------------------------------------------------", fg=c)
