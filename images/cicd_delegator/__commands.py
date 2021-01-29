@@ -91,7 +91,7 @@ def unregister(ctx, config):
 def register(ctx, config, desc, author, local, title, initiator, git_branch, git_sha):
     # reload current odoo
     from odoo_tools.click_config import Config
-    from odoo_tools.lib_module import Modules
+    from odoo_tools.module_tools import Modules
 
     # prepare network configuration
     update_project_configs(config)
