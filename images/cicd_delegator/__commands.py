@@ -20,6 +20,7 @@ from odoo_tools.lib_clickhelpers import AliasedGroup
 from odoo_tools.tools import __empty_dir, __dc, sync_folder
 from odoo_tools import cli, pass_config, Commands
 from odoo_tools.lib_composer import internal_reload
+from .tools import _askcontinue
 
 def _require_project(config):
     if not config.project_name:
@@ -32,30 +33,14 @@ def cicd(config):
     pass
 
 
-def set_registry(config, values):
-    path = config.files['cicd_delegator_registry']
-    path.parent.mkdir(exist_ok=True, parents=True)
-    path.write_text(json.dumps(values, indent=4))
-    if not values:
-        return
-
-    update_project_configs(config, values)
-    update_configs(config, values)
-
-@cicd.command()
-@pass_config
-def ask(config):
-    data = get_registry(config)
-    sites = [x for x in data.get('sites') if x['name'] == config.project_name]
-    click.secho("---")
-    click.secho(json.dumps(sites))
-    sys.exit(0)
-
-
 @cicd.command()
 @pass_config
 def clear(config):
-    set_registry(config, {})
+    _askcontinue(config)
+    subprocess.check_call(
+        ['docker-compose', 'down', 'mongo', '-v', machine],
+        cwd=config.dirs['cicd_delegator']
+    )
 
 @cicd.command(name="list")
 @pass_config
