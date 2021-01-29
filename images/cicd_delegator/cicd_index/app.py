@@ -17,7 +17,7 @@ mongoclient = MongoClient(
     username=os.environ['MONGO_USERNAME'],
     password=os.environ['MONGO_PASSWORD'],
 )
-db = mongoclient.get_database()
+db = mongoclient.get_database('cicd_sites')
 
 
 app = Flask(
