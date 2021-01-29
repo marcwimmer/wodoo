@@ -101,7 +101,9 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
     )
 
-    prev_instance = requests.get(url + "/previous_instance", params={"branch": git_branch}).json()
+    response = requests.get(url + "/previous_instance", params={"branch": git_branch})
+    print(response.text)
+    prev_instance = response.json()
     site = {}
     site['name'] = config.project_name
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
