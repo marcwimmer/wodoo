@@ -402,9 +402,9 @@ def generate_update_command(ctx, config):
 
 
 @pass_config
-@click.option('-f', '--from')
+@click.option('-f', '--from', name="_from")
 @click.pass_context
-def list_changed_modules_sind(ctx, config, from):
+def list_changed_modules_sind(ctx, config, _from):
     files = subprocess.check_output([
         'git',
         'diff',
