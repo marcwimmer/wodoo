@@ -170,8 +170,6 @@ def rebuild(config):
 @click.pass_context
 @pass_config
 def restart(config, ctx):
-    import pudb
-    pudb.set_trace()
     ctx.invoke(stop)
     ctx.invoke(start)
 
