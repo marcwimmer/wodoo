@@ -383,7 +383,6 @@ def list_changed_modules_sind(ctx, config, start):
         filepath = root / filepath
 
 
-
 Commands.register(progress)
 Commands.register(update)
 Commands.register(show_install_state)
