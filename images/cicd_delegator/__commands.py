@@ -147,7 +147,6 @@ def restart(config, ctx):
 @cicd.command()
 @pass_config
 def start(config):
-    registry = get_registry(config)
     update_configs(config)
     os.system(f"docker network create {config.CICD_NETWORK} 2>/dev/null")
     subprocess.check_call([
