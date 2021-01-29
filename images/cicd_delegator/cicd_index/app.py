@@ -37,8 +37,11 @@ def show_sites():
 
 @app.route("/activate", methods=['GET'])
 def active(site):
-    site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-    site['enabled'] = True
+    site = db.sites.find_one({'name': site})
+    db.sites.update_one({'name': site}), {
+        'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        'enabled': True,
+    }, upsert=False)
 
 @app.route('/register', methods=['POST'])
 def register_site(**kwargs):
