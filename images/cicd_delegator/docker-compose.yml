@@ -37,7 +37,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: 1
     volumes:
-      volumes: ~/mongo/data:/data/db
+        - ~/mongo/data:/data/db
 
   mongo-express:
     image: mongo-express
