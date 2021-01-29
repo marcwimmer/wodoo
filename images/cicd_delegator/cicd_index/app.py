@@ -78,6 +78,7 @@ def site():
     if not site:
         raise Exception("Missing site")
     site = db.sites.find_one({'name': site})
+    raise Exception(site)
     return jsonify(site)
 
 @app.route('/')
