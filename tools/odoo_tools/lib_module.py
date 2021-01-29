@@ -254,40 +254,6 @@ def update_i18n(ctx, config, module, no_restart):
     if not no_restart:
         Commands.invoke(ctx, 'restart', machines=['odoo'])
 
-@odoo_module.command(name='remove-old')
-@click.option("--ask-confirm", default=True, is_flag=True)
-@pass_config
-@click.pass_context
-def remove_old_modules(ctx, config, ask_confirm=True):
-    """
-    Sets modules to 'uninstalled', that have no module dir anymore.
-    """
-    from .module_tools import get_manifest_path_of_module_path
-    from .odoo_config import get_odoo_addons_paths
-    click.echo("Analyzing which modules to remove...")
-    Commands.invoke(ctx, 'wait_for_container_postgres')
-    mods = sorted(map(lambda x: x[0], _execute_sql(config.get_odoo_conn(), "select name from ir_module_module where state in ('installed', 'to install', 'to upgrade') or auto_install = true;", fetchall=True)))
-    mods = list(filter(lambda x: x not in ('base'), mods))
-    to_remove = []
-    for mod in mods:
-        for path in get_odoo_addons_paths():
-            if get_manifest_path_of_module_path(path / mod):
-                break
-        else:
-            to_remove.append(mod)
-    if not to_remove:
-        click.echo("Nothing found to remove")
-        return
-    click.echo("Following modules are set to uninstalled:")
-    for mod in to_remove:
-        click.echo(mod)
-    if ask_confirm:
-        answer = inquirer.prompt([inquirer.Confirm('confirm', message="Continue?", default=True)])
-        if not answer or not answer['confirm']:
-            return
-    for mod in to_remove:
-        _execute_sql(config.get_odoo_conn(), "update ir_module_module set auto_install=false, state = 'uninstalled' where name = '{}'".format(mod))
-        click.echo("Set module {} to uninstalled.".format(mod))
 
 @odoo_module.command()
 @pass_config
