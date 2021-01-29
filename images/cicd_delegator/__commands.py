@@ -299,5 +299,7 @@ def _update_docker_compose(config, registry):
         "__CICD_BINDING__": config.CICD_BINDING,
     }
     for k, v in values.items():
+        if v is None:
+            raise Exception(f"Value not set: {k}")
         template = template.replace(k, v)
     dc.write_text(template)
