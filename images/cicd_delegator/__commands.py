@@ -101,6 +101,8 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
     )
 
+    if not git_branch:
+        raise Exception("required git branch!")
     response = requests.get(url + "/previous_instance", params={"branch": git_branch})
     print(response.text)
     prev_instance = response.json()
