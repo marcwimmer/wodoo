@@ -38,7 +38,7 @@ def show_sites():
 @app.route("/activate", methods=['GET'])
 def active(site):
     site = db.sites.find_one({'name': site})
-    db.sites.update_one({'name': site}), {
+    db.sites.update_one({'name': site}, {
         'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         'enabled': True,
     }, upsert=False)
