@@ -83,7 +83,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     from odoo_tools.click_config import Config
     from lib_modules import Modules
 
-    reg = get_registry(config)
     # prepare network configuration
     update_project_configs(config, reg)
     internal_reload(
