@@ -41,7 +41,7 @@ def ask(config):
     response = requests.get(url + '/site', params={'site': config.project_name})
     try:
         data = response.json()
-    except:
+    except Exception:
         raise Exception(data.text)
     click.secho(json.dumps(data, indent=4))
 
