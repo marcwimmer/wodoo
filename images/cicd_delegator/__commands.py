@@ -125,6 +125,11 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         'sha': git_sha,
     }
     site['enabled'] = False
+
+    # get the previous instance by branch
+
+
+
     set_registry(config, reg)
 
     Commands.invoke(
