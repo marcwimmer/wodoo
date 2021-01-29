@@ -101,6 +101,7 @@ def unregister(ctx, config):
 def register(ctx, config, desc, author, local, title, initiator, git_branch, git_sha):
     # reload current odoo
     from odoo_tools.click_config import Config
+    from lib_modules import Modules
 
     reg = get_registry(config)
     # prepare network configuration
@@ -129,6 +130,8 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     }
     site['enabled'] = False
     # get the previous instance by branch
+    if current_instance:
+
 
     set_registry(config, reg)
 
