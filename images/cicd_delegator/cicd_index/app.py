@@ -36,11 +36,13 @@ def active():
     site['updated'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['enabled'] = True
 
-@app.route('/register')
+@app.route('/register', methods=['POST'])
 def register_site(**kwargs):
     import pudb
     pudb.set_trace()
-    db.sites.insert_one(site)
+    if request.method == 'POST':
+        data = request.form
+        db.sites.insert_one(data['site'])
 
 
 @app.route('/')
