@@ -68,10 +68,10 @@ def activate():
         raise Exception(f"site not found: {site}")
     import pudb
     pudb.set_trace()
-    db.sites.update_one({'_id': site['_id']}, {
+    db.sites.update_one({'_id': site['_id']}, {'$set': {
         'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         'enabled': True,
-    }, upsert=False)
+    }}, upsert=False)
 
 @app.route("/next_instance")
 def next_instance_name():
