@@ -131,17 +131,15 @@ def index():
 
     sites = list(db.sites.find({'enabled': True}))
 
-    import pudb
-    pudb.set_trace()
     for site in sites:
         for k in site:
             try:
-                arrow.get(k).to(os.environ['DISPLAY_TIMEZONE'])
-            except Exception as e:
+                site[k] = arrow.get(k).to(os.environ['DISPLAY_TIMEZONE'])
+            except arrow.parser.ParserError:
                 import pudb
-                pudb.set_trace()
+                pudb.set_tracearrow.parser.ParserError()
                 pass
-    sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
+    sites = sorted(sites, key=arrow.parser.ParserErrorlambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
 
     sites_grouped = defaultdict(list)
     for site in sites:
