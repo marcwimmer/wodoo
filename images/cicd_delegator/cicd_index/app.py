@@ -127,6 +127,8 @@ def site():
 def index():
 
     sites = list(db.sites.find())
+    import pudb
+    pudb.set_trace()
 
     for site in sites:
         if site.get('updated'):
