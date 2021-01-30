@@ -33,7 +33,7 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(o, ObjectId):
             return str(o)
         if isinstance(o, pymongo.cursor.Cursor):
-            o = list(list(json.JSONEncoder.default(self, x) for x in o))
+            o = list(list(JSONEncoder.default(self, x) for x in o))
             return json.dumps(o)
         if isinstance(o, dict):
             o = json.dumps(o)
