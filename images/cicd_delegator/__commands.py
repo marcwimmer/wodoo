@@ -58,7 +58,6 @@ def clear(config):
 @pass_config
 def do_list(config):
     reg = requests.get(config.url + "/sites").json()
-    reg = json.loads(reg) # WHHYYYYYYYY?
     click.secho("Registered Sites: ", fg='green')
     for site in reg.get('sites', []):
         click.secho(f"\t{site['name']}", fg='green')
