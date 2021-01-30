@@ -9,6 +9,7 @@ import hashlib
 import os
 import tempfile
 import click
+from .tools import sync_folder
 from .tools import __dcrun
 from .tools import __assert_file_exists
 from .tools import __safe_filename
@@ -138,6 +139,11 @@ def download_openupgrade(ctx, config, version, download):
     if download:
         dir_openupgrade = tempfile.mktemp()
         subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', 'version', 'https://github.com/OCA/OpenUpgrade'])
+        sync_folder(
+            dir_openupgrade
+            config.files[]
+            excludes=['.git'],
+        )
 
 
     pass
