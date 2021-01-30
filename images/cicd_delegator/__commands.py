@@ -278,6 +278,7 @@ def _update_docker_compose(config):
     values = {
         "__CICD_NETWORK_NAME__": config.CICD_NETWORK,
         "__CICD_BINDING__": config.CICD_BINDING,
+        "__CICD_INDEX_BINDING__": config.CICD_INDEX_BINDING,
     }
     for k, v in values.items():
         if v is None:
