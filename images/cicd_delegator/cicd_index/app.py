@@ -135,6 +135,9 @@ def index():
     pudb.set_trace()
     for site in sites:
         for k in site:
+            if k == 'last_access':
+                import pudb
+                pudb.set_trace()
             try:
                 site[k] = arrow.get(k).to(os.environ['DISPLAY_TIMEZONE'])
             except arrow.parser.ParserError:
