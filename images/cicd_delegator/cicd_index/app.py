@@ -58,6 +58,8 @@ def last_access():
 
 @app.route("/sites")
 def show_sites():
+    import pudb
+    pudb.set_trace()
     return jsonify(db.sites.find())
 
 @app.route("/activate", methods=['GET'])
