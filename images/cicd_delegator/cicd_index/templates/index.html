@@ -40,7 +40,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for link in sorted(sites, key=lambda x: x['index'], reverse=True) %}
+                            {% for link in sites: %}
                             <tr>
                                 <td>{{link['index']}}</td>
                                 <td>
