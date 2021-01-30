@@ -127,6 +127,8 @@ def site():
 @app.route('/')
 def index():
 
+    import pudb
+    pudb.set_trace()
     sites = list(db.sites.find({'enabled': True}))
 
     for site in sites:
