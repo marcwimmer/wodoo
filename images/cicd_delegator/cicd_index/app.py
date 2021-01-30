@@ -6,6 +6,7 @@ from flask import render_template
 from datetime import datetime
 from flask import request
 from bson import ObjectId
+from itertools import groupby
 
 
 import json
@@ -98,6 +99,8 @@ def index():
             site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
     sites = list(filter(lambda x: x.get('enabled'), sites))
+
+    groupby(sites, lambda x: x['git_branch'])
 
     return render_template(
         'index.html',
