@@ -135,13 +135,11 @@ def run_tests(ctx, config):
 @click.option('--version', help="Destination Version", required=True)
 @click.pass_context
 def download_openupgrade(ctx, config, version):
-    import pudb
-    pudb.set_trace()
     dir_openupgrade = Path(tempfile.mktemp())
     subprocess.check_call(['/usr/bin/git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
     sync_folder(
         dir_openupgrade / 'openupgrade',
-        config.dirs['customs'] / '/odoo',
+        config.dirs['customs'] / 'odoo',
         excludes=['.git'],
     )
     shutil.rmtree(dir_openupgrade)
