@@ -59,8 +59,6 @@ def clear(config):
 @cicd.command(name="list")
 @pass_config
 def do_list(config):
-    import pudb
-    pudb.set_trace()
     reg = requests.get(url + "/sites").json()
     reg = json.loads(reg) # WHHYYYYYYYY?
     click.secho("Registered Sites: ", fg='green')
