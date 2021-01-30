@@ -199,7 +199,7 @@ def debug(config, machine):
         machine,
     ], cwd=config.dirs['cicd_delegator'])
 
-    cmd = ['docker-compose', 'run', '--rm', '--service-ports', machine]
+    cmd = ['docker-compose', 'run', '--name', machine, '--rm', '--service-ports', machine]
 
     subprocess.check_call(
         cmd,
