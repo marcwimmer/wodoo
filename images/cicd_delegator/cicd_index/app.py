@@ -76,9 +76,7 @@ def next_instance_name():
     key = request.args.get('branch')
     assert branch
     assert key
-    sites = db.sites.find({'git_branch': branch})
-    import pudb
-    pudb.set_trace()
+    sites = list(db.sites.find({'git_branch': branch}))
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
 
     info = {
