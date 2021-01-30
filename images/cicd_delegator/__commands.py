@@ -30,8 +30,6 @@ def _require_project(config):
 @cli.group(cls=AliasedGroup)
 @pass_config
 def cicd(config):
-    import pudb
-    pudb.set_trace()
     config.url = 'http://' + config.cicd_index_binding
 
 @cicd.command()
@@ -40,7 +38,7 @@ def cicd(config):
 @pass_config
 def ask(config, key, branch):
     click.secho("---")
-    response = requests.get(url + '/site', params={'branch': branch, 'key': key})
+    response = requests.get(config.url + '/site', params={'branch': branch, 'key': key})
     click.secho(json.dumps(response.json() or {}, indent=4))
 
 @cicd.command()
@@ -59,7 +57,7 @@ def clear(config):
 @cicd.command(name="list")
 @pass_config
 def do_list(config):
-    reg = requests.get(url + "/sites").json()
+    reg = requests.get(config.url + "/sites").json()
     reg = json.loads(reg) # WHHYYYYYYYY?
     click.secho("Registered Sites: ", fg='green')
     for site in reg.get('sites', []):
@@ -69,7 +67,7 @@ def do_list(config):
 @pass_config
 @click.pass_context
 def unregister(ctx, config):
-    requests.post(url + "/site/unregister", params={"site": config.project_name}).raise_for_status()
+    requests.post(config.url + "/site/unregister", params={"site": config.project_name}).raise_for_status()
 
     files = []
     files.append(config.files['project_docker_compose.home.project'])
@@ -103,7 +101,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 
     if not git_branch:
         raise Exception("required git branch!")
-    response = requests.get(url + "/previous_instance", params={"branch": git_branch})
+    response = requests.get(config.url + "/previous_instance", params={"branch": git_branch})
     print(response.text)
     prev_instance = response.json()
     site = {}
@@ -123,7 +121,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         if current_sha:
             site['diff_modules'] = Modules.get_changed_modules(current_sha)
 
-    requests.post(url + '/register', json=site).raise_for_status()
+    requests.post(config.url + '/register', json=site).raise_for_status()
     Commands.invoke(
         ctx,
         'up',
@@ -136,7 +134,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 @pass_config
 def notify_created(config):
     _require_project(config)
-    requests.get(url + "/activate", params={"site": config.project_name})
+    requests.get(config.url + "/activate", params={"site": config.project_name})
 
 @cicd.command()
 @pass_config
