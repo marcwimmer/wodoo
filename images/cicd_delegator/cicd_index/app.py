@@ -81,6 +81,7 @@ def register_site():
         site = dict(request.json)
         sites = db.sites.find({'git_branch': site['git_branch']})
         index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
+        site['name'] = f"{site['git_branch']}_{site['key']}_{index}"
         site['index'] = index
         site['enabled'] = False
         db.sites.insert_one(site)
