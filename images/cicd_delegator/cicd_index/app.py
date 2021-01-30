@@ -54,8 +54,7 @@ def register_site():
     if request.method == 'POST':
         import pudb
         pudb.set_trace()
-        data = request.form
-        site = data['site']
+        site = request.form
         index = db.sites.find({'git_branch': site['git_branch']}).Count() + 1
         site['index'] = index
         db.sites.insert_one(data['site'])
