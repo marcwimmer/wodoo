@@ -91,6 +91,8 @@ def next_instance_name():
 
 @app.route('/register', methods=['POST'])
 def register_site():
+    import pudb
+    pudb.set_trace()
     if request.method == 'POST':
         site = dict(request.json)
         site['index'] = index
