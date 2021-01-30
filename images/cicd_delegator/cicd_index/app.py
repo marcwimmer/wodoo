@@ -87,10 +87,13 @@ def previous_instance():
 
 @app.route("/site", methods=["GET"])
 def site():
-    site = request.args.get('site')
-    if not site:
-        raise Exception("Missing site")
-    site = db.sites.find_one({'name': site})
+    q = {}
+    for key in [
+        'site', 'key', 'branch',
+    ]:
+        if request.args.get(key):
+            q[key] = request.args.get(key)
+    site = db.sites.find(q)
     return jsonify(site)
 
 @app.route('/')
