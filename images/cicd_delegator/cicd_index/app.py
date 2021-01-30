@@ -32,7 +32,7 @@ def show_sites():
     return jsonify(db.sites.find())
 
 @app.route("/activate", methods=['GET'])
-def active():
+def activate():
     site = request.args.get('site')
     if not site:
         raise Exception("Site missing")
