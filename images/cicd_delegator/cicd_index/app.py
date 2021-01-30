@@ -50,6 +50,7 @@ def register_site():
         site = dict(request.form)
         index = db.sites.count_documents({'git_branch': site['git_branch']}) + 1
         site['index'] = index
+        site['enabled'] = False
         db.sites.insert_one(site)
         return jsonify({'result': 'ok'})
     raise Exception("only POST")
