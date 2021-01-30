@@ -85,7 +85,7 @@ def register_site():
         site['index'] = index
         site['enabled'] = False
         db.sites.insert_one(site)
-        return jsonify({'result': 'ok'})
+        return jsonify({'result': 'ok', 'name': site['name']})
     raise Exception("only POST")
 
 @app.route("/previous_instance", methods=["GET"])
