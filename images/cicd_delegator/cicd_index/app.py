@@ -37,7 +37,10 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
 
         if isinstance(o, pymongo.cursor.Cursor):
-            o = list(o)
+            return ','.join([
+                super(JSONEncoder, self).default(x)
+                for x in o
+            ])
 
         return super(JSONEncoder, self).default(o)
 
@@ -60,7 +63,7 @@ def last_access():
 def show_sites():
     import pudb
     pudb.set_trace()
-    return jsonify(db.sites.find())
+    return jsonify(list(db.sites.find()))
 
 @app.route("/activate", methods=['GET'])
 def activate():
