@@ -129,11 +129,17 @@ def run_tests(ctx, config):
             click.secho(str(mod), fg='green')
         click.secho("Tests OK", fg='green')
 
-@odoo_module.command()
+@odoo_module.command(name='download-openupgrade')
 @pass_config
-@click.option('--version', help="Destination Version")
+@click.option('--version', help="Destination Version", required=True)
+@click.option('--download', help="Download Openupgrade")
 @click.pass_context
-def migrate(ctx, config, version):
+def download_openupgrade(ctx, config, version, download):
+    if download:
+        dir_openupgrade = tempfile.mktemp()
+        subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', 'version', 'https://github.com/OCA/OpenUpgrade'])
+
+
     pass
 
 
