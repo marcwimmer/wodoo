@@ -128,7 +128,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         'up',
         daemon=True,
     )
-    ctx.invoke(do_list)
 
 @cicd.command()
 @pass_config
