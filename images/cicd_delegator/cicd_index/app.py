@@ -51,6 +51,8 @@ def register_site():
         index = db.sites.count_documents({'git_branch': site['git_branch']}) + 1
         site['index'] = index
         db.sites.insert_one(site)
+        return jsonify({'result': 'ok'})
+    raise Exception("only POST")
 
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance():
