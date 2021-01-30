@@ -78,7 +78,17 @@ def next_instance_name():
     assert key
     sites = db.sites.find({'git_branch': branch})
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
-    return f"{site['git_branch']}_{site['key']}_{index}"
+    commit_before = ""
+    if index:
+        site = [x for x in sites if x['index'] == index]
+        commit_before = site[0]['git_sha']
+    return jsonify({
+        'name': f"{site['git_branch']}_{site['key']}_{index + 1}",
+        'commit_before': commit_before,
+    })
+
+
+    return
 
 @app.route('/register', methods=['POST'])
 def register_site():
