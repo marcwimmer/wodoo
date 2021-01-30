@@ -70,6 +70,7 @@ def activate():
         'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         'enabled': True,
     }}, upsert=False)
+    return jsonify({'result': 'ok'})
 
 @app.route("/next_instance")
 def next_instance_name():
