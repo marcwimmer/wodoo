@@ -35,11 +35,12 @@ def cicd(config):
     pass
 
 @cicd.command()
-@click.argument("branch", name="Git branch")
+@click.option("--key")
+@click.option("--branch")
 @pass_config
-def ask(config, branch_name):
+def ask(config, key, branch):
     click.secho("---")
-    response = requests.get(url + '/site', params={'branch': branch_name})
+    response = requests.get(url + '/site', params={'branch': branch, 'key': key})
     click.secho(json.dumps(response.json() or {}, indent=4))
 
 @cicd.command()
