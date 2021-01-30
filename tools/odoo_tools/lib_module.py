@@ -144,6 +144,7 @@ def download_openupgrade(ctx, config, version):
         config.dirs['working_dir'] / '/odoo',
         excludes=['.git'],
     )
+    shutil.rmtree(dir_openupgrade)
 
 
 @odoo_module.command()
