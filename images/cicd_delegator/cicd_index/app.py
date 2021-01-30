@@ -28,6 +28,7 @@ app = Flask(
 )
 
 class JSONEncoder(json.JSONEncoder):
+    # for encoding ObjectId
     def default(self, o):
         if isinstance(o, ObjectId):
             return str(o)
