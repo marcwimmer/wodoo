@@ -26,10 +26,19 @@ app = Flask(
     static_folder='/_static_index_files',
 )
 
+class JSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        return json.JSONEncoder.default(self, o)
+
 
 @app.route("/sites")
 def show_sites():
-    return jsonify(db.sites.find())
+    return  json.JSONEncoder.default(self, o)
+
+    return JSONEncoder().encode(db.sites.find())
+    return jsonify()
 
 @app.route("/activate", methods=['GET'])
 def activate():
