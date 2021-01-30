@@ -126,7 +126,7 @@ def site():
 @app.route('/')
 def index():
 
-    sites = db.sites.find()
+    sites = list(db.sites.find())
 
     for site in sites:
         if site.get('updated'):
