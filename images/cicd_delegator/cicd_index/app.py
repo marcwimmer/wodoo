@@ -127,13 +127,12 @@ def site():
 @app.route('/')
 def index():
 
-    sites = list(db.sites.find())
+    sites = list(db.sites.find({'enabled': True}))
 
     for site in sites:
         if site.get('updated'):
             site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
-    sites = list(filter(lambda x: x.get('enabled'), sites))
 
     sites = list(groupby(sites, itemgetter('git_branch')))
 
