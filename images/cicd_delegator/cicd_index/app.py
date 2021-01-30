@@ -131,6 +131,8 @@ def index():
 
     sites = list(db.sites.find({'enabled': True}))
 
+    import pudb
+    pudb.set_trace()
     for site in sites:
         for k in site:
             try:
