@@ -32,7 +32,9 @@ def _require_project(config):
 @cli.group(cls=AliasedGroup)
 @pass_config
 def cicd(config):
-    pass
+    import pudb
+    pudb.set_trace()
+    config.url = config.cicd_index_binding
 
 @cicd.command()
 @click.option("--key")
