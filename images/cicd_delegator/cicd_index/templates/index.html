@@ -20,10 +20,10 @@
             </tr>
         </thead>
         <tbody>
-            {% for branch in sites: %}
+            {% for branch, sites in sites: %}
             <tr>
                 <td>
-                    {{branch[0]}}
+                    {{branch}}
                 </td>
             </tr>
             <tr>
@@ -40,7 +40,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for link in branch[1] %}
+                            {% for link in sites %}
                             <tr>
                                 <td>
                                     <a href="/{{link['name']}}/__start_cicd">
