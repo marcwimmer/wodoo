@@ -133,6 +133,8 @@ def index():
 
     for site in sites:
         for k in site:
+            if not isinstance(site[k], str):
+                continue
             try:
                 site[k] = arrow.get(site[k]).to(os.environ['DISPLAY_TIMEZONE'])
             except arrow.parser.ParserError:
