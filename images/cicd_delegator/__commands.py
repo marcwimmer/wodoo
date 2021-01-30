@@ -81,12 +81,13 @@ def unregister(ctx, config):
 @click.option("-a", "--author", required=False)
 @click.option("-l", "--local", is_flag=True)
 @click.option("-t", "--title")
+@click.option("-k", "--key", required=True)
 @click.option("-b", "--git-branch")
 @click.option("--git-sha")
 @click.option("--initiator")
 @pass_config
 @click.pass_context
-def register(ctx, config, desc, author, local, title, initiator, git_branch, git_sha):
+def register(ctx, config, desc, author, local, title, initiator, git_branch, git_sha, key):
     # reload current odoo
     from odoo_tools.click_config import Config
     from odoo_tools.module_tools import Modules
@@ -108,6 +109,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['name'] = config.project_name
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['title'] = title
+    site['key'] = key
     site['initiator'] = initiator
     site['description'] = desc
     site['author'] = author
