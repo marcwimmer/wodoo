@@ -94,6 +94,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 
     # prepare network configuration
     update_project_configs(config)
+    # TODO undo
     # internal_reload(
         # config, config.dbname, demo=False,
         # devmode=config.devmode_as_bool, headless=True, local=False,
