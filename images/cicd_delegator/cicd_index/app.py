@@ -77,7 +77,8 @@ def activate():
 def register_site():
     if request.method == 'POST':
         site = dict(request.json)
-        index = db.sites.count_documents({'git_branch': site['git_branch']}) + 1
+        sites = db.sites.find({'git_branch': site['git_branch']})
+        index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
         site['index'] = index
         site['enabled'] = False
         db.sites.insert_one(site)
