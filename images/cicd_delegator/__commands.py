@@ -22,8 +22,6 @@ from odoo_tools import cli, pass_config, Commands
 from odoo_tools.lib_composer import internal_reload
 from odoo_tools.tools import _askcontinue
 
-url = "http://127.0.0.1:8889"
-
 def _require_project(config):
     if not config.project_name:
         click.secho("Missing project name.")
@@ -34,7 +32,7 @@ def _require_project(config):
 def cicd(config):
     import pudb
     pudb.set_trace()
-    config.url = config.cicd_index_binding
+    config.url = 'http://' + config.cicd_index_binding
 
 @cicd.command()
 @click.option("--key")
