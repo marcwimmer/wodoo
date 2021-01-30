@@ -139,9 +139,7 @@ def index():
     sites_grouped = defaultdict(list)
     for site in sites:
         sites_grouped[site['git_branch']].append(site)
-    import pudb
-    pudb.set_trace()
-    for site in sites:
+    for site in sites_grouped:
         sites_grouped[site] = sorted(sites_grouped[site], key=lambda x: x['index'], reverse=True)
 
     return render_template(
