@@ -50,8 +50,7 @@ def register_site():
         import pudb
         pudb.set_trace()
         site = request.form
-        # index = db.sites.find({'git_branch': site['git_branch']}).Count() + 1 # TODO
-        index = db.sites.find({'git_branch': site['git_branch']}).Count() + 1
+        index = db.sites.find({'git_branch': site['git_branch']}).count_documents() + 1
         site['index'] = index
         db.sites.insert_one(site)
 
