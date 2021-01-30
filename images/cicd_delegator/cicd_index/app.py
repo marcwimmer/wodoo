@@ -136,8 +136,6 @@ def index():
             try:
                 site[k] = arrow.get(k).to(os.environ['DISPLAY_TIMEZONE'])
             except arrow.parser.ParserError:
-                import pudb
-                pudb.set_tracearrow.parser.ParserError()
                 pass
     sites = sorted(sites, key=arrow.parser.ParserErrorlambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
 
