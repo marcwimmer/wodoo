@@ -45,7 +45,7 @@ app.json_encoder = JSONEncoder
 def last_access():
     if not request.args.get('site'):
         raise Exception('site missing')
-    site = db.sites.find_one({'name': site})
+    site = db.sites.find_one({'name': request.args.get('site')})
     if site:
         db.sites.update_one({
             '_id': site['_id'],
