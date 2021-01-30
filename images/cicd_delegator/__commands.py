@@ -40,11 +40,7 @@ def cicd(config):
 def ask(config, branch_name):
     click.secho("---")
     response = requests.get(url + '/site', params={'branch': branch_name})
-    try:
-        data = response.json()
-    except Exception:
-        raise Exception(response.text)
-    click.secho(json.dumps(data or {}, indent=4))
+    click.secho(json.dumps(response.json() or {}, indent=4))
 
 @cicd.command()
 @pass_config
