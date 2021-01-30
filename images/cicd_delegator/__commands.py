@@ -57,9 +57,9 @@ def clear(config):
 @cicd.command(name="list")
 @pass_config
 def do_list(config):
-    reg = requests.get(config.url + "/sites").json()
+    sites = requests.get(config.url + "/sites").json()
     click.secho("Registered Sites: ", fg='green')
-    for site in reg.get('sites', []):
+    for site in sites:
         click.secho(f"\t{site['name']}", fg='green')
 
 @cicd.command()
