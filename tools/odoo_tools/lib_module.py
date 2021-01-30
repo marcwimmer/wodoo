@@ -133,17 +133,17 @@ def run_tests(ctx, config):
 @odoo_module.command(name='download-openupgrade')
 @pass_config
 @click.option('--version', help="Destination Version", required=True)
-@click.option('--download', help="Download Openupgrade")
 @click.pass_context
-def download_openupgrade(ctx, config, version, download):
-    if download:
-        dir_openupgrade = tempfile.mktemp()
-        subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', 'version', 'https://github.com/OCA/OpenUpgrade'])
-        sync_folder(
-            dir_openupgrade,
-            config.dirs['working_dir'] / '/odoo'
-            excludes=['.git'],
-        )
+def download_openupgrade(ctx, config, version):
+    import pudb
+    pudb.set_trace()
+    dir_openupgrade = tempfile.mktemp()
+    subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', 'version', 'https://github.com/OCA/OpenUpgrade'])
+    sync_folder(
+        dir_openupgrade,
+        config.dirs['working_dir'] / '/odoo'
+        excludes=['.git'],
+    )
 
 
 @odoo_module.command()
