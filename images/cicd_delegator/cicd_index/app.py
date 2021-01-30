@@ -140,7 +140,7 @@ def index():
 
     return render_template(
         'index.html',
-        sites=sites,
+        sites=sites_grouped,
         DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
     )
 
