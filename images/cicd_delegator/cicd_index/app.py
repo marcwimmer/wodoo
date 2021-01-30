@@ -87,9 +87,6 @@ def next_instance_name():
         'commit_before': commit_before,
     })
 
-
-    return
-
 @app.route('/register', methods=['POST'])
 def register_site():
     if request.method == 'POST':
