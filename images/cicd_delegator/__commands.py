@@ -117,8 +117,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_sha'] = git_sha
     site['diff_modules'] = []
     site['index'] = int(index)
-    import pudb
-    pudb.set_trace()
     # get the previous instance by branch
     if prev_instance:
         current_sha = prev_instance.get('git', {}).get('sha')
