@@ -60,6 +60,7 @@ def clear(config):
 @pass_config
 def do_list(config):
     reg = requests.get(url + "/sites").json()
+    raise Exception(reg)
     click.secho("Registered Sites: ", fg='green')
     for site in reg.get('sites', []):
         click.secho(f"\t{site['name']}", fg='green')
