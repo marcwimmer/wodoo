@@ -8,9 +8,6 @@ from flask import request
 from bson import ObjectId
 from itertools import groupby
 import pymongo
-
-
-
 import json
 from pathlib import Path
 
