@@ -57,7 +57,7 @@ def register_site():
         site = request.form
         index = db.sites.find({'git_branch': site['git_branch']}).Count() + 1
         site['index'] = index
-        db.sites.insert_one(data['site'])
+        db.sites.insert_one(site)
 
 @app.route("/previous_instance", methods=["GET"])
 def previous_instance():
