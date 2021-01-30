@@ -12,38 +12,53 @@
         {% include "static/js/uikit.js"%}
         {% include "static/js/uikit-icons.js"%}
     </script>
-    <table class="uk-table uk-table-divider uk-table-striped uk-table-hover uk-table-small">
-        <caption>Tickets/Branches/Projects</caption>
+
+    <table>
         <thead>
             <tr>
-                <th>Branch</th>
-                <th>Title</th>
-                <th>Updated</th>
-                <th>Description</th>
-                <th>Last Author</th>
-                <th>Last Accessed</th>
+                Branch
             </tr>
         </thead>
         <tbody>
-            {% for link in sites %}
+            {% for branch in sites %}
             <tr>
                 <td>
-                    <a href="/{{link['name']}}/__start_cicd">
-                    {{link['name']}}
-                    </a>
+                    {{branch}}
                 </td>
-                <td>{{link.get('title')}}</td>
-                <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
-                <td>{{link.get('description')}}</td>
-                <td>{{link.get('author')}}</td>
-                <td>{{link.get('last_access') and link.get('last_access').strftime(DATE_FORMAT)}}</td>
             </tr>
             <tr>
-                <td colspan="6">
-                    <table>
+                <td>
+                    <table class="uk-table uk-table-divider uk-table-striped uk-table-hover uk-table-small">
+                        <caption>Tickets/Branches/Projects</caption>
                         <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th>Title</th>
+                                <th>Updated</th>
+                                <th>Description</th>
+                                <th>Last Author</th>
+                                <th>Last Accessed</th>
+                            </tr>
                         </thead>
                         <tbody>
+                            {% for link in sites %}
+                            <tr>
+                                <td>
+                                    <a href="/{{link['name']}}/__start_cicd">
+                                    {{link['name']}}
+                                    </a>
+                                </td>
+                                <td>{{link.get('title')}}</td>
+                                <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
+                                <td>{{link.get('description')}}</td>
+                                <td>{{link.get('author')}}</td>
+                                <td>{{link.get('last_access') and link.get('last_access').strftime(DATE_FORMAT)}}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="6">
+                                </td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </td>
@@ -51,4 +66,6 @@
             {% endfor %}
         </tbody>
     </table>
+
+
 </html>
