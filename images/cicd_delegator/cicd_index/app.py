@@ -73,7 +73,7 @@ def activate():
 @app.route("/next_instance")
 def next_instance_name():
     branch = request.args.get('branch')
-    key = request.args.get('branch')
+    key = request.args.get('key')
     assert branch
     assert key
     sites = list(db.sites.find({'git_branch': branch}))
