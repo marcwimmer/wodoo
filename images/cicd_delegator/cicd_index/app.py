@@ -79,7 +79,7 @@ def index():
 
     import pudb
     pudb.set_trace()
-    sites = db.cicd_sites.find()
+    sites = db.sites.find()
 
     for site in sites:
         if site.get('updated'):
