@@ -81,6 +81,7 @@ def next_instance_name():
     key = request.args.get('branch')
     assert branch
     assert key
+        sites = db.sites.find({'git_branch': site['git_branch']})
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
     return f"{site['git_branch']}_{site['key']}_{index}"
 
@@ -90,7 +91,6 @@ def register_site():
     pudb.set_trace()
     if request.method == 'POST':
         site = dict(request.json)
-        sites = db.sites.find({'git_branch': site['git_branch']})
         site['index'] = index
         site['enabled'] = False
         db.sites.insert_one(site)
