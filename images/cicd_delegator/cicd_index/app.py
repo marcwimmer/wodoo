@@ -31,16 +31,8 @@ app = Flask(
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
     def default(self, o):
-        import pudb
-        pudb.set_trace()
         if isinstance(o, ObjectId):
             return str(o)
-
-        if isinstance(o, pymongo.cursor.Cursor):
-            return ','.join([
-                super(JSONEncoder, self).default(x)
-                for x in o
-            ])
 
         return super(JSONEncoder, self).default(o)
 
