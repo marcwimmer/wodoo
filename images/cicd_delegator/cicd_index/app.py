@@ -79,14 +79,14 @@ def next_instance_name():
     sites = db.sites.find({'git_branch': branch})
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
 
-    info = {
-        'name': f"{site['git_branch']}_{site['key']}_{index + 1}",
-        'commit_before': '',
-    }
     if index:
         site = [x for x in sites if x['index'] == index]
         info['commit_before'] = site[0]['git_sha']
         info['prev_name'] = site[0]['name']
+    info = {
+        'name': f"{branch}_{key}_{index + 1}",
+        'commit_before': '',
+    }
     return jsonify(info)
 
 @app.route('/register', methods=['POST'])
