@@ -77,7 +77,7 @@ def site():
 @app.route('/')
 def index():
 
-    sites = db.sites.find()
+    sites = db.cicd_sites.find()
 
     for site in sites:
         if site.get('updated'):
