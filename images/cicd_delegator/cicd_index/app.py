@@ -38,9 +38,6 @@ class JSONEncoder(json.JSONEncoder):
             o = list(o)
             return json.dumps(o, cls=JSONEncoder)
 
-        if isinstance(o, dict):
-            return json.dumps(o, cls=JSONEncoder)
-
         return json.JSONEncoder.default(self, o)
 
 
