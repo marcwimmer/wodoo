@@ -131,15 +131,10 @@ def index():
 
     sites = list(db.sites.find({'enabled': True}))
 
-    import pudb
-    pudb.set_trace()
     for site in sites:
         for k in site:
-            if k == 'last_access':
-                import pudb
-                pudb.set_trace()
             try:
-                site[k] = arrow.get(k).to(os.environ['DISPLAY_TIMEZONE'])
+                site[k] = arrow.get(site[k]).to(os.environ['DISPLAY_TIMEZONE'])
             except arrow.parser.ParserError:
                 continue
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
