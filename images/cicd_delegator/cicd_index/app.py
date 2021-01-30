@@ -26,11 +26,6 @@ app = Flask(
     static_folder='/_static_index_files',
 )
 
-def augment_reg(reg):
-    for site in reg['sites']:
-        last_access_file = Path(os.environ['REGISTRY_SITES']) / site['name'] / 'last_access'
-        if last_access_file.exists():
-            site['last_access'] = arrow.get(last_access_file.read_text()).to(os.environ['DISPLAY_TIMEZONE'])
 
 @app.route("/sites")
 def show_sites():
@@ -82,11 +77,9 @@ def site():
 @app.route('/')
 def index():
 
-    reg = json.loads(Path("/registry.json").read_text())
+    sites = db.sites.find()
 
-    augment_reg(reg)
-
-    for site in reg['sites']:
+    for site in sites:
         if site.get('updated'):
             site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
     reg['sites'] = sorted(reg['sites'], key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
