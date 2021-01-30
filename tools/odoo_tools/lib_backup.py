@@ -86,8 +86,6 @@ def backup_calendar(config):
 @click.argument('filename', required=False, default="")
 @click.option('--dbname', required=False)
 def backup_db(ctx, config, filename, dbname):
-    import pudb
-    pudb.set_trace()
     filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
     cmd = [
         'run',
