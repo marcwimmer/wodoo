@@ -139,6 +139,8 @@ def index():
     sites_grouped = defaultdict(list)
     for site in sites:
         sites_grouped[site['git_branch']].append(site)
+    for site in sites:
+        sites_grouped[site] = sorted(sites_grouped[site], key=lambda x: x['index'], reverse=True)
 
     return render_template(
         'index.html',
