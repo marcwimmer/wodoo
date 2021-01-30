@@ -129,6 +129,13 @@ def run_tests(ctx, config):
             click.secho(str(mod), fg='green')
         click.secho("Tests OK", fg='green')
 
+@odoo_module.command()
+@pass_config
+@click.option('--version', help="Destination Version")
+@click.pass_context
+def migrate(ctx, config, version):
+    pass
+
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
