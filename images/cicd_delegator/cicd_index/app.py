@@ -40,7 +40,9 @@ app.json_encoder = JSONEncoder
 
 @app.route("/sites")
 def show_sites():
-    return jsonify(ldb.sites.find())
+    import pudb
+    pudb.set_trace()
+    return jsonify(list(db.sites.find()))
 
 @app.route("/activate", methods=['GET'])
 def activate():
