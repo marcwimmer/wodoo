@@ -136,7 +136,7 @@ def index():
             site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
 
-    sites = list(groupby(sites, itemgetter('git_branch')))
+    sites = list(groupby(sites, key=itemgetter('git_branch')))
 
     return render_template(
         'index.html',
