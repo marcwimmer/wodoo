@@ -122,7 +122,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
         if current_sha:
             site['diff_modules'] = Modules.get_changed_modules(current_sha)
 
-    requests.post(url + '/register', data=site).raise_for_status()
+    requests.post(url + '/register', json=site).raise_for_status()
     Commands.invoke(
         ctx,
         'up',
