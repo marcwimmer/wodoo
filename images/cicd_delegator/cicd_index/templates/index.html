@@ -31,6 +31,7 @@
                     <table class="uk-table uk-table-divider uk-table-striped uk-table-hover uk-table-small">
                         <thead>
                             <tr>
+                                <th>Index</th>
                                 <th>Title</th>
                                 <th>Updated</th>
                                 <th>Description</th>
@@ -41,6 +42,7 @@
                         <tbody>
                             {% for link in sites %}
                             <tr>
+                                <td>{{link['index']}}</td>
                                 <td>
                                     <a href="/{{link['name']}}/__start_cicd">
                                     {{link['title']}}
