@@ -100,7 +100,7 @@ def index():
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
     sites = list(filter(lambda x: x.get('enabled'), sites))
 
-    groupby(sites, lambda x: x['git_branch'])
+    sites = groupby(sites, lambda x: x['git_branch'])
 
     return render_template(
         'index.html',
