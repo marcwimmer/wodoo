@@ -75,6 +75,15 @@ def activate():
         'enabled': True,
     }, upsert=False)
 
+@app.route("/next_instance_name")
+def next_instance_name():
+    branch = request.args.get('branch')
+    key = request.args.get('branch')
+    assert branch
+    assert key
+    index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
+    return f"{site['git_branch']}_{site['key']}_{index}"
+
 @app.route('/register', methods=['POST'])
 def register_site():
     import pudb
@@ -82,8 +91,6 @@ def register_site():
     if request.method == 'POST':
         site = dict(request.json)
         sites = db.sites.find({'git_branch': site['git_branch']})
-        index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
-        site['name'] = f"{site['git_branch']}_{site['key']}_{index}"
         site['index'] = index
         site['enabled'] = False
         db.sites.insert_one(site)
