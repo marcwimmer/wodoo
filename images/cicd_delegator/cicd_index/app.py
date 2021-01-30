@@ -39,7 +39,7 @@ class JSONEncoder(json.JSONEncoder):
         if isinstance(o, pymongo.cursor.Cursor):
             o = list(o)
 
-        return json.JSONEncoder.default(self, o)
+        return super(JSONEncoder, self).default(o)
 
 
 app.json_encoder = JSONEncoder
