@@ -80,13 +80,14 @@ def unregister(ctx, config):
 @click.option("-a", "--author", required=False)
 @click.option("-l", "--local", is_flag=True)
 @click.option("-t", "--title")
+@click.option("-i", "--index")
 @click.option("-k", "--key", required=True)
 @click.option("-b", "--git-branch")
 @click.option("--git-sha")
 @click.option("--initiator")
 @pass_config
 @click.pass_context
-def register(ctx, config, desc, author, local, title, initiator, git_branch, git_sha, key):
+def register(ctx, config, desc, author, local, title, initiator, git_branch, git_sha, key, index):
     # reload current odoo
     from odoo_tools.click_config import Config
     from odoo_tools.module_tools import Modules
@@ -115,6 +116,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_branch'] = git_branch
     site['git_sha'] = git_sha
     site['diff_modules'] = []
+    site['index'] = int(index)
     # get the previous instance by branch
     if prev_instance:
         current_sha = prev_instance.get('git', {}).get('sha')
