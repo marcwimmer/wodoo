@@ -47,7 +47,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if delegator_path:
             # set touched date:
-            requests.get(cicd_index_url + "/last_access", data={'site': delegator_path}).raise_for_status()
+            requests.get(cicd_index_url + "/last_access", params={'site': delegator_path}).raise_for_status()
 
         logger.debug(f"rewrite path: self.path: {self.path}, delegator_path: {delegator_path}")
 
