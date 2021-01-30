@@ -41,7 +41,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for link in sites %}
+                            {% for link in sites[branch] %}
                             <tr>
                                 <td>
                                     <a href="/{{link['name']}}/__start_cicd">
@@ -53,10 +53,6 @@
                                 <td>{{link.get('description')}}</td>
                                 <td>{{link.get('author')}}</td>
                                 <td>{{link.get('last_access') and link.get('last_access').strftime(DATE_FORMAT)}}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="6">
-                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
