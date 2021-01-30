@@ -6,7 +6,7 @@ from flask import render_template
 from datetime import datetime
 from flask import request
 from bson import ObjectId
-from itertools import groupby
+from collections import defaultdict
 import pymongo
 import json
 from pathlib import Path
@@ -136,7 +136,9 @@ def index():
             site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
 
-    sites = list(groupby(sites, key=itemgetter('git_branch')))
+    sites_grouped = defaultdict([])
+    for site in sites:
+        sites_grouped[site['git_branch']].append(site)
 
     return render_template(
         'index.html',
