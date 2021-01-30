@@ -35,10 +35,11 @@ def cicd(config):
     pass
 
 @cicd.command()
+@click.argument("branch", name="Git branch")
 @pass_config
-def ask(config):
+def ask(config, branch_name):
     click.secho("---")
-    response = requests.get(url + '/site', params={'site': config.project_name})
+    response = requests.get(url + '/site', params={'branch': branch_name})
     try:
         data = response.json()
     except Exception:
