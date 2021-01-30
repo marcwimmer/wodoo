@@ -94,11 +94,11 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 
     # prepare network configuration
     update_project_configs(config)
-    internal_reload(
-        config, config.dbname, demo=False,
-        devmode=config.devmode_as_bool, headless=True, local=False,
-        proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
-    )
+    # internal_reload(
+        # config, config.dbname, demo=False,
+        # devmode=config.devmode_as_bool, headless=True, local=False,
+        # proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
+    # )
 
     if not git_branch:
         raise Exception("required git branch!")
@@ -117,6 +117,8 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_sha'] = git_sha
     site['diff_modules'] = []
     site['index'] = int(index)
+    import pudb
+    pudb.set_trace()
     # get the previous instance by branch
     if prev_instance:
         current_sha = prev_instance.get('git', {}).get('sha')
