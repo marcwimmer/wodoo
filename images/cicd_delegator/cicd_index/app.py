@@ -93,7 +93,7 @@ def site():
     ]:
         if request.args.get(key):
             q[key] = request.args.get(key)
-    site = db.sites.find(q)
+    site = list(db.sites.find(q))
     return jsonify(site)
 
 @app.route('/')
