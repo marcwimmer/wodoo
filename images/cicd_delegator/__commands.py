@@ -115,7 +115,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['author'] = author
     site['git_branch'] = git_branch
     site['git_sha'] = git_sha
-    site['enabled'] = False
     site['diff_modules'] = []
     # get the previous instance by branch
     if prev_instance:
