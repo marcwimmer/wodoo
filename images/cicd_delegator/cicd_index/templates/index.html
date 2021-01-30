@@ -20,7 +20,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for branch in sites %}
+            {% for branch, sites in sites.items() %}
             <tr>
                 <td>
                     {{branch}}
