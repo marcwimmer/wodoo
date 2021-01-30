@@ -141,7 +141,7 @@ def download_openupgrade(ctx, config, version):
     subprocess.check_call(['/usr/bin/git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
     sync_folder(
         dir_openupgrade / 'openupgrade',
-        config.dirs['working_dir'] / '/odoo',
+        config.dirs['customs'] / '/odoo',
         excludes=['.git'],
     )
     shutil.rmtree(dir_openupgrade)
