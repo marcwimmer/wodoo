@@ -75,6 +75,8 @@ def activate():
 
 @app.route('/register', methods=['POST'])
 def register_site():
+    import pudb
+    pudb.set_trace()
     if request.method == 'POST':
         site = dict(request.json)
         sites = db.sites.find({'git_branch': site['git_branch']})
