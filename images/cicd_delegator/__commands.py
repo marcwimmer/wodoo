@@ -123,11 +123,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
             site['diff_modules'] = Modules.get_changed_modules(current_sha)
 
     requests.post(config.url + '/register', json=site).raise_for_status()
-    Commands.invoke(
-        ctx,
-        'up',
-        daemon=True,
-    )
 
 @cicd.command()
 @pass_config
