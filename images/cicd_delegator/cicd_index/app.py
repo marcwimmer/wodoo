@@ -32,6 +32,7 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
         return json.JSONEncoder.default(self, o)
 
+app.json_encoder = JSONEncoder
 
 @app.route("/sites")
 def show_sites():
