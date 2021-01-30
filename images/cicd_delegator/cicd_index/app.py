@@ -30,6 +30,7 @@ app = Flask(
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
     def default(self, o):
+        breakpoint()
         if isinstance(o, ObjectId):
             return str(o)
         return json.JSONEncoder.default(self, o)
