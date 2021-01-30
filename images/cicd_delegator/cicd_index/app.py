@@ -42,7 +42,10 @@ app.json_encoder = JSONEncoder
 
 @app.route("/sites")
 def show_sites():
-    return jsonify(db.sites.find())
+    branch_name = request.args.get('branch')
+    if not branch_name:
+        raise Exception("Missing branch_Name")
+    return jsonify(db.sites.find({'git_branch': branch_name}))
 
 @app.route("/activate", methods=['GET'])
 def activate():
