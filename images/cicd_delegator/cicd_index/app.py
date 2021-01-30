@@ -63,6 +63,8 @@ def activate():
     site = db.sites.find_one({'name': site})
     if not site:
         raise Exception(f"site not found: {site}")
+    import pudb
+    pudb.set_trace()
     db.sites.update_one({'_id': site['_id']}, {
         'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         'enabled': True,
