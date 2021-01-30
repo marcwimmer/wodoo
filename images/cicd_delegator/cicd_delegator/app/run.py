@@ -12,6 +12,8 @@ import logging
 import json
 from pathlib import Path
 
+cicd_index_url = "http://cicd_index:5000"
+
 FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.DEBUG)
@@ -24,9 +26,6 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
     def _merge_headers(self, *arrs):
         headers = sum(arrs)
         return headers
-
-    def _get_registry(self):
-        return json.loads(Path("/registry.json").read_text())
 
     def do_HEAD(self):
         self.do_GET(body=False)
@@ -61,7 +60,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                 path = '/'
             else:
                 path = '/' + '/'.join(path.split("/")[2:])
-            url = f'http://cicd_index:5000{path}'
+            url = f'{cicd_index_url}{path}'
         else:
             host = f"{delegator_path}_proxy"
             path = self.path.replace(f"/{delegator_path}", "")
