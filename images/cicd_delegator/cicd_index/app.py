@@ -65,7 +65,7 @@ def register_site():
     import pudb
     pudb.set_trace()
     if request.method == 'POST':
-        site = dict(request.form)
+        site = dict(request.json)
         index = db.sites.count_documents({'git_branch': site['git_branch']}) + 1
         site['index'] = index
         site['enabled'] = False
