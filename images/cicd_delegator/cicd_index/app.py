@@ -49,7 +49,7 @@ def register_site():
     if request.method == 'POST':
         import pudb
         pudb.set_trace()
-        site = request.form
+        site = dict(request.form)
         index = db.sites.count_documents({'git_branch': site['git_branch']}) + 1
         site['index'] = index
         db.sites.insert_one(site)
