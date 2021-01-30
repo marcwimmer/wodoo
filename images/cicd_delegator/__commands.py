@@ -109,7 +109,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['name'] = config.project_name
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['title'] = title
-    site['key'] = key
+    site['key'] = key # example: demo, live, kept
     site['initiator'] = initiator
     site['description'] = desc
     site['author'] = author
