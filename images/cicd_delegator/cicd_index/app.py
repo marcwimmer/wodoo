@@ -134,9 +134,13 @@ def index():
     import pudb
     pudb.set_trace()
     for site in sites:
-        for f in ['last_access', 'updated']:
-            if site.get(f):
-                site[f] = arrow.get(site[f]).to(os.environ['DISPLAY_TIMEZONE'])
+        for k in site:
+            try:
+                arrow.get(k).to(os.environ['DISPLAY_TIMEZONE'])
+            except Exception as e:
+                import pudb
+                pudb.set_trace()
+                pass
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
 
     sites_grouped = defaultdict(list)
