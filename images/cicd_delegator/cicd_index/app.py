@@ -40,7 +40,7 @@ app.json_encoder = JSONEncoder
 
 @app.route("/sites")
 def show_sites():
-    return jsonify(db.sites.find())
+    return jsonify(ldb.sites.find())
 
 @app.route("/activate", methods=['GET'])
 def activate():
