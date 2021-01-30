@@ -87,6 +87,7 @@ def next_instance_name():
         info['commit_before'] = site[0]['git_sha']
         info['prev_name'] = site[0]['name']
     info['name'] = f"{branch}_{key}_{index + 1}"
+    info['index'] = index + 1
     return jsonify(info)
 
 @app.route('/register', methods=['POST'])
@@ -95,7 +96,6 @@ def register_site():
     pudb.set_trace()
     if request.method == 'POST':
         site = dict(request.json)
-        site['index'] = index
         site['enabled'] = False
         db.sites.insert_one(site)
         return jsonify({'result': 'ok', 'name': site['name']})
