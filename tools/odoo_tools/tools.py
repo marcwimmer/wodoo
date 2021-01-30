@@ -224,16 +224,17 @@ def _makedirs(path):
 
 def _remove_postgres_connections(connection, sql_afterwards=""):
     click.echo("Removing all current connections from {}".format(connection.dbname))
-    if _exists_db(connection):
-        SQL = """
-            SELECT pg_terminate_backend(pg_stat_activity.pid)
-            FROM pg_stat_activity
-            WHERE pg_stat_activity.datname = '{}'
-            AND pid <> pg_backend_pid();
-        """.format(connection.dbname, sql_afterwards)
-        _execute_sql(connection.clone(dbname='template1'), SQL, notransaction=True)
-        if sql_afterwards:
-            _execute_sql(connection.clone(dbname='template1'), sql_afterwards, notransaction=True)
+    if os.getenv("POSTGRES_DONT_DROP_ACTIVITIES", "") != "1":
+        if _exists_db(connection):
+            SQL = """
+                SELECT pg_terminate_backend(pg_stat_activity.pid)
+                FROM pg_stat_activity
+                WHERE pg_stat_activity.datname = '{}'
+                AND pid <> pg_backend_pid();
+            """.format(connection.dbname, sql_afterwards)
+            _execute_sql(connection.clone(dbname='template1'), SQL, notransaction=True)
+            if sql_afterwards:
+                _execute_sql(connection.clone(dbname='template1'), sql_afterwards, notransaction=True)
 
 def __rename_db_drop_target(conn, from_db, to_db):
     if 'to_db' == 'template1':
