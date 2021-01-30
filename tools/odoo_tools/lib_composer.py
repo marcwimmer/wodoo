@@ -303,7 +303,8 @@ def _prepare_yml_files_from_template_files(config):
         config.files['project_docker_compose.home.project'],
     ]:
         if not d.exists():
-            click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
+            if config.verbose:
+                click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
             continue
         if d.is_file():
             _files.append(d)
