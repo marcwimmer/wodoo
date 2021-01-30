@@ -132,8 +132,9 @@ def index():
     sites = list(db.sites.find({'enabled': True}))
 
     for site in sites:
-        if site.get('updated'):
-            site['updated'] = arrow.get(site['updated']).to(os.environ['DISPLAY_TIMEZONE'])
+        for f in ['last_access', 'updated']:
+            if site.get(f):
+                site[f] = arrow.get(site[f]).to(os.environ['DISPLAY_TIMEZONE'])
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
 
     sites_grouped = defaultdict(list)
