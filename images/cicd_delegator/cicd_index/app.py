@@ -33,6 +33,8 @@ class JSONEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, ObjectId):
             return str(o)
+        if isinstance(o, pymongo.cursor.Cursor):
+            o = list(o)
         return json.JSONEncoder.default(self, o)
 
 
@@ -90,7 +92,7 @@ def site():
     ]:
         if request.args.get(key):
             q[key] = request.args.get(key)
-    site = list(db.sites.find(q))
+    site = db.sites.find(q)
     return jsonify(site)
 
 @app.route('/')
