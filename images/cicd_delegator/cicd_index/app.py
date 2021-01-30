@@ -10,6 +10,7 @@ from itertools import groupby
 import pymongo
 import json
 from pathlib import Path
+from bson.json_util import dumps
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
