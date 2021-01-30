@@ -47,10 +47,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if delegator_path:
             # set touched date:
-            path = Path(os.environ['REGISTRY_SITES']) / delegator_path / 'last_access'
-            path.parent.mkdir(exist_ok=True)
-            path.write_text(arrow.get().strftime("%Y-%m-%d %H:%M:%S"))
-            del path
+            requests.get(cicd_index_url + "/last_access", data={'site': delegator_path})
 
         logger.debug(f"rewrite path: self.path: {self.path}, delegator_path: {delegator_path}")
 
