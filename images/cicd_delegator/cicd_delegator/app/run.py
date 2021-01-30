@@ -130,15 +130,12 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _set_cookies(self, cookie):
         logger.debug(f"Path is: {self.path}")
-        reg = self._get_registry()
-        sites = list(x['name'] for x in reg['sites'])
 
         if '/__start_cicd' in self.path:
             site = self.path.split("/")[1]
-            if site in sites:
-                cookie['delegator-path'] = site
-                cookie['delegator-path']['max-age'] = 365 * 24 * 3600
-                cookie['delegator-path']['path'] = '/'
+            cookie['delegator-path'] = site
+            cookie['delegator-path']['max-age'] = 365 * 24 * 3600
+            cookie['delegator-path']['path'] = '/'
         elif self.path in ['/index', '/index/', '/web/session/logout']:
             cookie['delegator-path'] = "not-set"
             cookie['delegator-path']['path'] = '/'
