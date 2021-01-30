@@ -24,7 +24,7 @@ services:
         - internal
     restart: "unless-stopped"
     ports:
-        - 127.0.0.1:8889:5000
+        - ${CICD_INDEX_BINDING}:5000
     environment:
         FLASK_ENV: development
         REGISTRY_SITES: /registry_sites
