@@ -52,6 +52,7 @@ def last_access():
             'last_access': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         }, upsert=False)
+    return jsonify({'result': 'ok'})
 
 @app.route("/sites")
 def show_sites():
