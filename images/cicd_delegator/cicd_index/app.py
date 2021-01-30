@@ -34,8 +34,6 @@ class JSONEncoder(json.JSONEncoder):
             return str(o)
 
         if isinstance(o, pymongo.cursor.Cursor):
-            import pudb
-            pudb.set_trace()
             o = list(o)
             return json.dumps(o, cls=JSONEncoder)
 
