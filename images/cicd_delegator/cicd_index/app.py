@@ -52,6 +52,8 @@ def active():
 @app.route('/register', methods=['POST'])
 def register_site():
     if request.method == 'POST':
+        import pudb
+        pudb.set_trace()
         data = request.form
         site = data['site']
         index = db.sites.find({'git_branch': site['git_branch']}).Count() + 1
