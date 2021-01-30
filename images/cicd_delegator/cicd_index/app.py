@@ -75,7 +75,7 @@ def activate():
         'enabled': True,
     }, upsert=False)
 
-@app.route("/next_instance")
+@app.route("/next_instance_name")
 def next_instance_name():
     branch = request.args.get('branch')
     key = request.args.get('branch')
