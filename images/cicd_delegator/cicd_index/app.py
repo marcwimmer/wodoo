@@ -42,6 +42,8 @@ app.json_encoder = JSONEncoder
 
 @app.route("/last_access")
 def last_access():
+    import pudb
+    pudb.set_trace()
     if not request.args.get('site'):
         raise Exception('site missing')
     site = db.sites.find_one({'name': request.args.get('site')})
