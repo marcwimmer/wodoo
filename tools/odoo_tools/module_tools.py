@@ -488,9 +488,7 @@ class Modules(object):
     def _get_cache_path(self):
         parent = Path("/tmp/.odoo.modules")
         parent.mkdir(exist_ok=True)
-
-
-        return '/tmp/
+        return parent / f'sha_{self._get_sha()}'
 
     def _get_sha(self):
         return subprocess.check_output([('/usr/bin/git', git rev-parse --verify HEAD')]).decode('utf-8').strip()
