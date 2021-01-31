@@ -124,6 +124,8 @@ def _install_module(config, modname):
 
 
 def update_module_list(config):
+    import pudb
+    pudb.set_trace()
     if config.no_update_modulelist:
         click.secho("No update module list flag set. Not updating.")
         return
