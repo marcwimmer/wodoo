@@ -157,7 +157,7 @@ def download_openupgrade(ctx, config, version):
 @click.option('--tests', default=False, is_flag=True, help="Runs tests")
 @click.option('--i18n', default=False, is_flag=True, help="Overwrite Translations")
 @click.option('--no-install-server-wide-first', default=False, is_flag=True)
-@click.option('--no-extra_addons_paths', is_flag=True)
+@click.option('--no-extra-addons-paths', is_flag=True)
 @pass_config
 @click.pass_context
 def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_install_server_wide_first, no_extra_addons_paths, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False):
