@@ -727,6 +727,8 @@ class Module(object):
 
         for p in [p] + list(p.parents):
             if (p / MANIFEST_FILE()).exists():
+                if '.git' in p.parts:
+                    continue
                 self._manifest_path = p / MANIFEST_FILE()
                 break
         if not getattr(self, '_manifest_path', ''):
