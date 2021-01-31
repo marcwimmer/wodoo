@@ -96,7 +96,13 @@ def next_instance_name():
 def register_site():
     if request.method == 'POST':
         site = dict(request.json)
+        sites = db.sites.find({"git_branch": site['git_branch']})
+        sites = sorted(sites, key=lambda x: x['index'])
+        index = 1
+        if sites:
+            index = 1 + sites[-1]['index']
         site['enabled'] = False
+        site['index'] =
         db.sites.insert_one(site)
         return jsonify({'result': 'ok', 'name': site['name']})
 
