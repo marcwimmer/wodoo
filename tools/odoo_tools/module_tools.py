@@ -721,9 +721,6 @@ class Module(object):
         self.version = float(current_version())
         path = Path(path)
         p = path if path.is_dir() else path.parent
-        import pudb
-        pudb.set_trace()
-
 
         for p in [p] + list(p.parents):
             if (p / MANIFEST_FILE()).exists():
