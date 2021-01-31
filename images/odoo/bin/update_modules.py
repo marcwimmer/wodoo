@@ -189,7 +189,8 @@ def cli():
 @click.option('--delete-qweb', is_flag=True)
 @click.option('--no-tests', is_flag=True)
 @click.option('--no-dangling-check', is_flag=True)
-def main(modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check):
+@pass_config
+def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check):
     prepare_run()
 
     import pudb
