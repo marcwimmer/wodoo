@@ -12,7 +12,7 @@ import odoo_tools
 from odoo_tools import odoo_config
 from odoo_tools import odoo_parser
 from odoo_tools.module_tools import get_all_langs
-from odoo_tools.module_tools import delete_qweb
+from odoo_tools.module_tools import delete_qweb as do_delete_qweb
 from odoo_tools.module_tools import Module, Modules, DBModules
 from odoo_tools.odoo_config import customs_dir
 from odoo_tools.odoo_config import MANIFEST
@@ -245,7 +245,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     if delete_qweb:
         for module in modules:
             print("Deleting qweb of module {}".format(module))
-            delete_qweb(module)
+            do_delete_qweb(module)
 
     if modules:
         update('u', modules)
