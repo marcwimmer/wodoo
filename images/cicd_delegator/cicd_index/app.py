@@ -78,7 +78,10 @@ def next_instance_name():
     key = request.args.get('key')
     assert branch
     assert key
-    sites = list(db.sites.find({'git_branch': branch, 'key': key}))
+    sites = list(db.sites.find({
+        'git_branch': branch,
+        'key': key
+    }))
     sites = sorted(sites, key=lambda x: x['index'])
 
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
