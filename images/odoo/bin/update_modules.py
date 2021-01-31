@@ -19,32 +19,6 @@ from odoo_tools.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
 import click
-prepare_run()
-
-import pudb
-pudb.set_trace()
-INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
-NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
-PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
-I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
-ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
-DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
-NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-tests")]
-NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
-
-ODOO_VERSION = float(os.getenv("ODOO_VERSION"))
-
-run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
-if NO_RUN_TESTS:
-    run_test = False
-
-manifest = MANIFEST()
-
-mode_text = {
-    'i': 'installing',
-    'u': 'updating',
-}
-
 def update(mode, modules):
     assert mode in ['i', 'u']
     assert isinstance(modules, list)
@@ -115,6 +89,7 @@ def update(mode, modules):
 
     print(mode, ','.join(modules), 'done')
 
+
 def _install_module(modname):
     if not DBModules.is_module_listed(modname):
         if modname not in ['update_module_list']:
@@ -136,8 +111,10 @@ def _install_module(modname):
         sys.exit(82)
     update('u', [modname])
 
+
 def update_module_list():
     _install_module("update_module_list")
+
 
 def _uninstall_marked_modules():
     """
@@ -161,6 +138,7 @@ def _uninstall_marked_modules():
             click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
             _install_module(module)
 
+
 def _get_to_install_modules(modules):
     for module in modules:
         if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module != 'base')):
@@ -173,6 +151,7 @@ def _get_to_install_modules(modules):
 
 def install_new_modules(modules):
     update('i', modules)
+
 
 def dangling_check():
     if not NO_DANGLING_CHECK:
@@ -191,12 +170,40 @@ def dangling_check():
             else:
                 DBModules.abort_upgrade()
 
+
 @click.group(invoke_without_command=True)
 def cli():
     pass
 
-@click.command(
-def main():
+@click.command()
+@click.option('--non-interactive')
+def main(non_interactive):
+    prepare_run()
+
+    import pudb
+    pudb.set_trace()
+    INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
+    NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
+    PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
+    I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
+    ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
+    DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
+    NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-tests")]
+    NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
+
+    ODOO_VERSION = float(os.getenv("ODOO_VERSION"))
+
+    run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
+    if NO_RUN_TESTS:
+        run_test = False
+
+    manifest = MANIFEST()
+
+    mode_text = {
+        'i': 'installing',
+        'u': 'updating',
+    }
+
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",")]
     summary = defaultdict(list)
