@@ -1,4 +1,5 @@
 import os
+import docker
 import arrow
 import subprocess
 from flask import jsonify
@@ -160,6 +161,17 @@ def start_instance():
 
 @app.route("/instance/stop")
 def stop_instance():
+    name = request.args['name']
+    container_ids = _get_container_ids(name)
+    docker = ["/usr/bin/docker"]
+    cmd = docker + ['kill'] + container_ids
+    subprocess.check_call(cmd)
+    return jsonify({
+        'container_ids': container_ids,
+    })
+
+@app.route("/instance/status")
+def instance_state():
     name = request.args['name']
     container_ids = _get_container_ids(name)
     docker = ["/usr/bin/docker"]
