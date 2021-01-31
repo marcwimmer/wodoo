@@ -210,7 +210,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         params = [','.join(module)]
         if non_interactive:
             params += ['--non-interactive']
-        if not no_update_module_list:
+        if no_update_module_list:
             params += ['--no-update-modulelist']
         if no_dangling_check:
             params += ['no-dangling-check']
