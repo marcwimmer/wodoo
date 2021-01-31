@@ -107,7 +107,7 @@ def _install_module(config, modname):
             update_module_list()
     if not DBModules.is_module_installed(modname):
         print("Update Module List is not installed - installing it...")
-        update('i', [modname])
+        update(config, 'i', [modname])
         return
 
     if not DBModules.is_module_installed(modname):
@@ -120,7 +120,7 @@ def _install_module(config, modname):
         print("")
         print("")
         sys.exit(82)
-    update('u', [modname])
+    update(config, 'u', [modname])
 
 
 def update_module_list(config):
@@ -165,9 +165,6 @@ def _get_to_install_modules(config, modules):
                     if not DBModules.is_module_listed(module):
                         raise Exception("After updating module list, module was not found: {}".format(module))
             yield module
-
-def install_new_modules(modules):
-    update('i', modules)
 
 
 def dangling_check(config):
