@@ -149,7 +149,7 @@ def start_instance():
     name = request.args['name']
     containers = docker.containers.list(all=True, filters={'name': [name]})
     for container in containers:
-        container.start(daemon=True)
+        container.start()
     return jsonify({
         'result': 'ok',
     })
