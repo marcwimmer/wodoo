@@ -89,6 +89,7 @@ def next_instance_name():
     if index:
         site = [x for x in sites if x['index'] == index]
         info['commit_before'] = site[0]['git_sha']
+        info['prev_name'] = site[0]['name']
     info['name'] = f"{branch}_{key}_{index + 1}"
     info['index'] = index + 1
     return jsonify(info)
