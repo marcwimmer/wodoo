@@ -40,7 +40,7 @@ def __choose_snapshot(config, take=False):
 
     import pudb
     pudb.set_trace()
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])
+    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])['snapshot']
     if not snapshot:
         sys.exit(0)
     snapshot = snapshots.index(snapshots_choices.index(snapshot))
