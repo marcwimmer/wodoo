@@ -98,7 +98,10 @@ def next_instance_name():
 def register_site():
     if request.method == 'POST':
         site = dict(request.json)
-        sites = db.sites.find({"git_branch": site['git_branch']})
+        sites = db.sites.find({
+            "git_branch": site['git_branch'],
+            "key": site['key'],
+        })
         sites = sorted(sites, key=lambda x: x['index'])
         index = 1
         if sites:
