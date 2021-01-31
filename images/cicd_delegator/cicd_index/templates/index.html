@@ -32,6 +32,7 @@
                         <thead>
                             <tr>
                                 <th>Index</th>
+                                <th>State</th>
                                 <th>Updated</th>
                                 <th>Description</th>
                                 <th>Last Author</th>
@@ -46,6 +47,7 @@
                                     {{link['index']}}
                                     </a>
                                 </td>
+                                <td>{{link.get('docker_state']}}</td>
                                 <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
                                 <td>{{link.get('description')}}</td>
                                 <td>{{link.get('author')}}</td>
