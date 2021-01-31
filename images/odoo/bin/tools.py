@@ -75,6 +75,8 @@ def _replace_variables_in_config_files(config):
         del path
 
     no_extra_addons_paths = False
+    import pudb
+    pudb.set_trace()
     if config and config.no_extra_addons_paths:
         no_extra_addons_paths = True
     ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths(
