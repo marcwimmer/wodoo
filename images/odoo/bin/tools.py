@@ -88,7 +88,7 @@ def _run_libreoffice_in_background():
 def get_config_file(confname):
     return str(Path(os.environ['ODOO_CONFIG_DIR']) / confname)
 
-def prepare_run():
+def prepare_run(config):
 
     _replace_variables_in_config_files()
 
