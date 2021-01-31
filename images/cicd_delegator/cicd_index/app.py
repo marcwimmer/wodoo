@@ -168,7 +168,7 @@ def stop_instance():
     for container in containers:
         container.stop()
     return jsonify({
-        'container_ids': container_ids,
+        'result': 'ok'
     })
 
 @app.route("/instance/status")
