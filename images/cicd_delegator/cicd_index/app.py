@@ -32,7 +32,7 @@ app = Flask(
 )
 
 docker = Docker.from_env()
-containers = docker.containers.list(all=True, filters={'name': ["name=master"]})
+containers = docker.containers.list(all=True, filters={'name': ["master"]})
 print(containers)
 print(containers[0].status)
 
