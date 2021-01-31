@@ -141,11 +141,15 @@ def site():
     site = db.sites.find(q)
     return jsonify(site)
 
+def _get_container_ids(name)
+    docker = ["/usr/bin/docker"]
+    cmd = docker + ['ps', '-q', '-a', '-f', f'name={name}']
+    container_ids = list(map(lambda x: x.strip(), subprocess.check_output(cmd).decode('utf-8').strip().split("\n")))
+    return container_ids
+
 @app.route("/instance/control")
 def control_instance():
     name = request.args['name']
-    docker = ["/usr/bin/docker"]
-    subprocess(
 
 @app.route('/')
 def index():
