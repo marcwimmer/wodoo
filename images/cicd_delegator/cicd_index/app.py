@@ -44,10 +44,11 @@ docker = Docker.from_env()
 def cycle_down_apps():
     while True:
         try:
+            db.sites.find()
 
         except Exception as e:
             logging.error(e)
-        time.sleep(1)
+        time.sleep(10)
 
 
 t = threading.Thread(target=cycle_down_apps)
