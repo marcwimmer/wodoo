@@ -32,6 +32,8 @@ app = Flask(
 )
 
 docker = Docker.from_env()
+import pudb
+pudb.set_trace()
 print(docker.containers.list())
 
 class JSONEncoder(json.JSONEncoder):
