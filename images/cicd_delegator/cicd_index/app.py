@@ -113,7 +113,6 @@ def previous_instance():
     site = {}
     if active_sites:
         site = active_sites[-1]
-    result = site
     return jsonify(site)
 
 @app.route("/site", methods=["GET"])
