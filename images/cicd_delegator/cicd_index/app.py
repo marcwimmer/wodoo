@@ -14,7 +14,6 @@ import pymongo
 import json
 from pathlib import Path
 from bson.json_util import dumps
-from operator import itemgetter
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
@@ -187,7 +186,7 @@ def instance_state():
 def _get_docker_state(name):
     docker.ping()
     containers = docker.containers.list(all=True, filters={'name': [name]})
-    states = set(map(itemgetter('status'), containers))
+    states = set(map(x.status, containers))
     return 'running' in states
 
 @app.route('/')
