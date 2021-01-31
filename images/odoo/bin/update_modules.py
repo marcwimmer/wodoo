@@ -161,8 +161,7 @@ def _get_to_install_modules(config, modules):
         if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module not in ('base',))):
             if not DBModules.is_module_listed(module):
                 if module != 'base':
-                    if not no_update_modulelist:
-                        update_module_list()
+                    update_module_list(config)
                     if not DBModules.is_module_listed(module):
                         raise Exception("After updating module list, module was not found: {}".format(module))
             yield module
@@ -205,8 +204,6 @@ def cli():
 def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check):
     prepare_run()
 
-    import pudb
-    pudb.set_trace()
     config.interactive = not non_interactive
     config.i18n_overwrite = i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
@@ -226,8 +223,6 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
 
     if not no_dangling_check:
         dangling_check(config)
-    import pudb
-    pudb.set_trace()
     to_install_modules = list(_get_to_install_modules(list(modules), no_update_modulelist))
 
     # install server wide modules and/or update them
