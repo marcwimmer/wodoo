@@ -177,20 +177,20 @@ def cli():
 
 @click.command()
 @click.argument("modules", required=False)
-@click.option('--non-interactive')
-@click.option('--no-update-modulelist')
-def main(modules, non_interactive, no_update_modulelist):
+@click.option('--non-interactive', is_flag=True)
+@click.option('--no-update-modulelist', is_flag=True)
+@click.option('--i18n', is_flag=True, help="Overwrite I18N")
+@click.option('--only-i18n', is_flag=True)
+@click.option('--delete-qweb', is_flag=True)
+@click.option('--no-tests', is_flag=True)
+@click.option('--no-dangling-check', is_flag=True)
+def main(modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check):
     prepare_run()
 
     import pudb
     pudb.set_trace()
     interactive  =not non_interactive
-    PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
-    I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
-    ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
-    DELETE_QWEB = [x for x in sys.argv[1:] if x.strip().startswith("--delete-qweb")]
-    NO_RUN_TESTS = [x for x in sys.argv[1:] if x.strip().startswith("--no-tests")]
-    NO_DANGLING_CHECK = [x for x in sys.argv[1:] if x.strip() == "no-dangling-check"]
+    i18n_overwrite = i18n
 
     ODOO_VERSION = float(os.getenv("ODOO_VERSION"))
 
