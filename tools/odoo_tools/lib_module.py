@@ -217,7 +217,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         if no_update_module_list:
             params += ['--no-update-modulelist']
         if no_dangling_check:
-            params += ['no-dangling-check']
+            params += ['--no-dangling-check']
         if i18n:
             params += ['--i18n']
         if not tests:
