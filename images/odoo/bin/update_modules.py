@@ -177,13 +177,13 @@ def cli():
 
 @click.command()
 @click.option('--non-interactive')
-def main(non_interactive):
+@click.option('--no-update-modulelist')
+def main(non_interactive, no_update_modulelist):
     prepare_run()
 
     import pudb
     pudb.set_trace()
-    INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
-    NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
+    interactive  =not non_interactive
     PARAMS = [x for x in sys.argv[1:] if not x.startswith("-")]
     I18N_OVERWRITE = [x for x in sys.argv[1:] if x.strip().startswith("--i18n")]
     ONLY_I18N = [x for x in sys.argv[1:] if x.strip().startswith("--only-i18n")]
