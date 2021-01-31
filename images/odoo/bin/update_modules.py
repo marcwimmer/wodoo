@@ -116,13 +116,13 @@ def update_module_list():
     _install_module("update_module_list")
 
 
-def _uninstall_marked_modules():
+def _uninstall_marked_modules(manifest, odoo_version):
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
     if os.getenv("USE_DOCKER", "1") == "0":
         return
-    if ODOO_VERSION < 11.0:
+    if odoo_version < 11.0:
         return
     module = 'server_tools_uninstaller'
     try:
@@ -231,7 +231,7 @@ def main(modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete
         click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
         update('u', to_update_swm)
 
-        _uninstall_marked_modules()
+        _uninstall_marked_modules(manifest, odoo_version)
 
     c = 'yellow'
     click.secho("--------------------------------------------------------------------------", fg=c)
