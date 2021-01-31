@@ -44,7 +44,7 @@ docker = Docker.from_env()
 def cycle_down_apps():
     while True:
         try:
-            db.sites.find()
+            db.sites.find({}, {'name': 1})
 
         except Exception as e:
             logging.error(e)
