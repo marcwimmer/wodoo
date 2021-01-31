@@ -501,7 +501,7 @@ class Modules(object):
     def _get_sha(self):
         return subprocess.check_output([('/usr/bin/git', 'git rev-parse --verify HEAD')]).decode('utf-8').strip()
 
-    def _get_modules(self)
+    def _get_modules(self):
         started = arrow.get()
         from .odoo_config import get_odoo_addons_paths
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
