@@ -64,7 +64,7 @@ def _run_autosetup():
                 os.environ['ODOO_AUTOSETUP_PARAM'],
             ])
 
-def _replace_variables_in_config_files():
+def _replace_variables_in_config_files(config):
     config_dir = Path(os.environ['ODOO_CONFIG_DIR'])
     config_dir_template = Path(os.environ['ODOO_CONFIG_TEMPLATE_DIR'])
     config_dir.mkdir(exist_ok=True, parents=True)
@@ -73,7 +73,13 @@ def _replace_variables_in_config_files():
         shutil.copy(str(file), path)
         subprocess.call(['chmod', 'a+r', path])
         del path
-    ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths())))
+
+    no_extra_addons_paths = False
+    if config and config.no_extra_addons_paths:
+        no_extra_addons_paths = True
+    ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths(
+        no_extra_addons_paths=no_extra_addons_paths
+    ))))
 
     config_dir = Path(os.getenv("ODOO_CONFIG_DIR"))
     common_content = (config_dir / 'common').read_text()
