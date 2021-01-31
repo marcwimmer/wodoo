@@ -38,9 +38,10 @@ def __choose_snapshot(config, take=False):
     if take:
         return take
 
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])['snapshot']
-    if not snapshot:
+    answer = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])
+    if not answer:
         sys.exit(0)
+    snapshot = answer['snapshot']
     snapshot = snapshots[snapshots_choices.index(snapshot)]
 
     return snapshot['path']
