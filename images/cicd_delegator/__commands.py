@@ -105,7 +105,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     print(response.text)
     prev_instance = response.json()
     site = {}
-    site['name'] = config.project_name
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['title'] = title
     site['key'] = key # example: demo, live, kept
@@ -115,7 +114,6 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_branch'] = git_branch
     site['git_sha'] = git_sha
     site['diff_modules'] = []
-    site['index'] = int(index)
     # get the previous instance by branch
     if prev_instance:
         current_sha = prev_instance.get('git', {}).get('sha')
