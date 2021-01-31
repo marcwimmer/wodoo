@@ -159,16 +159,16 @@ def install_new_modules(modules):
     update('i', modules)
 
 
-def dangling_check():
+def dangling_check(config):
     dangling_modules = DBModules.get_dangling_modules()
     if any(x[1] == 'uninstallable' for x in dangling_modules):
         for x in dangling_modules:
             print("{}: {}".format(*x[:2]))
-        if INTERACTIVE and input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+        if config.interactive and input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
             DBModules.set_uninstallable_uninstalled()
 
     if DBModules.get_dangling_modules():
-        if INTERACTIVE and not NO_DANGLING_CHECK:
+        if config.interactive:
             DBModules.show_install_state(raise_error=False)
             input("Abort old upgrade and continue? (Ctrl+c to break)")
             DBModules.abort_upgrade()
