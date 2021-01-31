@@ -202,8 +202,9 @@ def cli():
 @click.option('--no-tests', is_flag=True)
 @click.option('--no-dangling-check', is_flag=True)
 @click.option('--no-install-server-wide-first', is_flag=True)
+@click.option('--no-extra_addons_paths', is_flag=True)
 @pass_config
-def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first):
+def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths):
     prepare_run()
 
     config.interactive = not non_interactive
