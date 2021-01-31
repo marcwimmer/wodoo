@@ -93,11 +93,13 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 
     # prepare network configuration
     update_project_configs(config)
-    internal_reload(
-        config, config.dbname, demo=False,
-        devmode=config.devmode_as_bool, headless=True, local=False,
-        proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
-    )
+    import pudb
+    pudb.set_trace()
+    # internal_reload(
+        # config, config.dbname, demo=False,
+        # devmode=config.devmode_as_bool, headless=True, local=False,
+        # proxy_port=config.proxy_port, mailclient_gui_port=config.mailclient_gui_port,
+    # )
 
     if not git_branch:
         raise Exception("required git branch!")
