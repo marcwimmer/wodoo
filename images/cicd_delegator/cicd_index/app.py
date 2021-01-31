@@ -1,4 +1,5 @@
 import os
+from operator import itemgetter
 import docker as Docker
 import arrow
 import subprocess
@@ -32,9 +33,6 @@ app = Flask(
 )
 
 docker = Docker.from_env()
-containers = docker.containers.list(all=True, filters={'name': ["master"]})
-print(containers)
-print(containers[0].status)
 
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
@@ -188,7 +186,9 @@ def instance_state():
 
 def _get_docker_state(name):
     docker.ping()
-    docker.containers.list()
+    containers = docker.containers.list(all=True, filters={'name': [name]})
+    states = set(map(itemgetter('status'), containers))
+    return 'running' in states
 
 @app.route('/')
 def index():
