@@ -32,7 +32,6 @@
                         <thead>
                             <tr>
                                 <th>Index</th>
-                                <th>Title</th>
                                 <th>Updated</th>
                                 <th>Description</th>
                                 <th>Last Author</th>
@@ -42,10 +41,9 @@
                         <tbody>
                             {% for link in sites: %}
                             <tr>
-                                <td>{{link['index']}}</td>
                                 <td>
                                     <a href="/{{link['name']}}/__start_cicd">
-                                    {{link['title']}}
+                                    {{link['index']}}
                                     </a>
                                 </td>
                                 <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
