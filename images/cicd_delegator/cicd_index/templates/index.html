@@ -55,7 +55,7 @@
                                 <td>
                                     {{link.get('docker_state')}}
                                     {% if link.get('docker_state') == 'running' %}
-                                    <a class='docker-control' data-action='stop' data-name="{{link['name']}}" href="#" style="display: {{'block' if link.get('docker_state') == 'stopped' else 'none'}}">Stop</a>
+                                    <a class='docker-control' data-action='stop' data-name="{{link['name']}}" href="#">Stop</a>
                                     {% endif %}
                                     {% if link.get('docker_state') == 'stopped' %}
                                     <a class='docker-control' data-action='start' data-name="{{link['name']}}" href="#">Start</a>
