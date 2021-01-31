@@ -140,6 +140,10 @@ def site():
     site = db.sites.find(q)
     return jsonify(site)
 
+@app.route("/instance/control")
+def control_instance():
+    request.args.get('name')
+
 @app.route('/')
 def index():
 
@@ -166,6 +170,7 @@ def index():
         sites=sites_grouped,
         DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
     )
+
 
 @app.route('/__start_cicd')
 def start_cicd():
