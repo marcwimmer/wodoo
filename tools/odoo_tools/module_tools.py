@@ -482,6 +482,20 @@ class Modules(object):
 
     def __init__(self):
         modnames = set()
+        if self.is_git_clean():
+        self._get_modules()
+
+    def _get_cache_path(self):
+        parent = Path("/tmp/.odoo.modules")
+        parent.mkdir(exist_ok=True)
+
+
+        return '/tmp/
+
+    def _get_sha(self):
+        return subprocess.check_output([('/usr/bin/git', git rev-parse --verify HEAD')]).decode('utf-8').strip()
+
+    def _get_modules(self)
         started = arrow.get()
         from .odoo_config import get_odoo_addons_paths
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
