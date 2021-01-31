@@ -204,8 +204,6 @@ def cli():
 @click.option('--no-install-server-wide-first', is_flag=True)
 @pass_config
 def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first):
-    import pudb
-    pudb.set_trace()
     prepare_run()
 
     config.interactive = not non_interactive
