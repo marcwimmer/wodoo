@@ -28,7 +28,7 @@ def update(config, mode, modules):
     #if ','.join(modules) == 'all':
     #    raise Exception("update 'all' not allowed")
 
-    if run_test:
+    if config.run_test:
         if mode == "i":
             TESTS = '' # dont run tests at install, automatically run (says docu)
         else:
@@ -36,7 +36,7 @@ def update(config, mode, modules):
     else:
         TESTS = ''
 
-    if not ONLY_I18N:
+    if not config.only_i18n:
         print(mode, modules)
         # obj_module = Module.get_by_name(module)
         if mode == 'i':
