@@ -152,7 +152,10 @@ def _uninstall_marked_modules(config):
 
 def _get_to_install_modules(config, modules, no_update_modulelist):
     for module in modules:
-        if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module not in ('base', 'all'))):
+        if module in ['all']:
+            yield module
+
+        if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module not in ('base',))):
             if not DBModules.is_module_listed(module):
                 if module != 'base':
                     update_module_list()
