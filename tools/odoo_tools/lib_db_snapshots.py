@@ -99,12 +99,10 @@ def snapshot_remove(ctx, config, name):
 @pass_config
 @click.pass_context
 def snapshot_clear_all(ctx, config):
-    import pudb
-    pudb.set_trace()
     config.snapshot_manager.assert_environment(config)
 
     snapshots = config.snapshot_manager.__get_snapshots(config)
     if snapshots:
         for snap in snapshots:
-            config.snapshot_manager.remove(config)
+            config.snapshot_manager.remove(config, snap)
     ctx.invoke(do_list)
