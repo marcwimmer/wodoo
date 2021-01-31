@@ -215,6 +215,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     if no_tests:
         config.run_test = False
 
+    config.no_update_modulelist = no_update_modulelist
     config.manifest = MANIFEST()
 
     modules = list(filter(bool, modules.split(",")))
