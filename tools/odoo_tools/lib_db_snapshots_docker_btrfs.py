@@ -62,7 +62,7 @@ def _get_btrfs_infos(path):
             'subvol',
             'show',
             str(path)
-    ]).split("\n"):
+    ]).split("\n").decode('utf-8'):
         for line in infos:
             if 'Creation time:' in line:
                 info['date'] = arrow.get(line.split(":", 1)[1].strip()).datetime
