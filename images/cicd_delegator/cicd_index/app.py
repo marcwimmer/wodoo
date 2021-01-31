@@ -40,7 +40,7 @@ def cycle_down_apps():
     try:
         pass
     except Exception as e:
-        logging.error(ex)
+        logging.error(e)
 
 
 t = threading.Thread(target=cycle_down_apps)
