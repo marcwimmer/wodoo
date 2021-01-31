@@ -101,7 +101,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
 
     if not git_branch:
         raise Exception("required git branch!")
-    response = requests.get(config.url + "/previous_instance", params={"branch": git_branch})
+    response = requests.get(config.url + "/previous_active_instance", params={"branch": git_branch})
     prev_instance = response.json()
     site = {}
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
