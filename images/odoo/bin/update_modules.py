@@ -211,6 +211,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     config.i18n_overwrite = i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
     config.only_i18n = only_i18n
+    config.no_extra_addons_paths = no_extra_addons_paths
 
     config.run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
     if no_tests:
