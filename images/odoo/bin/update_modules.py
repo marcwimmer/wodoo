@@ -48,8 +48,8 @@ def update(mode, modules):
     if not modules:
         return
 
-    if ','.join(modules) == 'all':
-        raise Exception("update 'all' not allowed")
+    #if ','.join(modules) == 'all':
+    #    raise Exception("update 'all' not allowed")
 
     if run_test:
         if mode == "i":
