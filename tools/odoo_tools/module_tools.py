@@ -482,8 +482,6 @@ class Modules(object):
 
     def __init__(self):
         cache_file = self._get_cache_path()
-        import pudb
-        pudb.set_trace()
         if self.is_git_clean():
             if not cache_file.exists():
                 modules = self._get_modules()
