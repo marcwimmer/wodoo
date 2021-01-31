@@ -725,14 +725,14 @@ class Module(object):
         pudb.set_trace()
 
 
-        # for p in [p] + list(p.parents):
-            # if (p / MANIFEST_FILE()).exists():
-                # self._manifest_path = p / MANIFEST_FILE()
-                # break
-        # if not getattr(self, '_manifest_path', ''):
-            # raise Module.IsNot("no module found for {}".format(path))
-        # self.name = self._manifest_path.parent.name
-        # self.path = self._manifest_path.parent
+        for p in [p] + list(p.parents):
+            if (p / MANIFEST_FILE()).exists():
+                self._manifest_path = p / MANIFEST_FILE()
+                break
+        if not getattr(self, '_manifest_path', ''):
+            raise Module.IsNot("no module found for {}".format(path))
+        self.name = self._manifest_path.parent.name
+        self.path = self._manifest_path.parent
 
     @property
     def manifest_path(self):
