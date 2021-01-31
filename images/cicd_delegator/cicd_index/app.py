@@ -79,6 +79,9 @@ def next_instance_name():
     assert branch
     assert key
     sites = list(db.sites.find({'git_branch': branch}))
+    sites = sorted(sites, key=lambda x: x['index'])
+    active_sites = [x for x in sites if x.get('enabled')]
+
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
 
     info = {
@@ -108,18 +111,6 @@ def register_site():
 
     raise Exception("only POST")
 
-@app.route("/previous_instance", methods=["GET"])
-def previous_instance():
-    branch_name = request.args.get('branch')
-    if not branch_name:
-        raise Exception("Missing branch_name")
-    sites = db.sites.find({"git_branch": branch_name})
-    sites = sorted(sites, key=lambda x: x['index'])
-    active_sites = [x for x in sites if x.get('enabled')]
-    site = {}
-    if active_sites:
-        site = active_sites[-1]
-    return jsonify(site)
 
 @app.route("/site", methods=["GET"])
 def site():
