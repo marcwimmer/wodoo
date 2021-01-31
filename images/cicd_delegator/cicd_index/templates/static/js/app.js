@@ -6,7 +6,7 @@ $(document).ready(function() {
         var action = $el.data('action')
         var name = $el.data('name');
         $.get("/cicd/instance/" + action + "?name=" + name).then(function(result) {
-            debugger;
+            document.location.reload();
         });
     });
     alert("HI");
