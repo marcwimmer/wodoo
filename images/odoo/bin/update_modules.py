@@ -19,6 +19,12 @@ from odoo_tools.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
 
+mode_text = {
+    'i': 'installing',
+    'u': 'updating',
+}
+
+
 def update(config, mode, modules):
     assert mode in ['i', 'u']
     assert isinstance(modules, list)
@@ -52,7 +58,7 @@ def update(config, mode, modules):
             params += [TESTS]
         rc = exec_odoo('config_update', *params)
         if rc:
-            click.secho(f"Error at {config.mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
+            click.secho(f"Error at {mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
         for module in modules:
             if not DBModules.is_module_installed(module):
                 if mode == 'i':
@@ -199,11 +205,6 @@ def main(modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete
         run_test = False
 
     manifest = MANIFEST()
-
-    mode_text = {
-        'i': 'installing',
-        'u': 'updating',
-    }
 
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",")]
