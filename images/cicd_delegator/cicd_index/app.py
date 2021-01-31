@@ -148,11 +148,23 @@ def _get_container_ids(name):
     return container_ids
 
 @app.route("/instance/start")
-def control_instance():
+def start_instance():
     name = request.args['name']
     container_ids = _get_container_ids(name)
     docker = ["/usr/bin/docker"]
     cmd = docker + ['up', '-d'] + container_ids
+    subprocess.check_call(cmd)
+    return jsonify({
+        'container_ids': container_ids,
+    })
+
+@app.route("/instance/start")
+def stop_instance():
+    name = request.args['name']
+    container_ids = _get_container_ids(name)
+    docker = ["/usr/bin/docker"]
+    cmd = docker + ['up', '-d'] + container_ids
+    subprocess.check_call(cmd)
     return jsonify({
         'container_ids': container_ids,
     })
