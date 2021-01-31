@@ -128,7 +128,7 @@ def _uninstall_marked_modules(config):
     """
     if os.getenv("USE_DOCKER", "1") == "0":
         return
-    if odoo_version < 11.0:
+    if config.odoo_version < 11.0:
         return
     module = 'server_tools_uninstaller'
     try:
