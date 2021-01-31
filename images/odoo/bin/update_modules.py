@@ -205,8 +205,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
 
     config.manifest = MANIFEST()
 
-    modules = PARAMS[0] if PARAMS else ""
-    modules = [x for x in modules.split(",")]
+    modules = list(filter(bool, modules.split(","))
     summary = defaultdict(list)
     single_module = len(modules) == 1
     if not modules:
