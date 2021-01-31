@@ -111,7 +111,8 @@ def restore(config, name):
     if not name:
         return
     __dc(['stop', '-t 1'] + ['postgres'])
-    breakpoint()
+    import pudb
+    pudb.set_trace()
     volume_path = Path("/var/lib/docker/volumes") / __get_postgres_volume_name(config)
     if volume_path.exists():
         subprocess.check_call(
