@@ -154,8 +154,6 @@ def _uninstall_marked_modules(config):
 
 
 def _get_to_install_modules(config, modules):
-    import pudb
-    pudb.set_trace()
     for module in modules:
         if module in ['all']:
             yield module
@@ -225,7 +223,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
 
     if not no_dangling_check:
         dangling_check(config)
-    to_install_modules = list(_get_to_install_modules(list(modules), no_update_modulelist))
+    to_install_modules = list(_get_to_install_modules(config, modules))
 
     # install server wide modules and/or update them
     if not modules:
