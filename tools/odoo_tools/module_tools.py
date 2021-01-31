@@ -1,3 +1,4 @@
+import arrow
 import json
 import click
 import iscompatible
@@ -480,6 +481,7 @@ class Modules(object):
 
     def __init__(self):
         modnames = set()
+        started = arrow.get()
         from .odoo_config import get_odoo_addons_paths
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         print("INIT MODULES")
@@ -500,6 +502,8 @@ class Modules(object):
         self.modules = {}
         for m in get_all_manifests():
             self.modules[m.parent.name] = Module(m)
+
+        click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
 
     def get_changed_modules(self, sha_start):
         filepaths = subprocess.check_output([
