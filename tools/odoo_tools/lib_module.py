@@ -156,9 +156,10 @@ def download_openupgrade(ctx, config, version):
 @click.option('--no-dangling-check', default=False, is_flag=True, help="Not checking for dangling modules")
 @click.option('--tests', default=False, is_flag=True, help="Runs tests")
 @click.option('--i18n', default=False, is_flag=True, help="Overwrite Translations")
+@click.option('--no-install-server-wide-first', default=False, is_flag=True)
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False):
+def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False, no_install_server_wide_first):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
@@ -208,6 +209,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         params = [','.join(module)]
         if non_interactive:
             params += ['--non-interactive']
+        if no_install_server_wide_first:
+            params += ['--no-install-server-wide-first']
         if no_update_module_list:
             params += ['--no-update-modulelist']
         if no_dangling_check:
