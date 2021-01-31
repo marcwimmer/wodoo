@@ -146,13 +146,11 @@ def restore(config, name):
     __dc(['up', '-d'] + ['postgres'])
 
 def remove(config, snapshot):
-    import pudb
-    pudb.set_trace()
     snapshots = __get_snapshots(config)
     if snapshot['path'] in map(itemgetter('path'), snapshots):
         subprocess.check_call(
             _get_cmd_butter_volume() + [
                 'delete',
-                str(snapshot),
+                str(snapshot['path']),
             ]
         )
