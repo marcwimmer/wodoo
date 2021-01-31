@@ -117,7 +117,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     if prev_active_instance:
         sha = prev_active_instance.get('git_sha')
         if sha:
-            site['diff_modules'] = Modules.get_changed_modules(sha)
+            site['diff_modules'] = Modules().get_changed_modules(sha)
 
     requests.post(config.url + '/register', json=site).raise_for_status()
 
