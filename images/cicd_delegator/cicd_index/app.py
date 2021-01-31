@@ -1,4 +1,5 @@
 import os
+import time
 from operator import itemgetter
 import docker as Docker
 import arrow
@@ -212,4 +213,5 @@ def start_cicd():
     name = request.cookies['delegator-path']
     if _get_docker_state(name) == 'stopped':
         start_instance(name=name)
+        time.sleep(20)
     return render_template('start_cicd.html')
