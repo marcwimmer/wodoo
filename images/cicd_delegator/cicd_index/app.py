@@ -111,7 +111,7 @@ def register_site():
             index = 1 + sites[-1]['index']
         site['enabled'] = False
         site['index'] = index
-        site['name'] = f"{site['git_branch']_{site['key']}_{index}"
+        site['name'] = f"{site['git_branch']}_{site['key']}_{index}"
         db.sites.insert_one(site)
         return jsonify({'result': 'ok', 'name': site['name']})
 
