@@ -51,8 +51,14 @@ def _get_subvolume_dir(config):
     return subvolume_dir
 
 def __get_snapshots(config):
+    import pudb
+    pudb.set_trace()
     files = list(_get_subvolume_dir(config).glob("*"))
-    snapshots = list(reversed(files))
+    snapshots = list({
+        'path': str(x),
+        'name': x.name,
+        'date': arrow.get(x.stat().st_ctime).datetime,
+    } for x in reversed(files))
     return snapshots
 
 def assert_environment(config):
