@@ -1,5 +1,6 @@
 import os
 import arrow
+import subprocess
 from flask import jsonify
 from flask import Flask
 from flask import render_template
@@ -143,6 +144,10 @@ def site():
 @app.route("/instance/control")
 def control_instance():
     name = request.args['name']
+    cmd = [
+        "/usr/bin/docker",
+    ]
+    subprocess(
 
 @app.route('/')
 def index():
