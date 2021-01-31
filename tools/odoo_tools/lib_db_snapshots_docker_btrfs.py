@@ -95,13 +95,14 @@ def make_snapshot(config, name):
     dest_path = path / name
     if dest_path.exists():
         click.secho(f"Path {dest_path} already exists.", fg='red')
+        sys.exit(-1)
 
     subprocess.check_output(
         _get_cmd_butter_volume() + [
             "snapshot",
             "-r", # readonly
             f'/var/lib/docker/volumes/{volume_name}',
-            str(path / name),
+            str(dest_path),
         ]).decode('utf-8').strip()
     __dc(['up', '-d'] + ['postgres'])
     return name
