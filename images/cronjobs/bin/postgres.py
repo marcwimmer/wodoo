@@ -114,8 +114,6 @@ def _restore(dbname, host, port, user, password, filepath):
     method = PGRESTORE
     needs_unzip = True
 
-    import pudb
-    pudb.set_trace()
     dump_type = __get_dump_type(filepath)
     if dump_type == 'plain_text':
         needs_unzip = False
@@ -170,7 +168,7 @@ def __get_dump_type(filepath):
                 first_line += t
 
     if first_line and zipped:
-        if MARKER in first_line:
+        if MARKER in first_line or first_line.strip() == '--':
             return 'zipped_sql'
         if first_line.startswith("PGDMP"):
             return "zipped_pgdump"
