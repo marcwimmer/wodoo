@@ -65,11 +65,12 @@ def update(config, mode, modules):
         if rc:
             click.secho(f"Error at {mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
         for module in modules:
-            if not DBModules.is_module_installed(module):
-                if mode == 'i':
-                    click.secho("{} is not installed - but it was tried to be installed.".format(module), fg='red')
-                else:
-                    click.secho("{} update error".format(module), fg='red')
+            if module != 'all':
+                if not DBModules.is_module_installed(module):
+                    if mode == 'i':
+                        click.secho("{} is not installed - but it was tried to be installed.".format(module), fg='red')
+                    else:
+                        click.secho("{} update error".format(module), fg='red')
             del module
         rc and sys.exit(rc)
 
