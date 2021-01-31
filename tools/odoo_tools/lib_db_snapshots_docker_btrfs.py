@@ -111,7 +111,7 @@ def restore(config, name):
     if not name:
         return
 
-    if '/' not in name:
+    if '/' not in str(name):
         name = _get_subvolume_dir(config) / name
 
     name = Path(name)
