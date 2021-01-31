@@ -184,7 +184,8 @@ def instance_state():
     })
 
 def _get_docker_state(name):
-
+    docker.ping()
+    docker.containers.list()
 
 @app.route('/')
 def index():
