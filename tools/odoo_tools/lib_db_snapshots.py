@@ -35,11 +35,12 @@ def __choose_snapshot(config, take=False):
     import pudb
     pudb.set_trace()
     snapshots = config.snapshot_manager.__get_snapshots(config)
+    snapshots_choices = [f"{x['name']} from x['date']}" for x in snapshots]
 
     if take:
         return take
 
-    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots)])
+    snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])
     if not snapshot:
         sys.exit(0)
     snapshot = snapshot['snapshot']
