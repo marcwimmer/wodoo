@@ -250,7 +250,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     click.secho(f"Updating Module {','.join(modules)}", fg=c)
     click.secho("--------------------------------------------------------------------------", fg=c)
 
-    update('i', to_install_modules)
+    update(config, 'i', to_install_modules)
     summary['installed'] += to_install_modules
     modules = list(filter(lambda x: x not in summary['installed'], modules))
 
