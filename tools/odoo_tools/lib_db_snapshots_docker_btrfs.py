@@ -1,3 +1,4 @@
+from operator import itemgetter
 import subprocess
 import yaml
 import arrow
@@ -148,7 +149,7 @@ def remove(config, snapshot):
     import pudb
     pudb.set_trace()
     snapshots = __get_snapshots(config)
-    if snapshot in snapshots:
+    if snapshot['path'] in map(itemgetter('path'), snapshots):
         subprocess.check_call(
             _get_cmd_butter_volume() + [
                 'delete',
