@@ -506,11 +506,6 @@ class Modules(object):
         for m in all_manifests:
             self.modules[m.parent.name] = Module(m)
 
-        import pudb
-        pudb.set_trace()
-        data = pickle.dumps(self.modules)
-
-
     def get_changed_modules(self, sha_start):
         filepaths = subprocess.check_output([
             'git',
@@ -727,14 +722,15 @@ class Module(object):
         path = Path(path)
         p = path if path.is_dir() else path.parent
 
-        for p in [p] + list(p.parents):
-            if (p / MANIFEST_FILE()).exists():
-                self._manifest_path = p / MANIFEST_FILE()
-                break
-        if not getattr(self, '_manifest_path', ''):
-            raise Module.IsNot("no module found for {}".format(path))
-        self.name = self._manifest_path.parent.name
-        self.path = self._manifest_path.parent
+
+        # for p in [p] + list(p.parents):
+            # if (p / MANIFEST_FILE()).exists():
+                # self._manifest_path = p / MANIFEST_FILE()
+                # break
+        # if not getattr(self, '_manifest_path', ''):
+            # raise Module.IsNot("no module found for {}".format(path))
+        # self.name = self._manifest_path.parent.name
+        # self.path = self._manifest_path.parent
 
     @property
     def manifest_path(self):
