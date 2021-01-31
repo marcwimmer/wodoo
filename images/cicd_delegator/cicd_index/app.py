@@ -44,7 +44,13 @@ docker = Docker.from_env()
 def cycle_down_apps():
     while True:
         try:
-            db.sites.find({}, {'name': 1})
+            sites = db.sites.find({}, {'name': 1, 'last_access': 1})
+            for site in sites:
+                if not site.get('last_acccess'):
+                    continue
+                la = arrow.get(site['last_access'])
+                if (arrow.get() - la).total_seconds() > 2 * 3600:
+                    stop_instance(site['name'])
 
         except Exception as e:
             logging.error(e)
@@ -178,8 +184,8 @@ def start_instance(name=None):
     })
 
 @app.route("/instance/stop")
-def stop_instance():
-    name = request.args['name']
+def stop_instance(name=None):
+    name = name or request.args['name']
     containers = docker.containers.list(all=False, filters={'name': [name]})
     for container in containers:
         container.stop()
