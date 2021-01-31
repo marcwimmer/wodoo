@@ -51,8 +51,6 @@ def _get_subvolume_dir(config):
     return subvolume_dir
 
 def __get_snapshots(config):
-    import pudb
-    pudb.set_trace()
     files = list(_get_subvolume_dir(config).glob("*"))
     snapshots = list({
         'path': str(x),
