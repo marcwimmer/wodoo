@@ -58,7 +58,7 @@ def _get_btrfs_infos(path):
             '/usr/bin/btrfs',
             str(path)
     ]).split("\n"):
-    for line in infos:
+        for line in infos:
 
 
 def __get_snapshots(config):
