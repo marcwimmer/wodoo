@@ -5,6 +5,7 @@ import iscompatible
 from pathlib import Path
 from datetime import datetime
 from copy import deepcopy
+import pickle
 import os
 import codecs
 import shutil
