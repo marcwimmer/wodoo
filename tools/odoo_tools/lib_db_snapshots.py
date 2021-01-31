@@ -53,8 +53,6 @@ def do_list(config):
     rows = [(x['name'], x['date']) for x in snapshots]
     click.echo(tabulate(rows, ["Name", "Date"])
 
-    for snap in snapshots:
-        click.secho(f"  * {snap}")
 
 @snapshot.command(name="save")
 @click.argument('name', required=False)
