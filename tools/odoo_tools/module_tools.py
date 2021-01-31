@@ -481,6 +481,8 @@ def update_view_in_db(filepath, lineno):
 class Modules(object):
 
     def __init__(self):
+        import pudb
+        pudb.set_trace()
         cache_file = self._get_cache_path()
         if self.is_git_clean():
             if not cache_file.exists():
