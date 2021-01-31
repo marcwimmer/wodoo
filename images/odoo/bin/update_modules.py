@@ -195,10 +195,9 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
 
     import pudb
     pudb.set_trace()
-    interactive  =not non_interactive
-    i18n_overwrite = i18n
-
-    ODOO_VERSION = float(os.getenv("ODOO_VERSION"))
+    config.interactive  =not non_interactive
+    config.i18n_overwrite = i18n
+    config.odoo_version = float(os.getenv("ODOO_VERSION"))
 
     run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
     if NO_RUN_TESTS:
