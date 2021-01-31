@@ -7,8 +7,8 @@ RUN DEBIAN_FRONTEND="noninteractive" apt -y install apt-transport-https ca-certi
 #RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 # RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
 RUN add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
-RUN apt update
 RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+RUN apt update
 RUN apt install -y docker-ce
 
 COPY requirements.txt requirements.txt
