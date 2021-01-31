@@ -488,7 +488,7 @@ class Modules(object):
                 cache_file.write_bytes(pickle.dump(modules))
                 self.modules = modules
             else:
-                self.modules = pickle.load(cache_file.read_bytes())
+                self.modules = pickle.loads(cache_file.read_bytes())
         else:
             self.modules = self._get_modules()
 
