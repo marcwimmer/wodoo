@@ -205,8 +205,6 @@ def cli():
 @click.option('--no-extra-addons-paths', is_flag=True)
 @pass_config
 def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths):
-    import pudb
-    pudb.set_trace()
 
     config.interactive = not non_interactive
     config.i18n_overwrite = i18n
