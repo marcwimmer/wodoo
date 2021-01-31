@@ -144,21 +144,14 @@ def site():
     site = db.sites.find(q)
     return jsonify(site)
 
-def _get_container_ids(name):
-    docker = ["/usr/bin/docker"]
-    cmd = docker + ['ps', '-q', '-a', '-f', f'name={name}']
-    container_ids = list(map(lambda x: x.strip(), subprocess.check_output(cmd).decode('utf-8').strip().split("\n")))
-    return container_ids
-
 @app.route("/instance/start")
 def start_instance():
     name = request.args['name']
-    container_ids = _get_container_ids(name)
-    docker = ["/usr/bin/docker"]
-    cmd = docker + ['up', '-d'] + container_ids
-    subprocess.check_call(cmd)
+    containers = docker.containers.list(all=True, filters={'name': [name]})
+    for container in containers:
+        container.start(daemon=True)
     return jsonify({
-        'container_ids': container_ids,
+        'result': 'ok',
     })
 
 @app.route("/instance/stop")
