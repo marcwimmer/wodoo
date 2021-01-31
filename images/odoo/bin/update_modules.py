@@ -211,7 +211,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     if not modules:
         raise Exception("requires module!")
 
-    if not NO_DANGLING_CHECK:
+    if not no_dangling_check:
         dangling_check()
     to_install_modules = list(_get_to_install_modules(list(modules)))
 
