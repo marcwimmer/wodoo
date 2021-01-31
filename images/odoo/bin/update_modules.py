@@ -199,8 +199,9 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     config.i18n_overwrite = i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
 
-    run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
-    config.run_test = not no_tests
+    config.run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
+    if no_tests:
+        config.run_test = False
 
     config.manifest = MANIFEST()
 
