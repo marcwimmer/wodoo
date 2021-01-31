@@ -218,6 +218,8 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
 
     if not no_dangling_check:
         dangling_check()
+    import pudb
+    pudb.set_trace()
     to_install_modules = list(_get_to_install_modules(list(modules)))
 
     # install server wide modules and/or update them
