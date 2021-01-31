@@ -32,7 +32,8 @@ app = Flask(
 )
 
 docker = Docker.from_env()
-help(docker.containers.list)
+containers = docker.containers.list(all=True)
+help(containers[0])
 
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
