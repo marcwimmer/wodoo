@@ -18,6 +18,7 @@ from bson.json_util import dumps
 import threading
 import logging
 
+
 from pymongo import MongoClient
 mongoclient = MongoClient(
     os.environ["MONGO_HOST"],
@@ -28,6 +29,10 @@ mongoclient = MongoClient(
 )
 db = mongoclient.get_database('cicd_sites')
 
+FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
+logging.basicConfig(format=FORMAT)
+logging.getLogger().setLevel(logging.DEBUG)
+logger = logging.getLogger('')  # root handler
 
 app = Flask(
     __name__,
@@ -37,10 +42,12 @@ app = Flask(
 docker = Docker.from_env()
 
 def cycle_down_apps():
-    try:
-        pass
-    except Exception as e:
-        logging.error(e)
+    while True:
+        try:
+
+        except Exception as e:
+            logging.error(e)
+        time.sleep(1)
 
 
 t = threading.Thread(target=cycle_down_apps)
