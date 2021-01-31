@@ -534,10 +534,7 @@ class Modules(object):
     def is_git_clean(self):
         import pudb
         pudb.set_trace()
-        try:
-            status = subprocess.check_output(['/usr/bin/git', '--porcelain']).decode('utf-8').strip()
-        except subprocess.CalledProcessError:
-            return False
+        status = subprocess.check_output(['/usr/bin/git', 'status', '--porcelain']).decode('utf-8').strip()
         return not status
 
     def get_changed_modules(self, sha_start):
