@@ -58,6 +58,8 @@ def _get_btrfs_infos(path):
     info = {}
     for line in subprocess.check_output([
             '/usr/bin/btrfs',
+            'subvol',
+            'show',
             str(path)
     ]).split("\n"):
         for line in infos:
