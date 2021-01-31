@@ -115,9 +115,9 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['diff_modules'] = []
     # get the previous instance by branch
     if prev_active_instance:
-        current_sha = prev_active_instance.get('git', {}).get('sha')
-        if current_sha:
-            site['diff_modules'] = Modules.get_changed_modules(current_sha)
+        sha = prev_active_instance.get('git_sha');
+        if sha:
+            site['diff_modules'] = Modules.get_changed_modules(sha)
 
     requests.post(config.url + '/register', json=site).raise_for_status()
 
