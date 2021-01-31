@@ -145,8 +145,8 @@ def site():
     return jsonify(site)
 
 @app.route("/instance/start")
-def start_instance():
-    name = request.args['name']
+def start_instance(name=None):
+    name = name or request.args['name']
     containers = docker.containers.list(all=True, filters={'name': [name]})
     for container in containers:
         container.start()
@@ -209,6 +209,7 @@ def index():
 
 @app.route('/__start_cicd')
 def start_cicd():
-    import pudb
-    pudb.set_trace()
+    name = request.cookies['delegator-path']
+    if _get_docker_state(name) == 'stopped':
+        start_instance(name=name)
     return render_template('start_cicd.html')
