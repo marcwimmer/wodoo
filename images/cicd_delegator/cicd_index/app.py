@@ -186,7 +186,7 @@ def instance_state():
 def _get_docker_state(name):
     docker.ping()
     containers = docker.containers.list(all=True, filters={'name': [name]})
-    states = set(map(x.status, containers))
+    states = set(map(lambda x: x.status, containers))
     return 'running' in states
 
 @app.route('/')
