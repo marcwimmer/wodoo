@@ -241,7 +241,7 @@ def index():
 @app.route('/__start_cicd')
 def start_cicd():
     name = request.cookies['delegator-path']
-    if _get_docker_state(name) == 'stopped':
+    if not _get_docker_state(name):
         start_instance(name=name)
         time.sleep(20)
     return render_template('start_cicd.html')
