@@ -504,7 +504,14 @@ class Modules(object):
         all_manifests = get_all_manifests()
         for m in all_manifests:
             self.modules[m.parent.name] = Module(m)
+
+        # if directory is clear, we may cache
+
         click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
+
+    def is_git_clean(self):
+        status = subprocess.check_output(['/usr/bin/git', '--porcelain']).decode('utf-8').strip()
+        return not status
 
     def get_changed_modules(self, sha_start):
         filepaths = subprocess.check_output([
