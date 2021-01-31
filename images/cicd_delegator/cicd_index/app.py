@@ -49,7 +49,7 @@ def cycle_down_apps():
                 logger.info(f"Checking site to cycle down: {site['name']}")
                 if (arrow.get() - arrow.get(site.get('last_access', '1980-04-04') or '1980-04-04')).total_seconds() > 2 * 3600:
                     logger.info(f"Cycling down instance due to inactivity: {site['name']}")
-                    stop_instance(site['name'])
+                    _stop_instance(site['name'])
 
         except Exception as e:
             logging.error(e)
@@ -182,12 +182,15 @@ def start_instance(name=None):
         'result': 'ok',
     })
 
-@app.route("/instance/stop")
-def stop_instance(name=None):
-    name = name or request.args['name']
+def _stop_instance(name):
     containers = docker.containers.list(all=False, filters={'name': [name]})
     for container in containers:
         container.stop()
+
+@app.route("/instance/stop")
+def stop_instance(name=None):
+    name = name or request.args['name']
+    _stop_instance(name)
     return jsonify({
         'result': 'ok'
     })
