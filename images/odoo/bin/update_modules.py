@@ -18,7 +18,7 @@ from odoo_tools.odoo_config import customs_dir
 from odoo_tools.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
-import click
+
 def update(mode, modules):
     assert mode in ['i', 'u']
     assert isinstance(modules, list)
