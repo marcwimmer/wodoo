@@ -114,6 +114,8 @@ def _restore(dbname, host, port, user, password, filepath):
     method = PGRESTORE
     needs_unzip = True
 
+    import pudb
+    pudb.set_trace()
     dump_type = __get_dump_type(filepath)
     if dump_type == 'plain_text':
         needs_unzip = False
