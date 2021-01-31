@@ -176,9 +176,10 @@ def cli():
     pass
 
 @click.command()
+@click.argument("modules", required=False)
 @click.option('--non-interactive')
 @click.option('--no-update-modulelist')
-def main(non_interactive, no_update_modulelist):
+def main(modules, non_interactive, no_update_modulelist):
     prepare_run()
 
     import pudb
