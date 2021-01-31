@@ -123,7 +123,10 @@ def _install_module(config, modname):
     update('u', [modname])
 
 
-def update_module_list(config, ):
+def update_module_list(config):
+    if config.no_update_modulelist:
+        click.secho("No update module list flag set. Not updating.")
+        return
     _install_module(config, "update_module_list")
 
 
