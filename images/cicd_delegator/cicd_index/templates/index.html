@@ -50,10 +50,10 @@
                                 <td>
                                     {{link.get('docker_state')}}
                                     {% if link.get('docker_state') == 'running' %}
-                                    <a href="#">Stop</a>
+                                    <a data-name="{{link['name']}}" href="#">Stop</a>
                                     {% endif %}
                                     {% if link.get('docker_state') == 'stopped' %}
-                                    <a href="#">Start</a>
+                                    <a data-name="{{link['name']}}" href="#">Start</a>
                                     {% endif %}
                                 </td>
                                 <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
