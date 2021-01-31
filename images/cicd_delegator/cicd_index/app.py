@@ -209,4 +209,6 @@ def index():
 
 @app.route('/__start_cicd')
 def start_cicd():
+    import pudb
+    pudb.set_trace()
     return render_template('start_cicd.html')
