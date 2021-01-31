@@ -80,7 +80,6 @@ def next_instance_name():
     assert key
     sites = list(db.sites.find({'git_branch': branch}))
     sites = sorted(sites, key=lambda x: x['index'])
-    active_sites = [x for x in sites if x.get('enabled')]
 
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
 
@@ -117,6 +116,7 @@ def previous_instance():
     if not branch_name:
         raise Exception("Missing branch_name")
     sites = db.sites.find({"git_branch": branch_name})
+    active_sites = [x for x in sites if x.get('enabled')]
     site = {}
     if active_sites:
         site = active_sites[-1]
