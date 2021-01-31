@@ -190,10 +190,12 @@ def dangling_check():
                 DBModules.abort_upgrade()
             else:
                 DBModules.abort_upgrade()
-@click.group
+
+@click.group(invoke_without_command=True)
 def cli():
     pass
 
+@click.command(
 def main():
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",")]
