@@ -500,7 +500,7 @@ class Modules(object):
                     yield file.absolute()
 
         self.modules = {}
-        all_manifests = get_all_manifests():
+        all_manifests = get_all_manifests()
         click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
         for m in all_manifests:
             self.modules[m.parent.name] = Module(m)
