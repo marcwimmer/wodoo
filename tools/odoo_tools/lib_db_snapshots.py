@@ -99,6 +99,7 @@ def snapshot_remove(ctx, config, name):
 @pass_config
 @click.pass_context
 def snapshot_clear_all(ctx, config):
+    breakpoint()
     config.snapshot_manager.assert_environment(config)
 
     snapshots = config.snapshot_manager.__get_snapshots(config)
