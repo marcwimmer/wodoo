@@ -32,15 +32,15 @@ def snapshot(config):
     config.snapshot_manager = snapshot_manager
 
 def __choose_snapshot(config, take=False):
-    import pudb
-    pudb.set_trace()
     snapshots = config.snapshot_manager.__get_snapshots(config)
-    snapshots_choices = [f"{x['name']} from {x['date']}" for x in snapshots]
+    snapshots_choices = [(x['name'], f"{x['name']} from {x['date']}") for x in snapshots]
 
     if take:
         return take
 
     snapshot = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])
+    import pudb
+    pudb.set_trace()
     if not snapshot:
         sys.exit(0)
     snapshot = snapshot['snapshot']
