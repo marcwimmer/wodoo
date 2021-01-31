@@ -160,21 +160,20 @@ def install_new_modules(modules):
 
 
 def dangling_check():
-    if not NO_DANGLING_CHECK:
-        dangling_modules = DBModules.get_dangling_modules()
-        if any(x[1] == 'uninstallable' for x in dangling_modules):
-            for x in dangling_modules:
-                print("{}: {}".format(*x[:2]))
-            if INTERACTIVE and input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
-                DBModules.set_uninstallable_uninstalled()
+    dangling_modules = DBModules.get_dangling_modules()
+    if any(x[1] == 'uninstallable' for x in dangling_modules):
+        for x in dangling_modules:
+            print("{}: {}".format(*x[:2]))
+        if INTERACTIVE and input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+            DBModules.set_uninstallable_uninstalled()
 
-        if DBModules.get_dangling_modules():
-            if INTERACTIVE and not NO_DANGLING_CHECK:
-                DBModules.show_install_state(raise_error=False)
-                input("Abort old upgrade and continue? (Ctrl+c to break)")
-                DBModules.abort_upgrade()
-            else:
-                DBModules.abort_upgrade()
+    if DBModules.get_dangling_modules():
+        if INTERACTIVE and not NO_DANGLING_CHECK:
+            DBModules.show_install_state(raise_error=False)
+            input("Abort old upgrade and continue? (Ctrl+c to break)")
+            DBModules.abort_upgrade()
+        else:
+            DBModules.abort_upgrade()
 
 
 @click.group(invoke_without_command=True)
@@ -213,7 +212,8 @@ def main(modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete
     if not modules:
         raise Exception("requires module!")
 
-    dangling_check()
+    if not NO_DANGLING_CHECK:
+        dangling_check()
     to_install_modules = list(_get_to_install_modules(list(modules)))
 
     # install server wide modules and/or update them
