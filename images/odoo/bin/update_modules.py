@@ -19,8 +19,6 @@ from odoo_tools.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
 prepare_run()
-import pudb
-pudb.set_trace()
 
 INTERACTIVE = not any(x == '--non-interactive' for x in sys.argv)
 NO_UPDATE_MODULELIST = any(x == '--no-update-modulelist' for x in sys.argv)
