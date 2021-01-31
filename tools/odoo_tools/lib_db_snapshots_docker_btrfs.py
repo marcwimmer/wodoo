@@ -53,13 +53,17 @@ def _get_subvolume_dir(config):
     return subvolume_dir
 
 def _get_btrfs_infos(path):
+    import pudb
+    pudb.set_trace()
     info = {}
     for line in subprocess.check_output([
             '/usr/bin/btrfs',
             str(path)
     ]).split("\n"):
         for line in infos:
-
+            if 'Creation time:' in line:
+                info['date'] = arrow.get(line.split(":", 1)[1].strip()).datetime
+    return info
 
 def __get_snapshots(config):
     files = list(_get_subvolume_dir(config).glob("*"))
