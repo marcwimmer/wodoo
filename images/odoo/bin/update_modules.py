@@ -52,7 +52,7 @@ def update(config, mode, modules):
             params += [TESTS]
         rc = exec_odoo('config_update', *params)
         if rc:
-            click.secho(f"Error at {mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
+            click.secho(f"Error at {config.mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
         for module in modules:
             if not DBModules.is_module_installed(module):
                 if mode == 'i':
