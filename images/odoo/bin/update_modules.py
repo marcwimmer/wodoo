@@ -217,7 +217,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
         raise Exception("requires module!")
 
     if not no_dangling_check:
-        dangling_check()
+        dangling_check(config)
     import pudb
     pudb.set_trace()
     to_install_modules = list(_get_to_install_modules(list(modules)))
