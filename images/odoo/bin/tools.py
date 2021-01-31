@@ -94,9 +94,9 @@ def _run_libreoffice_in_background():
 def get_config_file(confname):
     return str(Path(os.environ['ODOO_CONFIG_DIR']) / confname)
 
-def prepare_run(config=None):
+def prepare_run(local_config=None):
 
-    _replace_variables_in_config_files(config)
+    _replace_variables_in_config_files(local_config)
 
     if config['RUN_AUTOSETUP'] == "1":
         _run_autosetup()
