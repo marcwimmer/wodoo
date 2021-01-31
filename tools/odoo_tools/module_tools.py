@@ -504,9 +504,6 @@ class Modules(object):
         modnames = set()
         started = arrow.get()
         from .odoo_config import get_odoo_addons_paths
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("INIT MODULES")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
         def get_all_manifests():
             """
