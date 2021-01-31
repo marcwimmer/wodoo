@@ -26,6 +26,9 @@ def get_odoo_addons_paths(relative=False, no_extra_addons_paths=False):
     c = customs_dir()
     res = []
     for x in m['addons_paths']:
+        if no_extra_addons_paths:
+            if x not in ['odoo/addons', 'odoo/odoo/addons']:
+                continue
         if relative:
             res.append(x)
         else:
