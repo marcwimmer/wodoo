@@ -15,6 +15,8 @@ import pymongo
 import json
 from pathlib import Path
 from bson.json_util import dumps
+import threading
+import logging
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
@@ -33,6 +35,18 @@ app = Flask(
 )
 
 docker = Docker.from_env()
+
+def cycle_down_apps():
+    try:
+
+    except as e:
+        logging.error(ex)
+
+
+t = threading.Thread(target=cycle_down_apps)
+t.daemon = True
+t.start()
+
 
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
