@@ -202,8 +202,9 @@ def cli():
 @click.option('--delete-qweb', is_flag=True)
 @click.option('--no-tests', is_flag=True)
 @click.option('--no-dangling-check', is_flag=True)
+@click.option('--no-install-server-wide-first', is_flag=True)
 @pass_config
-def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check):
+def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first):
     prepare_run()
 
     config.interactive = not non_interactive
@@ -229,7 +230,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     to_install_modules = list(_get_to_install_modules(config, modules))
 
     # install server wide modules and/or update them
-    if not modules or tuple(modules) == ('all',):
+    if not no_install_server_wide_first and not modules or tuple(modules) == ('all',):
         c = 'magenta'
         server_wide_modules = config.manifest['server-wide-modules']
         # leave out base modules
@@ -240,9 +241,9 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
         to_install_swm = list(filter(lambda x: x in to_install_modules, server_wide_modules))
         to_update_swm = list(filter(lambda x: x not in to_install_swm, server_wide_modules))
         click.secho(f"Installing {','.join(to_install_swm)}", fg=c)
-        update('i', to_install_swm)
+        update(config, 'i', to_install_swm)
         click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
-        update('u', to_update_swm)
+        update(config, 'u', to_update_swm)
 
         _uninstall_marked_modules(config)
 
