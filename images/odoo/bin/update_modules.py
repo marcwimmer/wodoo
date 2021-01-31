@@ -163,6 +163,8 @@ def _get_to_install_modules(config, modules):
                 if module != 'base':
                     update_module_list(config)
                     if not DBModules.is_module_listed(module):
+                        import pudb
+                        pudb.set_trace()
                         raise Exception("After updating module list, module was not found: {}".format(module))
             yield module
 
