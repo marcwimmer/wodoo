@@ -108,10 +108,12 @@ def previous_instance():
     if not branch_name:
         raise Exception("Missing branch_name")
     sites = db.sites.find({"git_branch": branch_name})
+    active_sites = [x for x in sites if x.get('enabled')]
     sites = sorted(sites, key=lambda x: x['index'])
     site = {}
     if sites:
         site = sites[-1]
+    result = site
     return jsonify(site)
 
 @app.route("/site", methods=["GET"])
