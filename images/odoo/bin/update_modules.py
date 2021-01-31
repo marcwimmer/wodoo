@@ -154,6 +154,8 @@ def _uninstall_marked_modules(config):
 
 
 def _get_to_install_modules(config, modules):
+    import pudb
+    pudb.set_trace()
     for module in modules:
         if module in ['all']:
             yield module
