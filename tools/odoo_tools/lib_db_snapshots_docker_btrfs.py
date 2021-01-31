@@ -62,11 +62,9 @@ def _get_btrfs_infos(path):
             str(path)
     ]).decode('utf-8').split("\n"):
         if 'Creation time:' in line:
-            import pudb
-            pudb.set_trace()
             line = line.split(":", 1)[1].strip()
             line = " ".join(line.split(" ")[:2])
-            info['date'] = arrow.get().datetime
+            info['date'] = arrow.get(line).datetime
     return info
 
 def __get_snapshots(config):
