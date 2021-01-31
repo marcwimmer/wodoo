@@ -175,12 +175,8 @@ def stop_instance():
 @app.route("/instance/status")
 def instance_state():
     name = request.args['name']
-    container_ids = _get_container_ids(name)
-    docker = ["/usr/bin/docker"]
-    cmd = docker + ['kill'] + container_ids
-    subprocess.check_call(cmd)
     return jsonify({
-        'container_ids': container_ids,
+        'state': 'running' if _get_docker_state(name) else 'stopped'
     })
 
 def _get_docker_state(name):
