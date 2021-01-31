@@ -68,7 +68,7 @@ def update(config, mode, modules):
             del module
         rc and sys.exit(rc)
 
-    if I18N_OVERWRITE or ONLY_I18N:
+    if config.i18n_overwrite or config.only_i18n:
         for module in modules:
             module = Module.get_by_name(module)
             if DBModules.is_module_installed(module.name):
