@@ -502,9 +502,9 @@ class Modules(object):
 
         self.modules = {}
         all_manifests = get_all_manifests()
-        click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
         for m in all_manifests:
             self.modules[m.parent.name] = Module(m)
+        click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
 
     def get_changed_modules(self, sha_start):
         filepaths = subprocess.check_output([
