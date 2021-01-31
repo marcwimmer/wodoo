@@ -53,8 +53,8 @@ def do_list(config):
     config.snapshot_manager.assert_environment(config)
     snapshots = config.snapshot_manager.__get_snapshots(config)
     from tabulate import tabulate
-    rows = [(x['name'], x['date']) for x in snapshots]
-    click.echo(tabulate(rows, ["Name", "Date"]))
+    rows = [(x['name'], x['date'], x['path']) for x in snapshots]
+    click.echo(tabulate(rows, ["Name", "Date", "Path"]))
 
 
 @snapshot.command(name="save")
