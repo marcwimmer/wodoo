@@ -24,6 +24,10 @@ mode_text = {
     'u': 'updating',
 }
 
+class Config(object):
+    pass
+
+pass_config = click.make_pass_decorator(Config, ensure=True)
 
 def update(config, mode, modules):
     assert mode in ['i', 'u']
