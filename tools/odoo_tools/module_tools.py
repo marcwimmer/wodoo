@@ -506,7 +506,6 @@ class Modules(object):
             self.modules[m.parent.name] = Module(m)
 
         # if directory is clear, we may cache
-
         click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
 
     def is_git_clean(self):
