@@ -263,7 +263,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
             do_delete_qweb(module)
 
     if modules:
-        update('u', modules)
+        update(config, 'u', modules)
         summary['update'] += modules
 
     c = 'green'
