@@ -32,6 +32,8 @@ def snapshot(config):
     config.snapshot_manager = snapshot_manager
 
 def __choose_snapshot(config, take=False):
+    import pudb
+    pudb.set_trace()
     snapshots = config.snapshot_manager.__get_snapshots(config)
 
     if take:
