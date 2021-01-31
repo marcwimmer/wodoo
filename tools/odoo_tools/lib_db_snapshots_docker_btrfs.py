@@ -86,6 +86,7 @@ def _turn_into_subvolume(path):
         return
 
 def make_snapshot(config, name):
+    name = name.replace('-', '_')
     import pudb
     pudb.set_trace()
     volume_name = __get_postgres_volume_name(config)
