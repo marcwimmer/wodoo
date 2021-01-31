@@ -122,7 +122,7 @@ def update_module_list():
     _install_module("update_module_list")
 
 
-def _uninstall_marked_modules(manifest, odoo_version):
+def _uninstall_marked_modules(config):
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
@@ -200,10 +200,9 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
 
     run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
-    if NO_RUN_TESTS:
-        run_test = False
+    config.run_test = not no_tests
 
-    manifest = MANIFEST()
+    config.manifest = MANIFEST()
 
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",")]
@@ -232,7 +231,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
         click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
         update('u', to_update_swm)
 
-        _uninstall_marked_modules(manifest, odoo_version)
+        _uninstall_marked_modules(config)
 
     c = 'yellow'
     click.secho("--------------------------------------------------------------------------", fg=c)
