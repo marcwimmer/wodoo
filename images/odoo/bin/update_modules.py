@@ -157,7 +157,6 @@ def _uninstall_marked_modules(config):
 def _get_to_install_modules(config, modules):
     for module in modules:
         if module in ['all']:
-            yield module
             continue
 
         if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module not in ('base',))):
