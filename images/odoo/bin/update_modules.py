@@ -101,7 +101,7 @@ def update(config, mode, modules):
     print(mode, ','.join(modules), 'done')
 
 
-def _install_module(modname):
+def _install_module(config, modname):
     if not DBModules.is_module_listed(modname):
         if modname not in ['update_module_list']:
             update_module_list()
@@ -123,8 +123,8 @@ def _install_module(modname):
     update('u', [modname])
 
 
-def update_module_list():
-    _install_module("update_module_list")
+def update_module_list(config, ):
+    _install_module(config, "update_module_list")
 
 
 def _uninstall_marked_modules(config):
@@ -147,7 +147,7 @@ def _uninstall_marked_modules(config):
         to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
         if to_uninstall:
             click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
-            _install_module(module)
+            _install_module(config, module)
 
 
 def _get_to_install_modules(config, modules, no_update_modulelist):
