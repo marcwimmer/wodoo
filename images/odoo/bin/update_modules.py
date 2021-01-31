@@ -153,7 +153,7 @@ def _uninstall_marked_modules(config):
             _install_module(config, module)
 
 
-def _get_to_install_modules(config, modules, no_update_modulelist):
+def _get_to_install_modules(config, modules):
     for module in modules:
         if module in ['all']:
             yield module
