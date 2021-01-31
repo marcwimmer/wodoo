@@ -47,6 +47,7 @@ def cycle_down_apps():
             sites = db.sites.find({}, {'name': 1, 'last_access': 1})
             for site in sites:
                 if (arrow.get() - arrow.get(site.get('last_access', '1980-04-04') or '1980-04-04')).total_seconds() > 2 * 3600:
+                    logger.info(f"Cycling down instance due to inactivity: {site['name'}")
                     stop_instance(site['name'])
 
         except Exception as e:
