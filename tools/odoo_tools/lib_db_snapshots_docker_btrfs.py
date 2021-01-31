@@ -23,6 +23,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from pathlib import Path
 
+DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
 SNAPSHOT_DIR = Path("/var/lib/docker/subvolumes")
 
 def __get_postgres_volume_name(config):
@@ -95,7 +96,7 @@ def make_snapshot(config, name):
     volume_name = __get_postgres_volume_name(config)
     __dc(['stop', '-t 1'] + ['postgres'])
     path = _get_subvolume_dir(config)
-    _turn_into_subvolume(Path('/var/lib/docker/volumes') / __get_postgres_volume_name(config))
+    _turn_into_subvolume(DOCKER_VOLUMES / __get_postgres_volume_name(config))
 
     # check if name already exists, and if so abort
     dest_path = path / name
@@ -107,7 +108,7 @@ def make_snapshot(config, name):
         _get_cmd_butter_volume() + [
             "snapshot",
             "-r", # readonly
-            f'/var/lib/docker/volumes/{volume_name}',
+            f'{DOCKER_VOLUMES}/{volume_name}',
             str(dest_path),
         ]).decode('utf-8').strip()
     __dc(['up', '-d'] + ['postgres'])
@@ -126,7 +127,7 @@ def restore(config, name):
         sys.exit(-1)
 
     __dc(['stop', '-t 1'] + ['postgres'])
-    volume_path = Path("/var/lib/docker/volumes") / __get_postgres_volume_name(config)
+    volume_path = DOCKER_VOLUMES / __get_postgres_volume_name(config)
     if volume_path.exists():
         subprocess.check_call(
             _get_cmd_butter_volume() + [
