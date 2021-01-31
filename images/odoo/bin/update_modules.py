@@ -157,15 +157,17 @@ def _get_to_install_modules(config, modules):
     for module in modules:
         if module in ['all']:
             yield module
+            continue
 
         if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module not in ('base',))):
             if not DBModules.is_module_listed(module):
                 if module != 'base':
                     update_module_list(config)
                     if not DBModules.is_module_listed(module):
-                        import pudb
-                        pudb.set_trace()
-                        raise Exception("After updating module list, module was not found: {}".format(module))
+                        if not config.no_update_modulelist:
+                            raise Exception(f"After updating module list, module was not found: {module}")
+                        else:
+                            raise Exception(f"Module not found to update: {module}")
             yield module
 
 
