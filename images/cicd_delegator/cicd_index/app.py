@@ -111,7 +111,7 @@ def register_site():
     raise Exception("only POST")
 
 @app.route("/previous_active_instance", methods=["GET"])
-def previous_instance():
+def previous_active_instance():
     branch_name = request.args.get('branch')
     if not branch_name:
         raise Exception("Missing branch_name")
