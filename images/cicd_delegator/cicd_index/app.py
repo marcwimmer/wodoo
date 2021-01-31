@@ -147,10 +147,11 @@ def _get_container_ids(name):
     container_ids = list(map(lambda x: x.strip(), subprocess.check_output(cmd).decode('utf-8').strip().split("\n")))
     return container_ids
 
-@app.route("/instance/control")
+@app.route("/instance/start")
 def control_instance():
     name = request.args['name']
     container_ids = _get_container_ids(name)
+
 
 @app.route('/')
 def index():
