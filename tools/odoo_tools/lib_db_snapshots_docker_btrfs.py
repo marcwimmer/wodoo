@@ -100,10 +100,10 @@ def make_snapshot(config, name):
             "snapshot",
             "-r", # readonly
             f'/var/lib/docker/volumes/{volume_name}',
-            str(path / snapshot_name),
+            str(path / name),
         ]).decode('utf-8').strip()
     __dc(['up', '-d'] + ['postgres'])
-    return snapshot_name
+    return name
 
 def restore(config, name):
     if not name:
