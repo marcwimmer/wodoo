@@ -209,7 +209,7 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
     try:
         params = [','.join(module)]
         if no_extra_addons_paths:
-            params += ['--no_extra_addons_paths']
+            params += ['--no-extra-addons-paths']
         if non_interactive:
             params += ['--non-interactive']
         if no_install_server_wide_first:
