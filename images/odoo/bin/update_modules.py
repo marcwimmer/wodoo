@@ -189,6 +189,8 @@ def dangling_check():
                 DBModules.abort_upgrade()
 
 def main():
+    import pudb
+    pudb.set_trace()
     modules = PARAMS[0] if PARAMS else ""
     modules = [x for x in modules.split(",") if x != 'all']
     summary = defaultdict(list)
