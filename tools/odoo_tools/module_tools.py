@@ -482,8 +482,16 @@ class Modules(object):
 
     def __init__(self):
         modnames = set()
+        cache_file = self._get_cache_path()
         if self.is_git_clean():
-        self._get_modules()
+            if not cache_file.exists():
+                modules = self._get_modules()
+                pickle.dumps(modules)
+                self.modules = modules
+            else:
+                self.modules = pickle.loads(modules)
+        else:
+            self.modules = self._get_modules()
 
     def _get_cache_path(self):
         parent = Path("/tmp/.odoo.modules")
@@ -512,13 +520,14 @@ class Modules(object):
                     modnames.add(file.absolute())
                     yield file.absolute()
 
-        self.modules = {}
+        modules = {}
         all_manifests = get_all_manifests()
         for m in all_manifests:
-            self.modules[m.parent.name] = Module(m)
+            modules[m.parent.name] = Module(m)
 
         # if directory is clear, we may cache
         click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
+        return modules
 
     def is_git_clean(self):
         status = subprocess.check_output(['/usr/bin/git', '--porcelain']).decode('utf-8').strip()
