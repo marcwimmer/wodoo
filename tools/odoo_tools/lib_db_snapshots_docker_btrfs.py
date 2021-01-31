@@ -63,9 +63,8 @@ def _get_btrfs_infos(path):
             'show',
             str(path)
     ]).split("\n").decode('utf-8'):
-        for line in infos:
-            if 'Creation time:' in line:
-                info['date'] = arrow.get(line.split(":", 1)[1].strip()).datetime
+        if 'Creation time:' in line:
+            info['date'] = arrow.get(line.split(":", 1)[1].strip()).datetime
     return info
 
 def __get_snapshots(config):
