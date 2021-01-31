@@ -110,9 +110,16 @@ def make_snapshot(config, name):
 def restore(config, name):
     if not name:
         return
+
+    if '/' not in name:
+        name = _get_subvolume_dir(config) / name
+
+    name = Path(name)
+    if not name.exists():
+        click.secho(f"Path {name} does not exist.", fg='red')
+        sys.exit(-1)
+
     __dc(['stop', '-t 1'] + ['postgres'])
-    import pudb
-    pudb.set_trace()
     volume_path = Path("/var/lib/docker/volumes") / __get_postgres_volume_name(config)
     if volume_path.exists():
         subprocess.check_call(
