@@ -481,7 +481,6 @@ def update_view_in_db(filepath, lineno):
 class Modules(object):
 
     def __init__(self):
-        modnames = set()
         cache_file = self._get_cache_path()
         if self.is_git_clean():
             if not cache_file.exists():
@@ -502,6 +501,7 @@ class Modules(object):
         return subprocess.check_output([('/usr/bin/git', 'git rev-parse --verify HEAD')]).decode('utf-8').strip()
 
     def _get_modules(self):
+        modnames = set()
         started = arrow.get()
         from .odoo_config import get_odoo_addons_paths
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
