@@ -102,7 +102,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     if not git_branch:
         raise Exception("required git branch!")
     response = requests.get(config.url + "/previous_active_instance", params={"branch": git_branch})
-    prev_instance = response.json()
+    prev_active_instance = response.json()
     site = {}
     site['date_registered'] = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
     site['title'] = title
@@ -114,8 +114,8 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_sha'] = git_sha
     site['diff_modules'] = []
     # get the previous instance by branch
-    if prev_instance:
-        current_sha = prev_instance.get('git', {}).get('sha')
+    if prev_active_instance:
+        current_sha = prev_active_instance.get('git', {}).get('sha')
         if current_sha:
             site['diff_modules'] = Modules.get_changed_modules(current_sha)
 
