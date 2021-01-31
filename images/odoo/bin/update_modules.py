@@ -195,7 +195,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
 
     import pudb
     pudb.set_trace()
-    config.interactive =not non_interactive
+    config.interactive = not non_interactive
     config.i18n_overwrite = i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
 
