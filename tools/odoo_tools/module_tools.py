@@ -506,6 +506,10 @@ class Modules(object):
         for m in all_manifests:
             self.modules[m.parent.name] = Module(m)
 
+        import pudb
+        pudb.set_trace()
+        data = pickle.dumps(self.modules)
+
 
     def get_changed_modules(self, sha_start):
         filepaths = subprocess.check_output([
