@@ -229,7 +229,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     to_install_modules = list(_get_to_install_modules(config, modules))
 
     # install server wide modules and/or update them
-    if not modules:
+    if not modules or tuple(modules) == ('all',):
         c = 'magenta'
         server_wide_modules = config.manifest['server-wide-modules']
         # leave out base modules
