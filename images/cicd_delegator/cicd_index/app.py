@@ -213,7 +213,6 @@ def index():
     for site in sites_grouped:
         sites_grouped[site] = sorted(sites_grouped[site], key=lambda x: x['index'], reverse=True)
 
-
     return render_template(
         'index.html',
         sites=sites_grouped,
