@@ -89,8 +89,6 @@ def next_instance_name():
     info = {
         'commit_before': '',
     }
-    import pudb
-    pudb.set_trace()
     if index:
         site = [x for x in sites if x['index'] == index]
         info['commit_before'] = site[0]['git_sha']
