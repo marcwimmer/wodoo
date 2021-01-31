@@ -51,7 +51,7 @@ def do_list(config):
     snapshots = config.snapshot_manager.__get_snapshots(config)
     import tabulate
     rows = [(x['name'], x['date']) for x in snapshots]
-    click.echo(tabulate(rows, ["Name", "Date"])
+    click.echo(tabulate(rows, ["Name", "Date"]))
 
 
 @snapshot.command(name="save")
