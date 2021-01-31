@@ -181,6 +181,8 @@ def instance_state():
         'container_ids': container_ids,
     })
 
+def _get_docker_state(name):
+
 
 @app.route('/')
 def index():
@@ -196,12 +198,15 @@ def index():
             except arrow.parser.ParserError:
                 continue
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
+    for site in sites:
+        site['docker_state'] = _get_docker_state(site['name'])
 
     sites_grouped = defaultdict(list)
     for site in sites:
         sites_grouped[site['git_branch']].append(site)
     for site in sites_grouped:
         sites_grouped[site] = sorted(sites_grouped[site], key=lambda x: x['index'], reverse=True)
+
 
     return render_template(
         'index.html',
