@@ -18,6 +18,7 @@ from odoo_tools.odoo_config import customs_dir
 from odoo_tools.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
+import click
 prepare_run()
 
 import pudb
@@ -189,6 +190,9 @@ def dangling_check():
                 DBModules.abort_upgrade()
             else:
                 DBModules.abort_upgrade()
+@click.group
+def cli():
+    pass
 
 def main():
     modules = PARAMS[0] if PARAMS else ""
