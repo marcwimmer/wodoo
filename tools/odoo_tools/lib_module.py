@@ -159,7 +159,7 @@ def download_openupgrade(ctx, config, version):
 @click.option('--no-install-server-wide-first', default=False, is_flag=True)
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False, no_install_server_wide_first):
+def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_dangling_check=False, no_install_server_wide_first, check_install_state=True, no_restart=True, i18n=False, tests=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
