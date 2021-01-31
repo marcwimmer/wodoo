@@ -142,7 +142,7 @@ def site():
 
 @app.route("/instance/control")
 def control_instance():
-    request.args.get('name')
+    name = request.args['name']
 
 @app.route('/')
 def index():
