@@ -39,7 +39,7 @@ docker = Docker.from_env()
 def cycle_down_apps():
     try:
         pass
-    except as e:
+    except Exception as e:
         logging.error(ex)
 
 
