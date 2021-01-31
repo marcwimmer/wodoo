@@ -1,5 +1,5 @@
 import os
-import docker
+import docker as Docker
 import arrow
 import subprocess
 from flask import jsonify
@@ -30,6 +30,8 @@ app = Flask(
     __name__,
     static_folder='/_static_index_files',
 )
+
+docker = Docker.from_env()
 
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
