@@ -25,7 +25,7 @@ def update(config, mode, modules):
     if not modules:
         return
 
-    # if ','.join(modules) == 'all':
+    # if ','.join(modules) == 'all': # needed for migration
     #    raise Exception("update 'all' not allowed")
 
     if config.run_test:
