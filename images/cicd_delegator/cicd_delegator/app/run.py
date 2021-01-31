@@ -53,6 +53,8 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if self.path in ['/index', '/index/'] or "/__start_cicd" in self.path or not delegator_path or self.path.startswith("/cicd/"):
             path = self.path
+            if path.startswith("/cicd/"):
+                path = path[5:]
             if path.split("/")[1] == 'index':
                 path = '/'
             else:
