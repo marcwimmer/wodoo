@@ -164,7 +164,7 @@ def install_new_modules(modules):
     update('i', modules)
 
 
-def dangling_check(config):
+def dangling_check():
     dangling_modules = DBModules.get_dangling_modules()
     if any(x[1] == 'uninstallable' for x in dangling_modules):
         for x in dangling_modules:
