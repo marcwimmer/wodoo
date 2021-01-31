@@ -151,6 +151,11 @@ def _get_container_ids(name):
 def control_instance():
     name = request.args['name']
     container_ids = _get_container_ids(name)
+    docker = ["/usr/bin/docker"]
+    cmd = docker + ['up', '-d'] + container_ids
+    return jsonify({
+        'container_ids': container_ids,
+    })
 
 
 @app.route('/')
