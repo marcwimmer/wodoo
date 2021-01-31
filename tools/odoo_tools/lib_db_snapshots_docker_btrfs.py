@@ -54,7 +54,7 @@ def _get_subvolume_dir(config):
 
 def _get_btrfs_infos(path):
     info = {}
-    for line in infos = subprocess.check_output([
+    for line in subprocess.check_output([
             '/usr/bin/btrfs',
             str(path)
     ]).split("\n"):
