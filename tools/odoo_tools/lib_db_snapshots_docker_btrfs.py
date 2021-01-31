@@ -92,9 +92,10 @@ def make_snapshot(config, name):
     _turn_into_subvolume(Path('/var/lib/docker/volumes') / __get_postgres_volume_name(config))
 
     # check if name already exists, and if so abort
-    path.glob(f"{name} - *")
+    dest_path = path / name
+    if dest_path.exists():
+        click.secho(f"Path {dest_path} already exists.", fg='red')
 
-    #snapshot_name = f"{name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     subprocess.check_output(
         _get_cmd_butter_volume() + [
             "snapshot",
