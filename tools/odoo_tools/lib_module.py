@@ -204,6 +204,8 @@ def update(ctx, config, module, dangling_modules, installed_modules, non_interac
         with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
             f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
+    import pudb
+    pudb.set_trace()
     try:
         params = [','.join(module)]
         if non_interactive:
