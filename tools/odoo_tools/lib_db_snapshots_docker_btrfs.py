@@ -57,6 +57,7 @@ def _get_btrfs_infos(path):
     pudb.set_trace()
     info = {}
     for line in subprocess.check_output([
+            'sudo',
             '/usr/bin/btrfs',
             'subvol',
             'show',
