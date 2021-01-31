@@ -144,9 +144,7 @@ def site():
 @app.route("/instance/control")
 def control_instance():
     name = request.args['name']
-    cmd = [
-        "/usr/bin/docker",
-    ]
+    docker = ["/usr/bin/docker"]
     subprocess(
 
 @app.route('/')
