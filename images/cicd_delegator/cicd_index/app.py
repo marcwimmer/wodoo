@@ -204,7 +204,7 @@ def index():
                 continue
     sites = sorted(sites, key=lambda x: x.get('updated', x.get('last_access', arrow.get('1980-04-04'))), reverse=True)
     for site in sites:
-        site['docker_state'] = _get_docker_state(site['name'])
+        site['docker_state'] = 'running' if _get_docker_state(site['name']) else 'stopped'
 
     sites_grouped = defaultdict(list)
     for site in sites:
