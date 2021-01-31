@@ -86,15 +86,15 @@ def _turn_into_subvolume(path):
         return
 
 def make_snapshot(config, name):
-    name = name.replace('-', '_')
-    import pudb
-    pudb.set_trace()
     volume_name = __get_postgres_volume_name(config)
     __dc(['stop', '-t 1'] + ['postgres'])
     path = _get_subvolume_dir(config)
     _turn_into_subvolume(Path('/var/lib/docker/volumes') / __get_postgres_volume_name(config))
 
-    snapshot_name = f"{name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    # check if name already exists, and if so abort
+    path.glob(f"{name} - *")
+
+    #snapshot_name = f"{name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     subprocess.check_output(
         _get_cmd_butter_volume() + [
             "snapshot",
