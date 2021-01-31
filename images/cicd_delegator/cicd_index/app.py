@@ -32,9 +32,7 @@ app = Flask(
 )
 
 docker = Docker.from_env()
-import pudb
-pudb.set_trace()
-print(docker.containers.list())
+help(docker.containers.list)
 
 class JSONEncoder(json.JSONEncoder):
     # for encoding ObjectId
