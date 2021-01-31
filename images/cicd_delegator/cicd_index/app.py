@@ -150,6 +150,7 @@ def _get_container_ids(name):
 @app.route("/instance/control")
 def control_instance():
     name = request.args['name']
+    container_ids = _get_container_ids(name)
 
 @app.route('/')
 def index():
