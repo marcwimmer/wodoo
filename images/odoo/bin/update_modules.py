@@ -150,7 +150,7 @@ def _uninstall_marked_modules(config):
             _install_module(module)
 
 
-def _get_to_install_modules(modules):
+def _get_to_install_modules(config, modules):
     for module in modules:
         if not DBModules.is_module_installed(module, raise_exception_not_initialized=(module != 'base')):
             if not DBModules.is_module_listed(module):
@@ -220,7 +220,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
         dangling_check(config)
     import pudb
     pudb.set_trace()
-    to_install_modules = list(_get_to_install_modules(list(modules)))
+    to_install_modules = list(_get_to_install_modules(list(modules), no_update_modulelist))
 
     # install server wide modules and/or update them
     if not modules:
