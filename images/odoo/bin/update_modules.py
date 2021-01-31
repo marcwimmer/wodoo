@@ -218,7 +218,7 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     # install server wide modules and/or update them
     if not modules:
         c = 'magenta'
-        server_wide_modules = manifest['server-wide-modules']
+        server_wide_modules = config.manifest['server-wide-modules']
         # leave out base modules
         server_wide_modules = list(filter(lambda x: x not in ['web'], server_wide_modules))
         click.secho("--------------------------------------------------------------------------", fg=c)
