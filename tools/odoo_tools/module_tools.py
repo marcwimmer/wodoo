@@ -500,7 +500,7 @@ class Modules(object):
         return parent / f'sha_{self._get_sha()}'
 
     def _get_sha(self):
-        return subprocess.check_output([('/usr/bin/git', 'git rev-parse --verify HEAD')]).decode('utf-8').strip()
+        return subprocess.check_output([('/usr/bin/git', 'rev-parse', '--verify', 'HEAD')]).decode('utf-8').strip()
 
     def _get_modules(self):
         modnames = set()
