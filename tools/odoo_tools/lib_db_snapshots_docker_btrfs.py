@@ -52,12 +52,21 @@ def _get_subvolume_dir(config):
         ])
     return subvolume_dir
 
+def _get_btrfs_infos(path):
+    info = {}
+    for line in infos = subprocess.check_output([
+            '/usr/bin/btrfs',
+            str(path)
+    ]).split("\n"):
+    for line in infos:
+
+
 def __get_snapshots(config):
     files = list(_get_subvolume_dir(config).glob("*"))
     snapshots = list({
         'path': str(x),
         'name': x.name,
-        'date': arrow.get(x.stat().st_mtime).datetime,
+        'date': _get_btrfs_infos(x)['date'],
     } for x in reversed(files))
     return snapshots
 
