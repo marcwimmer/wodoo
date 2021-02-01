@@ -127,13 +127,6 @@ def unregister(ctx, config):
         if file.exists():
             file.unlink()
 
-
-@cicd.command()
-@pass_config
-def notify_created(config):
-    _require_project(config)
-    requests.get(config.url + "/activate", params={"site": config.project_name})
-
 @cicd.command()
 @pass_config
 def rebuild(config):
