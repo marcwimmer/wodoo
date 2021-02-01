@@ -298,6 +298,9 @@ def index():
 
 @app.route('/__start_cicd')
 def start_cicd():
+    return __start_cicd()
+
+def _start_cicd():
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
