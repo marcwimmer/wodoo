@@ -172,6 +172,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     # ctx.invoke(module_link)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     if since_git_sha and module:
+        import pudb
+        pudb.set_trace()
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
         default_modules = set(_get_default_modules_to_update())
