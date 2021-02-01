@@ -274,10 +274,6 @@ def _get_docker_state(name):
     return 'running' in states
 
 @app.route('/')
-def index_entrypoint():
-    return redirect(url_for("index_func"))
-
-@app.route('/index')
 def index_func():
 
     sites = list(db.sites.find({'enabled': True}))
@@ -324,6 +320,6 @@ def _start_cicd():
                 break
             time.sleep(1)
         else:
-            return redirect(url_for("index_func", message="Please try again."))
+            return redirect("/index?" + urllib.urlencode(self.request.params))
 
     return render_template('start_cicd.html')
