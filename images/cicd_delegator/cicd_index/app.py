@@ -201,6 +201,19 @@ def instance_state():
         'state': 'running' if _get_docker_state(name) else 'stopped'
     })
 
+@app.route("/notify_instance_updated")
+def notify_instance_updated():
+    info = {
+        'key': request.args['key']
+        'branch': request.args['branch']
+        'sha': request.args['sha']
+    }
+    assert key
+    assert branch
+    assert sha
+
+    db.updateds.insert_one(info)
+
 def _get_docker_state(name):
     docker.ping()
     containers = docker.containers.list(all=True, filters={'name': [name]})
