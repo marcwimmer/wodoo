@@ -274,6 +274,10 @@ def _get_docker_state(name):
     return 'running' in states
 
 @app.route('/')
+def index_entrypoint():
+    return url_for("index_func")
+
+@app.route('/index')
 def index_func():
 
     sites = list(db.sites.find({'enabled': True}))
