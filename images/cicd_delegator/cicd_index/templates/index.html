@@ -61,6 +61,8 @@
                                     {% if link.get('docker_state') == 'stopped' %}
                                     <a class='docker-control' data-action='start' data-name="{{link['name']}}" href="#">Start</a>
                                     {% endif %}
+
+                                    <span class="update-state" data-name="{{link['name']}}"></span>
                                 </td>
                                 <td>
                                     <a href="#" class='docker-control' data-action='destroy' data-name="{{link['name']}}">Destroy</a>
