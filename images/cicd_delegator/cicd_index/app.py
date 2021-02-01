@@ -21,6 +21,7 @@ from bson.json_util import dumps
 import threading
 import logging
 import jenkins
+import urllib
 
 
 from pymongo import MongoClient
