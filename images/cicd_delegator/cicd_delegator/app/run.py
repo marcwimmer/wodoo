@@ -70,6 +70,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         import pudb
         pudb.set_trace()
         sent = False
+        parsed_path = urlparse.urlparse(self.path)
         try:
             req_header = self.parse_headers()
             url = self._rewrite_path(req_header)
