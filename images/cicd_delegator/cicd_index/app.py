@@ -244,7 +244,8 @@ def destroy_instance():
     }
     for container in docker.containers.list(all=True, filters=info):
         container.remove()
-    # drop database
+    # TODO drop database
+    # TODO remove source code
     db.sites.remove({'name': info['name']})
     db.updates.remove({'name': info['name']})
 
