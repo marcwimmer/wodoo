@@ -247,6 +247,9 @@ def destroy_instance():
     info = {
         'name': request.args['name'],
     }
+    return jsonify({
+        'result': 'ok',
+    })
 
 
 def _get_docker_state(name):
