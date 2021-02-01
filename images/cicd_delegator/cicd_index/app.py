@@ -187,10 +187,18 @@ def instance_state():
     })
 
 @app.route("/set_updating")
-def instance_state():
+def set_updating():
     name = request.args['name']
+
+    site = db.sites.find_one({'name': name})
+    if not site:
+        raise Exception(f"site not found: {info['name']}")
+    db.sites.update_one({'_id': site['_id']}, {'$set': {
+        'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        'enabled': True,
+    }}, upsert=False)
     return jsonify({
-        'state': 'running' if _get_docker_state(name) else 'stopped'
+        'result': 'ok',
     })
 
 @app.route("/notify_instance_updated")
