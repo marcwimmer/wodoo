@@ -242,6 +242,13 @@ def last_success_full_sha():
     })
 
 
+@app.route("/destroy/instance")
+def destroy_instance():
+    info = {
+        'name': request.args['name'],
+    }
+
+
 def _get_docker_state(name):
     docker.ping()
     containers = docker.containers.list(all=True, filters={'name': [name]})
