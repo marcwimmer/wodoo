@@ -251,6 +251,7 @@ def destroy_instance():
     for container in docker.containers.list(all=True, filters=info):
         container.remove()
 
+    jenkins.build_job('clean_cicd_instance', info)
 
     # TODO drop database
     site = db.sites.find_one(info)
