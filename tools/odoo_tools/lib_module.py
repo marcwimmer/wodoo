@@ -147,7 +147,7 @@ def download_openupgrade(ctx, config, version):
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
-@click.option('--since-git-sha', '-i', default=False, is_flag=True, help="Extracts modules changed since this git sha and updates them")
+@click.option('--since-git-sha', '-i', default=False, is_flag=False, help="Extracts modules changed since this git sha and updates them")
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
 @click.option('--dangling-modules', '-d', default=False, is_flag=True, help="Updates only dangling modules")
 @click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
@@ -172,8 +172,6 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     # ctx.invoke(module_link)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     if since_git_sha and module:
-        import pudb
-        pudb.set_trace()
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
         default_modules = set(_get_default_modules_to_update())
