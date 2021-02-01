@@ -17,6 +17,9 @@
         {% include "static/js/uikit-icons.js"%}
         {% include "static/js/app.js"%}
     </script>
+    {% if message %}
+    <h2>{{message}}</h2>
+    {% endfor %}
 
     <table>
         <thead>
