@@ -150,7 +150,7 @@ def register_site():
 def site():
     q = {}
     for key in [
-        'index', 'key', 'branch',
+        'index', 'key', 'branch', 'name',
     ]:
         if request.args.get(key):
             q[key] = request.args.get(key)
