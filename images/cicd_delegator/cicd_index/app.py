@@ -236,6 +236,10 @@ def last_success_full_sha():
         return jsonify({
             'sha': updates[0]['sha']
         })
+    return jsonify({
+        'sha': '',
+    })
+
 
 def _get_docker_state(name):
     docker.ping()
