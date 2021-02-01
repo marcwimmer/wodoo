@@ -115,7 +115,6 @@ def next_instance_name():
         'key': key
     }))
     sites = sorted(sites, key=lambda x: x['index'])
-
     index = max(list(filter(bool, [x.get('index') for x in sites])) + [0])
 
     info = {
@@ -126,7 +125,7 @@ def next_instance_name():
         info['commit_before'] = site[0]['git_sha']
         info['prev_name'] = site[0]['name']
     info['name'] = f"{branch}_{key}_{str(index + 1).zfill(3)}"
-    info['index'] = index + 1
+    info['index'] = 1 if 'kept' else index + 1
     return jsonify(info)
 
 @app.route('/register', methods=['POST'])
