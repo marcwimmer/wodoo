@@ -192,7 +192,7 @@ def set_updating():
 
     site = db.sites.find_one({'name': name})
     if not site:
-        raise Exception(f"site not found: {info['name']}")
+        raise Exception(f"site not found: {name}")
     db.sites.update_one({'_id': site['_id']}, {'$set': {
         'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
         'enabled': True,
