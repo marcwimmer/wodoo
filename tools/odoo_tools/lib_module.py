@@ -177,7 +177,7 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
         default_modules = set(_get_default_modules_to_update())
         module = list(filter(lambda x: x in default_modules, _get_changed_modules(since_git_sha)))
         if not module:
-            click.secho("No module update required -exiting.")
+            click.secho("No module update required - exiting.")
             return
     else:
         module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
