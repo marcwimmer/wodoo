@@ -493,7 +493,7 @@ class Modules(object):
             self.modules = self._get_modules()
 
     def _get_cache_path(self):
-        parent = Path(f"/tmp/.odoo.modules.{os.environ['UID']}")
+        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}")
         parent.mkdir(exist_ok=True)
         return parent / f'sha_{self._get_sha()}'
 
