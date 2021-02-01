@@ -259,7 +259,6 @@ def destroy_instance():
         'result': 'ok',
     })
 
-
 def _get_docker_state(name):
     docker.ping()
     containers = docker.containers.list(all=True, filters={'name': [name]})
