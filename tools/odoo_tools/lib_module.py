@@ -394,7 +394,7 @@ def _get_changed_modules(git_sha):
     filepaths = subprocess.check_output([
         'git',
         'diff',
-        f"{start}..HEAD",
+        f"{git_sha}..HEAD",
         "--name-only",
     ]).decode('utf-8').split("\n")
     modules = []
