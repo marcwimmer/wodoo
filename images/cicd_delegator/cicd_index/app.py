@@ -9,6 +9,7 @@ import subprocess
 from flask import jsonify
 from flask import Flask
 from flask import render_template
+from flask import url_for
 from datetime import datetime
 from flask import request
 from bson import ObjectId
@@ -316,10 +317,6 @@ def _start_cicd():
                 break
             time.sleep(1)
         else:
-        return render_template(
-            'index.html',
-            sites=sites_grouped,
-            DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
-        )
+            return redirect(url_for("index"))
 
     return render_template('start_cicd.html')
