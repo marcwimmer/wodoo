@@ -243,7 +243,7 @@ def destroy_instance():
     info = {
         'name': request.args['name'],
     }
-    for container in docker.containers.list(all=True, filters=info}):
+    for container in docker.containers.list(all=True, filters=info):
         container.remove()
     # drop database
     db.sites.remove({'name': info['name']})
