@@ -139,14 +139,17 @@ def next_instance_name():
 def register_site():
     if request.method == 'POST':
         site = dict(request.json)
-        sites = db.sites.find({
+        sites = list(db.sites.find({
             "git_branch": site['git_branch'],
             "key": site['key'],
-        })
-        sites = sorted(sites, key=lambda x: x['index'])
-        site['enabled'] = False
-        db.sites.insert_one(site)
-        return jsonify({'result': 'ok', 'name': site['name']})
+            "index": site['index'],
+        }))
+        result = {'result': 'ok'}
+        if not sites:
+            site['enabled'] = False
+            db.sites.insert_one(site)
+            result['existing'] = True
+        return jsonify(result)
 
     raise Exception("only POST")
 
