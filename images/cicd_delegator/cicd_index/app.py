@@ -165,7 +165,7 @@ def previous_active_instance():
 def site():
     q = {}
     for key in [
-        'site', 'key', 'branch',
+        'index', 'key', 'branch',
     ]:
         if request.args.get(key):
             q[key] = request.args.get(key)
