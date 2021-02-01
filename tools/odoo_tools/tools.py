@@ -587,8 +587,6 @@ def _get_dump_files(backupdir, fnfilter=None):
     return rows
 
 def __get_dump_type(filepath):
-    import pudb
-    pudb.set_trace()
     temp = Path(tempfile.mktemp(suffix='.check'))
     MARKER = "PostgreSQL database dump"
     FNULL = open(os.devnull, 'w')
