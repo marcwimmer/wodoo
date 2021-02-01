@@ -300,7 +300,7 @@ def index_func():
         'index.html',
         sites=sites_grouped,
         DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
-        message=request.args.get('message')
+        message=request.args.get('message'),
     )
 
 @app.route("/test123")
