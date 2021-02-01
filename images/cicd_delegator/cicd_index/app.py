@@ -222,11 +222,9 @@ def notify_instance_updated():
 @app.route("/last_successful_sha")
 def last_success_full_sha():
     info = {
-        'key': request.args['key'],
-        'branch': request.args['branch'],
+        'name': request.args['name'],
     }
-    assert info['key']
-    assert info['branch']
+    assert info['name']
 
     updates = db.updates.find(info)
     # TODO in mongo sorting
