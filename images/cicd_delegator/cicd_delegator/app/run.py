@@ -52,8 +52,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         logger.debug(f"rewrite path: self.path: {self.path}, delegator_path: {delegator_path}")
 
-        import pudb
-        pudb.set_trace()
+        path = (self.path or '').split("?")[0]
         if self.path in ['/index', '/index/'] or "/__start_cicd" in self.path or not delegator_path or self.path.startswith("/cicd/"):
             path = self.path
             if path.split("/")[1] == 'index':
