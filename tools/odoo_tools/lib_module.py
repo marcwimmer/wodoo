@@ -390,6 +390,7 @@ def generate_update_command(ctx, config):
 
 
 def _get_changed_modules(git_sha):
+    from .module_tools import Module
     filepaths = subprocess.check_output([
         'git',
         'diff',
@@ -414,7 +415,6 @@ def _get_changed_modules(git_sha):
 @click.pass_context
 @pass_config
 def list_changed_modules(ctx, config, start):
-    from .module_tools import Module
     modules = _get_changed_modules(start)
 
     click.secho("---")
