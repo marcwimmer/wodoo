@@ -11,7 +11,7 @@ import requests
 import logging
 import json
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlsplit
 
 cicd_index_url = "http://cicd_index:5000"
 
