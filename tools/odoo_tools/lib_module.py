@@ -408,6 +408,7 @@ def _get_changed_modules(git_sha):
             modules.append(module.name)
     return list(sorted(set(modules)))
 
+
 @odoo_module.command(name="list-changed-modules")
 @click.option('-s', '--start')
 @click.pass_context
