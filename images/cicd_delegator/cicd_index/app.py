@@ -211,6 +211,11 @@ def notify_instance_updated():
     assert info['key']
     assert info['branch']
     assert info['sha']
+    for extra_args in [
+        'update_time',
+    ]:
+        info[extra_args] = request.args.get(extra_args)
+
     info['date'] = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
 
     db.updateds.insert_one(info)
