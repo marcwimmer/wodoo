@@ -223,8 +223,6 @@ def notify_instance_updated():
 
 @app.route("/last_successful_sha")
 def last_success_full_sha():
-    import pudb
-    pudb.set_trace()
     info = {
         'key': request.args['key'],
         'branch': request.args['branch'],
