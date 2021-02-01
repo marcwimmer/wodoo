@@ -102,13 +102,6 @@ def activate():
     site = request.args.get('site')
     if not site:
         raise Exception("Site missing")
-    site = db.sites.find_one({'name': site})
-    if not site:
-        raise Exception(f"site not found: {site}")
-    db.sites.update_one({'_id': site['_id']}, {'$set': {
-        'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        'enabled': True,
-    }}, upsert=False)
     return jsonify({'result': 'ok'})
 
 @app.route("/next_instance")
@@ -228,6 +221,15 @@ def notify_instance_updated():
     info['date'] = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
 
     db.updates.insert_one(info)
+
+    site = db.sites.find_one({'name': info['name']})
+    if not site:
+        raise Exception(f"site not found: {info['name']}")
+    db.sites.update_one({'_id': site['_id']}, {'$set': {
+        'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        'enabled': True,
+    }}, upsert=False)
+
     return jsonify({
         'result': 'ok'
     })
