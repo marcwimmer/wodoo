@@ -117,7 +117,7 @@ def next_instance_name():
         site = [x for x in sites if x['index'] == index]
         info['commit_before'] = site[0]['git_sha']
     info['index'] = 1 if 'kept' else index + 1
-    info['name'] = f"{branch}_{key}_{str(info['index'] + 1).zfill(3)}"
+    info['name'] = f"{branch}_{key}_{str(info['index']).zfill(3)}"
     return jsonify(info)
 
 @app.route('/register', methods=['POST'])
