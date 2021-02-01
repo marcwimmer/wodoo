@@ -259,8 +259,6 @@ def destroy_instance():
         'result': 'ok',
     })
 
-@app.route("/start/ instance/destroy")
-
 
 def _get_docker_state(name):
     docker.ping()
