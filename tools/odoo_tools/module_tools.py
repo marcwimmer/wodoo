@@ -528,7 +528,8 @@ class Modules(object):
 
     def is_git_clean(self):
         status = subprocess.check_output(['/usr/bin/git', 'status', '--porcelain']).decode('utf-8').strip()
-        click.secho(f'unclean git: {status}')
+        if status:
+            click.secho(f'unclean git: {status}')
         return not status
 
     def get_changed_modules(self, sha_start):
