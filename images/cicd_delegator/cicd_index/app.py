@@ -145,18 +145,6 @@ def register_site():
 
     raise Exception("only POST")
 
-@app.route("/previous_active_instance", methods=["GET"])
-def previous_active_instance():
-    branch_name = request.args.get('branch')
-    if not branch_name:
-        raise Exception("Missing branch_name")
-    sites = db.sites.find({"git_branch": branch_name})
-    active_sites = [x for x in sites if x.get('enabled')]
-    site = {}
-    if active_sites:
-        site = active_sites[-1]
-    return jsonify(site)
-
 @app.route("/site", methods=["GET"])
 def site():
     q = {}
