@@ -31,7 +31,7 @@ db = mongoclient.get_database('cicd_sites')
 
 FORMAT = '[%(levelname)s] %(name) -12s %(asctime)s %(message)s'
 logging.basicConfig(format=FORMAT)
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger('')  # root handler
 
 app = Flask(
@@ -46,10 +46,11 @@ def cycle_down_apps():
         try:
             sites = db.sites.find({'enabled': True}, {'name': 1, 'last_access': 1})
             for site in sites:
-                logger.info(f"Checking site to cycle down: {site['name']}")
+                logger.debug(f"Checking site to cycle down: {site['name']}")
                 if (arrow.get() - arrow.get(site.get('last_access', '1980-04-04') or '1980-04-04')).total_seconds() > 2 * 3600:
-                    logger.info(f"Cycling down instance due to inactivity: {site['name']}")
-                    _stop_instance(site['name'])
+                    if _get_docker_state(site['name']) == 'running':
+                        logger.info(f"Cycling down instance due to inactivity: {site['name']}")
+                        _stop_instance(site['name'])
 
         except Exception as e:
             logging.error(e)
@@ -222,8 +223,6 @@ def notify_instance_updated():
 
 @app.route("/last_successful_sha")
 def last_success_full_sha():
-    import pudb
-    pudb.set_trace()
     info = {
         'key': request.args['key'],
         'branch': request.args['branch'],
