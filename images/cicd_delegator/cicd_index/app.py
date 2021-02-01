@@ -211,8 +211,20 @@ def notify_instance_updated():
     assert info['key']
     assert info['branch']
     assert info['sha']
+    info['date'] = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
 
     db.updateds.insert_one(info)
+
+@app.route("/last_successful_sha")
+def last_success_full_sha():
+    info = {
+        'key': request.args['key'],
+        'branch': request.args['branch'],
+    }
+    assert info['key']
+    assert info['branch']
+
+    updates = db.updateds.find(info)
 
 def _get_docker_state(name):
     docker.ping()
