@@ -231,7 +231,7 @@ def last_success_full_sha():
     assert info['key']
     assert info['branch']
 
-    updates = db.updateds.find(info)
+    updates = db.updates.find(info)
     # TODO in mongo sorting
     updates = sorted(updates, key=lambda x: x['date'], reverse=True)
     if updates:
