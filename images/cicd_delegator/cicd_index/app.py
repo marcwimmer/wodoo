@@ -323,7 +323,7 @@ def _start_cicd():
                 break
             time.sleep(1)
         else:
-            url = request.url.split(request.host)[0] + request.host
+            url = request.url.split(request.host)[0] + request.host # TODO messy
             return redirect(url + "/index?" + urllib.parse.urlencode({
                 "message": f"Please try again. Instance {name} not started within timeout.",
             }, quote_via=urllib.parse.quote_plus))
