@@ -255,7 +255,6 @@ def destroy_instance():
 
     # TODO drop database
     site = db.sites.find_one(info)
-    if site:
     db.sites.remove(info)
     db.updates.remove(info)
 
