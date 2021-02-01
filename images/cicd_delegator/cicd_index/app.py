@@ -97,13 +97,6 @@ def last_access():
 def show_sites():
     return jsonify(list(db.sites.find()))
 
-@app.route("/activate", methods=['GET'])
-def activate():
-    site = request.args.get('site')
-    if not site:
-        raise Exception("Site missing")
-    return jsonify({'result': 'ok'})
-
 @app.route("/next_instance")
 def next_instance_name():
     branch = request.args.get('branch')
