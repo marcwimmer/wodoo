@@ -321,6 +321,8 @@ def _start_cicd():
                 break
             time.sleep(1)
         else:
-            return redirect("/index?" + urllib.urlencode(request.params))
+            return redirect("/index?" + urllib.urlencode({
+                "message": f"Please try again. Instance {name} not started within timeout.",
+            ))
 
     return render_template('start_cicd.html')
