@@ -68,8 +68,6 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         return url
 
     def do_GET(self, body=True):
-        import pudb
-        pudb.set_trace()
         sent = False
         query_params = dict(parse.parse_qsl(parse.urlsplit(self.path).query))
         try:
