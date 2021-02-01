@@ -176,7 +176,6 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     if since_git_sha:
         default_modules = set(_get_default_modules_to_update())
         module = list(filter(lambda x: x in default_modules, _get_changed_modules(since_git_sha)))
-
     else:
         module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
