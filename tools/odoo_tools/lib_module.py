@@ -389,13 +389,7 @@ def generate_update_command(ctx, config):
     click.secho(f"-u {','.join(modules)}")
 
 
-@odoo_module.command(name="list-changed-modules")
-@click.option('-s', '--start')
-@click.pass_context
-@pass_config
-def list_changed_modules(ctx, config, start):
-    from .module_tools import Module
-
+def _get_changed_modules(git_sha):
     filepaths = subprocess.check_output([
         'git',
         'diff',
@@ -412,8 +406,18 @@ def list_changed_modules(ctx, config, start):
             pass
         else:
             modules.append(module.name)
+    return list(sorted(set(modules)))
+
+@odoo_module.command(name="list-changed-modules")
+@click.option('-s', '--start')
+@click.pass_context
+@pass_config
+def list_changed_modules(ctx, config, start):
+    from .module_tools import Module
+    modules = _get_changed_modules(start)
+
     click.secho("---")
-    for module in sorted(set(modules)):
+    for module in modules::
         click.secho(module)
 
 
