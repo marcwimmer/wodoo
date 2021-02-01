@@ -485,6 +485,8 @@ class Modules(object):
         if self.is_git_clean():
             if not cache_file.exists():
                 modules = self._get_modules()
+                import pudb
+                pudb.set_trace()
                 cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
             else:
@@ -1065,6 +1067,4 @@ class Module(object):
 
 def write_debug_instruction(instruction):
     config = _get_missing_click_config()
-    import pudb
-    pudb.set_trace()
     config.files['run/odoo_debug.txt'].write_text(instruction)
