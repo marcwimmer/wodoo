@@ -323,6 +323,6 @@ def _start_cicd():
         else:
             return redirect("/index?" + urllib.parse.urlencode({
                 "message": f"Please try again. Instance {name} not started within timeout.",
-            ), quote_via=quote_plus)
+            }), quote_via=quote_plus)
 
     return render_template('start_cicd.html')
