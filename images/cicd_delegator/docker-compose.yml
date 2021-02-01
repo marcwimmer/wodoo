@@ -35,6 +35,9 @@ services:
         MONGO_USERNAME: admin
         MONGO_PASSWORD: 1
         WORKSPACES_DIR: /jenkins_workspaces
+        JENKINS_URL: __JENKINS_URL__
+        JENKINS_USER: __JENKINS_USER
+        JENKINS_PASSWORD: __JENKINS_PASSWORD__
     volumes:
         - ./registry.json:/registry.json
         - ./registry_sites:/registry_sites
