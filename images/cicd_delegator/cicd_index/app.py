@@ -316,7 +316,7 @@ def _start_cicd():
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
-        for i in range(1): # TODO undo set 20
+        for i in range(30):
             if _get_docker_state('name') == 'running':
                 break
             time.sleep(1)
