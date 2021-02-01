@@ -2,3 +2,4 @@ requests
 pathlib
 pudb
 arrow
+urlparse
