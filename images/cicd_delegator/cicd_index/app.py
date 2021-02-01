@@ -204,9 +204,9 @@ def instance_state():
 @app.route("/notify_instance_updated")
 def notify_instance_updated():
     info = {
-        'key': request.args['key']
-        'branch': request.args['branch']
-        'sha': request.args['sha']
+        'key': request.args['key'],
+        'branch': request.args['branch'],
+        'sha': request.args['sha'],
     }
     assert key
     assert branch
