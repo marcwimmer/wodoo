@@ -1,6 +1,7 @@
 import shutil
 import os
 import time
+from flask import redirect
 from operator import itemgetter
 import docker as Docker
 import arrow
@@ -309,5 +310,16 @@ def _start_cicd():
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
-        time.sleep(20)
+        success = False
+        for i in range(120):
+            if _get_docker_state('name') == 'running':
+                break
+            time.sleep(1)
+        else:
+        return render_template(
+            'index.html',
+            sites=sites_grouped,
+            DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
+        )
+
     return render_template('start_cicd.html')
