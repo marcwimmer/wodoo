@@ -418,7 +418,7 @@ def list_changed_modules(ctx, config, start):
     modules = _get_changed_modules(start)
 
     click.secho("---")
-    for module in modules::
+    for module in modules:
         click.secho(module)
 
 
