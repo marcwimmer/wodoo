@@ -313,8 +313,6 @@ def start_cicd():
     return _start_cicd()
 
 def _start_cicd():
-    import pudb
-    pudb.set_trace()
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
@@ -325,6 +323,6 @@ def _start_cicd():
         else:
             return redirect("/index?" + urllib.parse.urlencode({
                 "message": f"Please try again. Instance {name} not started within timeout.",
-            }), quote_via=urllib.parse.quote_plus)
+            }, quote_via=urllib.parse.quote_plus))
 
     return render_template('start_cicd.html')
