@@ -298,7 +298,7 @@ def index():
 
 @app.route('/__start_cicd')
 def start_cicd():
-    return __start_cicd()
+    return _start_cicd()
 
 def _start_cicd():
     name = request.cookies['delegator-path']
