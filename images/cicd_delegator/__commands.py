@@ -101,7 +101,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_branch'] = git_branch
     site['git_sha'] = git_sha
     site['diff_modules'] = []
-    site['host_working_dir'] = os.getcwd()
+    site['host_working_dir'] = Path(os.getcwd()).name
 
     # get the previous instance by branch
     if prev_active_instance:
