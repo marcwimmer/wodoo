@@ -38,6 +38,7 @@
                             <tr>
                                 <th>Index</th>
                                 <th>State</th>
+                                <th>Action</th>
                                 <th>Updated</th>
                                 <th>Description</th>
                                 <th>Last Author</th>
@@ -60,6 +61,9 @@
                                     {% if link.get('docker_state') == 'stopped' %}
                                     <a class='docker-control' data-action='start' data-name="{{link['name']}}" href="#">Start</a>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <a href="#" class='docker-control' data-action='destroy' data-name="{{link['name']}}">Destroy</a>
                                 </td>
                                 <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
                                 <td>{{link.get('description')}}</td>
