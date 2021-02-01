@@ -43,8 +43,7 @@ app = Flask(
 
 docker = Docker.from_env()
 
-# TODO configurable
-#jenkins = jenkins.Jenkins('http://192.168.101.122:8080', username='admin', password='1')
+# jenkins = jenkins.Jenkins('http://192.168.101.122:8080', username='admin', password='1')
 jenkins = jenkins.Jenkins(os.environ["JENKINS_URL"], username=os.environ["JENKINS_USER"], password=os.environ["JENKINS_PASSWORD"])
 print(f"Jenkins {jenkins.get_whoami()} and version {jenkins.get_version()}")
 
