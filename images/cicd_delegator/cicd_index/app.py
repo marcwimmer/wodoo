@@ -275,7 +275,7 @@ def _get_docker_state(name):
 
 @app.route('/')
 def index_entrypoint():
-    return url_for("index_func")
+    return redirect(url_for("index_func"))
 
 @app.route('/index')
 def index_func():
