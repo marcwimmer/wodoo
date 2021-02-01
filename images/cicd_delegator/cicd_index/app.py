@@ -320,6 +320,6 @@ def _start_cicd():
                 break
             time.sleep(1)
         else:
-            return redirect("/index?" + urllib.urlencode(self.request.params))
+            return redirect("/index?" + urllib.urlencode(request.params))
 
     return render_template('start_cicd.html')
