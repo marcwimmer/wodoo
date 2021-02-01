@@ -228,7 +228,7 @@ def notify_instance_updated():
 
     info['date'] = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
 
-    db.updateds.insert_one(info)
+    db.updates.insert_one(info)
 
 @app.route("/last_successful_sha")
 def last_success_full_sha():
