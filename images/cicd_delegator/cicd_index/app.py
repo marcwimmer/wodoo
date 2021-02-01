@@ -237,7 +237,6 @@ def last_success_full_sha():
         'sha': '',
     })
 
-
 @app.route("/instance/destroy")
 def destroy_instance():
     info = {
