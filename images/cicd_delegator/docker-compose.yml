@@ -38,6 +38,7 @@ services:
         - ./registry.json:/registry.json
         - ./registry_sites:/registry_sites
         - /var/run/docker.sock:/var/run/docker.sock
+        - /var/lib/jenkins/workspace:/jenkins_workspaces
   mongo:
     image: mongo
     restart: "unless-stopped"
