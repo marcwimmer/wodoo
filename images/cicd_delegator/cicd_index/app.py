@@ -20,8 +20,6 @@ import threading
 import logging
 import jenkins
 
-jenkins = jenkins.Jenkins('http://192.168.101.122:8080', username='admin', password='1')
-print(f"Jenkins {jenkins.get_whoami()} and version {jenkins.get_version()}")
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
@@ -44,6 +42,10 @@ app = Flask(
 )
 
 docker = Docker.from_env()
+
+# TODO configurable
+jenkins = jenkins.Jenkins('http://192.168.101.122:8080', username='admin', password='1')
+print(f"Jenkins {jenkins.get_whoami()} and version {jenkins.get_version()}")
 
 def cycle_down_apps():
     while True:
