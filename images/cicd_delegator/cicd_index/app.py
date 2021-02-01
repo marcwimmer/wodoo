@@ -205,12 +205,10 @@ def instance_state():
 @app.route("/notify_instance_updated")
 def notify_instance_updated():
     info = {
-        'key': request.args['key'],
-        'branch': request.args['branch'],
+        'name': request.args['name'],
         'sha': request.args['sha'],
     }
-    assert info['key']
-    assert info['branch']
+    assert info['name']
     assert info['sha']
     for extra_args in [
         'update_time',
