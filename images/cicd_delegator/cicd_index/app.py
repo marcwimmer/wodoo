@@ -311,7 +311,6 @@ def _start_cicd():
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
-        success = False
         for i in range(120):
             if _get_docker_state('name') == 'running':
                 break
