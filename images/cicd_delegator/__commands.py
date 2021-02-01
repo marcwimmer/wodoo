@@ -22,6 +22,8 @@ from odoo_tools import cli, pass_config, Commands
 from odoo_tools.lib_composer import internal_reload
 from odoo_tools.tools import _askcontinue
 
+config_file = Path('/etc/cicd')
+
 def _require_project(config):
     if not config.project_name:
         click.secho("Missing project name.")
@@ -274,6 +276,9 @@ def _update_docker_compose(config):
         "__CICD_BINDING__": config.CICD_BINDING,
         "__CICD_INDEX_BINDING__": config.CICD_INDEX_BINDING,
     }
+
+    values.update(json.loads(config_file.read_text()))
+
     for k, v in values.items():
         if v is None:
             raise Exception(f"Value not set: {k}")
