@@ -62,18 +62,6 @@ def do_list(config):
     for site in sites:
         click.secho(f"\t{site['name']}", fg='green')
 
-@cicd.command()
-@pass_config
-@click.pass_context
-def unregister(ctx, config):
-    requests.post(config.url + "/site/unregister", params={"site": config.project_name}).raise_for_status()
-
-    files = []
-    files.append(config.files['project_docker_compose.home.project'])
-    for file in files:
-        if file.exists():
-            file.unlink()
-
 @cicd.command(help="Register new odoo")
 @click.option("-d", "--desc", required=False)
 @click.option("-a", "--author", required=False)
@@ -113,6 +101,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_branch'] = git_branch
     site['git_sha'] = git_sha
     site['diff_modules'] = []
+    site['host_working_dir'] = os.getcwd()
     # get the previous instance by branch
     if prev_active_instance:
         sha = prev_active_instance.get('git_sha')
@@ -120,6 +109,19 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
             site['diff_modules'] = Modules().get_changed_modules(sha)
 
     requests.post(config.url + '/register', json=site).raise_for_status()
+
+@cicd.command()
+@pass_config
+@click.pass_context
+def unregister(ctx, config):
+    requests.post(config.url + "/site/unregister", params={"site": config.project_name}).raise_for_status()
+
+    files = []
+    files.append(config.files['project_docker_compose.home.project'])
+    for file in files:
+        if file.exists():
+            file.unlink()
+
 
 @cicd.command()
 @pass_config
