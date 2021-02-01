@@ -27,7 +27,7 @@ mongoclient = MongoClient(
     int(os.environ['MONGO_PORT']),
     username=os.environ['MONGO_USERNAME'],
     password=os.environ['MONGO_PASSWORD'],
-    connectTimeoutMS=5000, socketTimeoutMS=5000
+    connectTimeoutMS=20000, socketTimeoutMS=20000
 )
 db = mongoclient.get_database('cicd_sites')
 
