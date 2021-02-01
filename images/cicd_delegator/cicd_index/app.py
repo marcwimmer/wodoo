@@ -245,13 +245,20 @@ def destroy_instance():
     for container in docker.containers.list(all=True, filters=info):
         container.remove()
     # TODO drop database
-    # TODO remove source code
+    site = db.sites.find_one(info)
+    if site:
+        # remove source code
+        if site.get('host_working_dir'):
+            host_working_dir = Path(os.environ['jenkins_workspaces']) / site['host_working_dir'])
+            shutil.rmtree(host_working_dir)
     db.sites.remove({'name': info['name']})
     db.updates.remove({'name': info['name']})
 
     return jsonify({
         'result': 'ok',
     })
+
+@app.route("/start/ instance/destroy")
 
 
 def _get_docker_state(name):
