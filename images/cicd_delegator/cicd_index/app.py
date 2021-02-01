@@ -304,7 +304,7 @@ def index_func():
 
 @app.route("/test123")
 def test123():
-    return redirect(url_for("index", message="Please try again."))
+    return redirect(url_for("index_func", message="Please try again."))
 
 @app.route('/__start_cicd')
 def start_cicd():
