@@ -67,6 +67,8 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         return url
 
     def do_GET(self, body=True):
+        import pudb
+        pudb.set_trace()
         sent = False
         try:
             req_header = self.parse_headers()
