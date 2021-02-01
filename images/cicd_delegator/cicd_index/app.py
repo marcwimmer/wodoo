@@ -145,7 +145,6 @@ def register_site():
         })
         sites = sorted(sites, key=lambda x: x['index'])
         site['enabled'] = False
-        site['name'] = f"{site['git_branch']}_{site['key']}_{index}"
         db.sites.insert_one(site)
         return jsonify({'result': 'ok', 'name': site['name']})
 
