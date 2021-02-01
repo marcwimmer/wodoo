@@ -127,6 +127,7 @@ def unregister(ctx, config):
         if file.exists():
             file.unlink()
 
+
 @cicd.command()
 @pass_config
 def rebuild(config):
