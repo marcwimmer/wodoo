@@ -485,8 +485,6 @@ class Modules(object):
         if self.is_git_clean():
             if not cache_file.exists():
                 modules = self._get_modules()
-                import pudb
-                pudb.set_trace()
                 cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
             else:
@@ -495,7 +493,7 @@ class Modules(object):
             self.modules = self._get_modules()
 
     def _get_cache_path(self):
-        parent = Path("/tmp/.odoo.modules")
+        parent = Path(f"/tmp/.odoo.modules.{os.environ['UID']}")
         parent.mkdir(exist_ok=True)
         return parent / f'sha_{self._get_sha()}'
 
