@@ -243,8 +243,11 @@ def destroy_instance():
     info = {
         'name': request.args['name'],
     }
+    for container in docker.containers.list(all=True, filters=info}):
+        container.remove()
     db.sites.remove({'name': info['name']})
     db.updates.remove({'name': info['name']})
+
     return jsonify({
         'result': 'ok',
     })
