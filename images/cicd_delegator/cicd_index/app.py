@@ -20,6 +20,7 @@ import threading
 import logging
 import jenkins
 
+BOOL_VALUES = ['1', 1, 'true', 'True', 'y']
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
@@ -194,8 +195,7 @@ def set_updating():
     if not site:
         raise Exception(f"site not found: {name}")
     db.sites.update_one({'_id': site['_id']}, {'$set': {
-        'updated': datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-        'enabled': True,
+        'updating': request.args['value'] in BOOL_VALUES,
     }}, upsert=False)
     return jsonify({
         'result': 'ok',
