@@ -186,6 +186,13 @@ def instance_state():
         'state': 'running' if _get_docker_state(name) else 'stopped'
     })
 
+@app.route("/set_updating")
+def instance_state():
+    name = request.args['name']
+    return jsonify({
+        'state': 'running' if _get_docker_state(name) else 'stopped'
+    })
+
 @app.route("/notify_instance_updated")
 def notify_instance_updated():
     info = {
