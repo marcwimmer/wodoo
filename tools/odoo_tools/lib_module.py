@@ -171,15 +171,19 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
-    import pudb
-    pudb.set_trace()
     if since_git_sha and module:
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
         default_modules = set(_get_default_modules_to_update())
         module = list(filter(lambda x: x in default_modules, _get_changed_modules(since_git_sha)))
+        if not module:
+            click.secho("No module update required -exiting.")
+            return
     else:
         module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
+
+    if not module and not since_git_sha:
+        module = _get_default_modules_to_update()
 
     if not no_restart:
         if config.use_docker:
@@ -187,9 +191,6 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
             if config.run_redis:
                 Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
             Commands.invoke(ctx, 'wait_for_container_postgres')
-
-    if not module:
-        module = _get_default_modules_to_update()
 
     if not no_dangling_check:
         if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
