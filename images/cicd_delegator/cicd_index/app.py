@@ -256,12 +256,8 @@ def destroy_instance():
     # TODO drop database
     site = db.sites.find_one(info)
     if site:
-        # remove source code
-        if site.get('host_working_dir'):
-            host_working_dir = Path(os.environ['jenkins_workspaces']) / site['host_working_dir']
-            shutil.rmtree(host_working_dir)
-    db.sites.remove({'name': info['name']})
-    db.updates.remove({'name': info['name']})
+    db.sites.remove(info)
+    db.updates.remove(info)
 
     return jsonify({
         'result': 'ok',
