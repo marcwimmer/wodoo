@@ -78,7 +78,7 @@ class ProxyHTTPRequestHandler(BaseHTTPRequestHandler):
             logger.debug(f"{url}\n{req_header}")
             resp = requests.get(
                 url, headers=req_header, verify=False,
-                allow_redirects=False,
+                allow_redirects=False, params=query_params,
             )
             sent = True
 
