@@ -1065,4 +1065,6 @@ class Module(object):
 
 def write_debug_instruction(instruction):
     config = _get_missing_click_config()
+    import pudb
+    pudb.set_trace()
     config.files['run/odoo_debug.txt'].write_text(instruction)
