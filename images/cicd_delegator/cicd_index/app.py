@@ -208,9 +208,9 @@ def notify_instance_updated():
         'branch': request.args['branch'],
         'sha': request.args['sha'],
     }
-    assert key
-    assert branch
-    assert sha
+    assert info['key']
+    assert info['branch']
+    assert info['sha']
 
     db.updateds.insert_one(info)
 
