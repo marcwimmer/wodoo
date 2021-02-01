@@ -246,7 +246,10 @@ def last_success_full_sha():
 def destroy_instance():
     info = {
         'name': request.args['name'],
+        'key': request.args['key'],
+        'branch': request.args['branch'],
     }
+    db.sites
     return jsonify({
         'result': 'ok',
     })
