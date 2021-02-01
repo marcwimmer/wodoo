@@ -250,6 +250,8 @@ def destroy_instance():
     }
     for container in docker.containers.list(all=True, filters=info):
         container.remove()
+
+
     # TODO drop database
     site = db.sites.find_one(info)
     if site:
