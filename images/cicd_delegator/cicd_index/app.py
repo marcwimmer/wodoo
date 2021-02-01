@@ -238,7 +238,7 @@ def last_success_full_sha():
     })
 
 
-@app.route("/destroy/instance")
+@app.route("/instance/destroy")
 def destroy_instance():
     info = {
         'name': request.args['name'],
