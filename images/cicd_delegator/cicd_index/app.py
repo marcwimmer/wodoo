@@ -225,6 +225,12 @@ def last_success_full_sha():
     assert info['branch']
 
     updates = db.updateds.find(info)
+    # TODO in mongo sorting
+    updates = sorted(updates, key=lambda x: x['date'], reverse=True)
+    if updates:
+        return jsonify({
+            'sha': updates[0]['sha']
+        })
 
 def _get_docker_state(name):
     docker.ping()
