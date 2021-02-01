@@ -161,7 +161,7 @@ def download_openupgrade(ctx, config, version):
 @click.option('--no-extra-addons-paths', is_flag=True)
 @pass_config
 @click.pass_context
-def update(ctx, config, module, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_install_server_wide_first, no_extra_addons_paths, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False):
+def update(ctx, config, module, since_git_sha, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_install_server_wide_first, no_extra_addons_paths, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
