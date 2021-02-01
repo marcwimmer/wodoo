@@ -277,7 +277,8 @@ def _update_docker_compose(config):
         "__CICD_INDEX_BINDING__": config.CICD_INDEX_BINDING,
     }
 
-    values.update(json.loads(config_file.read_text()))
+    for k, v in json.loads(config_file.read_text()):
+        values[f"__{k}__"] = v
 
     for k, v in values.items():
         if v is None:
