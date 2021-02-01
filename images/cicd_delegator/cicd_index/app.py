@@ -253,8 +253,6 @@ def destroy_instance():
 
     jenkins.build_job('clean_cicd_instance', info)
 
-    # TODO drop database
-    site = db.sites.find_one(info)
     db.sites.remove(info)
     db.updates.remove(info)
 
