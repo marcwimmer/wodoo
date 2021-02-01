@@ -22,7 +22,6 @@ import threading
 import logging
 import jenkins
 
-BOOL_VALUES = ['1', 1, 'true', 'True', 'y']
 
 from pymongo import MongoClient
 mongoclient = MongoClient(
@@ -39,6 +38,7 @@ logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger('')  # root handler
 
+BOOL_VALUES = ['1', 1, 'true', 'True', 'y']
 app = Flask(
     __name__,
     static_folder='/_static_index_files',
