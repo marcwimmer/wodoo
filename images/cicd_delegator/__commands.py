@@ -69,9 +69,9 @@ def do_list(config):
 @click.option("-a", "--author", required=False)
 @click.option("-l", "--local", is_flag=True)
 @click.option("-t", "--title")
-@click.option("-i", "--index")
+@click.option("-i", "--index", required=True)
 @click.option("-k", "--key", required=True)
-@click.option("-b", "--git-branch")
+@click.option("-b", "--git-branch", required=True)
 @click.option("--git-sha")
 @click.option("--initiator")
 @pass_config
@@ -104,6 +104,7 @@ def register(ctx, config, desc, author, local, title, initiator, git_branch, git
     site['git_sha'] = git_sha
     site['diff_modules'] = []
     site['host_working_dir'] = Path(os.getcwd()).name
+    site['index'] = int(index)
 
     # get the previous instance by branch
     if prev_active_instance:
