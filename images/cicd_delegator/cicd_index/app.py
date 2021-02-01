@@ -320,6 +320,6 @@ def _start_cicd():
                 break
             time.sleep(1)
         else:
-            return redirect(url_for("index", message="Please try again."))
+            return redirect(url_for("index_func", message="Please try again."))
 
     return render_template('start_cicd.html')
