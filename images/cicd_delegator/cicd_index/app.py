@@ -302,6 +302,9 @@ def index():
         DATE_FORMAT=os.environ['DATE_FORMAT'].replace("_", "%"),
     )
 
+@app.route("/test123")
+def test123():
+    return redirect(url_for("index", message="Please try again."))
 
 @app.route('/__start_cicd')
 def start_cicd():
