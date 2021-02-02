@@ -63,7 +63,7 @@ def backup(dbname, host, port, user, password, filepath, dumptype):
         user=user,
         password=password,
     )
-    click.echo(f"Backing up to {filepath}"
+    click.echo(f"Backing up to {filepath}")
     try:
         cr = conn.cursor()
         cr.execute("SELECT (pg_database_size(current_database())) FROM pg_database")
