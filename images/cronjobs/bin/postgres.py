@@ -37,7 +37,7 @@ def execute(dbname, host, port, user, password, sql):
     ) as conn:
         conn.autocommit = True
         with conn.cursor() as cr:
-            logger.info("executing sql: {}".format(sql))
+            logger.info(f"executing sql: {sql}")
             cr.execute(sql)
             res = cr.fetchall()
             logger.info(res)
