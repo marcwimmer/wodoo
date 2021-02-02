@@ -51,6 +51,7 @@ def execute(dbname, host, port, user, password, sql):
 @click.argument('user', required=True)
 @click.argument('password', required=True)
 @click.argument('filepath', required=True)
+@click.option('--dumptype', type=click.Choice(["custom", "plain"]), case_sensitive=False)
 def backup(dbname, host, port, user, password, filepath):
     port = int(port)
     filepath = Path(filepath)
