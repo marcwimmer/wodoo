@@ -63,7 +63,7 @@ def backup(dbname, host, port, user, password, filepath, dumptype):
         user=user,
         password=password,
     )
-    click.echo("Backing up to {}".format(filepath))
+    click.echo(f"Backing up to {filepath}"
     try:
         cr = conn.cursor()
         cr.execute("SELECT (pg_database_size(current_database())) FROM pg_database")
@@ -89,7 +89,7 @@ def restore(dbname, host, port, user, password, filepath):
     _restore(dbname, host, port, user, password, filepath)
 
 def _restore(dbname, host, port, user, password, filepath):
-    click.echo("Restoring dump on {}:{} as {}".format(host, port, user))
+    click.echo(f"Restoring dump on {host}:{port} as {user}")
     os.environ['PGPASSWORD'] = password
     args = ["-h", host, "-p", str(port), "-U", user]
     PGRESTORE = [
