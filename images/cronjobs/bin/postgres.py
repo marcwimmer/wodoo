@@ -51,8 +51,8 @@ def execute(dbname, host, port, user, password, sql):
 @click.argument('user', required=True)
 @click.argument('password', required=True)
 @click.argument('filepath', required=True)
-@click.option('--dumptype', type=click.Choice(["custom", "plain"]), case_sensitive=False)
-def backup(dbname, host, port, user, password, filepath):
+@click.option('--dumptype', type=click.Choice(["custom", "plain"]), case_sensitive=False, default='custom')
+def backup(dbname, host, port, user, password, filepath, dumptype):
     port = int(port)
     filepath = Path(filepath)
     os.environ['PGPASSWORD'] = password
@@ -71,7 +71,7 @@ def backup(dbname, host, port, user, password, filepath):
         bytes = str(float(size)).split(".")[0]
         temp_filepath = filepath.with_name('.' + filepath.name)
 
-        cmd = 'pg_dump --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(
+        cmd = 'pg_dump --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -F{dumptype[0]} {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(
             host=host,
             port=port,
             user=user,
