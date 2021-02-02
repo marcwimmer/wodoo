@@ -304,10 +304,6 @@ def index_func():
         message=request.args.get('message'),
     )
 
-@app.route("/test123")
-def test123():
-    return redirect(url_for("index_func", message="Please try again."))
-
 @app.route('/__start_cicd')
 def start_cicd():
     return _start_cicd()
