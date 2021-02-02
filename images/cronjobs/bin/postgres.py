@@ -102,8 +102,8 @@ def _restore(dbname, host, port, user, password, filepath):
     if not dbname:
         raise Exception("DBName missing")
 
-    os.system("echo 'drop database if exists {};' | psql {} template1".format(dbname, " ".join(args)))
-    os.system("echo 'create database {};' | psql {} template1".format(dbname, " ".join(args)))
+    os.system(f"echo 'drop database if exists {dbname};' | psql {" ".join(args)} template1"
+    os.system(f"echo 'create database {dbname};' | psql {" ".join(args)} template1"
 
     method = PGRESTORE
     needs_unzip = True
