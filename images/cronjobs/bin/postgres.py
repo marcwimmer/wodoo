@@ -70,7 +70,7 @@ def backup(dbname, host, port, user, password, filepath):
         bytes = str(float(size)).split(".")[0]
         temp_filepath = filepath.with_name('.' + filepath.name)
 
-        cmd = 'pg_dump --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(
+        cmd = 'pg_dump --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -Fc {dbname} | pv -s {bytes} | pigz --rsyncable > {filepath}'.format(
             host=host,
             port=port,
             user=user,
