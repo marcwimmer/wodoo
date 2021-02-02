@@ -309,7 +309,8 @@ def start_cicd():
     return _start_cicd()
 
 def _start_cicd():
-    name = request.cookies['delegator-path']
+    # name = request.cookies['delegator-path']
+    name = request.args['name']
     if not _get_docker_state(name):
         start_instance(name=name)
         for i in range(30):
