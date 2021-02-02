@@ -309,13 +309,11 @@ def start_cicd():
     return _start_cicd()
 
 def _start_cicd():
-    import pudb
-    pudb.set_trace()
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
         for i in range(30):
-            if _get_docker_state(name) == 'running':
+            if _get_docker_state(name):
                 break
             time.sleep(1)
         else:
