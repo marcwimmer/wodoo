@@ -120,7 +120,7 @@ def _restore(dbname, host, port, user, password, filepath):
     elif dump_type == "pgdump":
         needs_unzip = False
     else:
-        raise Exception("not impl: {}".format(dump_type))
+        raise Exception(f"not impl: {dump_type}")
 
     PREFIX = []
     if needs_unzip:
