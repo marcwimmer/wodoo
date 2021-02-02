@@ -48,7 +48,7 @@
                             {% for link in sites: %}
                             <tr>
                                 <td>
-                                    <a href="/{{link['name']}}/__start_cicd">
+                                    <a href="/cicd/__start_cicd?name={{link['name']}}">
                                     {{link['key']}}-{{link['index']}}
                                     </a>
                                 </td>
