@@ -141,7 +141,7 @@ def _restore(dbname, host, port, user, password, filepath):
         dbname,
     ])
     os.system(CMD)
-    click.echo(f"Restore took {(datetime.now() - started).total_seconds())} seconds"
+    click.echo(f"Restore took {(datetime.now() - started).total_seconds())} seconds")
 
 def __get_dump_type(filepath):
     MARKER = "PostgreSQL database dump"
