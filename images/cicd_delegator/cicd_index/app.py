@@ -317,7 +317,7 @@ def _start_cicd():
     if not _get_docker_state(name):
         start_instance(name=name)
         for i in range(30):
-            if _get_docker_state('name') == 'running':
+            if _get_docker_state(name) == 'running':
                 break
             time.sleep(1)
         else:
