@@ -22,16 +22,12 @@
     {% endif %}
 
     <table>
-        <thead>
-            <tr>
-                Branch
-            </tr>
-        </thead>
         <tbody>
             {% for branch, sites in sites.items(): %}
             <tr>
                 <td class="uk-heading-small">
                     {{branch}}
+                    {{sites[0]['title']}}
                 </td>
             </tr>
             <tr>
