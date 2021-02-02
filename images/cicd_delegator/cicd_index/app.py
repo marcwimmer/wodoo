@@ -304,13 +304,11 @@ def index_func():
         message=request.args.get('message'),
     )
 
-@app.route('/__start_cicd')
+@app.route('/start')
 def start_cicd():
     return _start_cicd()
 
 def _start_cicd():
-    import pudb
-    pudb.set_trace()
     name = request.cookies['delegator-path']
     if not _get_docker_state(name):
         start_instance(name=name)
