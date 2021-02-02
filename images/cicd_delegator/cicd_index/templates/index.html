@@ -64,7 +64,7 @@
                                     <span class="update-state" data-name="{{link['name']}}"></span>
                                 </td>
                                 <td>
-                                    <a href="#" class='docker-control' data-action='destroy' data-name="{{link['name']}}" onclick="return confirm('Continue?");">Destroy</a>
+                                    <a href="#" class='docker-control' data-action='destroy' data-name="{{link['name']}}" onclick="return confirm('Continue?');">Destroy</a>
                                 </td>
                                 <td>{{link.get('updated') and link.get('updated').strftime(DATE_FORMAT)}}</td>
                                 <td>{{link.get('description')}}</td>
