@@ -106,7 +106,7 @@ def do_kill(ctx, config, machines=[], brutal=False):
     """
     SAFE_KILL = []
 
-    for machine in config.safe_kill.split(","):
+    for machine in (config.safe_kill or '').split(","):
         if getattr(config, 'run_{}'.format(machine)):
             SAFE_KILL.append(machine)
 
