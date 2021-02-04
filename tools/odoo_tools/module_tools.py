@@ -359,6 +359,8 @@ def update_view_in_db_in_debug_file(filepath, lineno):
     write_debug_instruction('update_view_in_db:{}:{}'.format(filepath, lineno))
 
 def update_view_in_db(filepath, lineno):
+    import pudb
+    pudb.set_trace()
     filepath = translate_path_into_machine_path(filepath)
     module = Module(filepath)
     xml = filepath.read_text().split("\n")
