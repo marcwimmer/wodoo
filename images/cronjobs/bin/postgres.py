@@ -73,6 +73,8 @@ def backup(dbname, host, port, user, password, filepath, dumptype, column_insert
         temp_filepath = filepath.with_name('.' + filepath.name)
 
         column_inserts = column_inserts and '--column-inserts' or ''
+        if column_inserts and dumptype != 'plain':
+            raise Exception(f"Requires plain dumptype when column inserts set!")
 
         cmd = f'pg_dump {column_inserts} --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -F{dumptype[0].lower()} {dbname} | pv -s {bytes} | pigz --rsyncable > {temp_filepath}'
 
