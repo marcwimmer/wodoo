@@ -457,7 +457,7 @@ def update_view_in_db(filepath, lineno):
                     print('updating view of xmlid: %s.%s' % (module.name, xmlid))
                     view_ids = [res[0]]
                     cr.execute("select type, name from ir_ui_view where id in %s", (tuple(view_ids),))
-                    view_type, view_name = cr.fetchone()[0]
+                    view_type, view_name = cr.fetchone()
 
                     if view_type == 'qweb':
                         cr.execute("select id from ir_ui_view where type ='qweb' and name = %s", (view_name,))
