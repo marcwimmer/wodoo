@@ -52,7 +52,8 @@ def execute(dbname, host, port, user, password, sql):
 @click.argument('password', required=True)
 @click.argument('filepath', required=True)
 @click.option('--dumptype', type=click.Choice(["custom", "plain", "directory"]), default='custom')
-def backup(dbname, host, port, user, password, filepath, dumptype):
+@click.option('--column-inserts', is_flag=True)
+def backup(dbname, host, port, user, password, filepath, dumptype, column_inserts):
     port = int(port)
     filepath = Path(filepath)
     os.environ['PGPASSWORD'] = password
@@ -71,7 +72,9 @@ def backup(dbname, host, port, user, password, filepath, dumptype):
         bytes = str(float(size)).split(".")[0]
         temp_filepath = filepath.with_name('.' + filepath.name)
 
-        cmd = f'pg_dump --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -F{dumptype[0].lower()} {dbname} | pv -s {bytes} | pigz --rsyncable > {temp_filepath}'
+        column_inserts = column_inserts and '--column-inserts' or ''
+
+        cmd = f'pg_dump {column_inserts} --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -F{dumptype[0].lower()} {dbname} | pv -s {bytes} | pigz --rsyncable > {temp_filepath}'
 
         os.system(cmd)
         temp_filepath.replace(filepath)
