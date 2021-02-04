@@ -93,7 +93,7 @@ def update(config, mode, modules):
                         params = [
                             '-l',
                             lang,
-                            f'--i18n-import={module.path}/i18n/{lang}.po',
+                            f'--i18n-import={module.path}/i18n/{lang_file.name}.po',
                             '--i18n-overwrite',
                             '--stop-after-init',
                         ]
