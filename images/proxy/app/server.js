@@ -43,6 +43,12 @@ const server_calendar = {
     port: 80
 };
 
+const server_mail = {
+    protocol: 'http',
+    host: 'roundcube',
+    port: 80
+};
+
 const server_longpolling = {
     protocol: 'http',
     host: process.env.ODOO_HOST,
@@ -123,6 +129,10 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
 
 app.all("/caldav/*", (req, res, next) => {
     _call_proxy(req, res, server_calendar);
+});
+
+app.all("/mail/*", (req, res, next) => {
+    _call_proxy(req, res, server_mail);
 });
 
 app.all("/longpolling/*", (req, res, next) => {
