@@ -455,27 +455,32 @@ def update_view_in_db(filepath, lineno):
                     print("No view found for {}.{}".format(module.name, xmlid))
                 else:
                     print('updating view of xmlid: %s.%s' % (module.name, xmlid))
-                    res_id = res[0]
-                    cr.execute("select type from ir_ui_view where id=%s", (res_id,))
-                    # view_type = cr.fetchone()[0]
-                    cr.execute("update ir_ui_view set {}=%s where id=%s".format(arch_column), [
+                    view_ids = [res[0]]
+                    cr.execute("select type, name from ir_ui_view where id in %s", (tuple(view_ids),))
+                    view_type, view_name = cr.fetchone()[0]
+
+                    if view_type == 'qweb':
+                        cr.execute("select id from ir_ui_view where type ='qweb' and name = %s", (view_name,))
+                        view_ids = set(cr.fetchall())
+
+                    cr.execute("update ir_ui_view set {}=%s where id in %s".format(arch_column), [
                         arch,
-                        res_id
+                        tuple(view_ids)
                     ])
                     cr.connection.commit()
                     if arch_fs_column:
                         try:
                             rel_path = module.name + "/" + str(filepath.relative_to(module.path))
-                            cr.execute("update ir_ui_view set arch_fs=%s where id=%s", [
+                            cr.execute("update ir_ui_view set arch_fs=%s where id in %s", [
                                 rel_path,
-                                res_id
+                                tuple(view_ids),
                             ])
                             cr.connection.commit()
                         except Exception:
                             cr.connection.rollback()
 
                     if res:
-                        exe("ir.ui.view", "write", [res_id], {'arch_db': arch})
+                        exe("ir.ui.view", "write", [view_ids], {'arch_db': arch})
 
 
 class Modules(object):
