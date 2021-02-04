@@ -257,12 +257,10 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     summary['installed'] += to_install_modules
     modules = list(filter(lambda x: x not in summary['installed'], modules))
 
-    import pudb
-    pudb.set_trace()
-    if delete_qweb:
-        for module in modules:
-            print("Deleting qweb of module {}".format(module))
-            do_delete_qweb(module)
+    # if delete_qweb:
+        # for module in modules:
+            # print("Deleting qweb of module {}".format(module))
+            # do_delete_qweb(module)
 
     if modules:
         update(config, 'u', modules)
