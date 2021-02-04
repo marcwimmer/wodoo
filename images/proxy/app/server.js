@@ -60,6 +60,15 @@ function _make_davical_path(path) {
 
 }
 
+function _make_mail_path(path) {
+    let a = path.split("/"); //a = ["", "caldav", "user1", ]
+    if (path.indexOf('/mail/') === 0) {
+        a = a.slice(1).join('/');
+        return a;
+    }
+
+}
+
 function _call_proxy(req, res, url) {
     proxy.web(req, res, {target: url,
         selfHandleResponse: true
@@ -90,6 +99,13 @@ function _wait_tcp_conn(target) {
 
 proxy.on('proxyReq', (proxyReq, req, res, options) =>  {
     if (req.url.indexOf('/caldav/') == 0) {
+        var rewritten_path = _make_davical_path(proxyReq.path);
+        proxyReq.path = rewritten_path;
+    }
+});
+
+proxy.on('proxyReq', (proxyReq, req, res, options) =>  {
+    if (req.url.indexOf('/mail/') == 0) {
         var rewritten_path = _make_davical_path(proxyReq.path);
         proxyReq.path = rewritten_path;
     }
