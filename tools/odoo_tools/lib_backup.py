@@ -85,8 +85,9 @@ def backup_calendar(config):
 @click.pass_context
 @click.argument('filename', required=False, default="")
 @click.option('--dbname', required=False)
+@click.option('--column-inserts', is_flag=True)
 @click.option('--dumptype', type=click.Choice(["custom", "plain", "directory"]), default='custom')
-def backup_db(ctx, config, filename, dbname, dumptype):
+def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
     filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
     cmd = [
         'run',
@@ -101,6 +102,11 @@ def backup_db(ctx, config, filename, dbname, dumptype):
         '/host/dumps/' + filename,
         "--dumptype", dumptype,
     ]
+    if column_inserts:
+        cmd += [
+            "--column-inserts"
+        ]
+
     __dc(cmd)
 
 
