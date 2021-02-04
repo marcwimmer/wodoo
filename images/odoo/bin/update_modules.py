@@ -47,6 +47,8 @@ def update(config, mode, modules):
     else:
         TESTS = ''
 
+    import pudb
+    pudb.set_trace()
     if not config.only_i18n:
         print(mode, modules)
         # obj_module = Module.get_by_name(module)
