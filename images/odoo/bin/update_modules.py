@@ -81,8 +81,6 @@ def update(config, mode, modules):
                 for lang in get_all_langs():
                     if lang == 'en_US':
                         continue
-                    import pudb
-                    pudb.set_trace()
                     lang_file = module.get_lang_file(lang)
                     if not lang_file:
                         lang_file = module.get_lang_file(lang.split("_")[0])
