@@ -38,6 +38,8 @@ def watch_file_and_kill():
             if DEBUGGER_WATCH.exists():
                 content = DEBUGGER_WATCH.read_text()
                 action = content.split(":")
+                import pudb
+                pudb.set_trace()
                 if action[0] and action[0] == 'update_view_in_db':
                     filepath = Path(action[1])
                     lineno = int(action[2])
