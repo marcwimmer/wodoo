@@ -480,7 +480,7 @@ def update_view_in_db(filepath, lineno):
                             cr.connection.rollback()
 
                     if res:
-                        exe("ir.ui.view", "write", [view_ids], {'arch_db': arch})
+                        exe("ir.ui.view", "write", view_ids, {'arch_db': arch})
 
 
 class Modules(object):
