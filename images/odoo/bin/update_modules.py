@@ -85,7 +85,7 @@ def update(config, mode, modules):
                     pudb.set_trace()
                     lang_file = module.get_lang_file(lang)
                     if not lang_file:
-                        lang_file.name = lang_file.split("_")[0]
+                        lang_file = module.get_lang_file(lang.split("_")[0])
                     if not lang_file:
                         continue
                     if lang_file.exists():
