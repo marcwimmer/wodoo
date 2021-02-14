@@ -1,0 +1,8 @@
+services:
+  webssh:
+    build: $ODOO_HOME/images/webssh
+    restart: unless-stopped
+    networks:
+      - default
+    ports: 
+      - 10.10.173.111:10255:8080

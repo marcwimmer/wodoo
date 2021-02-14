@@ -1,6 +1,7 @@
 FROM    debian:stretch
 ENV     DEBIAN_FRONTEND noninteractive
 ENV     TERM xterm
+ENV     ROUNDCUBE_VERSION=1.4.11
 MAINTAINER Round Cube <rc@xxx.org>
 
 WORKDIR /root
@@ -19,7 +20,6 @@ RUN apt update && \
 RUN pip3 install pathlib
 RUN ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log
 
-ENV     ROUNDCUBE_VERSION=1.4.11
 RUN rm -fr /usr/share/nginx/www && \
 wget --no-check-certificate http://github.com/roundcube/roundcubemail/releases/download/$ROUNDCUBE_VERSION/roundcubemail-${ROUNDCUBE_VERSION}-complete.tar.gz -O - | tar xz && \
 mv /root/roundcubemail-$ROUNDCUBE_VERSION /usr/share/nginx/www  && \

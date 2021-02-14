@@ -1,5 +1,4 @@
 #manage-order: 5001
-version: '3.3'
 services:
   proxy:
     ports:
