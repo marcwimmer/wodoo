@@ -1,14 +1,26 @@
 server {
         root /usr/share/nginx/www;
         index index.php index.html index.htm;
+        port_in_redirect off;
 
         server_name localhost;
 
-        location ~ \.php$ {
+        location /mailer/  {
+            index  index.php index.html index.htm;
+
+            location /mailer/ {
+                rewrite /mailer/(.*)$ /$1 break;
+                try_files $uri $uri/ /index.php;
+            }
+
+            location ~ \.php$ {
+                rewrite /mailer$ /index.php break;
+                rewrite /mailer/(.*)$ /$1 break;
                 fastcgi_split_path_info ^(.+\.php)(/.+)$;
                 fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
                 fastcgi_index index.php;
                 include fastcgi_params;
                 fastcgi_param SCRIPT_FILENAME $document_root/$fastcgi_script_name;
+            }
         }
 }

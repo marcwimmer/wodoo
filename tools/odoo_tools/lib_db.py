@@ -74,15 +74,16 @@ def pgcli(config, dbname, params):
 @db.command()
 @click.argument('dbname', required=False)
 @click.argument('params', nargs=-1)
+@click.option("--sql", required=False)
 @pass_config
-def psql(config, dbname, params):
+def psql(config, dbname, params, sql):
     dbname = dbname or config.dbname
     if config.use_docker:
         os.environ['DOCKER_MACHINE'] = "1"
     conn = config.get_odoo_conn().clone(dbname=dbname)
-    return _psql(config, conn, params)
+    return _psql(config, conn, params, sql=sql)
 
-def _psql(config, conn, params, bin='psql'):
+def _psql(config, conn, params, bin='psql', sql=None):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
         if params[0] in ['template1', dbname]:

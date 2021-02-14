@@ -9,9 +9,11 @@ sed -i "s/__MAIL_SERVER__/$MAIL_SERVER/g" /usr/share/nginx/www/config/config.inc
 mkdir -p /rc/logs
 mkdir -p /rc/tmp
 chown -R www-data:www-data /rc
+nginx -c /etc/nginx/nginx.conf -t
 
 phpenmod mcrypt
 service nginx start
 service php7.0-fpm start
 
-tail -F /var/log/nginx/access.log
+tail -F /var/log/nginx/access.log &
+tail -F /var/log/nginx/error.log

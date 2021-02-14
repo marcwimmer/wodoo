@@ -1,4 +1,0 @@
-requests
-pathlib
-pudb
-arrow
