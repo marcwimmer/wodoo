@@ -5,22 +5,28 @@ server {
 
         server_name localhost;
 
-        location /mailer/  {
-            index  index.php index.html index.htm;
+        location /mailer {
+            return 301 $scheme://$http_host/mailer/index.php;
+        }
 
-            location /mailer/ {
-                rewrite /mailer/(.*)$ /$1 break;
-                try_files $uri $uri/ /index.php;
+        location /mailer/  {
+
+            location ~* ^/mailer/(.+\.(woff|woff2|svg|jpg|jpeg|gif|css|png|js|ico|html|xml|txt))$ {
+                rewrite ^/mailer/(.*)$ /$1 break;
+                try_files $uri $uri/ index.php;
             }
 
-            location ~ \.php$ {
-                rewrite /mailer$ /index.php break;
+            location ~ (\.php|\/)$ {
+                rewrite /mailer$ /mailer/index.php;
                 rewrite /mailer/(.*)$ /$1 break;
+
                 fastcgi_split_path_info ^(.+\.php)(/.+)$;
+
                 fastcgi_pass unix:/var/run/php/php7.0-fpm.sock;
                 fastcgi_index index.php;
                 include fastcgi_params;
-                fastcgi_param SCRIPT_FILENAME $document_root/$fastcgi_script_name;
+                fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_param PATH_INFO $fastcgi_path_info;
             }
         }
 }
