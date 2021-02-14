@@ -66,35 +66,9 @@ app.use("/longpolling", createProxyMiddleware({
     target: 'http://' + process.env.ODOO_HOST + ':8072',
 })); 
 
-function onProxyRes(proxyRes, req, res) {
-    const bodyChunks = [];
-    proxyRes.on('data', (chunk) => {
-        bodyChunks.push(chunk);
-    });
-    proxyRes.on('end', () => {
-        html = Buffer.concat(bodyChunks).toString();
-        html = html.replace(/(src|href)="static\/(.*?)"/g, (match, $1, $2) => { 
-            return $1 + '="console/static/' + $2 + '"';
-        });
-        html = Buffer.from(html);
-        res.end("my response to cli");
-
-        //res.end(html);
-    });
-}
-
-                //html = html.replace(/(src|href)="static\/(.*?)"/g, (match, $1, $2) => { 
-                    //return $1 + '="console/static/' + $2 + '"';
-                //});
-
 app.use("/console", createProxyMiddleware({
     target: 'http://' + process.env.WEBSSH_HOST + ':8080',
     ws: true,
-    pathRewrite: {
-      '^/console': '/', // rewrite path
-    },
-    onProxyRes: onProxyRes,
-
 })); 
 
 app.all("/*", (req, res, next) => {
