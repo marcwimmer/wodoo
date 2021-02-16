@@ -35,4 +35,5 @@ exec_odoo(
     *cmd,
     odoo_shell=True,
     stdin=stdin,
+    dokill=False,
 )

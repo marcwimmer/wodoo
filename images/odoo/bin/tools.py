@@ -214,7 +214,7 @@ def __python_exe():
         # return "/usr/bin/python3"
         return "python3"
 
-def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, stdin=None, **kwargs): # NOQA
+def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, stdin=None, dokill=True, **kwargs): # NOQA
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
     def wait_flag():
@@ -227,7 +227,8 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, st
         del flag
     # wait_flag()
 
-    kill_odoo()
+    if dokill:
+        kill_odoo()
 
     EXEC, _CONFIG = get_odoo_bin(for_shell=odoo_shell)
     CONFIG = get_config_file(CONFIG or _CONFIG)

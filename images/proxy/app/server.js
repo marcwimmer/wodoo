@@ -67,7 +67,7 @@ app.use("/longpolling", createProxyMiddleware({
 })); 
 
 app.use("/console", createProxyMiddleware({
-    target: 'http://' + process.env.WEBSSH_HOST + ':8080',
+    target: 'http://' + process.env.WEBSSH_HOST + ':80',
     ws: true,
 })); 
 

@@ -4,6 +4,5 @@ services:
     restart: unless-stopped
     networks:
       - default
-    ports: 
-      - 10.10.173.111:10255:80
-      - 10.10.173.111:10256:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
