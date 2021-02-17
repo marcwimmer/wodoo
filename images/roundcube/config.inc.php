@@ -19,6 +19,7 @@ $config['smtp_conn_options'] = array(
 );
 $config['smtp_user'] = '';
 $config['smtp_pass'] = '';
+$config['smtp_port'] = 25;
 // SMTP server just like IMAP server
 $config['smtp_server'] = '__MAIL_SERVER__';
 $config['support_url'] = 'mailto:marc@itewimmer.de';
@@ -28,5 +29,5 @@ $config['des_key'] = '8VGuiUzzJvRI7VGOZIM4UTvQ';
 $config['product_name'] = 'Odoo Mail';
 $config['plugins'] = array();
 $config['language'] = 'en_US';
-$config['enable_installer'] = true;
+$config['enable_installer'] = false;
 ?>
