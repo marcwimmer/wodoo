@@ -894,7 +894,7 @@ def search_env_path(executable_file):
     def _search():
         for path in os.getenv("PATH").split(":"):
             yield Path(path).glob(execute_script)
-    res = _search()
+    res = list(_search())
     if res:
         return res[0]
     raise Exception(f"Not found: {executable_file}")
