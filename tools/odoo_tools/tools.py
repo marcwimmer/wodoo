@@ -893,7 +893,7 @@ def get_services(config, based_on, yml=None):
 def search_env_path(executable_file):
     def _search():
         for path in os.getenv("PATH").split(":"):
-            yield from Path(path).glob(execute_script)
+            yield from Path(path).glob(executable_file)
     res = list(_search())
     if res:
         return res[0]
