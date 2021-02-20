@@ -18,6 +18,7 @@ from .tools import remove_webassets
 from .tools import _askcontinue
 from .tools import __dc
 from .tools import get_volume_names
+from .tools import search_env_path
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
@@ -30,7 +31,7 @@ def __get_postgres_volume_name(config):
     return f"{config.project_name}_odoo_postgres_volume"
 
 def _get_cmd_butter_volume():
-    return ["sudo", "/usr/bin/btrfs", "subvolume"]
+    return ["sudo", search_env_path('btrfs'), "subvolume"]
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -56,7 +57,7 @@ def _get_btrfs_infos(path):
     info = {}
     for line in subprocess.check_output([
             'sudo',
-            '/usr/bin/btrfs',
+            search_env_path('btrfs'),
             'subvol',
             'show',
             str(path)
@@ -83,13 +84,16 @@ def _turn_into_subvolume(path):
     """
     Makes a subvolume out of a path. Docker restart required?
     """
-    process = subprocess.Popen(['sudo', 'btrfs', 'subvolume', 'show', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    process = subprocess.Popen(['sudo', search_env_path('btrfs'), 'subvolume', 'show', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     std_out, std_err = process.communicate()
     if process.returncode != 0:
-        if 'Not a Btrfs subvolume' in std_err.decode('utf-8'):
+        import pudb
+        pudb.set_trace()
+        err_msg = std_err.decode('utf-8').lower()
+        if any(x.lower() in err_msg for x in ['Not a Btrfs subvolume', 'not a subvolume']):
             click.secho(f"Turning {path} into a subvolume.")
-            filename = tempfile.mktemp(suffix='.')
-            subprocess.check_call(['sudo', '/usr/bin/mv', path, filename])
+            filename = path.parent / Path(tempfile.mktemp()).name
+            shutil.move(path, filename)
             try:
                 subprocess.check_output(['sudo', 'btrfs', 'subvolume', 'create', path])
                 click.secho("Writing back the files to original position")
