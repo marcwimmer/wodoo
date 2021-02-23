@@ -7,7 +7,7 @@ with open('/config') as file:
     conf = file.read().split("\n")
 conf += os.environ['POSTGRES_CONFIG'].split(",")
 
-conf = list(map(lambda x: f"-c {x}", filter(bool, conf)))
+conf = list(map(lambda x: f"-c {x}", map(lambda x: x.strip(), filter(bool, conf))))
 
 with open('/start.sh', 'w') as f:
     f.write('/usr/local/bin/docker-entrypoint.sh postgres ' + ' '.join(conf))
