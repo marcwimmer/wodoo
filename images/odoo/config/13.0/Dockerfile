@@ -111,7 +111,8 @@ RUN apt update && apt install -y libncurses5 libncurses5-dev libncursesw5
 ADD python/Python-$ODOO_PYTHON_VERSION.tgz /usr/local/src
 WORKDIR /usr/local/src/Python-${ODOO_PYTHON_VERSION}
 RUN ./configure --enable-optimizations
-RUN make -j4
+RUN apt install time
+RUN time make -j4
 RUN make install
 RUN rm /usr/bin/python3 /usr/bin/pip3
 
