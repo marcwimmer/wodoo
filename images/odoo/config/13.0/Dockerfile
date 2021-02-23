@@ -86,7 +86,8 @@ RUN apt-get install \
             locales-all \
             libpoppler-cpp-dev \
             postgresql-client \
-            sassc
+            sassc \
+            libsqlite3-dev
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
