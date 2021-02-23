@@ -20,4 +20,4 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
       PGCLIRC: /var/lib/postgresql/.pgcli.config
 
-    shm_size: '1g'
+    shm_size: ${POSTGRES_SHM_SIZE}

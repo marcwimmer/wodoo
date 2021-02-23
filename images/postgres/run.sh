@@ -1,9 +1,24 @@
 #!/bin/bash
 set -e
-CONFIG="$(sed 's/^/-c/' /config)"
+
+python3 <<EOF
+import os
+with open('/config') as file:
+    conf = file.read().split("\n")
+conf += os.environ['POSTGRES_CONFIG'].split(",")
+
+conf = list(map(lambda x: f"-c {x}", filter(bool, conf)))
+
+with open('/start.sh', 'w') as f:
+    f.write('/usr/local/bin/docker-entrypoint.sh postgres ' + ' '.join(conf))
+
+with open('/config', 'w') as f:
+    f.write('\n'.join(conf))
+
+EOF
 
 if [[ "$1" == "postgres" ]]; then
-    exec gosu postgres bash /usr/local/bin/docker-entrypoint.sh postgres $CONFIG
+    exec gosu postgres bash /start.sh
 else
     exec gosu postgres "$@"
 fi
