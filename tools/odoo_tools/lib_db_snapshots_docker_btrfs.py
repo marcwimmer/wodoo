@@ -87,8 +87,6 @@ def _turn_into_subvolume(path):
     process = subprocess.Popen(['sudo', search_env_path('btrfs'), 'subvolume', 'show', path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     std_out, std_err = process.communicate()
     if process.returncode != 0:
-        import pudb
-        pudb.set_trace()
         err_msg = std_err.decode('utf-8').lower()
         if any(x.lower() in err_msg for x in ['Not a Btrfs subvolume', 'not a subvolume']):
             click.secho(f"Turning {path} into a subvolume.")
