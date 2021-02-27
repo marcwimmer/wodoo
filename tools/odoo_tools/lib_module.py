@@ -365,7 +365,10 @@ def unittest(config, repeat):
     config.runtime_settings.set('last_unittest', filename)
     click.secho(str(filename), fg='green', bold=True)
     container_file = Path('/opt/src/') / filename
-    params = ['odoo', '/odoolib/unit_test.py', f'{container_file}']
+    params = [
+        'odoo', '/odoolib/unit_test.py', f'{container_file}',
+        '--not-interactive',
+    ]
     __dcrun(params + ['--log-level=debug'], interactive=True)
 
 @odoo_module.command()
