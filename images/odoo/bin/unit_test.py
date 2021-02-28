@@ -9,28 +9,24 @@ from odoo_tools.odoo_config import current_version
 from pathlib import Path
 from tools import exec_odoo
 from tools import prepare_run
+import argparse
+parser = argparse.ArgumentParser(description='Unittest.')
+parser.add_argument('--log-level')
+parser.add_argument('--not-interactive', action="store_true")
+parser.add_argument('test_file')
+parser.set_defaults(log_level='debug')
+args = parser.parse_args()
 
 os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
 
-if len(sys.argv) == 1:
-    print("Missing test file!")
-    sys.exit(-1)
-
-loglevel = [x for x in sys.argv[1:] if x.startswith("--log-level=")]
-if loglevel:
-    loglevel = loglevel[0][len("--log-level="):]
-else:
-    loglevel = 'debug'
-
-not_interactive = bool([x for x in sys.argv[1:] if x.startswith("--not-interactive")])
-if not not_interactive:
+if not args.not_interactive:
     os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
 else:
-    os.environ["PYTHONBREAKPOINT"] = ""
+    os.environ["PYTHONBREAKPOINT"] = "0"
 
 prepare_run()
 
-filepath = Path(sys.argv[1])
+filepath = Path(args.test_file)
 if not str(filepath).startswith("/"):
     filepath = Path(os.environ['CUSTOMS_DIR']) / filepath
 if not filepath.exists():
@@ -38,12 +34,10 @@ if not filepath.exists():
     sys.exit(-1)
 module = Module(filepath)
 
-# make path relative to links, so that test is recognized by odoo
-path = filepath.resolve().absolute()
 cmd = [
     '--stop-after-init',
-    f'--log-level={loglevel}',
-    f'--test-file={path}',
+    f'--log-level={args.log_level}',
+    f'--test-file={filepath.resolve().absolute()}',
 ]
 if current_version() <= 11.0:
     cmd += [
