@@ -29,8 +29,6 @@ ADD config.inc.php /usr/share/nginx/www/config/
 ADD default /etc/nginx/sites-enabled/default
 ADD launch.sh /root/
 RUN nginx -c /etc/nginx/nginx.conf -t
-COPY login.html /usr/share/nginx/www/skins/elastic/templates/login.html
-ADD adapt_roundcube.py /usr/src
-RUN python3 /usr/src/adapt_roundcube.py
 
+COPY autologon.php /usr/share/nginx/www/plugins/autologon/autologon.php
 CMD [ "bash", "/root/launch.sh" ]

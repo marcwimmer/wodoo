@@ -59,7 +59,7 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
 });
 
 app.use("/mailer",createProxyMiddleware({
-    target: 'http://roundcube:80',
+    target: 'http://' + process.env.ROUNDCUBE_HOST + ':80',
 })); 
 
 app.use("/longpolling", createProxyMiddleware({
