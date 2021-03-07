@@ -37,7 +37,7 @@ function _wait_tcp_conn(target) {
                 client.end()
             });
             client.on('error', function(e) {
-                console.log("Error connecting to odoo: " + (new Date()));
+                console.log("Error connecting to " + target + ": " + (new Date()));
                 client.end();
                 setTimeout(() => {
                     do_connect();
