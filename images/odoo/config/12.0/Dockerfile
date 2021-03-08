@@ -99,6 +99,15 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
+# https://github.com/openvenues/pypostal postal lib for address checking
+RUN apt install -y curl autoconf automake libtool python-dev pkg-config
+RUN git clone https://github.com/openvenues/libpostal && \
+cd libpostal && \
+./bootstrap.sh && \
+./configure  && \
+make && \
+make install && \
+ldconfig
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
 ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 
@@ -124,3 +133,4 @@ RUN python3 setup.py install
 
 RUN pip3 install iscompatible
 WORKDIR /opt/odoo
+
