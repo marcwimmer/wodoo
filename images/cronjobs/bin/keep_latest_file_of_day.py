@@ -113,8 +113,6 @@ def print_files(files):
 
 
 if __name__ == '__main__':
-    import pudb
-    pudb.set_trace()
     logging.basicConfig(level=logging.ERROR)
     log = logging.getLogger()
     args = parse_args()
