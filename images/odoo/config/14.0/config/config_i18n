@@ -1,0 +1,5 @@
+log_level = debug
+log_handler = :DEBUG
+max_cron_threads = 0
+workers = 0
+http_enable = False
