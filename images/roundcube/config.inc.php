@@ -2,6 +2,7 @@
 $config['db_dsnw'] = 'sqlite:////rc/roundcubemail.sqlite?mode=0640';
 $config['default_host'] = '__MAIL_SERVER__';
 $config['assets_path'] = '/mailer';
+$config['use_secure_urls'] = false;
 
 // required to ignore SSL cert. verification
 // see: https://bbs.archlinux.org/viewtopic.php?id=187063
@@ -27,7 +28,8 @@ $config['log_dir'] = '/rc/logs';
 $config['temp_dir'] = '/rc/tmp';
 $config['des_key'] = '8VGuiUzzJvRI7VGOZIM4UTvQ';
 $config['product_name'] = 'Odoo Mail';
-$config['plugins'] = array();
+//$config['plugins'] = array('autologon');
+$config['plugins'] = array('autologon');
 $config['language'] = 'en_US';
 $config['enable_installer'] = false;
 ?>

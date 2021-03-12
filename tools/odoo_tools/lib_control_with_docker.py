@@ -207,7 +207,7 @@ def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
         'ODOO_VERSION': config.odoo_version,  # at you developer: do not mismatch with build args
     })
 
-def debug(ctx, config, machine, ports):
+def debug(ctx, config, machine, ports, cmd=None):
     """
     starts /bin/bash for just that machine and connects to it; if machine is down, it is powered up; if it is up, it is restarted; as command an endless bash loop is set"
     """
@@ -241,7 +241,10 @@ def debug(ctx, config, machine, ports):
         cmd_prefix += ['-f', dest]
 
     __dc(cmd_prefix + ['up', '-d', machine])
-    attach(ctx, config, machine=machine)
+    if not cmd:
+        attach(ctx, config, machine=machine)
+    else:
+        __dcexec([machine, cmd], interactive=True)
 
 def run(ctx, config, volume, machine, args, **kwparams):
     """

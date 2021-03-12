@@ -160,13 +160,14 @@ def build(ctx, config, machines, pull, no_cache, push):
 
 @docker.command()
 @click.argument('machine', required=True)
+@click.option('-c', '--command', required=False, help="Like /odoolib/debug.py")
 @click.option('-p', '--ports', is_flag=True, help='With Port 33284')
 @pass_config
 @click.pass_context
-def debug(ctx, config, machine, ports):
+def debug(ctx, config, machine, ports, command):
     if config.use_docker:
         from .lib_control_with_docker import debug as lib_debug
-    lib_debug(ctx, config, machine, ports)
+    lib_debug(ctx, config, machine, ports, cmd=command)
 
 @cli.command()
 @click.argument('machine', required=True)

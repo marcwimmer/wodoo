@@ -45,13 +45,11 @@ def db(config):
 @click.argument('dbname', required=True)
 @pass_config
 def drop_db(config, dbname):
-
     if not (config.devmode or config.force):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
-    conn = config.get_odoo_conn()
-    _remove_postgres_connections(conn)
-    _execute_sql("drop database {};".format(dbname), dbname='template1', notransaction=True)
+    conn = config.get_odoo_conn().clone(dbname='template1')
+    _remove_postgres_connections(conn, sql_afterwards="drop database {};".format(dbname))
     click.echo("Database {} dropped.".format(dbname))
 
 @db.command()
