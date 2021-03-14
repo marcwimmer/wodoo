@@ -17,4 +17,4 @@ services:
     #ports:
     #    - "127.0.0.1:8282:80"
     environment:
-      MAIL_SERVER: ${PROJECT_NAME}_mail
+      MAIL_SERVER: ${project_name}_mail
