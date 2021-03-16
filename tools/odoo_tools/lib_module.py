@@ -339,8 +339,10 @@ def _exec_update(config, params):
 
 @odoo_module.command()
 @click.argument('file', required=False)
+@click.option('-u', '--user', default='admin')
+@click.option('-a', '--all', is_flag=True)
 @pass_config
-def robotest(config, file):
+def robotest(config, file, user, all):
     from .odoo_config import MANIFEST, CUSTOMS_MANIFEST_FILE
     from .module_tools import Module
     from pathlib import Path
@@ -371,24 +373,28 @@ def robotest(config, file):
         if filename not in testfiles:
             click.secho(f"Not found: {filename}", fg='red')
             sys.exit(-1)
+        filename = [filename]
     else:
-        testfiles = sorted(testfiles)
-        message = "Please choose the unittest to run."
-        filename = inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')
+        if not all:
+            testfiles = sorted(testfiles)
+            message = "Please choose the unittest to run."
+            filename = [inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')]
+        else:
+            filename = testfiles
 
     if not filename:
         return
     config.runtime_settings.set('last_robot_test', filename)
     click.secho(str(filename), fg='green', bold=True)
 
-    archive = _make_archive([filename])
+    archive = _make_archive(filename)
 
     data = json.dumps({
         'test_file': archive,
         'params': {
             "-s": "http://proxy",
-            "-u": "admin",
-            "-w": "1",
+            "-u": user,
+            "-w": config.DEFAULT_DEV_PASSWORD,
             "-z": 3, # selenium timeout,
         },
     })
@@ -408,7 +414,7 @@ def robotest(config, file):
         click.secho(f"Test failed: {failed['name']} - Duration: {failed['duration']}", fg='red')
     click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
-    if failed:
+    if failds:
         sys.exit(-1)
 
 

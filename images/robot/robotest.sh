@@ -175,6 +175,6 @@ else
 fi
 
 RES2=$?
-echo "Test Run Result :" $RES2
+echo "Test Run Result (from robotest.sh):" $RES2
 
 exit $RES2

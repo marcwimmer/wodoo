@@ -104,6 +104,7 @@ def run_tests(params, test_file):
         shutil.rmtree(working_space)
 
     (output_dir / 'results.json').write_text(json.dumps(test_results))
+    logger.info("Finished calling robotest.sh from robotest.py")
 
 
 if __name__ == '__main__':

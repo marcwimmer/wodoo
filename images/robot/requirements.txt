@@ -2,6 +2,7 @@ unidecode
 diff-match-patch
 PyPDF2
 gengo
+odoo-rpc-client
 newrelic
 selenium
 robotframework
