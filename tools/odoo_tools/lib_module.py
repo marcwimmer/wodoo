@@ -355,6 +355,8 @@ def robotest(config, file, user, all):
 
     testfiles = []
     for _file in customs_dir().glob("**/*.robot"):
+        if 'keywords' in _file.parts: continue
+        if 'library' in _file.parts: continue
         testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
         del _file
 
