@@ -78,6 +78,14 @@ def __turn_into_devdb(config, conn):
                         fetchone=True
                     )
                     return not res[0]
+                if 'if-column-exists' in comment:
+                    table, column = comment.split("if-column-exists")[1].strip().split('.')
+                    res = _execute_sql(
+                        conn,
+                        "select count(*) from information_schema.columns where table_schema='public' and table_name='{}' and column_name='{}'".format(table, column),
+                        fetchone=True
+                    )
+                    return not res[0]
                 return False
 
             if any(list(ignore_line(comment) for comment in comment[0].split(";"))):

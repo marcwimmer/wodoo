@@ -37,10 +37,26 @@ Browsers = {
     }
 }
 
+def _get_variables_file(parent_path, content):
+    variables_conf = parent_path / 'variables.json'
+    variables_conf.write_text(json.dumps(content, indent=4))
+    variables_file = parent_path / 'variables.py'
+    variables_file.write_text("""
+import json
+from pathlib import Path
+
+def get_variables():
+    return json.loads(Path('{path}').read_text())
+""".format(path=variables_conf))
+    return variables_file
+
 
 def _run_test(test_file, output_dir, url, user, password, browser='chrome', selenium_timeout=20):
     assert browser in Browsers
     browser = Browsers[browser]
+
+    if password == '1':
+        raise Exception("Cannot use password '1' - is converted to bool in robot.")
 
     variables = {
         "SELENIUM_DELAY": 0,
@@ -53,11 +69,9 @@ def _run_test(test_file, output_dir, url, user, password, browser='chrome', sele
         "ALIAS": browser['alias'],
         "DRIVER": browser['driver'],
     }
-    cmd_variables = []
-    for k, v in variables.items():
-        cmd_variables += [f"{k}:{v}"]
-
-    robot.run(test_file, outputdir=output_dir, variable=cmd_variables)
+    variables_file = _get_variables_file(test_file.parent, variables)
+    logger.info(f"Configuration:\n{variables}")
+    robot.run(test_file, outputdir=output_dir, variablefile=str(variables_file))
 
 
 def _run_tests(params, test_dir, output_dir):
