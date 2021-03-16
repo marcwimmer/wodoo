@@ -1,4 +1,6 @@
 import sys
+import json
+import base64
 import subprocess
 import inquirer
 import traceback
@@ -334,10 +336,87 @@ def _exec_update(config, params):
         from . import lib_control_native
         return lib_control_native._update_command(config, params)
 
+
+@odoo_module.command()
+@click.argument('file', required=False)
+@pass_config
+def robotest(config, file):
+    from .odoo_config import MANIFEST, CUSTOMS_MANIFEST_FILE
+    from .module_tools import Module
+    from pathlib import Path
+    from .odoo_config import customs_dir
+    from .robo_helpers import _make_archive
+
+    if not config.devmode:
+        click.secho("Devmode required to run unit tests. Database will be destroyed.", fg='red')
+        sys.exit(-1)
+
+    testfiles = []
+    for _file in customs_dir().glob("**/*.robot"):
+        testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
+        del _file
+
+    if file:
+        if '/' in file:
+            filename = Path(file)
+        else:
+            match = [x for x in testfiles if file in x.name]
+            if len(match) > 1:
+                click.secho("Not unique: {file}", fg='red')
+                sys.exit(-1)
+
+            if match:
+                filename = match[0]
+
+        if filename not in testfiles:
+            click.secho(f"Not found: {filename}", fg='red')
+            sys.exit(-1)
+    else:
+        testfiles = sorted(testfiles)
+        message = "Please choose the unittest to run."
+        filename = inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')
+
+    if not filename:
+        return
+    config.runtime_settings.set('last_robot_test', filename)
+    click.secho(str(filename), fg='green', bold=True)
+
+    archive = _make_archive([filename])
+
+    data = json.dumps({
+        'test_file': archive,
+        'params': {
+            "-s": "http://proxy",
+            "-u": "admin",
+            "-w": "1",
+            "-z": 3, # selenium timeout,
+        },
+    })
+    data = base64.encodestring(data.encode('utf-8'))
+
+    params = [
+        'robot',
+    ]
+    __dcrun(params, pass_stdin=data.decode('utf-8'), interactive=True)
+
+    output_path = customs_dir() / 'robot_output'
+    test_results = json.loads((output_path / 'results.json').read_text())
+    failds = [x for x in test_results if x['result'] != 'ok']
+    color_info = 'green'
+    for failed in failds:
+        color_info = 'red'
+        click.secho(f"Test failed: {failed['name']} - Duration: {failed['duration']}", fg='red')
+    click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
+    click.secho(f"Outputs are generated in {output_path}", fg='yellow')
+    if failed:
+        sys.exit(-1)
+
+
 @odoo_module.command()
 @click.option('-r', '--repeat', is_flag=True)
+@click.argument('file', required=False)
 @pass_config
-def unittest(config, repeat):
+def unittest(config, repeat, file):
     """
     Collects unittest files and offers to run
     """
@@ -346,19 +425,31 @@ def unittest(config, repeat):
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    if repeat and last_unittest:
-        filename = last_unittest
+    testfiles = []
+    for testmodule in MANIFEST().get('tests', []):
+        testmodule = Module.get_by_name(testmodule)
+        for _file in testmodule.path.glob("tests/test*.py"):
+            testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
+        del _file
+
+    if file:
+        if '/' in file:
+            filename = Path(file)
+        else:
+            match = [x for x in testfiles if x.name == file or x.name == file + '.py']
+            if match:
+                filename = match[0]
+
+        if filename not in testfiles:
+            click.secho(f"Not found: {filename}", fg='red')
+            sys.exit(-1)
     else:
-        testfiles = []
-
-        for testmodule in MANIFEST().get('tests', []):
-            testmodule = Module.get_by_name(testmodule)
-            for file in testmodule.path.glob("tests/test*.py"):
-                testfiles.append(file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
-
-        testfiles = sorted(testfiles)
-        message = "Please choose the unittest to run."
-        filename = inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')
+        if repeat and last_unittest:
+            filename = last_unittest
+        else:
+            testfiles = sorted(testfiles)
+            message = "Please choose the unittest to run."
+            filename = inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')
 
     if not filename:
         return

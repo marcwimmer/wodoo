@@ -272,7 +272,7 @@ def __dcexec(cmd, interactive=True):
     else:
         return subprocess.check_output(cmd)
 
-def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=False):
+def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=False, pass_stdin=None):
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ['run']
     if not interactive:
@@ -284,14 +284,24 @@ def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=Fal
     del cmd2
     cmd = __get_cmd() + cmd
     if interactive:
-        subprocess.call(cmd, stdin=sys.stdin)
+        optional_params = {}
+        if pass_stdin:
+            optional_params['input'] = pass_stdin
+            optional_params['universal_newlines'] = True
+        else:
+            optional_params['stdin'] = sys.stdin
+        subprocess.run(cmd, **optional_params)
     else:
         if returncode:
             process = subprocess.Popen(cmd)
             process.wait()
             return process.returncode
         else:
-            return subprocess.check_output(cmd)
+            optional_params = {}
+            if pass_stdin:
+                optional_params['input'] = pass_stdin
+                optional_params['universal_newlines'] = True
+            return subprocess.check_output(cmd, **optional_params)
 
 def _askcontinue(config, msg=None):
     if msg:
