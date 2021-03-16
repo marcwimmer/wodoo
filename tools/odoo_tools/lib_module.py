@@ -384,7 +384,6 @@ def robotest(config, file, user, all):
 
     if not filename:
         return
-    config.runtime_settings.set('last_robot_test', filename)
     click.secho(str(filename), fg='green', bold=True)
 
     archive = _make_archive(filename)
