@@ -3,6 +3,7 @@ diff-match-patch
 PyPDF2
 gengo
 odoo-rpc-client
+click
 newrelic
 selenium
 robotframework

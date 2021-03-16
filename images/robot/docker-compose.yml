@@ -8,6 +8,5 @@ services:
     volumes:
         - ${CUSTOMS_DIR}/robot_output:/opt/output
         - ${ODOO_HOME}/images/robot/robotest.py:/opt/robot/robotest.py
-        - ${ODOO_HOME}/images/robot/robotest.sh:/opt/robot/robotest.sh
         - ${ODOO_HOME}/images/robot/keywords:/opt/robot/keywords
         - ${ODOO_HOME}/images/robot/library:/opt/robot/library

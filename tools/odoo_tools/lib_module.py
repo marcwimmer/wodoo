@@ -388,13 +388,17 @@ def robotest(config, file, user, all):
 
     archive = _make_archive(filename)
 
+    pwd = config.DEFAULT_DEV_PASSWORD
+    if pwd == "True" or pwd is True:
+        pwd = '1'
+
     data = json.dumps({
         'test_file': archive,
         'params': {
-            "-s": "http://proxy",
-            "-u": user,
-            "-w": config.DEFAULT_DEV_PASSWORD,
-            "-z": 3, # selenium timeout,
+            "url": "http://proxy",
+            "user": user,
+            "password": config.DEFAULT_DEV_PASSWORD,
+            "selenium_timeout": 3, # selenium timeout,
         },
     })
     data = base64.encodestring(data.encode('utf-8'))

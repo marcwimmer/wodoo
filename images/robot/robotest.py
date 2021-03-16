@@ -1,4 +1,5 @@
 import base64
+import robot
 import sys
 import shutil
 import os
@@ -25,6 +26,39 @@ logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger('')  # root handler
 
+Browsers = {
+    'chrome': {
+        'driver': 'Chrome',
+        'alias': 'Chrome',
+    },
+    'firefox': {
+        'driver': 'Firefox',
+        'alias': 'Headless Firefox',
+    }
+}
+
+
+def _run_test(test_file, output_dir, url, user, password, browser='chrome', selenium_timeout=20):
+    assert browser in Browsers
+    browser = Browsers[browser]
+
+    variables = {
+        "SELENIUM_DELAY": 0,
+        "SELENIUM_TIMEOUT": selenium_timeout,
+        "ODOO_URL": url,
+        "ODOO_URL_LOGIN": url + "/web/login",
+        "ODOO_USER": user,
+        "ODOO_PASSWORD": password,
+        "BROWSER": browser['alias'],
+        "ALIAS": browser['alias'],
+        "DRIVER": browser['driver'],
+    }
+    cmd_variables = []
+    for k, v in variables.items():
+        cmd_variables += [f"{k}:{v}"]
+
+    robot.run(test_file, outputdir=output_dir, variable=cmd_variables)
+
 
 def _run_tests(params, test_dir, output_dir):
     # init vars
@@ -37,17 +71,11 @@ def _run_tests(params, test_dir, output_dir):
         output_sub_dir = output_dir / f"{test_file.stem}"
 
         # build robot command: pass all params from data as parameters to the command call
-        cmd = ["/bin/bash", "/opt/robot/robotest.sh"]
-        logger.info(f"Calling {' '.join(cmd)}")
-        params['-o'] = output_sub_dir
-        for k, v in params.items():
-            cmd += [f"{k}{v}"]
-
         logger.info(f"Running test {test_file.name} using output dir {output_sub_dir}")
         output_sub_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            subprocess.check_call(cmd + [test_file], cwd=output_sub_dir)
+            _run_test(test_file=test_file, output_dir=output_sub_dir, **params)
             result = 'ok'
         except subprocess.CalledProcessError:
             result = 'failed'
@@ -104,7 +132,6 @@ def run_tests(params, test_file):
         shutil.rmtree(working_space)
 
     (output_dir / 'results.json').write_text(json.dumps(test_results))
-    logger.info("Finished calling robotest.sh from robotest.py")
 
 
 if __name__ == '__main__':
@@ -114,3 +141,4 @@ if __name__ == '__main__':
     del archive
 
     run_tests(**data)
+    logger.info("Finished calling robotest.py")

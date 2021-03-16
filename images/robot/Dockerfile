@@ -26,5 +26,5 @@ rm -rf /tmp/requirements.txt
 
 ENV WORKDIR=/opt/robot
 WORKDIR $WORKDIR
-COPY robotest.py robotest.sh ./
+COPY robotest.py ./
 CMD [ "python3", "robotest.py"]
