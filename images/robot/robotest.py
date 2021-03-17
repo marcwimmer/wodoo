@@ -72,7 +72,7 @@ def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrom
     }
     variables_file = _get_variables_file(test_file.parent, variables)
     logger.info(f"Configuration:\n{variables}")
-    robot.run(test_file, outputdir=output_dir, variablefile=str(variables_file))
+    return not robot.run(test_file, outputdir=output_dir, variablefile=str(variables_file))
 
 
 def _run_tests(params, test_dir, output_dir):
@@ -90,10 +90,11 @@ def _run_tests(params, test_dir, output_dir):
         output_sub_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            _run_test(test_file=test_file, output_dir=output_sub_dir, **params)
-            result = 'ok'
-        except subprocess.CalledProcessError:
             result = 'failed'
+            if _run_test(test_file=test_file, output_dir=output_sub_dir, **params):
+                result = 'ok'
+        except Exception:
+            pass
         duration = (arrow.get() - started).total_seconds()
 
         test_results.append({
