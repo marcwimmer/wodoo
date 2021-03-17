@@ -55,8 +55,8 @@ def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrom
     assert browser in Browsers
     browser = Browsers[browser]
 
-    if password == '1':
-        raise Exception("Cannot use password '1' - is converted to bool in robot.")
+    if password is True:
+        password = '1'  # handle limitation of settings files
 
     variables = {
         "SELENIUM_DELAY": 0,
