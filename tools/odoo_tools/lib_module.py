@@ -399,6 +399,7 @@ def robotest(config, file, user, all):
         'params': {
             "url": "http://proxy",
             "user": user,
+            "dbname": config.DBNAME,
             "password": config.DEFAULT_DEV_PASSWORD,
             "selenium_timeout": 3, # selenium timeout,
         },
