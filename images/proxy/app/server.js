@@ -3,6 +3,9 @@ var net = require('net');
 var httpProxy = require('http-proxy');
 var proxy = httpProxy.createProxyServer();
 const web_o = Object.values(require('http-proxy/lib/http-proxy/passes/web-outgoing'));
+var serveStatic = require('serve-static');
+var serveIndex = require('serve-index');
+
 
 
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -58,6 +61,12 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
     proxyRes.pipe(res);
 });
 
+app.use(
+    "/robot-output",
+    express.static(__dirname + "/odoo/robot_output"),
+    serveIndex(__dirname + "/odoo/robot_output", {'icons': true})
+);
+
 app.use("/mailer",createProxyMiddleware({
     target: 'http://' + process.env.ROUNDCUBE_HOST + ':80',
 })); 
@@ -71,6 +80,7 @@ app.use("/console", createProxyMiddleware({
     ws: true,
 })); 
 
+
 app.all("/*", (req, res, next) => {
     if (options.odoo_tcp_check) {
             _wait_tcp_conn(server_odoo).then(() => {
@@ -82,6 +92,7 @@ app.all("/*", (req, res, next) => {
     }
 });
 
+console.log("test123");
 
  
 var server = app.listen(80, '0.0.0.0', () => {

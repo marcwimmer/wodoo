@@ -10,6 +10,7 @@
   "dependencies": {
     "http-proxy": "^1.18.1",
     "express": "^4.17.1",
+    "serve-index": "1.9.1",
     "express-mung": "0.5.1",
     "cookie-parser": "1.4.5",
     "http-proxy-middleware": "1.0.6"

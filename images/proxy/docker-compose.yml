@@ -9,4 +9,5 @@ services:
       - $HOST_RUN_DIR/proxy:/etc/proxy
       - $HOST_RUN_DIR/run/intercom:/intercom
       - $ODOO_HOME/images/proxy/app/server.js:/usr/src/app/server.js
+      - ${CUSTOMS_DIR}:/usr/src/app/odoo
 
