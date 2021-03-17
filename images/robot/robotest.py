@@ -51,7 +51,7 @@ def get_variables():
     return variables_file
 
 
-def _run_test(test_file, output_dir, url, user, password, browser='chrome', selenium_timeout=20):
+def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrome', selenium_timeout=20):
     assert browser in Browsers
     browser = Browsers[browser]
 
@@ -65,6 +65,7 @@ def _run_test(test_file, output_dir, url, user, password, browser='chrome', sele
         "ODOO_URL_LOGIN": url + "/web/login",
         "ODOO_USER": user,
         "ODOO_PASSWORD": password,
+        "ODOO_DB": dbname,
         "BROWSER": browser['alias'],
         "ALIAS": browser['alias'],
         "DRIVER": browser['driver'],
