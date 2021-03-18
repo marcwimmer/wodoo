@@ -18,7 +18,7 @@ def _make_archive(test_files):
             # refactor after code review to remove consts
             for subdir in file.parent.glob("*"):
                 if subdir.is_dir():
-                    if subdir.name in ['keywords', 'library']:
+                    if subdir.name in ['keywords', 'library', 'data']:
                         shutil.copytree(subdir, test_folder / subdir.name)
         try:
             zip_folder = Path(tempfile.mkdtemp())
