@@ -326,7 +326,7 @@ def pretty_print_manifest():
 @odoo_module.command(name='show-conflicting-modules')
 def show_conflicting_modules():
     from .odoo_config import get_odoo_addons_paths
-    get_odoo_addons_paths(show_conflicts=True)
+    get_odoo_addons_paths()
 
 def _exec_update(config, params):
     if config.use_docker:

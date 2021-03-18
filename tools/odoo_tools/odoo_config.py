@@ -198,9 +198,6 @@ class MANIFEST_CLASS(object):
         d.setdefault('modules', [])
         # patches ?
 
-        def has_url(pattern, x):
-            return x.endswith(pattern) or x.endswith(pattern + ".git")
-
         self.patch_dir = customs_dir() / 'patches'
 
         if 'version' not in d:
