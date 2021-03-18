@@ -442,7 +442,7 @@ def unittest(config, repeat, file):
         testmodule = Module.get_by_name(testmodule)
         for _file in testmodule.path.glob("tests/test*.py"):
             testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
-        del _file
+            del _file
 
     if file:
         if '/' in file:
