@@ -66,7 +66,6 @@ app.use(
     express.static(__dirname + "/odoo/robot_output"),
     serveIndex(__dirname + "/odoo/robot_output", {'icons': true})
 );
-
 app.use("/mailer",createProxyMiddleware({
     target: 'http://' + process.env.ROUNDCUBE_HOST + ':80',
 })); 
@@ -92,9 +91,6 @@ app.all("/*", (req, res, next) => {
     }
 });
 
-console.log("test123");
-
- 
 var server = app.listen(80, '0.0.0.0', () => {
     console.log('Proxy server listening on 0.0.0.0:80.');
 });
