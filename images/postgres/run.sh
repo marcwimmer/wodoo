@@ -5,6 +5,7 @@ python3 <<EOF
 import os
 with open('/config') as file:
     conf = file.read().split("\n")
+print("Applying configuration:\n" + '\n'.join(conf))
 conf += os.environ['POSTGRES_CONFIG'].split(",")
 
 conf = list(map(lambda x: f"-c {x}", filter(bool, map(lambda x: (x or '').strip(), conf))))
