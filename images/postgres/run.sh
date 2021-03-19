@@ -2,6 +2,7 @@
 set -e
 
 python3 <<EOF
+print("Version 1.0")
 import os
 with open('/config') as file:
     conf = file.read().split("\n")
