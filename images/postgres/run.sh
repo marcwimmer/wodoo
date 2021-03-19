@@ -16,9 +16,6 @@ conf = list(map(lambda x: f"-c {x}", conf))
 with open('/start.sh', 'w') as f:
     f.write('/usr/local/bin/docker-entrypoint.sh postgres ' + ' '.join(conf))
 
-with open('/config', 'w') as f:
-    f.write('\n'.join(conf))
-
 EOF
 
 if [[ "$1" == "postgres" ]]; then
