@@ -5,10 +5,12 @@ python3 <<EOF
 import os
 with open('/config') as file:
     conf = file.read().split("\n")
-print("Applying configuration:\n" + '\n'.join(conf))
 conf += os.environ['POSTGRES_CONFIG'].split(",")
+conf = list(filter(lambda x: bool((x or '').strip()), conf))
 
-conf = list(map(lambda x: f"-c {x}", filter(bool, map(lambda x: (x or '').strip(), conf))))
+print("Applying configuration:\n" + '\n'.join(conf))
+
+conf = list(map(lambda x: f"-c {x}", conf))
 
 with open('/start.sh', 'w') as f:
     f.write('/usr/local/bin/docker-entrypoint.sh postgres ' + ' '.join(conf))
