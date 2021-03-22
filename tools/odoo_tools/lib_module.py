@@ -401,7 +401,7 @@ def robotest(config, file, user, all):
             "user": user,
             "dbname": config.DBNAME,
             "password": config.DEFAULT_DEV_PASSWORD,
-            "selenium_timeout": 3, # selenium timeout,
+            "selenium_timeout": 20, # selenium timeout,
         },
     })
     data = base64.encodestring(data.encode('utf-8'))
