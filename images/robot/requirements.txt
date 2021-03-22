@@ -13,6 +13,7 @@ robotframework-imaplibrary
 robotframework-selenium2screenshots
 robotframework-xvfb
 robotframework-requests
+robotframework-faker
 coverage
 elaphe3
 Faker
