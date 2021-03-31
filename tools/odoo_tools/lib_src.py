@@ -46,11 +46,12 @@ def make_module(config, name):
     )
 
 @src.command(name='update-ast')
-def update_ast():
+@click.option('-f', '--filename', required=False)
+def update_ast(filename):
     from .odoo_parser import update_cache
     started = datetime.now()
     click.echo("Updating ast - can take about one minute")
-    update_cache()
+    update_cache(filename or None)
     click.echo("Updated ast - took {} seconds".format((datetime.now() - started).seconds))
 
 @src.command()

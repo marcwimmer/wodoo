@@ -53,11 +53,6 @@ def _get_default_modules_to_update():
     module += DBModules.get_uninstalled_modules_where_others_depend_on()
     return module
 
-@odoo_module.command(name='update-ast-file')
-def update_ast_file():
-    from .odoo_parser import update_cache
-    update_cache()
-
 @odoo_module.command(name='update-module-file')
 @click.argument('module', nargs=-1, required=True)
 def update_module_file(module):
