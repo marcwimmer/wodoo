@@ -1069,5 +1069,4 @@ class Module(object):
             pp.pprint(data)
 
 def write_debug_instruction(instruction):
-    config = _get_missing_click_config()
-    config.files['run/odoo_debug.txt'].write_text(instruction)
+    (customs_dir() / '.debug').write_text(instruction)

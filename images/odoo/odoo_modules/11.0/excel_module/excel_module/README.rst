@@ -4,7 +4,7 @@ Provides Excel Reports:
 
 1. Define Action:
 
-.. code-block:: xml
+.. code-block: xml
 
    <report
     auto="False"
@@ -16,7 +16,7 @@ Provides Excel Reports:
 
 2. Define abstract class:
 
-.. code-block:: python
+.. code-block: python
 
     from odoo import _, api, fields, models, SUPERUSER_ID
     from odoo.exceptions import UserError, RedirectWarning, ValidationError
@@ -40,7 +40,7 @@ Provides Excel Reports:
 
 2a. OR: Define abstract class and deliver excel on your own:
 
-.. code-block:: python
+.. code-block: python
 
     from odoo import _, api, fields, models, SUPERUSER_ID
     from odoo.exceptions import UserError, RedirectWarning, ValidationError

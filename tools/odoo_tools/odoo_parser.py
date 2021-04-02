@@ -22,7 +22,7 @@ cache_models = {}
 cache_xml_ids = {}
 
 SEP_FILE = ":::"
-SEP_LINENO = "::"
+SEP_LINENO = ":"
 
 def try_to_get_filepath(filepath):
     filepath = Path(filepath)
