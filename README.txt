@@ -4,7 +4,7 @@
 source /opt/odoo/.venv/bin/activate && /opt/odoo/odoo "$@"
 
 
-Setup a new odoo::
+Setup a new odoo:
 
     odoo init
 

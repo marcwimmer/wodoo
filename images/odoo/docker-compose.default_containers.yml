@@ -7,7 +7,7 @@ services:
     environment:
       IS_ODOO_WEBSERVER: 1
     environment:
-      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
+      DEBUGGER_WATCH: /opt/src/.debug
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
 
   odoo_debug:
@@ -16,9 +16,9 @@ services:
         compose.merge: 'odoo_base'
     environment:
       ENDLESS_LOOP: 1
-      DEBUGGER_WATCH: /tmp/debug/odoo_debug.txt
+      DEBUGGER_WATCH: /opt/src/.debug
       DEBUGGER_ODOO_PID: /tmp/odoo.debug.pid
-      
+
   odoo_cronjobs:
     labels:
         compose.merge: 'odoo_base'

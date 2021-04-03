@@ -9,11 +9,11 @@ import click
 from pathlib import Path
 import tools
 from tools import prepare_run
-from tools import get_config_file
-from odoo_tools.odoo_config import current_version
-from odoo_tools.odoo_config import get_env
-from odoo_tools.module_tools import update_view_in_db
-from odoo_tools.module_tools import Modules
+from tools import get_config_file  # NOQA
+from odoo_tools.odoo_config import current_version  # NOQA
+from odoo_tools.odoo_config import get_env  # NOQA
+from odoo_tools.module_tools import update_view_in_db  # NOQA
+from odoo_tools.module_tools import Modules  # NOQA
 from tools import kill_odoo
 
 config = get_env()
@@ -45,7 +45,7 @@ def watch_file_and_kill():
                     update_view_in_db(filepath, lineno)
                 else:
                     kill_odoo()
-        except Exception:
+        except Exception as ex:
             msg = traceback.format_exc()
             print(msg)
 

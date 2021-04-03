@@ -1,0 +1,13 @@
+<data>
+    <template id="vxmlids">
+        <t t-foreach="sorted(by_model)" t-as="model">
+            <h1>
+                <t t-esc="model"></t>
+            </h1>
+            <t t-foreach="by_model[model]" t-as="data">
+                <t t-esc="data['name']"/>
+                <br/>
+            </t>
+        </t>
+    </template>
+</data>

@@ -54,6 +54,18 @@ def update_ast(filename):
     update_cache(filename or None)
     click.echo("Updated ast - took {} seconds".format((datetime.now() - started).seconds))
 
+@src.command('goto-inherited')
+@src.option('-f', '--filepath', required=True)
+@src.option('-l', '--lineno', required=True)
+def goto_inherited(filepath, lineno):
+    from .odoo_parser import goto_inherited_view
+    lineno = int(lineno)
+    filepath = customs_dir() / filepath
+    lines = filepath.read_text()
+    filepath, lineno = goto_inherited_view(filepath, lineno, lines)
+    if filepath:
+        print(f"{filepath}:{lineno}")
+
 @src.command()
 @pass_config
 def rmpyc(config):

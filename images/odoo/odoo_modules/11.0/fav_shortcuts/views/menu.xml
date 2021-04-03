@@ -13,7 +13,10 @@
     </record>
   </data>
   <data noupdate="0">
-    <menuitem name="Favorites" parent="" id="root_menu" sequence="-1000" groups="base.group_erp_manager"/>
+    <menuitem name="Favorites" parent="" id="root_menu" sequence="-1000" groups="base.group_erp_manager"
+    web_icon="fav_shortcuts,static/description/icon.png" />
+    
+    />
     <menuitem name="Favs" parent="root_menu" id="root_menu2"/>
     <record model="ir.actions.act_window" id="act_reports_window">
       <field name="name">Reports</field>
