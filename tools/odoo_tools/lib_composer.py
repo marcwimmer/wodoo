@@ -630,9 +630,14 @@ def _use_file(config, path):
             for run in run:
                 if getattr(config, run):
                     return True
+                if getattr(config, run.lower().replace('run_', '')):
+                    # make run_devmode possible; in config is only devmode set
+                    return True
             run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
             for run in run:
                 if not getattr(config, run):
+                    return True
+                if getattr(config, run.lower().replace('run_', '')):
                     return True
             return False
 

@@ -10,7 +10,6 @@ dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 MINIMAL_MODULES = ['anonymize'] # to include its dependencies
 
 def after_compose(config, settings, yml, globals):
-    import requests
     # store also in clear text the requirements
     from odoo_tools.tools import get_services
     from pathlib import Path
@@ -29,6 +28,11 @@ def after_compose(config, settings, yml, globals):
         sys.exit(-1)
 
     PYTHON_VERSION = tuple([int(x) for x in config.ODOO_PYTHON_VERSION.split(".")])
+
+    # Add remote debugging possibility in devmode
+    if config.devmode:
+        yml['services']['odoo'].setdefault('ports', [])
+        yml['services']['odoo']['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
 
     if float(config.ODOO_VERSION) >= 13.0:
         # fetch dependencies from odoo lib requirements

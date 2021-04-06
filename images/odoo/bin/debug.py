@@ -77,6 +77,8 @@ class Debugger(object):
         self.execpy(['/usr/bin/reset'])
         if os.getenv("PROXY_PORT", ""):
             print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
+        if os.getenv("ODOO_DEBUG_PORT", ""):
+            print("PTHON REMOTE DEBUGGER PORT: {}".format(os.environ['ODOO_PYTHON_DEBUG_PORT']))
 
         if self.sync_common_modules:
             self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
