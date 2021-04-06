@@ -207,25 +207,31 @@ def kill_odoo():
                 'openerp-gevent',
             ])
 
-def __python_exe():
+def __python_exe(remote_debug=False, wait_for_remote=False):
     if version <= 10.0:
-        return "/usr/bin/python"
+        return ["/usr/bin/python"]
     else:
         # return "/usr/bin/python3"
-        return "python3"
+        cmd = [
+            "python3",
+        ]
+        if remote_debug:
+            cmd += [
+                '-mdebugpy',
+                '--listen',
+                '0.0.0.0:5678',
+            ]
 
-def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, stdin=None, dokill=True, **kwargs): # NOQA
+        if wait_for_remote:
+            cmd += [
+                '--wait-for-client',
+            ]
+        return cmd
+
+def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None,
+              stdin=None, dokill=True, remote_debug=False, wait_for_remote=False, **kwargs): # NOQA
     assert not [x for x in args if '--pidfile' in x], "Not custom pidfile allowed"
 
-    def wait_flag():
-        flag = Path(os.environ['INTERCOM_FLAG_FULLSYNC'])
-        while flag.exists():
-            print("Waiting for full source sync to be done. (intercom flag {})".format(
-                flag
-            ))
-            time.sleep(1)
-        del flag
-    # wait_flag()
 
     if dokill:
         kill_odoo()
@@ -241,8 +247,7 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None, st
             "-u",
             ODOO_USER,
         ]
-    cmd += [
-        __python_exe(),
+    cmd += __python_exe(remote_debug=remote_debug, wait_for_remote=wait_for_remote) + [
         EXEC,
     ]
     if odoo_shell:

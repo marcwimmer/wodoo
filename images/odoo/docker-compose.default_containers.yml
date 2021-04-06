@@ -12,6 +12,8 @@ services:
 
   odoo_debug:
     restart: 'no'
+    ports:
+      - "0.0.0.0:${ODOO_PYTHON_DEBUG_PORT}:5678"
     labels:
         compose.merge: 'odoo_base'
     environment:

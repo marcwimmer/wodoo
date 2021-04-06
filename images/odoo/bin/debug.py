@@ -24,7 +24,6 @@ last_mod = ''
 last_unit_test = ''
 customs_dir = Path(os.environ['CUSTOMS_DIR'])
 
-os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
 os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
 
 profiling = False
@@ -60,11 +59,12 @@ def watch_file_and_kill():
 
 
 class Debugger(object):
-    def __init__(self, sync_common_modules):
+    def __init__(self, sync_common_modules, wait_for_remote):
         self.odoolib_path = Path(os.environ['ODOOLIB'])
         self.sync_common_modules = sync_common_modules
         self.first_run = True
         self.last_unit_test = None
+        self.wait_for_remote = wait_for_remote
 
     def execpy(self, cmd):
         os.chdir(self.odoolib_path)
@@ -80,7 +80,10 @@ class Debugger(object):
 
         if self.sync_common_modules:
             self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
-        self.execpy(["run_debug.py"])
+        cmd = ["run_debug.py", "--remote-debug"]
+        if self.wait_for_remote:
+            cmd += ["--wait-for-remote"]
+        self.execpy(cmd)
 
     def action_update_module(self, cmd, module):
         kill_odoo()
@@ -193,9 +196,13 @@ class Debugger(object):
 
 @click.command(name='debug')
 @click.option("--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
-def command_debug(sync_common_modules):
+@click.option('-q', '--debug-queuejobs', is_flag=True)
+@click.option('-w', '--wait-for-remote', is_flag=True)
+def command_debug(sync_common_modules, debug_queuejobs, wait_for_remote):
+    os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1' if debug_queuejobs else '0'
     Debugger(
         sync_common_modules=sync_common_modules,
+        wait_for_remote=wait_for_remote,
     ).endless_loop()
 
 

@@ -2,10 +2,9 @@
 import os
 from pathlib import Path
 from tools import exec_odoo
+import sys
 
 ENV = {
-    "TEST_QUEUE_JOB_NO_DELAY": "1", # for module queue_job
-    "ODOO_TRACE": "1"
 }
 
 if float(os.environ['ODOO_VERSION']) <= 7.0:
@@ -19,4 +18,6 @@ exec_odoo(
     'config_debug',
     DEV,
     env=ENV,
+    remote_debug='--remote-debug' in sys.argv,
+    wait_for_remote='--wait-for-remote' in sys.argv,
 )
