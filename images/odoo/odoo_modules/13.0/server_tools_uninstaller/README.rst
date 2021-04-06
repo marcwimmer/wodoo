@@ -12,7 +12,7 @@ How to use::
    self.env['...']
 
 
-.. image:: /__module_name__/static/sample.png
+.. image:: /___module_name___/static/sample.png
 
 Authors
 ~~~~~~~~~~~~~~~

@@ -312,7 +312,7 @@ def make_module(parent_path, module_name):
             filepath = os.path.join(root, filepath)
             with open(filepath, 'r') as f:
                 content = f.read()
-            content = content.replace("__module_name__", module_name)
+            content = content.replace("___module_name___", module_name)
             with open(filepath, 'w') as f:
                 f.write(content)
 

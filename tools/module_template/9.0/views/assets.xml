@@ -1,10 +1,10 @@
 <openerp>
 	<data>
         <!--
-		<template id="assets_backend" name="__module_name__ assets" inherit_id="web.assets_backend">
+		<template id="assets_backend" name="___module_name___ assets" inherit_id="web.assets_backend">
 			<xpath expr="." position="inside">
-				<script type="text/javascript" src="/__module_name__/static/src/js/__module_name__.js"></script>
-                <link rel="stylesheet" href="/__module_name__/static/src/css/__module_name__.css"/>
+				<script type="text/javascript" src="/___module_name___/static/src/js/___module_name___.js"></script>
+                <link rel="stylesheet" href="/___module_name___/static/src/css/___module_name___.css"/>
 			</xpath>
 		</template>
         -->
