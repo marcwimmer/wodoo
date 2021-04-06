@@ -31,14 +31,16 @@ from .tools import split_hub_url
 
 @cli.group(cls=AliasedGroup)
 @pass_config
-def src(config):
+def src(config): 
     pass
 
 
 @src.command()
 @pass_config
-def make_module(config, name):
-    cwd = config.working_dir
+@click.option('-n', '--name', required=True)
+@click.option('-p', '--parent-path', required=False)
+def make_module(config, name, parent_path):
+    cwd = parent_path or config.working_dir
     from .module_tools import make_module as _tools_make_module
     _tools_make_module(
         cwd,
