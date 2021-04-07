@@ -38,7 +38,7 @@ def after_compose(config, settings, yml, globals):
     PYTHON_VERSION = tuple([int(x) for x in config.ODOO_PYTHON_VERSION.split(".")])
 
     # Add remote debugging possibility in devmode
-    _setup_remote_debugging()
+    _setup_remote_debugging(config, yml)
 
     if float(config.ODOO_VERSION) >= 13.0:
         # fetch dependencies from odoo lib requirements
