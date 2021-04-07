@@ -24,8 +24,6 @@ last_mod = ''
 last_unit_test = ''
 customs_dir = Path(os.environ['CUSTOMS_DIR'])
 
-os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
-
 profiling = False
 if any(x in ['--profile', '-profile', 'profile'] for x in sys.argv):
     profiling = True
@@ -33,21 +31,6 @@ if any(x in ['--profile', '-profile', 'profile'] for x in sys.argv):
 
 def watch_file_and_kill():
     while True:
-        try:
-            if DEBUGGER_WATCH.exists():
-                content = DEBUGGER_WATCH.read_text()
-                action = content.split(":")
-                if action[0] and action[0] == 'update_view_in_db':
-                    filepath = Path(action[1])
-                    lineno = int(action[2])
-                    DEBUGGER_WATCH.unlink()
-                    update_view_in_db(filepath, lineno)
-                else:
-                    kill_odoo()
-        except Exception as ex:
-            msg = traceback.format_exc()
-            print(msg)
-
         time.sleep(0.2)
 
         # force odoo profiler to output profiling info
@@ -77,8 +60,9 @@ class Debugger(object):
         self.execpy(['/usr/bin/reset'])
         if os.getenv("PROXY_PORT", ""):
             print("PROXY Port: {}".format(os.environ['PROXY_PORT']))
-        if os.getenv("ODOO_DEBUG_PORT", ""):
+        if os.getenv("ODOO_PYTHON_DEBUG_PORT", ""):
             print("PTHON REMOTE DEBUGGER PORT: {}".format(os.environ['ODOO_PYTHON_DEBUG_PORT']))
+        print(f"Using tracing: {os.getenv('PYTHONBREAKPOINT')}")
 
         if self.sync_common_modules:
             self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
@@ -153,43 +137,71 @@ class Debugger(object):
                 if not self.first_run and not DEBUGGER_WATCH.exists():
                     time.sleep(0.2)
                     continue
+
                 if not self.first_run:
                     content = DEBUGGER_WATCH.read_text()
-                    action = content.split(":")
-                if DEBUGGER_WATCH.exists():
                     DEBUGGER_WATCH.unlink()
+                    action = content.split(":")
 
                 if self.first_run or action[0] in ['debug', 'quick_restart']:
-                    self.action_debug()
-                    continue
+                    kill_odoo()
+                    thread1 = threading.Thread(target=self.action_debug)
+                    thread1.daemon = True
+                    thread1.start()
+
+                if action[0] in ['restart']:
+                    kill_odoo()
+                    self.trigger_restart()
+
                 elif action[0] == 'update_view_in_db':
-                    continue
+                    filepath = Path(action[1])
+                    lineno = int(action[2])
+                    DEBUGGER_WATCH.unlink()
+                    update_view_in_db(filepath, lineno)
 
                 elif action[0] in ["update_module", "update_module_full"]:
-                    self.action_update_module(
+                    kill_odoo()
+                    thread1 = threading.Thread(target=self.action_update_module, kwargs=dict(
                         cmd=action[0],
                         module=action[1]
-                    )
+                    ))
+                    thread1.daemon = True
+                    thread1.start()
 
                 elif action[0] in ['last_unit_test']:
-                    self.action_last_unittest()
+                    kill_odoo()
+                    thread1 = threading.Thread(target=self.action_last_unittest)
+                    thread1.daemon = True
+                    thread1.start()
 
                 elif action[0] in ['unit_test']:
-                    self.action_unittest(
+                    kill_odoo()
+                    thread1 = threading.Thread(target=self.action_unittest, kwargs=dict(
                         filepath=action[1],
-                    )
+                    ))
+                    thread1.daemon = True
+                    thread1.start()
+
                 elif action[0] == 'export_i18n':
-                    self.action_export_lang(
+                    kill_odoo()
+                    thread1 = threading.Thread(target=self.action_export_lang, kwargs=dict(
                         lang=action[1],
                         module=action[2]
-                    )
+                    ))
+                    thread1.daemon = True
+                    thread1.start()
+
                 elif action[0] == 'import_i18n':
-                    self.action_import_lang(
+                    kill_odoo()
+                    thread1 = threading.Thread(target=self.action_import_lang, kwargs=dict(
                         lang=action[1],
                         filepath=action[2],
-                    )
+                    ))
+                    thread1.daemon = True
+                    thread1.start()
 
                 self.first_run = False
+
             except Exception:
                 msg = traceback.format_exc()
                 print(msg)
@@ -200,8 +212,15 @@ class Debugger(object):
 @click.option("--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
 @click.option('-q', '--debug-queuejobs', is_flag=True)
 @click.option('-w', '--wait-for-remote', is_flag=True)
-def command_debug(sync_common_modules, debug_queuejobs, wait_for_remote):
-    os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1' if debug_queuejobs else '0'
+@click.option('-r', '--remote-debugging', is_flag=True)
+def command_debug(sync_common_modules, debug_queuejobs, wait_for_remote, remote_debugging):
+    if debug_queuejobs:
+        os.environ['TEST_QUEUE_JOB_NO_DELAY'] = '1'
+    if remote_debugging:
+        os.environ["PYTHONBREAKPOINT"] = "debugpy.set_trace"
+    else:
+        os.environ["PYTHONBREAKPOINT"] = "pudb.set_trace"
+
     Debugger(
         sync_common_modules=sync_common_modules,
         wait_for_remote=wait_for_remote,
