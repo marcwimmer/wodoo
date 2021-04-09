@@ -422,8 +422,10 @@ def robotest(config, file, user, all):
 @odoo_module.command()
 @click.option('-r', '--repeat', is_flag=True)
 @click.argument('file', required=False)
+@click.option('-w', '--wait-for-remote', is_flag=True)
+@click.option('-r', '--remote-debug', is_flag=True)
 @pass_config
-def unittest(config, repeat, file):
+def unittest(config, repeat, file, remote_debug, wait_for_remote):
     """
     Collects unittest files and offers to run
     """
@@ -463,10 +465,21 @@ def unittest(config, repeat, file):
     config.runtime_settings.set('last_unittest', filename)
     click.secho(str(filename), fg='green', bold=True)
     container_file = Path('/opt/src/') / filename
+
+    interactive = True # means pudb trace turned on
     params = [
         'odoo', '/odoolib/unit_test.py', f'{container_file}',
-        '--not-interactive',
     ]
+    if wait_for_remote:
+        remote_debug = True
+        interactive = False
+    if remote_debug:
+        params += ["--remote-debug"]
+    if wait_for_remote:
+        params += ["--wait-for-remote"]
+    if not interactive:
+        params += ['--not-interactive']
+
     __dcrun(params + ['--log-level=debug'], interactive=True)
 
 @odoo_module.command()

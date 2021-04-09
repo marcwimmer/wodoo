@@ -280,6 +280,7 @@ def logall(machines, follow, lines):
 def shell(command=""):
     __cmd_interactive(
         'run',
+        '--rm',
         'odoo',
         'python3',
         '/odoolib/shell.py',

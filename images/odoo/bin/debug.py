@@ -42,12 +42,15 @@ def watch_file_and_kill():
 
 
 class Debugger(object):
-    def __init__(self, sync_common_modules, wait_for_remote):
+    def __init__(self, sync_common_modules, wait_for_remote, remote_debugging):
         self.odoolib_path = Path(os.environ['ODOOLIB'])
         self.sync_common_modules = sync_common_modules
         self.first_run = True
         self.last_unit_test = None
         self.wait_for_remote = wait_for_remote
+        if wait_for_remote:
+            remote_debugging = True
+        self.remote_debugging = remote_debugging
 
     def execpy(self, cmd):
         os.chdir(self.odoolib_path)
@@ -66,7 +69,9 @@ class Debugger(object):
 
         if self.sync_common_modules:
             self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
-        cmd = ["run_debug.py", "--remote-debug"]
+        cmd = ["run_debug.py"]
+        if self.remote_debugging:
+            cmd += ["--remote-debug"]
         if self.wait_for_remote:
             cmd += ["--wait-for-remote"]
         self.execpy(cmd)
@@ -92,15 +97,20 @@ class Debugger(object):
             self.last_unit_test
         ])
 
-    def action_unittest(self, filepath):
+    def action_unittest(self, filepath, wait_for_remote):
         kill_odoo()
         subprocess.call(['/usr/bin/reset'])
         self.last_unit_test = str(customs_dir / filepath)
         print(f"Running unit test: {last_unit_test}")
+        args = []
+        if wait_for_remote:
+            args += [
+                "--wait-for-remote"
+            ]
         self.execpy([
             "unit_test.py",
-            self.last_unit_test
-        ])
+            self.last_unit_test,
+        ] + args)
 
     def action_export_lang(self, lang, module):
         kill_odoo()
@@ -174,10 +184,11 @@ class Debugger(object):
                     thread1.daemon = True
                     thread1.start()
 
-                elif action[0] in ['unit_test']:
+                elif action[0] in ['unit_test', 'unit_test_wait_for_remote']:
                     kill_odoo()
                     thread1 = threading.Thread(target=self.action_unittest, kwargs=dict(
                         filepath=action[1],
+                        wait_for_remote='wait_for_remote' in action[0],
                     ))
                     thread1.daemon = True
                     thread1.start()
@@ -224,6 +235,7 @@ def command_debug(sync_common_modules, debug_queuejobs, wait_for_remote, remote_
     Debugger(
         sync_common_modules=sync_common_modules,
         wait_for_remote=wait_for_remote,
+        remote_debugging=remote_debugging,
     ).endless_loop()
 
 

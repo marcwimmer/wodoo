@@ -214,7 +214,7 @@ def __python_exe(remote_debug=False, wait_for_remote=False):
         # return "/usr/bin/python3"
         cmd = ["python3"]
 
-    if remote_debug:
+    if remote_debug or wait_for_remote:
         cmd += [
             '-mdebugpy',
             '--listen',
@@ -273,8 +273,7 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None,
     def toucher():
         while True:
             try:
-                r = requests.get('http://{}:'.format(
-                    'localhost',
+                r = requests.get('http://localhost:{}'.format(
                     os.environ['INTERNAL_ODOO_PORT']
                 ))
                 r.raise_for_status()
