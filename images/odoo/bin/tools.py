@@ -294,10 +294,14 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None,
     filename = Path(tempfile.mktemp(suffix='.exitcode'))
     cmd += f' || echo $? > {filename}'
 
+    # if stdin:
+    #     cmd = f'{stdin} |' + cmd
     if stdin:
-        cmd = f'{stdin} |' + cmd
-
-    os.system(cmd)
+        if isinstance(stdin, str):
+            stdin = stdin.encode('utf-8')
+        subprocess.run(cmd, input=stdin, shell=True)
+    else:
+        subprocess.run(cmd, shell=True)
     if pidfile.exists():
         pidfile.unlink()
     if on_done:
