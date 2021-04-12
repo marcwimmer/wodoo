@@ -206,6 +206,14 @@ def kill_odoo():
                 '-f',
                 'openerp-gevent',
             ])
+        else:
+            subprocess.call([
+                '/usr/bin/sudo',
+                '/usr/bin/pkill',
+                '-9',
+                '-f',
+                'odoo-bin',
+            ])
 
 def __python_exe(remote_debug=False, wait_for_remote=False):
     if version <= 10.0:

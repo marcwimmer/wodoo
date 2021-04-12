@@ -66,6 +66,7 @@ class Debugger(object):
         if os.getenv("ODOO_PYTHON_DEBUG_PORT", ""):
             print("PTHON REMOTE DEBUGGER PORT: {}".format(os.environ['ODOO_PYTHON_DEBUG_PORT']))
         print(f"Using tracing: {os.getenv('PYTHONBREAKPOINT')}")
+        print(f"remote debugg: {self.remote_debugging}, waiting for debugger: {self.wait_for_remote}")
 
         if self.sync_common_modules:
             self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
@@ -74,6 +75,7 @@ class Debugger(object):
             cmd += ["--remote-debug"]
         if self.wait_for_remote:
             cmd += ["--wait-for-remote"]
+        print(f"executing: {cmd}")
         self.execpy(cmd)
 
     def action_update_module(self, cmd, module):
@@ -92,18 +94,15 @@ class Debugger(object):
     def action_last_unittest(self):
         if not self.last_unit_test:
             self.trigger_restart()
-        self.execpy([
-            "unit_test.py",
-            self.last_unit_test
-        ])
+        self.action_unittest(self.last_unit_test)
 
-    def action_unittest(self, filepath, wait_for_remote):
+    def action_unittest(self, filepath):
         kill_odoo()
         subprocess.call(['/usr/bin/reset'])
         self.last_unit_test = str(customs_dir / filepath)
         print(f"Running unit test: {last_unit_test}")
         args = []
-        if wait_for_remote:
+        if self.wait_for_remote:
             args += [
                 "--wait-for-remote"
             ]
@@ -184,11 +183,10 @@ class Debugger(object):
                     thread1.daemon = True
                     thread1.start()
 
-                elif action[0] in ['unit_test', 'unit_test_wait_for_remote']:
+                elif action[0] in ['unit_test']:
                     kill_odoo()
                     thread1 = threading.Thread(target=self.action_unittest, kwargs=dict(
                         filepath=action[1],
-                        wait_for_remote='wait_for_remote' in action[0],
                     ))
                     thread1.daemon = True
                     thread1.start()
