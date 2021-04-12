@@ -106,6 +106,7 @@ class Debugger(object):
             args += [
                 "--wait-for-remote"
             ]
+            print(f"Please connect your external debugger to: {os.environ['ODOO_PYTHON_DEBUG_PORT']}")
         self.execpy([
             "unit_test.py",
             self.last_unit_test,
