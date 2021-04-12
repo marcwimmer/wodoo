@@ -37,6 +37,8 @@ class Anonymizer(models.AbstractModel):
             return
         import names
 
+        self.env['ir.model.fields']._apply_default_anonymize_fields()
+
         for field in self.env['ir.model.fields'].search([('anonymize', '=', True)]):
             try:
                 obj = self.env[field.model]
