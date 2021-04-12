@@ -15,7 +15,8 @@ def _setup_remote_debugging(config, yml):
     else:
         key = 'odoo_debug'
     yml['services'][key].setdefault('ports', [])
-    yml['services'][key]['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
+    if config.ODOO_PYTHON_DEBUG_PORT:
+        yml['services'][key]['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
 
 def after_compose(config, settings, yml, globals):
     # store also in clear text the requirements
