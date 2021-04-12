@@ -165,7 +165,7 @@ def get_odoo_bin(for_shell=False):
             except KeyError:
                 pass
             if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1":
-                config = 'config_allinone'
+                CONFIG = 'config_allinone'
 
     EXEC = "{}/{}".format(
         os.environ["SERVER_DIR"],
