@@ -220,7 +220,7 @@ class Debugger(object):
 
 
 @click.command(name='debug')
-@click.option("--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
+@click.option("-s", "--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
 @click.option('-q', '--debug-queuejobs', is_flag=True)
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debugging', is_flag=True)

@@ -89,7 +89,7 @@ class Anonymizer(models.AbstractModel):
             cr.execute("select id, {} from {} order by id desc".format(','.join(cols), table))
             recs = cr.fetchall()
             logger.info(f"Anonymizing {len(recs)} records of {table}")
-            for rec in cr.fetchall():
+            for rec in recs:
                 values = []
                 for icol, col in enumerate(cols):
                     v = rec[1 + icol] or ''

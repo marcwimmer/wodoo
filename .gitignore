@@ -30,3 +30,5 @@ settings.override
 ._*
 .vimhook.syncdestination
 .vscode/launch.json
+
+.debug
