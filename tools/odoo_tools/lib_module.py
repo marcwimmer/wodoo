@@ -383,7 +383,7 @@ def robotest(config, file, user, all):
         return
     click.secho(str(filename), fg='green', bold=True)
 
-    archive = _make_archive(filename)
+    archive = _make_archive(filename, customs_dir())
 
     pwd = config.DEFAULT_DEV_PASSWORD
     if pwd == "True" or pwd is True:
