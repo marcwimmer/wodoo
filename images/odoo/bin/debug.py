@@ -166,7 +166,6 @@ class Debugger(object):
                 elif action[0] == 'update_view_in_db':
                     filepath = Path(action[1])
                     lineno = int(action[2])
-                    DEBUGGER_WATCH.unlink()
                     update_view_in_db(filepath, lineno)
 
                 elif action[0] in ["update_module", "update_module_full"]:
