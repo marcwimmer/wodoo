@@ -111,6 +111,7 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
         'demo': demo,
         'LOCAL_SETTINGS': '1' if local else '0',
         'CUSTOMS_DIR': config.WORKING_DIR,
+        'ODOO_PYTHON_DEBUG_PORT': '0',
     }
     if devmode:
         defaults['DEVMODE'] = 1
