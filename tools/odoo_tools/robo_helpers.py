@@ -54,8 +54,9 @@ def _make_archive(test_files, root_dir):
         collect_all(root_dir, 'library', '*.py', test_folder)
         collect_all(root_dir, 'keywords', '*.robot', test_folder)
 
-        # for file in test_folder.glob("**/*"):
-        #     print(file)
+        print("Archive content:")
+        for file in test_folder.glob("**/*"):
+            print(f"\t\t{file.relative_to(test_folder)}")
 
         try:
             zip_folder = Path(tempfile.mkdtemp())

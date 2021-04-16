@@ -28,11 +28,12 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     content = content.replace("__ENABLE_DB_MANAGER__", 'True' if config['ODOO_ENABLE_DB_MANAGER'] == '1' else 'False')
 
     server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
-    if os.getenv("IS_ODOO_QUEUEJOB", "") == "1" and 'debug' not in file.name:
+    if (os.getenv("IS_ODOO_QUEUEJOB", "") == "1" or os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1") and 'debug' not in file.name:
         server_wide_modules += ['queue_job']
     if os.getenv("IS_ODOO_QUEUEJOB", "") != "1" or 'debug' in file.name:
-        if 'queue_job' in server_wide_modules:
-            server_wide_modules.remove('queue_job')
+        if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") != "1":
+            if 'queue_job' in server_wide_modules:
+                server_wide_modules.remove('queue_job')
     server_wide_modules = ','.join(server_wide_modules)
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 

@@ -415,6 +415,7 @@ def robotest(config, file, user, all):
         click.secho(f"Test failed: {failed['name']} - Duration: {failed['duration']}", fg='red')
     click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
+    click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
     if failds:
         sys.exit(-1)
 
