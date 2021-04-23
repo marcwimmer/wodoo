@@ -253,9 +253,9 @@ def get_postgres_connection_params():
     return host, port, user, password
 
 def get_conn(db=None, host=None):
-    if db != "template1":
+    if db != "postgres":
         # waiting until postgres is up
-        get_conn(db='template1')
+        get_conn(db='postgres')
 
     host, port, user, password = get_postgres_connection_params()
     db = db or current_db()

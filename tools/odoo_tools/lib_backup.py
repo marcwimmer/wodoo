@@ -215,7 +215,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
         _dropdb(config, conn)
 
     _execute_sql(
-        conn.clone(dbname="template1"),
+        conn.clone(dbname="postgres"),
         "create database {};".format(DBNAME_RESTORING),
         notransaction=True
     )
@@ -246,7 +246,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     from .lib_db import __turn_into_devdb
     if config.devmode and not no_dev_scripts:
         __turn_into_devdb(config, conn)
-    __rename_db_drop_target(conn.clone(dbname='template1'), DBNAME_RESTORING, config.dbname)
+    __rename_db_drop_target(conn.clone(dbname='postgres'), DBNAME_RESTORING, config.dbname)
     _remove_postgres_connections(conn.clone(dbname=dest_db))
 
 def _add_cronjob_scripts(config):
