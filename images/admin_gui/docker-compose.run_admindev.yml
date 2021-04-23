@@ -1,7 +1,0 @@
-# manage-order 1001
-version: '3.3'
-
-services:
-  admin:
-    environment:
-        ADMINDEBUG: 1
