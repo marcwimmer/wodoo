@@ -30,7 +30,7 @@ def snapshot(config):
     pass
 
 def __get_snapshots(config):
-    conn = config.get_odoo_conn().clone(dbname='template1')
+    conn = config.get_odoo_conn().clone(dbname='postgres')
     snapshots = [x[0] for x in _execute_sql(
         conn,
         "select datname from pg_database where datname like '{}_%_snapshot_%'".format(

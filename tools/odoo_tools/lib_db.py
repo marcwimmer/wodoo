@@ -48,7 +48,7 @@ def drop_db(config, dbname):
     if not (config.devmode or config.force):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
-    conn = config.get_odoo_conn().clone(dbname='template1')
+    conn = config.get_odoo_conn().clone(dbname='postgres')
     _remove_postgres_connections(conn, sql_afterwards="drop database {};".format(dbname))
     click.echo("Database {} dropped.".format(dbname))
 
@@ -84,7 +84,7 @@ def psql(config, dbname, params, sql):
 def _psql(config, conn, params, bin='psql', sql=None):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
-        if params[0] in ['template1', dbname]:
+        if params[0] in ['postgres', dbname]:
             dbname = params[0]
             params = []
     params = " ".join(params)
@@ -120,7 +120,7 @@ def reset_db(ctx, config, dbname):
     _start_postgres_and_wait(config)
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
-    conn = config.get_odoo_conn().clone(dbname='template1')
+    conn = config.get_odoo_conn().clone(dbname='postgres')
     _execute_sql(
         conn,
         "create database {}".format(
