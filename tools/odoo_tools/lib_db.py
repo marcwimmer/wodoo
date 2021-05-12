@@ -134,6 +134,7 @@ def reset_db(ctx, config, dbname):
         ctx,
         'update',
         module=['base'],
+        since_git_sha=False,
         no_restart=True,
         no_dangling_check=True,
         no_update_module_list=True,
