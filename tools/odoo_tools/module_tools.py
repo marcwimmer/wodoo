@@ -596,7 +596,7 @@ class Modules(object):
                 try:
                     dep_mod = dep_mod[0]
                 except Exception:
-                    click.secho(f"Module not found: {dep}", fg='red', bold=True)
+                    click.secho(f"Module not found: {dep}\n\n\n{list(sorted(map(lambda x: x.name, self.modules.values())))}", fg='red', bold=True)
                     sys.exit(-1)
                 data[mod.name][dep] = {}
                 append_deps(dep_mod, data[mod.name][dep])
