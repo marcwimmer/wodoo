@@ -172,7 +172,7 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
         default_modules = set(_get_default_modules_to_update())
-        module = list(filter(lambda x: x in default_modules, _get_changed_modules(since_git_sha)))
+        module = list(_get_changed_modules(since_git_sha))
         if not module:
             click.secho("No module update required - exiting.")
             return
@@ -515,12 +515,12 @@ def generate_update_command(ctx, config):
 
 def _get_changed_modules(git_sha):
     from .module_tools import Module
-    filepaths = subprocess.check_output([
+    filepaths = list(filter(bool, subprocess.check_output([
         'git',
         'diff',
         f"{git_sha}..HEAD",
         "--name-only",
-    ]).decode('utf-8').split("\n")
+    ]).decode('utf-8').split("\n")))
     modules = []
     root = Path(os.getcwd())
     for filepath in filepaths:
