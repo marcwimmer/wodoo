@@ -3,6 +3,7 @@ import json
 import base64
 import subprocess
 import inquirer
+from git import Repo
 import traceback
 from datetime import datetime
 import time
@@ -28,6 +29,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from pathlib import Path
+import git
 
 class UpdateException(Exception): pass
 
@@ -520,10 +522,41 @@ def _get_changed_modules(git_sha):
         f"{git_sha}..HEAD",
         "--name-only",
     ]).decode('utf-8').split("\n")))
+    repo = Repo(os.getcwd())
     modules = []
     root = Path(os.getcwd())
+
+    # check if there are submodules:
+    filepaths2 = []
+    cwd = Path(os.getcwd())
     for filepath in filepaths:
+        os.chdir(cwd)
+        submodule = [x for x in repo.submodules if x.path == filepath]
+        if submodule:
+            current_commit = str(repo.active_branch.commit)
+            old_commit = subprocess.check_output([
+                'git', 'rev-parse', f"{git_sha}:./{filepath}"
+                ]).decode("utf-8").strip()
+            new_commit = subprocess.check_output([
+                'git', 'rev-parse', f"{current_commit}:./{filepath}"
+                ]).decode("utf-8").strip()
+            # now diff the submodule
+            submodule_path = cwd / filepath
+            submodule_relative_path = filepath
+            for filepath in list(filter(bool, subprocess.check_output([
+                'git', 'diff', 
+                f"{old_commit}..{new_commit}",
+                "--name-only",
+                ], cwd=submodule_path).decode('utf-8').split("\n"))):
+
+                filepaths2.append(submodule_relative_path + "/" + filepath)
+        else:
+            filepaths2.append(filepath)
+
+    for filepath in filepaths2:
+
         filepath = root / filepath
+
         try:
             module = Module(filepath)
         except Module.IsNot:
