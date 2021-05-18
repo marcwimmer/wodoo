@@ -171,7 +171,6 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     if since_git_sha and module:
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
-        default_modules = set(_get_default_modules_to_update())
         module = list(_get_changed_modules(since_git_sha))
         if not module:
             click.secho("No module update required - exiting.")
