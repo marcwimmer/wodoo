@@ -1,4 +1,5 @@
 import collections
+import pwd
 from contextlib import contextmanager
 import platform
 from pathlib import Path
@@ -171,6 +172,12 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
     """
     from .myconfigparser import MyConfigParser
     from .settings import _export_settings
+
+    click.secho(f"*****************************************************", fg='yellow')
+    click.secho(f" cwd:         {os.getcwd()}",                           fg='yellow')
+    click.secho(f" whoami:      {pwd.getpwuid( os.getuid() )[ 0 ]}",      fg='yellow')
+    click.secho(f" cmd:         {' '.join(sys.argv)}",                    fg='yellow')
+    click.secho(f"*****************************************************", fg='yellow')
 
     defaults = {}
     _set_defaults(config, defaults)
