@@ -84,7 +84,8 @@ apt-get install \
             libpoppler-cpp-dev \
             default-jre \
             libreoffice-java-common \
-            postgresql-client
+            postgresql-client \
+            git
 
 # https://github.com/openvenues/pypostal postal lib for address checking
 RUN apt install -y curl autoconf automake libtool python-dev pkg-config
