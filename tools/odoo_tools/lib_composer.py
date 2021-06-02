@@ -83,9 +83,10 @@ def config(ctx, config, service_name, full=True):
 @click.option("-P", '--project-name', help="Set Project-Name")
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
 @click.option("--devmode", is_flag=True)
+@click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name, headless, devmode):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name, headless, devmode, additional_config):
     from .myconfigparser import MyConfigParser
 
     if headless and proxy_port:
@@ -97,13 +98,27 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
 
-    _set_host_run_dir(ctx, config, local)
-    # Reload config
-    from .click_config import Config
-    config = Config(project_name=project_name, verbose=config.verbose, force=config.force)
-    internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port)
+    additional_config_file = None
+    try:
+        if additional_config:
+            additional_config_file = Path(tempfile.mktemp(suffix='.'))
+            filename.write_text(base64.b64decode(additional_config))
+            additional_config = MyConfigParser(filename)
 
-def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port):
+        _set_host_run_dir(ctx, config, local)
+        # Reload config
+        from .click_config import Config
+        config = Config(project_name=project_name, verbose=config.verbose, force=config.force)
+        internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config)
+
+    finally:
+        if additional_config_file:
+            additional_config_file.unlink()
+
+def get_arch():
+    return platform.uname().machine # aarch64 
+
+def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config=None):
 
     defaults = {
         'config': config,
@@ -130,6 +145,12 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
         defaults['PROXY_PORT'] = proxy_port
     if mailclient_gui_port:
         defaults["ROUNDCUBE_PORT"] = mailclient_gui_port
+
+    if additional_config:
+        for key in additional_config.keys():
+            defaults[key] = additional_config[key]
+
+        click.secho("Additional config: {defaults}")
 
     # assuming we are in the odoo directory
     _do_compose(**defaults)
