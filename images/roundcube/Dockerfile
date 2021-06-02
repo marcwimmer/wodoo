@@ -1,4 +1,4 @@
-FROM    debian:stretch
+FROM    ubuntu:20.04
 ENV     DEBIAN_FRONTEND noninteractive
 ENV     TERM xterm
 ENV     ROUNDCUBE_VERSION=1.4.11
@@ -10,14 +10,19 @@ RUN apt update && \
     apt -y upgrade && \
     apt install -y --no-install-recommends \
     nginx php-fpm nano wget sqlite3 procps \
+    php-dev libmcrypt-dev \
     php-intl php-pear \
     php-net-smtp php-mail-mime \
     php-sqlite3 \
-    php-mcrypt \
     python3-pip \
     python3 \
-    python3-setuptools
-RUN pip3 install pathlib
+    python3-setuptools \ 
+    build-essential
+RUN pecl channel-update pecl.php.net && \
+pecl install mcrypt && \
+pip3 install pip --upgrade && \
+pip3 install wheel && \
+pip3 install pathlib
 RUN ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log
 
 RUN rm -fr /usr/share/nginx/www && \
