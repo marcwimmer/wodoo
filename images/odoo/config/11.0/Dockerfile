@@ -85,7 +85,8 @@ apt-get install \
             default-jre \
             libreoffice-java-common \
             postgresql-client \
-            git
+            git \
+            libpq-dev
 
 # https://github.com/openvenues/pypostal postal lib for address checking
 RUN apt install -y curl autoconf automake libtool python-dev pkg-config

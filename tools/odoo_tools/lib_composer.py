@@ -1,4 +1,5 @@
 import collections
+import base64
 import pwd
 from contextlib import contextmanager
 import platform
@@ -102,8 +103,8 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     try:
         if additional_config:
             additional_config_file = Path(tempfile.mktemp(suffix='.'))
-            filename.write_text(base64.b64decode(additional_config))
-            additional_config = MyConfigParser(filename)
+            additional_config_file.write_bytes(base64.b64decode(additional_config))
+            additional_config = MyConfigParser(additional_config_file)
 
         _set_host_run_dir(ctx, config, local)
         # Reload config
@@ -112,7 +113,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
         internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config)
 
     finally:
-        if additional_config_file:
+        if additional_config_file and additional_config_file.exists():
             additional_config_file.unlink()
 
 def get_arch():

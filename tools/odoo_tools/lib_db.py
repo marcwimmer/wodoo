@@ -111,9 +111,10 @@ def _pgcli(config, conn, params):
 
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)
+@click.option('--do-not-install-base', is_flag=True)
 @pass_config
 @click.pass_context
-def reset_db(ctx, config, dbname):
+def reset_db(ctx, config, dbname, do_not_install_base):
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
@@ -130,16 +131,17 @@ def reset_db(ctx, config, dbname):
     )
 
     # since odoo version 12 "-i base -d <name>" is required
-    Commands.invoke(
-        ctx,
-        'update',
-        module=['base'],
-        since_git_sha=False,
-        no_restart=True,
-        no_dangling_check=True,
-        no_update_module_list=True,
-        non_interactive=True,
-    )
+    if not do_not_install_base:
+        Commands.invoke(
+            ctx,
+            'update',
+            module=['base'],
+            since_git_sha=False,
+            no_restart=True,
+            no_dangling_check=True,
+            no_update_module_list=True,
+            non_interactive=True,
+        )
 
 @db.command()
 @pass_config
