@@ -29,3 +29,6 @@ settings.override
 .tmp.compose
 ._*
 .vimhook.syncdestination
+.vscode/launch.json
+
+.debug

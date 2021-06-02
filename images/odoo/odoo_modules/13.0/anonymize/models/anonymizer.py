@@ -1,5 +1,6 @@
 import os
 from odoo import _, api, fields, models, SUPERUSER_ID
+from odoo.tools.sql import column_exists
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import random
 import logging
@@ -36,77 +37,36 @@ class Anonymizer(models.AbstractModel):
             return
         import names
 
-        name_fields = {}
-        for dbfield in self.env['ir.model.fields'].search([]):
-            if any(x in dbfield.name for x in [
-                'phone',
-                'lastname',
-                'firstname',
-                'city',
-                'zip',
-                'fax',
-                'email',
-            ]):
-                table_name = dbfield.model_id.model.replace('.', '_')
-                name_fields.setdefault(table_name, [])
-                name_fields[table_name].append(dbfield.name)
+        self.env['ir.model.fields']._apply_default_anonymize_fields()
 
-        for table, fieldnames in name_fields.items():
-            if not fieldnames:
+        for field in self.env['ir.model.fields'].search([('anonymize', '=', True)]):
+            try:
+                obj = self.env[field.model]
+            except KeyError:
                 continue
+            table = obj._table
             cr = self.env.cr
-            cr.execute("select table_name from information_schema.tables where table_name = %s and TABLE_TYPE ='BASE TABLE'", (table,))
-            if not cr.fetchone():
-                continue
-            cols = []
-            for col in fieldnames:
-                cr.execute("""
-                SELECT column_name
-                FROM information_schema.columns
-                WHERE table_schema='public'
-                  and table_name=%s
-                  and column_name=%s
-                  and data_type in ('text', '"char"', 'character varying')
-                """, (table, col))
-                if not cr.fetchone():
-                    continue
-                cols.append(col)
-                del col
-            del fieldnames
-            if not cols:
+            if not column_exists(cr, table, field.name):
+                logger.info(f"Ignoring not existent column: {table}:{field.name}")
                 continue
 
-            cr.execute("""
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_schema='public'
-              and table_name=%s
-              and column_name=%s
-            """, (table, 'id'))
-            if not cr.fetchone():
-                continue
-
-            cr.execute("select id, {} from {} order by id desc".format(','.join(cols), table))
+            cr.execute(f"select id, {field.name} from {table} order by id desc")
             recs = cr.fetchall()
             logger.info(f"Anonymizing {len(recs)} records of {table}")
-            for rec in cr.fetchall():
-                values = []
-                for icol, col in enumerate(cols):
-                    v = rec[1 + icol] or ''
-                    if any(x in col for x in ['phone', 'fax']):
-                        v = self.gen_phone()
-                    else:
-                        if "@" in v or 'email' in col:
-                            v = self.generate_random_email()
-                        elif col == 'lastname':
-                            v = names.get_last_name()
-                        elif col == 'firstname':
-                            v = names.get_first_name()
-                        else:
-                            v = names.get_full_name()
-                    values.append(v)
+            for rec in recs:
+                v = rec[1] or ''
+                if any(x in field.name for x in ['phone', 'fax']):
+                    v = self.gen_phone()
+                elif "@" in v or 'email' in field.name:
+                    v = self.generate_random_email()
+                elif field.name == 'lastname':
+                    v = names.get_last_name()
+                elif field.name == 'firstname':
+                    v = names.get_first_name()
+                else:
+                    v = names.get_full_name()
 
-                sets = []
-                for icol, col in enumerate(cols):
-                    sets.append("{} = %s".format(col))
-                cr.execute("update {} set {} where id = %s".format(table, ','.join(sets)), tuple(values + [rec[0]]))
+                cr.execute(f"update {table} set {field.name} = %s where id = %s", (
+                    v,
+                    rec[0],
+                ))

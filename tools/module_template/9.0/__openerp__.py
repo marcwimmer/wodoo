@@ -1,7 +1,7 @@
 
 {
     'auto_install': False,
-    'name': '__module_name__',
+    'name': 'module_tools',
     'description': '',
     'version': '1.0',
     'author': 'Marc Wimmer (marc@itewimmer.de)',

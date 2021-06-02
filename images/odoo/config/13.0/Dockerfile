@@ -153,3 +153,5 @@ ADD patches/python_3.8.email.patch /usr/local/src
 RUN bash python_3.8.email.patch
 
 WORKDIR /opt/odoo
+
+RUN /usr/local/bin/python3 -mpip install debugpy

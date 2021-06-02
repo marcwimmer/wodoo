@@ -3,6 +3,7 @@ import json
 import base64
 import subprocess
 import inquirer
+from git import Repo
 import traceback
 from datetime import datetime
 import time
@@ -28,6 +29,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from pathlib import Path
+import git
 
 class UpdateException(Exception): pass
 
@@ -52,11 +54,6 @@ def _get_default_modules_to_update():
     module = mods.get_customs_modules('to_update')
     module += DBModules.get_uninstalled_modules_where_others_depend_on()
     return module
-
-@odoo_module.command(name='update-ast-file')
-def update_ast_file():
-    from .odoo_parser import update_cache
-    update_cache()
 
 @odoo_module.command(name='update-module-file')
 @click.argument('module', nargs=-1, required=True)
@@ -176,8 +173,7 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     if since_git_sha and module:
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
-        default_modules = set(_get_default_modules_to_update())
-        module = list(filter(lambda x: x in default_modules, _get_changed_modules(since_git_sha)))
+        module = list(_get_changed_modules(since_git_sha))
         if not module:
             click.secho("No module update required - exiting.")
             return
@@ -388,7 +384,7 @@ def robotest(config, file, user, all):
         return
     click.secho(str(filename), fg='green', bold=True)
 
-    archive = _make_archive(filename)
+    archive = _make_archive(filename, customs_dir())
 
     pwd = config.DEFAULT_DEV_PASSWORD
     if pwd == "True" or pwd is True:
@@ -420,6 +416,7 @@ def robotest(config, file, user, all):
         click.secho(f"Test failed: {failed['name']} - Duration: {failed['duration']}", fg='red')
     click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
+    click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
     if failds:
         sys.exit(-1)
 
@@ -427,8 +424,10 @@ def robotest(config, file, user, all):
 @odoo_module.command()
 @click.option('-r', '--repeat', is_flag=True)
 @click.argument('file', required=False)
+@click.option('-w', '--wait-for-remote', is_flag=True)
+@click.option('-r', '--remote-debug', is_flag=True)
 @pass_config
-def unittest(config, repeat, file):
+def unittest(config, repeat, file, remote_debug, wait_for_remote):
     """
     Collects unittest files and offers to run
     """
@@ -468,10 +467,21 @@ def unittest(config, repeat, file):
     config.runtime_settings.set('last_unittest', filename)
     click.secho(str(filename), fg='green', bold=True)
     container_file = Path('/opt/src/') / filename
+
+    interactive = True # means pudb trace turned on
     params = [
         'odoo', '/odoolib/unit_test.py', f'{container_file}',
-        '--not-interactive',
     ]
+    if wait_for_remote:
+        remote_debug = True
+        interactive = False
+    if remote_debug:
+        params += ["--remote-debug"]
+    if wait_for_remote:
+        params += ["--wait-for-remote"]
+    if not interactive:
+        params += ['--not-interactive']
+
     __dcrun(params + ['--log-level=debug'], interactive=True)
 
 @odoo_module.command()
@@ -506,16 +516,47 @@ def generate_update_command(ctx, config):
 
 def _get_changed_modules(git_sha):
     from .module_tools import Module
-    filepaths = subprocess.check_output([
+    filepaths = list(filter(bool, subprocess.check_output([
         'git',
         'diff',
         f"{git_sha}..HEAD",
         "--name-only",
-    ]).decode('utf-8').split("\n")
+    ]).decode('utf-8').split("\n")))
+    repo = Repo(os.getcwd())
     modules = []
     root = Path(os.getcwd())
+
+    # check if there are submodules:
+    filepaths2 = []
+    cwd = Path(os.getcwd())
     for filepath in filepaths:
+        os.chdir(cwd)
+        submodule = [x for x in repo.submodules if x.path == filepath]
+        if submodule:
+            current_commit = str(repo.active_branch.commit)
+            old_commit = subprocess.check_output([
+                'git', 'rev-parse', f"{git_sha}:./{filepath}"
+                ]).decode("utf-8").strip()
+            new_commit = subprocess.check_output([
+                'git', 'rev-parse', f"{current_commit}:./{filepath}"
+                ]).decode("utf-8").strip()
+            # now diff the submodule
+            submodule_path = cwd / filepath
+            submodule_relative_path = filepath
+            for filepath in list(filter(bool, subprocess.check_output([
+                'git', 'diff', 
+                f"{old_commit}..{new_commit}",
+                "--name-only",
+                ], cwd=submodule_path).decode('utf-8').split("\n"))):
+
+                filepaths2.append(submodule_relative_path + "/" + filepath)
+        else:
+            filepaths2.append(filepath)
+
+    for filepath in filepaths2:
+
         filepath = root / filepath
+
         try:
             module = Module(filepath)
         except Module.IsNot:

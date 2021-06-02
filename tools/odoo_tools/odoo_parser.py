@@ -22,7 +22,7 @@ cache_models = {}
 cache_xml_ids = {}
 
 SEP_FILE = ":::"
-SEP_LINENO = "::"
+SEP_LINENO = ":"
 
 def try_to_get_filepath(filepath):
     filepath = Path(filepath)
@@ -60,7 +60,7 @@ def get_view(inherit_id):
 def get_qweb_template(name):
     with plaintextfile().open('r') as f:
         lines = f.readlines()
-        lines = filter(lambda line: '~qweb' in line and name in line, lines)
+        lines = list(filter(lambda line: '~qweb' in line and name in line, lines))
         if lines:
             return get_file_lineno(lines[0])
     return None, None
@@ -538,7 +538,6 @@ def goto_inherited_view(filepath, line, current_buffer):
 
     return filepath, goto
 
-
 def try_to_get_context(line_content, lines_before, filename):
     result = None
     ext = ""
@@ -622,6 +621,5 @@ def try_to_get_context(line_content, lines_before, filename):
         if re.search("<record", line):
             if is_arch:
                 return {'context': 'arch', 'model': model, 'field': field, 'inherit_id': inherit_id}
-                break
 
     return result

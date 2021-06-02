@@ -31,14 +31,16 @@ from .tools import split_hub_url
 
 @cli.group(cls=AliasedGroup)
 @pass_config
-def src(config):
+def src(config): 
     pass
 
 
 @src.command()
 @pass_config
-def make_module(config, name):
-    cwd = config.working_dir
+@click.option('-n', '--name', required=True)
+@click.option('-p', '--parent-path', required=False)
+def make_module(config, name, parent_path):
+    cwd = parent_path or config.working_dir
     from .module_tools import make_module as _tools_make_module
     _tools_make_module(
         cwd,
@@ -46,12 +48,25 @@ def make_module(config, name):
     )
 
 @src.command(name='update-ast')
-def update_ast():
+@click.option('-f', '--filename', required=False)
+def update_ast(filename):
     from .odoo_parser import update_cache
     started = datetime.now()
     click.echo("Updating ast - can take about one minute")
-    update_cache()
+    update_cache(filename or None)
     click.echo("Updated ast - took {} seconds".format((datetime.now() - started).seconds))
+
+@src.command('goto-inherited')
+@click.option('-f', '--filepath', required=True)
+@click.option('-l', '--lineno', required=True)
+def goto_inherited(filepath, lineno):
+    from .odoo_parser import goto_inherited_view
+    lineno = int(lineno)
+    filepath = customs_dir() / filepath
+    lines = filepath.read_text().split('\n')
+    filepath, lineno = goto_inherited_view(filepath, lineno, lines)
+    if filepath:
+        print(f"FILEPATH:{filepath}:{lineno}")
 
 @src.command()
 @pass_config

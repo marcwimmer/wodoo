@@ -2,10 +2,9 @@
 import os
 from pathlib import Path
 from tools import exec_odoo
+import sys
 
 ENV = {
-    "TEST_QUEUE_JOB_NO_DELAY": "1", # for module queue_job
-    "ODOO_TRACE": "1"
 }
 
 if float(os.environ['ODOO_VERSION']) <= 7.0:
@@ -13,10 +12,18 @@ if float(os.environ['ODOO_VERSION']) <= 7.0:
 elif float(os.environ['ODOO_VERSION']) <= 9.0:
     DEV = '--dev'
 else:
-    DEV = '--dev=pudb,qweb,xml,werkzeug'
+    os.getenv("")
+    # eg: pudb.set_trace
+    # not really supported by odoo yet; they call post mortem function
+    # import pudb;pudb.set_trace()kj
+    # PYBREAKPOINT = os.getenv("PYTHONBREAKPOINT", "pudb").split(".")[0]
+    PYBREAKPOINT = 'pudb'
+    DEV = f'--dev={PYBREAKPOINT},qweb,xml,werkzeug'
 
 exec_odoo(
     'config_debug',
     DEV,
     env=ENV,
+    remote_debug='--remote-debug' in sys.argv,
+    wait_for_remote='--wait-for-remote' in sys.argv,
 )

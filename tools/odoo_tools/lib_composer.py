@@ -1,4 +1,5 @@
 import collections
+import pwd
 from contextlib import contextmanager
 import platform
 from pathlib import Path
@@ -123,7 +124,7 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
             'RUN_MAIL': 1,
             'RUN_CUPS': 0,
         })
-        if os.getuid() == 0:
+        if str(os.getenv("SUOD_UID", os.getuid())) == "0":
             defaults.update({'OWNER_UID': 1000})
     if proxy_port:
         defaults['PROXY_PORT'] = proxy_port
@@ -171,6 +172,12 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
     """
     from .myconfigparser import MyConfigParser
     from .settings import _export_settings
+
+    click.secho(f"*****************************************************", fg='yellow')
+    click.secho(f" cwd:         {os.getcwd()}",                           fg='yellow')
+    click.secho(f" whoami:      {pwd.getpwuid( os.getuid() )[ 0 ]}",      fg='yellow')
+    click.secho(f" cmd:         {' '.join(sys.argv)}",                    fg='yellow')
+    click.secho(f"*****************************************************", fg='yellow')
 
     defaults = {}
     _set_defaults(config, defaults)
@@ -630,9 +637,14 @@ def _use_file(config, path):
             for run in run:
                 if getattr(config, run):
                     return True
+                if getattr(config, run.lower().replace('run_', '')):
+                    # make run_devmode possible; in config is only devmode set
+                    return True
             run = filter(lambda x: x.startswith("!run_"), [y for x in path.parts for y in x.split(".")])
             for run in run:
                 if not getattr(config, run):
+                    return True
+                if getattr(config, run.lower().replace('run_', '')):
                     return True
             return False
 

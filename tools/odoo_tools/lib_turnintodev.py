@@ -1,4 +1,5 @@
 import click
+import arrow
 import re
 import traceback
 from datetime import datetime
@@ -22,7 +23,7 @@ def hash_password(config, password):
 
 @turn_into_dev.command()
 @pass_config
-def turn_into_dev(config):
+def turn_into_dev_(config):
     if not config.devmode:
         raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
 Please set DEVMODE=1 to allow this""")
@@ -100,3 +101,16 @@ def __turn_into_devdb(config, conn):
             print("failed un-critical sql:", msg)
 
     remove_webassets(conn)
+
+@turn_into_dev.command()
+@pass_config
+def prolong(config):
+    conn = config.get_odoo_conn()
+    _execute_sql(conn, """
+        UPDATE
+            ir_config_parameter
+        SET
+            value = '{}'
+        WHERE
+            key = 'database.expiration_date';
+    """.format(arrow.get().shift(months=6).strftime("%Y-%m-%d %H:%M:%S")))

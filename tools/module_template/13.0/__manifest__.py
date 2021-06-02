@@ -1,6 +1,6 @@
 
 {
-    'name': '__module_name__',
+    'name': '___module_name___',
     'version': '13.0.1.0',
     'author': 'Marc Wimmer (marc@itewimmer.de)',
     'depends': [,

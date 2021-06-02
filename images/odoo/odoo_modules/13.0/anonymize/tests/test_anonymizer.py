@@ -20,4 +20,5 @@ class Anonymizer(common.TransactionCase):
         super().setUp()
 
     def test_anonymize(self):
-        self.env['anonymizer']._anonymize()
+        self.env['ir.model.fields']._apply_default_anonymize_fields()
+        self.env['frameworktools.anonymizer']._run()
