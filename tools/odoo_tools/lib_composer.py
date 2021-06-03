@@ -422,6 +422,16 @@ def post_process_complete_yaml_config(config, yml):
         yml['services'][service]['container_name'] = f"{config.project_name}_{service}"
         # yml['services'][service]['hostname'] = service # otherwise odoo pgcli does not work
 
+    # set label from configuration settings starting with DOCKER_LABEL=123
+    for service in yml['services']:
+        service = yml['services'][service]
+        for key in service['environment']:
+            if key.startswith("DOCKER_LABEL_"):
+                label_name = key[len("DOCKER_LABEL_"):]
+                label_value = service['environment'][key]
+                service.setdefault('labels', {})
+                service['labels'][label_name] = label_value
+
     return yml
 
 def __run_docker_compose_config(config, contents, env):
