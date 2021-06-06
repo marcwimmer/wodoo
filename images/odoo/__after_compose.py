@@ -82,7 +82,7 @@ def after_compose(config, settings, yml, globals):
                 if not re.findall("python.dateutil.*", libpy):
                     libpy = libpy.replace('dateutil', 'python-dateutil')
             arr2.append(libpy)
-        external_dependencies['pip'] = arr2
+        external_dependencies['pip'] = list(sorted(arr2))
 
         for odoo_machine in odoo_machines:
             service = yml['services'][odoo_machine]
@@ -94,3 +94,6 @@ def after_compose(config, settings, yml, globals):
 
         config.files['native_collected_requirements_from_modules'].parent.mkdir(exist_ok=True, parents=True)
         config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))
+
+        # put the collected requirements into project root
+        (config.dirs['customs'] / 'requirements.txt').write_text('\n'.join(external_dependencies['pip']))
