@@ -66,6 +66,7 @@ class Debugger(object):
         if os.getenv("ODOO_PYTHON_DEBUG_PORT", ""):
             print("PTHON REMOTE DEBUGGER PORT: {}".format(os.environ['ODOO_PYTHON_DEBUG_PORT']))
         print(f"Using tracing: {os.getenv('PYTHONBREAKPOINT')}")
+        print(f"remote debugg: {self.remote_debugging}, waiting for debugger: {self.wait_for_remote}")
 
         if self.sync_common_modules:
             self.execpy(["/odoolib/put_server_modules_into_odoo_src_dir.py"])
@@ -74,6 +75,7 @@ class Debugger(object):
             cmd += ["--remote-debug"]
         if self.wait_for_remote:
             cmd += ["--wait-for-remote"]
+        print(f"executing: {cmd}")
         self.execpy(cmd)
 
     def action_update_module(self, cmd, module):
@@ -92,21 +94,19 @@ class Debugger(object):
     def action_last_unittest(self):
         if not self.last_unit_test:
             self.trigger_restart()
-        self.execpy([
-            "unit_test.py",
-            self.last_unit_test
-        ])
+        self.action_unittest(self.last_unit_test)
 
-    def action_unittest(self, filepath, wait_for_remote):
+    def action_unittest(self, filepath):
         kill_odoo()
         subprocess.call(['/usr/bin/reset'])
         self.last_unit_test = str(customs_dir / filepath)
         print(f"Running unit test: {last_unit_test}")
         args = []
-        if wait_for_remote:
+        if self.wait_for_remote:
             args += [
                 "--wait-for-remote"
             ]
+            print(f"Please connect your external debugger to: {os.environ['ODOO_PYTHON_DEBUG_PORT']}")
         self.execpy([
             "unit_test.py",
             self.last_unit_test,
@@ -166,7 +166,6 @@ class Debugger(object):
                 elif action[0] == 'update_view_in_db':
                     filepath = Path(action[1])
                     lineno = int(action[2])
-                    DEBUGGER_WATCH.unlink()
                     update_view_in_db(filepath, lineno)
 
                 elif action[0] in ["update_module", "update_module_full"]:
@@ -184,11 +183,10 @@ class Debugger(object):
                     thread1.daemon = True
                     thread1.start()
 
-                elif action[0] in ['unit_test', 'unit_test_wait_for_remote']:
+                elif action[0] in ['unit_test']:
                     kill_odoo()
                     thread1 = threading.Thread(target=self.action_unittest, kwargs=dict(
                         filepath=action[1],
-                        wait_for_remote='wait_for_remote' in action[0],
                     ))
                     thread1.daemon = True
                     thread1.start()
@@ -220,7 +218,7 @@ class Debugger(object):
 
 
 @click.command(name='debug')
-@click.option("--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
+@click.option("-s", "--sync-common-modules", is_flag=True, help="If set, then common modules from framework are copied to addons_tools")
 @click.option('-q', '--debug-queuejobs', is_flag=True)
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debugging', is_flag=True)

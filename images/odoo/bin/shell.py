@@ -28,7 +28,7 @@ else:
 os.environ["ODOO_SHELL_CMD"] = odoo_cmd
 stdin = None
 if odoo_cmd:
-    stdin = 'echo "$ODOO_SHELL_CMD"'
+    stdin = odoo_cmd # 'echo "$ODOO_SHELL_CMD"'
 
 exec_odoo(
     "config_shell",

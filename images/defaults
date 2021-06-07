@@ -26,3 +26,7 @@ USE_DOCKER=1
 SAFE_KILL=redis,postgres
 
 PSYCOPG_TIMEOUT=30
+
+
+# set customized docker label for identifying all containers
+DOCKER_LABEL_ODOOCOMPOSE=1

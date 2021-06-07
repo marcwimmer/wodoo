@@ -130,7 +130,7 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
     def try_connect(connection):
         try:
             if hasattr(connection, 'clone'):
-                connection = connection.clone(dbname='template1')
+                connection = connection.clone(dbname='postgres')
             _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True)
         except Exception as e:
             click.secho(str(e), fg='red')
@@ -165,7 +165,7 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
 def _exists_db(conn):
     sql = "select count(*) from pg_database where datname='{}'".format(conn.dbname)
     conn = conn.clone()
-    conn.dbname = 'template1'
+    conn.dbname = 'postgres'
     record = _execute_sql(conn, sql, fetchone=True)
     if not record or not record[0]:
         return False
@@ -189,7 +189,7 @@ def _start_postgres_and_wait(config):
             pass
         else:
             __dc(["up", "-d", "postgres"])
-        conn = config.get_odoo_conn().clone(dbname='template1')
+        conn = config.get_odoo_conn().clone(dbname='postgres')
         _wait_for_port(conn.host, conn.port, timeout=30)
         _execute_sql(conn, sql="""
         SELECT table_schema,table_name
@@ -232,17 +232,17 @@ def _remove_postgres_connections(connection, sql_afterwards=""):
                 WHERE pg_stat_activity.datname = '{}'
                 AND pid <> pg_backend_pid();
             """.format(connection.dbname, sql_afterwards)
-            _execute_sql(connection.clone(dbname='template1'), SQL, notransaction=True)
+            _execute_sql(connection.clone(dbname='postgres'), SQL, notransaction=True)
             if sql_afterwards:
-                _execute_sql(connection.clone(dbname='template1'), sql_afterwards, notransaction=True)
+                _execute_sql(connection.clone(dbname='postgres'), sql_afterwards, notransaction=True)
 
 def __rename_db_drop_target(conn, from_db, to_db):
-    if 'to_db' == 'template1':
+    if to_db in ('postgres', 'template1'):
         raise Exception("Invalid: {}".format(to_db))
     _remove_postgres_connections(conn.clone(dbname=from_db))
     _remove_postgres_connections(conn.clone(dbname=to_db))
-    _execute_sql(conn.clone(dbname='template1'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
-    _execute_sql(conn.clone(dbname='template1'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
+    _execute_sql(conn.clone(dbname='postgres'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
+    _execute_sql(conn.clone(dbname='postgres'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
     _remove_postgres_connections(conn.clone(dbname=to_db))
 
 def _merge_env_dict(env):

@@ -16,3 +16,4 @@ GitPython>=3.1.11
 docker-compose==1.27.3
 iscompatible
 buttervolume>=3.7
+pudb

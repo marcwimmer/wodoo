@@ -3,7 +3,7 @@ ENV DOCKER_VERSION=docker-19.03.12
 RUN apt update && \
 export DEBIAN_FRONTEND=noninteractive && \
 apt install -y python3-pip python3 curl rsync locales \
-postgresql-client pv pigz telnet
+postgresql-client pv pigz telnet libpq-dev
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen \
     && dpkg-reconfigure --frontend=noninteractive locales \

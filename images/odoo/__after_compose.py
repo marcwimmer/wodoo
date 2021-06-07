@@ -15,7 +15,8 @@ def _setup_remote_debugging(config, yml):
     else:
         key = 'odoo_debug'
     yml['services'][key].setdefault('ports', [])
-    yml['services'][key]['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
+    if config.ODOO_PYTHON_DEBUG_PORT and config.ODOO_PYTHON_DEBUG_PORT != '0':
+        yml['services'][key]['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
 
 def after_compose(config, settings, yml, globals):
     # store also in clear text the requirements
@@ -81,7 +82,7 @@ def after_compose(config, settings, yml, globals):
                 if not re.findall("python.dateutil.*", libpy):
                     libpy = libpy.replace('dateutil', 'python-dateutil')
             arr2.append(libpy)
-        external_dependencies['pip'] = arr2
+        external_dependencies['pip'] = list(sorted(arr2))
 
         for odoo_machine in odoo_machines:
             service = yml['services'][odoo_machine]
@@ -93,3 +94,6 @@ def after_compose(config, settings, yml, globals):
 
         config.files['native_collected_requirements_from_modules'].parent.mkdir(exist_ok=True, parents=True)
         config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))
+
+        # put the collected requirements into project root
+        (config.dirs['customs'] / 'requirements.txt').write_text('\n'.join(external_dependencies['pip']))
