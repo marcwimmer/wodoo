@@ -365,15 +365,19 @@ def __cmd_interactive(*params):
 
 def __empty_dir(dir, user_out=False):
     dir = Path(dir)
-    for x in dir.glob("*"):
-        if x.is_dir():
-            if user_out:
-                click.secho("Removing {}".format(x.absolute()))
-            shutil.rmtree(x.absolute())
-        else:
-            if user_out:
-                click.secho("Removing {}".format(x.absolute()))
-            x.unlink()
+    try:
+        for x in dir.glob("*"):
+            if x.is_dir():
+                if user_out:
+                    click.secho("Removing {}".format(x.absolute()))
+                shutil.rmtree(x.absolute())
+            else:
+                if user_out:
+                    click.secho("Removing {}".format(x.absolute()))
+                x.unlink()
+    except:
+        click.secho(f"Could not delete: {dir}", fg='red')
+        raise
 
 def __file_default_content(path, default_content):
     if not path.exists():
