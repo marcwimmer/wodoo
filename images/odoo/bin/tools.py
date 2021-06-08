@@ -165,8 +165,11 @@ def get_odoo_bin(for_shell=False):
                     raise Exception("Dont use GEVENT MODE anymore")
             except KeyError:
                 pass
-            if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1" or os.getenv("ODOO_CRON_IN_ONE_CONTAINER", "") == "1":
+            if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1":
                 CONFIG = 'config_allinone'
+
+            if os.getenv("ODOO_CRON_IN_ONE_CONTAINER", "") == "1":
+                CONFIG = 'config_web_and_cron'
 
     EXEC = "{}/{}".format(
         os.environ["SERVER_DIR"],

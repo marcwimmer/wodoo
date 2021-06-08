@@ -356,6 +356,7 @@ def __resolve_custom_merge(whole_content, value):
             for item in value[k]:
                 if isinstance(item, dict):
                     __resolve_custom_merge(whole_content, item)
+    return whole_content
 
 def __get_sorted_contents(paths):
     import yaml
@@ -472,7 +473,7 @@ def __run_docker_compose_config(config, contents, env):
         pass
 
 
-def dict_merge(dct, merge_dct, keep_source_scalars=True):
+def dict_merge(dct, merge_dct):
     """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
     updating only top-level keys, dict_merge recurses down into dicts nested
     to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
@@ -504,6 +505,10 @@ def dict_merge(dct, merge_dct, keep_source_scalars=True):
         #   - A=B
 
         _make_dict_if_possible(merge_dct, k)
+
+        if k in dct and not dct[k] and isinstance(merge_dct[k], dict):
+            dct[k] = {}
+
         if (k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], collections.Mapping)):
             dict_merge(dct[k], merge_dct[k])
         else:
@@ -536,12 +541,25 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     contents = __get_sorted_contents(paths)
     contents = list(_apply_variables(config, contents, env))
     _explode_referenced_machines(contents)
+    import pudb;pudb.set_trace()
+    _fix_contents(contents)
 
     # call docker compose config to get the complete config
     content = __run_docker_compose_config(config, contents, env)
     content = post_process_complete_yaml_config(config, content)
     content = _execute_after_compose(config, content)
     dest_file.write_text(yaml.dump(content, default_flow_style=False))
+
+def _fix_contents(contents):
+    for content in contents:
+        services = content.get('services')
+        for service in services:
+            service = services[service]
+            # turn {"env_file": {"FILE1": null} --> ["FILE1"]
+            if 'env_file' in service:
+                if isinstance(service['env_file'], dict):
+                    service['env_file'] = list(service['env_file'].keys())
+                    
 
 def _explode_referenced_machines(contents):
     """
@@ -570,8 +588,11 @@ def _explode_referenced_machines(contents):
             if explode in content.get('services', []):
                 for to_explode in to_explode:
                     if to_explode in content['services']:
-                        raise Exception(f"Already exists: {to_explode}\n{yaml.dump(content, default_flow_style=False)}")
-                    content['services'][to_explode] = deepcopy(content['services'][explode])
+                        src = deepcopy(content['services'][explode])
+                        dict_merge(src, content['services'][to_explode])
+                    else:
+                        src = content['services'][explode]
+                    content['services'][to_explode] = src
 
 def _apply_variables(config, contents, env):
     import yaml
