@@ -541,7 +541,6 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     contents = __get_sorted_contents(paths)
     contents = list(_apply_variables(config, contents, env))
     _explode_referenced_machines(contents)
-    import pudb;pudb.set_trace()
     _fix_contents(contents)
 
     # call docker compose config to get the complete config
