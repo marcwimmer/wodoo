@@ -58,26 +58,6 @@ def backup_all(ctx, config):
     """
     ctx.invoke(backup_db, non_interactive=True)
     ctx.invoke(backup_files)
-    ctx.invoke(backup_calendar)
-
-@backup.command(name='calendar')
-@pass_config
-def backup_calendar(config):
-    if not config.run_calendar:
-        return
-    cmd = [
-        'run',
-        'cronjobshell',
-        'postgres.py',
-        'backup',
-        config.CALENDAR_DB_NAME,
-        config.CALENDAR_DB_HOST,
-        config.CALENDAR_DB_PORT,
-        config.CALENDAR_DB_USER,
-        config.CALENDAR_DB_PWD,
-        '/host/dumps/' + f'{config.project_name}.calendar' + '.dump.gz',
-    ]
-    __dc(cmd)
 
 
 @backup.command(name='odoo-db')
@@ -161,26 +141,6 @@ def list_dumps(config):
 def restore_files(filename):
     __do_restore_files(filename)
 
-@restore.command(name="calendar")
-@click.argument('filename', required=True)
-@pass_config
-@click.pass_context
-def restore_calendar_db(ctx, config, filename):
-    filename = Path(filename)
-
-    __dc([
-        'run',
-        'cronjobshell',
-        'postgres.py',
-        'restore',
-        config.CALENDAR_DB_NAME,
-        config.CALENDAR_DB_HOST,
-        config.CALENDAR_DB_PORT,
-        config.CALENDAR_DB_USER,
-        config.CALENDAR_DB_PWD,
-        '/host/dumps/{}'.format(filename.name),
-    ])
-
 @restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
 @click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
@@ -191,6 +151,11 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     conn = config.get_odoo_conn()
     dest_db = conn.dbname
 
+    dumps_path = config.dumps_path
+
+    if '/' in filename:
+        filename, dumps_path = Path(filename).name, Path(filename).parent.absolute()
+
     if config.devmode and not no_dev_scripts:
         click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
 
@@ -199,8 +164,9 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     if not filename:
         return
 
-    BACKUPDIR = Path(config.dumps_path)
-    filename = BACKUPDIR / filename
+    BACKUPDIR = Path(dumps_path)
+    filename = (BACKUPDIR / filename).absolute()
+
     if not config.force and not latest:
         __restore_check(filename, config)
 
@@ -221,8 +187,18 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     )
 
     if config.use_docker:
-        __dc([
+        cmd = [
             'run',
+            '--rm',
+        ]
+
+        parent_path_in_container = '/host/dumps2'
+        cmd += [
+            "-v",
+            f"{dumps_path}:{parent_path_in_container}",
+        ]
+
+        cmd += [
             'cronjobshell',
             'postgres.py',
             'restore',
@@ -231,8 +207,9 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
             config.db_port,
             config.db_user,
             config.db_pwd,
-            '/host/dumps/{}'.format(filename.name),
-        ])
+            f'{parent_path_in_container}/{filename.name}',
+        ]
+        __dc(cmd)
     else:
         _add_cronjob_scripts(config)['postgres']._restore(
             DBNAME_RESTORING,
