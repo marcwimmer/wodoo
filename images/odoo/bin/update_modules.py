@@ -208,10 +208,6 @@ def cli():
 @pass_config
 def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths):
 
-    if i18n and os.getenv("UPDATE_I18N", "0") == "0":
-        click.secho("Warning: no update of i18n happening because turned off by setting UPDATE_I18N=0")
-        i18n = False
-
     config.interactive = not non_interactive
     config.i18n_overwrite = i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
