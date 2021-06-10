@@ -56,7 +56,8 @@ def backup_all(ctx, config):
     """
     Runs backup-db and backup-files
     """
-    ctx.invoke(backup_db, non_interactive=True)
+    config.force = True
+    ctx.invoke(backup_db)
     ctx.invoke(backup_files)
 
 
@@ -68,9 +69,14 @@ def backup_all(ctx, config):
 @click.option('--column-inserts', is_flag=True)
 @click.option('--dumptype', type=click.Choice(["custom", "plain", "directory"]), default='custom')
 def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
-    filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
+    filename = Path(filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz')
+    if len(filename.parts) == 1:
+        filename = Path(config.dumps_path) / filename
     cmd = [
         'run',
+        '--rm',
+        '-v',
+        f'{filename.parent}:/host/dumps',
         'cronjobshell',
         'postgres.py',
         'backup',
@@ -79,7 +85,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         config.DB_PORT,
         config.DB_USER,
         config.DB_PWD,
-        '/host/dumps/' + filename,
+        '/host/dumps/' + filename.name,
         "--dumptype", dumptype,
     ]
     if column_inserts:
@@ -91,31 +97,30 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
 
 
 @backup.command(name='files')
+@click.argument('filename', required=False, default="")
 @pass_config
-def backup_files(config):
-    BACKUPDIR = Path(config.dumps_path)
-    BACKUP_FILENAME = f"{config.project_name}.files.tar.gz"
-    BACKUP_FILEPATH = config.dirs['backup_dir'] / BACKUP_FILENAME
+def backup_files(config, filename):
+    filepath = Path(filename or f"{config.project_name}.files.tar.gz")
+    if len(filepath.parts) == 1:
+        filepath = Path(config.dumps_path) / filepath
 
-    if BACKUP_FILEPATH.exists():
-        second = BACKUP_FILENAME + ".bak"
-        second_path = BACKUPDIR / second
-        if second_path.exists():
-            second_path.unlink()
-        shutil.move(BACKUP_FILEPATH, second_path)
-        del second
-        del second_path
-    files_dir = config.dirs['odoo_data_dir'] / config.dbname
+    if filepath.exists():
+
+        second = filepath.with_suffix(filepath.suffix + '.bak')
+        second.exists() and second.unlink()
+        shutil.move(filepath, second)
+
+    files_dir = config.dirs['odoo_data_dir'] / 'filestore' / config.dbname
     if not files_dir.exists():
         return
     subprocess.check_call([
         'tar',
         'cfz',
-        BACKUP_FILEPATH,
+        filepath,
         '.'
     ], cwd=files_dir)
-    __apply_dump_permissions(BACKUP_FILEPATH)
-    click.secho("Backup files done to {}".format(BACKUP_FILENAME), fg='green')
+    __apply_dump_permissions(filepath)
+    click.secho(f"Backup files done to {filepath}", fg='green')
 
 def __get_default_backup_filename(config):
     return datetime.now().strftime(f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz")
