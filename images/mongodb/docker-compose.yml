@@ -9,3 +9,12 @@ services:
         environment:
             MONGO_INITDB_ROOT_USERNAME: mongouser1
             MONGO_INITDB_ROOT_PASSWORD: topSecretDontTel!l1234
+    mongo-express:
+        image: mongo-express
+        restart: "unless-stopped"
+        #ports: 
+        #    - "0.0.0.0:5002:8081"
+        environment:
+            ME_CONFIG_MONGODB_ADMINUSERNAME: mongouser1
+            ME_CONFIG_MONGODB_ADMINPASSWORD: topSecretDontTel!l1234
+            ME_CONFIG_MONGODB_SERVER: mongodb
