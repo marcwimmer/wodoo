@@ -176,7 +176,6 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     if '/' in filename:
         dumps_path = Path(filename).parent
         filename = Path(filename).name
-    raise Exception(f"{filename}; {dumps_path}; {before};")
 
     if not filename:
         filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
@@ -215,7 +214,6 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
             # with external directory mapped; after that remove config
             if config.run_postgres:
                 __dc(['kill', 'postgres'])
-                raise Exception(dumps_path)
                 __dc(['run', '-d', '--name', f'{postgres_name}', '--rm', '--service-ports', '-v', f'{dumps_path}:/host/dumps2', 'postgres'])
                 Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
                 effective_db_host = postgres_name
