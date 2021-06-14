@@ -172,11 +172,11 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
 
     dumps_path = config.dumps_path
 
+    before = filename
     if '/' in filename:
-        filename, dumps_path = Path(filename).name, Path(filename).parent.absolute()
-
-    if config.devmode and not no_dev_scripts:
-        click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
+        dumps_path = Path(filename).parent
+        filename = Path(filename).name
+    raise Exception(f"{filename}; {dumps_path}; {before};")
 
     if not filename:
         filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
@@ -204,6 +204,8 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
         notransaction=True
     )
 
+    if config.devmode and not no_dev_scripts:
+        click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
     effective_db_host = config.DB_HOST
     try:
 
@@ -213,8 +215,8 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
             # with external directory mapped; after that remove config
             if config.run_postgres:
                 __dc(['kill', 'postgres'])
+                raise Exception(dumps_path)
                 __dc(['run', '-d', '--name', f'{postgres_name}', '--rm', '--service-ports', '-v', f'{dumps_path}:/host/dumps2', 'postgres'])
-                test = __dc_out(['ps', '-a', '--filter', 'name=postgres'])
                 Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
                 effective_db_host = postgres_name
 
