@@ -15,5 +15,4 @@ exec_odoo(
         os.getenv("ODOO_LOG_LEVEL", "debug")
     ),
     touch_url=TOUCH_URL,
-    start_debugger=True
 )

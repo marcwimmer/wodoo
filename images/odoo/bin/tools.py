@@ -28,11 +28,12 @@ def _replace_params_in_config(ADDONS_PATHS, file):
     content = content.replace("__ENABLE_DB_MANAGER__", 'True' if config['ODOO_ENABLE_DB_MANAGER'] == '1' else 'False')
 
     server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
-    if os.getenv("IS_ODOO_QUEUEJOB", "") == "1" and 'debug' not in file.name:
+    if (os.getenv("IS_ODOO_QUEUEJOB", "") == "1" or os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1") and 'debug' not in file.name:
         server_wide_modules += ['queue_job']
     if os.getenv("IS_ODOO_QUEUEJOB", "") != "1" or 'debug' in file.name:
-        if 'queue_job' in server_wide_modules:
-            server_wide_modules.remove('queue_job')
+        if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") != "1":
+            if 'queue_job' in server_wide_modules:
+                server_wide_modules.remove('queue_job')
     server_wide_modules = ','.join(server_wide_modules)
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 
@@ -164,6 +165,8 @@ def get_odoo_bin(for_shell=False):
                     raise Exception("Dont use GEVENT MODE anymore")
             except KeyError:
                 pass
+            if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1" or os.getenv("ODOO_CRON_IN_ONE_CONTAINER", "") == "1":
+                CONFIG = 'config_allinone'
 
     EXEC = "{}/{}".format(
         os.environ["SERVER_DIR"],
@@ -206,6 +209,14 @@ def kill_odoo():
                 '-f',
                 'openerp-gevent',
             ])
+        else:
+            subprocess.call([
+                '/usr/bin/sudo',
+                '/usr/bin/pkill',
+                '-9',
+                '-f',
+                'odoo-bin',
+            ])
 
 def __python_exe(remote_debug=False, wait_for_remote=False):
     if version <= 10.0:
@@ -214,7 +225,7 @@ def __python_exe(remote_debug=False, wait_for_remote=False):
         # return "/usr/bin/python3"
         cmd = ["python3"]
 
-    if remote_debug:
+    if remote_debug or wait_for_remote:
         cmd += [
             '-mdebugpy',
             '--listen',
@@ -273,8 +284,7 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None,
     def toucher():
         while True:
             try:
-                r = requests.get('http://{}:'.format(
-                    'localhost',
+                r = requests.get('http://localhost:{}'.format(
                     os.environ['INTERNAL_ODOO_PORT']
                 ))
                 r.raise_for_status()
@@ -295,10 +305,14 @@ def exec_odoo(CONFIG, *args, odoo_shell=False, touch_url=False, on_done=None,
     filename = Path(tempfile.mktemp(suffix='.exitcode'))
     cmd += f' || echo $? > {filename}'
 
+    # if stdin:
+    #     cmd = f'{stdin} |' + cmd
     if stdin:
-        cmd = f'{stdin} |' + cmd
-
-    os.system(cmd)
+        if isinstance(stdin, str):
+            stdin = stdin.encode('utf-8')
+        subprocess.run(cmd, input=stdin, shell=True)
+    else:
+        subprocess.run(cmd, shell=True)
     if pidfile.exists():
         pidfile.unlink()
     if on_done:

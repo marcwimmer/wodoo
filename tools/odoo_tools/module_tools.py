@@ -312,7 +312,7 @@ def make_module(parent_path, module_name):
             filepath = os.path.join(root, filepath)
             with open(filepath, 'r') as f:
                 content = f.read()
-            content = content.replace("__module_name__", module_name)
+            content = content.replace("___module_name___", module_name)
             with open(filepath, 'w') as f:
                 f.write(content)
 
@@ -498,7 +498,12 @@ class Modules(object):
             self.modules = self._get_modules()
 
     def _get_cache_path(self):
-        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}")
+        # 
+        from git import Repo
+        repo = Repo(os.getcwd())
+        active_branch = repo.active_branch.name
+        full_path = os.getcwd().replace('/', '_')
+        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{active_branch}.{full_path}")
         parent.mkdir(exist_ok=True)
         return parent / f'sha_{self._get_sha()}'
 
@@ -596,7 +601,7 @@ class Modules(object):
                 try:
                     dep_mod = dep_mod[0]
                 except Exception:
-                    click.secho(f"Module not found: {dep}", fg='red', bold=True)
+                    click.secho(f"Module not found: {dep}\n\n\n{list(sorted(map(lambda x: x.name, self.modules.values())))}", fg='red', bold=True)
                     sys.exit(-1)
                 data[mod.name][dep] = {}
                 append_deps(dep_mod, data[mod.name][dep])

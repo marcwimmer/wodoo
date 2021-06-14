@@ -25,7 +25,6 @@ from .tools import _askcontinue
 from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import __dcrun, __dc, _remove_postgres_connections, _execute_sql, __dcexec
-from .tools import _start_postgres_and_wait
 from .tools import get_volume_names
 from .tools import exec_file_in_path
 from . import cli, pass_config, Commands
@@ -48,7 +47,7 @@ def drop_db(config, dbname):
     if not (config.devmode or config.force):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
-    conn = config.get_odoo_conn().clone(dbname='template1')
+    conn = config.get_odoo_conn().clone(dbname='postgres')
     _remove_postgres_connections(conn, sql_afterwards="drop database {};".format(dbname))
     click.echo("Database {} dropped.".format(dbname))
 
@@ -84,7 +83,7 @@ def psql(config, dbname, params, sql):
 def _psql(config, conn, params, bin='psql', sql=None):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
-        if params[0] in ['template1', dbname]:
+        if params[0] in ['postgres', dbname]:
             dbname = params[0]
             params = []
     params = " ".join(params)
@@ -111,16 +110,19 @@ def _pgcli(config, conn, params):
 
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)
+@click.option('--do-not-install-base', is_flag=True)
 @pass_config
 @click.pass_context
-def reset_db(ctx, config, dbname):
+def reset_db(ctx, config, dbname, do_not_install_base):
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
-    _start_postgres_and_wait(config)
+    if config.run_docker:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+    _wait_postgres(config)
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
-    conn = config.get_odoo_conn().clone(dbname='template1')
+    conn = config.get_odoo_conn().clone(dbname='postgres')
     _execute_sql(
         conn,
         "create database {}".format(
@@ -130,15 +132,17 @@ def reset_db(ctx, config, dbname):
     )
 
     # since odoo version 12 "-i base -d <name>" is required
-    Commands.invoke(
-        ctx,
-        'update',
-        module=['base'],
-        no_restart=True,
-        no_dangling_check=True,
-        no_update_module_list=True,
-        non_interactive=True,
-    )
+    if not do_not_install_base:
+        Commands.invoke(
+            ctx,
+            'update',
+            module=['base'],
+            since_git_sha=False,
+            no_restart=True,
+            no_dangling_check=True,
+            no_update_module_list=True,
+            non_interactive=True,
+        )
 
 @db.command()
 @pass_config

@@ -7,17 +7,7 @@ RUN apt install -y tzdata wget unzip python3
 RUN apt install -y python3-pip python3-magic libmagickwand-dev xvfb
 
 # chrome for testing
-RUN wget -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
-    && apt-get update -qq \
-    && apt-get install -y /tmp/google-chrome-stable_current_amd64.deb \
-    && rm -rf /tmp/google-chrome-stable_current_amd64.deb
-
-RUN wget -O /tmp/chromedriver_linux64.zip http://chromedriver.storage.googleapis.com/2.40/chromedriver_linux64.zip \
-    && unzip /tmp/chromedriver_linux64.zip -d /opt/chromedriver \
-    && chmod +x /opt/chromedriver/chromedriver \
-    && ln -fs /opt/chromedriver/chromedriver /usr/local/bin/chromedriver \
-    && rm -rf /tmp/chromedriver_linux64.zip
-
+RUN apt install -y chromium-browser
 
 COPY ./requirements.txt /tmp/requirements.txt
 RUN \
@@ -28,3 +18,16 @@ ENV WORKDIR=/opt/robot
 WORKDIR $WORKDIR
 COPY robotest.py ./
 CMD [ "python3", "robotest.py"]
+
+RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+wget -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/91.0.4472.19/chromedriver_linux64.zip; \
+fi
+
+RUN if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
+wget -O /tmp/chromedriver_linux64.zip https://github.com/electron/electron/releases/download/v14.0.0-beta.1/chromedriver-v14.0.0-beta.1-linux-arm64.zip; \
+fi
+
+RUN unzip /tmp/chromedriver_linux64.zip -d /opt/chromedriver \
+    && chmod +x /opt/chromedriver/chromedriver \
+    && ln -fs /opt/chromedriver/chromedriver /usr/local/bin/chromedriver \
+    && rm -rf /tmp/chromedriver_linux64.zip

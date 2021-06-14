@@ -1,1 +1,0 @@
-http://<odoo url>/console/?username=root&password=b2Rvbw==&hostname=127.0.0.1&command=docker exec -t rsodoo_odoo /odoolib/shell.py

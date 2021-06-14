@@ -1,4 +1,6 @@
 import collections
+import base64
+import pwd
 from contextlib import contextmanager
 import platform
 from pathlib import Path
@@ -82,9 +84,10 @@ def config(ctx, config, service_name, full=True):
 @click.option("-P", '--project-name', help="Set Project-Name")
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
 @click.option("--devmode", is_flag=True)
+@click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name, headless, devmode):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name, headless, devmode, additional_config):
     from .myconfigparser import MyConfigParser
 
     if headless and proxy_port:
@@ -96,13 +99,27 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
 
-    _set_host_run_dir(ctx, config, local)
-    # Reload config
-    from .click_config import Config
-    config = Config(project_name=project_name, verbose=config.verbose, force=config.force)
-    internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port)
+    additional_config_file = None
+    try:
+        if additional_config:
+            additional_config_file = Path(tempfile.mktemp(suffix='.'))
+            additional_config_file.write_bytes(base64.b64decode(additional_config))
+            additional_config = MyConfigParser(additional_config_file)
 
-def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port):
+        _set_host_run_dir(ctx, config, local)
+        # Reload config
+        from .click_config import Config
+        config = Config(project_name=project_name, verbose=config.verbose, force=config.force)
+        internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config)
+
+    finally:
+        if additional_config_file and additional_config_file.exists():
+            additional_config_file.unlink()
+
+def get_arch():
+    return platform.uname().machine # aarch64 
+
+def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config=None):
 
     defaults = {
         'config': config,
@@ -129,6 +146,12 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
         defaults['PROXY_PORT'] = proxy_port
     if mailclient_gui_port:
         defaults["ROUNDCUBE_PORT"] = mailclient_gui_port
+
+    if additional_config:
+        for key in additional_config.keys():
+            defaults[key] = additional_config[key]
+
+        click.secho("Additional config: {defaults}")
 
     # assuming we are in the odoo directory
     _do_compose(**defaults)
@@ -171,6 +194,12 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
     """
     from .myconfigparser import MyConfigParser
     from .settings import _export_settings
+
+    click.secho(f"*****************************************************", fg='yellow')
+    click.secho(f" cwd:         {os.getcwd()}",                           fg='yellow')
+    click.secho(f" whoami:      {pwd.getpwuid( os.getuid() )[ 0 ]}",      fg='yellow')
+    click.secho(f" cmd:         {' '.join(sys.argv)}",                    fg='yellow')
+    click.secho(f"*****************************************************", fg='yellow')
 
     defaults = {}
     _set_defaults(config, defaults)
@@ -392,6 +421,16 @@ def post_process_complete_yaml_config(config, yml):
     for service in yml['services']:
         yml['services'][service]['container_name'] = f"{config.project_name}_{service}"
         # yml['services'][service]['hostname'] = service # otherwise odoo pgcli does not work
+
+    # set label from configuration settings starting with DOCKER_LABEL=123
+    for service in yml['services']:
+        service = yml['services'][service]
+        for key in service['environment']:
+            if key.startswith("DOCKER_LABEL_"):
+                label_name = key[len("DOCKER_LABEL_"):]
+                label_value = service['environment'][key]
+                service.setdefault('labels', {})
+                service['labels'][label_name] = label_value
 
     return yml
 

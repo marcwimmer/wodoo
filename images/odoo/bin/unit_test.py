@@ -13,6 +13,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Unittest.')
 parser.add_argument('--log-level')
 parser.add_argument('--not-interactive', action="store_true")
+parser.add_argument('--remote-debug', action="store_true")
+parser.add_argument('--wait-for-remote', action="store_true")
 parser.add_argument('test_file')
 parser.set_defaults(log_level='debug')
 args = parser.parse_args()
@@ -45,7 +47,9 @@ if current_version() <= 11.0:
     ]
 rc = exec_odoo(
     "config_unittest",
-    *cmd
+    remote_debug='--remote-debug' in sys.argv,
+    wait_for_remote='--wait-for-remote' in sys.argv,
+    *cmd,
 )
 
 sys.exit(rc)

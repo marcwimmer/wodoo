@@ -152,7 +152,7 @@ class CalidavAdminService(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def reset_db(self):
-        conn = get_conn('template1')
+        conn = get_conn('postgres')
         conn.autocommit = True
         try:
             cr = conn.cursor()

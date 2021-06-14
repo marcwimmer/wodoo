@@ -2,6 +2,7 @@ import platform
 import stat
 from contextlib import contextmanager
 import re
+import docker
 try:
     import arrow
 except ImportError: pass
@@ -130,7 +131,7 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
     def try_connect(connection):
         try:
             if hasattr(connection, 'clone'):
-                connection = connection.clone(dbname='template1')
+                connection = connection.clone(dbname='postgres')
             _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True)
         except Exception as e:
             click.secho(str(e), fg='red')
@@ -165,7 +166,7 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
 def _exists_db(conn):
     sql = "select count(*) from pg_database where datname='{}'".format(conn.dbname)
     conn = conn.clone()
-    conn.dbname = 'template1'
+    conn.dbname = 'postgres'
     record = _execute_sql(conn, sql, fetchone=True)
     if not record or not record[0]:
         return False
@@ -182,20 +183,40 @@ def _exists_table(conn, table_name):
     """.format(table_name), fetchone=True)
     return record[0]
 
-def _start_postgres_and_wait(config):
+def _wait_postgres(config):
     if config.run_postgres:
-        if config.run_postgres_in_ram and _is_container_running('postgres'):
-            # avoid recreate
-            pass
-        else:
-            __dc(["up", "-d", "postgres"])
-        conn = config.get_odoo_conn().clone(dbname='template1')
+        conn = config.get_odoo_conn().clone(dbname='postgres')
+        container_ids = __dc_out(['ps', '-a', '-q', '--filter', 'name=postgres']).decode('utf-8').strip().split("\n")
+        client = docker.from_env()
+        postgres_containers = []
+        for container_id in container_ids:
+            container = client.containers.get(container_id)
+            if not container:
+                continue
+            if not container.attrs['State']['Running']:
+                continue
+            postgres_containers += [container]
+
+        # if running containers wait for health state:
+        if not postgres_containers:
+            raise Exception("No running container found!")
+
         _wait_for_port(conn.host, conn.port, timeout=30)
-        _execute_sql(conn, sql="""
-        SELECT table_schema,table_name
-        FROM information_schema.tables
-        ORDER BY table_schema,table_name;
-        """)
+        trycount = 0
+        try:
+            _execute_sql(conn, sql="""
+            SELECT table_schema,table_name
+            FROM information_schema.tables
+            ORDER BY table_schema,table_name;
+            LIMIT 1
+            """)
+        except Exception:
+            if trycount > 20:
+                raise
+            else:
+                click.secho("Waiting again for postgres...")
+                time.sleep(3)
+                trycount += 1
 
 def _is_container_running(machine_name):
     import docker
@@ -232,17 +253,17 @@ def _remove_postgres_connections(connection, sql_afterwards=""):
                 WHERE pg_stat_activity.datname = '{}'
                 AND pid <> pg_backend_pid();
             """.format(connection.dbname, sql_afterwards)
-            _execute_sql(connection.clone(dbname='template1'), SQL, notransaction=True)
+            _execute_sql(connection.clone(dbname='postgres'), SQL, notransaction=True)
             if sql_afterwards:
-                _execute_sql(connection.clone(dbname='template1'), sql_afterwards, notransaction=True)
+                _execute_sql(connection.clone(dbname='postgres'), sql_afterwards, notransaction=True)
 
 def __rename_db_drop_target(conn, from_db, to_db):
-    if 'to_db' == 'template1':
+    if to_db in ('postgres', 'template1'):
         raise Exception("Invalid: {}".format(to_db))
     _remove_postgres_connections(conn.clone(dbname=from_db))
     _remove_postgres_connections(conn.clone(dbname=to_db))
-    _execute_sql(conn.clone(dbname='template1'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
-    _execute_sql(conn.clone(dbname='template1'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
+    _execute_sql(conn.clone(dbname='postgres'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
+    _execute_sql(conn.clone(dbname='postgres'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
     _remove_postgres_connections(conn.clone(dbname=to_db))
 
 def _merge_env_dict(env):
@@ -255,7 +276,7 @@ def _merge_env_dict(env):
 
 def __dc(cmd, env={}):
     c = __get_cmd() + cmd
-    subprocess.check_call(c, env=_merge_env_dict(env))
+    return subprocess.check_call(c, env=_merge_env_dict(env))
 
 def __dc_out(cmd, env={}):
     c = __get_cmd() + cmd
@@ -365,15 +386,19 @@ def __cmd_interactive(*params):
 
 def __empty_dir(dir, user_out=False):
     dir = Path(dir)
-    for x in dir.glob("*"):
-        if x.is_dir():
-            if user_out:
-                click.secho("Removing {}".format(x.absolute()))
-            shutil.rmtree(x.absolute())
-        else:
-            if user_out:
-                click.secho("Removing {}".format(x.absolute()))
-            x.unlink()
+    try:
+        for x in dir.glob("*"):
+            if x.is_dir():
+                if user_out:
+                    click.secho("Removing {}".format(x.absolute()))
+                shutil.rmtree(x.absolute())
+            else:
+                if user_out:
+                    click.secho("Removing {}".format(x.absolute()))
+                x.unlink()
+    except:
+        click.secho(f"Could not delete: {dir}", fg='red')
+        raise
 
 def __file_default_content(path, default_content):
     if not path.exists():

@@ -1,8 +1,0 @@
-services:
-  webssh:
-    build: $ODOO_HOME/images/webssh
-    restart: unless-stopped
-    networks:
-      - default
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock

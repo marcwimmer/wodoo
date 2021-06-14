@@ -9,6 +9,15 @@ dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 MINIMAL_MODULES = ['anonymize'] # to include its dependencies
 
+def _setup_remote_debugging(config, yml):
+    if config.devmode:
+        key = 'odoo'
+    else:
+        key = 'odoo_debug'
+    yml['services'][key].setdefault('ports', [])
+    if config.ODOO_PYTHON_DEBUG_PORT and config.ODOO_PYTHON_DEBUG_PORT != '0':
+        yml['services'][key]['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
+
 def after_compose(config, settings, yml, globals):
     # store also in clear text the requirements
     from odoo_tools.tools import get_services
@@ -30,9 +39,7 @@ def after_compose(config, settings, yml, globals):
     PYTHON_VERSION = tuple([int(x) for x in config.ODOO_PYTHON_VERSION.split(".")])
 
     # Add remote debugging possibility in devmode
-    if config.devmode:
-        yml['services']['odoo'].setdefault('ports', [])
-        yml['services']['odoo']['ports'].append(f"0.0.0.0:{config.ODOO_PYTHON_DEBUG_PORT}:5678")
+    _setup_remote_debugging(config, yml)
 
     if float(config.ODOO_VERSION) >= 13.0:
         # fetch dependencies from odoo lib requirements
@@ -75,7 +82,7 @@ def after_compose(config, settings, yml, globals):
                 if not re.findall("python.dateutil.*", libpy):
                     libpy = libpy.replace('dateutil', 'python-dateutil')
             arr2.append(libpy)
-        external_dependencies['pip'] = arr2
+        external_dependencies['pip'] = list(sorted(arr2))
 
         for odoo_machine in odoo_machines:
             service = yml['services'][odoo_machine]
@@ -87,3 +94,6 @@ def after_compose(config, settings, yml, globals):
 
         config.files['native_collected_requirements_from_modules'].parent.mkdir(exist_ok=True, parents=True)
         config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))
+
+        # put the collected requirements into project root
+        (config.dirs['customs'] / 'requirements.txt').write_text('\n'.join(external_dependencies['pip']))
