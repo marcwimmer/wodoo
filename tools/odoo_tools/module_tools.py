@@ -502,7 +502,8 @@ class Modules(object):
         from git import Repo
         repo = Repo(os.getcwd())
         active_branch = repo.active_branch.name
-        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{active_branch}")
+        full_path = os.getcwd().replace('/', '_')
+        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{active_branch}.{full_path}")
         parent.mkdir(exist_ok=True)
         return parent / f'sha_{self._get_sha()}'
 
