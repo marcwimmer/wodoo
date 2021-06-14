@@ -164,6 +164,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
             container.kill()
             container.remove()
 
+        Commands.invoke(ctx, 'down')
         Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     conn = config.get_odoo_conn()
@@ -201,10 +202,10 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
         "create database {};".format(DBNAME_RESTORING),
         notransaction=True
     )
+    effective_host_name = config.DB_HOST
 
     if config.devmode and not no_dev_scripts:
         click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
-    effective_db_host = config.DB_HOST
     try:
 
         if config.use_docker:
@@ -215,7 +216,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
                 __dc(['kill', 'postgres'])
                 __dc(['run', '-d', '--name', f'{postgres_name}', '--rm', '--service-ports', '-v', f'{dumps_path}:/host/dumps2', 'postgres'])
                 Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
-                effective_db_host = postgres_name
+                effective_host_name = postgres_name
 
             cmd = [
                 'run',
@@ -229,25 +230,15 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
             ]
 
             cmd += [
-                'cronjobshell',
-                'postgres.py',
-                'restore',
-                DBNAME_RESTORING,
-                effective_db_host,
-                config.db_port,
-                config.db_user,
-                config.db_pwd,
-                f'{parent_path_in_container}/{filename.name}',
+                'cronjobshell', 'postgres.py', 'restore',
+                DBNAME_RESTORING, effective_host_name, config.DB_PORT,
+                config.DB_USER, config.DB_PASSWORD, f'{parent_path_in_container}/{filename.name}',
             ]
             __dc(cmd)
         else:
             _add_cronjob_scripts(config)['postgres']._restore(
-                DBNAME_RESTORING,
-                effective_db_host,
-                config.db_port,
-                config.db_user,
-                config.db_pwd,
-                Path(config.dumps_path) / filename,
+                DBNAME_RESTORING, effective_host_name, config.DB_PORT,
+                config.DB_USER, config.DB_PASSWORD, Path(config.dumps_path) / filename,
             )
 
         from .lib_db import __turn_into_devdb
@@ -258,8 +249,17 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
 
     finally:
         if config.run_postgres:
-            # stop the run started postgres container:
+            # stop the run started postgres container; softly
+            subprocess.check_output(['docker', 'stop', postgres_name])
+            try:
+                subprocess.check_output(['docker', 'kill', postgres_name])
+            except subprocess.CalledProcessError:
+                # ignore - stopped before
+                pass
             subprocess.check_output(['docker', 'rm', '-f', postgres_name])
+
+    __dc(['up', '-d', 'postgres'])
+    Commands.invoke(ctx, 'wait_for_container_postgres')
 
 def _add_cronjob_scripts(config):
     """
