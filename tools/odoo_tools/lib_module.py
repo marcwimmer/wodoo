@@ -21,7 +21,6 @@ from .tools import __write_file
 from .tools import __append_line
 from .tools import _exists_table
 from .tools import __get_odoo_commit
-from .tools import _start_postgres_and_wait
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
 from . import cli, pass_config, Commands
@@ -169,6 +168,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     """
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
+    if config.run_postgres:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     if since_git_sha and module:
         raise Exception("Conflict: since-git-sha and modules")
@@ -188,6 +189,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
             Commands.invoke(ctx, 'kill', machines=get_services(config, 'odoo_base'))
             if config.run_redis:
                 Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
+            if config.run_postgres:
+                Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
             Commands.invoke(ctx, 'wait_for_container_postgres')
 
     if not no_dangling_check:
@@ -263,6 +266,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
 @pass_config
 @click.pass_context
 def update_i18n(ctx, config, module, no_restart):
+    if config.run_postgres:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     Commands.invoke(ctx, 'wait_for_container_postgres')
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 

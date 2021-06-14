@@ -2,6 +2,7 @@ import platform
 import stat
 from contextlib import contextmanager
 import re
+import docker
 try:
     import arrow
 except ImportError: pass
@@ -182,20 +183,40 @@ def _exists_table(conn, table_name):
     """.format(table_name), fetchone=True)
     return record[0]
 
-def _start_postgres_and_wait(config):
+def _wait_postgres(config):
     if config.run_postgres:
-        if config.run_postgres_in_ram and _is_container_running('postgres'):
-            # avoid recreate
-            pass
-        else:
-            __dc(["up", "-d", "postgres"])
         conn = config.get_odoo_conn().clone(dbname='postgres')
+        container_ids = __dc_out(['ps', '-a', '-q', '--filter', 'name=postgres']).decode('utf-8').strip().split("\n")
+        client = docker.from_env()
+        postgres_containers = []
+        for container_id in container_ids:
+            container = client.containers.get(container_id)
+            if not container:
+                continue
+            if not container.attrs['State']['Running']:
+                continue
+            postgres_containers += [container]
+
+        # if running containers wait for health state:
+        if not postgres_containers:
+            raise Exception("No running container found!")
+
         _wait_for_port(conn.host, conn.port, timeout=30)
-        _execute_sql(conn, sql="""
-        SELECT table_schema,table_name
-        FROM information_schema.tables
-        ORDER BY table_schema,table_name;
-        """)
+        trycount = 0
+        try:
+            _execute_sql(conn, sql="""
+            SELECT table_schema,table_name
+            FROM information_schema.tables
+            ORDER BY table_schema,table_name;
+            LIMIT 1
+            """)
+        except Exception:
+            if trycount > 20:
+                raise
+            else:
+                click.secho("Waiting again for postgres...")
+                time.sleep(3)
+                trycount += 1
 
 def _is_container_running(machine_name):
     import docker
@@ -255,7 +276,7 @@ def _merge_env_dict(env):
 
 def __dc(cmd, env={}):
     c = __get_cmd() + cmd
-    subprocess.check_call(c, env=_merge_env_dict(env))
+    return subprocess.check_call(c, env=_merge_env_dict(env))
 
 def __dc_out(cmd, env={}):
     c = __get_cmd() + cmd

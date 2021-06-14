@@ -25,7 +25,6 @@ from .tools import _askcontinue
 from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import __dcrun, __dc, _remove_postgres_connections, _execute_sql, __dcexec
-from .tools import _start_postgres_and_wait
 from .tools import get_volume_names
 from .tools import exec_file_in_path
 from . import cli, pass_config, Commands
@@ -118,7 +117,9 @@ def reset_db(ctx, config, dbname, do_not_install_base):
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
-    _start_postgres_and_wait(config)
+    if config.run_docker:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+    _wait_postgres(config)
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
     conn = config.get_odoo_conn().clone(dbname='postgres')

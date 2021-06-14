@@ -17,7 +17,7 @@ from .tools import _is_container_running
 from .tools import _get_bash_for_machine
 from .tools import __cmd_interactive
 from .tools import _display_machine_tips
-from .tools import _start_postgres_and_wait
+from .tools import _wait_postgres
 from .tools import __replace_in_file
 from .tools import _wait_for_port
 from .tools import __dcexec
@@ -130,7 +130,7 @@ def force_kill(ctx, config, machine):
 
 def wait_for_container_postgres(config):
     if config.USE_DOCKER:
-        _start_postgres_and_wait(config)
+        _wait_postgres(config)
 
 def wait_for_port(host, port):
     port = int(port)
