@@ -145,8 +145,16 @@ def _restore(dbname, host, port, user, password, filepath):
         '-d',
         dbname,
     ])
+    filename = Path(tempfile.mktemp(suffix='.rc'))
+    CMD += f" && echo '1' > {filename}"
     os.system(CMD)
     click.echo(f"Restore took {(datetime.now() - started).total_seconds()} seconds")
+    success = False
+    if filename.exists() and filename.read_text().strip() == '1':
+        success = True
+
+    if not success:
+        raise Exception("Did not fully restore.")
 
 def __get_dump_type(filepath):
     MARKER = "PostgreSQL database dump"
