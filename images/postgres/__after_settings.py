@@ -19,7 +19,7 @@ def after_settings(config):
             if not config.get(k, ""):
                 config[k] = v
 
-        file = Path(f"/tmp/odoo-compose/{config['PROJECT_NAME']}.postgres_port")
+        file = Path(f"/tmp/{config['PROJECT_NAME']}.postgres_port")
         if not file.exists():
             port = random.randint(10001, 30000)
             file.parent.mkdir(exist_ok=True, parents=True)
