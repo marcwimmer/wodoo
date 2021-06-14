@@ -1,5 +1,4 @@
 import sys
-from tools.odoo_tools.lib_control import wait_for_container_postgres
 import docker
 import threading
 import time
