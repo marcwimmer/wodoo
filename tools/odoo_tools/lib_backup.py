@@ -258,8 +258,9 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
                 pass
             subprocess.check_output(['docker', 'rm', '-f', postgres_name])
 
-    __dc(['up', '-d', 'postgres'])
-    Commands.invoke(ctx, 'wait_for_container_postgres')
+    if config.run_postgres:
+        __dc(['up', '-d', 'postgres'])
+        Commands.invoke(ctx, 'wait_for_container_postgres')
 
 def _add_cronjob_scripts(config):
     """
