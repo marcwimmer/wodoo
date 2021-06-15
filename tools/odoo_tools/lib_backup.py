@@ -232,13 +232,13 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
             cmd += [
                 'cronjobshell', 'postgres.py', 'restore',
                 DBNAME_RESTORING, effective_host_name, config.DB_PORT,
-                config.DB_USER, config.DB_PASSWORD, f'{parent_path_in_container}/{filename.name}',
+                config.DB_USER, config.DB_PWD, f'{parent_path_in_container}/{filename.name}',
             ]
             __dc(cmd)
         else:
             _add_cronjob_scripts(config)['postgres']._restore(
                 DBNAME_RESTORING, effective_host_name, config.DB_PORT,
-                config.DB_USER, config.DB_PASSWORD, Path(config.dumps_path) / filename,
+                config.DB_USER, config.DB_PWD, Path(config.dumps_path) / filename,
             )
 
         from .lib_db import __turn_into_devdb
