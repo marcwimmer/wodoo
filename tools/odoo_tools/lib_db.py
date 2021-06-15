@@ -14,6 +14,7 @@ import click
 import inquirer
 from datetime import datetime
 from .tools import __replace_all_envs_in_str
+from .tools import _wait_postgres
 from .tools import _dropdb
 from .tools import __assert_file_exists
 from .tools import _exists_db
