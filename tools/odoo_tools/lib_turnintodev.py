@@ -114,3 +114,15 @@ def prolong(config):
         WHERE
             key = 'database.expiration_date';
     """.format(arrow.get().shift(months=6).strftime("%Y-%m-%d %H:%M:%S")))
+
+@turn_into_dev.command()
+@click.option('--settings', required=True)
+@pass_config
+def remove_settings(config, settings):
+    conn = config.get_odoo_conn()
+    for setting in settings.split(","):
+        _execute_sql(conn, """
+            DELETE FROM
+                ir_config_parameter
+            WHERE key='{}'
+        """.format(setting))
