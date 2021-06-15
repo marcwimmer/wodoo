@@ -560,6 +560,8 @@ def _get_changed_files(git_sha):
     
 
 def _get_changed_modules(git_sha):
+    from .module_tools import Module
+
     filepaths = _get_changed_files(git_sha)
     modules = []
     root = Path(os.getcwd())
