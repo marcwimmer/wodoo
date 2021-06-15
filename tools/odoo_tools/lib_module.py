@@ -519,7 +519,7 @@ def generate_update_command(ctx, config):
     click.secho(f"-u {','.join(modules)}")
 
 
-def _get_changed_modules(git_sha):
+def _get_changed_files(git_sha):
     from .module_tools import Module
     filepaths = list(filter(bool, subprocess.check_output([
         'git',
@@ -528,8 +528,6 @@ def _get_changed_modules(git_sha):
         "--name-only",
     ]).decode('utf-8').split("\n")))
     repo = Repo(os.getcwd())
-    modules = []
-    root = Path(os.getcwd())
 
     # check if there are submodules:
     filepaths2 = []
@@ -558,7 +556,14 @@ def _get_changed_modules(git_sha):
         else:
             filepaths2.append(filepath)
 
-    for filepath in filepaths2:
+    return filepaths2
+    
+
+def _get_changed_modules(git_sha):
+    filepaths = _get_changed_files(git_sha)
+    modules = []
+    root = Path(os.getcwd())
+    for filepath in filepaths:
 
         filepath = root / filepath
 
@@ -581,6 +586,17 @@ def list_changed_modules(ctx, config, start):
     click.secho("---")
     for module in modules:
         click.secho(module)
+
+@odoo_module.command(name="list-changed-files")
+@click.option('-s', '--start')
+@click.pass_context
+@pass_config
+def list_changed_files(ctx, config, start):
+    files = _get_changed_files(start)
+
+    click.secho("---")
+    for file in files:
+        click.secho(file)
 
 
 Commands.register(progress)
