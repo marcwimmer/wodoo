@@ -146,4 +146,4 @@ chown odoo:odoo -R /home/odoo/.ipython
 
 WORKDIR /opt/odoo
 
-RUN python3 -mpip install debugpy
+RUN python3 -mpip install debugpy docker
