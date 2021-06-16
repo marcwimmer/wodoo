@@ -6,4 +6,4 @@ services:
     environment:
         ODOO_HOST: ${project_name}_odoo
         ROUNDCUBE_HOST: ${project_name}_roundcube
-        WEBSSH_HOST: ${project_name}_webssh
+        # WEBSSH_HOST: ${project_name}_webssh
