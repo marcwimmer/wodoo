@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import shutil
 import tempfile
 import os
@@ -49,7 +50,12 @@ def _make_archive(test_files, root_dir):
             for subdir in file.parent.glob("*"):
                 if subdir.is_dir():
                     if subdir.name in ['data']:
-                        shutil.copytree(subdir, test_folder / subdir.name)
+                        (test_folder / subdir.name).mkdir(exist_ok=True)
+                        subprocess.call(["rsync", 
+                            str(subdir) + "/",
+                            str(test_folder / subdir.name) + "/",
+                            '-ar',
+                        ])
 
         collect_all(root_dir, 'library', '*.py', test_folder)
         collect_all(root_dir, 'keywords', '*.robot', test_folder)
