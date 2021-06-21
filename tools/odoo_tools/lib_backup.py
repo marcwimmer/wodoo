@@ -97,7 +97,9 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
             "--column-inserts"
         ]
 
-    __dc(cmd)
+    res = __dc(cmd)
+    if res:
+        raise Exception('Backup failed!')
 
 
 @backup.command(name='files')
