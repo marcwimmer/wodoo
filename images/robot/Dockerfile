@@ -14,6 +14,11 @@ RUN \
 pip3 install --no-cache-dir -r /tmp/requirements.txt && \
 rm -rf /tmp/requirements.txt
 
+RUN unzip /tmp/chromedriver_linux64.zip -d /opt/chromedriver \
+    && chmod +x /opt/chromedriver/chromedriver \
+    && ln -fs /opt/chromedriver/chromedriver /usr/local/bin/chromedriver \
+    && rm -rf /tmp/chromedriver_linux64.zip
+
 ENV WORKDIR=/opt/robot
 WORKDIR $WORKDIR
 COPY robotest.py ./
@@ -26,8 +31,3 @@ fi
 RUN if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
 wget -O /tmp/chromedriver_linux64.zip https://github.com/electron/electron/releases/download/v14.0.0-beta.1/chromedriver-v14.0.0-beta.1-linux-arm64.zip; \
 fi
-
-RUN unzip /tmp/chromedriver_linux64.zip -d /opt/chromedriver \
-    && chmod +x /opt/chromedriver/chromedriver \
-    && ln -fs /opt/chromedriver/chromedriver /usr/local/bin/chromedriver \
-    && rm -rf /tmp/chromedriver_linux64.zip
