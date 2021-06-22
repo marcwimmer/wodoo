@@ -126,3 +126,17 @@ def remove_settings(config, settings):
                 ir_config_parameter
             WHERE key='{}'
         """.format(setting))
+
+@turn_into_dev.command()
+@click.argument('key', required=True)
+@click.argument('value', required=True)
+@pass_config
+def update_setting(config, key, value):
+    conn = config.get_odoo_conn()
+    _execute_sql(conn, """
+        UPDATE
+            ir_config_parameter
+        SET
+            value='{}'
+        WHERE key='{}'
+    """.format(value, key))
