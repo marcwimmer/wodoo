@@ -14,6 +14,7 @@ robotframework-selenium2screenshots
 robotframework-xvfb
 robotframework-requests
 robotframework-faker
+robotframework-datetime-tz
 coverage
 elaphe3
 Faker
