@@ -21,7 +21,6 @@ from .tools import __write_file
 from .tools import __append_line
 from .tools import _exists_table
 from .tools import __get_odoo_commit
-from .tools import _start_postgres_and_wait
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
 from . import cli, pass_config, Commands
@@ -169,6 +168,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
     """
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
+    if config.run_postgres:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     if since_git_sha and module:
         raise Exception("Conflict: since-git-sha and modules")
@@ -188,6 +189,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
             Commands.invoke(ctx, 'kill', machines=get_services(config, 'odoo_base'))
             if config.run_redis:
                 Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
+            if config.run_postgres:
+                Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
             Commands.invoke(ctx, 'wait_for_container_postgres')
 
     if not no_dangling_check:
@@ -263,6 +266,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
 @pass_config
 @click.pass_context
 def update_i18n(ctx, config, module, no_restart):
+    if config.run_postgres:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     Commands.invoke(ctx, 'wait_for_container_postgres')
     module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
@@ -514,7 +519,7 @@ def generate_update_command(ctx, config):
     click.secho(f"-u {','.join(modules)}")
 
 
-def _get_changed_modules(git_sha):
+def _get_changed_files(git_sha):
     from .module_tools import Module
     filepaths = list(filter(bool, subprocess.check_output([
         'git',
@@ -523,8 +528,6 @@ def _get_changed_modules(git_sha):
         "--name-only",
     ]).decode('utf-8').split("\n")))
     repo = Repo(os.getcwd())
-    modules = []
-    root = Path(os.getcwd())
 
     # check if there are submodules:
     filepaths2 = []
@@ -553,7 +556,16 @@ def _get_changed_modules(git_sha):
         else:
             filepaths2.append(filepath)
 
-    for filepath in filepaths2:
+    return filepaths2
+    
+
+def _get_changed_modules(git_sha):
+    from .module_tools import Module
+
+    filepaths = _get_changed_files(git_sha)
+    modules = []
+    root = Path(os.getcwd())
+    for filepath in filepaths:
 
         filepath = root / filepath
 
@@ -576,6 +588,17 @@ def list_changed_modules(ctx, config, start):
     click.secho("---")
     for module in modules:
         click.secho(module)
+
+@odoo_module.command(name="list-changed-files")
+@click.option('-s', '--start')
+@click.pass_context
+@pass_config
+def list_changed_files(ctx, config, start):
+    files = _get_changed_files(start)
+
+    click.secho("---")
+    for file in files:
+        click.secho(file)
 
 
 Commands.register(progress)

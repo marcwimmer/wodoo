@@ -65,6 +65,8 @@ def backup(dbname, host, port, user, password, filepath, dumptype, column_insert
         password=password,
     )
     click.echo(f"Backing up to {filepath}")
+    stderr = Path(tempfile.mktemp())
+    temp_filepath = None
     try:
         cr = conn.cursor()
         cr.execute("SELECT (pg_database_size(current_database())) FROM pg_database")
@@ -76,12 +78,27 @@ def backup(dbname, host, port, user, password, filepath, dumptype, column_insert
         if column_inserts and dumptype != 'plain':
             raise Exception(f"Requires plain dumptype when column inserts set!")
 
-        cmd = f'pg_dump {column_inserts} --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -F{dumptype[0].lower()} {dbname} | pv -s {bytes} | pigz --rsyncable > {temp_filepath}'
+        # FOR PERFORMANCE USE os.system
+        err_dump = Path(tempfile.mkstemp()[1])
+        err_pigz = Path(tempfile.mkstemp()[1])
+        err_dump.unlink()
+        err_pigz.unlink()
+        success = True
+        cmd = f'pg_dump {column_inserts} --clean --no-owner -h "{host}" -p {port} -U "{user}" -Z0 -F{dumptype[0].lower()} {dbname} 2>{err_dump} | pv -s {bytes} | pigz --rsyncable > {temp_filepath} 2>{err_pigz}'
+        try:
+            os.system(cmd)
+        finally:
+            for file in [err_dump, err_pigz]:
+                if file.exists() and file.read_text().strip():
+                    raise Exception(file.read_text().strip())
 
-        os.system(cmd)
         temp_filepath.replace(filepath)
     finally:
+        if temp_filepath and temp_filepath.exists():
+            temp_filepath.unlink()
         conn.close()
+        if stderr.exists():
+            stderr.unlink()
 
 @postgres.command()
 @click.argument('dbname', required=True)
@@ -145,8 +162,16 @@ def _restore(dbname, host, port, user, password, filepath):
         '-d',
         dbname,
     ])
+    filename = Path(tempfile.mktemp(suffix='.rc'))
+    CMD += f" && echo '1' > {filename}"
     os.system(CMD)
     click.echo(f"Restore took {(datetime.now() - started).total_seconds()} seconds")
+    success = False
+    if filename.exists() and filename.read_text().strip() == '1':
+        success = True
+
+    if not success:
+        raise Exception("Did not fully restore.")
 
 def __get_dump_type(filepath):
     MARKER = "PostgreSQL database dump"

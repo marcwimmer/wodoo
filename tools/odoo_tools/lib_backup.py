@@ -1,4 +1,8 @@
 import sys
+import docker
+import threading
+import time
+import json
 import importlib.util
 import re
 from retrying import retry
@@ -18,12 +22,12 @@ from .tools import _dropdb
 from .tools import __assert_file_exists
 from .tools import __safe_filename
 from .tools import __read_file
-from .tools import __dc
+from .tools import __dc, __dc_out
 from .tools import __write_file
 from .tools import __append_line
 from .tools import __get_odoo_commit
 from .tools import __get_dump_type
-from .tools import _start_postgres_and_wait
+from .tools import _wait_postgres
 from .tools import __dcrun
 from .tools import _execute_sql
 from .tools import _askcontinue
@@ -56,28 +60,9 @@ def backup_all(ctx, config):
     """
     Runs backup-db and backup-files
     """
-    ctx.invoke(backup_db, non_interactive=True)
+    config.force = True
+    ctx.invoke(backup_db)
     ctx.invoke(backup_files)
-    ctx.invoke(backup_calendar)
-
-@backup.command(name='calendar')
-@pass_config
-def backup_calendar(config):
-    if not config.run_calendar:
-        return
-    cmd = [
-        'run',
-        'cronjobshell',
-        'postgres.py',
-        'backup',
-        config.CALENDAR_DB_NAME,
-        config.CALENDAR_DB_HOST,
-        config.CALENDAR_DB_PORT,
-        config.CALENDAR_DB_USER,
-        config.CALENDAR_DB_PWD,
-        '/host/dumps/' + f'{config.project_name}.calendar' + '.dump.gz',
-    ]
-    __dc(cmd)
 
 
 @backup.command(name='odoo-db')
@@ -88,9 +73,14 @@ def backup_calendar(config):
 @click.option('--column-inserts', is_flag=True)
 @click.option('--dumptype', type=click.Choice(["custom", "plain", "directory"]), default='custom')
 def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
-    filename = filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz'
+    filename = Path(filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz')
+    if len(filename.parts) == 1:
+        filename = Path(config.dumps_path) / filename
     cmd = [
         'run',
+        '--rm',
+        '-v',
+        f'{filename.parent}:/host/dumps',
         'cronjobshell',
         'postgres.py',
         'backup',
@@ -99,7 +89,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         config.DB_PORT,
         config.DB_USER,
         config.DB_PWD,
-        '/host/dumps/' + filename,
+        '/host/dumps/' + filename.name,
         "--dumptype", dumptype,
     ]
     if column_inserts:
@@ -107,35 +97,36 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
             "--column-inserts"
         ]
 
-    __dc(cmd)
+    res = __dc(cmd)
+    if res:
+        raise Exception('Backup failed!')
 
 
 @backup.command(name='files')
+@click.argument('filename', required=False, default="")
 @pass_config
-def backup_files(config):
-    BACKUPDIR = Path(config.dumps_path)
-    BACKUP_FILENAME = f"{config.project_name}.files.tar.gz"
-    BACKUP_FILEPATH = config.dirs['backup_dir'] / BACKUP_FILENAME
+def backup_files(config, filename):
+    filepath = Path(filename or f"{config.project_name}.files.tar.gz")
+    if len(filepath.parts) == 1:
+        filepath = Path(config.dumps_path) / filepath
 
-    if BACKUP_FILEPATH.exists():
-        second = BACKUP_FILENAME + ".bak"
-        second_path = BACKUPDIR / second
-        if second_path.exists():
-            second_path.unlink()
-        shutil.move(BACKUP_FILEPATH, second_path)
-        del second
-        del second_path
-    files_dir = config.dirs['odoo_data_dir'] / config.dbname
+    if filepath.exists():
+
+        second = filepath.with_suffix(filepath.suffix + '.bak')
+        second.exists() and second.unlink()
+        shutil.move(filepath, second)
+
+    files_dir = config.dirs['odoo_data_dir'] / 'filestore' / config.dbname
     if not files_dir.exists():
         return
     subprocess.check_call([
         'tar',
         'cfz',
-        BACKUP_FILEPATH,
+        filepath,
         '.'
     ], cwd=files_dir)
-    __apply_dump_permissions(BACKUP_FILEPATH)
-    click.secho("Backup files done to {}".format(BACKUP_FILENAME), fg='green')
+    __apply_dump_permissions(filepath)
+    click.secho(f"Backup files done to {filepath}", fg='green')
 
 def __get_default_backup_filename(config):
     return datetime.now().strftime(f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz")
@@ -161,26 +152,6 @@ def list_dumps(config):
 def restore_files(filename):
     __do_restore_files(filename)
 
-@restore.command(name="calendar")
-@click.argument('filename', required=True)
-@pass_config
-@click.pass_context
-def restore_calendar_db(ctx, config, filename):
-    filename = Path(filename)
-
-    __dc([
-        'run',
-        'cronjobshell',
-        'postgres.py',
-        'restore',
-        config.CALENDAR_DB_NAME,
-        config.CALENDAR_DB_HOST,
-        config.CALENDAR_DB_PORT,
-        config.CALENDAR_DB_USER,
-        config.CALENDAR_DB_PWD,
-        '/host/dumps/{}'.format(filename.name),
-    ])
-
 @restore.command(name='odoo-db')
 @click.argument('filename', required=False, default='')
 @click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
@@ -188,19 +159,34 @@ def restore_calendar_db(ctx, config, filename):
 @pass_config
 @click.pass_context
 def restore_db(ctx, config, filename, latest, no_dev_scripts):
+    if config.run_postgres:
+        postgres_name = f"{config.PROJECT_NAME}_run_postgres"
+        client = docker.from_env()
+        for container in client.containers.list(filters={'name': f'{postgres_name}'}):
+            container.kill()
+            container.remove()
+
+        Commands.invoke(ctx, 'down')
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+    Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     conn = config.get_odoo_conn()
     dest_db = conn.dbname
 
-    if config.devmode and not no_dev_scripts:
-        click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
+    dumps_path = config.dumps_path
+
+    before = filename
+    if '/' in filename:
+        dumps_path = Path(filename).parent
+        filename = Path(filename).name
 
     if not filename:
         filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
     if not filename:
         return
 
-    BACKUPDIR = Path(config.dumps_path)
-    filename = BACKUPDIR / filename
+    BACKUPDIR = Path(dumps_path)
+    filename = (BACKUPDIR / filename).absolute()
+
     if not config.force and not latest:
         __restore_check(filename, config)
 
@@ -209,7 +195,6 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
     if not config.dbname:
         raise Exception("somehow dbname is missing")
 
-    Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     conn = conn.clone(dbname=DBNAME_RESTORING)
     with config.forced() as config:
         _dropdb(config, conn)
@@ -219,35 +204,65 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
         "create database {};".format(DBNAME_RESTORING),
         notransaction=True
     )
+    effective_host_name = config.DB_HOST
 
-    if config.use_docker:
-        __dc([
-            'run',
-            'cronjobshell',
-            'postgres.py',
-            'restore',
-            DBNAME_RESTORING,
-            config.db_host,
-            config.db_port,
-            config.db_user,
-            config.db_pwd,
-            '/host/dumps/{}'.format(filename.name),
-        ])
-    else:
-        _add_cronjob_scripts(config)['postgres']._restore(
-            DBNAME_RESTORING,
-            config.db_host,
-            config.db_port,
-            config.db_user,
-            config.db_pwd,
-            Path(config.dumps_path) / filename,
-        )
-
-    from .lib_db import __turn_into_devdb
     if config.devmode and not no_dev_scripts:
-        __turn_into_devdb(config, conn)
-    __rename_db_drop_target(conn.clone(dbname='postgres'), DBNAME_RESTORING, config.dbname)
-    _remove_postgres_connections(conn.clone(dbname=dest_db))
+        click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
+    try:
+
+        if config.use_docker:
+
+            # if postgres docker is used, then make a temporary config to restart docker container
+            # with external directory mapped; after that remove config
+            if config.run_postgres:
+                __dc(['kill', 'postgres'])
+                __dc(['run', '-d', '--name', f'{postgres_name}', '--rm', '--service-ports', '-v', f'{dumps_path}:/host/dumps2', 'postgres'])
+                Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
+                effective_host_name = postgres_name
+
+            cmd = [
+                'run',
+                '--rm',
+            ]
+
+            parent_path_in_container = '/host/dumps2'
+            cmd += [
+                "-v",
+                f"{dumps_path}:{parent_path_in_container}",
+            ]
+
+            cmd += [
+                'cronjobshell', 'postgres.py', 'restore',
+                DBNAME_RESTORING, effective_host_name, config.DB_PORT,
+                config.DB_USER, config.DB_PWD, f'{parent_path_in_container}/{filename.name}',
+            ]
+            __dc(cmd)
+        else:
+            _add_cronjob_scripts(config)['postgres']._restore(
+                DBNAME_RESTORING, effective_host_name, config.DB_PORT,
+                config.DB_USER, config.DB_PWD, Path(config.dumps_path) / filename,
+            )
+
+        from .lib_db import __turn_into_devdb
+        if config.devmode and not no_dev_scripts:
+            __turn_into_devdb(config, conn)
+        __rename_db_drop_target(conn.clone(dbname='postgres'), DBNAME_RESTORING, config.dbname)
+        _remove_postgres_connections(conn.clone(dbname=dest_db))
+
+    finally:
+        if config.run_postgres:
+            # stop the run started postgres container; softly
+            subprocess.check_output(['docker', 'stop', postgres_name])
+            try:
+                subprocess.check_output(['docker', 'kill', postgres_name])
+            except subprocess.CalledProcessError:
+                # ignore - stopped before
+                pass
+            subprocess.check_output(['docker', 'rm', '-f', postgres_name])
+
+    if config.run_postgres:
+        __dc(['up', '-d', 'postgres'])
+        Commands.invoke(ctx, 'wait_for_container_postgres')
 
 def _add_cronjob_scripts(config):
     """

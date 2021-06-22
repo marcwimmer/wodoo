@@ -57,3 +57,4 @@ python-magento==1.0.3
 iscompatible
 paho-mqtt==1.5.1
 GitPython==3.1.14
+openpyxl

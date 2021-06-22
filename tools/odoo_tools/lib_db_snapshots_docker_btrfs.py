@@ -94,7 +94,7 @@ def _turn_into_subvolume(path):
             shutil.move(path, filename)
             try:
                 subprocess.check_output(['sudo', 'btrfs', 'subvolume', 'create', path])
-                click.secho("Writing back the files to original position")
+                click.secho(f"Writing back the files to original position: from {filename}/ to {path}/")
                 subprocess.check_call([
                     'sudo',
                     'rsync',

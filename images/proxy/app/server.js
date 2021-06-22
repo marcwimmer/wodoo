@@ -74,10 +74,10 @@ app.use("/longpolling", createProxyMiddleware({
     target: 'http://' + process.env.ODOO_HOST + ':8072',
 })); 
 
-app.use("/console", createProxyMiddleware({
-    target: 'http://' + process.env.WEBSSH_HOST + ':80',
-    ws: true,
-})); 
+// app.use("/console", createProxyMiddleware({
+//     target: 'http://' + process.env.WEBSSH_HOST + ':80',
+//     ws: true,
+// })); 
 
 
 app.all("/*", (req, res, next) => {

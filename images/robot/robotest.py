@@ -136,6 +136,7 @@ def run_tests(params, test_file):
         # extract tests
         test_zip.write_bytes(base64.b64decode(test_file))
         shutil.unpack_archive(test_zip, extract_dir=test_dir)
+        os.chdir(test_dir)
 
         for test_sub_dir in test_dir.glob("*"):
             test_results += _run_tests(

@@ -19,7 +19,12 @@ def after_settings(config):
             if not config.get(k, ""):
                 config[k] = v
 
+        file = Path(f"/tmp/{config['PROJECT_NAME']}.postgres_port")
+        if not file.exists():
+            port = random.randint(10001, 30000)
+            file.parent.mkdir(exist_ok=True, parents=True)
+            file.write_text(str(port))
+
         if not config.get("POSTGRES_PORT", ""):
             # try to use same port again
-            port = random.randint(10001, 30000)
-            config['POSTGRES_PORT'] = str(port)
+            config['POSTGRES_PORT'] = int(file.read_text().strip())
