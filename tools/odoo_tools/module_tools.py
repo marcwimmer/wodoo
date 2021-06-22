@@ -501,14 +501,11 @@ class Modules(object):
         # 
         from git import Repo
         repo = Repo(os.getcwd())
-        active_branch = repo.active_branch.name
+        sha = repo.head.commit.hexsha
         full_path = os.getcwd().replace('/', '_')
-        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{active_branch}.{full_path}")
+        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{full_path}")
         parent.mkdir(exist_ok=True)
-        return parent / f'sha_{self._get_sha()}'
-
-    def _get_sha(self):
-        return subprocess.check_output(['/usr/bin/git', 'rev-parse', '--verify', 'HEAD']).decode('utf-8').strip()
+        return parent / sha
 
     def _get_modules(self):
         modnames = set()
