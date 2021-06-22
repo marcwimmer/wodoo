@@ -18,7 +18,6 @@ rm -rf /tmp/requirements.txt
 
 ENV WORKDIR=/opt/robot
 ENV ROBOT_THREADS 1
-ENV CHROMIUM_VERSION 92.0
 
 WORKDIR $WORKDIR
 COPY robotest.py ./
@@ -28,7 +27,7 @@ ENV CHROME_VERSION=91.0.4472.101
 ENV ARCH=amd64
 COPY artefacts/chromedriver_$ARCH.zip /tmp/chromedriver.zip
 COPY artefacts/googlechrome_$ARCH.deb /tmp/googlechrome.deb
-RUN [ "$ARCH" = "amd64" ] && apt install -y /tmp/googlechrome.deb
+RUN [ "$ARCH" = "amd64" ] && apt update && apt install -y /tmp/googlechrome.deb
 
 # RUN if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
 # wget -O /tmp/chromedriver https://github.com/electron/electron/releases/download/v14.0.0-beta.1/chromedriver-v14.0.0-beta.1-linux-arm64.zip; \
