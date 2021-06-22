@@ -38,3 +38,8 @@ RUN unzip /tmp/chromedriver.zip -d /opt/chromedriver \
     && chmod +x /opt/chromedriver/chromedriver \
     && ln -fs /opt/chromedriver/chromedriver /usr/local/bin/chromedriver \
     && rm -rf /tmp/chromedriver_linux64.zip
+
+ENV WORKDIR=/opt/robot
+WORKDIR $WORKDIR
+COPY robotest.py ./
+CMD [ "python3", "robotest.py"]
