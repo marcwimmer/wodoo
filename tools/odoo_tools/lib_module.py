@@ -175,6 +175,13 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
         raise Exception("Conflict: since-git-sha and modules")
     if since_git_sha:
         module = list(_get_changed_modules(since_git_sha))
+
+        # filter modules to defined ones in MANIFEST
+        click.secho(f"Following modules change since last sha: {' '.join(module)}")
+        from .odoo_config import MANIFEST
+        module = list(filter(lambda x: x in MANIFEST()['install'], module))
+        click.secho(f"Following modules change since last sha (filtered to manifest): {' '.join(module)}")
+
         if not module:
             click.secho("No module update required - exiting.")
             return
