@@ -51,7 +51,7 @@ def get_variables():
     return variables_file
 
 
-def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrome', selenium_timeout=20):
+def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrome', selenium_timeout=20, **run_parameters):
     assert browser in Browsers
     browser = Browsers[browser]
 
@@ -72,7 +72,10 @@ def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrom
     }
     variables_file = _get_variables_file(test_file.parent, variables)
     logger.info(f"Configuration:\n{variables}")
-    return not robot.run(test_file, outputdir=output_dir, variablefile=str(variables_file))
+    return not robot.run(
+        test_file, outputdir=output_dir, variablefile=str(variables_file),
+        **run_parameters,
+        )
 
 
 def _run_tests(params, test_dir, output_dir):
@@ -118,7 +121,7 @@ def run_tests(params, test_file):
 
     """
     # setup workspace folders
-    logger.info("Starting test")
+    logger.info(f"Starting test with params:\n{params}")
     working_space = Path(tempfile.mkdtemp())
     output_dir = Path(os.environ['OUTPUT_DIR'])
     for file in output_dir.glob("*"):

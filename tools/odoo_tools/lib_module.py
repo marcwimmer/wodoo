@@ -349,8 +349,10 @@ def _exec_update(config, params):
 @click.argument('file', required=False)
 @click.option('-u', '--user', default='admin')
 @click.option('-a', '--all', is_flag=True)
+@click.option('-t', '--tag', is_flag=False)
+@click.option('-n', '--test_name', is_flag=False)
 @pass_config
-def robotest(config, file, user, all):
+def robotest(config, file, user, all, tag, test_name):
     from .odoo_config import MANIFEST, CUSTOMS_MANIFEST_FILE
     from .module_tools import Module
     from pathlib import Path
@@ -388,12 +390,16 @@ def robotest(config, file, user, all):
         if not all:
             testfiles = sorted(testfiles)
             message = "Please choose the unittest to run."
-            filename = [inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')]
+            try:
+                filename = [inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')]
+            except:
+                sys.exit(-1)
         else:
             filename = testfiles
 
     if not filename:
         return
+
     click.secho(str(filename), fg='green', bold=True)
 
     archive = _make_archive(filename, customs_dir())
@@ -402,15 +408,23 @@ def robotest(config, file, user, all):
     if pwd == "True" or pwd is True:
         pwd = '1'
 
-    data = json.dumps({
-        'test_file': archive,
-        'params': {
+    def params():
+        params = {
             "url": "http://proxy",
             "user": user,
             "dbname": config.DBNAME,
             "password": config.DEFAULT_DEV_PASSWORD,
             "selenium_timeout": 20, # selenium timeout,
-        },
+        }
+        if test_name:
+            params['test_name'] = test_name
+        if tag:
+            params['include'] = [tag]
+        return params
+
+    data = json.dumps({
+        'test_file': archive,
+        'params': params(),
     })
     data = base64.encodestring(data.encode('utf-8'))
 
