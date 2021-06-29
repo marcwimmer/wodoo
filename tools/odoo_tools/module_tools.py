@@ -501,14 +501,11 @@ class Modules(object):
         # 
         from git import Repo
         repo = Repo(os.getcwd())
-        active_branch = repo.active_branch.name
+        sha = repo.head.commit.hexsha
         full_path = os.getcwd().replace('/', '_')
-        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{active_branch}.{full_path}")
+        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{full_path}")
         parent.mkdir(exist_ok=True)
-        return parent / f'sha_{self._get_sha()}'
-
-    def _get_sha(self):
-        return subprocess.check_output(['/usr/bin/git', 'rev-parse', '--verify', 'HEAD']).decode('utf-8').strip()
+        return parent / sha
 
     def _get_modules(self):
         modnames = set()
@@ -725,7 +722,8 @@ class Modules(object):
             # mixed == and >=
             reqs = list(set([x[1] for x in parsed_requirements if x[0] == libname]))
             ge = sorted([x for x in reqs if x[0] == '>='], key=lambda x: x[1])
-            eq = [x for x in reqs if x[1][0] == '==']
+            gt = sorted([x for x in reqs if x[0] == '>'], key=lambda x: x[1]) # very unusual, not seen yet
+            eq = [x for x in reqs if x[0] == '==']
             no = [x for x in reqs if not x]
 
             if ge or eq and no:
@@ -740,8 +738,11 @@ class Modules(object):
                     click.secho(f"Dependency conflict: {libname} {ge[0]} - {eq[0]}", fg='red')
                     sys.exit(-1)
 
+            if gt:
+                raise NotImplementedError("gt")
+
             if eq:
-                result.add(f"{libname}{eq[0][0]}{'.'.join(eq[0][1])}")
+                result.add(f"{libname}{eq[-1][0]}{'.'.join(map(str, eq[-1][1]))}")
             elif ge:
                 result.add(f"{libname}{ge[-1][0]}{'.'.join(map(str, ge[-1][1]))}")
             else:

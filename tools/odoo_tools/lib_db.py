@@ -14,6 +14,7 @@ import click
 import inquirer
 from datetime import datetime
 from .tools import __replace_all_envs_in_str
+from .tools import _wait_postgres
 from .tools import _dropdb
 from .tools import __assert_file_exists
 from .tools import _exists_db
@@ -172,34 +173,36 @@ def anonymize(ctx, config):
     )
 
 @db.command()
+@click.option("--no-update", is_flag=True)
 @pass_config
 @click.pass_context
-def cleardb(ctx, config):
+def cleardb(ctx, config, no_update):
     if not (config.devmode or config.force):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
 
-    Commands.invoke(
-        ctx,
-        'update',
-        module=['cleardb'],
-        no_restart=False,
-        no_dangling_check=True,
-        no_update_module_list=False,
-        non_interactive=True,
-    )
+    if not no_update:
+        Commands.invoke(
+            ctx,
+            'update',
+            module=['cleardb'],
+            no_restart=False,
+            no_dangling_check=True,
+            no_update_module_list=False,
+            non_interactive=True,
+        )
 
-    # update of all modules then required, so that metainformation is
-    # written to ir.model (the _cleardb flag on model)
-    Commands.invoke(
-        ctx,
-        'update',
-        module=[],
-        no_restart=False,
-        no_dangling_check=True,
-        no_update_module_list=False,
-        non_interactive=True,
-    )
+        # update of all modules then required, so that metainformation is
+        # written to ir.model (the _cleardb flag on model)
+        Commands.invoke(
+            ctx,
+            'update',
+            module=[],
+            no_restart=False,
+            no_dangling_check=True,
+            no_update_module_list=False,
+            non_interactive=True,
+        )
 
     Commands.invoke(
         ctx,

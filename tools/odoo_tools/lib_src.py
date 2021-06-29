@@ -80,6 +80,14 @@ def show_addons_paths():
     paths = get_odoo_addons_paths(relative=True)
     for path in paths:
         click.echo(path)
+        
+@src.command(name='make-modules', help="Puts all modules in /modules.txt")
+@pass_config
+def show_addons_paths(config):
+    modules = ','.join(MANIFEST()['install'])
+    (config.dirs['customs'] / 'modules.txt').write_text(modules)
+    click.secho(f"Updated /modules.txt with: \n\n", fg='yellow')
+    click.secho(modules)
 
 def _edit_text(file):
     editor = Path(os.environ['EDITOR'])
