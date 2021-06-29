@@ -1,5 +1,4 @@
 # NO-AUTO-COMPOSE
-version: '3.7'
 volumes:
   mailstorage:
   mailsqlite:
