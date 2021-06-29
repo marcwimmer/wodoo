@@ -9,6 +9,15 @@ services:
         environment:
             MONGO_INITDB_ROOT_USERNAME: mongouser1
             MONGO_INITDB_ROOT_PASSWORD: topSecretDontTel!l1234
+        deploy:
+          resources:
+            limits:
+              cpus: 0.50
+              memory: 512M
+            reservations:
+              cpus: 0.25
+              memory: 128M
+
     mongo-express:
         image: mongo-express
         restart: "unless-stopped"

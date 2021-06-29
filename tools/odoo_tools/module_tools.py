@@ -734,7 +734,7 @@ class Modules(object):
                 sys.exit(-1)
 
             if eq and ge:
-                if eq[0][1] < ge[0][1]:
+                if eq[-1][1] < ge[-1][1]:
                     click.secho(f"Dependency conflict: {libname} {ge[0]} - {eq[0]}", fg='red')
                     sys.exit(-1)
 
