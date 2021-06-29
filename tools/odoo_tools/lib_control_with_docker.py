@@ -146,6 +146,7 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
 
     options = [
         # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
+        #'--compatibility' # to support reousrce limit swarm mode
     ]
     if daemon:
         options += ['-d']
