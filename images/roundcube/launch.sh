@@ -12,7 +12,7 @@ chown -R www-data:www-data /rc
 
 phpenmod mcrypt
 service nginx start
-service php7.0-fpm start
+service php7.4-fpm start
 
 tail -F /var/log/nginx/access.log &
 tail -F /var/log/nginx/error.log

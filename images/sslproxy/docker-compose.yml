@@ -3,7 +3,6 @@ services:
   sslproxy:
     image: 'jc21/nginx-proxy-manager:latest'
     ports:
-      - '${SSLPROXY_LISTEN_NON_SSL}:80'
       - '${SSLPROXY_LISTEN_ADMIN}:81'
       - '${SSLPROXY_LISTEN_SSL}:443'
     volumes:
