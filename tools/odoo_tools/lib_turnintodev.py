@@ -134,9 +134,6 @@ def remove_settings(config, settings):
 def update_setting(config, key, value):
     conn = config.get_odoo_conn()
     _execute_sql(conn, """
-        UPDATE
-            ir_config_parameter
-        SET
-            value='{}'
-        WHERE key='{}'
-    """.format(value, key))
+        DELETE FROM ir_config_parameter WHERE key = '{key}';
+        INSERT INTO ir_config_parameter(key, value) values('{key}', '{value}');
+    """.format(key=key, value=value))

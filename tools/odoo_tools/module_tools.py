@@ -722,7 +722,8 @@ class Modules(object):
             # mixed == and >=
             reqs = list(set([x[1] for x in parsed_requirements if x[0] == libname]))
             ge = sorted([x for x in reqs if x[0] == '>='], key=lambda x: x[1])
-            eq = [x for x in reqs if x[1][0] == '==']
+            gt = sorted([x for x in reqs if x[0] == '>'], key=lambda x: x[1]) # very unusual, not seen yet
+            eq = [x for x in reqs if x[0] == '==']
             no = [x for x in reqs if not x]
 
             if ge or eq and no:
@@ -733,12 +734,15 @@ class Modules(object):
                 sys.exit(-1)
 
             if eq and ge:
-                if eq[0][1] < ge[0][1]:
+                if eq[-1][1] < ge[-1][1]:
                     click.secho(f"Dependency conflict: {libname} {ge[0]} - {eq[0]}", fg='red')
                     sys.exit(-1)
 
+            if gt:
+                raise NotImplementedError("gt")
+
             if eq:
-                result.add(f"{libname}{eq[0][0]}{'.'.join(eq[0][1])}")
+                result.add(f"{libname}{eq[-1][0]}{'.'.join(map(str, eq[-1][1]))}")
             elif ge:
                 result.add(f"{libname}{ge[-1][0]}{'.'.join(map(str, ge[-1][1]))}")
             else:

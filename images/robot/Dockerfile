@@ -19,10 +19,6 @@ rm -rf /tmp/requirements.txt
 ENV WORKDIR=/opt/robot
 ENV ROBOT_THREADS 1
 
-WORKDIR $WORKDIR
-COPY robotest.py ./
-CMD [ "python3", "robotest.py"]
-
 ENV CHROME_VERSION=91.0.4472.101
 ENV ARCH=amd64
 COPY artefacts/chromedriver_$ARCH.zip /tmp/chromedriver.zip
