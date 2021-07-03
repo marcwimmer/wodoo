@@ -81,7 +81,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         'run',
         '--rm',
         '-v',
-        f'{filename.parent}:/host/dumps',
+        f'{filename.parent}:/host/dumps2',
         'cronjobshell',
         'postgres.py',
         'backup',
@@ -90,7 +90,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         config.DB_PORT,
         config.DB_USER,
         config.DB_PWD,
-        '/host/dumps/' + filename.name,
+        '/host/dumps2/' + filename.name,
         "--dumptype", dumptype,
     ]
     if column_inserts:

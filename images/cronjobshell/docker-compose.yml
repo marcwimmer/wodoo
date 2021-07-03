@@ -8,4 +8,3 @@ services:
     restart: 'no'
     volumes:
         - "$ODOO_HOME/images/cronjobs/bin/:/usr/local/bin/:ro"
-        - "$DUMPS_PATH:/host/dumps"

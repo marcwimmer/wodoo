@@ -23,7 +23,6 @@ default_dirs = {
     'odoo_tools': '$odoo_home/tools',
     'odoo_data_dir': "~/.odoo/files",
     'user_conf_dir': "~/.odoo",
-    "backup_dir": "/host/dumps",
     'cicd_delegator': '~/.odoo/cicd_delegator',
 }
 
