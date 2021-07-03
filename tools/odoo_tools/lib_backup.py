@@ -76,6 +76,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
     filename = Path(filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz')
     if len(filename.parts) == 1:
         filename = Path(config.dumps_path) / filename
+    click.secho(f"Backup file will be stored there: {filename.parent}")
     cmd = [
         'run',
         '--rm',

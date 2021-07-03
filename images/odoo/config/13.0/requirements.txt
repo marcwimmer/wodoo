@@ -52,3 +52,4 @@ tabulate==0.8.3
 pyzpl2==0.1
 python-redis-lock==3.4.0
 pyldap==3.0.0.post1
+zxcvbn
