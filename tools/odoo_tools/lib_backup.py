@@ -175,7 +175,6 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
 
     dumps_path = config.dumps_path
 
-    before = filename
     if len(Path(filename).parts) > 1:
         dumps_path = Path(filename).parent
         filename = Path(filename).name
