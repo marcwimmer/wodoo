@@ -1,6 +1,7 @@
 import tempfile
 from pathlib import Path
 from odoo import _, api, fields, models, SUPERUSER_ID
+import base64
 import tempfile
 from pathlib import Path
 from odoo import _, api, fields, models, SUPERUSER_ID
@@ -11,6 +12,18 @@ from odoo.exceptions import UserError, RedirectWarning, ValidationError
 
 class DataLoader(models.AbstractModel):
     _name = 'robot.data.loader'
+
+    def put_file(self, filecontent, dest_path):
+        content = base64.b64decode(filecontent)
+        dest_path = Path(dest_path)
+        dest_path.parent.mkdir(exist_ok=True, parents=True)
+        dest_path.write_bytes(content)
+        return True
+
+    @api.model
+    def execute_sql(self, sql):
+        self.env.cr.execute(sql)
+        return True
 
     @api.model
     def load_data(self, content, file_type, module_name, filename):
@@ -37,4 +50,4 @@ class DataLoader(models.AbstractModel):
         finally:
             filepath.unlink()
 
-        return True
+        return True    @api.model
