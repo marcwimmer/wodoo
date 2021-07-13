@@ -10,7 +10,7 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 
-@cli.group(cls=AliasedGroup)
+@cli.group(cls=AliasedGroup, name='dev-env')
 @pass_config
 def turn_into_dev(config):
     pass
@@ -21,7 +21,7 @@ def turn_into_dev(config):
 def hash_password(config, password):
     click.secho(__hash_odoo_password(password))
 
-@turn_into_dev.command()
+@turn_into_dev.command(name='turn-into-dev')
 @pass_config
 def turn_into_dev_(config):
     if not config.devmode:
