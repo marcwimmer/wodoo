@@ -61,12 +61,25 @@ def pgactivity(config):
 @db.command()
 @click.argument('dbname', required=False)
 @click.argument('params', nargs=-1)
+@click.option('-h', '--host', required=False)
+@click.option('-p', '--port', required=False)
+@click.option('-u', '--user', required=False)
+@click.option('-P', '--password', required=False)
 @pass_config
-def pgcli(config, dbname, params):
+def pgcli(config, dbname, params, host, port, user, password):
+    import pudb;pudb.set_trace()
+    from .tools import DBConnection
+
     dbname = dbname or config.dbname
     if config.use_docker:
         os.environ['DOCKER_MACHINE'] = "1"
-    conn = config.get_odoo_conn().clone(dbname=dbname)
+
+    if host:
+        if any(not x for x in [port, user, password]):
+            click.secho("If you provide a host, then provide please all connection informations.")
+        conn = DBConnection(dbname, host, int(port), user, password)
+    else:
+        conn = config.get_odoo_conn().clone(dbname=dbname)
     return _pgcli(config, conn, params)
 
 @db.command()
