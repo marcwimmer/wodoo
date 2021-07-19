@@ -103,7 +103,7 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 RUN apt install -y libpython2-dev python2 python-dev python-lxml python-magic
-RUN curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py
+RUN curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py
 RUN python get-pip.py
 RUN pip install pip --upgrade
 
