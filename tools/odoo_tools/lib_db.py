@@ -67,7 +67,6 @@ def pgactivity(config):
 @click.option('-P', '--password', required=False)
 @pass_config
 def pgcli(config, dbname, params, host, port, user, password):
-    import pudb;pudb.set_trace()
     from .tools import DBConnection
 
     dbname = dbname or config.dbname
@@ -80,7 +79,7 @@ def pgcli(config, dbname, params, host, port, user, password):
         conn = DBConnection(dbname, host, int(port), user, password)
     else:
         conn = config.get_odoo_conn().clone(dbname=dbname)
-    return _pgcli(config, conn, params)
+    return _pgcli(config, conn, params, use_docker_container=True)
 
 @db.command()
 @click.argument('dbname', required=False)
@@ -94,7 +93,7 @@ def psql(config, dbname, params, sql):
     conn = config.get_odoo_conn().clone(dbname=dbname)
     return _psql(config, conn, params, sql=sql)
 
-def _psql(config, conn, params, bin='psql', sql=None):
+def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
         if params[0] in ['postgres', dbname]:
@@ -108,8 +107,8 @@ def _psql(config, conn, params, bin='psql', sql=None):
             dbname,
         ]
 
-        if config.use_docker and config.run_postgres:
-            __dcrun(['postgres', bin] + cmd, interactive=True, env={
+        if use_docker_container or (config.use_docker and config.run_postgres):
+            __dcrun(['pgtools', bin] + cmd, interactive=True, env={
                 "PGPASSWORD": conn.pwd,
             })
         else:
@@ -119,8 +118,8 @@ def _psql(config, conn, params, bin='psql', sql=None):
     finally:
         os.environ['PGPASSWORD'] = ""
 
-def _pgcli(config, conn, params):
-    _psql(config, conn, params, bin='pgcli')
+def _pgcli(config, conn, params, use_docker_container=None):
+    _psql(config, conn, params, bin='pgcli', use_docker_container=use_docker_container)
 
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)

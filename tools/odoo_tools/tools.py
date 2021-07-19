@@ -860,7 +860,10 @@ def exec_file_in_path(filename):
             filepath = Path(p) / filename
             if filepath.exists():
                 yield filepath
-    return next(_g())
+    try:
+        return next(_g())
+    except StopIteration:
+        raise Exception(f"Could not find in path: {filename}")
 
 def measure_time(method):
     def wrapper(*args, **kwargs):
