@@ -131,6 +131,6 @@ RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
 
-RUN pip3 install iscompatible
+RUN pip3 install iscompatible docker gitpython
 WORKDIR /opt/odoo
 
