@@ -370,6 +370,10 @@ def robotest(config, file, user, all, tag, test_name):
         testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
         del _file
 
+    if file and all:
+        click.secho("Cannot provide all and file together!", fg='red')
+        sys.exit(-1)
+
     if file:
         if '/' in file:
             filename = Path(file)
@@ -387,20 +391,20 @@ def robotest(config, file, user, all, tag, test_name):
             sys.exit(-1)
         filename = [filename]
     else:
+        testfiles = sorted(testfiles)
         if not all:
-            testfiles = sorted(testfiles)
             message = "Please choose the unittest to run."
             try:
                 filename = [inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')]
-            except:
+            except Exception:
                 sys.exit(-1)
         else:
-            filename = testfiles
+            filename = list(sorted(testfiles))
 
     if not filename:
         return
 
-    click.secho(str(filename), fg='green', bold=True)
+    click.secho('\n'.join(map(str, filename)), fg='green', bold=True)
 
     archive = _make_archive(filename, customs_dir())
 
