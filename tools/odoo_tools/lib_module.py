@@ -103,7 +103,7 @@ def run_tests(ctx, config):
             if config.use_docker:
                 params = ['odoo', '/odoolib/unit_test.py', f'{file}']
                 click.secho(f"Running test: {file}", fg='yellow', bold=True)
-                res = __dcrun(params + ['--log-level=error', '--not-interactive'], raise_exception=True, returncode=True)
+                res = __dcrun(params + ['--log-level=error', '--not-interactive'], returncode=True)
                 if res:
                     failed.append(file)
                     click.secho(f"Failed, running again with debug on: {file}", fg='red', bold=True)
