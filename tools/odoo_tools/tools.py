@@ -282,18 +282,21 @@ def __dc_out(cmd, env={}):
     c = __get_cmd() + cmd
     return subprocess.check_output(c, env=_merge_env_dict(env))
 
-def __dcexec(cmd, interactive=True):
+def __dcexec(cmd, interactive=True, env=None):
     c = __get_cmd()
     c += ['exec']
     if not interactive:
         c += ['-T']
+    if env:
+        for k, v in env.items():
+            c+= ['-e', f"{k}={v}"]
     c += cmd
     if interactive:
         subprocess.call(c)
     else:
         return subprocess.check_output(cmd)
 
-def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=False, pass_stdin=None):
+def __dcrun(cmd, interactive=False, env={}, returncode=False, pass_stdin=None):
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ['run']
     if not interactive:
@@ -311,7 +314,7 @@ def __dcrun(cmd, interactive=False, raise_exception=True, env={}, returncode=Fal
             optional_params['universal_newlines'] = True
         else:
             optional_params['stdin'] = sys.stdin
-        subprocess.run(cmd, **optional_params)
+        subprocess.run(cmd, check=True, **optional_params)
     else:
         if returncode:
             process = subprocess.Popen(cmd)
