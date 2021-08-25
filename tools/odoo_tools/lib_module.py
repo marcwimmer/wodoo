@@ -142,6 +142,38 @@ def download_openupgrade(ctx, config, version):
     )
     shutil.rmtree(dir_openupgrade)
 
+def _add_outdated_versioned_modules(modules):
+    """
+
+    Gets dependency tree of modules and copmares version in manifest with version in database.
+    If db is newer then update is required.
+
+    This usually habens after an update of odoo core.
+    
+    """
+    from .module_tools import Modules, DBModules
+    from .odoo_config import MANIFEST
+    mods = Modules()
+    for module in modules:
+        if module == 'base':
+            continue
+
+        yield module
+
+        for dep in mods.get_module_flat_dependency_tree(mods.modules[module]):
+            meta_info = DBModules.get_meta_data(dep)
+            version = meta_info['version']
+            if not version:
+                continue
+            version = tuple([int(x) for x in version.split(".")])
+            new_version = tuple([int(x) for x in mods.modules[dep].manifest_dict['version'].split('.')])
+            if len(new_version) == 2:
+                # add odoo version in front
+                new_version = tuple([int(x) for x in str(MANIFEST()['version']).split('.')] + list(new_version))
+
+            if new_version > version:
+                yield dep
+
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
@@ -190,6 +222,8 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
 
     if not module and not since_git_sha:
         module = _get_default_modules_to_update()
+
+    module = list(set(_add_outdated_versioned_modules(module)))
 
     if not no_restart:
         if config.use_docker:

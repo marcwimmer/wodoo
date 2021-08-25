@@ -209,6 +209,20 @@ class DBModules(object):
             return [x[0] for x in cr.fetchall()]
 
     @classmethod
+    def get_meta_data(clazz, module):
+        with get_conn_autoclose() as cr:
+            cr.execute("select id, state, name, latest_version from ir_module_module where name = %s", (module,))
+            record = cr.fetchone()
+            if not record:
+                raise ModuleNotFoundError(module)
+            return {
+                'name': record[2],
+                'state': record[1],
+                'id': record[0],
+                'version': record[3],
+            }
+
+    @classmethod
     def get_module_state(clazz, module):
         with get_conn_autoclose() as cr:
             cr.execute("select name, state from ir_module_module where name = %s", (module,))
