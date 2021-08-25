@@ -166,7 +166,10 @@ def _add_outdated_versioned_modules(modules):
             if not version:
                 continue
             version = tuple([int(x) for x in version.split(".")])
-            new_version = tuple([int(x) for x in mods.modules[dep].manifest_dict['version'].split('.')])
+            new_version = mods.modules[dep].manifest_dict.get('version')
+            if not new_version:
+                continue
+            new_version = tuple([int(x) for x in new_version.split('.')])
             if len(new_version) == 2:
                 # add odoo version in front
                 new_version = tuple([int(x) for x in str(MANIFEST()['version']).split('.')] + list(new_version))
