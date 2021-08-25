@@ -214,7 +214,13 @@ class DBModules(object):
             cr.execute("select id, state, name, latest_version from ir_module_module where name = %s", (module,))
             record = cr.fetchone()
             if not record:
-                raise ModuleNotFoundError(module)
+                return {
+                    'name': module,
+                    'state': 'uninstalled',
+                    'version': False,
+                    'id': False,
+
+                }
             return {
                 'name': record[2],
                 'state': record[1],
