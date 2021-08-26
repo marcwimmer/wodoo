@@ -119,7 +119,8 @@ def prepare_run(local_config=None):
         if not path:
             continue
         out_dir = Path(path)
-        out_dir.mkdir(parents=True, exist_ok=True)
+        if not out_dir.exists() and not out_dir.is_symlink():
+            out_dir.mkdir(parents=True, exist_ok=True)
         if out_dir.exists():
             if out_dir.stat().st_uid == 0:
                 shutil.chown(str(out_dir), user=user_id, group=user_id)
