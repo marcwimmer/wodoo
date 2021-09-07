@@ -1,4 +1,5 @@
 import collections
+import grp
 import base64
 import pwd
 from contextlib import contextmanager
@@ -461,6 +462,10 @@ def __run_docker_compose_config(config, contents, env):
         cmdline += ['config']
         d = deepcopy(os.environ)
         d.update(env)
+
+        # set current user id and docker group for probable dinds
+        d['USER_ID'] = os.getenv("SUDO_UID") or os.getenv("UID")
+        d['DOCKER_GROUP_ID'] = str(grp.getgrnam('docker').gr_gid)
 
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         conf = yaml.safe_load(conf)

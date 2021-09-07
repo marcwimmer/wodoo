@@ -1,0 +1,17 @@
+version: "3.3"
+services:
+  theia:
+    build:
+      context: ${ODOO_HOME}/images/theia_odoo_vim
+      args:
+        USER_ID: ${USER_ID}
+        DOCKER_GROUP_ID: ${DOCKER_GROUP_ID}
+    privileged: true
+    ports:
+      - "3000:3000"
+      # - "3030:3030" # debugging theia plugin
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${CUSTOMS_DIR}:/home/project
+      - ${ODOO_HOME}/images/theia_odoo_vim/add_vsix_files:/home/vsix_files
+      - ~/.odoo:/home/theia/.odoo
