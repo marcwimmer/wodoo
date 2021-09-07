@@ -1,0 +1,8 @@
+repos:
+    # make ordinary git submodule:
+    - url: "https://git.itewimmer.de/theia/odoo-vim"
+      branch: master
+      path: images/theia_odoo_vim
+      patches: []
+      type: submodule
+
