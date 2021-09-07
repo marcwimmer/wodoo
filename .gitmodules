@@ -21,3 +21,7 @@
 [submodule "extra_install/asterisk_customs"]
 	path = extra_install/asterisk_customs
 	url = ssh://git@git.clear-consulting.de:50004/odoo/asterisk_customs.git
+[submodule "images/theia_odoo_vim"]
+	path = images/theia_odoo_vim
+	url = https://git.itewimmer.de/theia/odoo-vim
+	branch = master
