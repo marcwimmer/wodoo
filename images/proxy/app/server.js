@@ -21,6 +21,7 @@ const server_odoo = {
     port: 8069,
 };
 
+
 function _call_proxy(req, res, url) {
     proxy.web(req, res, {
         target: url,
@@ -68,6 +69,10 @@ app.use(
 );
 app.use("/mailer",createProxyMiddleware({
     target: 'http://' + process.env.ROUNDCUBE_HOST + ':80',
+})); 
+
+app.use("/code",createProxyMiddleware({
+    target: 'http://theia' + process.env.THEIA_HOST + ':3000',
 })); 
 
 app.use("/longpolling", createProxyMiddleware({
