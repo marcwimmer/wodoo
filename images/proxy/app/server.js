@@ -72,7 +72,7 @@ app.use("/mailer",createProxyMiddleware({
 })); 
 
 app.use("/code",createProxyMiddleware({
-    target: 'http://theia' + process.env.THEIA_HOST + ':3000',
+    target: 'http://' + process.env.THEIA_HOST + ':80',
 })); 
 
 app.use("/longpolling", createProxyMiddleware({
