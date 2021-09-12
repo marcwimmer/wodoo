@@ -23,5 +23,5 @@
 	url = ssh://git.itewimmer.de/odoo/asterisk_customs.git
 [submodule "images/theia_odoo_vim"]
 	path = images/theia_odoo_vim
-	url = https://git.itewimmer.de/theia/odoo-vim
+	url = ssh://git@git.itewimmer.de/theia/odoo-vim
 	branch = master
