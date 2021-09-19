@@ -464,7 +464,6 @@ def __run_docker_compose_config(config, contents, env):
         d.update(env)
 
         # set current user id and docker group for probable dinds
-        d['USER_ID'] = os.getenv("SUDO_UID") or os.getenv("UID") or ''
         d['DOCKER_GROUP_ID'] = str(grp.getgrnam('docker').gr_gid)
 
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
@@ -605,6 +604,8 @@ def _apply_variables(config, contents, env):
 
     # extract further networks
     for content in contents:
+        if not content:
+            continue
         for networkname, network in content.get('networks', {}).items():
             default_network['networks'][networkname] = network
 
