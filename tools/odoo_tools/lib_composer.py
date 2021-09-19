@@ -464,7 +464,7 @@ def __run_docker_compose_config(config, contents, env):
         d.update(env)
 
         # set current user id and docker group for probable dinds
-        d['USER_ID'] = os.getenv("SUDO_UID") or os.getenv("UID")
+        d['USER_ID'] = os.getenv("SUDO_UID") or os.getenv("UID") or ''
         d['DOCKER_GROUP_ID'] = str(grp.getgrnam('docker').gr_gid)
 
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
