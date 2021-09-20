@@ -135,9 +135,15 @@ def run_tests(ctx, config):
 def download_openupgrade(ctx, config, version):
     dir_openupgrade = Path(tempfile.mktemp())
     subprocess.check_call(['/usr/bin/git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
+
+    if float(version) < '14.0':
+        destination_path = 'odoo'
+    else:
+        destination_path = 'openupgrade'
+
     sync_folder(
         dir_openupgrade / 'openupgrade',
-        config.dirs['customs'] / 'odoo',
+        config.dirs['customs'] / destination_path,
         excludes=['.git'],
     )
     shutil.rmtree(dir_openupgrade)
@@ -155,10 +161,10 @@ def _add_outdated_versioned_modules(modules):
     from .odoo_config import MANIFEST
     mods = Modules()
     for module in modules:
+        yield module
         if module == 'base':
             continue
 
-        yield module
 
         for dep in mods.get_module_flat_dependency_tree(mods.modules[module]):
             meta_info = DBModules.get_meta_data(dep)
@@ -192,9 +198,17 @@ def _add_outdated_versioned_modules(modules):
 @click.option('--i18n', default=False, is_flag=True, help="Overwrite Translations")
 @click.option('--no-install-server-wide-first', default=False, is_flag=True)
 @click.option('--no-extra-addons-paths', is_flag=True)
+@click.option('-c', '--config-file', default='config_update', help="Specify config file to use, for example config_update")
 @pass_config
 @click.pass_context
-def update(ctx, config, module, since_git_sha, dangling_modules, installed_modules, non_interactive, no_update_module_list, no_install_server_wide_first, no_extra_addons_paths, no_dangling_check=False, check_install_state=True, no_restart=True, i18n=False, tests=False):
+def update(
+    ctx, config, module,
+    since_git_sha, dangling_modules, installed_modules,
+    non_interactive, no_update_module_list, no_install_server_wide_first,
+    no_extra_addons_paths, no_dangling_check=False, check_install_state=True,
+    no_restart=True, i18n=False, tests=False,
+    config_file=False,
+    ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
@@ -277,6 +291,7 @@ def update(ctx, config, module, since_git_sha, dangling_modules, installed_modul
             params += ['--i18n']
         if not tests:
             params += ['--no-tests']
+        params += ["--config-file=" + config_file]
         rc = _exec_update(config, params)
         if rc:
             raise UpdateException(module)

@@ -38,6 +38,8 @@ def _replace_params_in_config(ADDONS_PATHS, file):
 
     if file.name == 'config_update':
         server_wide_modules = 'web'
+    elif file.name == 'config_upgrade':
+        server_wide_modules = 'base,web,openupgrade_framework'
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 
     for key, value in os.environ.items():
