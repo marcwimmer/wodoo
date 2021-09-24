@@ -1017,7 +1017,7 @@ class Module(object):
         self.update_assets_file()
         mod = self.manifest_dict
 
-        all_files = self.get_all_files_of_module()
+        all_files = list(self.get_all_files_of_module())
         # first collect all xml files and ignore test and static
         DATA_NAME = 'data'
         if current_version() <= 7.0:
