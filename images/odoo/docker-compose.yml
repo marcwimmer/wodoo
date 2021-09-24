@@ -25,6 +25,7 @@ services:
       - ${ODOO_HOME}/images/odoo/odoo_modules/${ODOO_VERSION}:/tmp/odoo_server_tools.template
       - ${HOST_RUN_DIR}/odoo-shell-ipython:/home/odoo/.ipython
     environment:
+      - OPENUPGRADE_TARGET_VERSION=${ODOO_VERSION}
       - ODOO_USER=odoo
       - ODOO_DATA_DIR=/opt/files
       - ODOO_HOME=/opt/odoo
