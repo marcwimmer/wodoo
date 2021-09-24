@@ -1,9 +1,9 @@
-FROM postgres:12
+FROM postgres:12-bullseye
 ENTRYPOINT ["/run.sh"]
 CMD ["postgres"]
 RUN sed -i 's|http://deb.debian|http://ftp2.de.debian|g' /etc/apt/sources.list
 RUN apt-get update && \
-apt install -y postgresql-server-dev-12 python-pip python-dev build-essential git python3-pip procps sockstat
+apt install -y postgresql-server-dev-12 python-dev build-essential git python3-pip procps sockstat
 
 
 ADD config* /
