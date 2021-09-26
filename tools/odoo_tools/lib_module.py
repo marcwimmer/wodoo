@@ -52,6 +52,7 @@ def _get_default_modules_to_update():
     mods = Modules()
     module = mods.get_customs_modules('to_update')
     module += DBModules.get_uninstalled_modules_where_others_depend_on()
+    module += DBModules.get_outdated_installed_modules(mods)
     return module
 
 @odoo_module.command(name='update-module-file')
@@ -160,11 +161,11 @@ def _add_outdated_versioned_modules(modules):
     from .module_tools import Modules, DBModules
     from .odoo_config import MANIFEST
     mods = Modules()
+
     for module in modules:
         yield module
         if module == 'base':
             continue
-
 
         for dep in mods.get_module_flat_dependency_tree(mods.modules[module]):
             meta_info = DBModules.get_meta_data(dep)

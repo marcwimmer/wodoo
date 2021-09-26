@@ -173,6 +173,19 @@ class DBModules(object):
         return rows
 
     @classmethod
+    def get_outdated_installed_modules(clazz, mods):
+        odoo_version = current_version()
+        for mod in clazz.get_all_installed_modules():
+            version_new = mods.modules[mod].manifest_dict.get('version', False)
+            if not version_new:
+                continue
+            if len(list(x for x in version_new if x == '.')) <= 2:
+                version_new = str(odoo_version) + '.' + version_new
+            version = clazz.get_meta_data(mod)['version']
+            if version and version != version_new:
+                yield mod
+
+    @classmethod
     def get_uninstalled_modules_where_others_depend_on(clazz):
         sql = """
             select
