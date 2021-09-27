@@ -1,3 +1,4 @@
+[options]
 max_cron_threads = 1
 workers = __ODOO_WORKERS_WEB__
 log_handler = :DEBUG,openerp:DEBUG,werkzeug:DEBUG,odoo.addons.queue_job:DEBUG

@@ -1,3 +1,4 @@
+[options]
 log_handler = :INFO,openerp:INFO,werkzeug:INFO,odoo.addons.queue_job:INFO
 log_level = info
 max_cron_threads = 0

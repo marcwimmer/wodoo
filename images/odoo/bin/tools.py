@@ -6,6 +6,7 @@ import threading
 import sys
 from consts import ODOO_USER
 import subprocess
+import configparser
 import os
 from odoo_tools import odoo_config
 from odoo_tools.odoo_config import customs_dir
@@ -18,13 +19,10 @@ version = odoo_config.current_version()
 is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "0") == "1"
 is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "0") == "1"
 
-def _replace_params_in_config(ADDONS_PATHS, file):
+def _replace_params_in_config(file_name, ADDONS_PATHS, content):
     if not config.get("DB_HOST", "") or not config.get("DB_USER", ""):
         raise Exception("Please define all DB Env Variables!")
-    content = file.read_text()
     content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
-    if config['ODOO_ADMIN_PASSWORD']:
-        content += "\nadmin_passwd = " + config['ODOO_ADMIN_PASSWORD']
     content = content.replace("__ENABLE_DB_MANAGER__", 'True' if config['ODOO_ENABLE_DB_MANAGER'] == '1' else 'False')
 
     server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
@@ -36,28 +34,26 @@ def _replace_params_in_config(ADDONS_PATHS, file):
                 server_wide_modules.remove('queue_job')
     server_wide_modules = ','.join(server_wide_modules)
 
-    if file.name == 'config_update':
+    if file_name == 'config_update':
         server_wide_modules = 'web'
-    elif file.name == 'config_upgrade':
-        server_wide_modules = 'base,web,openupgrade_framework'
+    elif file_name == 'config_migration':
+        if version >= 14.0:
+            server_wide_modules = 'base,web,openupgrade_framework'
+        else:
+            server_wide_modules = 'base,web'
     content = content.replace("__SERVER_WIDE_MODULES__", server_wide_modules)
 
     for key, value in os.environ.items():
         key = f'__{key}__'
         content = content.replace(key, value)
 
-    if 'without_demo=' not in content:
-        if os.getenv("ODOO_DEMO", "") == "1":
-            content = content + "\nwithout_demo=False"
-        else:
-            content = content + "\nwithout_demo=all"
-
     for key in config.keys():
         content = content.replace("__{}__".format(key), config[key])
     for key in os.environ.keys():
         content = content.replace("__{}__".format(key), os.getenv(key, ""))
 
-    file.write_text(content)
+    # exchange existing configurations
+    return content
 
 def _run_autosetup():
     path = customs_dir() / 'autosetup'
@@ -70,7 +66,7 @@ def _run_autosetup():
                 os.environ['ODOO_AUTOSETUP_PARAM'],
             ])
 
-def _replace_variables_in_config_files(config):
+def _replace_variables_in_config_files(local_config):
     config_dir = Path(os.environ['ODOO_CONFIG_DIR'])
     config_dir_template = Path(os.environ['ODOO_CONFIG_TEMPLATE_DIR'])
     config_dir.mkdir(exist_ok=True, parents=True)
@@ -81,18 +77,55 @@ def _replace_variables_in_config_files(config):
         del path
 
     no_extra_addons_paths = False
-    if config and config.no_extra_addons_paths:
+    if local_config and local_config.no_extra_addons_paths:
         no_extra_addons_paths = True
     ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths(
         no_extra_addons_paths=no_extra_addons_paths
     ))))
 
+    def _combine(common_content, content):
+        def _get_key(x):
+            res = x.split("=")[0].strip()
+            if '[' in res:
+                res = ''
+            return res
+        for line in common_content.split("\n"):
+            key = _get_key(line)
+            if key:
+                if not [x for x in content if _get_key(x) == key]:
+                    yield line
+                    continue
+            yield line
+        for line in content.split("\n"):
+            yield line
+
     config_dir = Path(os.getenv("ODOO_CONFIG_DIR"))
-    common_content = (config_dir / 'common').read_text()
+
+    def _get_config(filepath):
+        content = filepath.read_text()
+        content = _replace_params_in_config("", ADDONS_PATHS, content)
+        cfg = configparser.ConfigParser()
+        cfg.read_string(content)
+        return cfg
+
+    common_config = _get_config(config_dir / 'common')
     for file in config_dir.glob("config_*"):
-        content = file.read_text()
-        file.write_text(common_content + "\n" + content)
-        _replace_params_in_config(ADDONS_PATHS, file)
+        config_file_content = _get_config(file)
+        for section in common_config.sections():
+            for k, v in common_config[section].items():
+                if section not in config_file_content.sections() or k not in config_file_content[section]:
+                    config_file_content[section][k] = v
+        if config['ODOO_ADMIN_PASSWORD']:
+            config_file_content['options']['admin_passwd'] = config['ODOO_ADMIN_PASSWORD']
+
+        if 'without_demo' not in config_file_content['options']:
+            if os.getenv("ODOO_DEMO", "") == "1":
+                config_file_content['options']['without_demo'] = "False"
+            else:
+                config_file_content['options']['without_demo'] = "all"
+
+        with open(file, 'w') as configfile:
+            config_file_content.write(configfile)
 
 def _run_libreoffice_in_background():
     subprocess.Popen(["/bin/bash", os.environ['ODOOLIB'] + "/run_soffice.sh"])

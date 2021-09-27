@@ -5,4 +5,8 @@ repos:
       path: images/theia_odoo_vim
       patches: []
       type: submodule
+    - url: https://git.itewimmer.de/odoo/public_modules/snippets
+      branch: master
+      path: tools/snippets
+      type: submodule
 
