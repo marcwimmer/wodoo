@@ -25,3 +25,7 @@
 	path = images/theia_odoo_vim
 	url = ssh://git@git.itewimmer.de/theia/odoo-vim
 	branch = master
+[submodule "tools/snippets"]
+	path = tools/snippets
+	url = https://git.itewimmer.de/odoo/public_modules/snippets
+	branch = master
