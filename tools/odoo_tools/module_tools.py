@@ -176,6 +176,8 @@ class DBModules(object):
     def get_outdated_installed_modules(clazz, mods):
         odoo_version = current_version()
         for mod in clazz.get_all_installed_modules():
+            if mod not in mods.modules:
+                continue
             version_new = mods.modules[mod].manifest_dict.get('version', False)
             if not version_new:
                 continue
