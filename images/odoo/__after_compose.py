@@ -96,4 +96,10 @@ def after_compose(config, settings, yml, globals):
         config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))
 
         # put the collected requirements into project root
-        (config.dirs['customs'] / 'requirements.txt').write_text('\n'.join(external_dependencies['pip']))
+        req_file = (config.dirs['customs'] / 'requirements.txt')
+        req_file.write_text('\n'.join(external_dependencies['pip']))
+
+        # filter out the bad outdated LDAP module
+        content = req_file.read_text()
+        content = "\n".join([x for x in content.split("\n") if x.strip() != 'ldap'])
+        req_file.write_text(content)
