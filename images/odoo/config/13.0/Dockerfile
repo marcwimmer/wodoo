@@ -135,7 +135,7 @@ RUN pip3 install wheel
 RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \
-	pip3 install --upgrade setuptools cython 
+	pip3 install --upgrade 'setuptools<58' cython 
 # RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 

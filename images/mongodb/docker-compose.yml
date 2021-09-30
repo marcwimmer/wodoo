@@ -2,7 +2,8 @@ volumes:
     mongodb_volume:
 services:
     mongodb:
-        image: mongo
+        # new version 5.0 brings errors regarding cpu type in virtual environment!
+        image: mongo:4.4.7
         restart: "unless-stopped"
         volumes:
             - mongodb_volume:/data/db

@@ -61,7 +61,7 @@ def update(config, mode, modules):
         ]
         if TESTS:
             params += [TESTS]
-        rc = exec_odoo('config_update', *params)
+        rc = exec_odoo(config.config_file, *params)
         if rc:
             click.secho(f"Error at {mode_text[mode]} of: {','.join(modules)}", fg='red', bold=True)
         for module in modules:
@@ -107,7 +107,7 @@ def update(config, mode, modules):
 def _install_module(config, modname):
     if not DBModules.is_module_listed(modname):
         if modname not in ['update_module_list']:
-            update_module_list()
+            update_module_list(config)
     if not DBModules.is_module_installed(modname):
         print("Update Module List is not installed - installing it...")
         update(config, 'i', [modname])
@@ -205,14 +205,16 @@ def cli():
 @click.option('--no-dangling-check', is_flag=True)
 @click.option('--no-install-server-wide-first', is_flag=True)
 @click.option('--no-extra-addons-paths', is_flag=True)
+@click.option('--config-file', is_flag=False, default='config_update', help="Which config file to use")
 @pass_config
-def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths):
+def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths, config_file):
 
     config.interactive = not non_interactive
     config.i18n_overwrite = i18n
     config.odoo_version = float(os.getenv("ODOO_VERSION"))
     config.only_i18n = only_i18n
     config.no_extra_addons_paths = no_extra_addons_paths
+    config.config_file = config_file
 
     config.run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
     if no_tests:

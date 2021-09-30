@@ -9,8 +9,6 @@ db_port = __DB_PORT__
 db_template = template1
 db_user = __DB_USER__
 email_from = False
-limit_memory_hard = 8053063680
-limit_memory_soft = 6710886400
 limit_request = 8192
 limit_time_cpu = 6000000
 limit_time_real = 12000000
@@ -18,4 +16,6 @@ list_db = __ENABLE_DB_MANAGER__
 server_wide_modules = __SERVER_WIDE_MODULES__
 proxy_mode = True
 translate_modules = ['all']
-upgrade_path = __ODOO_UPGRADE_PATH__
+
+limit_memory_hard = 8053063680
+limit_memory_soft = 6710886400

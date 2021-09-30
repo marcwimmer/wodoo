@@ -1,0 +1,12 @@
+repos:
+    # make ordinary git submodule:
+    - url: "ssh://git@git.itewimmer.de/theia/odoo-vim"
+      branch: master
+      path: images/theia_odoo_vim
+      patches: []
+      type: submodule
+    - url: https://git.itewimmer.de/odoo/public_modules/snippets
+      branch: master
+      path: tools/snippets
+      type: submodule
+

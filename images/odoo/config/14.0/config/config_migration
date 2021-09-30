@@ -1,3 +1,13 @@
-max_cron_threads = 0
-workers = 0
+[options]
 http_enable = False
+log_level = debug
+log_handler = :DEBUG
+max_cron_threads =0
+workers = 0
+upgrade_path = /opt/src/openupgrade/openupgrade_scripts
+
+limit_memory_hard = 80053063680
+limit_memory_soft = 60710886400
+
+[hallo]
+test = 123

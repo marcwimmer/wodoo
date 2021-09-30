@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     print(f"Version: {VERSION}")
 
-    if os.getenv("UID", "") == "0":
+    if os.getenv("UID", "") == "0" and os.getenv("SUDO_UID", "") == "0":
         import click
         click.secho("If you this odoo in root account, please set OWNER_UID=1000 in ~/.odoo/settings!", fg='red', bold=True)
         time.sleep(1)

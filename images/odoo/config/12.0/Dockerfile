@@ -119,7 +119,7 @@ ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \
-	pip3 install --upgrade setuptools cython 
+	pip3 install --upgrade 'setuptools<58' cython 
 RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
 RUN pip3 install -r /root/odoo_requirements.txt
 RUN pip3 install -r /root/requirements.txt

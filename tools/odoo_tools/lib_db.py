@@ -55,8 +55,22 @@ def drop_db(config, dbname):
 @db.command()
 @pass_config
 def pgactivity(config):
-    if config.run_postgres:
-        __dcexec(["postgres", 'pg_activity'])
+    from .tools import DBConnection
+    conn = DBConnection(
+        config.dbname,
+        config.db_host,
+        config.db_port,
+        config.db_user,
+        config.db_pwd
+    )
+    __dcrun([
+        "pgtools", 'pg_activity',
+        '-p', str(conn.port),
+        '-U', conn.user,
+        '-h', conn.host, 
+        ], env={
+            "PGPASSWORD": conn.pwd,
+        }, interactive=True)
 
 @db.command()
 @click.argument('dbname', required=False)

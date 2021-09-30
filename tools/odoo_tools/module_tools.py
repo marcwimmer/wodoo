@@ -173,6 +173,21 @@ class DBModules(object):
         return rows
 
     @classmethod
+    def get_outdated_installed_modules(clazz, mods):
+        odoo_version = current_version()
+        for mod in clazz.get_all_installed_modules():
+            if mod not in mods.modules:
+                continue
+            version_new = mods.modules[mod].manifest_dict.get('version', False)
+            if not version_new:
+                continue
+            if len(list(x for x in version_new if x == '.')) <= 2:
+                version_new = str(odoo_version) + '.' + version_new
+            version = clazz.get_meta_data(mod)['version']
+            if version and version != version_new:
+                yield mod
+
+    @classmethod
     def get_uninstalled_modules_where_others_depend_on(clazz):
         sql = """
             select
@@ -207,6 +222,26 @@ class DBModules(object):
         with get_conn_autoclose() as cr:
             cr.execute("select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');")
             return [x[0] for x in cr.fetchall()]
+
+    @classmethod
+    def get_meta_data(clazz, module):
+        with get_conn_autoclose() as cr:
+            cr.execute("select id, state, name, latest_version from ir_module_module where name = %s", (module,))
+            record = cr.fetchone()
+            if not record:
+                return {
+                    'name': module,
+                    'state': 'uninstalled',
+                    'version': False,
+                    'id': False,
+
+                }
+            return {
+                'name': record[2],
+                'state': record[1],
+                'id': record[0],
+                'version': record[3],
+            }
 
     @classmethod
     def get_module_state(clazz, module):
@@ -997,7 +1032,7 @@ class Module(object):
         self.update_assets_file()
         mod = self.manifest_dict
 
-        all_files = self.get_all_files_of_module()
+        all_files = list(self.get_all_files_of_module())
         # first collect all xml files and ignore test and static
         DATA_NAME = 'data'
         if current_version() <= 7.0:
