@@ -6,8 +6,6 @@ const web_o = Object.values(require('http-proxy/lib/http-proxy/passes/web-outgoi
 var serveStatic = require('serve-static');
 var serveIndex = require('serve-index');
 
-
-
 const { createProxyMiddleware } = require('http-proxy-middleware');
 var app      = express();
 
@@ -62,6 +60,10 @@ proxy.on('proxyRes', (proxyRes, req, res) => {
     proxyRes.pipe(res);
 });
 
+proxy.on('error', function(e) {
+    console.debug(e);
+});
+
 app.use(
     "/robot-output",
     express.static(__dirname + "/odoo/robot_output"),
@@ -71,8 +73,9 @@ app.use("/mailer",createProxyMiddleware({
     target: 'http://' + process.env.ROUNDCUBE_HOST + ':80',
 })); 
 
-app.use("/code",createProxyMiddleware({
+app.use("/code", createProxyMiddleware({
     target: 'http://' + process.env.THEIA_HOST + ':80',
+    ws: true
 })); 
 
 app.use("/longpolling", createProxyMiddleware({
