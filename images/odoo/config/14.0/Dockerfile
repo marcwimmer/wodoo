@@ -141,7 +141,7 @@ RUN pip3 install -r /root/pip_requirements.txt
 RUN echo "$ODOO_DEB_REQUIREMENTS"  | base64 --decode > /root/deb_requirements.txt
 RUN apt install -y  $(grep -vE "^\s*#" /root/deb_requirements  | tr "\n" " ")
 
-RUN pip3 install pudb ipython
+RUN pip3 install pudb ipython marabunta
 
 RUN ipython profile create && \
 echo "c.TerminalInteractiveShell.editing_mode = 'vi'" >> /root/.ipython/profile_default/ipython_config.py && \
