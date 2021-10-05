@@ -22,4 +22,4 @@ services:
       - ${ODOO_HOME}/images/theia_odoo_vim/add_vsix_files:/home/vsix_files
       - ~/.odoo:/home/theia/.odoo
       - ${ODOO_HOME}:/opt/odoo
-      - ${ODOO_HOME/tools/snippets/snippets.vsix:/home/vsix_files/snippets.vsix
+      - ${ODOO_HOME}/tools/snippets/snippets.vsix:/home/vsix_files/snippets.vsix
