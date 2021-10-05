@@ -186,6 +186,36 @@ def _add_outdated_versioned_modules(modules):
 
 
 @odoo_module.command()
+@click.option('--migration-file', is_flag=False)
+@click.option('--mode')
+@click.option('--allow-serie', is_flag=True)
+@click.option('--force-version')
+def marabunta(migration_file, mode, allow_serie, force_version):
+    click.secho("""
+            _.._.-..-._
+        .-'  .'  /\\  \\`._
+        /    /  .'  `-.\\  `.
+            :_.'  ..    :       _.../\\
+            |           ;___ .-'   //\\\\.
+            \\  _..._  /    `/\\   //  \\\\\\
+            `-.___.-'  /\\ //\\\\       \\\\:
+                |    //\\V/ :\\\\       \\\\
+                    \\      \\\\/  \\\\      /\\\\
+                    `.____.\\\\   \\\\   .'  \\\\
+                    //   /\\\\---\\\\-'     \\\\
+                fsc  //   // \\\\   \\\\       \\\\
+    """, fg='red')
+
+    click.secho("=================================", fg='yellow')
+    click.secho("MARABUNTA", fg='yellow')
+    click.secho("=================================", fg='yellow')
+    
+    
+    params = ['run', 'odoo_update', '/update_modules.py'] + params
+    return __cmd_interactive(*params)
+
+
+@odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
 @click.option('--since-git-sha', '-i', default=False, is_flag=False, help="Extracts modules changed since this git sha and updates them")
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
@@ -216,6 +246,17 @@ def update(
 
     To update all (custom) modules set "all" here
     """
+    click.secho("""
+
+           _                               _       _       
+          | |                             | |     | |      
+  ___   __| | ___   ___    _   _ _ __   __| | __ _| |_ ___ 
+ / _ \\ / _` |/ _ \\ / _ \\  | | | | '_ \\ / _` |/ _` | __/ _ \\
+| (_) | (_| | (_) | (_) | | |_| | |_) | (_| | (_| | ||  __/
+ \\___/ \\__,_|\\___/ \\___/   \\__,_| .__/ \\__,_|\\__,_|\\__\\___|
+                                | |                        
+                                |_|   
+    """, fg='green')
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
     if config.run_postgres:
