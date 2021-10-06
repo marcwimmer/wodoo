@@ -1,0 +1,5 @@
+<odoo>
+    <data>
+        <function model="ir.module.module" name="update_list"/>
+    </data>
+</odoo>
