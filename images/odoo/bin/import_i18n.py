@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 import shutil
 import tempfile
 import os
@@ -26,8 +27,13 @@ for path in addon_paths:
         filepath = path / FILEPATH
         break
 else:
-    print(f"File not found: {FILEPATH}")
-    sys.exit(-1)
+    path = Path("/opt/src") / path
+    if path.exists():
+        pass
+    else:
+        print(f"File not found: {FILEPATH}")
+        time.sleep(3)
+        sys.exit(-1)
 print(f"Importing lang file {FILEPATH}")
 
 exec_odoo(
