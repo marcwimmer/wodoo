@@ -186,6 +186,50 @@ def _add_outdated_versioned_modules(modules):
 
 
 @odoo_module.command()
+@click.argument('migration-file', required=True)
+@click.argument('mode', required=True)
+@click.option('--allow-serie', is_flag=True)
+@click.option('--force-version')
+@pass_config
+@click.pass_context
+def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
+    click.secho("""
+            _.._.-..-._
+        .-'  .'  /\\  \\`._
+        /    /  .'  `-.\\  `.
+            :_.'  ..    :       _.../\\
+            |           ;___ .-'   //\\\\.
+            \\  _..._  /    `/\\   //  \\\\\\
+            `-.___.-'  /\\ //\\\\       \\\\:
+                |    //\\V/ :\\\\       \\\\
+                    \\      \\\\/  \\\\      /\\\\
+                    `.____.\\\\   \\\\   .'  \\\\
+                    //   /\\\\---\\\\-'     \\\\
+                fsc  //   // \\\\   \\\\       \\\\
+    """, fg='red')
+
+    click.secho("=================================", fg='yellow')
+    click.secho("MARABUNTA", fg='yellow')
+    click.secho("=================================", fg='yellow')
+    params = [
+        '--migration-file', '/opt/src/' + migration_file,
+        '--database', config.dbname,
+        '--db-user', config.db_user,
+        '--db-password', config.db_pwd,
+        '--db-port', config.db_port,
+        '--db-host', config.db_host,
+        '--mode', mode,
+    ]
+    if allow_serie:
+        params += ["--allow-serie"]
+    if force_version:
+        params += ["--force-version", force_version]
+    
+    params = ['run', 'odoo', '/usr/local/bin/marabunta'] + params
+    return __cmd_interactive(*params)
+
+
+@odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
 @click.option('--since-git-sha', '-i', default=False, is_flag=False, help="Extracts modules changed since this git sha and updates them")
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
@@ -216,6 +260,17 @@ def update(
 
     To update all (custom) modules set "all" here
     """
+    click.secho("""
+
+           _                               _       _       
+          | |                             | |     | |      
+  ___   __| | ___   ___    _   _ _ __   __| | __ _| |_ ___ 
+ / _ \\ / _` |/ _ \\ / _ \\  | | | | '_ \\ / _` |/ _` | __/ _ \\
+| (_) | (_| | (_) | (_) | | |_| | |_) | (_| | (_| | ||  __/
+ \\___/ \\__,_|\\___/ \\___/   \\__,_| .__/ \\__,_|\\__,_|\\__\\___|
+                                | |                        
+                                |_|   
+    """, fg='green')
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
     if config.run_postgres:

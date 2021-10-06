@@ -1,0 +1,13 @@
+{   'application': False,
+    'author': 'Marc Wimmer (marc@itewimmer.de)',
+    'auto_install': False,
+    'conflicts': [],
+    'css': [],
+    'data': ['data.xml'],
+    'demo': [],
+    'demo_xml': [],
+    'depends': ['base'],
+    'installable': True,
+    'name': 'web_restore_webicons',
+    'test': [],
+    'version': '13.0.1.0'}

@@ -15,9 +15,6 @@
 [submodule "repos/OpenUpgrade"]
 	path = repos/OpenUpgrade
 	url = https://github.com/OCA/OpenUpgrade.git
-[submodule "repos/openupgradelib"]
-	path = repos/openupgradelib
-	url = https://github.com/OCA/openupgradelib.git
 [submodule "extra_install/asterisk_customs"]
 	path = extra_install/asterisk_customs
 	url = ssh://git@git.itewimmer.de/odoo/asterisk_customs.git

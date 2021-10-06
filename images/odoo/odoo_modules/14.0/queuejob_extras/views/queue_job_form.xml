@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_queue_job_form" model="ir.ui.view">
+      <field name="model">queue.job</field>
+      <field name="inherit_id" ref="queue_job.view_queue_job_form"/>
+      <field name="arch" type="xml">
+        <header position="inside">
+          <button name="run_now" string="Run Now" type="object" groups="base.group_no_one"/>
+        </header>
+        <field name="exc_info" position="before">
+          <field name="console_call_to_debug" readonly="1"/>
+        </field>
+        <field name="channel" position="before">
+          <field name="identity_key"/>
+        </field>
+      </field>
+    </record>
+  </data>
+</odoo>
