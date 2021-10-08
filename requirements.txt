@@ -1,6 +1,6 @@
 pyyaml
 arrow>=0.14.6
-Click>=7.0
+Click>=8.0.1
 click-default-group>=1.2.1
 pathlib>=1.0.1
 inquirer>=2.6.3
