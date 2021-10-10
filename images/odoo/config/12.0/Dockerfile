@@ -135,6 +135,6 @@ WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
 RUN [ "$TARGETARCH" = "amd64" ] && pip3 install postal || exit 0
 
-RUN pip3 install iscompatible docker gitpython
+RUN pip3 install iscompatible docker gitpython retrying inquirer
 WORKDIR /opt/odoo
 
