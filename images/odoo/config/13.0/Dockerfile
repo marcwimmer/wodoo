@@ -1,5 +1,6 @@
 # use buster for latest postgres client
 FROM debian:buster
+ARG TARGETARCH
 ARG ODOO_VERSION
 ARG ODOO_REQUIREMENTS
 ARG ODOO_DEB_REQUIREMENTS

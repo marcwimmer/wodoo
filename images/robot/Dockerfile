@@ -1,4 +1,5 @@
 FROM ubuntu:20.04
+ARG TARGETARCH
 
 # wget
 RUN export DEBIAN_FRONTEND=noninteractive
@@ -23,11 +24,9 @@ ENV CHROME_VERSION=94.0.4606.71
 ENV ARCH=amd64
 COPY artefacts/chromedriver_$ARCH.zip /tmp/chromedriver.zip
 COPY artefacts/googlechrome_$ARCH.deb /tmp/googlechrome.deb
-RUN [ "$ARCH" = "amd64" ] && apt update && apt install -y /tmp/googlechrome.deb
-
-# RUN if [ "$(dpkg --print-architecture)" = "arm64" ]; then \
-# wget -O /tmp/chromedriver https://github.com/electron/electron/releases/download/v14.0.0-beta.1/chromedriver-v14.0.0-beta.1-linux-arm64.zip; \
-# fi
+ENV arm_chromium_download_link=https://github.com/electron/electron/releases/download/v14.1.1/chromedriver-v14.1.1-linux-arm64.zip
+RUN [ "$TARGETARCH" = "amd64" ] && $(apt update && apt install -y /tmp/googlechrome.deb) || exit 0
+RUN [ "$TARGETARCH" = "arm64" ] && $(wget -O /tmp/chromedriver $arm_chromium_download_link) || exit 0
 
 RUN unzip /tmp/chromedriver.zip -d /opt/chromedriver \
     && chmod +x /opt/chromedriver/chromedriver \
