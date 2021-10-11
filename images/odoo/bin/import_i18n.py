@@ -27,9 +27,9 @@ for path in addon_paths:
         filepath = path / FILEPATH
         break
 else:
-    path = Path("/opt/src") / path
+    path = Path("/opt/src") / FILEPATH
     if path.exists():
-        pass
+        filepath = path
     else:
         print(f"File not found: {FILEPATH}")
         time.sleep(3)

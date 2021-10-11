@@ -1,6 +1,7 @@
 # use buster for latest postgres client
 FROM debian:buster
 ARG ODOO_VERSION
+ARG TARGETARCH
 MAINTAINER marc@itewimmer.de
 
 ENV LANG C.UTF-8
@@ -101,15 +102,16 @@ rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
 # https://github.com/openvenues/pypostal postal lib for address checking
 RUN apt install -y curl autoconf automake libtool python-dev pkg-config
-RUN git clone https://github.com/openvenues/libpostal && \
-cd libpostal && \
-./bootstrap.sh && \
-./configure  && \
-make && \
-make install && \
-ldconfig
+# RUN git clone https://github.com/openvenues/libpostal && \
+# cd libpostal && \
+# ./bootstrap.sh && \
+# ./configure  && \
+# make && \
+# make install && \
+# ldconfig
 ADD https://raw.githubusercontent.com/odoo/odoo/${ODOO_VERSION}/requirements.txt /root/odoo_requirements.txt
-ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
+
+RUN apt-get install -y libgeos-dev
 
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 # PYTHON 3 and PIP
@@ -121,6 +123,7 @@ RUN hash -r && \
 	hash -r && \
 	pip3 install --upgrade 'setuptools<58' cython 
 RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
+ADD config/$ODOO_VERSION/requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/odoo_requirements.txt
 RUN pip3 install -r /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
@@ -130,7 +133,8 @@ RUN apt install -y postgresql-client
 RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
+RUN [ "$TARGETARCH" = "amd64" ] && pip3 install postal || exit 0
 
-RUN pip3 install iscompatible docker gitpython
+RUN pip3 install iscompatible docker gitpython retrying inquirer
 WORKDIR /opt/odoo
 
