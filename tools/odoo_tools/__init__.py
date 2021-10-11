@@ -34,7 +34,7 @@ if click:
     pass_config = click.make_pass_decorator(Config, ensure=True)
 
     @click.group(cls=AliasedGroup)
-    @click.option("--project-name", is_flag=False)  # CHECK with init functions on default value
+    @click.option("-p", "--project-name", is_flag=False)  # CHECK with init functions on default value
     @click.option("-f", "--force", is_flag=True)
     @click.option("-v", "--verbose", is_flag=True)
     @pass_config
