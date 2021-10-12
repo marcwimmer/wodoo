@@ -15,9 +15,6 @@
 [submodule "repos/OpenUpgrade"]
 	path = repos/OpenUpgrade
 	url = https://github.com/OCA/OpenUpgrade.git
-[submodule "extra_install/asterisk_customs"]
-	path = extra_install/asterisk_customs
-	url = ssh://git@git.itewimmer.de/odoo/asterisk_customs.git
 [submodule "images/theia_odoo_vim"]
 	path = images/theia_odoo_vim
 	url = ssh://git@git.itewimmer.de/theia/odoo-vim
