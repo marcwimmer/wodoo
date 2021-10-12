@@ -1,15 +1,6 @@
-import shutil
-import hashlib
-import os
-import tempfile
 import click
-from .tools import __assert_file_exists
-from .tools import __safe_filename
-from .tools import __read_file
-from .tools import __write_file
-from .tools import __append_line
-from .tools import __get_odoo_commit
 from .tools import __dcrun
+from .tools import __dcexec
 from .tools import _execute_sql
 from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
@@ -24,7 +15,7 @@ def lang(config):
 @click.argument('modules', nargs=-1, required=True)
 def export_i18n(lang, modules):
     modules = ','.join(modules)
-    __dcrun(['odoo', '/export_i18n.py', lang, modules])
+    __dcexec(['odoo', '/odoolib/export_i18n.py', lang, modules])
     # file now is in $DIR/run/i18n/export.po
 
 @lang.command(name='list')
