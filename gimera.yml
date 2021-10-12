@@ -1,12 +1,15 @@
 repos:
-    # make ordinary git submodule:
-    - url: "ssh://git@git.itewimmer.de/theia/odoo-vim"
-      branch: master
-      path: images/theia_odoo_vim
-      patches: []
-      type: submodule
-    - url: https://git.itewimmer.de/odoo/public_modules/snippets
-      branch: master
-      path: tools/snippets
-      type: submodule
-
+- branch: master
+  patches: []
+  path: images/theia_odoo_vim
+  type: submodule
+  url: ssh://git@git.itewimmer.de/theia/odoo-vim
+- branch: master
+  path: tools/snippets
+  type: submodule
+  url: https://git.itewimmer.de/odoo/public_modules/snippets
+- branch: master
+  path: extra_instal/asterisk_customs
+  sha: 390f12b761dc8934a5db3ad54233f41815707406
+  type: integrated
+  url: git@git.itewimmer.de:odoo/asterisk_customs.git
