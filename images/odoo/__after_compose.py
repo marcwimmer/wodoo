@@ -84,9 +84,11 @@ def after_compose(config, settings, yml, globals):
             arr2.append(libpy)
         external_dependencies['pip'] = list(sorted(arr2))
 
+        external_dependencies['pip'] = list(filter(lambda x: x not in ['ldap'], list(sorted(external_dependencies['pip']))))
         for odoo_machine in odoo_machines:
             service = yml['services'][odoo_machine]
             service['build'].setdefault('args', [])
+            # filter out the bad outdated LDAP module
             py_deps = list(sorted(external_dependencies['pip']))
             service['build']['args']['ODOO_REQUIREMENTS'] = base64.encodebytes('\n'.join(py_deps).encode('utf-8')).decode('utf-8')
             service['build']['args']['ODOO_REQUIREMENTS_CLEARTEXT'] = (';'.join(py_deps).encode('utf-8')).decode('utf-8')
@@ -101,5 +103,5 @@ def after_compose(config, settings, yml, globals):
 
         # filter out the bad outdated LDAP module
         content = req_file.read_text()
-        content = "\n".join([x for x in content.split("\n") if x.strip() != 'ldap'])
+        content = "\n".join([x for x in content.split("\n")])
         req_file.write_text(content)
