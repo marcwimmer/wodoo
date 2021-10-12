@@ -1,0 +1,36 @@
+# borrowed from tiredofit
+version: '3.7'
+
+services:
+    connector-mqtt-asterisk:
+        build: .
+        restart: always
+        volumes:
+            # better debugging
+            - ./app.py:/app.py:ro
+        environment:
+            # must be unique - client id of mqtt client, otherwise no registration
+            - APP_NAME=asterisk_connector_test
+            - MQTT_BROKER_HOST=DOCKER_HOST
+            - MQTT_BROKER_PORT=1883
+
+            # settings for local freepbx
+            #- ASTERISK_SERVER=DOCKER_HOST
+            #- ASTERISK_ARI_PORT=8088
+            #- ASTERISK_ARI_USER=ariuser1
+            #- ASTERISK_ARI_PASSWORD=password1
+            #- ASTERISK_AMI_USER=an_ami_user2
+            #- ASTERISK_AMI_PASSWORD=a_password
+            #- ASTERISK_AMI_PORT=5038
+            #- ASTERISK_SSH_PORT=9022
+
+            # settings real life
+            - ASTERISK_SERVER=192.168.56.101
+            - ASTERISK_ARI_PORT=8088
+            - ASTERISK_ARI_USER=ariuser1
+            - ASTERISK_ARI_PASSWORD=aripassword1
+            - ASTERISK_AMI_USER=amiuser1
+            - ASTERISK_AMI_PASSWORD=amipassword1
+            - ASTERISK_AMI_PORT=5038
+            - ASTERISK_SSH_PORT=9022
+            - ASTERISK_PREFIX=

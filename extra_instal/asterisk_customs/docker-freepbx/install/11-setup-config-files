@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+set -x
+
+DOCKER_NET=$(route -n |sed -n 4p  |awk '{print $1}')
+DOCKER_NET_MASK=$(route -n |sed -n 4p  |awk '{print $3}')
+
+F=/etc/asterisk/manager_custom.conf
+cat /config/manager_custom.conf.appendix >> $F
+sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
+sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
+sed -i "s/__ASTERISK_AMI_USER__/$ASTERISK_AMI_USER/g" $F
+sed -i "s/__ASTERISK_AMI_PASSWORD__/$ASTERISK_AMI_PASSWORD/g" $F
+
+F=/etc/asterisk/ari_additional_custom.conf
+cat /config/ari_additional_custom.conf.appendix >> $F
+sed -i "s/__DOCKER_NET__/$DOCKER_NET/g" $F
+sed -i "s/__DOCKER_NET_MASK__/$DOCKER_NET_MASK/g" $F
+sed -i "s/__ASTERISK_ARI_USER__/$ASTERISK_ARI_USER/g" $F
+sed -i "s/__ASTERISK_ARI_PASSWORD__/$ASTERISK_ARI_PASSWORD/g" $F
+
+
+KEYCOLUMN="\`key\`"
+echo $KEYCOLUMN
+mysql asterisk <<EOF
+update freepbx_settings set value='1' where keyword = 'HTTPENABLED';
+update kvstore_Sipsettings set val = '$EXTERNIP' where $KEYCOLUMN='externip' and id = 'noid';
+insert into kvstore_Sipsettings($KEYCOLUMN, val, id) values('rtpstart', '$RTPSTART', 'noid');
+insert into kvstore_Sipsettings($KEYCOLUMN, val, id) values('rtpend', '$RTPEND', 'noid');
+EOF
+

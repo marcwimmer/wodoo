@@ -1,0 +1,12 @@
+#!/usr/bin/with-contenv bash
+set -x
+set -e
+
+mkdir -p /run/sshd
+/usr/sbin/sshd 
+service mysql start
+bash /11-setup-config-files
+service apache2 restart >/dev/null
+fwconsole start
+fwconsole reload
+asterisk -rvx "core restart now"

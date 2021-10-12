@@ -1,0 +1,32 @@
+# borrowed from tiredofit
+version: '3.7'
+
+services:
+    freepbx:
+        container_name: freepbx-app
+        build: .
+        volumes:
+            - './docker-freepbx/install:/install'
+        ports:
+            - 9080:80
+            - "9022:22"
+            - 8088:8088
+            - 5038:5038
+            - "5060:5060/tcp"
+            - "5060:5060/udp"
+            - 5160:5160
+            - "10000-10200:10000-10200/udp"
+            - 4445:4445
+        environment: 
+            # must match above
+            - ASTERISK_ARI_USER=ariuser1
+            - ASTERISK_ARI_PASSWORD=password1
+            - ASTERISK_AMI_USER=an_ami_user2
+            - ASTERISK_AMI_PASSWORD=a_password
+
+            - RTPSTART=10000
+            - RTPEND=10200
+            # set by run_freepbx
+            - EXTERNIP
+
+            - UCP_FIRST=False

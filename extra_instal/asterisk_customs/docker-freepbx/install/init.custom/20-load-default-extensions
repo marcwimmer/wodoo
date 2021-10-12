@@ -1,0 +1,15 @@
+#!/bin/bash
+set -ex
+
+service mysql start
+service apache2 restart >/dev/null
+
+# apply to /etc/asterisk
+fwconsole start || /var/lib/asterisk/bin/retrieve_conf
+fwconsole bi --type='extensions' /default_extensions.csv
+fwconsole reload || /var/lib/asterisk/bin/retrieve_conf
+
+# shutdown
+fwconsole stop
+service apache2 stop >/dev/null
+service mysql stop

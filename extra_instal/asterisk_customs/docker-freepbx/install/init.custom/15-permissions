@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+set -x
+
+chown asterisk:asterisk /var/www/html -R
+
+chown root:root /root/.ssh -R
+chmod 500 /root/.ssh
+chmod 400 /root/.ssh/authorized_keys

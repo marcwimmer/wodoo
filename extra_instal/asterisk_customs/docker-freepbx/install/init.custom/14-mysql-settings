@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+set -x
+
+service mysql start
+service apache2 restart >/dev/null
+
+# set some settings in freepbx
+MYSQL="mysql asterisk"
+echo "update freepbx_settings set value='1' where keyword = 'HTTPENABLED';" | $MYSQL
+echo "update freepbx_settings set value='1' where keyword = 'ENABLE_ARI';" | $MYSQL
+echo "update freepbx_settings set value='*' where keyword = 'ARI_ALLOWED_ORIGINS';" | $MYSQL
+
+# apply to /etc/asterisk
+echo "fwconsole start settings permissions takes LONG but works"
+fwconsole start || /var/lib/asterisk/bin/retrieve_conf
+fwconsole reload || /var/lib/asterisk/bin/retrieve_conf
+
+# shutdown
+fwconsole stop
+service apache2 stop >/dev/null
+service mysql stop
