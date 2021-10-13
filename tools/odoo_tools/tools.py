@@ -274,15 +274,26 @@ def _merge_env_dict(env):
         res[k] = v
     return res
 
+def _set_default_envs(env):
+    env = env or {}
+    env.update({
+        'DOCKER_BUILDKIT' : '1',
+        'COMPOSE_DOCKER_CLI_BUILD': '1'
+    })
+    return env
+
 def __dc(cmd, env={}):
     c = __get_cmd() + cmd
+    env = _set_default_envs(env)
     return subprocess.check_call(c, env=_merge_env_dict(env))
 
 def __dc_out(cmd, env={}):
     c = __get_cmd() + cmd
+    env = _set_default_envs(env)
     return subprocess.check_output(c, env=_merge_env_dict(env))
 
 def __dcexec(cmd, interactive=True, env=None):
+    env = _set_default_envs(env)
     c = __get_cmd()
     c += ['exec']
     if not interactive:
@@ -297,6 +308,7 @@ def __dcexec(cmd, interactive=True, env=None):
         return subprocess.check_output(cmd)
 
 def __dcrun(cmd, interactive=False, env={}, returncode=False, pass_stdin=None):
+    env = _set_default_envs(env)
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ['run']
     if not interactive:
