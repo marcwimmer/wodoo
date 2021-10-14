@@ -9,7 +9,7 @@ repos:
   type: submodule
   url: https://git.itewimmer.de/odoo/public_modules/snippets
 - branch: master
-  path: extra_instal/asterisk_customs
+  path: extra_install/asterisk_customs
   sha: 390f12b761dc8934a5db3ad54233f41815707406
   type: integrated
   url: git@git.itewimmer.de:odoo/asterisk_customs.git
