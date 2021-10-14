@@ -63,29 +63,10 @@
         "webkit-tools",
         "website"
     ],
-    "version": 13.0,
-    "modules": [
-        {
-            "path": "addons_cc",
-            "urls": [
-                "ssh://git@git.clear-consulting.de:50004/odoo/modules/patches",
-                "ssh://git@git.clear-consulting.de:50004/odoo/modules/tools"
-            ],
-            "branch": "11.0"
-        }
-    ],
-    "not_allowed_commit_branches": [
-        "master",
-        "stage",
-    ],
+    "version": 15.0,
     "addons_paths": [
         "odoo/odoo/addons",
         "odoo/addons",
-        "addons_cc/tools",
-        "addons_cc/tools",
-        "addons_cc/tools/fuzzy_search",
-        "addons_cc/tools/excel_module",
-        "addons_cc/tools/datapolice",
         "addons_OCA/account-financial-tools",
         "addons_OCA/purchase-workflow",
         "addons_OCA/contract",

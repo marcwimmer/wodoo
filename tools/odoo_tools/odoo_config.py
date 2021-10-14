@@ -220,10 +220,6 @@ class MANIFEST_CLASS(object):
 
     def _update(self, d):
         d['install'] = list(sorted(d['install']))
-        d['OCA'] = list(sorted(d['OCA']))
-        for mod in d['modules']:
-            mod['urls'] = list(sorted(filter(lambda x: x, mod.get('urls', []))))
-            mod['branch'] = str(mod['branch'])
         s = json.dumps(d, indent=4)
         CUSTOMS_MANIFEST_FILE().write_text(s)
 
