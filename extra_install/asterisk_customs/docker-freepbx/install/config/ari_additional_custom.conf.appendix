@@ -1,0 +1,8 @@
+
+[__ASTERISK_ARI_USER__]
+type=user
+password=__ASTERISK_ARI_PASSWORD__
+password_format=plain
+read_only=no
+
+

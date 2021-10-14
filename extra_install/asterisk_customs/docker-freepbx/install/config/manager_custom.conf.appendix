@@ -1,0 +1,11 @@
+
+
+[__ASTERISK_AMI_USER__]
+secret = __ASTERISK_AMI_PASSWORD__
+deny=0.0.0.0/0.0.0.0
+permit=__DOCKER_NET__/__DOCKER_NET_MASK__
+read = agi,system,call,log,verbose,command,agent,user,config,command,dtmf,reporting,cdr,dialplan,originate,message
+write = agi,system,call,log,verbose,command,agent,user,config,command,dtmf,reporting,cdr,dialplan,originate,message
+
+
+

@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+set -x
+
+service mysql start
+service apache2 restart >/dev/null
+
+# install restservice
+fwconsole ma downloadinstall manager
+fwconsole ma downloadinstall restapi
+fwconsole ma downloadinstall arimanager
+fwconsole ma downloadinstall bulkhandler
+
+# apply to /etc/asterisk
+fwconsole start || /var/lib/asterisk/bin/retrieve_conf
+fwconsole reload || /var/lib/asterisk/bin/retrieve_conf
+
+# shutdown
+fwconsole stop
+service apache2 stop >/dev/null
+service mysql stop

@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+set -x
+
+cat >> /var/www/html/admin/modules/soundlang/views/oobe.php << EOF
+<script>
+\$("#oobeSoundLang").val("en");
+\$("#localeForm").submit();
+</script>
+
+
+EOF
+
+#service mysql start
+#service apache2 restart >/dev/null
+
+## install restservice
+#fwconsole ma downloadinstall soundlang
+
+## shutdown
+#fwconsole stop
+#service apache2 stop >/dev/null
+#service mysql stop

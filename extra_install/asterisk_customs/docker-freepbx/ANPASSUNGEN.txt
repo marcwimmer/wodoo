@@ -1,0 +1,11 @@
+Basis fuer dieses docker ist das tiredofit/docker-freepbx image.
+
+tiredofit ist so vorgegangen, dass in 10-freepbx in den
+continit Verzeichnissen, saemtliche Module fuer Asterisk runtergeladen 
+wurden (per fwconsole downloadinstall arimanager usw.).
+Nachteil aus meiner Sicht ist, dass dann das Starten immer lange dauerte.
+
+Ziel dieses docker ist es, zuegig eine Entwicklungsumgebung zur Verfuegung 
+zu stellen, um den ari manager und die phonebox zu testen.
+
+Das Warten, bis die immergleichen Downloads passiert sind, dauerte zu lang.
