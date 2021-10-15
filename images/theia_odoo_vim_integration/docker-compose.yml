@@ -4,8 +4,6 @@ services:
     image: "nginx:1.21"
     volumes:
       - ${ODOO_HOME}/images/theia_odoo_vim_integration/nginx.conf:/etc/nginx/nginx.conf
-    ports:
-      - "4000:80"
   theia:
     build:
       context: ${ODOO_HOME}/images/theia_odoo_vim
@@ -13,8 +11,6 @@ services:
         USER_ID: ${OWNER_UID}
         DOCKER_GROUP_ID: ${DOCKER_GROUP_ID}
     privileged: true
-    #ports:
-      # - "3030:3030" # debugging theia plugin
     volumes:
       - ${CUSTOMS_DIR}:/home/project
       - ${ODOO_HOME}/images/theia_odoo_vim/add_vsix_files:/home/vsix_files
