@@ -15,10 +15,6 @@
 [submodule "repos/OpenUpgrade"]
 	path = repos/OpenUpgrade
 	url = https://github.com/OCA/OpenUpgrade.git
-[submodule "images/theia_odoo_vim"]
-	path = images/theia_odoo_vim
-	url = ssh://git@git.itewimmer.de/theia/odoo-vim
-	branch = master
 [submodule "tools/snippets"]
 	path = tools/snippets
 	url = https://git.itewimmer.de/odoo/public_modules/snippets
