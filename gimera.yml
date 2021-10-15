@@ -2,7 +2,7 @@ repos:
 - branch: master
   patches: []
   path: images/theia_odoo_vim
-  type: submodule
+  type: integrated
   url: ssh://git@git.itewimmer.de/theia/odoo-vim
 - branch: master
   path: tools/snippets
