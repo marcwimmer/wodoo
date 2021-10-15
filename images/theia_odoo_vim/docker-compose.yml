@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  theia:
+    build:
+      args:
+        USER_ID: ${OWNER_UID}
+        DOCKER_GROUP_ID: ${DOCKER_GROUP_ID}
+    privileged: true
+    #ports:
+      # - "3000:3000"
+      # - "3030:3030" # debugging theia plugin
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      #- ./add_vsix_files:/home/vsix_files/default
+      #- ./plugins:/home/plugins
