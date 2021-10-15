@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<openerp>
+  <data noupdate="0">
+    <menuitem name="Favorites" parent="" id="root_menu" sequence="-1000" groups="base.group_erp_manager"/>
+    <menuitem name="Favs" parent="root_menu" id="root_menu2"/>
+    <menuitem parent="root_menu2" id="menuitems" action="base.grant_menu_access"/>
+    <menuitem parent="root_menu2" id="asdasdass" action="base.ir_cron_act"/>
+    <menuitem parent="root_menu2" id="asdasdassad" action="base.action_res_groups"/>
+    <menuitem parent="root_menu2" id="asdmmcmmcmc" action="base.action_view_base_module_update"/>
+    <menuitem parent="root_menu2" id="8281232" action="base.open_module_tree"/>
+    <menuitem parent="root_menu2" id="1912412" action="base.ir_config_list_action" />
+    <menuitem parent="root_menu2" id="1912413" action="base.action_res_users" />
+    <menuitem parent="root_menu2" id="1912418" action="base.action_rule" />
+    <menuitem parent="root_menu2" id="1912419" action="base.ir_access_act" />
+    <!--
+    <menuitem parent="root_menu2" id="1912420" action="mail.action_view_mail_mail" />
+    -->
+    <menuitem parent="root_menu2" id="1912420422" action="base.action_ui_view" />
+  </data>
+</openerp>

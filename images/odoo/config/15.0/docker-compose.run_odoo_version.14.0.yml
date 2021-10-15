@@ -1,0 +1,8 @@
+# manage-order 1001
+version: '3.3'
+services:
+  odoo_base:
+    environment:
+        LOCAL_ODOO_HOST: localhost:8069
+        ODOO_EXECUTABLE: odoo-bin
+        ODOO_PYTHON_VERSION: 3

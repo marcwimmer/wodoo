@@ -1,0 +1,7 @@
+<odoo><data>
+    <template id="report_assets_common" inherit_id="web.report_assets_common">
+        <xpath expr="." position="inside">
+        <link rel="stylesheet" href="/report_pdf_watermark/report/styles.less"/></xpath>
+    </template>
+    </data>
+    </odoo>
