@@ -125,7 +125,7 @@ def __get_odoo_commit():
         raise Exception("No odoo commit defined.")
     return commit
 
-def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False, params=None):
+def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False, params=None, return_columns=False):
 
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect(connection):
@@ -153,7 +153,10 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
         try:
             res = _call_cr(cr)
             conn.commit()
-            return res
+            if return_columns:
+                return [x.name for x in cr.description], res
+            else:
+                return res
         except Exception:
             conn.rollback()
             raise
