@@ -21,5 +21,6 @@ repos:
   url: https://gitlab.com/davical-project/awl.git
 - branch: master
   path: machines/calendar/src/awl
+  sha: 827fbfed7dab0ca339998ca6cdcffb328246d83b
   type: integrated
   url: https://gitlab.com/davical-project/awl.git
