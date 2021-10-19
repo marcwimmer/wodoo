@@ -179,15 +179,15 @@ def anonymize(ctx, config):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
 
-    Commands.invoke(
-        ctx,
-        'update',
-        module=['anonymize'],
-        no_restart=False,
-        no_dangling_check=True,
-        no_update_module_list=False,
-        non_interactive=True,
-    )
+    # Commands.invoke(
+    #     ctx,
+    #     'update',
+    #     module=['anonymize'],
+    #     no_restart=False,
+    #     no_dangling_check=True,
+    #     no_update_module_list=False,
+    #     non_interactive=True,
+    # )
 
     Commands.invoke(
         ctx,
