@@ -48,10 +48,6 @@ ENV USE_LOCAL_GIT true
 # customizations:
 USER root
 
-ADD git_itewimmer_readonly /root/.ssh/id_rsa
-RUN chmod 400 /root/.ssh/id_rsa && \
-GIT_SSH_COMMAND='ssh -i /root/.ssh/id_rsa -o IdentitiesOnly=yes -o StrictHostKeyChecking=no' git clone ssh://git@git.itewimmer.de/odoo/docker /opt/odoo 
-
 RUN pip3 install pip -U && \
     pip3 install flake8 pylint && \
     chown theia:theia /home/theia -R && \
@@ -71,7 +67,6 @@ RUN pip3 install pip -U && \
     usermod -aG docker_host theia && \
     mkdir -p /home/theia/.cache/pip && \
     chown theia:theia /home/theia/.cache -R && \
-    pip3 install -r /opt/odoo/requirements.txt && \
     pip3 install flake8 pylint 
 
 ADD entrypoint.sh /entrypoint.sh
