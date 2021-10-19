@@ -19,19 +19,22 @@ version = odoo_config.current_version()
 is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "0") == "1"
 is_odoo_queuejob = os.getenv("IS_ODOO_QUEUEJOB", "0") == "1"
 
-def _replace_params_in_config(file_name, ADDONS_PATHS, content):
+def _replace_params_in_config(file_name, ADDONS_PATHS, content, server_wide_modules=None):
     if not config.get("DB_HOST", "") or not config.get("DB_USER", ""):
         raise Exception("Please define all DB Env Variables!")
     content = content.replace("__ADDONS_PATH__", ADDONS_PATHS)
     content = content.replace("__ENABLE_DB_MANAGER__", 'True' if config['ODOO_ENABLE_DB_MANAGER'] == '1' else 'False')
 
-    server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
-    if (os.getenv("IS_ODOO_QUEUEJOB", "") == "1" or os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1") and 'debug' not in file_name:
-        server_wide_modules += ['queue_job']
-    if os.getenv("IS_ODOO_QUEUEJOB", "") != "1" or 'debug' in file_name:
-        if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") != "1":
-            if 'queue_job' in server_wide_modules:
-                server_wide_modules.remove('queue_job')
+    if server_wide_modules:
+        server_wide_modules = server_wide_modules
+    else:
+        server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
+        if (os.getenv("IS_ODOO_QUEUEJOB", "") == "1" or os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") == "1") and 'debug' not in file_name:
+            server_wide_modules += ['queue_job']
+        if os.getenv("IS_ODOO_QUEUEJOB", "") != "1" or 'debug' in file_name:
+            if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") != "1":
+                if 'queue_job' in server_wide_modules:
+                    server_wide_modules.remove('queue_job')
     server_wide_modules = ','.join(server_wide_modules)
 
     if file_name == 'config_update':
@@ -79,8 +82,13 @@ def _replace_variables_in_config_files(local_config):
     no_extra_addons_paths = False
     if local_config and local_config.no_extra_addons_paths:
         no_extra_addons_paths = True
+    additional_addons_paths = False
+    if local_config and local_config.additional_addons_paths:
+        additional_addons_paths = local_config.additional_addons_paths
+
     ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths(
-        no_extra_addons_paths=no_extra_addons_paths
+        no_extra_addons_paths=no_extra_addons_paths,
+        additional_addons_paths=(additional_addons_paths or '').split(','),
     ))))
 
     def _combine(common_content, content):
@@ -103,7 +111,8 @@ def _replace_variables_in_config_files(local_config):
 
     def _get_config(filepath):
         content = filepath.read_text()
-        content = _replace_params_in_config("", ADDONS_PATHS, content)
+        server_wide_modules = (local_config and local_config.server_wide_modules and local_config.server_wide_modules.split(",")) or None
+        content = _replace_params_in_config("", ADDONS_PATHS, content, server_wide_modules=server_wide_modules)
         cfg = configparser.ConfigParser()
         cfg.read_string(content)
         return cfg
