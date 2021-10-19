@@ -1,0 +1,2 @@
+model_id:id,group_id:id,id,name,perm_read,perm_write,perm_create,perm_unlink
+model_queue_job_severity_rule,base.group_system,queue_job_severity_rule_base_group_system,queue.job.severity_rule - base_group_system,1,1,1,1

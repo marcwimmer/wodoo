@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<odoo>
+  <data noupdate="0">
+    <record id="view_ir_rule_form" model="ir.ui.view">
+      <field name="model">ir.rule</field>
+      <field name="inherit_id" ref="base.view_rule_form"/>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <group position="after">
+          <group string="XMLID">
+            <field name="xml_id" nolabel="1"/>
+          </group>
+        </group>
+      </field>
+    </record>
+  </data>
+</odoo>

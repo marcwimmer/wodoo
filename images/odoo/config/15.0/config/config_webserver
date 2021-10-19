@@ -1,0 +1,5 @@
+[options]
+log_handler1 = :ERROR,openerp:ERROR,werkzeug:ERROR
+log_handler = :DEBUG,openerp:DEBUG,werkzeug:DEBUG
+max_cron_threads = 0
+workers = 8
