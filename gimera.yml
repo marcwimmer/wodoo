@@ -14,3 +14,11 @@ repos:
   sha: 390f12b761dc8934a5db3ad54233f41815707406
   type: integrated
   url: git@git.itewimmer.de:odoo/asterisk_customs.git
+- branch: master
+  path: machines/calendar/src/davical
+  type: integrated
+  url: https://gitlab.com/davical-project/awl.git
+- branch: master
+  path: machines/calendar/src/awl
+  type: integrated
+  url: https://gitlab.com/davical-project/awl.git
