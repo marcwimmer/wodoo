@@ -19,11 +19,14 @@ try:
 except Exception:
     pass
 
-def get_odoo_addons_paths(relative=False, no_extra_addons_paths=False):
+def get_odoo_addons_paths(relative=False, no_extra_addons_paths=False, additional_addons_paths=False):
     m = MANIFEST()
     c = customs_dir()
     res = []
-    for x in m['addons_paths']:
+    addons_paths = m['addons_paths']
+    if additional_addons_paths:
+        addons_paths += additional_addons_paths
+    for x in addons_paths:
         if no_extra_addons_paths:
             if x not in ['odoo/addons', 'odoo/odoo/addons']:
                 continue
