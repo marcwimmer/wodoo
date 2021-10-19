@@ -244,6 +244,8 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 @click.option('--no-install-server-wide-first', default=False, is_flag=True)
 @click.option('--no-extra-addons-paths', is_flag=True)
 @click.option('-c', '--config-file', default='config_update', help="Specify config file to use, for example config_update")
+@click.option('--server-wide-modules')
+@click.option('--additional-addons-paths')
 @pass_config
 @click.pass_context
 def update(
@@ -252,13 +254,20 @@ def update(
     non_interactive, no_update_module_list, no_install_server_wide_first,
     no_extra_addons_paths, no_dangling_check=False, check_install_state=True,
     no_restart=True, i18n=False, tests=False,
-    config_file=False,
+    config_file=False, server_wide_modules=False, additional_addons_paths=False
     ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
 
     To update all (custom) modules set "all" here
+
+
+    Sample call migration 14.0:
+    odoo update --no-dangling-check --config-file=config_migration --server-wide-modules=web,openupgrade_framework --additional-addons-paths=openupgrade base
+
+
+
     """
     click.secho("""
 
@@ -347,6 +356,10 @@ def update(
             params += ['--i18n']
         if not tests:
             params += ['--no-tests']
+        if server_wide_modules:
+            params += ['--server-wide-modules', server_wide_modules]
+        if additional_addons_paths:
+            params += ['--additional-addons-paths', additional_addons_paths]
         params += ["--config-file=" + config_file]
         rc = _exec_update(config, params)
         if rc:
