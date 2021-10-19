@@ -77,10 +77,6 @@ class Anonymizer(models.AbstractModel):
         for table, fieldnames in name_fields.items():
             if not fieldnames:
                 continue
-            if 'partner' in table:
-                breakpoint()
-            else:
-                continue
             cr = self.env.cr
             cr.execute("select table_name from information_schema.tables where table_name = %s and TABLE_TYPE ='BASE TABLE'", (table,))
             if not cr.fetchone():
