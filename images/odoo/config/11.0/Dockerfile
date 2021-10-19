@@ -18,6 +18,7 @@ apt-get install \
             cmake \
             ctags \
 			build-essential \
+            libtool \ 
             htop \
             ca-certificates \
             curl \
@@ -87,10 +88,13 @@ apt-get install \
             libreoffice-java-common \
             postgresql-client \
             git \
-            libpq-dev
+            libpq-dev \
+            autoconf \
+            python-dev \
+            pkg-config \
+            curl
 
 # https://github.com/openvenues/pypostal postal lib for address checking
-RUN apt install -y curl autoconf automake libtool python-dev pkg-config
 ADD install_libpostal.sh /root/install_libpostal.sh
 RUN if [ "$TARGETARCH" = "amd64" ]; then bash /root/install_libpostal.sh; fi
 

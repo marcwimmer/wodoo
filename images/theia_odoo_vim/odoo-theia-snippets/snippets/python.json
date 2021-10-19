@@ -1,9 +1,0 @@
-{
-	"iterfiles": {
-        "prefix": "iterfiles",
-        "body": [
-            "from itertools import chain",
-            "result = (chain.from_iterable(glob(os.path.join(x[0], '*.tif')) for x in os.walk('.')))"
-        ]
-    }
-}
