@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 import yaml
 import arrow
 import json
@@ -376,6 +377,34 @@ ORDER BY total_bytes DESC;
     if top:
         rows = rows[:top]
     click.echo(tabulate(rows, ["TABLE_NAME", "row_estimate", "total", 'INDEX', 'toast', 'TABLE']))
+
+@db.command(help="Export as excel")
+@click.argument("sql", required=True)
+@pass_config
+def excel(config, sql):
+    import xlsxwriter
+    conn = config.get_odoo_conn()
+    columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
+    filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
+ 
+    # Workbook() takes one, non-optional, argument
+    # which is the filename that we want to create.
+    workbook = xlsxwriter.Workbook(str(filepath))
+    
+    # The workbook object is then used to add new
+    # worksheet via the add_worksheet() method.
+    worksheet = workbook.add_worksheet()
+
+    for icol, col in enumerate(columns):
+        worksheet.write(0, icol, col)
+
+
+    for irow, rec in enumerate(rows):
+        for icol, col in enumerate(rec):
+            worksheet.write(irow + 1, icol, col)
+
+    workbook.close()
+    click.secho(f"File created: {filepath}")
 
 
 Commands.register(reset_db, 'reset-db')

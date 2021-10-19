@@ -63,7 +63,7 @@
         "webkit-tools",
         "website"
     ],
-    "version": 11.0,
+    "version": 13.0,
     "modules": [
         {
             "path": "addons_cc",

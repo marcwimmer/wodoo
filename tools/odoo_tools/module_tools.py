@@ -322,9 +322,14 @@ def make_customs(path):
     subprocess.call(["git", "init"], cwd=path)
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
+    subprocess.call(['gimera', 'apply', '--update'], cwd=path)
+    subprocess.call([
+        'rsync',
+        '-ar',
+        str(src_dir.parent.parent / 'images' / 'odoo' / 'odoo_modules' / str(manifest['version'])) + "/",
+        'addons_tools/'], cwd=path)
 
     click.secho("Initialized - please call following now.", fg='green')
-    click.secho("odoo pull --oca", fg='green')
     click.secho("odoo db reset", fg='green')
     sys.exit(0)
 
@@ -523,7 +528,9 @@ class Modules(object):
     def __init__(self):
         cache_file = self._get_cache_path()
         if self.is_git_clean():
-            if not cache_file.exists():
+            if not cache_file:
+                pass
+            elif cache_file or not cache_file.exists():
                 modules = self._get_modules()
                 cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
@@ -535,6 +542,8 @@ class Modules(object):
     def _get_cache_path(self):
         # 
         from git import Repo
+        if not (Path(os.getcwd()) / '.git').exists():
+            return None
         repo = Repo(os.getcwd())
         sha = repo.head.commit.hexsha
         full_path = os.getcwd().replace('/', '_')
@@ -569,6 +578,8 @@ class Modules(object):
         return modules
 
     def is_git_clean(self):
+        if not ((Path(os.getcwd())) / '.git').exists():
+            return True
         status = subprocess.check_output(['/usr/bin/git', 'status', '--porcelain']).decode('utf-8').strip()
         if status:
             click.secho(f'unclean git: {status}')
