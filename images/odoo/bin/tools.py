@@ -88,7 +88,7 @@ def _replace_variables_in_config_files(local_config):
 
     ADDONS_PATHS = ','.join(list(map(str, odoo_config.get_odoo_addons_paths(
         no_extra_addons_paths=no_extra_addons_paths,
-        additional_addons_paths=additional_addons_paths.split(','),
+        additional_addons_paths=(additional_addons_paths or '').split(','),
     ))))
 
     def _combine(common_content, content):
@@ -111,7 +111,7 @@ def _replace_variables_in_config_files(local_config):
 
     def _get_config(filepath):
         content = filepath.read_text()
-        server_wide_modules = local_config.server_wide_modules and local_config.server_wide_modules.split(",") or None
+        server_wide_modules = (local_config and local_config.server_wide_modules and local_config.server_wide_modules.split(",")) or None
         content = _replace_params_in_config("", ADDONS_PATHS, content, server_wide_modules=server_wide_modules)
         cfg = configparser.ConfigParser()
         cfg.read_string(content)
