@@ -261,6 +261,13 @@ def update(
     Minimal downtime;
 
     To update all (custom) modules set "all" here
+
+
+    Sample call migration 14.0:
+    odoo update --no-dangling-check --config-file=config_migration --server-wide-modules=web,openupgrade_framework --additional-addons-paths=openupgrade base
+
+
+
     """
     click.secho("""
 
