@@ -3,13 +3,12 @@ import json
 import click
 import iscompatible
 from pathlib import Path
-from datetime import datetime
 from copy import deepcopy
 import pickle
 import os
-import codecs
 import shutil
 import uuid
+from .tools import __try_to_set_owner as try_to_set_owner
 try:
     from psycopg2 import IntegrityError
 except Exception:
@@ -18,18 +17,14 @@ from .tools import _extract_python_libname
 from .tools import _exists_table
 from .tools import _execute_sql
 from .odoo_config import odoo_root
-from .odoo_config import run_dir
 from .odoo_config import get_conn_autoclose
-from .odoo_config import current_customs
 from .odoo_config import current_version
 from .odoo_config import current_db
 from .odoo_config import customs_dir
 from .odoo_config import translate_path_into_machine_path
-from .odoo_config import translate_path_relative_to_customs_root
 from .odoo_config import MANIFEST_FILE
 from .odoo_config import MANIFEST
 from .myconfigparser import MyConfigParser
-import traceback
 from .odoo_parser import get_view
 import fnmatch
 import re
@@ -43,8 +38,6 @@ except Exception:
     from xmlrpc import client as xmlrpclib
 import inspect
 import sys
-import threading
-import glob
 from .tools import _get_missing_click_config
 
 LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
@@ -530,7 +523,7 @@ class Modules(object):
         if self.is_git_clean():
             if not cache_file:
                 pass
-            elif cache_file or not cache_file.exists():
+            elif not cache_file.exists():
                 modules = self._get_modules()
                 cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
@@ -547,8 +540,19 @@ class Modules(object):
         repo = Repo(os.getcwd())
         sha = repo.head.commit.hexsha
         full_path = os.getcwd().replace('/', '_')
-        parent = Path(f"/tmp/.odoo.modules.{os.getuid()}.{full_path}")
+        if os.getenv("SUDO_UID"):
+            uid = int(os.getenv("SUDO_UID"))
+        else:
+            uid = os.getuid()
+        parent = Path(f"/tmp/.odoo.modules.{uid}.{full_path}")
         parent.mkdir(exist_ok=True)
+        if os.getenv("SUDO_USER"):
+            try_to_set_owner(
+                os.environ['SUDO_UID'],
+                parent,
+                autofix=True,
+            )
+        
         return parent / sha
 
     def _get_modules(self):
