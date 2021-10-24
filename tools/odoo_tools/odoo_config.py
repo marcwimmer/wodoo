@@ -134,6 +134,8 @@ def customs_dir():
         manifest_file = Path(os.getcwd()) / 'MANIFEST'
         if manifest_file.exists():
             return manifest_file.parent
+        else:
+            click.secho("no MANIFEST file found in current directory.")
     return Path(env_customs_dir)
 
 def run_dir():
