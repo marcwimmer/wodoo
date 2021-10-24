@@ -1,18 +1,4 @@
-import shutil
-import subprocess
-import hashlib
-import os
-import tempfile
 import click
-from .tools import __assert_file_exists
-from .tools import __safe_filename
-from .tools import __read_file
-from .tools import __write_file
-from .tools import __append_line
-from .tools import __replace_in_file
-from .tools import _sanity_check
-from .tools import __get_odoo_commit
-from .tools import _fix_permissions
 from .tools import _askcontinue
 from .tools import remove_webassets
 from . import cli, pass_config
@@ -23,11 +9,6 @@ from . import Commands
 @pass_config
 def setup(config):
     pass
-
-@setup.command()
-@pass_config
-def doctor(config):
-    _sanity_check(config)
 
 @setup.command()
 @pass_config
@@ -68,11 +49,6 @@ def status(config):
     click.secho("db: ", nl=False)
     click.secho(config.dbname, fg=color, bold=True)
 
-@setup.command()
-@pass_config
-def fix_permissions(config):
-    _fix_permissions(config)
 
 
 Commands.register(status)
-Commands.register(fix_permissions)
