@@ -21,6 +21,7 @@ RUN apt-get install \
             cmake \
             ctags \
 			build-essential \
+            libtool \
             htop \
             ca-certificates \
             curl \
@@ -88,7 +89,12 @@ RUN apt-get install \
             libpoppler-cpp-dev \
             postgresql-client \
             sassc \
-            libsqlite3-dev
+            libsqlite3-dev \
+            autoconf \
+            python-dev \
+            pkg-config \
+            curl
+
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
@@ -134,6 +140,8 @@ RUN hash -r && \
 RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
+ADD install_libpostal.sh /root/install_libpostal.sh
+RUN bash /root/install_libpostal.sh
 
 
 RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/pip_requirements.txt

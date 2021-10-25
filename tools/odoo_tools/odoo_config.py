@@ -19,11 +19,14 @@ try:
 except Exception:
     pass
 
-def get_odoo_addons_paths(relative=False, no_extra_addons_paths=False):
+def get_odoo_addons_paths(relative=False, no_extra_addons_paths=False, additional_addons_paths=False):
     m = MANIFEST()
     c = customs_dir()
     res = []
-    for x in m['addons_paths']:
+    addons_paths = m['addons_paths']
+    if additional_addons_paths:
+        addons_paths += additional_addons_paths
+    for x in addons_paths:
         if no_extra_addons_paths:
             if x not in ['odoo/addons', 'odoo/odoo/addons']:
                 continue
@@ -131,6 +134,8 @@ def customs_dir():
         manifest_file = Path(os.getcwd()) / 'MANIFEST'
         if manifest_file.exists():
             return manifest_file.parent
+        else:
+            click.secho("no MANIFEST file found in current directory.")
     return Path(env_customs_dir)
 
 def run_dir():

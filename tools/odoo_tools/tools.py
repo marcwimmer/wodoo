@@ -479,40 +479,6 @@ def _remember_customs_and_cry_if_changed(config):
                     click.echo("Customs changed - you need to restart and/or rebuild!")
                     __dc(['stop', '-t 2'])
 
-def _sanity_check(config):
-    owner_uid = config.owner_uid_as_int
-
-    errors = False
-    if config.run_postgres is None:
-        click.secho("Please define RUN_POSTGRES", fg='red')
-
-    if config.run_postgres and config.db_host != 'postgres':
-        click.secho("You are using the docker postgres container, but you do not have the DB_HOST set to use it.", fg='red')
-        click.secho("Either configure DB_HOST to point to the docker container or turn it off by: ", fg='red')
-        click.secho("RUN_POSTGRES=0", fg='red')
-
-    if config.odoo_files and Path(config.odoo_files).is_dir():
-        if owner_uid and Path(config.odoo_files).stat().st_uid != owner_uid:
-            _fix_permissions(config)
-
-    if owner_uid and config.dirs['run'].exists():
-        for file in config.dirs['run'].glob("**/*"):
-            if not file.is_dir():
-                continue
-            if file.stat().st_uid != owner_uid:
-                __try_to_set_owner(
-                    owner_uid,
-                    file,
-                    recursive=True,
-                    autofix=True,
-                )
-
-    # make sure the odoo_debug.txt exists; otherwise directory is created
-    __file_default_content(config.files['run/odoo_debug.txt'], "")
-
-    if errors:
-        sys.exit(-1)
-
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
     rows = _execute_sql(
@@ -544,10 +510,10 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
         if not res:
             return
 
-        for run in ["", "sudo"]:
-            repair_command = f"{run} {find_command} -exec chown {UID}:{UID} {{}} \\; 2>/dev/null;"
-            if run == 'sudo':
-                click.secho(f"Executing: {repair_command}")
+        runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
+        for run in runs:
+            # dont set to UID:UID --> group not necessarily matches user id
+            repair_command = f"{run} {find_command} -exec chown {UID} {{}} \\; 2>/dev/null;"
             if autofix:
                 os.system(repair_command)
             uid = UID
@@ -603,17 +569,6 @@ def __do_command(cmd, *params, **kwparams):
     cmd = cmd.replace('-', '_')
     return globals()[cmd](*params, **kwparams)
 
-def _fix_permissions(config):
-    from . import odoo_config
-    if config.odoo_files and Path(config.odoo_files).is_dir() and \
-            config.owner_uid and \
-            config.owner_uid_as_int != 0:
-        __try_to_set_owner(
-            config.owner_uid,
-            Path(config.odoo_files),
-            recursive=True,
-            autofix=config.devmode,
-        )
 
 def _get_dump_files(backupdir, fnfilter=None):
     import humanize

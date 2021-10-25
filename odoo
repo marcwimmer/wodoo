@@ -5,7 +5,7 @@ import time
 import os
 import inspect
 
-VERSION = '0.6.1'
+VERSION = '0.6.2'
 
 SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
 
@@ -21,6 +21,13 @@ from odoo_tools.module_tools import make_customs # NOQA
 
 if __name__ == '__main__':
     args = sys.argv[1:]
+
+    # find MANIFEST file and change there
+    current_dir = Path(os.getcwd())
+    while current_dir.parent != current_dir and not (current_dir / "MANIFEST").exists():
+        current_dir = current_dir.parent
+    if current_dir != Path(os.getcwd()) and (current_dir / "MANIFEST").exists():
+        os.chdir(current_dir)
 
     print(f"Version: {VERSION}")
 

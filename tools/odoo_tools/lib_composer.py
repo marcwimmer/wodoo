@@ -15,7 +15,6 @@ import re
 from datetime import datetime
 import sys
 import shutil
-import hashlib
 import os
 import tempfile
 import copy
@@ -23,8 +22,6 @@ import click
 from . import tools
 from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
-from .tools import _file2env
-from .tools import __append_line
 from .tools import _makedirs
 from .tools import __try_to_set_owner
 from .tools import __empty_dir
@@ -196,10 +193,15 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
     from .myconfigparser import MyConfigParser
     from .settings import _export_settings
 
+    if os.getenv("SUDO_UID"):
+        whoami = f"{os.environ['SUDO_USER']} {os.environ['SUDO_UID']}"
+    else:
+        whoami = str(pwd.getpwuid(os.getuid())[0])
+
     click.secho(f"*****************************************************", fg='yellow')
-    click.secho(f" cwd:         {os.getcwd()}",                           fg='yellow')
-    click.secho(f" whoami:      {pwd.getpwuid( os.getuid() )[ 0 ]}",      fg='yellow')
-    click.secho(f" cmd:         {' '.join(sys.argv)}",                    fg='yellow')
+    click.secho(f" cwd:         {os.getcwd()}"                          , fg='yellow')
+    click.secho(f" whoami:      {whoami}"                               , fg='yellow')
+    click.secho(f" cmd:         {' '.join(sys.argv)}"                   , fg='yellow')
     click.secho(f"*****************************************************", fg='yellow')
 
     defaults = {}
@@ -217,6 +219,12 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
 def _prepare_filesystem(config):
     from .myconfigparser import MyConfigParser
     fileconfig = MyConfigParser(config.files['settings'])
+    if os.getenv("SUDO_USER") and config.dirs['user_conf_dir'].exists():
+        __try_to_set_owner(
+            int(fileconfig['OWNER_UID']),
+            config.dirs['user_conf_dir'],
+            autofix=True,
+        )
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
         path = config.dirs['run'] / subdir
         _makedirs(path)
