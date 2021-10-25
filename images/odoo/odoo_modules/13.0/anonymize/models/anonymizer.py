@@ -53,6 +53,7 @@ class Anonymizer(models.AbstractModel):
 
         name_fields.setdefault('res_parter', [])
         name_fields['res_partner'].append('name')
+        name_fields['res_partner'].append('display_name')
 
         name_fields.setdefault('mail_tracking_value', [])
         name_fields['mail_tracking_value'].append('old_value_char')
@@ -69,6 +70,10 @@ class Anonymizer(models.AbstractModel):
         if os.environ['DEVMODE'] != "1":
             return
         import names
+
+        KEY = 'db.anonymized'
+        if self.env['ir.config_parameter'].get_param(key=KEY, default='0') == '1':
+            return
 
         name_fields = self._get_fields()
 
@@ -134,3 +139,5 @@ class Anonymizer(models.AbstractModel):
                 for icol, col in enumerate(cols):
                     sets.append("{} = %s".format(col))
                 cr.execute("update {} set {} where id = %s".format(table, ','.join(sets)), tuple(values + [rec[0]]))
+
+        self.env['ir.config_parameter'].set_param(KEY, '1')
