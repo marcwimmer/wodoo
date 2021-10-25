@@ -380,12 +380,17 @@ ORDER BY total_bytes DESC;
 
 @db.command(help="Export as excel")
 @click.argument("sql", required=True)
+@click.option('-f', '--file')
 @pass_config
-def excel(config, sql):
+def excel(config, sql, file):
     import xlsxwriter
     conn = config.get_odoo_conn()
     columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
-    filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
+    click.secho(f"exporting {len(rows)} rows...")
+    if file:
+        filepath = Path(os.getcwd()) / file
+    else:
+        filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
  
     # Workbook() takes one, non-optional, argument
     # which is the filename that we want to create.
@@ -402,6 +407,8 @@ def excel(config, sql):
     for irow, rec in enumerate(rows):
         for icol, col in enumerate(rec):
             worksheet.write(irow + 1, icol, col)
+        if not irow % 1000:
+            click.secho(f"Done {irow} rows...")
 
     workbook.close()
     click.secho(f"File created: {filepath}")
