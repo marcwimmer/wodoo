@@ -6,21 +6,12 @@ import inquirer
 from git import Repo
 import traceback
 from datetime import datetime
-import time
 import shutil
-import hashlib
 import os
 import tempfile
 import click
 from .tools import sync_folder
 from .tools import __dcrun
-from .tools import __assert_file_exists
-from .tools import __safe_filename
-from .tools import __read_file
-from .tools import __write_file
-from .tools import __append_line
-from .tools import _exists_table
-from .tools import __get_odoo_commit
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
 from . import cli, pass_config, Commands
@@ -28,7 +19,6 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from pathlib import Path
-import git
 
 class UpdateException(Exception): pass
 

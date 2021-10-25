@@ -74,8 +74,20 @@ def _get_project_name(config, p):
         project_name = config.get("PROJECT_NAME", "")
         if project_name:
             return project_name
-        DEVMODE = config.get("DEVMODE", "") == "1"
 
+    if not (p / '.odoo').exists():
+        if os.getenv("SUDO_USER"):
+            homedir = Path(os.path.expanduser("~" + os.getenv("SUDO_USER")))
+        else:
+            homedir = Path.home()
+        if (homedir / '.odoo' / 'settings').exists():
+            project_name_in_config = [x for x in (homedir / '.odoo' / 'settings').read_text().split("\n") if 'PROJECT_NAME=' in x]
+            if project_name_in_config:
+                return project_name_in_config[0].split("=", 2)[1]
+
+
+
+    DEVMODE = config.get("DEVMODE", "") == "1"
     if DEVMODE:
         return p.name
 

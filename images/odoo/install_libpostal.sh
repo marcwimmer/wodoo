@@ -1,9 +1,11 @@
 #!/bin/bash
 set -e
-pip3 install postal || exit 0
-cd libpostal 
+git clone https://github.com/openvenues/libpostal /root/libpostal
+cd /root/libpostal
 ./bootstrap.sh
 ./configure
-make
+make -j4
 make install
 ldconfig
+pip3 install nose
+pip3 install postal
