@@ -22,6 +22,13 @@ from odoo_tools.module_tools import make_customs # NOQA
 if __name__ == '__main__':
     args = sys.argv[1:]
 
+    # find MANIFEST file and change there
+    current_dir = Path(os.getcwd())
+    while current_dir.parent != current_dir and not (current_dir / "MANIFEST").exists():
+        current_dir = current_dir.parent
+    if current_dir != Path(os.getcwd()) and (current_dir / "MANIFEST").exists():
+        os.chdir(current_dir)
+
     print(f"Version: {VERSION}")
 
     if os.getenv("UID", "") == "0" and os.getenv("SUDO_UID", "") == "0":
