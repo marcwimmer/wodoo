@@ -94,10 +94,6 @@ apt-get install \
             pkg-config \
             curl
 
-# https://github.com/openvenues/pypostal postal lib for address checking
-ADD install_libpostal.sh /root/install_libpostal.sh
-RUN if [ "$TARGETARCH" = "amd64" ]; then bash /root/install_libpostal.sh; fi
-RUN exit -1
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
@@ -128,15 +124,17 @@ RUN pip3 install wheel
 RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \
-    pip3 install --upgrade 'setuptools<58' cython
+    pip3 install --upgrade cython
+RUN pip3 install 'setuptools<58.0'
 RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
-RUN pip3 install setuptools==57.5.0
 RUN pip3 install -r /root/odoo_requirements.txt
 RUN pip3 install -r /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
 RUN apt install -y libdmtx0b
-
+# https://github.com/openvenues/pypostal postal lib for address checking
+ADD install_libpostal.sh /root/install_libpostal.sh
+RUN if [ "$TARGETARCH" = "amd64" ]; then bash /root/install_libpostal.sh; fi
 RUN ipython profile create && \
 echo "c.TerminalInteractiveShell.editing_mode = 'vi'" >> /root/.ipython/profile_default/ipython_config.py && \
 rsync /root/.ipython/ /home/odoo/.ipython/ -arP && \
