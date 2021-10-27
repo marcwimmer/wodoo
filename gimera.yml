@@ -2,7 +2,8 @@ repos:
 - branch: master
   patches: []
   path: images/theia_odoo_vim
-  type: submodule
+  sha: fef1b62be4df35aca796c7ea725b948e11be4a57
+  type: integrated
   url: ssh://git@git.itewimmer.de/theia/odoo-vim
 - branch: master
   path: tools/snippets
@@ -13,3 +14,13 @@ repos:
   sha: 390f12b761dc8934a5db3ad54233f41815707406
   type: integrated
   url: git@git.itewimmer.de:odoo/asterisk_customs.git
+- branch: master
+  path: machines/calendar/src/davical
+  sha: 827fbfed7dab0ca339998ca6cdcffb328246d83b
+  type: integrated
+  url: https://gitlab.com/davical-project/awl.git
+- branch: master
+  path: machines/calendar/src/awl
+  sha: 827fbfed7dab0ca339998ca6cdcffb328246d83b
+  type: integrated
+  url: https://gitlab.com/davical-project/awl.git

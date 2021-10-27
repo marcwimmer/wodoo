@@ -160,6 +160,10 @@ def restore_files(filename):
 @pass_config
 @click.pass_context
 def restore_db(ctx, config, filename, latest, no_dev_scripts):
+    if not filename:
+        filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
+    if not filename:
+        return
     if config.run_postgres:
         postgres_name = f"{config.PROJECT_NAME}_run_postgres"
         client = docker.from_env()
@@ -179,10 +183,6 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
         dumps_path = Path(filename).parent
         filename = Path(filename).name
 
-    if not filename:
-        filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
-    if not filename:
-        return
 
     BACKUPDIR = Path(dumps_path)
     filename = (BACKUPDIR / filename).absolute()

@@ -1,14 +1,9 @@
-import platform
-import sys
-import shutil
-import hashlib
 import os
 import tempfile
 import click
 from pathlib import Path
 from .odoo_config import current_version
 from .odoo_config import customs_dir
-from .tools import _sanity_check
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 import subprocess
@@ -40,7 +35,6 @@ def _update_command(config, params):
 
 
 def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
-    _sanity_check(config)
     _exec_in_virtualenv(config, ['python', _path_odoolib() / 'run.py'])
 
 

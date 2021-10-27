@@ -206,8 +206,10 @@ def cli():
 @click.option('--no-install-server-wide-first', is_flag=True)
 @click.option('--no-extra-addons-paths', is_flag=True)
 @click.option('--config-file', is_flag=False, default='config_update', help="Which config file to use")
+@click.option('--server-wide-modules', is_flag=False)
+@click.option('--additional-addons-paths', is_flag=False)
 @pass_config
-def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths, config_file):
+def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n, delete_qweb, no_tests, no_dangling_check, no_install_server_wide_first, no_extra_addons_paths, config_file, additional_addons_paths, server_wide_modules):
 
     config.interactive = not non_interactive
     config.i18n_overwrite = i18n
@@ -215,6 +217,8 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
     config.only_i18n = only_i18n
     config.no_extra_addons_paths = no_extra_addons_paths
     config.config_file = config_file
+    config.server_wide_modules = server_wide_modules
+    config.additional_addons_paths = additional_addons_paths
 
     config.run_test = os.getenv("ODOO_RUN_TESTS", "1") == "1"
     if no_tests:

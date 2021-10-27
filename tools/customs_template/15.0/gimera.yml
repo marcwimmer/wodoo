@@ -353,9 +353,9 @@ repos:
   #   patches:
   #     - addons_OCA/rma.patches
 
-  - path: "addons_OCA/manufacture"
-    url: https://github.com/OCA/manufacture
-    branch: "15.0"
-    type: integrated
-    patches:
-      - addons_OCA/manufactur.patches
+  # - path: "addons_OCA/manufacture"
+  #   url: https://github.com/OCA/manufacture
+  #   branch: "15.0"
+  #   type: integrated
+  #   patches:
+  #     - addons_OCA/manufactur.patches
