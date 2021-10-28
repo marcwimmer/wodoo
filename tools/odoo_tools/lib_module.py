@@ -221,7 +221,7 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
-@click.option('--since-git-sha', '-i', default=False, is_flag=False, help="Extracts modules changed since this git sha and updates them")
+@click.option('--since-git-sha', '-i', default=None, is_flag=False, help="Extracts modules changed since this git sha and updates them")
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
 @click.option('--dangling-modules', '-d', default=False, is_flag=True, help="Updates only dangling modules")
 @click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
