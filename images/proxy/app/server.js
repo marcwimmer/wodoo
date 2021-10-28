@@ -78,6 +78,25 @@ app.use("/code", createProxyMiddleware({
     ws: true
 })); 
 
+        // location ~ ^/logs_socket_io/?(.*)$ {
+        //     rewrite ^/logs_socket_io/?(.*)$ /socket.io/$1 break;
+app.use("/logs", createProxyMiddleware({
+    changeOrigin: true,
+    pathRewrite: {
+        '^/logs' : '/'
+    },
+    target: 'http://' + process.env.LOGS_HOST + ':6688',
+    ws: true
+})); 
+app.use("/logs_socket_io", createProxyMiddleware({
+    changeOrigin: true,
+    pathRewrite: {
+        '^/logs_socket_io' : '/socket.io'
+    },
+    target: 'http://' + process.env.LOGS_HOST + ':6688',
+    ws: true
+})); 
+
 app.use("/longpolling", createProxyMiddleware({
     target: 'http://' + process.env.ODOO_HOST + ':8072',
 })); 

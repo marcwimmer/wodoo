@@ -1,0 +1,49 @@
+Source: awl
+Section: php
+Priority: optional
+Maintainer: Davical Development Team <davical-devel@lists.sourceforge.net>
+Uploaders: Andrew McMillan <awm@debian.org>,
+ Florian Schlichting <fsfs@debian.org>
+Standards-Version: 4.5.1
+Build-Depends: debhelper-compat (= 13), jdupes, doxygen, phpunit
+Vcs-Browser: https://gitlab.com/davical-project/awl
+Vcs-Git: https://gitlab.com/davical-project/awl.git
+Homepage: https://www.davical.org
+Rules-Requires-Root: no
+
+Package: libawl-php
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Recommends: php | php5
+Description: Andrew's Web Libraries - PHP Utility Libraries
+ This package contains Andrew's Web Libraries.  This is a set
+ of hopefully lightweight libraries for handling a variety of
+ useful things for web programming, including:
+  - Session management
+  - User management
+  - DB Records
+  - Simple reporting
+  - DB Schema Updating
+  - iCalendar parsing
+ .
+ There is some documentation in the awl-doc package.
+
+Package: awl-doc
+Section: doc
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: Andrew's Web Libraries - API documentation
+ This package documents Andrew's Web Libraries.  This is a set
+ of hopefully lightweight libraries for handling a variety of
+ useful things for web programming, including:
+  - Session management
+  - User management
+  - DB Records
+  - Simple reporting
+  - DB Schema Updating
+  - iCalendar parsing
+ .
+ This package contains detailed technical documentation for the
+ classes and methods in these libraries.

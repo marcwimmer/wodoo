@@ -1,0 +1,814 @@
+2021-03-01 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.62
+	* actually set the search_path in SetSearchPath() (fixes #23)
+
+2021-02-08 Florian Schlichting <fsfs@debian.org>
+	* TestTextMatch: treat contains the same as starts-with and ends-with when the needle is empty
+
+2021-02-05 Michael Stilkerich <ms@mike2k.de>
+	* Fix param-filter that checks if a parameter is defined
+	* Fix param-filter for multi-value parameters with TYPE=T1,T2 format
+	* Fix GetProperties: Select properties with group prefix
+	* Fix: GetProperties must treat property names as case-insensitive
+
+2021-02-07 Andrew Ruthven <puck@catalyst.net.nz>
+	* Make sure that DAViCal can create its own log files
+	* If length is 0, then this match should fail - regression tests pass
+	* Replicate checking the length of $search
+
+2021-02-06 Andrew Ruthven <puck@catalyst.net.nz>
+	* Another attempt to suppress a strstr error.
+	* PHP 7.3.12 needs the needle to be defined
+
+2021-02-05 Florian Schlichting <fsfs@debian.org>
+	* param-filter: fix a typo (array case), explode comma-separated multivalues (string case)
+
+2021-01-28 Michael Stilkerich <ms@mike2k.de>
+	* Fix merge with master for param-filter is-not-defined case
+	* Fix wrong statement in comment
+
+2021-01-24 Michael Stilkerich <ms@mike2k.de>
+	* Support propfilter test="anyof"
+
+2021-02-03 Florian Schlichting <fsfs@debian.org>
+	* fix PHP8 deprecation warning: Required parameter $prefix follows optional parameter $ftype in inc/DataEntry.php on line 652
+	* CI: add test_buster_latestphp
+	* CI: run davical testsuite in addition to PHP syntax and unit tests
+
+2021-01-24 Michael Stilkerich <ms@mike2k.de>
+	* Fix regression on allof match for multiple prop-filter elements
+
+2021-01-24 Andrew Ruthven <andrew@etc.gen.nz>
+	* Use same indenting and style as other code
+
+2021-01-23 Michael Stilkerich <ms@mike2k.de>
+	* Fix param-filter/is-not-defined behavior
+	* Fail text-match if property/parameter is not defined
+
+2021-01-31 Andrew Ruthven <puck@catalyst.net.nz>
+	* Warn if the hook function is missing
+
+2021-01-23 Michael Stilkerich <ms@mike2k.de>
+	* Negated text-match must not match non-existing properties
+
+2021-01-25 Andrew Ruthven <andrew@etc.gen.nz>
+	* Handle a property having multiple parameters.
+
+2021-01-23 Michael Stilkerich <ms@mike2k.de>
+	* Fix param-filter/text-match evaluation (Issue #21)
+
+2021-01-24 Andrew Ruthven <puck@catalyst.net.nz>
+	* Update logic to match the previous logic.
+
+2021-01-23 Andrew Ruthven <puck@catalyst.net.nz>
+	* Correctly filter on other properties
+
+2020-04-28 Debian Janitor <janitor@jelmer.uk>
+	* Changed vcs type from git to Git based on URL.
+	* Set upstream metadata fields: Bug-Submit, Repository, Repository-Browse.
+	* Wrap long lines in changelog entries: 0.37, 0.33.
+
+2020-04-13 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.61
+	* Update AUTHORS and ChangeLog
+
+2020-04-04 Florian Schlichting <fsfs@debian.org>
+	* Disallow current time as a session key (fix: #19, CVE-2020-11728)
+	* Drop LSIDLogin function (fix: #18, CVE-2020-11729)
+
+2019-02-27 Jamie McClymont <jamiemcclymont@catalyst.net.nz>
+	* Make olson_from_tzstring faster by caching timezone_identifiers_list
+
+2019-12-06 Florian Schlichting <fsfs@debian.org>
+	* myComponentTest.php: drop empty setUp function, which causes make test to fail with PHPUnit 8
+	* use foreach() instead of deprecated each() (see davical-project/davical#190)
+
+2019-01-30 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.60
+	* Update AUTHORS and ChangeLog
+
+2018-12-29 Florian Schlichting <fsfs@debian.org>
+	* GetItip: do no increase SEQUENCE
+	* log feedback from gettext init
+	* Remove apidoc for removed class iCalendar
+	* Update debian/watch to changed Gitlab directory layout
+
+2018-12-27 Florian Schlichting <fsfs@debian.org>
+	* Prevent "PHP Warning: count(): Parameter must be an array..." (fixes
+	  #15, also fixes davical-project/davical#153)
+
+2018-11-19 Jamie McClymont <jamiemcclymont@catalyst.net.nz>
+	* Add GitLab CI
+
+2018-04-30 Malte Renken <malte.renken@fu-berlin.de>
+	* XMLElement::__construct() : set $this->attributes to an empty array
+	  by default. Fixes https://gitlab.com/davical-project/awl/issues/14
+
+2018-01-11 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.59
+	* switch to doxygen for api docs
+
+2017-12-09 Florian Schlichting <fsfs@debian.org>
+	* Ensure compatibility of unit tests with phpunit 6 (closes: #882894)
+
+2017-09-21 Florian Schlichting <fsfs@debian.org>
+	* vComponent: wrap lines longer than 75 bytes
+
+2017-05-29 Florian Schlichting <fsfs@debian.org>
+	* use new class constructors (cf davical-project/davical#119)
+
+2017-04-08 Florian Schlichting <fsfs@debian.org>
+	* vComponent: allow empty prop-filter
+	* Session.php: use correct / defined username in debug output
+
+2017-05-15 Florian Schlichting <fsfs@debian.org>
+	* update class constructors to not trigger a warning in PHP 7 (fixes #11)
+
+2017-04-28 Florian Schlichting <fsfs@debian.org>
+	* be more forgiving when parsing propname with params from propvalue
+
+2017-01-23 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.57
+	* Update AUTHORS and ChangeLog
+
+2017-01-10 Florian Schlichting <fsfs@debian.org>
+	* Browser: add ExtraRowFormat() to format additional rows differently
+
+2017-01-08 Florian Schlichting <fsfs@debian.org>
+	* delete session after logout, clean up old sessions (fixes davical#65, Debian #643907)
+	* always use full the ID as username, similar to davical's
+	  HTTPAuthSession (fix #1, fix #2, debian #703139)
+
+2017-01-07 Florian Schlichting <fsfs@debian.org>
+	* Session::Log and ::Dbg are deprecated
+	* vComponent: add missing strtoupper, so that BEGIN:TYPE...END:TYPE
+	  are really case-insensitive
+
+2017-01-02 Florian Schlichting <fsfs@debian.org>
+	* vProperty: always escape backslash, and escape semicolon for "other"
+	  properties (fixes Debian bug #837154)
+
+2016-12-31 Florian Schlichting <fsfs@debian.org>
+	* improve debug logging: ignore components, filter by remote IP or username
+
+2016-12-28 Florian Schlichting <fsfs@debian.org>
+	* eliminate trailing whitespace, expand tabs
+	* doc typos
+
+2016-12-02 Florian Schlichting <fsfs@debian.org>
+	* Remove deprecated and unused class iCalendar along with remaining
+	  $c->local_tzid references
+
+2016-12-01 Paul Kallnbach <p.kallnbach@gorilla-computing.de>
+	* Update vProperty.php
+
+2016-06-13 Florian Schlichting <fsfs@debian.org>
+	* Bump AWL version to 0.57 (API change)
+	* fix if-else logic, so that "Unable to Reset Password" does not get
+	  overwritten by "Temporary Password" form
+
+2016-06-13 Basti <basti122303@gitlab>
+	* Fix link after password reset in case DAViCal is not installed in
+	  the webserver root. Closes:davical-project/davical#94
+
+2016-05-08 Andrew McMillan <andrew@morphoss.com>
+	* A semi-colon might be escaped within the text value.
+	* Rename get_fields() function.
+	* Improve access to the slow query threshold.
+
+2016-05-10 Florian Schlichting <fsfs@debian.org>
+	* always remake the apidoc, and remove the stale copy from git
+	* update Makefile to work with both php5 and php7
+
+2016-02-22 ClemensN <c.nuebel@gorilla-computing.de>
+	* fixed issue with escaped ',' in CATEGORIES Property that are seperators in this case
+
+2016-01-11 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.56
+	* run simple php syntax check on make test
+
+2016-01-01 Florian Schlichting <fsfs@debian.org>
+	* fix php7 syntax error and correctly handle "what if the new
+	  AwlDatabase() call fails" case
+
+2015-12-16 Florian Schlichting <fsfs@debian.org>
+	* Make "Toggle all privileges" button work on all forms
+
+2015-12-10 Jim Fenton <fenton@bluepopcorn.net>
+	* Update AWL version number to 0.56
+
+2015-11-13 ClemensN <c.nuebel@gorilla-computing.de>
+	* Fixed grouped Properties naming (e.g. Addresses: item1.ADR instead of just ADR)
+
+2015-11-05 Florian Schlichting <fsfs@debian.org>
+	* less verbose logging on regular admin ui accesses
+
+2015-11-05 Florian Schlichting <fsfs@debian.org>
+	* fix use of nonexistant function / typo
+
+2015-10-03 Florian Schlichting <fsfs@debian.org>
+	* HttpDateFormat() is in AwlDBDialect, actually
+	* update version in default make target
+	* remove boilerplate (no-op) Debian maintainer scripts
+
+2015-09-18 Mark Davies <mark.davies@moose-beast.com>
+	* Fix initialisation of content property in TestFilter function. Also improve comments.
+
+2015-04-28 Matthias Althaus <contact@althaus.it>
+	* Fix broken timezone handling (fixes #9)
+
+2015-03-06 Matthias Althaus <contact@althaus.it>
+	* Reworked iCalProp parsing according to RFC5545 (fixes #7)
+
+2014-10-06 Florian Schlichting <fsfs@debian.org>
+	* release awl 0.55
+	* also exclude .pc/ and debian/ from tarball
+	* Declare compliance with Debian Policy 3.9.6
+
+2014-09-13 Florian Schlichting <fsfs@debian.org>
+	* Declare compliance with Debian Policy 3.9.5
+	* switch to copyright-format 1.0 debian/copyright
+	* remove/replace non-free test data
+	* Add a debian/watch file
+	* Bump dh compat to level 9
+	* debian/control: move to section php and clean out Depends
+	* Add doc-base registration for the api doc in awl-doc
+	* Clean up duplicate files (symlink identical files in api documentation)
+	* Exclude vendor directory from tarball and use Debians phpunit instead
+
+2014-09-10 Florian Schlichting <fsfs@debian.org>
+	* add a "make test" target to run phpunit tests
+	* Switch to source format 3.0 (quilt)
+	* remove php-awl.spec, it is recreated from php-awl.spec.in by Makefile
+	* Use short-form debian/rules
+
+2014-09-09 Florian Schlichting <fsfs@debian.org>
+	* Takeover for the Davical Development Team (first part of #742498)
+
+2014-05-14 Ján Máté <jan.mate@inf-it.com>
+	* fixed forced recursive object rendering
+	* fixed clearPropertyAt function
+	* fixed wrong processing of invitation / added ClearParameters method
+
+2014-04-07 Ján Máté <jan.mate@inf-it.com>
+	* added clearPropertyAt function (required for DAViCal invitation processing)
+	* fixed major object processing bug
+	* fixes related to Awl interface changes
+	* added parsing for \r in content
+
+2014-03-26 Ján Máté <jan.mate@inf-it.com>
+	* prevent infinite recursion if vObject is malformed - call
+	  $iterator->next() only if iterator->valid()
+
+2014-03-24 Ján Máté <jan.mate@inf-it.com>
+	* fixed masking of confidential event components
+	* fix of vCard import with obsolete parameters (Jorge López Pérez)
+
+2014-03-23 Ján Máté <jan.mate@inf-it.com>
+	* removed VCalendar.html (vCalendar.html is the latest version)
+
+2014-01-01 Alexander Dreweke <thrawn@shadowhunt.de>
+	* cleanup text-match
+
+2013-12-09 Alexander Dreweke <thrawn@shadowhunt.de>
+	* implement full text-match spec for caldav and carddav
+
+2013-11-17 Alexander Dreweke <thrawn@shadowhunt.de>
+	* check collation for caseinsensitive search
+
+2013-11-07 Milan Medlik <milan@morphoss.com>
+	* fix exception in Multipart with ->
+
+2013-10-15 Andrew McMillan <andrew@morphoss.com>
+	* Fix typo.
+
+2013-10-11 Andrew McMillan <andrew@morphoss.com>
+	* Handle htmlspecialchars() differences between PHP < 5.4 vs >= 5.4
+	* More work on correct wrapping of XML with weird stuff.
+
+2013-09-27 Andrew McMillan <andrew@morphoss.com>
+	* Fix parsing issues with lowercase begin:vcard etc.
+
+2013-09-26 Andrew McMillan <andrew@morphoss.com>
+	* Get rid of old vCalendar/vComponent code. Add commented alternative for XML escaping.
+	* Fix a bunch of bugs discovered through RRULE expansion issues.
+
+2013-09-25 Andrew McMillan <andrew@morphoss.com>
+	* Correct encoding of text to go in XML.
+	* Deprecate the various SQL date format strings which are moved to AwlDatabase
+	* Use $this->master, ensure we are dealing with a vComponent, correct split on EOL.
+	* It's better if we can make $this->master usable everywhere.
+	* Move these constants from iCalendar into the Database class.
+
+2013-09-16 Milan Medlik <milan@morphoss.com>
+	* fix GetPropertiesByPath -> using GetComponents and GetProperties
+
+2013-09-04 Andrew McMillan <andrew@morphoss.com>
+	* Use \r\n for line endings.  Correct spelling of "unrolled".
+
+2013-09-02 Andrew McMillan <andrew@morphoss.com>
+	* Clarification of code that confused Eclipse.
+	* Our coding style omits the PHP closing tag at EOF
+	* Add the TestFilter method back in.
+
+2013-07-22 Milan Medlik <milan@morphoss.com>
+	* remove rendered
+	* rename function for better human readable
+	* switch VERSION and PROID for pass some test
+
+2013-07-19 Milan Medlik <milan@morphoss.com>
+	* prefil properties name in basic component parse
+	* change link to real files
+
+2013-07-18 Milan Medlik <milan@morphoss.com>
+	* fix test 2007 and next
+	* fix almost all tests
+	* fix test 0244-MOZ-POST-FB.test
+
+2013-07-16 Milan Medlik <milan@morphoss.com>
+	* fix several test till 0244-mox-post-fb
+	* finaly some test passed
+
+2013-07-15 Milan Medlik <milan@morphoss.com>
+	* add myCalendar into
+
+2013-07-15 Andrew McMillan <andrew@morphoss.com>
+	* Add support for decoding a password stored in WordPress hash format.
+	* Ensure VERSION is first in a VCALENDAR component.
+
+2013-05-25 Andrew McMillan <andrew@morphoss.com>
+	* Avoid ignorable warning message.
+	* Ensure Attendees array is initialised.
+
+2013-05-14 Andrew McMillan <andrew@morphoss.com>
+	* Allow field selection to work when a schema-qualified tablename is given.
+	* This should not be private, since it is used by Editor.
+	* Add phpdoc for the Editor class.
+	* If $c->expand_pdo_parameters is off then we should still detect failures!
+
+2013-04-21 Jason Alavaliant <alavaliant@gmail.com>
+	* add fix for the OSX Contacts.app: escape using CDATA
+
+2013-04-10 Matthias Althaus <matthias.althaus@iserv.eu>
+	* Fix using property values instead of whole property on timezone guessing
+
+2013-03-25  Christoph Anton Mitterer <mail@christoph.anton.mitterer.name>
+	* In places where the CGI variable REMOTE_USER is read, support
+	  alternatively REDIRECT_REMOTE_USER, which is used by the Apache
+	  HTTPD Server instead, when a redirect was used.
+
+2013-03-07  Christoph Anton Mitterer <mail@christoph.anton.mitterer.name>
+	* Handle the content of the CGI AUTH_TYPE variable case-insensitively as
+	  defined by RFC 3875 Section 4.1.1.
+
+2013-03-07  Andrew McMillan <andrew@morphoss.com>
+	* Release 0.54
+
+2012-10-10  Andrew McMillan  <andrew@morphoss.com>
+	* Editor: provide error message if an undefined field is used in a form.
+	* Session: clarify code for setting date format.
+
+2012-09-12  Andrew McMillan  <andrew@morphoss.com>
+	* Use accessor for EMail->To(), remove silly 'must log in' message.
+	  Also declare $page_elements global, as it must be.
+	* Provide an accessor for the To() list.
+
+2012-07-04  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.53
+
+2012-06-26  Andrew McMillan  <andrew@morphoss.com>
+	* Correct replacement when 'mailto:' is not passed in as first part of match.
+
+2012-06-25  Andrew McMillan  <andrew@morphoss.com>
+	* Fix name of CDO TZID property, avoid unassigned variable warning.
+	* Fix typo in unlocking code.
+
+2012-05-28  Andrew McMillan  <andrew@morphoss.com>
+	* For creating MIME messages.
+	* Updated and modernized.
+
+2012-06-17  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.52
+
+2012-06-14  Andrew McMillan  <andrew@morphoss.com>
+	* [DataUpdate] Fix regular expression matching whether value is already a salted hash.
+
+2012-05-20  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLElement] Changes for more repeatable parsing.
+	* [XMLDocument] If an href includes a space or @ then bug about it, but urlencode it also.
+
+2012-05-15  Andrew McMillan  <andrew@morphoss.com>
+	* [Editor] Add support for labels on checkboxes.
+
+2012-05-11  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLElement] XML parsing / creating improvements / fixes.
+
+2012-04-30  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] We should use GetNSTag() rather than GetTag() in most cases.
+
+2012-04-22  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlQuery] Throw exception if the database is not connected when we try to query it.
+
+2012-04-16  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] Log the actual VTIMEZONE which appears to be in error.
+
+2012-03-22  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] New SetUID/GetUID methods used by POST add-member.
+
+2012-03-12  Andrew McMillan  <andrew@morphoss.com>
+	* [Editor] The current row needs to be global so the hook might reference it.
+
+2012-01-13  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Fix handling for vcard peculiarities.
+	* [vComponent] Don't escape all ; in N or ADR.
+	* [vComponent] Allow for property parameters to be multiply set.
+	* [AwlDbDialect] Don't treat binary strings longer than 6 characters as numbers.
+	* Release 0.51
+
+2012-01-04  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.50
+
+2011-11-09  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLUtilities] Ensure we flush output buffers on abort.
+
+2011-11-02  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] More support for scheduling-related actions.
+	* [vComponent] Minor performance tweaks.
+
+2011-10-31  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] Add method to scrub a confidential event.
+
+2011-10-24  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlDatabase] Throw an exception when we can't rollback a transaction.
+	* [vCalendar] New functions for updating organizer/attendee status.
+
+2011-10-20  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.49
+	* [vComponent] Allow re-rendering to be forced.
+	* [AwlUtilities] Add a new trace_bug() function which logs a stacktrace.
+
+2011-10-18  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlUtilities] timezone_identifiers_list() is only PHP5.2 onwards :-(
+
+2011-10-16  Andrew McMillan  <andrew@morphoss.com>
+	* [Session] Support array of server_auth_type since Kerberos can send different ones.
+
+2011-10-13  Andrew McMillan  <andrew@morphoss.com>
+	* [various session things] Force cast to text() to handle integer usernames
+
+2011-10-05  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlUtilities] Support for gzdecode where PHP does not.
+
+2011-09-24  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.48
+
+2011-09-17  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] More ways to get an Olson Time Zone ID.
+
+2011-09-15  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Cleaned up the filter handling.
+
+2011-09-14  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] Support replacement the last few iCalendar cases that were missing.
+	* Add TZ exception for America/Phoenix and config for doing these as config items.
+	* See http://wiki.davical.org/w/Configuration/settings/timezone_translations
+
+2011-09-13  Andrew McMillan  <andrew@morphoss.com>
+	* Fix handling of properties enclosed in double-quotes.
+	* Release 0.47
+
+2011-09-08  Andrew McMillan  <andrew@morphoss.com>
+	* [vCalendar] Developing this to be useful for scheduling.
+
+2011-09-06  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] add GetPValue() method and VCalendar class.
+	* [iCalendar] Remove deprecated() function moved to AwlUtilities.
+	* [AwlQuery] Change phpdoc to include possible values for TransactionState()
+	* [AwlDatabase] Make attempt to nest transactions a fatal error.
+	* [AWLUtlities] Add fatal() and deprecated() functions.
+
+2011-06-04  Andrew McMillan  <andrew@morphoss.com>
+	* Fix some errors in filtering on arbitrary iCalendar properties.
+	* Better fallback between pluggable authentication things.
+	* Provide better logging when DB connection fails.
+
+2011-02-23  Felix Möller  <mail@felixmoeller.de>
+	* Add support for RPM packages.
+
+2011-02-22  Andrew McMillan  <andrew@morphoss.com>
+	* The " character should not be escaped per RFC5545 3.3.11
+	* [AwlCache] Add facility to lock / release something arbitrary.
+
+2011-01-21  Andrew McMillan  <andrew@morphoss.com>
+	* Ensure all lines of the output VComponent are \r\n terminated.
+
+2011-01-06  Andrew McMillan  <andrew@morphoss.com>
+	* [AuthPlugins] Fix misspelled __LINE__ constant.
+	* Add US/* as allowable timezone names.
+
+2011-01-04  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Add to the list of passed-through values on obfuscation.
+	* [DataUpdate] Move strange character check until after password hashing.
+	  Well, well well.  For some years it has been impossible to have '
+	  or \ in a password...
+
+2011-01-01  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlCache] Added: A Simple Memcached wrapper supporting namespaces.
+
+2010-12-28  Andrew McMillan  <andrew@morphoss.com>
+	* The real release 0.46 :-)
+	* Really going to release 0.46 this time...
+	* [classBrowser] Fix checking of ordering fieldname.
+	* [Validation] Remove references to outdated ereg() functions.
+	* [AWLUtlities] Rename regex checking function more appropriately.
+
+2010-12-28  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.46
+	* [classBrowser] Fix checking of ordering fieldname.
+	* [Validation] Remove references to outdated ereg() functions.
+	* [AWLUtlities] Rename regex checking function more appropriately.
+	* [Session] Don't use ereg() for parsing regex.
+	* [XMLDocument] Use __construct style for constructor.
+
+2010-12-24  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlQuery] Make the quote() method public/static.
+
+2010-12-23  Andrew McMillan  <andrew@morphoss.com>
+	* Convert everything except PgQuery to use AwlQuery
+	* [AwlQuery] Add minor missing functionality so we can switch.
+	* [vComponent] Improve parameter splitting to allow for escapes.
+	* [classEditor] Avoid uninitialised variable warning.
+
+2010-11-27  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Add __toString() methods.
+	* [Session] If someone is made inactive then their long-term login should cease.
+
+2010-10-15  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLUtilities] Add an awl_version() function.
+
+2010-10-10  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] It is OK to SetComponents() to an empty set.
+
+2010-09-20  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLDbDialect] Quote hex numbers as strings.
+
+2010-09-11  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar/vComponent/vEvent] UTF8 mode for RFC5545 wrap regexes
+
+2010-09-10  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLUtilities] Undeclared globals in force_utf8.
+	* [iCalendar,vEvent,vComponent] Fix the line wrapping in V* components.
+
+2010-08-30  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Add a function to return a single property.
+	* Slightly better TZname to Olson matching.
+
+2010-08-28  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Various changes in use with VCard.
+	  - Enforce upercase property names.
+	  - Invert array sense for MaskComponents / MaskProperties to match
+	    the way it is with the GetProperties, GetComponents.
+
+2010-08-26  Andrew McMillan  <andrew@morphoss.com>
+	* Add some basic filter processing for addressbook-query usage.
+	* Wrap password logging in logs behind $c->dbg['password'] = 1;
+
+2010-06-23  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLDocument] Add helper for CardDAVElement.
+
+2010-06-17  Andrew McMillan  <andrew@morphoss.com>
+	* [Session] Try and clarify the lost password text a little better.
+	* Don't send multipart/form-data if the form is GET.
+
+2010-05-28  Andrew McMillan  <debian@mcmillan.net.nz>
+	* [AwlQuery] Fixing backward compatibility with PgQuery.
+	* [AwlQuery] Fix handling of queries with no parameters.
+
+2010-05-27  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Apply correct wrapping for RFC5545.
+	* [iCalendar] Don't add a trailling space when wrapping for RFC5545.
+
+2010-05-19  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Generic base class for handling VCALENDAR, VCARD, etc.
+	* Expose transaction state at query level.
+	* No need to return anything from the schema update.
+
+2010-05-09  Andrew McMillan  <andrew@morphoss.com>
+	* [Translation] If gettext is not installed, fall back to English.
+
+2010-05-08  Andrew McMillan  <andrew@morphoss.com>
+	* Add Australia to the list of possible TZ continents.
+
+2010-04-28  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlQuery] Handle setting an alternative connection somewhat better.
+	* [Session] _CheckLogin needs to access $c for external authentication.
+	* Allow for multiple records to have somehow got into the DB.
+	* Better parameter escaping, including escaping ? for older PHP::PDO.
+
+2010-04-20  Andrew McMillan  <andrew@morphoss.com>
+	* Replace deprecated split() calls.
+
+2010-04-17  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.43
+
+2010-04-15  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Add and use a new olson_from_tzstring() function.
+
+2010-04-14  Andrew McMillan  <andrew@morphoss.com>
+	* We can close this bug now, since it was fixed a wee while ago.
+	* [AwlQuery] Warn if named parameters are passed in incorrectly.
+	* Fix strange alternate reality definition of aparche_read_header.
+
+2010-04-12  Andrew McMillan  <andrew@morphoss.com>
+	* Preparing to release 0.43
+	* The new database libraries should be with the library code.
+	  Especially since they're being used for more than just DAViCal now.
+
+2010-09-11  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Tweak wrapping one last time.
+	* [iCalendar/vComponent/vEvent] UTF8 mode for RFC5545 wrap regexes
+	  The regexes used for wrapping to 72 characters in line with
+	  RFC5545 wrapping rules need to be UTF8 aware, otherwise they
+	  will break lines in the middle of UTF8 sequences and we get
+	  to fail to put both broken parts into the database.
+
+2010-09-10  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLUtilities] Undeclared globals in force_utf8.
+	* Ignore Eclipse droppings.
+	* [iCalendar,vEvent,vComponent] Fix the line wrapping in V* components.
+	  The wordwrap was not being done in a repeatably reversible manner
+	  due to a misguided effort to make it more readable.  This gives up
+	  on readability in favour of reversability.
+
+2010-09-02  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Revert that last change.
+
+2010-08-30  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Add a function to return a single property.
+	* Slightly better TZname to Olson matching.
+
+2010-08-28  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Various changes in use with VCard.
+	  - Enforce upercase property names.
+	  - Invert array sense for MaskComponents / MaskProperties to match
+	    the way it is with the GetProperties, GetComponents.
+	  - Generally improve the consistency.
+
+2010-08-26  Andrew McMillan  <andrew@morphoss.com>
+	* Add some basic filter processing for addressbook-query usage.
+	* Wrap password logging in logs behind $c->dbg['password'] = 1;
+
+2010-06-23  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLDocument] Add helper for CardDAVElement.
+
+2010-06-17  Andrew McMillan  <andrew@morphoss.com>
+	* [Session] Try and clarify the lost password text a little better.
+	* Don't send multipart/form-data if the form is GET.
+
+2010-05-28  Andrew McMillan  <debian@mcmillan.net.nz>
+	* [AwlQuery] Fixing backward compatibility with PgQuery.
+	* [AwlQuery] Fix handling of queries with no parameters.
+
+2010-05-27  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Apply correct wrapping for RFC5545.
+	* [iCalendar] Don't add a trailling space when wrapping for RFC5545.
+
+2010-05-19  Andrew McMillan  <andrew@morphoss.com>
+	* [vComponent] Generic base class for handling VCALENDAR, VCARD, etc.
+	* Expose transaction state at query level.
+	* No need to return anything from the schema update.
+
+2010-05-09  Andrew McMillan  <andrew@morphoss.com>
+	* [Translation] If gettext is not installed, fall back to English.
+
+2010-05-08  Andrew McMillan  <andrew@morphoss.com>
+	* Add Australia to the list of possible TZ continents.
+
+2010-04-28  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlQuery] Handle setting an alternative connection somewhat better.
+	* [Session] _CheckLogin needs to access $c for external authentication.
+	* Allow for multiple records to have somehow got into the DB.
+	* Better parameter escaping, including escaping ? for older PHP::PDO.
+
+2010-04-20  Andrew McMillan  <andrew@morphoss.com>
+	* Replace deprecated split() calls.
+
+2010-04-17  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.43
+
+2010-04-15  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Add and use a new olson_from_tzstring() function.
+
+2010-04-14  Andrew McMillan  <andrew@morphoss.com>
+	* We can close this bug now, since it was fixed a wee while ago.
+	* [AwlQuery] Warn if named parameters are passed in incorrectly.
+	* Fix strange alternate reality definition of aparche_read_header.
+
+2010-04-12  Andrew McMillan  <andrew@morphoss.com>
+	* [AwlQuery] Move new database libraries into AWL
+
+2010-04-01  Andrew McMillan  <andrew@morphoss.com>
+	* [classEditor] Tidy up logging.
+	* [DataUpdate] Merge sql_from_post() and sql_from_object().
+
+2010-03-21  Andrew McMillan  <andrew@morphoss.com>
+	* [PgQuery] Add forward compatibility rows() method.
+
+2010-03-18  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Provide a better deprecation indication.
+	* [iCalendar] Add explicit need for PgQuery and mark stuff deprecated.
+
+2010-03-10  Andrew McMillan  <andrew@morphoss.com>
+	* Switch to LGPL v3 license.
+
+2010-03-08  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.42
+	* [XMLDocument] Return any created node. Also parse namespace in tag.
+	  These functions are much more useful if we can actually use any
+	  returned reference as another location within a document, so we
+	  can have a hold of the root, and then add within each new tag
+	  we add, supporting outer -> inner construction approaches along
+	  with the existing inner -> outer approach used currently.
+
+2010-03-07  Andrew McMillan  <andrew@morphoss.com>
+	* Note that the iCalendar class is DEPRECATED.
+	* Don't try to translate null/empty strings.
+
+2010-03-05  Andrew McMillan  <andrew@morphoss.com>
+	* Add a PostToValues() method to update form data from POST.
+
+2010-02-23  Andrew McMillan  <andrew@morphoss.com>
+	* Release 0.41
+	* [classEditor] Make Create/Apply form translatable.
+	* [User] Yes/No should be translatable.
+
+2010-02-18  Andrew McMillan  <andrew@morphoss.com>
+	* [PgQuery] Don't log connection string on error as it may expose the password.
+
+2010-02-17  Andrew McMillan  <andrew@morphoss.com>
+	* [DataUpdate] Translate empty string to NULL for bitfields.
+
+2010-02-16  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLUtilities] Add support for a legacy plain MD5 password hash
+
+2010-02-01  Andrew McMillan  <andrew@morphoss.com>
+	* Move editor widget class into standard libraries.
+
+2010-01-30  Andrew McMillan  <andrew@morphoss.com>
+	* [MenuSet] Remove deprecated backward compatibility with PHP4.
+	* Comply with E_STRICT and friends.
+	* [PgQuery] Make duration() conditional in case it is defined elsewhere.
+
+2009-12-28  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLElement] Make all properties protected, provide __tostring()
+
+2009-12-27  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLDocument] Fix for NS helpers assigning used NS alias.
+
+2009-11-22  Andrew McMillan  <andrew@morphoss.com>
+	* [classBrowser] Add a Title() get/set method.
+	* [AWLUtilties] Support precision in type names.
+
+2009-11-17  Andrew McMillan  <andrew@morphoss.com>
+	* [XMLElement] Looking for the xmlns attribute should return it.
+
+2009-11-14  Andrew McMillan  <andrew@morphoss.com>
+	* Remove opportunity for unassigned value warning.
+	* [XMLElement] Allow the GetElements() method to be called with no tag.
+
+2009-11-11  Andrew McMillan  <andrew@morphoss.com>
+	* [AWLUtilities] More generic implementation of request_headers.
+
+2009-11-03  Andrew McMillan  <andrew@morphoss.com>
+	* [iCalendar] Comment a bunch of debugging messages.
+
+2009-10-30  Matthias Mohr  <Matthias@Mohrenclan.de>
+	* Add translation features.
+
+2009-10-20  Andrew McMillan  <andrew@morphoss.com>
+	* Restructure the external link handling.
+	* Add an option for links to open in a new tab/page.
+
+2009-10-16  Andrew McMillan  <andrew@morphoss.com>
+	* [Session] Allow username/e-mail for forgotten password to be case-insensitive.
+
+2009-09-25  Andrew McMillan <andrew@morphoss.com>
+	* [DataEntry] Remove uninitialised warning possibility.
+	* [XMLDocument] Remove uninitialised warning possibilty.
+	* [iCalendar] Remove deprecated function.  Add some convenience methods.
+	* [classBrowser] Add new replaceable variable for row even/odd ness.
+
+2009-09-07  Andrew McMillan <andrew@morphoss.com>
+	* [AWLUtilities] Add a fix_latin() function to convert mixed charset into UTF-8.
+
+2008-08-25 Andrew McMillan <andrew@morphoss.com>
+
+	* [PgQuery] Extend clean_string to recurse through an array.
+	* [DataUpdate] When value for an integer is null or empty string, use db NULL.
+
+2009-06-25  Andrew McMillan <andrew@morphoss.com>
+	* [PgQuery] Add the ability for PgQuery to search a non-default schema.
+
+2009-06-22  Andrew McMillan <andrew@morphoss.com>
+
+	* Release 0.37

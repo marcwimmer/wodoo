@@ -1,0 +1,84 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Source: https://gitlab.com/davical-project/awl
+Upstream-Name: awl
+Upstream-Contact: davical-devel@lists.sourceforge.net
+
+Files: *
+Copyright: 2006 - 2008 Catalyst IT Ltd
+ 2006 - 2013 Andrew McMillan
+ 2009 - 2021 Davical contributors (see AUTHORS for details)
+License: GPL-2+
+
+Files: inc/classEditor.php inc/DataEntry.php
+Copyright: 2006 - 2008 Catalyst IT Ltd
+ 2006 - 2013 Andrew McMillan
+ 2009 - 2021 Davical contributors (see AUTHORS for details)
+License: GPL-2
+
+Files: inc/vComponent.php inc/AwlCache.php
+Copyright: 2006 - 2008 Catalyst IT Ltd
+ 2006 - 2013 Andrew McMillan
+ 2009 - 2021 Davical contributors (see AUTHORS for details)
+License: LGPL-2+
+
+Files: inc/AwlDatabase.php inc/AwlDBDialect.php inc/AwlQuery.php
+Copyright: 2006 - 2008 Catalyst IT Ltd
+ 2006 - 2013 Andrew McMillan
+ 2009 - 2021 Davical contributors (see AUTHORS for details)
+License: GPL-3+
+
+Files: inc/vCalendar.php inc/AWLUtilities.php.in inc/AwlUpgrader.php
+ inc/AWLUtilities.php inc/XMLDocument.php inc/XMLElement.php
+Copyright: 2006 - 2008 Catalyst IT Ltd
+ 2006 - 2013 Andrew McMillan
+ 2009 - 2021 Davical contributors (see AUTHORS for details)
+License: LGPL-3+
+
+Files: debian/*
+Copyright: 2006-2012, Andrew McMillan <awm@debian.org>
+ 2014-2021, Florian Schlichting <fsfs@debian.org>
+License: GPL-2+
+
+License: GPL-2+
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation; either version 2, or (at your option) any
+ later version.
+ .
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-2
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of version 2 of the GNU General Public License as
+ published by the Free Software Foundation.
+ .
+ On Debian systems, the complete text of version 2 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+License: GPL-3+
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation; either version 3, or (at your option) any
+ later version.
+ .
+ On Debian systems, the complete text of version 3 of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-3'.
+
+License: LGPL-2+
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Library General Public License as published
+ by the Free Software Foundation; either version 2, or (at your option)
+ any later version.
+ .
+ On Debian systems, the complete text of version 2 of the GNU Library
+ General Public License can be found in `/usr/share/common-licenses/LGPL-2'.
+
+License: LGPL-3+
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU Lesser General Public License as published
+ by the Free Software Foundation; either version 3, or (at your option)
+ any later version.
+ .
+ On Debian systems, the complete text of version 3 of the GNU Lesser
+ General Public License can be found in `/usr/share/common-licenses/LGPL-3'.

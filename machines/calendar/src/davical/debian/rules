@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/pkg-info.mk
+
+get-orig-source:
+	make clean
+	tar cJf ../awl_$(DEB_VERSION_UPSTREAM).orig.tar.xz --exclude-vcs --exclude=.gitattributes --exclude=vendor --exclude=.pc --exclude=debian .
+
+%:
+	dh $@
+
+override_dh_installdocs:
+	dh_installdocs
+	find debian/awl-doc/ -name '*.md5' -delete
+	jdupes -rl debian/awl-doc/
+
+override_dh_installchangelogs:
+	dh_installchangelogs ChangeLog
