@@ -51,7 +51,7 @@ def get_variables():
     return variables_file
 
 
-def _run_test(test_file, output_dir, url, dbname, user, password, browser='chrome', selenium_timeout=20, **run_parameters):
+def _run_test(test_file, output_dir, url, dbname, user, password, browser='firefox', selenium_timeout=20, **run_parameters):
     assert browser in Browsers
     browser = Browsers[browser]
 

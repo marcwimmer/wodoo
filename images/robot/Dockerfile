@@ -20,7 +20,7 @@ rm -rf /tmp/requirements.txt
 ENV WORKDIR=/opt/robot
 ENV ROBOT_THREADS 1
 
-ENV CHROME_VERSION=94.0.4606.71
+ENV CHROME_VERSION=95.0.4638.54
 ENV ARCH=amd64
 COPY artefacts/chromedriver_$ARCH.zip /tmp/chromedriver.zip
 COPY artefacts/googlechrome_$ARCH.deb /tmp/googlechrome.deb
