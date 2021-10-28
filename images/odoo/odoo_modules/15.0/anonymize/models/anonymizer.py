@@ -1,6 +1,6 @@
 import os
 from odoo import _, api, fields, models, SUPERUSER_ID
-from odoo.tools.sql import column_exists
+from odoo.tools.sql import column_exists, table_exists
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 import random
 import logging
@@ -31,12 +31,35 @@ class Anonymizer(models.AbstractModel):
         import names
         return names.get_full_name().replace(' ', '.') + "@" + self.get_one_random_domain(self._domains)
 
+    def _delete_mail_tracking_values(self):
+        for field in self.env['ir.model.fields'].search([
+            ('anonymize', '=', True)
+        ]):
+            self.env.cr.execute("""
+                delete from mail_tracking_value where field = %s"
+                and
+                mail_message_id in (select id from mail_message where model=%s)
+            """, (field.name, field.model_id.model))
+
     @api.model
-    def _run(self):
-        if os.environ['DEVMODE'] != "1":
+    def _delete_critical_tables(self):
+        self.env.cr.execute("delete from mail_mail;")
+
+    @api.model
+    def _run(self, force=False):
+        if force:
+            if force != self.env.cr.dbname:
+                raise Exception("force must match the databasename {}".format(self.env.cr.dbname))
+        if not force and os.environ['DEVMODE'] != "1":
             return
         import names
 
+        KEY = 'db.anonymized'
+        if not force and self.env['ir.config_parameter'].get_param(key=KEY, default='0') == '1':
+            return
+
+        self._delete_critical_tables()
+        self._delete_mail_tracking_values()
         self.env['ir.model.fields']._apply_default_anonymize_fields()
 
         for field in self.env['ir.model.fields'].search([('anonymize', '=', True)]):
@@ -46,27 +69,34 @@ class Anonymizer(models.AbstractModel):
                 continue
             table = obj._table
             cr = self.env.cr
+            if not table_exists(cr, table):
+                continue
             if not column_exists(cr, table, field.name):
                 logger.info(f"Ignoring not existent column: {table}:{field.name}")
                 continue
 
-            cr.execute(f"select id, {field.name} from {table} order by id desc")
+            cr.execute("select id, {} from {} order by id desc".format(field.name, table))
             recs = cr.fetchall()
             logger.info(f"Anonymizing {len(recs)} records of {table}")
+            logger.info(f"Anonymizing following column {field.name}")
             for rec in recs:
+                values = []
                 v = rec[1] or ''
-                if any(x in field.name for x in ['phone', 'fax']):
+                if any(x in field.name for x in ['phone', 'fax', 'mobile']):
                     v = self.gen_phone()
-                elif "@" in v or 'email' in field.name:
-                    v = self.generate_random_email()
-                elif field.name == 'lastname':
-                    v = names.get_last_name()
-                elif field.name == 'firstname':
-                    v = names.get_first_name()
                 else:
-                    v = names.get_full_name()
+                    if "@" in v or 'email' in field.name:
+                        v = self.generate_random_email()
+                    elif field.name == 'lastname':
+                        v = names.get_last_name()
+                    elif field.name == 'firstname':
+                        v = names.get_first_name()
+                    else:
+                        v = names.get_full_name()
 
                 cr.execute(f"update {table} set {field.name} = %s where id = %s", (
                     v,
                     rec[0],
                 ))
+
+        self.env['ir.config_parameter'].set_param(KEY, '1')
