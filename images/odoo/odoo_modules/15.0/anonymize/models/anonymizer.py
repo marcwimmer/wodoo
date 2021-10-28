@@ -46,17 +46,21 @@ class Anonymizer(models.AbstractModel):
         self.env.cr.execute("delete from mail_mail;")
 
     @api.model
-    def _run(self):
-        if os.environ['DEVMODE'] != "1":
+    def _run(self, force=False):
+        if force:
+            if force != self.env.cr.dbname:
+                raise Exception("force must match the databasename {}".format(self.env.cr.dbname))
+        if not force and os.environ['DEVMODE'] != "1":
             return
         import names
 
         KEY = 'db.anonymized'
-        if self.env['ir.config_parameter'].get_param(key=KEY, default='0') == '1':
+        if not force and self.env['ir.config_parameter'].get_param(key=KEY, default='0') == '1':
             return
 
         self._delete_critical_tables()
         self._delete_mail_tracking_values()
+        self.env['ir.model.fields']._apply_default_anonymize_fields()
 
         for field in self.env['ir.model.fields'].search([('anonymize', '=', True)]):
             try:
