@@ -29,7 +29,10 @@ def _replace_params_in_config(ADDONS_PATHS, content, server_wide_modules=None):
         server_wide_modules = server_wide_modules
     else:
         server_wide_modules = (os.getenv('SERVER_WIDE_MODULES', '') or '').split(',')
-        if os.getenv("IS_ODOO_QUEUEJOB", "") != "1":
+        if os.getenv("IS_ODOO_QUEUEJOB", "") == "1":
+            if 'queue_job' not in server_wide_modules:
+                server_wide_modules.append('queue_job')
+        else:
             if os.getenv("ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER", "") != "1":
                 if 'queue_job' in server_wide_modules:
                     server_wide_modules.remove('queue_job')
