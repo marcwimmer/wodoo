@@ -41,6 +41,16 @@ odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
 ```bash
 odoo init
 ```
+- You will be asked for a version, then building begins
+- After that:
+
+```bash
+odoo reload
+odoo -f db reset
+odoo up -d
+```
+
+- Then you should see the odoo instance empty at ```http://localhost:80```
 
 ## Store settings not in ~/.odoo but local inside the current directory in .odoo 
 
