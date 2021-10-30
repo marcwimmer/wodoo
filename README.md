@@ -20,12 +20,15 @@ Provides functionalities:
 
 - clone repository to /opt/odoo
 - make a bin file /usr/local/bin/odoo and chmod a+x
-```
+
+```bash
 #!/bin/bash
 sudo -E /opt/odoo/odoo "$@"
 ```
+
 - make entry `/etc/sudoers.d/odoo
-```
+
+```bash
 Cmnd_Alias ODOO_COMMANDS_ODOO = /usr/bin/find *, /opt/odoo/odoo *, /usr/bin/btrfs subvolume *, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rsync *, /usr/bin/rm *,  /usr/bin/du *, /usr/local/bin/odoo *, /opt/odoo/odoo *, /usr/bin/btrfs subvol show *, /usr/sbin/gosu *
 odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
 ```
@@ -35,7 +38,7 @@ odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
 - make an empty directory and cd into it
 - then:
 
-```
+```bash
 odoo init
 ```
 
@@ -43,16 +46,15 @@ odoo init
 
 This is excellent for jenkins jobs where different branches are tested.
 
-```
+```bash
 odoo reload --local --devmode --headless --project-name 'unique_name'
 ```
 
 ## How to extend an existing service
-------------------------------------
 
 - make a docker-compose file like ~/.odoo/docker-compose.yml
 
-```
+```yml
 services:
   odoo3:
     labels:
@@ -65,7 +67,7 @@ services:
 ```
 
 ### Example for fixed ip addresses:
-```
+```yml
 services:
     proxy:
         networks:
