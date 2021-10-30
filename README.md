@@ -41,6 +41,7 @@ odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
 ```bash
 odoo init
 ```
+
 - You will be asked for a version, then building begins
 - After that:
 
@@ -52,7 +53,7 @@ odoo up -d
 
 - Then you should see the odoo instance empty at ```http://localhost:80```
 
-## Store settings not in ~/.odoo but local inside the current directory in .odoo 
+## Store settings not in ~/.odoo but local inside the current directory in .odoo
 
 This is excellent for jenkins jobs where different branches are tested.
 
@@ -76,7 +77,8 @@ services:
 
 ```
 
-### Example for fixed ip addresses:
+### Example for fixed ip addresses
+
 ```yml
 services:
     proxy:
