@@ -165,6 +165,12 @@ def restore(config, name):
 
 def remove(config, snapshot):
     snapshots = __get_snapshots(config)
+    if isinstance(snapshot, str):
+        snapshots = [x for x in snapshots if x['name'] == snapshot]
+        if not snapshots:
+            click.secho(f"Snapshot {snapshot} not found!", fg='red')
+            sys.exit(-1)
+        snapshot = snapshots[0]
     if snapshot['path'] in map(itemgetter('path'), snapshots):
         subprocess.check_call(
             _get_cmd_butter_volume() + [
