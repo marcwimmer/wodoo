@@ -6,7 +6,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from .odoo_config import MANIFEST
 
-def _get_settings_files(config, customs):
+def _get_settings_files(config):
     """
     Returns list of paths or files
     """
@@ -16,8 +16,6 @@ def _get_settings_files(config, customs):
     if customs_dir:
         yield customs_dir / 'settings'
     yield Path('/etc/odoo/settings')
-    if customs: # catch what goes; if no customs given, then perhaps first init run done or so
-        yield Path(f'/etc/odoo/{config.CUSTOMS}/settings')
     if config.project_name:
         yield Path(f'/etc/odoo/{config.project_name}/settings')
     yield customs_dir / '.odoo' / 'settings'
@@ -36,14 +34,14 @@ def _get_settings(config, customs, quiet=False):
     finally:
         Path(filename).unlink()
 
-def _export_settings(config, customs, forced_values):
+def _export_settings(config, forced_values):
     from . import odoo_config
     from .myconfigparser import MyConfigParser
 
     if not config.files['settings'].exists():
         raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
 
-    setting_files = _collect_settings_files(config, customs)
+    setting_files = _collect_settings_files(config)
     _make_settings_file(config.files['settings'], setting_files)
     # constants
     config = MyConfigParser(config.files['settings'])
@@ -56,7 +54,7 @@ def _export_settings(config, customs, forced_values):
 
     config.write()
 
-def _collect_settings_files(config, customs, quiet=False):
+def _collect_settings_files(config, quiet=False):
     _files = []
 
     if config.dirs:
@@ -64,19 +62,22 @@ def _collect_settings_files(config, customs, quiet=False):
         # optimize
         for filename in config.dirs['images'].glob("**/default.settings"):
             _files.append(config.dirs['images'] / filename)
-    if 'settings_auto' in _files:
-        _files.append(config.files['settings_auto'])
+    if config.restrict:
+        _files += [x for x in config.restrict if 'settings' in x.name]
+    else:
+        if 'settings_auto' in _files:
+            _files.append(config.files['settings_auto'])
 
-    for dir in filter(lambda x: x.exists(), _get_settings_files(config, customs)):
-        if not quiet:
-            click.secho("Searching for settings in: {}".format(dir), fg='cyan')
-        if dir.is_file():
-            _files.append(dir)
-        elif dir.is_dir():
-            for file in dir.glob("settings*"):
-                if file.is_dir():
-                    continue
-                _files.append(file)
+        for dir in filter(lambda x: x.exists(), _get_settings_files(config)):
+            if not quiet:
+                click.secho("Searching for settings in: {}".format(dir), fg='cyan')
+            if dir.is_file():
+                _files.append(dir)
+            elif dir.is_dir():
+                for file in dir.glob("settings*"):
+                    if file.is_dir():
+                        continue
+                    _files.append(file)
 
     if config.files:
         # _files.append(files['user_settings'])

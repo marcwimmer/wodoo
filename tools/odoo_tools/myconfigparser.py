@@ -78,6 +78,7 @@ class MyConfigParser:
 
                 def write_line(key, val):
                     if val is None:
+                        import pudb;pudb.set_trace()
                         raise Exception("None value not allowed for: {}".format(key))
                     return key + "=" + str(val)
 
