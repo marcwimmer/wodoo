@@ -30,12 +30,23 @@ Commands = GlobalCommands()
 os.environ['HOST_HOME'] = os.environ['HOME']
 os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY.parent.parent)
 
-def _get_default_project_name():
-    path = Path(os.path.expanduser("~/.odoo/settings"))
-    if path.exists():
+def _get_default_project_name(restrict):
+    def _get_project_name_from_file(path):
+        if not path.exists():
+            return
         pj = [x for x in path.read_text().split("\n") if 'PROJECT_NAME' in x]
         if pj:
             return pj[0].split("=")[-1].strip()
+    if restrict:
+        paths = restrict
+    else:
+        paths = [Path(os.path.expanduser("~/.odoo/settings"))]
+    
+    for path in paths:
+        pj = _get_project_name_from_file(path)
+        if pj:
+            return pj
+
     root = Path(_get_customs_root(Path(os.getcwd())))
     if (root / "MANIFEST").exists():
         return root.name
@@ -53,16 +64,11 @@ if click:
     def cli(config, force, verbose, project_name, restrict):
         config.force = force
         config.verbose = verbose
-        if project_name:
-            config.project_name = project_name
-        else:
-            config.project_name = _get_default_project_name()
+        config.restrict = []
         if not config.WORKING_DIR:
             # usually all need a working except cicd
             click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
             sys.exit(1)
-
-        config.restrict = []
         if restrict:
             restrict = [Path(x).absolute() for x in restrict]
             for test in restrict:
@@ -71,6 +77,11 @@ if click:
                     sys.exit(-1)
                 config.restrict.append(test)
                 del test
+        if project_name:
+            config.project_name = project_name
+        else:
+            config.project_name = _get_default_project_name(restrict)
+
 
 
 from . import lib_clickhelpers  # NOQA

@@ -166,6 +166,7 @@ def _do_compose(config, db='', demo=False, **forced_values):
         whoami = str(pwd.getpwuid(os.getuid())[0])
 
     click.secho(f"*****************************************************", fg='yellow')
+    click.secho(f" project-name:         {config.project_name}"                          , fg='yellow')
     click.secho(f" cwd:         {os.getcwd()}"                          , fg='yellow')
     click.secho(f" whoami:      {whoami}"                               , fg='yellow')
     click.secho(f" cmd:         {' '.join(sys.argv)}"                   , fg='yellow')

@@ -79,7 +79,6 @@ def _collect_settings_files(config, quiet=False):
                         continue
                     _files.append(file)
 
-    if config.files:
         # _files.append(files['user_settings'])
         if config.files and 'project_settings' in config.files:
             if config.files['project_settings'].exists():
@@ -89,6 +88,7 @@ def _collect_settings_files(config, quiet=False):
 
     if not quiet:
         click.secho("\n\nFound following extra settings files:\n", fg='cyan', bold=True)
+
     for file in _files:
         if not Path(file).exists():
             continue
