@@ -62,8 +62,8 @@ def _collect_settings_files(config, quiet=False):
         # optimize
         for filename in config.dirs['images'].glob("**/default.settings"):
             _files.append(config.dirs['images'] / filename)
-    if config.restrict:
-        _files += [x for x in config.restrict if 'settings' in x.name]
+    if config.restrict['settings']:
+        _files += config.restrict['settings']
     else:
         if 'settings_auto' in _files:
             _files.append(config.files['settings_auto'])

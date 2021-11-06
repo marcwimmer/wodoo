@@ -305,7 +305,7 @@ def _prepare_yml_files_from_template_files(config):
             [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
 
     if config.restrict:
-        _files += [x for x in config.restrict if '.yml' in x.name]
+        _files += config.restrict['docker-compose']
     elif not config.restrict: 
         for d in [
             config.files['project_docker_compose.local'],

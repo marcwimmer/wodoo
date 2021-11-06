@@ -460,24 +460,7 @@ def _file2env(filepath, out_dict=None):
             os.environ[k] = config[k]
 
 def _get_bash_for_machine(machine):
-    if machine == 'postgres':
-        return 'bash'
-    else:
-        return 'bash'
-
-
-def _remember_customs_and_cry_if_changed(config):
-    # if customs changed, then restart is required
-
-    if _is_container_running('odoo'):
-        out = __dcexec(['odoo', 'env'])
-        out = [x for x in out.split('\n') if x.startswith("CUSTOMS=")]
-        if out:
-            current_customs = out[0].split("=")[-1]
-            if config.customs:
-                if current_customs != config.customs:
-                    click.echo("Customs changed - you need to restart and/or rebuild!")
-                    __dc(['stop', '-t 2'])
+    return 'bash'
 
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()

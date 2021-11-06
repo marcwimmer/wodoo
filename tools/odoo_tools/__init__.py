@@ -58,30 +58,34 @@ if click:
     @click.group(cls=AliasedGroup)
     @click.option("-f", "--force", is_flag=True)
     @click.option("-v", "--verbose", is_flag=True)
-    @click.option("-x", '--restrict', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
+    @click.option("-xs", '--restrict-setting', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
+    @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
     @click.option("-p", '--project-name', help="Set Project-Name")
     @pass_config
-    def cli(config, force, verbose, project_name, restrict):
+    def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose):
         config.force = force
         config.verbose = verbose
-        config.restrict = []
+        config.restrict = {}
         if not config.WORKING_DIR:
             # usually all need a working except cicd
             click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
             sys.exit(1)
-        if restrict:
-            restrict = [Path(x).absolute() for x in restrict]
-            for test in restrict:
+
+        def _collect_files(files):
+            for test in files:
+                test = Path(test)
                 if not test.exists():
                     click.secho(f"Not found: {test}", fg='red')
                     sys.exit(-1)
-                config.restrict.append(test)
-                del test
+                yield test.absolute()
+
+        config.restrict['settings'] = list(_collect_files(restrict_setting))
+        config.restrict['docker-compose'] = list(_collect_files(restrict_docker_compose))
+
         if project_name:
             config.project_name = project_name
         else:
-            config.project_name = _get_default_project_name(restrict)
-
+            config.project_name = _get_default_project_name(config.restrict['settings'])
 
 
 from . import lib_clickhelpers  # NOQA
