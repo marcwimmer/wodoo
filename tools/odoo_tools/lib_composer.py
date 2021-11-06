@@ -291,6 +291,7 @@ def _prepare_yml_files_from_template_files(config):
     #
     # - also replace all environment variables
     _files = []
+
     for dir in [
         config.dirs['images'],
         odoo_config.customs_dir(),
@@ -298,22 +299,35 @@ def _prepare_yml_files_from_template_files(config):
     ]:
         if not dir.exists():
             continue
-        [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
-
-    for d in [
-        config.files['project_docker_compose.local'],
-        config.files['project_docker_compose.home'],
-        config.files['project_docker_compose.home.project'],
-    ]:
-        if not d.exists():
-            if config.verbose:
-                click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
-            continue
-        if d.is_file():
-            _files.append(d)
+        if dir.is_file():
+            _files += [dir]
         else:
-            [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+            [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
 
+    if config.restrict:
+        _files += [x for x in config.restrict if '.yml' in x.name]
+    elif not config.restrict: 
+        for d in [
+            config.files['project_docker_compose.local'],
+            config.files['project_docker_compose.home'],
+            config.files['project_docker_compose.home.project'],
+        ]:
+            if not d.exists():
+                if config.verbose:
+                    click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
+                continue
+            if d.is_file():
+                _files.append(d)
+            else:
+                [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+
+    _files2 =[]
+    for x in _files:
+        if x in _files2:
+            continue
+        _files2.append(x)
+    _files = _files2
+    del _files2
     _prepare_docker_compose_files(config, config.files['docker_compose'], _files)
 
 def __resolve_custom_merge(whole_content, value):
