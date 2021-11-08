@@ -506,29 +506,34 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
         filename = tempfile.mktemp(suffix='.findoutput')
         find_command = f"find '{path}' -not -type l -not -user {UID}"
         os.system(f"{find_command} > '{filename}'")
-        res = Path(filename).read_text().strip()
-        if not res:
-            return
+        filename = Path(filename)
+        try:
+            res = filename.read_text().strip()
+            if not res:
+                return
 
-        runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
-        for run in runs:
-            # dont set to UID:UID --> group not necessarily matches user id
-            repair_command = f"{run} {find_command} -exec chown {UID} {{}} \\; 2>/dev/null;"
-            if autofix:
-                os.system(repair_command)
-            uid = UID
-            if recursive:
-                for test in path.glob("**/*"):
+            runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
+            for run in runs:
+                # dont set to UID:UID --> group not necessarily matches user id
+                repair_command = f"{run} {find_command} -exec chown {UID} {{}} \\; 2>/dev/null;"
+                if autofix:
+                    os.system(repair_command)
+                uid = UID
+                if recursive:
+                    for test in path.glob("**/*"):
+                        uid = os.stat(path).st_uid
+                        if str(uid) != str(UID):
+                            break
+                else:
                     uid = os.stat(path).st_uid
-                    if str(uid) != str(UID):
-                        break
-            else:
-                uid = os.stat(path).st_uid
-            if str(uid) != str(UID):
-                click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
-                click.secho("Probably execute: ", fg='yellow')
-                click.secho(repair_command, fg='yellow')
-                sys.exit(-1)
+                if str(uid) != str(UID):
+                    click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
+                    click.secho("Probably execute: ", fg='yellow')
+                    click.secho(repair_command, fg='yellow')
+                    sys.exit(-1)
+        finally:
+            if filename.exists():
+                filename.unlink()
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but
