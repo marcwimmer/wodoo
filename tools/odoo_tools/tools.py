@@ -491,29 +491,19 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
         os.system(f"{find_command} > '{filename}'")
         filename = Path(filename)
         try:
-            res = filename.read_text().strip()
+            res = filename.read_text().strip().split("\n")
+            filename.unlink()
             if not res:
                 return
 
             runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
             for run in runs:
                 # dont set to UID:UID --> group not necessarily matches user id
-                repair_command = f"{run} {find_command} -exec chown {UID} {{}} \\; 2>/dev/null;"
-                if autofix:
-                    os.system(repair_command)
-                uid = UID
-                if recursive:
-                    for test in path.glob("**/*"):
-                        uid = os.stat(path).st_uid
-                        if str(uid) != str(UID):
-                            break
-                else:
-                    uid = os.stat(path).st_uid
-                if str(uid) != str(UID):
-                    click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
-                    click.secho("Probably execute: ", fg='yellow')
-                    click.secho(repair_command, fg='yellow')
-                    sys.exit(-1)
+                for line in res:
+                    if not line: continue
+                    GID = os.stat(line).st_gid
+                    os.chown(line, UID, GID)
+
         finally:
             if filename.exists():
                 filename.unlink()
