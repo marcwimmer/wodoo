@@ -86,6 +86,8 @@ if click:
             config.project_name = project_name
         else:
             config.project_name = _get_default_project_name(config.restrict['settings'])
+        os.environ['project_name'] = config.project_name
+        os.environ['docker_compose'] = str(config.files['docker_compose'])
 
 
 from . import lib_clickhelpers  # NOQA

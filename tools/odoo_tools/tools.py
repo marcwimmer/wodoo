@@ -281,7 +281,7 @@ def _set_default_envs(env):
     env = env or {}
     env.update({
         'DOCKER_BUILDKIT' : '1',
-        'COMPOSE_DOCKER_CLI_BUILD': '1'
+        'COMPOSE_DOCKER_CLI_BUILD': '1',
     })
     return env
 
