@@ -40,6 +40,7 @@ class Config(object):
         self._project_name = value
         self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.project_name)
         self.setup_files_and_folders()
+        os.environ['RUN_DIR'] = str(self.dirs['run']) if self.dirs.get('run') else ""
 
     def setup_files_and_folders(self):
         from .init_functions import get_use_docker
