@@ -547,7 +547,7 @@ class Modules(object):
         parent.mkdir(exist_ok=True)
         if os.getenv("SUDO_USER"):
             try_to_set_owner(
-                os.environ['SUDO_UID'],
+                int(os.environ['SUDO_UID']),
                 parent,
                 autofix=True,
             )
