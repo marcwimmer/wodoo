@@ -7,6 +7,8 @@ services:
         args:
           ODOO_VERSION: ${ODOO_VERSION}
           ODOO_PYTHON_VERSION: ${ODOO_PYTHON_VERSION}
+          INSTALL_DOCKER_CLIENTS: ${INSTALL_DOCKER_CLIENTS}
+          DOCKER_GROUP_ID: ${DOCKER_GROUP_ID}
     restart: unless-stopped
     volumes:
       - ${HOST_RUN_DIR}:/opt/run

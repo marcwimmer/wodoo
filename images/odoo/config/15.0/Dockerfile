@@ -5,6 +5,8 @@ ARG ODOO_VERSION
 ARG ODOO_REQUIREMENTS
 ARG ODOO_DEB_REQUIREMENTS
 ARG ODOO_PYTHON_VERSION
+ARG DOCKER_GROUP_ID
+ARG INSTALL_DOCKER_CLIENTS
 
 MAINTAINER marc@itewimmer.de
 
@@ -107,6 +109,23 @@ RUN \
 chown odoo:odoo /home/odoo -R && \
 rm -Rf /usr/local/man && mkdir -p /usr/local/man/man1
 
+# install docker client
+RUN \
+if [ "$INSTALL_DOCKER_CLIENTS" = "1" ]; then \
+    groupadd -g $DOCKER_GROUP_ID docker && \
+    usermod -aG docker odoo && \
+    apt update && \
+    apt install -y ca-certificates curl gnupg lsb-release software-properties-common && \
+    apt update && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \ 
+    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt update && \
+    DEBIAN_FRONTEND="noninteractive" apt install -y docker-ce-cli && \
+    echo 'done'; \
+fi
+
+
 # Install specific Python version; example: 3.7.3 has email bug:
 # https://github.com/SpamScope/mail-parser/issues/49
 RUN apt update && apt install -y libncurses5 libncurses5-dev libncursesw5
@@ -154,3 +173,4 @@ ADD patches/python_3.8.email.patch /usr/local/src
 RUN bash python_3.8.email.patch
 
 WORKDIR /opt/odoo
+
