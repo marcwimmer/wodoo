@@ -17,5 +17,5 @@ server_wide_modules = __SERVER_WIDE_MODULES__
 proxy_mode = True
 translate_modules = ['all']
 
-limit_memory_hard = 8053063680
-limit_memory_soft = 6710886400
+limit_memory_hard = 18053063680
+limit_memory_soft = 16710886400
