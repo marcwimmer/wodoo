@@ -1,4 +1,3 @@
-from odoo.addons.queue_job.job import job
 from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
 
