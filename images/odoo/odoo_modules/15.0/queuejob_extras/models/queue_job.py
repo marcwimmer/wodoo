@@ -4,7 +4,6 @@ import logging
 from datetime import datetime, timedelta
 from odoo import _, api, fields, models, SUPERUSER_ID
 from odoo.exceptions import UserError, RedirectWarning, ValidationError
-from odoo.addons.queue_job.job import Job
 
 logger = logging.getLogger(__name__)
 
