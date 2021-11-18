@@ -133,29 +133,6 @@ def update_module_list(config):
     _install_module(config, "update_module_list")
 
 
-def _uninstall_marked_modules(config):
-    """
-    Checks for file "uninstall" in customs root and sets modules to uninstalled.
-    """
-    if os.getenv("USE_DOCKER", "1") == "0":
-        return
-    if config.odoo_version < 11.0:
-        return
-    module = 'server_tools_uninstaller'
-    try:
-        DBModules.is_module_installed(module, raise_exception_not_initialized=True)
-    except UserWarning:
-        click.secho("Nothing to uninstall - db not initialized yet.", fg='yellow')
-        return
-    else:
-        # check if something is todo
-        to_uninstall = config.manifest.get('uninstall', [])
-        to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
-        if to_uninstall:
-            click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
-            _install_module(config, module)
-
-
 def _get_to_install_modules(config, modules):
     for module in modules:
         if module in ['all']:
@@ -253,8 +230,6 @@ def main(config, modules, non_interactive, no_update_modulelist, i18n, only_i18n
         update(config, 'i', to_install_swm)
         click.secho(f"Updating {','.join(to_install_swm)}", fg=c)
         update(config, 'u', to_update_swm)
-
-        _uninstall_marked_modules(config)
 
     c = 'yellow'
     click.secho("--------------------------------------------------------------------------", fg=c)

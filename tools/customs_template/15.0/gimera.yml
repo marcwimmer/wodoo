@@ -283,12 +283,12 @@ repos:
   #   patches:
   #     - addons_OCA/server-backend.patches
 
-  # - path: "addons_OCA/queue"
-  #   url: https://github.com/OCA/queue
-  #   branch: "15.0"
-  #   type: integrated
-  #   patches:
-  #     - addons_OCA/queue.patches
+  - path: "addons_OCA/queue"
+    url: https://github.com/OCA/queue
+    branch: "14.0"
+    type: integrated
+    patches:
+      - addons_OCA/queue.patches
 
   # - path: "addons_OCA/account-analytic"
   #   url: https://github.com/OCA/account-analytic

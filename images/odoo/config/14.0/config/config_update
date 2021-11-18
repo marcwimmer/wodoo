@@ -3,3 +3,6 @@ log_level = debug
 log_handler = :DEBUG
 max_cron_threads =0
 workers = 0
+
+limit_memory_hard = 88053063680
+limit_memory_soft = 86710886400

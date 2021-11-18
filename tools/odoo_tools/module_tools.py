@@ -16,13 +16,13 @@ except Exception:
 from .tools import _extract_python_libname
 from .tools import _exists_table
 from .tools import _execute_sql
-from .odoo_config import odoo_root
-from .odoo_config import get_conn_autoclose
+from .odoo_config import get_conn_autoclose, manifest_file_names
 from .odoo_config import current_version
-from .odoo_config import current_db
+from .odoo_config import get_settings
 from .odoo_config import customs_dir
 from .odoo_config import translate_path_into_machine_path
 from .odoo_config import MANIFEST_FILE
+from .odoo_config import manifest_file_names
 from .odoo_config import MANIFEST
 from .myconfigparser import MyConfigParser
 from .odoo_parser import get_view
@@ -48,17 +48,18 @@ pwd = "1"
 
 
 def exe(*params):
+    config = get_settings()
     def login(username, password):
         socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (host))
-        return socket_obj.login(current_db(), username, password)
+        return socket_obj.login(config['DBNAME'], username, password)
     uid = login(username, pwd)
     socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (host))
-    return socket_obj.execute(current_db(), uid, pwd, *params)
+    return socket_obj.execute(config['DBNAME'], uid, pwd, *params)
 
 
-def delete_qweb(modules):
+def delete_qweb(config, modules):
 
-    with get_conn_autoclose() as cr:
+    with get_conn_autoclose(config) as cr:
         if modules != 'all':
             cr.execute("select name from ir_module_module where name = %s", (modules,))
         else:
@@ -106,9 +107,9 @@ def delete_qweb(modules):
             for view_id in [x[0] for x in cr.fetchall()]:
                 erase_view(view_id)
 
-def get_all_langs():
+def get_all_langs(config):
     sql = "select distinct code from res_lang where active = true;"
-    with get_conn_autoclose() as cr:
+    with get_conn_autoclose(config) as cr:
         cr.execute(sql)
         langs = [x[0] for x in cr.fetchall() if x[0]]
     return langs
@@ -128,12 +129,12 @@ class DBModules(object):
                 sys.exit(32)
 
     @classmethod
-    def abort_upgrade(clazz):
+    def abort_upgrade(clazz, config):
         SQL = """
             UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
-        with get_conn_autoclose() as cr:
+        with get_conn_autoclose(config) as cr:
             _execute_sql(cr, SQL)
 
     @classmethod
@@ -479,10 +480,10 @@ def update_view_in_db(filepath, lineno):
                 module = Module.get_by_name(module)
                 print("Searching view/template for {}.{}".format(module.name, xmlid))
                 cr.execute("select res_id from ir_model_data where model='ir.ui.view' and module=%s and name=%s",
-                             [
-                                 module.name,
-                                 xmlid
-                             ])
+                            [
+                                module.name,
+                                xmlid
+                            ])
                 res = cr.fetchone()
                 if not res:
                     print("No view found for {}.{}".format(module.name, xmlid))
@@ -521,11 +522,10 @@ class Modules(object):
     def __init__(self):
         cache_file = self._get_cache_path()
         if self.is_git_clean():
-            if not cache_file:
-                pass
-            elif not cache_file.exists():
+            if not cache_file or not cache_file.exists():
                 modules = self._get_modules()
-                cache_file.write_bytes(pickle.dumps(modules))
+                if cache_file:
+                    cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
             else:
                 self.modules = pickle.loads(cache_file.read_bytes())
@@ -548,7 +548,7 @@ class Modules(object):
         parent.mkdir(exist_ok=True)
         if os.getenv("SUDO_USER"):
             try_to_set_owner(
-                os.environ['SUDO_UID'],
+                int(os.environ['SUDO_UID']),
                 parent,
                 autofix=True,
             )
@@ -565,7 +565,7 @@ class Modules(object):
             Returns a list of full paths of all manifests
             """
             for path in get_odoo_addons_paths():
-                for file in path.glob("**/" + MANIFEST_FILE()):
+                for file in path.glob("**/" + manifest_file_names()):
                     modname = file.parent.name
                     if modname in modnames:
                         continue
@@ -709,6 +709,8 @@ class Modules(object):
         pydeps = []
         deb_deps = []
         for module in modules:
+            if module == 'master':
+                import pudb;pudb.set_trace()
             module = self.modules[module]
             file = (module.path / 'external_dependencies.txt')
             new_deps = []
@@ -810,10 +812,10 @@ class Module(object):
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
-            if (p / MANIFEST_FILE()).exists():
+            if (p / manifest_file_names()).exists():
                 if '.git' in p.parts:
                     continue
-                self._manifest_path = p / MANIFEST_FILE()
+                self._manifest_path = p / manifest_file_names()
                 break
         if not getattr(self, '_manifest_path', ''):
             raise Module.IsNot("no module found for {}".format(path))

@@ -30,23 +30,65 @@ Commands = GlobalCommands()
 os.environ['HOST_HOME'] = os.environ['HOME']
 os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY.parent.parent)
 
+def _get_default_project_name(restrict):
+    def _get_project_name_from_file(path):
+        if not path.exists():
+            return
+        pj = [x for x in path.read_text().split("\n") if 'PROJECT_NAME' in x]
+        if pj:
+            return pj[0].split("=")[-1].strip()
+    if restrict:
+        paths = restrict
+    else:
+        paths = [Path(os.path.expanduser("~/.odoo/settings"))]
+    
+    for path in paths:
+        pj = _get_project_name_from_file(path)
+        if pj:
+            return pj
+
+    root = Path(_get_customs_root(Path(os.getcwd())))
+    if (root / "MANIFEST").exists():
+        return root.name
+    raise Exception("No default project name could be determined.")
+
 if click:
     pass_config = click.make_pass_decorator(Config, ensure=True)
 
     @click.group(cls=AliasedGroup)
-    @click.option("-p", "--project-name", is_flag=False)  # CHECK with init functions on default value
     @click.option("-f", "--force", is_flag=True)
     @click.option("-v", "--verbose", is_flag=True)
+    @click.option("-xs", '--restrict-setting', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
+    @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
+    @click.option("-p", '--project-name', help="Set Project-Name")
     @pass_config
-    def cli(config, force, verbose, project_name):
+    def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose):
         config.force = force
         config.verbose = verbose
-        if project_name:
-            config.project_name = project_name
+        config.restrict = {}
         if not config.WORKING_DIR:
             # usually all need a working except cicd
             click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
             sys.exit(1)
+
+        def _collect_files(files):
+            for test in files:
+                test = Path(test)
+                if not test.exists():
+                    click.secho(f"Not found: {test}", fg='red')
+                    sys.exit(-1)
+                yield test.absolute()
+
+        config.restrict['settings'] = list(_collect_files(restrict_setting))
+        config.restrict['docker-compose'] = list(_collect_files(restrict_docker_compose))
+
+        if project_name:
+            config.project_name = project_name
+        else:
+            config.project_name = _get_default_project_name(config.restrict['settings'])
+        os.environ['project_name'] = config.project_name
+        os.environ['docker_compose'] = str(config.files['docker_compose'])
+
 
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
@@ -69,6 +111,3 @@ from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
 
 load_dynamic_modules((SCRIPT_DIRECTORY / '..' / '..' / 'images'))
-
-# init config to setup required env variables
-Config()

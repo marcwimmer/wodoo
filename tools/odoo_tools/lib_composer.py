@@ -9,10 +9,7 @@ import importlib.util
 import random
 from copy import deepcopy
 import subprocess
-import time
 import importlib
-import re
-from datetime import datetime
 import sys
 import shutil
 import os
@@ -78,21 +75,19 @@ def config(ctx, config, service_name, full=True):
 @click.option("-d", "--db", required=False)
 @click.option("-p", "--proxy-port", required=False)
 @click.option("-m", "--mailclient-gui-port", required=False, default=None)
-@click.option("-l", "--local", is_flag=True, help="Puts all files and settings into .odoo directory of source code")
-@click.option("-P", '--project-name', help="Set Project-Name")
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
 @click.option("--devmode", is_flag=True)
 @click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, project_name, headless, devmode, additional_config):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config):
     from .myconfigparser import MyConfigParser
 
     if headless and proxy_port:
         click.secho("Proxy Port and headless together not compatible.", fg='red')
         sys.exit(-1)
 
-    click.secho("Current Project Name: {}".format(project_name or config.project_name), bold=True, fg='green')
+    click.secho("Current Project Name: {}".format(config.project_name), bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
@@ -104,11 +99,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, local, pro
             additional_config_file.write_bytes(base64.b64decode(additional_config))
             additional_config = MyConfigParser(additional_config_file)
 
-        _set_host_run_dir(ctx, config, local)
-        # Reload config
-        from .click_config import Config
-        config = Config(project_name=project_name, verbose=config.verbose, force=config.force)
-        internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config)
+        internal_reload(config, db, demo, devmode, headless, proxy_port, mailclient_gui_port, additional_config)
 
     finally:
         if additional_config_file and additional_config_file.exists():
@@ -118,10 +109,8 @@ def get_arch():
     return platform.uname().machine # aarch64 
 
 def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config=None):
-
     defaults = {
         'config': config,
-        'customs': config.CUSTOMS,
         'db': db,
         'demo': demo,
         'LOCAL_SETTINGS': '1' if local else '0',
@@ -159,34 +148,12 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
 def _execute_after_reload(config):
     execute_script(config, config.files['after_reload_script'], "You may provide a custom after reload script here:")
 
-def _set_host_run_dir(ctx, config, local):
-    from .init_functions import make_absolute_paths
-    local_config_dir = (config.WORKING_DIR / '.odoo')
-    if local:
-        local_config_dir.mkdir(exist_ok=True)
-    else:
-        # remove probably existing local run dir
-        if local_config_dir.exists():
-            if config.files['docker_compose'].exists():
-                Commands.invoke(ctx, 'down', volumes=True)
-            if local_config_dir.exists():
-                if local_config_dir.stat().st_uid == 0:
-                    __try_to_set_owner(
-                        config.owner_uid_as_int,
-                        local_config_dir,
-                        recursive=True,
-                        autofix=True
-                    )
-                __remove_tree(local_config_dir, retry=0)
-            click.secho("Please reload again.", fg='green')
-            sys.exit(-1)
-
 def _set_defaults(config, defaults):
     defaults['HOST_RUN_DIR'] = config.HOST_RUN_DIR
-    defaults['NETWORK_NAME'] = config.NETWORK_NAME
+    defaults['NETWORK_NAME'] = config.project_name
     defaults['project_name'] = config.project_name
 
-def _do_compose(config, customs='', db='', demo=False, **forced_values):
+def _do_compose(config, db='', demo=False, **forced_values):
     """
     builds docker compose, proxy settings, setups odoo instances
     """
@@ -199,15 +166,20 @@ def _do_compose(config, customs='', db='', demo=False, **forced_values):
         whoami = str(pwd.getpwuid(os.getuid())[0])
 
     click.secho(f"*****************************************************", fg='yellow')
+    click.secho(f" project-name:         {config.project_name}"                          , fg='yellow')
     click.secho(f" cwd:         {os.getcwd()}"                          , fg='yellow')
     click.secho(f" whoami:      {whoami}"                               , fg='yellow')
     click.secho(f" cmd:         {' '.join(sys.argv)}"                   , fg='yellow')
+    if config.restrict:
+        for file in config.restrict:
+            click.secho(f" restrict to:         {file}"                   , fg='yellow')
+            del file
     click.secho(f"*****************************************************", fg='yellow')
 
     defaults = {}
     _set_defaults(config, defaults)
-    setup_settings_file(config, customs, db, demo, **defaults)
-    _export_settings(config, customs, forced_values)
+    setup_settings_file(config, db, demo, **defaults)
+    _export_settings(config, forced_values)
     _prepare_filesystem(config)
     _execute_after_settings(config)
 
@@ -234,32 +206,25 @@ def _prepare_filesystem(config):
             autofix=config.devmode
         )
 
-def get_db_name(db, customs):
-    db = db or customs
+def get_db_name(db, project_name):
+    db = db or project_name
 
-    if db[0] in "0123456789":
+    if db and db[0] in "0123456789":
         db = 'db' + db
     for c in '?:/*\\!@#$%^&*()-.':
         db = db.replace(c, "_")
     db = db.lower()
     return db
 
-def setup_settings_file(config, customs, db, demo, **forced_values):
+def setup_settings_file(config, db, demo, **forced_values):
     """
     Cleans run/settings and sets minimal settings;
     Puts default values in settings.d to override any values
     """
     from .myconfigparser import MyConfigParser
     settings = MyConfigParser(config.files['settings'])
-    if customs:
-        if settings.get('CUSTOMS', '') != customs:
-            settings.clear()
-            settings['CUSTOMS'] = customs
-            settings.write()
     vals = {}
-    if customs:
-        vals['CUSTOMS'] = customs
-    vals['DBNAME'] = get_db_name(db, customs)
+    vals['DBNAME'] = get_db_name(db, config.project_name)
     if demo:
         vals['ODOO_DEMO'] = "1" if demo else "0"
     vals.update(forced_values)
@@ -326,6 +291,7 @@ def _prepare_yml_files_from_template_files(config):
     #
     # - also replace all environment variables
     _files = []
+
     for dir in [
         config.dirs['images'],
         odoo_config.customs_dir(),
@@ -333,22 +299,35 @@ def _prepare_yml_files_from_template_files(config):
     ]:
         if not dir.exists():
             continue
-        [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
-
-    for d in [
-        config.files['project_docker_compose.local'],
-        config.files['project_docker_compose.home'],
-        config.files['project_docker_compose.home.project'],
-    ]:
-        if not d.exists():
-            if config.verbose:
-                click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
-            continue
-        if d.is_file():
-            _files.append(d)
+        if dir.is_file():
+            _files += [dir]
         else:
-            [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+            [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
 
+    if config.restrict and config.restrict.get('docker-compose'):
+        _files += config.restrict['docker-compose']
+    else:
+        for d in [
+            config.files['project_docker_compose.local'],
+            config.files['project_docker_compose.home'],
+            config.files['project_docker_compose.home.project'],
+        ]:
+            if not d.exists():
+                if config.verbose:
+                    click.secho(f"Hint: you may use configuration file {d}", fg='magenta')
+                continue
+            if d.is_file():
+                _files.append(d)
+            else:
+                [_files.append(x) for x in d.glob("docker-compose*.yml")] # not recursive
+
+    _files2 =[]
+    for x in _files:
+        if x in _files2:
+            continue
+        _files2.append(x)
+    _files = _files2
+    del _files2
     _prepare_docker_compose_files(config, config.files['docker_compose'], _files)
 
 def __resolve_custom_merge(whole_content, value):

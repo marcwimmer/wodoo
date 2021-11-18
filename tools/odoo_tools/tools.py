@@ -281,7 +281,7 @@ def _set_default_envs(env):
     env = env or {}
     env.update({
         'DOCKER_BUILDKIT' : '1',
-        'COMPOSE_DOCKER_CLI_BUILD': '1'
+        'COMPOSE_DOCKER_CLI_BUILD': '1',
     })
     return env
 
@@ -460,24 +460,7 @@ def _file2env(filepath, out_dict=None):
             os.environ[k] = config[k]
 
 def _get_bash_for_machine(machine):
-    if machine == 'postgres':
-        return 'bash'
-    else:
-        return 'bash'
-
-
-def _remember_customs_and_cry_if_changed(config):
-    # if customs changed, then restart is required
-
-    if _is_container_running('odoo'):
-        out = __dcexec(['odoo', 'env'])
-        out = [x for x in out.split('\n') if x.startswith("CUSTOMS=")]
-        if out:
-            current_customs = out[0].split("=")[-1]
-            if config.customs:
-                if current_customs != config.customs:
-                    click.echo("Customs changed - you need to restart and/or rebuild!")
-                    __dc(['stop', '-t 2'])
+    return 'bash'
 
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
@@ -508,50 +491,22 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
         os.system(f"{find_command} > '{filename}'")
         filename = Path(filename)
         try:
-            res = filename.read_text().strip()
+            res = filename.read_text().strip().split("\n")
+            filename.unlink()
             if not res:
                 return
 
             runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
             for run in runs:
                 # dont set to UID:UID --> group not necessarily matches user id
-                repair_command = f"{run} {find_command} -exec chown {UID} {{}} \\; 2>/dev/null;"
-                if autofix:
-                    os.system(repair_command)
-                uid = UID
-                if recursive:
-                    for test in path.glob("**/*"):
-                        uid = os.stat(path).st_uid
-                        if str(uid) != str(UID):
-                            break
-                else:
-                    uid = os.stat(path).st_uid
-                if str(uid) != str(UID):
-                    click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
-                    click.secho("Probably execute: ", fg='yellow')
-                    click.secho(repair_command, fg='yellow')
-                    sys.exit(-1)
+                for line in res:
+                    if not line: continue
+                    GID = os.stat(line).st_gid
+                    os.chown(line, UID, GID)
+
         finally:
             if filename.exists():
                 filename.unlink()
-
-def _check_working_dir_customs_mismatch(config):
-    # Checks wether the current working is in a customs directory, but
-    # is not matching the correct customs. Avoid creating wrong tickets
-    # in the wrong customizations.
-
-    from . import dirs
-    for working_dir in dirs['host_working_dir'].parents:
-        if (working_dir / 'MANIFEST').is_file():
-            break
-    else:
-        return # no customs
-
-    current_customs = working_dir.name
-    if current_customs != config.customs:
-        _askcontinue(None, """Caution: current customs is {} but you are in another customs directory: {}
-Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
-                     )
 
 def _display_machine_tips(config, machine_name):
     dir = config.dirs['images'] / machine_name
@@ -732,8 +687,9 @@ def __hash_odoo_password(pwd):
             12.0,
             13.0,
             14.0,
+            15.0,
             10.0,
-            09.0,
+            9.0,
     ]:
         setpw = CryptContext(schemes=['pbkdf2_sha512', 'md5_crypt'])
         return setpw.encrypt(pwd)

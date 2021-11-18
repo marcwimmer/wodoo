@@ -7,7 +7,7 @@ import inspect
 import os
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
-MINIMAL_MODULES = ['anonymize'] # to include its dependencies
+MINIMAL_MODULES = [] # to include its dependencies
 
 def _setup_remote_debugging(config, yml):
     if config.devmode:
@@ -62,7 +62,7 @@ def after_compose(config, settings, yml, globals):
         external_dependencies.setdefault('pip', [])
         external_dependencies.setdefault('deb', [])
 
-        requirements_odoo = config.dirs['customs'] / 'odoo' / 'requirements.txt'
+        requirements_odoo = config.WORKING_DIR / 'odoo' / 'requirements.txt'
         if requirements_odoo.exists():
             for libpy in requirements_odoo.read_text().split("\n"):
                 libpy = libpy.strip()
@@ -98,7 +98,7 @@ def after_compose(config, settings, yml, globals):
         config.files['native_collected_requirements_from_modules'].write_text('\n'.join(external_dependencies['pip']))
 
         # put the collected requirements into project root
-        req_file = (config.dirs['customs'] / 'requirements.txt')
+        req_file = (config.WORKING_DIR / 'requirements.txt')
         req_file.write_text('\n'.join(external_dependencies['pip']))
 
         # filter out the bad outdated LDAP module
