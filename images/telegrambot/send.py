@@ -14,7 +14,7 @@ import inspect
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
 sys.path.append('/opt/odoo/admin/module_tools')
 import odoo_config
-conf = odoo_config.get_env()
+conf = odoo_config.get_settings()
 
 def prefixed(message):
     with open('/etc/hostname', 'r') as f:

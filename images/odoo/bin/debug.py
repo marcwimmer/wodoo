@@ -11,12 +11,12 @@ import tools
 from tools import prepare_run
 from tools import get_config_file  # NOQA
 from odoo_tools.odoo_config import current_version  # NOQA
-from odoo_tools.odoo_config import get_env  # NOQA
+from odoo_tools.odoo_config import get_settings  # NOQA
 from odoo_tools.module_tools import update_view_in_db  # NOQA
 from odoo_tools.module_tools import Modules  # NOQA
 from tools import kill_odoo
 
-config = get_env()
+config = get_settings()
 prepare_run()
 DEBUGGER_WATCH = Path(os.environ["DEBUGGER_WATCH"])
 print("Watching file {}".format(DEBUGGER_WATCH))
