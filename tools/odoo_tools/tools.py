@@ -705,8 +705,9 @@ def __hash_odoo_password(pwd):
             12.0,
             13.0,
             14.0,
+            15.0,
             10.0,
-            09.0,
+            9.0,
     ]:
         setpw = CryptContext(schemes=['pbkdf2_sha512', 'md5_crypt'])
         return setpw.encrypt(pwd)
