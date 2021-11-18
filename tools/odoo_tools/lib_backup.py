@@ -303,14 +303,7 @@ def __do_restore_files(config, filepath):
     click.secho("Files restored {}".format(filepath), fg='green')
 
 def __restore_check(filepath, config):
-    dumpname = filepath.name
-
-    if config.dbname not in dumpname and not config.force:
-        click.secho("The dump-name \"{}\" should somehow match the current database \"{}\", which isn't.".format(
-            dumpname,
-            config.dbname,
-        ), fg='red')
-        sys.exit(1)
+    pass
 
 def __apply_dump_permissions(filepath):
 

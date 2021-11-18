@@ -227,11 +227,10 @@ def get_settings():
     from .myconfigparser import MyConfigParser  # NOQA
     if os.getenv("DOCKER_MACHINE") == "1":
         settings_path = Path("/tmp/settings")
-        if not settings_path.exists():
-            content = ""
-            for k, v in os.environ.items():
-                content += f"{k}={v}\n"
-            settings_path.write_text(content)
+        content = ""
+        for k, v in os.environ.items():
+            content += f"{k}={v}\n"
+        settings_path.write_text(content)
     else:
         settings_path = Path(os.environ['HOST_RUN_DIR']) / 'settings'
     myconfig = MyConfigParser(settings_path)
