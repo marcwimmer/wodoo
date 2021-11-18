@@ -1,0 +1,20 @@
+{
+  "messageServer": {
+    "host": "127.0.0.1",
+    "port": 6689
+  },
+  "debug": true,
+  "inputs": [
+    {
+      "source": "will be replaced",
+      "stream": "by script setup_container_logs_to_watch.py",
+      "config": {
+        "path": "/var/log",
+        "watcherOptions": {
+          "ignored": "*.txt",
+          "depth": 2
+        }
+      }
+    }
+  ]
+}

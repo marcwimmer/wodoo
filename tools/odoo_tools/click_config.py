@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 class Config(object):
@@ -18,6 +19,8 @@ class Config(object):
         from .consts import YAML_VERSION
         from . import odoo_config  # NOQA
 
+        from .init_functions import _get_customs_root
+        self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
         self.project_name = project_name
         self.YAML_VERSION = YAML_VERSION
         self.verbose = verbose
@@ -25,37 +28,30 @@ class Config(object):
         self.compose_version = YAML_VERSION
         self.setup_files_and_folders()
         self.quiet = quiet
+        self.restrict = []
+
+    @property
+    def project_name(self):
+        return self._project_name
+
+    @project_name.setter
+    def project_name(self, value):
+        from .init_functions import _get_default_anticipated_host_run_dir
+        self._project_name = value
+        self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.project_name)
+        self.setup_files_and_folders()
+        os.environ['RUN_DIR'] = str(self.dirs['run']) if self.dirs.get('run') else ""
 
     def setup_files_and_folders(self):
-        from .init_functions import make_absolute_paths
-        from .init_functions import _get_project_name
-        from .init_functions import _get_default_anticipated_host_run_dir
         from .init_functions import get_use_docker
-        from .init_functions import set_shell_table_title
-        from .init_functions import _get_customs_root
         from . import odoo_config  # NOQA
         self.dirs = {}
         self.files = {}
         self.commands = {}
 
-        self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
-        self.CUSTOMS = self.WORKING_DIR and self.WORKING_DIR.name or None
-        if not self.project_name:
-            self.project_name = _get_project_name(self, self.WORKING_DIR)
-        self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.project_name)
-        if not os.getenv("RUN_DIR"):
-            # needed for get_env for example
-            os.environ['RUN_DIR'] = str(self.HOST_RUN_DIR)
-        self.NETWORK_NAME = self.project_name
-        make_absolute_paths(self, self.dirs, self.files, self.commands)
         self.use_docker = get_use_docker(self.files)
-        self.dirs['customs'] = self.WORKING_DIR
-
-        if self.dirs['customs']:
-            self.files['commit'] = self.dirs['customs'] / self.files['commit'].name
-        else:
-            self.files['commit'] = None
-        set_shell_table_title(self.project_name)
+        from .init_functions import make_absolute_paths
+        make_absolute_paths(self, self.dirs, self.files, self.commands)
 
         from .program_settings import ProgramSettings
         self.runtime_settings = ProgramSettings(self.files['runtime_settings'])

@@ -2,7 +2,7 @@ repos:
 - branch: master
   patches: []
   path: images/theia_odoo_vim
-  sha: fef1b62be4df35aca796c7ea725b948e11be4a57
+  sha: 319f64b6af4e8c0b0e87579541b8c53c7b13f783
   type: integrated
   url: ssh://git@git.itewimmer.de/theia/odoo-vim
 - branch: master
@@ -14,3 +14,20 @@ repos:
   sha: 390f12b761dc8934a5db3ad54233f41815707406
   type: integrated
   url: git@git.itewimmer.de:odoo/asterisk_customs.git
+- branch: master
+  path: machines/calendar/src/davical
+  sha: 827fbfed7dab0ca339998ca6cdcffb328246d83b
+  type: integrated
+  url: https://gitlab.com/davical-project/awl.git
+- branch: master
+  path: machines/calendar/src/awl
+  sha: 827fbfed7dab0ca339998ca6cdcffb328246d83b
+  type: integrated
+  url: https://gitlab.com/davical-project/awl.git
+- branch: master
+  patches:
+  - images/logsio-web/log.io.patches
+  path: images/logsio_web/log.io
+  sha: ad925e1387af63c329ac0e68db7dd92185c20cb6
+  type: integrated
+  url: https://github.com/NarrativeScience/log.io.git

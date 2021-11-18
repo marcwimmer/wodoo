@@ -21,6 +21,7 @@ RUN apt-get install \
             cmake \
             ctags \
 			build-essential \
+            libtool \
             htop \
             ca-certificates \
             curl \
@@ -88,7 +89,12 @@ RUN apt-get install \
             libpoppler-cpp-dev \
             postgresql-client \
             sassc \
-            libsqlite3-dev
+            libsqlite3-dev \
+            autoconf \
+            python-dev \
+            pkg-config \
+            curl
+
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
@@ -96,10 +102,10 @@ RUN fc-cache -f -v
 
 WORKDIR /tmp
 
-RUN curl -o wkhtmltox.deb -sSL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.stretch_amd64.deb \
-        && echo '7e35a63f9db14f93ec7feeb0fce76b30c08f2057 wkhtmltox.deb' | sha1sum -c - \
-        && apt-get install -y --no-install-recommends ./wkhtmltox.deb \
-        && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
+RUN apt install -y xfonts-75dpi xfonts-base libgeos-dev
+RUN if [ "$TARGETARCH" = "amd64" ]; then curl -o wkhtmltox.deb -SL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.buster_amd64.deb; fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then curl -o wkhtmltox.deb -SL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_arm64.deb; fi
+RUN dpkg -i wkhtmltox.deb
 
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
@@ -134,6 +140,8 @@ RUN hash -r && \
 RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
+ADD install_libpostal.sh /root/install_libpostal.sh
+RUN bash /root/install_libpostal.sh
 
 
 RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/pip_requirements.txt

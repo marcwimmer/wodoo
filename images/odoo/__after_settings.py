@@ -14,9 +14,8 @@ def after_settings(config):
 
     # if odoo does not exist yet and version is given then we setup gimera and clone it 
 
-    if "CUSTOMS" in config.keys():
-        config['ODOO_VERSION'] = str(odoo_config.current_version())
-        config.write()
+    config['ODOO_VERSION'] = str(odoo_config.current_version())
+    config.write()
 
     # replace any env variable
     if config.get("ODOO_QUEUEJOBS_CHANNELS", ""):

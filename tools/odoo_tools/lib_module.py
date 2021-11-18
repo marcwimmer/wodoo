@@ -6,21 +6,12 @@ import inquirer
 from git import Repo
 import traceback
 from datetime import datetime
-import time
 import shutil
-import hashlib
 import os
 import tempfile
 import click
 from .tools import sync_folder
 from .tools import __dcrun
-from .tools import __assert_file_exists
-from .tools import __safe_filename
-from .tools import __read_file
-from .tools import __write_file
-from .tools import __append_line
-from .tools import _exists_table
-from .tools import __get_odoo_commit
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
 from . import cli, pass_config, Commands
@@ -28,7 +19,6 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from pathlib import Path
-import git
 
 class UpdateException(Exception): pass
 
@@ -231,7 +221,7 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
-@click.option('--since-git-sha', '-i', default=False, is_flag=False, help="Extracts modules changed since this git sha and updates them")
+@click.option('--since-git-sha', '-i', default=None, is_flag=False, help="Extracts modules changed since this git sha and updates them")
 @click.option('--installed-modules', '-i', default=False, is_flag=True, help="Updates only installed modules")
 @click.option('--dangling-modules', '-d', default=False, is_flag=True, help="Updates only dangling modules")
 @click.option('--no-update-module-list', '-n', default=False, is_flag=True, help="Does not install/update module list module")
@@ -244,6 +234,8 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 @click.option('--no-install-server-wide-first', default=False, is_flag=True)
 @click.option('--no-extra-addons-paths', is_flag=True)
 @click.option('-c', '--config-file', default='config_update', help="Specify config file to use, for example config_update")
+@click.option('--server-wide-modules')
+@click.option('--additional-addons-paths')
 @pass_config
 @click.pass_context
 def update(
@@ -252,13 +244,20 @@ def update(
     non_interactive, no_update_module_list, no_install_server_wide_first,
     no_extra_addons_paths, no_dangling_check=False, check_install_state=True,
     no_restart=True, i18n=False, tests=False,
-    config_file=False,
+    config_file=False, server_wide_modules=False, additional_addons_paths=False
     ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
     Minimal downtime;
 
     To update all (custom) modules set "all" here
+
+
+    Sample call migration 14.0:
+    odoo update --no-dangling-check --config-file=config_migration --server-wide-modules=web,openupgrade_framework --additional-addons-paths=openupgrade base
+
+
+
     """
     click.secho("""
 
@@ -347,6 +346,10 @@ def update(
             params += ['--i18n']
         if not tests:
             params += ['--no-tests']
+        if server_wide_modules:
+            params += ['--server-wide-modules', server_wide_modules]
+        if additional_addons_paths:
+            params += ['--additional-addons-paths', additional_addons_paths]
         params += ["--config-file=" + config_file]
         rc = _exec_update(config, params)
         if rc:

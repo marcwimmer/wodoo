@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 import yaml
 import arrow
 import json
@@ -179,15 +180,15 @@ def anonymize(ctx, config):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
 
-    Commands.invoke(
-        ctx,
-        'update',
-        module=['anonymize'],
-        no_restart=False,
-        no_dangling_check=True,
-        no_update_module_list=False,
-        non_interactive=True,
-    )
+    # Commands.invoke(
+    #     ctx,
+    #     'update',
+    #     module=['anonymize'],
+    #     no_restart=False,
+    #     no_dangling_check=True,
+    #     no_update_module_list=False,
+    #     non_interactive=True,
+    # )
 
     Commands.invoke(
         ctx,
@@ -376,6 +377,41 @@ ORDER BY total_bytes DESC;
     if top:
         rows = rows[:top]
     click.echo(tabulate(rows, ["TABLE_NAME", "row_estimate", "total", 'INDEX', 'toast', 'TABLE']))
+
+@db.command(help="Export as excel")
+@click.argument("sql", required=True)
+@click.option('-f', '--file')
+@pass_config
+def excel(config, sql, file):
+    import xlsxwriter
+    conn = config.get_odoo_conn()
+    columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
+    click.secho(f"exporting {len(rows)} rows...")
+    if file:
+        filepath = Path(os.getcwd()) / file
+    else:
+        filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
+ 
+    # Workbook() takes one, non-optional, argument
+    # which is the filename that we want to create.
+    workbook = xlsxwriter.Workbook(str(filepath))
+    
+    # The workbook object is then used to add new
+    # worksheet via the add_worksheet() method.
+    worksheet = workbook.add_worksheet()
+
+    for icol, col in enumerate(columns):
+        worksheet.write(0, icol, col)
+
+
+    for irow, rec in enumerate(rows):
+        for icol, col in enumerate(rec):
+            worksheet.write(irow + 1, icol, col)
+        if not irow % 1000:
+            click.secho(f"Done {irow} rows...")
+
+    workbook.close()
+    click.secho(f"File created: {filepath}")
 
 
 Commands.register(reset_db, 'reset-db')

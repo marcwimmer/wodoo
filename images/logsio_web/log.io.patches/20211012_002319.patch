@@ -1,0 +1,25 @@
+From 9f0535f392262fa23f3e67cbc3cb72d1dc3b26b4 Mon Sep 17 00:00:00 2001
+From: cicd <cicd>
+Date: Tue, 12 Oct 2021 00:23:19 +0200
+Subject: [PATCH] for patch
+
+---
+ ui/src/socket/index.ts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ui/src/socket/index.ts b/ui/src/socket/index.ts
+index 32a3e1a..cb234b5 100644
+--- a/ui/src/socket/index.ts
++++ b/ui/src/socket/index.ts
+@@ -10,7 +10,7 @@ import { MessageEvent, PingEvent, RegistrationEvent } from './types'
+  * Creates a new socket.io connection to the server
+  */
+ export const createSocket = (): SocketIOClient.Socket =>
+-  socketIO()
++  socketIO("", {"path": "/logs_socket_io"})
+ 
+ /**
+  * Receives a new input event and adds it to relevant state
+-- 
+2.25.1
+

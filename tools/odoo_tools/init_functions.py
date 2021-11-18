@@ -11,19 +11,9 @@ try:
 except ImportError: click = None
 
 def _get_default_anticipated_host_run_dir(config, WORKING_DIR, project_name):
-    if WORKING_DIR and (WORKING_DIR / '.odoo').exists():
-        # if click:
-        #   # if not config.quiet:
-        #       # click.secho("Using local run-directory - should only be used for non productive setups!", fg='yellow')
-        #       # click.secho("If this is not intended, then remove the .odoo sub-directory please!", fg='yellow')
-        return WORKING_DIR / '.odoo' / 'run'
-    if "HOST_HOME" in os.environ:
-        HOME_DIR = Path(os.environ['HOST_HOME'])
-    else:
-        HOME_DIR = Path(os.path.expanduser("~"))
     if not project_name:
         return None
-    return HOME_DIR / '.odoo' / 'run' / project_name
+    return Path(os.path.expanduser("~")) / '.odoo' / 'run' / project_name
 
 def get_use_docker(files):
     try:
@@ -61,43 +51,6 @@ def _get_customs_root(p):
                 return p
             p = p.parent
     # click.echo("Missing MANIFEST - file here in {}".format(arg_dir))
-
-def _get_project_name(config, p):
-    if not p:
-        return
-
-    if '--project-name' in sys.argv:
-        return sys.argv[sys.argv.index('--project-name') + 1]
-
-    from .settings import _get_settings
-    with _get_settings(config, None, quiet=True) as config:
-        project_name = config.get("PROJECT_NAME", "")
-        if project_name:
-            return project_name
-        DEVMODE = config.get("DEVMODE", "") == "1"
-
-    if DEVMODE:
-        return p.name
-
-    if (p / '.git').exists():
-        branch_name = subprocess.check_output([
-            'git',
-            'rev-parse',
-            '--abbrev-ref',
-            'HEAD'
-        ], cwd=str(p)).decode('utf-8').strip()
-    else:
-        branch_name = ""
-    if branch_name and branch_name not in [
-        'master',
-        'deploy',
-        'stage',
-    ]:
-        branch_name = 'dev'
-    return "_".join(x for x in [
-        p.name,
-        branch_name
-    ] if x)
 
 def make_absolute_paths(config, dirs, files, commands):
     from .consts import default_dirs, default_files, default_commands
@@ -152,11 +105,3 @@ def make_absolute_paths(config, dirs, files, commands):
     make_absolute(files, dirs)
     for k in commands:
         commands[k] = [replace_keys(x, ChainMap(config.__dict__, files, dirs)) for x in commands[k]]
-
-def set_shell_table_title(project_name):
-    if os.getenv("DOCKER_MACHINE", "") != "1":
-        parent = psutil.Process(psutil.Process(os.getpid()).ppid())
-        parent_process_name = parent.name()
-        if parent_process_name in ['sh', 'bash', 'zsh']:
-            tab_title = f"odoo - {project_name}"
-            print("\033]0;{}\007".format(tab_title), file=sys.stdout) # NOQA

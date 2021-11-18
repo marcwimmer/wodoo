@@ -1,4 +1,5 @@
 FROM debian:buster
+ARG TARGETARCH
 ARG ODOO_VERSION
 #ARG CUSTOMS_REQUIREMENTS
 MAINTAINER marc@itewimmer.de
@@ -17,6 +18,7 @@ apt-get install \
             cmake \
             ctags \
 			build-essential \
+            libtool \ 
             htop \
             ca-certificates \
             curl \
@@ -86,17 +88,12 @@ apt-get install \
             libreoffice-java-common \
             postgresql-client \
             git \
-            libpq-dev
+            libpq-dev \
+            autoconf \
+            python-dev \
+            pkg-config \
+            curl
 
-# https://github.com/openvenues/pypostal postal lib for address checking
-RUN apt install -y curl autoconf automake libtool python-dev pkg-config
-RUN git clone https://github.com/openvenues/libpostal && \
-cd libpostal && \
-./bootstrap.sh && \
-./configure  && \
-make && \
-make install && \
-ldconfig
 
 ADD liberation-sans /usr/share/fonts/
 # rebuild font cache
@@ -104,10 +101,10 @@ RUN fc-cache -f -v
 
 WORKDIR /tmp
 
-RUN apt install -y xfonts-75dpi xfonts-base
-RUN curl -o wkhtmltox.deb -SL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.buster_amd64.deb \
-        && dpkg -i wkhtmltox.deb
-
+RUN apt install -y xfonts-75dpi xfonts-base libgeos-dev
+RUN if [ "$TARGETARCH" = "amd64" ]; then curl -o wkhtmltox.deb -SL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.buster_amd64.deb; fi
+RUN if [ "$TARGETARCH" = "arm64" ]; then curl -o wkhtmltox.deb -SL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_arm64.deb; fi
+RUN dpkg -i wkhtmltox.deb
 
 RUN update-alternatives --install /usr/bin/node node /usr/bin/nodejs 10 && \
 useradd -ms /bin/bash odoo
@@ -127,15 +124,17 @@ RUN pip3 install wheel
 RUN hash -r && \
 	pip3 install --upgrade pip && \
 	hash -r && \
-	pip3 install --upgrade setuptools cython 
+    pip3 install --upgrade cython
+RUN pip3 install 'setuptools<58.0'
 RUN pip3 install psycopg2 pyinotify python-magic wand pycups pudb
-RUN pip3 install setuptools==57.5.0
 RUN pip3 install -r /root/odoo_requirements.txt
 RUN pip3 install -r /root/requirements.txt
 #p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3p3
 
 RUN apt install -y libdmtx0b
-
+# https://github.com/openvenues/pypostal postal lib for address checking
+ADD install_libpostal.sh /root/install_libpostal.sh
+RUN if [ "$TARGETARCH" = "amd64" ]; then bash /root/install_libpostal.sh; fi
 RUN ipython profile create && \
 echo "c.TerminalInteractiveShell.editing_mode = 'vi'" >> /root/.ipython/profile_default/ipython_config.py && \
 rsync /root/.ipython/ /home/odoo/.ipython/ -arP && \

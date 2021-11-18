@@ -125,7 +125,7 @@ def __get_odoo_commit():
         raise Exception("No odoo commit defined.")
     return commit
 
-def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False, params=None):
+def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False, params=None, return_columns=False):
 
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect(connection):
@@ -153,7 +153,10 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
         try:
             res = _call_cr(cr)
             conn.commit()
-            return res
+            if return_columns:
+                return [x.name for x in cr.description], res
+            else:
+                return res
         except Exception:
             conn.rollback()
             raise
@@ -278,7 +281,7 @@ def _set_default_envs(env):
     env = env or {}
     env.update({
         'DOCKER_BUILDKIT' : '1',
-        'COMPOSE_DOCKER_CLI_BUILD': '1'
+        'COMPOSE_DOCKER_CLI_BUILD': '1',
     })
     return env
 
@@ -457,58 +460,7 @@ def _file2env(filepath, out_dict=None):
             os.environ[k] = config[k]
 
 def _get_bash_for_machine(machine):
-    if machine == 'postgres':
-        return 'bash'
-    else:
-        return 'bash'
-
-
-def _remember_customs_and_cry_if_changed(config):
-    # if customs changed, then restart is required
-
-    if _is_container_running('odoo'):
-        out = __dcexec(['odoo', 'env'])
-        out = [x for x in out.split('\n') if x.startswith("CUSTOMS=")]
-        if out:
-            current_customs = out[0].split("=")[-1]
-            if config.customs:
-                if current_customs != config.customs:
-                    click.echo("Customs changed - you need to restart and/or rebuild!")
-                    __dc(['stop', '-t 2'])
-
-def _sanity_check(config):
-    owner_uid = config.owner_uid_as_int
-
-    errors = False
-    if config.run_postgres is None:
-        click.secho("Please define RUN_POSTGRES", fg='red')
-
-    if config.run_postgres and config.db_host != 'postgres':
-        click.secho("You are using the docker postgres container, but you do not have the DB_HOST set to use it.", fg='red')
-        click.secho("Either configure DB_HOST to point to the docker container or turn it off by: ", fg='red')
-        click.secho("RUN_POSTGRES=0", fg='red')
-
-    if config.odoo_files and Path(config.odoo_files).is_dir():
-        if owner_uid and Path(config.odoo_files).stat().st_uid != owner_uid:
-            _fix_permissions(config)
-
-    if owner_uid and config.dirs['run'].exists():
-        for file in config.dirs['run'].glob("**/*"):
-            if not file.is_dir():
-                continue
-            if file.stat().st_uid != owner_uid:
-                __try_to_set_owner(
-                    owner_uid,
-                    file,
-                    recursive=True,
-                    autofix=True,
-                )
-
-    # make sure the odoo_debug.txt exists; otherwise directory is created
-    __file_default_content(config.files['run/odoo_debug.txt'], "")
-
-    if errors:
-        sys.exit(-1)
+    return 'bash'
 
 def __get_installed_modules(config):
     conn = config.get_odoo_conn()
@@ -537,29 +489,24 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
         filename = tempfile.mktemp(suffix='.findoutput')
         find_command = f"find '{path}' -not -type l -not -user {UID}"
         os.system(f"{find_command} > '{filename}'")
-        res = Path(filename).read_text().strip()
-        if not res:
-            return
+        filename = Path(filename)
+        try:
+            res = filename.read_text().strip().split("\n")
+            filename.unlink()
+            if not res:
+                return
 
-        for run in ["", "sudo"]:
-            repair_command = f"{run} {find_command} -exec chown {UID}:{UID} {{}} \\; 2>/dev/null;"
-            if run == 'sudo':
-                click.secho(f"Executing: {repair_command}")
-            if autofix:
-                os.system(repair_command)
-            uid = UID
-            if recursive:
-                for test in path.glob("**/*"):
-                    uid = os.stat(path).st_uid
-                    if str(uid) != str(UID):
-                        break
-            else:
-                uid = os.stat(path).st_uid
-            if str(uid) != str(UID):
-                click.secho(f"WARNING: Wrong User at path {path}", fg='yellow')
-                click.secho("Probably execute: ", fg='yellow')
-                click.secho(repair_command, fg='yellow')
-                sys.exit(-1)
+            runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
+            for run in runs:
+                # dont set to UID:UID --> group not necessarily matches user id
+                for line in res:
+                    if not line: continue
+                    GID = os.stat(line).st_gid
+                    os.chown(line, UID, GID)
+
+        finally:
+            if filename.exists():
+                filename.unlink()
 
 def _check_working_dir_customs_mismatch(config):
     # Checks wether the current working is in a customs directory, but
@@ -600,17 +547,6 @@ def __do_command(cmd, *params, **kwparams):
     cmd = cmd.replace('-', '_')
     return globals()[cmd](*params, **kwparams)
 
-def _fix_permissions(config):
-    from . import odoo_config
-    if config.odoo_files and Path(config.odoo_files).is_dir() and \
-            config.owner_uid and \
-            config.owner_uid_as_int != 0:
-        __try_to_set_owner(
-            config.owner_uid,
-            Path(config.odoo_files),
-            recursive=True,
-            autofix=config.devmode,
-        )
 
 def _get_dump_files(backupdir, fnfilter=None):
     import humanize
@@ -769,8 +705,9 @@ def __hash_odoo_password(pwd):
             12.0,
             13.0,
             14.0,
+            15.0,
             10.0,
-            09.0,
+            9.0,
     ]:
         setpw = CryptContext(schemes=['pbkdf2_sha512', 'md5_crypt'])
         return setpw.encrypt(pwd)

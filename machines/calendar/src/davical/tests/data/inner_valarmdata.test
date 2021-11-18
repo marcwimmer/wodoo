@@ -1,0 +1,37 @@
+BEGIN:VCALENDAR
+PRODID:-//davical.org//NONSGML AWL Calendar//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+X-WR-CALNAME:My Events
+BEGIN:VEVENT
+DURATION:P0DT5H0M
+LOCATION:12345 On Line
+SEQUENCE:10
+URL;VALUE=URI:http://davical.org/
+DTSTART;TZID=US/Pacific:20120211T120000
+UID:ab415d7-6a5a09-e4a48-84158-3f66255605b5fcd7
+DTSTAMP:20120202T182742Z
+SUMMARY:My Test Event
+DESCRIPTION:AWL needs testing data\n\nBe careful when adding testing data 
+ from random sources on the internet. Most data is copyrighted and cannot
+ be freely used, modified and distributed. It is often best to create suc
+ h data yourself.
+LAST-MODIFIED:20120202T182742Z
+CREATED:20120202T182355Z
+BEGIN:VALARM
+TRIGGER:-PT0S
+ACTION:X-DO-EMAIL
+ATTENDEE:mailto:test@davical.org
+DESCRIPTION:This is an event reminder
+SUMMARY:Alarm notification
+END:VALARM
+X-PROP-1:true
+X-PROP-2:true
+X-PROP-3:true
+X-PROP-4:true
+X-PROP-5:true
+X-PROP-6:true
+X-PROP-7:true
+X-PROP-8:true
+X-PROP-9:true
+END:VEVENT

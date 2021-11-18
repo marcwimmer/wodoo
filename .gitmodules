@@ -1,20 +1,3 @@
-[submodule "machines/admin/src/odoo"]
-	path = machines/admin/src/odoo
-	url = https://github.com/odoo/odoo
-	branch = 10.0
-[submodule "repos/odoo"]
-	path = repos/odoo
-	url = https://github.com/odoo/odoo
-[submodule "machines/calendar/src/davical"]
-	path = machines/calendar/src/davical
-	url = https://gitlab.com/davical-project/davical.git
-[submodule "machines/calendar/src/awl"]
-	path = machines/calendar/src/awl
-	url = https://gitlab.com/davical-project/awl.git
-    branch = master
-[submodule "repos/OpenUpgrade"]
-	path = repos/OpenUpgrade
-	url = https://github.com/OCA/OpenUpgrade.git
 [submodule "tools/snippets"]
 	path = tools/snippets
 	url = https://git.itewimmer.de/odoo/public_modules/snippets
