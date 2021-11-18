@@ -1,7 +1,10 @@
 <?xml version="1.0"?>
 <odoo>
   <data noupdate="0">
+    <!--
+      called by shell now
     <function model="server.tools.uninstaller" name="uninstall">
         </function>
+        -->
   </data>
 </odoo>

@@ -13,7 +13,7 @@ from odoo_tools.odoo_config import customs_dir
 from odoo_tools.odoo_config import get_conn_autoclose
 from pathlib import Path
 pidfile = Path('/tmp/odoo.pid')
-config = odoo_config.get_env()
+config = odoo_config.get_settings()
 version = odoo_config.current_version()
 
 is_odoo_cronjob = os.getenv("IS_ODOO_CRONJOB", "0") == "1"

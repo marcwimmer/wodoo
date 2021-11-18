@@ -378,6 +378,33 @@ def update(
         with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
             f.write("0")
 
+    def _uninstall_marked_modules():
+        """
+        Checks for file "uninstall" in customs root and sets modules to uninstalled.
+        """
+        if config.odoo_version < 11.0:
+            return
+        module = 'server_tools_uninstaller'
+        model = 'server.tools.uninstaller'
+        try:
+            DBModules.is_module_installed(module, raise_exception_not_initialized=True)
+        except UserWarning:
+            click.secho("Nothing to uninstall - db not initialized yet.", fg='yellow')
+        else:
+            # check if something is todo
+            to_uninstall = config.manifest.get('uninstall', [])
+            to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
+            if to_uninstall:
+                click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
+                _exec_update(config, module)
+
+                if config.use_docker:
+                    from .lib_control_with_docker import shell as lib_shell
+                lib_shell(f"env['{model}'].uninstall()")
+
+
+    _uninstall_marked_modules()
+
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument('module', nargs=-1, required=False)
 @click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
@@ -464,7 +491,7 @@ def _exec_update(config, params):
 @click.option('-n', '--test_name', is_flag=False)
 @pass_config
 def robotest(config, file, user, all, tag, test_name):
-    from .odoo_config import MANIFEST, CUSTOMS_MANIFEST_FILE
+    from .odoo_config import MANIFEST, MANIFEST_FILE
     from .module_tools import Module
     from pathlib import Path
     from .odoo_config import customs_dir
@@ -478,7 +505,7 @@ def robotest(config, file, user, all, tag, test_name):
     for _file in customs_dir().glob("**/*.robot"):
         if 'keywords' in _file.parts: continue
         if 'library' in _file.parts: continue
-        testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
+        testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
         del _file
 
     if file and all:
@@ -572,7 +599,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     """
     Collects unittest files and offers to run
     """
-    from .odoo_config import MANIFEST, CUSTOMS_MANIFEST_FILE
+    from .odoo_config import MANIFEST, MANIFEST_FILE
     from .module_tools import Module
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
@@ -581,7 +608,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     for testmodule in MANIFEST().get('tests', []):
         testmodule = Module.get_by_name(testmodule)
         for _file in testmodule.path.glob("tests/test*.py"):
-            testfiles.append(_file.relative_to(CUSTOMS_MANIFEST_FILE().parent))
+            testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
             del _file
 
     if file:

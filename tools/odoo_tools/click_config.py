@@ -21,12 +21,12 @@ class Config(object):
 
         from .init_functions import _get_customs_root
         self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
+        self._host_run_dir = None
         self.project_name = project_name
         self.YAML_VERSION = YAML_VERSION
         self.verbose = verbose
         self.force = force
         self.compose_version = YAML_VERSION
-        self.setup_files_and_folders()
         self.quiet = quiet
         self.restrict = []
 
@@ -36,11 +36,24 @@ class Config(object):
 
     @project_name.setter
     def project_name(self, value):
-        from .init_functions import _get_default_anticipated_host_run_dir
         self._project_name = value
-        self.HOST_RUN_DIR = _get_default_anticipated_host_run_dir(self, self.WORKING_DIR, self.project_name)
+        if self._project_name:
+            os.environ['PROJECT_NAME'] = value
+            self.HOST_RUN_DIR = Path(os.environ['HOME']) / '.odoo' / 'run' / value
+        else:
+            os.environ['PROJECT_NAME'] = ""
         self.setup_files_and_folders()
-        os.environ['RUN_DIR'] = str(self.dirs['run']) if self.dirs.get('run') else ""
+
+    @property
+    def HOST_RUN_DIR(self):
+        return self._host_run_dir
+
+    @HOST_RUN_DIR.setter
+    def HOST_RUN_DIR(self, value):
+        self._host_run_dir = value
+        if value:
+            os.environ['HOST_RUN_DIR'] = str(value)
+        self.setup_files_and_folders()
 
     def setup_files_and_folders(self):
         from .init_functions import get_use_docker

@@ -145,18 +145,6 @@ def run_dir():
         raise Exception("No RUN_DIR specified. Is HOST_HOME set?")
     return HOST_RUN_DIR
 
-def odoo_root():
-    #
-    # be compatible with VIM on host and executed in container.
-    #
-    odoo_home = os.getenv('ODOO_HOME', False)
-    if not odoo_home or not os.path.isdir(odoo_home):
-        odoo_home = '/opt/odoo'
-    if not os.path.isdir(odoo_home):
-        raise Exception("ODOO_HOME not found and not given per environment.")
-    result = Path(odoo_home).resolve()
-    return result
-
 def plaintextfile():
     path = customs_dir() / '.odoo.ast'
     return path
@@ -168,33 +156,12 @@ def _read_file(path, default=None):
     except Exception:
         return default
 
-def get_env():
-    from .myconfigparser import MyConfigParser
-    # on docker machine self use environment variables; otherwise read from config file
-    # if no run_dir provided, then provide minimal file
-    if "RUN_DIR" in os.environ:
-        file = Path(os.environ['RUN_DIR']) / 'settings'
-        return MyConfigParser(file)
-    else:
-        conf = MyConfigParser({
-            "CUSTOMS": os.getenv("CUSTOMS"),
-        })
-    return conf
-
-def current_customs():
-    result = os.getenv("CUSTOMS", "")
-    if not result:
-        result = get_env().get('CUSTOMS', '')
-    if not result:
-        raise Exception("No Customs found. Please define customs=")
-    return result
-
-def CUSTOMS_MANIFEST_FILE():
+def MANIFEST_FILE():
     return customs_dir().resolve().absolute() / "MANIFEST"
 
 class MANIFEST_CLASS(object):
     def __init__(self):
-        self.path = CUSTOMS_MANIFEST_FILE()
+        self.path = MANIFEST_FILE()
 
         self._apply_defaults()
 
@@ -209,6 +176,8 @@ class MANIFEST_CLASS(object):
             self['version'] = float(d['version'])
 
     def _get_data(self):
+        if isinstance(self.path, str):
+            import pudb;pudb.set_trace()
         return OrderedDict(eval(self.path.read_text() or "{}"))
 
     def __getitem__(self, key):
@@ -226,7 +195,7 @@ class MANIFEST_CLASS(object):
     def _update(self, d):
         d['install'] = list(sorted(d['install']))
         s = json.dumps(d, indent=4)
-        CUSTOMS_MANIFEST_FILE().write_text(s)
+        MANIFEST_FILE().write_text(s)
 
     def rewrite(self):
         self._update(self._get_data())
@@ -237,11 +206,8 @@ def MANIFEST():
 def current_version():
     return float(MANIFEST()['version'])
 
-def current_db():
-    return get_env().get('DBNAME', '')
-
 def get_postgres_connection_params():
-    config = get_env()
+    config = get_settings()
     host = config["DB_HOST"]
     port = int(config.get("DB_PORT", "5432"))
     # using the linked port: For what? disturbs using an external database
@@ -253,13 +219,32 @@ def get_postgres_connection_params():
     user = config['DB_USER']
     return host, port, user, password
 
+def get_settings():
+    """
+    Can run outside of host and inside host. Returns all values from 
+    composed settings file.
+    """
+    from .myconfigparser import MyConfigParser  # NOQA
+    if os.getenv("DOCKER_MACHINE") == "1":
+        settings_path = Path("/tmp/settings")
+        if not settings_path.exists():
+            content = ""
+            for k, v in os.environ.items():
+                content += f"{k}={v}\n"
+            settings_path.write_text(content)
+    else:
+        settings_path = Path(os.environ['HOST_RUN_DIR']) / 'settings'
+    myconfig = MyConfigParser(settings_path)
+    return myconfig
+
 def get_conn(db=None, host=None):
+    config = get_settings()
     if db != "postgres":
         # waiting until postgres is up
         get_conn(db='postgres')
 
     host, port, user, password = get_postgres_connection_params()
-    db = db or current_db()
+    db = db or config['DBNAME']
     connstring = "dbname={}".format(db)
 
     for combi in [
@@ -299,7 +284,7 @@ def translate_path_relative_to_customs_root(path):
     MANIFEST to indicate the root of the customs
     """
 
-    cmf = CUSTOMS_MANIFEST_FILE().absolute()
+    cmf = MANIFEST_FILE().absolute()
     if not str(path).startswith("/"):
         path = cmf.parent / path
         return path
@@ -317,7 +302,7 @@ def translate_path_relative_to_customs_root(path):
         raise Exception("No Customs MANIFEST File found. started at: {}, Manifest: {}".format(path, cmf))
 
 
-def MANIFEST_FILE():
+def manifest_file_names():
     result = "__manifest__.py"
     try:
         current_version()

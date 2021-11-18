@@ -508,24 +508,6 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
             if filename.exists():
                 filename.unlink()
 
-def _check_working_dir_customs_mismatch(config):
-    # Checks wether the current working is in a customs directory, but
-    # is not matching the correct customs. Avoid creating wrong tickets
-    # in the wrong customizations.
-
-    from . import dirs
-    for working_dir in dirs['host_working_dir'].parents:
-        if (working_dir / 'MANIFEST').is_file():
-            break
-    else:
-        return # no customs
-
-    current_customs = working_dir.name
-    if current_customs != config.customs:
-        _askcontinue(None, """Caution: current customs is {} but you are in another customs directory: {}
-Continue at your own risk!""".format("$CUSTOMS", "$LOCAL_WORKING_DIR")
-                     )
-
 def _display_machine_tips(config, machine_name):
     dir = config.dirs['images'] / machine_name
     if not dir.is_dir():

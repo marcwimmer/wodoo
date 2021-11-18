@@ -1,21 +1,10 @@
 from pathlib import Path
 import os
 import re
-import fnmatch
-import pdb
-import sys
-import lxml
 from lxml import etree
 import tempfile
-import shutil
-import time
-import traceback
-from datetime import datetime
-from .odoo_config import odoo_root
 from .odoo_config import customs_dir
-from .odoo_config import current_customs
 from .odoo_config import plaintextfile
-from .odoo_config import current_version
 from .odoo_config import translate_path_relative_to_customs_root
 modified_filename = ""
 cache_models = {}

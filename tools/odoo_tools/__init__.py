@@ -111,6 +111,3 @@ from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
 
 load_dynamic_modules((SCRIPT_DIRECTORY / '..' / '..' / 'images'))
-
-# init config to setup required env variables
-# Config()

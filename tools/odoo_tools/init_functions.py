@@ -10,11 +10,6 @@ try:
     import click
 except ImportError: click = None
 
-def _get_default_anticipated_host_run_dir(config, WORKING_DIR, project_name):
-    if not project_name:
-        return None
-    return Path(os.path.expanduser("~")) / '.odoo' / 'run' / project_name
-
 def get_use_docker(files):
     try:
         myconfig = MyConfigParser(files['settings'])
