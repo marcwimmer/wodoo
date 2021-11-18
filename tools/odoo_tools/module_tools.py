@@ -640,7 +640,7 @@ class Modules(object):
 
         def append_deps(mod, data):
             data[mod.name] = {}
-            for dep in mod.manifest_dict['depends']:
+            for dep in mod.manifest_dict.get('depends', []):
                 if dep == 'base':
                     continue
                 dep_mod = [x for x in self.modules.values() if x.name == dep]
