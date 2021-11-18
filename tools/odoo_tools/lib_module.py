@@ -382,7 +382,8 @@ def update(
         """
         Checks for file "uninstall" in customs root and sets modules to uninstalled.
         """
-        if config.odoo_version < 11.0:
+        from .odoo_config import MANIFEST
+        if float(config.odoo_version) < 11.0:
             return
         module = 'server_tools_uninstaller'
         model = 'server.tools.uninstaller'
@@ -392,11 +393,11 @@ def update(
             click.secho("Nothing to uninstall - db not initialized yet.", fg='yellow')
         else:
             # check if something is todo
-            to_uninstall = config.manifest.get('uninstall', [])
+            to_uninstall = MANIFEST().get('uninstall', [])
             to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
             if to_uninstall:
                 click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
-                _exec_update(config, module)
+                _exec_update(config, [module])
 
                 if config.use_docker:
                     from .lib_control_with_docker import shell as lib_shell
