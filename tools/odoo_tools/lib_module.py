@@ -236,7 +236,7 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 @click.option('-c', '--config-file', default='config_update', help="Specify config file to use, for example config_update")
 @click.option('--server-wide-modules')
 @click.option('--additional-addons-paths')
-@click.option('--only-uninstall')
+@click.option('--only-uninstall', is_flag=True)
 @pass_config
 @click.pass_context
 def update(
@@ -272,12 +272,13 @@ def update(
                                 | |                        
                                 |_|   
     """, fg='green')
-    if not only_uninstall:
-        from .module_tools import Modules, DBModules
-        # ctx.invoke(module_link)
-        if config.run_postgres:
-            Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+    from .module_tools import Modules, DBModules
+    # ctx.invoke(module_link)
+    if config.run_postgres:
+        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
         Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
+
+    if not only_uninstall:
         if since_git_sha and module:
             raise Exception("Conflict: since-git-sha and modules")
         if since_git_sha:
