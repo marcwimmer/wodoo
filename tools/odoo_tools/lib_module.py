@@ -236,6 +236,7 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 @click.option('-c', '--config-file', default='config_update', help="Specify config file to use, for example config_update")
 @click.option('--server-wide-modules')
 @click.option('--additional-addons-paths')
+@click.option('--only-uninstall')
 @pass_config
 @click.pass_context
 def update(
@@ -244,7 +245,8 @@ def update(
     non_interactive, no_update_module_list, no_install_server_wide_first,
     no_extra_addons_paths, no_dangling_check=False, check_install_state=True,
     no_restart=True, i18n=False, tests=False,
-    config_file=False, server_wide_modules=False, additional_addons_paths=False
+    config_file=False, server_wide_modules=False, additional_addons_paths=False,
+    only_uninstall=False
     ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -270,113 +272,114 @@ def update(
                                 | |                        
                                 |_|   
     """, fg='green')
-    from .module_tools import Modules, DBModules
-    # ctx.invoke(module_link)
-    if config.run_postgres:
-        Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
-    Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
-    if since_git_sha and module:
-        raise Exception("Conflict: since-git-sha and modules")
-    if since_git_sha:
-        module = list(_get_changed_modules(since_git_sha))
+    if not only_uninstall:
+        from .module_tools import Modules, DBModules
+        # ctx.invoke(module_link)
+        if config.run_postgres:
+            Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+        Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
+        if since_git_sha and module:
+            raise Exception("Conflict: since-git-sha and modules")
+        if since_git_sha:
+            module = list(_get_changed_modules(since_git_sha))
 
-        # filter modules to defined ones in MANIFEST
-        click.secho(f"Following modules change since last sha: {' '.join(module)}")
-        from .odoo_config import MANIFEST
-        module = list(filter(lambda x: x in MANIFEST()['install'], module))
-        click.secho(f"Following modules change since last sha (filtered to manifest): {' '.join(module)}")
+            # filter modules to defined ones in MANIFEST
+            click.secho(f"Following modules change since last sha: {' '.join(module)}")
+            from .odoo_config import MANIFEST
+            module = list(filter(lambda x: x in MANIFEST()['install'], module))
+            click.secho(f"Following modules change since last sha (filtered to manifest): {' '.join(module)}")
 
+            if not module:
+                click.secho("No module update required - exiting.")
+                return
+        else:
+            module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
+
+        if not module and not since_git_sha:
+            module = _get_default_modules_to_update()
+
+        module = list(set(_add_outdated_versioned_modules(module)))
+
+        if not no_restart:
+            if config.use_docker:
+                Commands.invoke(ctx, 'kill', machines=get_services(config, 'odoo_base'))
+                if config.run_redis:
+                    Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
+                if config.run_postgres:
+                    Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+                Commands.invoke(ctx, 'wait_for_container_postgres')
+
+        if not no_dangling_check:
+            if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
+                for x in DBModules.get_dangling_modules():
+                    click.echo("{}: {}".format(*x[:2]))
+                if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
+                    _execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+            if DBModules.get_dangling_modules() and not dangling_modules:
+                if not no_dangling_check:
+                    Commands.invoke(ctx, 'show_install_state', suppress_error=True)
+                    input("Abort old upgrade and continue? (Ctrl+c to break)")
+                    ctx.invoke(abort_upgrade)
+        if installed_modules:
+            module += __get_installed_modules(config)
+        if dangling_modules:
+            module += [x[0] for x in DBModules.get_dangling_modules()]
+        module = list(filter(lambda x: x, module))
         if not module:
-            click.secho("No module update required - exiting.")
-            return
-    else:
-        module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
+            raise Exception("no modules to update")
 
-    if not module and not since_git_sha:
-        module = _get_default_modules_to_update()
+        click.echo("Run module update")
+        if config.odoo_update_start_notification_touch_file_in_container:
+            with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
+                f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    module = list(set(_add_outdated_versioned_modules(module)))
+        try:
+            params = [','.join(module)]
+            if no_extra_addons_paths:
+                params += ['--no-extra-addons-paths']
+            if non_interactive:
+                params += ['--non-interactive']
+            if no_install_server_wide_first:
+                params += ['--no-install-server-wide-first']
+            if no_update_module_list:
+                params += ['--no-update-modulelist']
+            if no_dangling_check:
+                params += ['--no-dangling-check']
+            if i18n:
+                params += ['--i18n']
+            if not tests:
+                params += ['--no-tests']
+            if server_wide_modules:
+                params += ['--server-wide-modules', server_wide_modules]
+            if additional_addons_paths:
+                params += ['--additional-addons-paths', additional_addons_paths]
+            params += ["--config-file=" + config_file]
+            rc = _exec_update(config, params)
+            if rc:
+                raise UpdateException(module)
 
-    if not no_restart:
-        if config.use_docker:
-            Commands.invoke(ctx, 'kill', machines=get_services(config, 'odoo_base'))
-            if config.run_redis:
-                Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
-            if config.run_postgres:
-                Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
-            Commands.invoke(ctx, 'wait_for_container_postgres')
+        except UpdateException:
+            raise
+        except Exception:
+            click.echo(traceback.format_exc())
+            ctx.invoke(show_install_state, suppress_error=True)
+            raise Exception("Error at /update_modules.py - aborting update process.")
 
-    if not no_dangling_check:
-        if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
-            for x in DBModules.get_dangling_modules():
-                click.echo("{}: {}".format(*x[:2]))
-            if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
-                _execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
-        if DBModules.get_dangling_modules() and not dangling_modules:
-            if not no_dangling_check:
-                Commands.invoke(ctx, 'show_install_state', suppress_error=True)
-                input("Abort old upgrade and continue? (Ctrl+c to break)")
-                ctx.invoke(abort_upgrade)
-    if installed_modules:
-        module += __get_installed_modules(config)
-    if dangling_modules:
-        module += [x[0] for x in DBModules.get_dangling_modules()]
-    module = list(filter(lambda x: x, module))
-    if not module:
-        raise Exception("no modules to update")
+        if check_install_state:
+            ctx.invoke(show_install_state, suppress_error=no_dangling_check)
 
-    click.echo("Run module update")
-    if config.odoo_update_start_notification_touch_file_in_container:
-        with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
-            f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        if not no_restart and config.use_docker:
+            Commands.invoke(ctx, 'restart', machines=['odoo'])
+            if config.run_odoocronjobs:
+                Commands.invoke(ctx, 'restart', machines=['odoo_cronjobs'])
+            if config.run_queuejobs:
+                Commands.invoke(ctx, 'restart', machines=['odoo_queuejobs'])
+            Commands.invoke(ctx, 'up', daemon=True)
 
-    try:
-        params = [','.join(module)]
-        if no_extra_addons_paths:
-            params += ['--no-extra-addons-paths']
-        if non_interactive:
-            params += ['--non-interactive']
-        if no_install_server_wide_first:
-            params += ['--no-install-server-wide-first']
-        if no_update_module_list:
-            params += ['--no-update-modulelist']
-        if no_dangling_check:
-            params += ['--no-dangling-check']
-        if i18n:
-            params += ['--i18n']
-        if not tests:
-            params += ['--no-tests']
-        if server_wide_modules:
-            params += ['--server-wide-modules', server_wide_modules]
-        if additional_addons_paths:
-            params += ['--additional-addons-paths', additional_addons_paths]
-        params += ["--config-file=" + config_file]
-        rc = _exec_update(config, params)
-        if rc:
-            raise UpdateException(module)
-
-    except UpdateException:
-        raise
-    except Exception:
-        click.echo(traceback.format_exc())
-        ctx.invoke(show_install_state, suppress_error=True)
-        raise Exception("Error at /update_modules.py - aborting update process.")
-
-    if check_install_state:
-        ctx.invoke(show_install_state, suppress_error=no_dangling_check)
-
-    if not no_restart and config.use_docker:
-        Commands.invoke(ctx, 'restart', machines=['odoo'])
-        if config.run_odoocronjobs:
-            Commands.invoke(ctx, 'restart', machines=['odoo_cronjobs'])
-        if config.run_queuejobs:
-            Commands.invoke(ctx, 'restart', machines=['odoo_queuejobs'])
-        Commands.invoke(ctx, 'up', daemon=True)
-
-    Commands.invoke(ctx, 'status')
-    if config.odoo_update_start_notification_touch_file_in_container:
-        with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
-            f.write("0")
+        Commands.invoke(ctx, 'status')
+        if config.odoo_update_start_notification_touch_file_in_container:
+            with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
+                f.write("0")
 
     def _uninstall_marked_modules():
         """
