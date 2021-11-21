@@ -236,7 +236,7 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
 @click.option('-c', '--config-file', default='config_update', help="Specify config file to use, for example config_update")
 @click.option('--server-wide-modules')
 @click.option('--additional-addons-paths')
-@click.option('--only-uninstall', is_flag=True)
+@click.option('--uninstall', is_flag=True, help="Executes just uninstallation of modules.")
 @pass_config
 @click.pass_context
 def update(
@@ -246,7 +246,7 @@ def update(
     no_extra_addons_paths, no_dangling_check=False, check_install_state=True,
     no_restart=True, i18n=False, tests=False,
     config_file=False, server_wide_modules=False, additional_addons_paths=False,
-    only_uninstall=False
+    uninstall=False
     ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -278,7 +278,7 @@ def update(
         Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
         Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
 
-    if not only_uninstall:
+    if not uninstall:
         if since_git_sha and module:
             raise Exception("Conflict: since-git-sha and modules")
         if since_git_sha:
@@ -389,24 +389,28 @@ def update(
         from .odoo_config import MANIFEST
         if float(config.odoo_version) < 11.0:
             return
-        module = 'server_tools_uninstaller'
-        model = 'server.tools.uninstaller'
-        try:
-            DBModules.is_module_installed(module, raise_exception_not_initialized=True)
-        except UserWarning:
-            click.secho("Nothing to uninstall - db not initialized yet.", fg='yellow')
-        else:
-            # check if something is todo
-            to_uninstall = MANIFEST().get('uninstall', [])
-            to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
-            if to_uninstall:
-                click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
-                _exec_update(config, [module])
+        # check if something is todo
+        to_uninstall = MANIFEST().get('uninstall', [])
+        to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
+        if to_uninstall:
+            click.secho("Going to uninstall {}".format(', '.join(to_uninstall)), fg='red')
 
-                if config.use_docker:
-                    from .lib_control_with_docker import shell as lib_shell
-                lib_shell(f"env['{model}'].uninstall()")
+            if config.use_docker:
+                from .lib_control_with_docker import shell as lib_shell
+            for module in to_uninstall:
+                click.secho(f"Uninstall {module}", fg='red')
+                lib_shell("""
+self.env['ir.module.module'].search([
+('name', '=', '{}'),
+('state', 'in', ['to upgrade', 'to install', 'installed'])
+]).module_uninstall()
+self.env.cr.commit()
+                """.format(module))
 
+        to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
+        if to_uninstall:
+            click.secho(f"Failed to uninstall: {','.join(to_uninstall)}", fg='red')
+            sys.exit(-1)
 
     _uninstall_marked_modules()
 
