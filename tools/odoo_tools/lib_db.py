@@ -76,7 +76,6 @@ def pgcli(config, dbname, params, host, port, user, password):
     from .tools import DBConnection
 
     dbname = dbname or config.dbname
-    import pudb;pudb.set_trace()
 
     if host:
         if any(not x for x in [port, user, password]):
