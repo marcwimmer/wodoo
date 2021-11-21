@@ -16,5 +16,4 @@ def after_settings(config):
             "DB_PWD": "odoo"
         }
         for k, v in default_values.items():
-            if not config.get(k, ""):
-                config[k] = v
+            config[k] = v
