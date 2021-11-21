@@ -17,17 +17,8 @@ from datetime import datetime
 from .tools import __replace_all_envs_in_str
 from .tools import _wait_postgres
 from .tools import _dropdb
-from .tools import __assert_file_exists
-from .tools import _exists_db
-from .tools import __safe_filename
 from .tools import remove_webassets
-from .tools import __read_file
-from .tools import __write_file
-from .tools import _askcontinue
-from .tools import __append_line
-from .tools import __get_odoo_commit
-from .tools import __dcrun, __dc, _remove_postgres_connections, _execute_sql, __dcexec
-from .tools import get_volume_names
+from .tools import __dcrun, _remove_postgres_connections, _execute_sql
 from .tools import exec_file_in_path
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
@@ -85,6 +76,7 @@ def pgcli(config, dbname, params, host, port, user, password):
     from .tools import DBConnection
 
     dbname = dbname or config.dbname
+    import pudb;pudb.set_trace()
 
     if host:
         if any(not x for x in [port, user, password]):
@@ -117,7 +109,6 @@ def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None)
         cmd += [
             dbname,
         ]
-
         if use_docker_container or (config.use_docker and config.run_postgres):
             __dcrun(['pgtools', bin] + cmd, interactive=True, env={
                 "PGPASSWORD": conn.pwd,
@@ -130,7 +121,7 @@ def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None)
         os.environ['PGPASSWORD'] = ""
 
 def _pgcli(config, conn, params, use_docker_container=None):
-    _psql(config, conn, params, bin='pgcli', use_docker_container=use_docker_container)
+    _psql(config, conn, params, bin='pgcli', use_docker_container=None)
 
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)
