@@ -402,7 +402,7 @@ def post_process_complete_yaml_config(config, yml):
             service['image'] = "/".join([
                 hub['url'],
                 hub['prefix'],
-                config.customs,
+                config.project_name,
                 service_name + ":latest"
             ])
 
