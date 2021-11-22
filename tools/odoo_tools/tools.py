@@ -210,8 +210,8 @@ def _wait_postgres(config):
             _execute_sql(conn, sql="""
             SELECT table_schema,table_name
             FROM information_schema.tables
-            ORDER BY table_schema,table_name;
-            LIMIT 1
+            ORDER BY table_schema,table_name
+            LIMIT 1;
             """)
         except Exception:
             if trycount > 20:
