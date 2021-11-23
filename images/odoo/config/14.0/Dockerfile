@@ -141,7 +141,7 @@ RUN git clone https://github.com/OCA/openupgradelib /opt/openupgradelib
 WORKDIR /opt/openupgradelib
 RUN python3 setup.py install
 ADD install_libpostal.sh /root/install_libpostal.sh
-RUN bash /root/install_libpostal.sh
+RUN if [ "$TARGETARCH" = "amd64" ]; then bash /root/install_libpostal.sh; fi
 
 
 RUN echo "$ODOO_REQUIREMENTS"  | base64 --decode > /root/pip_requirements.txt
