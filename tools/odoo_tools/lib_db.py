@@ -76,6 +76,7 @@ def pgcli(config, dbname, params, host, port, user, password):
     from .tools import DBConnection
 
     dbname = dbname or config.dbname
+    os.environ['ODOO_FRAMEWORK_KEEP_SQL_CONNECTION'] = '1'  # will be executed there so connection string will point to postgres
 
     if host:
         if any(not x for x in [port, user, password]):
@@ -92,6 +93,7 @@ def pgcli(config, dbname, params, host, port, user, password):
 @pass_config
 def psql(config, dbname, params, sql):
     dbname = dbname or config.dbname
+    os.environ['ODOO_FRAMEWORK_KEEP_SQL_CONNECTION'] = '1'  # will be executed there so connection string will point to postgres
     conn = config.get_odoo_conn().clone(dbname=dbname)
     return _psql(config, conn, params, sql=sql)
 
