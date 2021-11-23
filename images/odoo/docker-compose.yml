@@ -46,6 +46,7 @@ services:
       - LC_ALL=en_US.UTF-8
       - PYTHONBREAKPOINT=0
       - ODOO_SERVER_TOOLS_MODULES=/opt/odoo_server_tools
+      - ODOO_FRAMEWORK_KEEP_SQL_CONNECTION=1
     command: /usr/bin/env python3 /odoolib/run.py
     entrypoint: ["/odoolib/entrypoint.py"]
     logging:
