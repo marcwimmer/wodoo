@@ -11,7 +11,6 @@
         "odoo/odoo/addons",
         "odoo/addons",
         "addons_tools",
-        "addons_OCA/account-financial-tools",
         "addons_OCA/purchase-workflow",
         "addons_OCA/contract",
         "addons_OCA/project-service",
