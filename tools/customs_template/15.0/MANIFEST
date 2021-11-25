@@ -13,7 +13,6 @@
         "addons_tools",
         "addons_OCA/contract",
         "addons_OCA/project-service",
-        "addons_OCA/account-closing",
         "addons_OCA/commission",
         "addons_OCA/management-system",
         "addons_OCA/bank-statement-import",
