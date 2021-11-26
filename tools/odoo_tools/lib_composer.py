@@ -374,7 +374,8 @@ def __set_environment_in_services(content):
 
         file = '$HOST_RUN_DIR/settings'
         if not [x for x in service['env_file'] if x == file]:
-            service['env_file'].append(file)
+            if service.get('labels', {}).get('odoo_framework.apply_env', '1') not in [0, '0', 'false', 'False']:
+                service['env_file'].append(file)
 
         service.setdefault('environment', [])
 
