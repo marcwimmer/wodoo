@@ -550,15 +550,15 @@ def _fix_contents(contents):
             if 'env_file' in service:
                 if isinstance(service['env_file'], dict):
                     service['env_file'] = list(service['env_file'].keys())
-                    
+
 
 def _explode_referenced_machines(contents):
     """
     with:
     service:
-      machine:
-        labels:
-          compose.merge: service-name
+        machine:
+            labels:
+                compose.merge: service-name
 
     a service is referenced; this service is copied in its own file to match later that reference by its service
     name in docker compose config
