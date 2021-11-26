@@ -92,3 +92,14 @@ networks:
             config:
                 - subnet: 10.5.0.0/16
 ```
+
+### Some labels
+
+```yml
+services:
+    new_machine:
+        ...
+        labels:
+          odoo_framework.apply_env: 0
+
+```
