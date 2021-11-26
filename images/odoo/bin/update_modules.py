@@ -78,7 +78,7 @@ def update(config, mode, modules):
         for module in modules:
             module = Module.get_by_name(module)
             if DBModules.is_module_installed(module.name):
-                for lang in get_all_langs():
+                for lang in get_all_langs(config):
                     if lang == 'en_US':
                         continue
                     lang_file = module.get_lang_file(lang)
