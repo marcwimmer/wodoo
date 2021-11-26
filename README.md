@@ -100,6 +100,6 @@ services:
     new_machine:
         ...
         labels:
-          odoo_framework.apply_env: 0
+          odoo_framework.apply_env: 0  # do not apply global environment from settings here
 
 ```
