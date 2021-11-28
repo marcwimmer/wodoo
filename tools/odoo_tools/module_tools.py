@@ -337,8 +337,9 @@ def make_module(parent_path, module_name):
     del parent_path
     if complete_path.exists():
         raise Exception("Path already exists: {}".format(complete_path))
+    odoo_root = os.environ['ODOO_HOME']
 
-    shutil.copytree(str(odoo_root() / 'tools/module_template' / str(version)), complete_path)
+    shutil.copytree(str(Path(odoo_root) / 'tools/module_template' / str(version)), complete_path)
     for root, dirs, _files in os.walk(complete_path):
         if '.git' in dirs:
             dirs.remove('.git')
@@ -370,7 +371,7 @@ def run_test_file(path):
     write_debug_instruction(instruction)
 
 def search_qweb(template_name, root_path=None):
-    root_path = root_path or odoo_root()
+    root_path = root_path or os.environ['ODOO_HOME']
     pattern = "*.xml"
     for path, dirs, _files in os.walk(str(root_path.resolve().absolute()), followlinks=True):
         for filename in fnmatch.filter(_files, pattern):
