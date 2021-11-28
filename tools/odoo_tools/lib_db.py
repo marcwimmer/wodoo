@@ -116,13 +116,13 @@ def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None)
             })
         else:
             subprocess.call([
-                exec_file_in_path('psql'),
+                exec_file_in_path(bin),
             ] + cmd, env={"PGPASSWORD": conn.pwd})
     finally:
         os.environ['PGPASSWORD'] = ""
 
 def _pgcli(config, conn, params, use_docker_container=None):
-    _psql(config, conn, params, bin='pgcli', use_docker_container=None)
+    _psql(config, conn, params, bin='pgcli', use_docker_container=use_docker_container)
 
 @db.command(name='reset-odoo-db')
 @click.argument('dbname', required=False)
