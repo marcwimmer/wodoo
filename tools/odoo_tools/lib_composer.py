@@ -387,12 +387,6 @@ def post_process_complete_yaml_config(config, yml):
 
     yml['version'] = config.YAML_VERSION
 
-    # remove restart policies, if not restart allowed:
-    if not config.restart_containers:
-        for service in yml['services']:
-            if 'restart' in yml['services'][service]:
-                yml['services'][service].pop('restart')
-
     # set hub source for all images, that are built:
     for service_name, service in yml['services'].items():
         if not service.get('build', False):
