@@ -510,12 +510,7 @@ def robotest(config, file, user, all, tag, test_name):
         click.secho("Devmode required to run unit tests. Database will be destroyed.", fg='red')
         sys.exit(-1)
 
-    testfiles = []
-    for _file in customs_dir().glob("**/*.robot"):
-        if 'keywords' in _file.parts: continue
-        if 'library' in _file.parts: continue
-        testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
-        del _file
+    testfiles = _get_all_robottest_files()
 
     if file and all:
         click.secho("Cannot provide all and file together!", fg='red')
@@ -597,6 +592,47 @@ def robotest(config, file, user, all, tag, test_name):
     if failds:
         sys.exit(-1)
 
+def _get_all_unittest_files():
+    from .odoo_config import MANIFEST, MANIFEST_FILE
+    from .module_tools import Module
+    testfiles = []
+    for testmodule in MANIFEST().get('tests', []):
+        testmodule = Module.get_by_name(testmodule)
+        for _file in testmodule.path.glob("tests/test*.py"):
+            testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
+            del _file
+    return testfiles
+
+def _get_all_robottest_files():
+    from .odoo_config import MANIFEST, MANIFEST_FILE
+    from .module_tools import Module
+    from .odoo_config import customs_dir
+
+    testfiles = []
+    for _file in customs_dir().glob("**/*.robot"):
+        if 'keywords' in _file.parts: continue
+        if 'library' in _file.parts: continue
+        testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
+        del _file
+    return testfiles
+
+@odoo_module.command()
+@pass_config
+def list_unit_test_files(config):
+    files = _get_all_unittest_files()
+    click.secho("!!!")
+    for file in files:
+        click.secho(file)
+    click.secho("!!!")
+
+@odoo_module.command()
+@pass_config
+def list_robot_test_files(config):
+    files = _get_all_robottest_files()
+    click.secho("!!!")
+    for file in files:
+        click.secho(file)
+    click.secho("!!!")
 
 @odoo_module.command()
 @click.option('-r', '--repeat', is_flag=True)
@@ -613,12 +649,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = []
-    for testmodule in MANIFEST().get('tests', []):
-        testmodule = Module.get_by_name(testmodule)
-        for _file in testmodule.path.glob("tests/test*.py"):
-            testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
-            del _file
+    testfiles = _get_all_unittest_files()
 
     if file:
         if '/' in file:
