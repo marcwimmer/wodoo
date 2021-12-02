@@ -61,11 +61,15 @@ if click:
     @click.option("-xs", '--restrict-setting', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
     @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
     @click.option("-p", '--project-name', help="Set Project-Name")
+    @click.option("--chdir", help="Set Working Directory")
     @pass_config
-    def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose):
+    def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir):
         config.force = force
         config.verbose = verbose
         config.restrict = {}
+        if chdir:
+            os.chdir(chdir)
+            config.WORKING_DIR = chdir
         if not config.WORKING_DIR:
             # usually all need a working except cicd
             click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
