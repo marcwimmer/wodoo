@@ -109,7 +109,7 @@ def delete_qweb(config, modules):
 
 def get_all_langs(config):
     sql = "select distinct code from res_lang where active = true;"
-    with get_conn_autoclose(config) as cr:
+    with get_conn_autoclose() as cr:
         cr.execute(sql)
         langs = [x[0] for x in cr.fetchall() if x[0]]
     return langs
@@ -134,7 +134,7 @@ class DBModules(object):
             UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
-        with get_conn_autoclose(config) as cr:
+        with get_conn_autoclose() as cr:
             _execute_sql(cr, SQL)
 
     @classmethod
