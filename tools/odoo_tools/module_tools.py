@@ -129,12 +129,12 @@ class DBModules(object):
                 sys.exit(32)
 
     @classmethod
-    def abort_upgrade(clazz, config):
+    def abort_upgrade(clazz):
         SQL = """
             UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
-        with get_conn_autoclose(config) as cr:
+        with get_conn_autoclose() as cr:
             _execute_sql(cr, SQL)
 
     @classmethod
