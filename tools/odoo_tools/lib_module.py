@@ -159,6 +159,8 @@ def _add_outdated_versioned_modules(modules):
 
         for dep in mods.get_module_flat_dependency_tree(mods.modules[module]):
             meta_info = DBModules.get_meta_data(dep)
+            if not meta_info:
+                continue
             version = meta_info['version']
             if not version:
                 continue

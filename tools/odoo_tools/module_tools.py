@@ -202,6 +202,8 @@ class DBModules(object):
                 mprior.state = 'uninstalled';
         """
         with get_conn_autoclose() as cr:
+            if not _exists_table(cr, 'ir_module_module'):
+                return []
             cr.execute(sql)
             return [x[0] for x in cr.fetchall()]
 
@@ -214,12 +216,16 @@ class DBModules(object):
     @classmethod
     def get_all_installed_modules(clazz):
         with get_conn_autoclose() as cr:
+            if not _exists_table(cr, 'ir_module_module'):
+                return []
             cr.execute("select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');")
             return [x[0] for x in cr.fetchall()]
 
     @classmethod
     def get_meta_data(clazz, module):
         with get_conn_autoclose() as cr:
+            if not _exists_table(cr, 'ir_module_module'):
+                return {}
             cr.execute("select id, state, name, latest_version from ir_module_module where name = %s", (module,))
             record = cr.fetchone()
             if not record:
@@ -261,6 +267,7 @@ class DBModules(object):
         with get_conn_autoclose() as cr:
             if not _exists_table(cr, 'ir_module_module'):
                 if raise_exception_not_initialized:
+                    import pudb;pudb.set_trace()
                     raise UserWarning("Database not initialized")
                 return False
             cr.execute("select name, state from ir_module_module where name = %s", (module,))
