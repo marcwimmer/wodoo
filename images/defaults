@@ -30,3 +30,4 @@ PSYCOPG_TIMEOUT=30
 
 # set customized docker label for identifying all containers
 DOCKER_LABEL_ODOOCOMPOSE=1
+RESTART_CONTAINERS=0
