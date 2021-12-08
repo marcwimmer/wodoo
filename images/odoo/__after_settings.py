@@ -30,7 +30,7 @@ def after_settings(config):
 
         channels = ','.join(f"{x[0]}:{x[1]}" for x in [('root', Sum)] + channels_no_root)
 
-        config['ODOO_QUEUEJOBS_WORKERS'] = str(int(Sum * 1.5)) # good for all in one also
+        config['ODOO_QUEUEJOBS_WORKERS'] = str(int(Sum * 2)) # good for all in one also
         config['ODOO_QUEUEJOBS_CHANNELS'] = channels
 
     if config['LOCAL_SETTINGS'] == '1':
