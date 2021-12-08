@@ -267,7 +267,6 @@ class DBModules(object):
         with get_conn_autoclose() as cr:
             if not _exists_table(cr, 'ir_module_module'):
                 if raise_exception_not_initialized:
-                    import pudb;pudb.set_trace()
                     raise UserWarning("Database not initialized")
                 return False
             cr.execute("select name, state from ir_module_module where name = %s", (module,))
