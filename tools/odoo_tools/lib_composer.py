@@ -96,8 +96,12 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, 
     try:
         if additional_config:
             additional_config_file = Path(tempfile.mktemp(suffix='.'))
-            additional_config_file.write_bytes(base64.b64decode(additional_config))
+            additional_config_text = base64.b64decode(additional_config)
+            additional_config_file.write_bytes(additional_config_text)
             additional_config = MyConfigParser(additional_config_file)
+            click.secho(f"Additional config provided in {additional_config_file}:")
+            for line in additional_config_text.decode('utf-8').split("\n"):
+                click.secho("\t" + line)
 
         internal_reload(config, db, demo, devmode, headless, proxy_port, mailclient_gui_port, additional_config)
 
