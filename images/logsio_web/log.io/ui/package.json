@@ -1,7 +1,6 @@
 {
   "name": "log.io-ui",
   "version": "0.4.16",
-  "homepage": "http://example.com/logs",
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
