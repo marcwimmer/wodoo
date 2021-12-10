@@ -2,12 +2,12 @@ repos:
 - branch: master
   patches: []
   path: images/theia_odoo_vim
-  sha: 319f64b6af4e8c0b0e87579541b8c53c7b13f783
+  sha: 41b0221255f4c25362780da5977512a4ef970328
   type: integrated
   url: ssh://git@git.itewimmer.de/theia/odoo-vim
 - branch: master
   path: tools/snippets
-  type: submodule
+  type: integrated
   url: https://git.itewimmer.de/odoo/public_modules/snippets
 - branch: master
   path: extra_install/asterisk_customs
