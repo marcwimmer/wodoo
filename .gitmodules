@@ -1,4 +1,0 @@
-[submodule "tools/snippets"]
-	path = tools/snippets
-	url = https://git.itewimmer.de/odoo/public_modules/snippets
-	branch = master
