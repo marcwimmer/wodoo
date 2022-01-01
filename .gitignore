@@ -31,3 +31,4 @@ settings.override
 .vscode/launch.json
 
 .debug
+*.egg-info

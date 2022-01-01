@@ -19,8 +19,6 @@ except ImportError:
     click = None
 from .tools import _file2env
 
-dir = Path(inspect.getfile(inspect.currentframe())).resolve().parent
-sys.path.append(dir / '..' / 'module_tools')
 from . import module_tools # NOQA
 from . import odoo_config  # NOQA
 SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
@@ -28,7 +26,7 @@ SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().pare
 Commands = GlobalCommands()
 
 os.environ['HOST_HOME'] = os.getenv("HOME", "")
-os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY.parent.parent)
+os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
 
 def _get_default_project_name(restrict):
     def _get_project_name_from_file(path):

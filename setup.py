@@ -7,6 +7,7 @@
 import io
 import os
 import sys
+from glob import glob
 from shutil import rmtree
 from pathlib import Path
 
@@ -14,12 +15,16 @@ from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
 from subprocess import check_call, check_output
 
+import inspect
+import os
+from pathlib import Path
+current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 
 
 # Package meta-data.
 NAME = 'wodoo'
 SHELL_CALL = "odoo"
-DESCRIPTION = 'Odoo Framework.'
+DESCRIPTION = 'Odoo Framework'
 URL = 'https://git.itewimmer.de/odoo/framework'
 EMAIL = 'marc@itewimmer.de'
 AUTHOR = 'Marc-Christian Wimmer'
@@ -151,6 +156,21 @@ class InstallCommand(install):
         install.run(self)
         setup_click_autocompletion()
 
+data_files = []
+PREFIX = Path(sys.prefix) / 'local' / NAME
+for i, file in enumerate((current_dir / 'wodoo').rglob("*")):
+    if not file.is_file():
+        continue
+    if any(file.name.endswith(x) for x in ['.pyc', '.py']):
+        continue
+    if file.name.startswith('.'):
+        continue
+    if file.name in ['requirements.txt']:
+        continue
+    path = str(file.relative_to(current_dir))
+    data_files.append((str(PREFIX / path), [path]))
+
+
 # Where the magic happens:
 setup(
     name=NAME,
@@ -165,12 +185,10 @@ setup(
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
     # If your package is a single module, use this instead of 'packages':
     #py_modules=['prlsnapshotter'],
-
+    data_files=data_files,
     entry_points={
-        'console_scripts': [SHELL_CALL + '=framework:cli'],
+        'console_scripts': [SHELL_CALL + '=wodoo:cli'],
     },
-    data_files=[
-    ],
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
