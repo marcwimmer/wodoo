@@ -32,3 +32,8 @@ settings.override
 
 .debug
 *.egg-info
+
+build
+dist
+repos
+.vscode
