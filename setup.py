@@ -134,19 +134,24 @@ class InstallCommand(install):
         install.run(self)
         setup_click_autocompletion()
 
-data_files = []
-PREFIX = Path(sys.prefix) / 'local' / NAME
-for i, file in enumerate((current_dir / 'wodoo').rglob("*")):
-    if not file.is_file():
-        continue
-    if any(file.name.endswith(x) for x in ['.pyc', '.py']):
-        continue
-    if file.name.startswith('.'):
-        continue
-    if file.name in ['requirements.txt']:
-        continue
-    path = str(file.relative_to(current_dir))
-    data_files.append((str(PREFIX / path), [path]))
+def get_data_files():
+    data_files = []
+    PREFIX = Path(sys.prefix) / 'local' / NAME
+    for i, file in enumerate((current_dir / 'wodoo').rglob("*")):
+        if not file.is_file():
+            continue
+        if any(file.name.endswith(x) for x in ['.pyc', '.py']):
+            continue
+        if file.name.startswith('.'):
+            continue
+        if file.name in ['requirements.txt']:
+            continue
+        path = str(file.relative_to(current_dir))
+        if path.startswith("images/odoo/python"):
+            continue
+        data_files.append((str(PREFIX / path), [path]))
+
+    return data_files
 
 
 # Where the magic happens:
@@ -163,7 +168,7 @@ setup(
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
     # If your package is a single module, use this instead of 'packages':
     #py_modules=['prlsnapshotter'],
-    data_files=data_files,
+    data_files=get_data_files(),
     entry_points={
         'console_scripts': [SHELL_CALL + '=wodoo:cli'],
     },
