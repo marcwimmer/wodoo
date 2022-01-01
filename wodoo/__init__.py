@@ -69,8 +69,9 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
         config.WORKING_DIR = chdir
     if not config.WORKING_DIR:
         # usually all need a working except cicd
-        click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
-        sys.exit(1)
+        if 'init' not in sys.argv:
+            click.secho("Please enter into an odoo directory, which contains a MANIFEST file.", fg='red')
+            sys.exit(1)
 
     def _collect_files(files):
         for test in files:
