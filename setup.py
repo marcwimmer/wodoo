@@ -147,8 +147,6 @@ def get_data_files():
         if file.name in ['requirements.txt']:
             continue
         path = str(file.relative_to(current_dir))
-        if path.startswith("images/odoo/python"):
-            continue
         data_files.append((str(PREFIX / path), [path]))
 
     return data_files
