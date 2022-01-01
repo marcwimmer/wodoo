@@ -18,7 +18,7 @@ default_dirs = {
     'run_native_bin_dir': '${run}/bin',
     'run_native_requirements': '${run}/requirements', # requirement files
     'run_native_out_dir': '${run}/odoo_outdir',
-    'odoo_tools': '$odoo_home/tools',
+    'odoo_tools': '$odoo_home',
     'odoo_data_dir': "~/.odoo/files",
     'user_conf_dir': "~/.odoo",
     'cicd_delegator': '~/.odoo/cicd_delegator',

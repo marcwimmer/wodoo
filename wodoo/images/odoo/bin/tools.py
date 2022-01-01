@@ -8,9 +8,9 @@ from consts import ODOO_USER
 import subprocess
 import configparser
 import os
-from odoo_tools import odoo_config
-from odoo_tools.odoo_config import customs_dir
-from odoo_tools.odoo_config import get_conn_autoclose
+from wodoo import odoo_config
+from wodoo.odoo_config import customs_dir
+from wodoo.odoo_config import get_conn_autoclose
 from pathlib import Path
 pidfile = Path('/tmp/odoo.pid')
 config = odoo_config.get_settings()

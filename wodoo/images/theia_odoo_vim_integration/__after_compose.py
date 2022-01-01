@@ -8,5 +8,5 @@ import os
 dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 def after_compose(config, settings, yml, globals):
-    from odoo_tools.tools import get_services
+    from wodoo.tools import get_services
     from pathlib import Path

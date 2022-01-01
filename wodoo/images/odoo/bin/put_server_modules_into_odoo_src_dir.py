@@ -3,7 +3,7 @@ import sys
 import os
 import shutil
 from pathlib import Path
-from odoo_tools.odoo_config import customs_dir
+from wodoo.odoo_config import customs_dir
 
 if os.getenv("DEVMODE", "") == "1":
     owner = os.environ['OWNER_UID']

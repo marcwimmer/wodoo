@@ -13,9 +13,9 @@ try:
     injected_globals = injected_globals # NOQA
 except Exception:
     pass
-from odoo_tools.lib_clickhelpers import AliasedGroup
-from odoo_tools.tools import __empty_dir, __dc
-from odoo_tools import cli, pass_config
+from wodoo.lib_clickhelpers import AliasedGroup
+from wodoo.tools import __empty_dir, __dc
+from wodoo import cli, pass_config
 
 @cli.group(cls=AliasedGroup)
 @pass_config

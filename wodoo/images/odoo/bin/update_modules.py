@@ -8,14 +8,13 @@ import tempfile
 import subprocess
 from pathlib import Path
 from time import sleep
-import odoo_tools
-from odoo_tools import odoo_config
-from odoo_tools import odoo_parser
-from odoo_tools.module_tools import get_all_langs
-from odoo_tools.module_tools import delete_qweb as do_delete_qweb
-from odoo_tools.module_tools import Module, Modules, DBModules
-from odoo_tools.odoo_config import customs_dir
-from odoo_tools.odoo_config import MANIFEST
+from wodoo import odoo_config
+from wodoo import odoo_parser
+from wodoo.module_tools import get_all_langs
+from wodoo.module_tools import delete_qweb as do_delete_qweb
+from wodoo.module_tools import Module, Modules, DBModules
+from wodoo.odoo_config import customs_dir
+from wodoo.odoo_config import MANIFEST
 from tools import prepare_run
 from tools import exec_odoo
 

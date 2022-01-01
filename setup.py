@@ -32,29 +32,7 @@ REQUIRES_PYTHON = '>=3.6.0'
 VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
-REQUIRED = [
-    "pyyaml",
-    "arrow>=0.14.6",
-    "Click>=8.0.1",
-    "click-default-group>=1.2.1",
-    "pathlib>=1.0.1",
-    "inquirer>=2.6.3",
-    "retrying>=1.3.3",
-    "humanize>=0.5.1",
-    "passlib>=1.7.1",
-    "tabulate>=0.8.3",
-    "psycopg2-binary>=2.8.3",
-    "requests>=2.20.1",
-    "lxml>=4.4.1",
-    "psutil>=5.6.3",
-    "GitPython>=3.1.11",
-    "docker-compose==1.27.3",
-    "iscompatible",
-    "buttervolume>=3.7",
-    "pudb",
-    "gimera",
-]
-
+REQUIRED = list(filter(bool, (current_dir / 'wodoo' / 'requirements.txt').read_text().split("\n")))
 
 # What packages are optional?
 EXTRAS = {

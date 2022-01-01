@@ -287,7 +287,7 @@ def make_customs(path):
     from git import Repo
     from .tools import copy_dir_contents
     dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
-    src_dir = dir.parent / 'customs_template'
+    src_dir = dir / 'customs_template'
 
     def _floatify(x):
         try:

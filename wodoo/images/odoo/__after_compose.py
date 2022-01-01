@@ -20,7 +20,7 @@ def _setup_remote_debugging(config, yml):
 
 def after_compose(config, settings, yml, globals):
     # store also in clear text the requirements
-    from odoo_tools.tools import get_services
+    from wodoo.tools import get_services
     from pathlib import Path
 
     yml['services'].pop('odoo_base')

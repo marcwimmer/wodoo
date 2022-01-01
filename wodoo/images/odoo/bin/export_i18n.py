@@ -6,7 +6,7 @@ import sys
 import grp
 import pwd
 import subprocess
-from odoo_tools.module_tools import Module
+from wodoo.module_tools import Module
 from pathlib import Path
 from tools import exec_odoo
 if len(sys.argv) == 1:

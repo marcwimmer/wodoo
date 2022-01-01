@@ -26,7 +26,7 @@ def init(config, path):
     from .module_tools import make_customs
     path = Path(path)
     if not path.exists():
-        path.mkdir(path)
+        path.mkdir(parents=True)
     make_customs(path)
 
 

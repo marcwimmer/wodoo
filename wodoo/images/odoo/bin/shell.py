@@ -2,9 +2,9 @@
 import os
 import sys
 import subprocess
-from odoo_tools.module_tools import Module
-from odoo_tools.odoo_config import customs_dir
-from odoo_tools.odoo_config import current_version
+from wodoo.module_tools import Module
+from wodoo.odoo_config import customs_dir
+from wodoo.odoo_config import current_version
 from pathlib import Path
 from tools import exec_odoo
 from tools import prepare_run

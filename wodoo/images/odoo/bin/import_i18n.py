@@ -5,8 +5,8 @@ import tempfile
 import os
 import sys
 import subprocess
-from odoo_tools.module_tools import Module
-from odoo_tools.odoo_config import get_odoo_addons_paths
+from wodoo.module_tools import Module
+from wodoo.odoo_config import get_odoo_addons_paths
 from pathlib import Path
 from tools import exec_odoo
 if len(sys.argv) == 1:

@@ -62,6 +62,8 @@ def _exec_in_virtualenv(config, cmd):
     files = config.files
     dirs = config.dirs
 
+    raise Exception('adapt after pip compatible')
+
     filename.write_text('\n'.join(content + list((
         f'set -ex',
         f'export DEBUGGER_WATCH="{files["run/odoo_debug.txt"]}"',
@@ -71,7 +73,7 @@ def _exec_in_virtualenv(config, cmd):
         f'export ODOO_USER="$(whoami)"',
         f'export ODOO_DATA_DIR="{dirs["odoo_data_dir"]}"',
         f'export SERVER_DIR="{customs_dir()}/odoo"',
-        f'export PYTHONPATH="{dirs["odoo_tools"]}"',
+        f'export PYTHONPATH="{dirs["."]}"',
         f'export RUN_DIR="{dirs["run"]}"',
         f'export NO_SOFFICE=1',
         f'export OUT_DIR="{dirs["run_native_out_dir"]}"',

@@ -6,7 +6,7 @@ from pathlib import Path
 import inspect
 
 def after_settings(config):
-    from odoo_tools import odoo_config
+    from wodoo import odoo_config
 
     # disable theia on live system
     if config['DEVMODE'] != "1":
