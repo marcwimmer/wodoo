@@ -1,4 +1,0 @@
-# ignore the "vendor" directory when builing in the upstream git repo, it
-# contains a convenience copy of PHPunit and dependencies, which are not part
-# of the release tarball
-extend-diff-ignore=^vendor/
