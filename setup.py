@@ -4,9 +4,11 @@
 # Note: To use the 'upload' functionality of this file, you must:
 #   $ pipenv install twine --dev
 
+import shutil
 import io
 import os
 import sys
+import requests
 from glob import glob
 from shutil import rmtree
 from pathlib import Path
@@ -100,39 +102,56 @@ class UploadCommand(Command):
 
         sys.exit()
 
-def setup_click_autocompletion():
-
-    def setup_for_shell_generic(shell):
-        path = Path(f"/etc/{shell}_completion.d")
-        technical_name = SHELL_CALL.upper().replace("-", "_")
-        completion = check_output(["/usr/local/bin/" + SHELL_CALL], env={
-            f"_{technical_name}_COMPLETE": f"{shell}_source"
-        })
-        if path.exists():
-            if os.access(path, os.W_OK):
-                (path / SHELL_CALL).write_bytes(completion)
-                return
-
-        if not (path / NAME).exists():
-            rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
-            if not rc.exists():
-                return
-            complete_file = rc.parent / f'.{SHELL_CALL}-completion.sh'
-            complete_file.write_bytes(completion)
-            if complete_file.name not in rc.read_text():
-                content = rc.read_text()
-                content += '\nsource ~/' + complete_file.name
-                rc.write_text(content)
-
-    setup_for_shell_generic('zsh')
-    setup_for_shell_generic('bash')
-    setup_for_shell_generic('fish')
-
 class InstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
         install.run(self)
-        setup_click_autocompletion()
+        self.setup_click_autocompletion()
+        self.download_artefacts()
+
+    def download_artefacts(self):
+        raise Exception(self.__dict__.keys())
+
+        download_file('https://github.com/marcwimmer/chromedrivers/raw/2021-12/chromedriver_amd64.zip').rename()
+        download_file('https://github.com/marcwimmer/chromedrivers/raw/2021-12/googlechrome_amd64.deb').rename()
+
+    def download_file(self, url):
+        local_filename = url.split('/')[-1]
+        with requests.get(url, stream=True) as r:
+            with open(local_filename, 'wb') as f:
+                shutil.copyfileobj(r.raw, f)
+
+        return Path(local_filename)
+
+    def setup_click_autocompletion(self):
+
+        def setup_for_shell_generic(shell):
+            path = Path(f"/etc/{shell}_completion.d")
+            technical_name = SHELL_CALL.upper().replace("-", "_")
+            completion = check_output([str(Path(self.install_scripts) / SHELL_CALL)], env={
+                f"_{technical_name}_COMPLETE": f"{shell}_source"
+            })
+            if path.exists():
+                if os.access(path, os.W_OK):
+                    (path / SHELL_CALL).write_bytes(completion)
+                    return
+
+            if not (path / NAME).exists():
+                rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
+                if not rc.exists():
+                    return
+                complete_file = rc.parent / f'.{SHELL_CALL}-completion.sh'
+                complete_file.write_bytes(completion)
+                if complete_file.name not in rc.read_text():
+                    content = rc.read_text()
+                    content += '\nsource ~/' + complete_file.name
+                    rc.write_text(content)
+
+        setup_for_shell_generic('zsh')
+        setup_for_shell_generic('bash')
+        setup_for_shell_generic('fish')
+
+
 
 def get_data_files():
     data_files = []
