@@ -110,12 +110,18 @@ class InstallCommand(install):
         self.download_artefacts()
 
     def download_artefacts(self):
-        raise Exception(self.__dict__.keys())
+        path = Path(self.install_lib) / NAME
+        path_robot_artefacts = path / 'images' / 'robot' / 'artefacts'
+        path_robot_artefacts.mkdir(exist_ok=True)
+        self.download_file_and_move('https://github.com/marcwimmer/chromedrivers/raw/2021-12/chromedriver_amd64.zip', path_robot_artefacts)
+        self.download_file_and_move('https://github.com/marcwimmer/chromedrivers/raw/2021-12/googlechrome_amd64.deb', path_robot_artefacts)
 
-        download_file('https://github.com/marcwimmer/chromedrivers/raw/2021-12/chromedriver_amd64.zip').rename()
-        download_file('https://github.com/marcwimmer/chromedrivers/raw/2021-12/googlechrome_amd64.deb').rename()
+    def download_file_and_move(self, url, dest_parent_path):
+        file = self.download_file(url)
+        file.rename(Path(dest_parent_path) / file.name)
 
     def download_file(self, url):
+        print(f"Downloading {url}")
         local_filename = url.split('/')[-1]
         with requests.get(url, stream=True) as r:
             with open(local_filename, 'wb') as f:
