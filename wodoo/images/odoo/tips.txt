@@ -1,8 +1,0 @@
-  * just debug:
-	* debug
-
-  * emulate real run:
-    * run.py
-
-  * open shell:
-    * shell.py

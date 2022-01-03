@@ -1,5 +1,0 @@
-RUN_ASTERISK_CONNECTOR=0
-
-#connection to odoo phonebox module
-PHONEBOX_ODOO_USER=admin
-PHONEBOX_ODOO_PASSWORD=1

@@ -1,9 +1,0 @@
-#manage-order 1500
-version: '3.3'
-volumes:
-    redis_persistent_data:
-services:
-  redis:
-    image: redis
-    volumes: 
-      - redis_persistent_data:/data

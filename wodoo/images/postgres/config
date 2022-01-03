@@ -1,3 +1,0 @@
-max_connections=1000
-logging_collector=on
-track_activity_query_size=16384

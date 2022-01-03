@@ -1,5 +1,0 @@
-# manage-order: 500
-services:
-  pgtools:
-    build: $ODOO_HOME/images/pgtools
-    stdin_open: true

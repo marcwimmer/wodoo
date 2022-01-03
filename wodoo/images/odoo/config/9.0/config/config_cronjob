@@ -1,5 +1,0 @@
-[options]
-max_cron_threads = __ODOO_MAX_CRON_THREADS__
-xmlrpc = False
-xmlrpcs = False
-netrpc = False

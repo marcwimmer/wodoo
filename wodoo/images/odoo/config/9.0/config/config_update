@@ -1,7 +1,0 @@
-[options]
-xmlrpcs = False
-netrpc = False
-log_level = debug
-log_handler = :DEBUG
-max_cron_threads =0
-workers = 0

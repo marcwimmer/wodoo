@@ -1,2 +1,0 @@
-model_id:id,group_id:id,id,name,perm_read,perm_write,perm_create,perm_unlink
-model_log_request,group_sees_requests,access_log_request_group_sees_requests,log.request_group_sees_requests,1,0,0,0

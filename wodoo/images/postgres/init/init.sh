@@ -1,9 +1,0 @@
-#!/bin/bash
-set -e
-
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE USER root WITH superuser;
-    CREATE USER $DB_USER WITH PASSWORD '$DB_PWD' superuser;
-    CREATE DATABASE $DBNAME;
-    ALTER DATABASE $DBNAME OWNER TO $DB_USER;
-EOSQL

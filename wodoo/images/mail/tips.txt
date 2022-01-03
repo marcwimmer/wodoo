@@ -1,6 +1,0 @@
-- creates postfix server that collects all domains from subnet computers
-- redirects all mails to user postmaster
-- imap login: postmaster/postmaster (configure in install.sh chpasswd)
-- send testmail:
-	- /opt/bin/send_test_mail.sh
-	- editable in bin directory

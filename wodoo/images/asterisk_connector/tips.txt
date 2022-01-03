@@ -1,5 +1,0 @@
-For debugging run just:
-
-debug.sh
-
-(is in path)
