@@ -1,0 +1,6 @@
+{
+	"images/robot/artefacts": [
+		"https://github.com/marcwimmer/chromedrivers/raw/2021-12/chromedriver_amd64.zip",
+		"https://github.com/marcwimmer/chromedrivers/raw/2021-12/googlechrome_amd64.deb"
+	]
+}
