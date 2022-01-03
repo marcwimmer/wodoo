@@ -157,7 +157,6 @@ setup(
     data_files=get_data_files(),
     install_requires=REQUIRED,
     extras_require=EXTRAS,
-    include_package_data=True,
     # $ setup.py publish support.
     cmdclass={
         'upload': UploadCommand,
