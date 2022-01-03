@@ -57,8 +57,6 @@ def install_completion_callback(ctx, attr, value):
     def setup_for_shell_generic(shell, shell_call):
         path = Path(f"/etc/{shell}_completion.d")
         NAME = shell_call.upper().replace("-", "_")
-        if '_source' in (os.getenv(f"_{NAME}_COMPLETE") or ''):
-            sys.exit(0)
         completion = subprocess.check_output([sys.argv[0]], env={f"_{NAME}_COMPLETE": f"{shell}_source"}, shell=True)
         if path.exists():
             if os.access(path, os.W_OK):
