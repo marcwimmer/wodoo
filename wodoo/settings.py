@@ -57,7 +57,7 @@ def _collect_settings_files(config, quiet=False):
     _files = []
 
     if config.dirs:
-        _files.append(config.dirs['images'] / 'defaults')
+        _files.append(config.dirs['odoo_home'] / 'defaults')
         # optimize
         for filename in config.dirs['images'].glob("**/default.settings"):
             _files.append(config.dirs['images'] / filename)

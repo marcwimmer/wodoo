@@ -1,0 +1,31 @@
+# db access (define if you dont use RUN_POSTGRES=1)
+
+# external directory where files are stored (when using file storage); is overwritten with --local-settings flag
+ODOO_FILES=~/.odoo/files
+
+NO_QWEB_DELETE=0
+VERBOSE=0
+DEVMODE=0
+DUMPS_PATH=~/odoo_dumps
+
+DB_ODOO_FILEFORMAT={customs}.odoo.{date:%Y%m%d%H%M%S}.dump.gz
+DB_ODOO_SEARCHFORMAT={customs}.odoo.*.dump.gz
+DB_CALENDAR_FILEFORMAT={customs}.calendar.{date:%Y%m%d%H%M%S}.dump.gz
+CRONJOB_BACKUP_DAILY=0 0 * * * ${JOB_BACKUP_ODOO_DB}
+#CRONJOB_KEEP_LAST_FILE_OF_DAY=0 */1 * * * ${JOB_KEEP_LAST_FILE_OF_DAY}
+#CRONJOB_DADDY_CLEANUP=0 */1 * * * ${JOB_DADDY_CLEANUP}
+
+CRONJOB_BACKUP_DAILY_CALENDAR=0 0 * * * ${JOB_BACKUP_CALENDAR_DB}
+# CRONJOB_VACUUM=0 0 * * 0 ${JOB_VACUUM}
+CRONJOB_KILL_LONG_RUNNING=0 */15 * * 0 ${JOB_CLEAN_LONG_RUNNING_QUERIES}
+CRONJOB_KILL_DB_LOCKS=* * * * * */3 ${JOB_KILL_DB_LOCKS}
+DOCKER_MACHINE=1
+USE_DOCKER=1
+SAFE_KILL=redis,postgres
+
+PSYCOPG_TIMEOUT=30
+
+
+# set customized docker label for identifying all containers
+DOCKER_LABEL_ODOOCOMPOSE=1
+RESTART_CONTAINERS=0
