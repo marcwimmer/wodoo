@@ -4,12 +4,9 @@
 # Note: To use the 'upload' functionality of this file, you must:
 #   $ pipenv install twine --dev
 
-import shutil
 import io
 import os
 import sys
-import json
-import requests
 from glob import glob
 from shutil import rmtree
 from pathlib import Path
@@ -29,7 +26,7 @@ metadata = setup_cfg['metadata']
 
 # Package meta-data.
 # What packages are required for this module to be executed?
-REQUIRED = list(filter(bool, (current_dir / 'wodoo' / 'requirements.txt').read_text().split("\n")))
+REQUIRED = list(filter(bool, (current_dir / metadata['name'] / 'requirements.txt').read_text().split("\n")))
 
 # What packages are optional?
 EXTRAS = {
@@ -101,34 +98,6 @@ class InstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
         install.run(self)
-        self.setup_click_autocompletion()
-
-    def setup_click_autocompletion(self):
-
-        def setup_for_shell_generic(shell, shell_call):
-            path = Path(f"/etc/{shell}_completion.d")
-            completion = (Path("completions") / f"odoo.{shell}").read_bytes()
-            if path.exists():
-                if os.access(path, os.W_OK):
-                    (path / shell_call).write_bytes(completion)
-                    return
-
-            if not (path / shell_call).exists():
-                rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
-                if not rc.exists():
-                    return
-                complete_file = rc.parent / f'.{shell_call}-completion.sh'
-                complete_file.write_bytes(completion)
-                if complete_file.name not in rc.read_text():
-                    content = rc.read_text()
-                    content += '\nsource ~/' + complete_file.name
-                    rc.write_text(content)
-
-        for console_script in setup_cfg['options']['entry_points']['console_scripts']:
-            shell_call = console_script.split("=")[0].strip()
-            for console in ['zsh', 'bash', 'fish']:
-                setup_for_shell_generic(console, shell_call)
-
 
 def get_data_files():
     data_files = []
@@ -139,39 +108,45 @@ def get_data_files():
             continue
         if file.name.startswith('.'):
             continue
-        if file.name in ['requirements.txt']:
-            continue
         path = str(file.relative_to(current_dir))
         data_files.append((str(path), [path]))
 
     return data_files
 
+def _post_install(setup):
+    def _post_actions():
+        Path("/tmp/post").write_text("HI")
+    _post_actions()
+    return setup
 
 # Where the magic happens:
-setup(
-    version=about['__version__'],
-    long_description=long_description,
-    long_description_content_type='text/markdown',
-    # If your package is a single module, use this instead of 'packages':
-    #py_modules=['prlsnapshotter'],
-    data_files=get_data_files(),
-    install_requires=REQUIRED,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
-    include_package_data = True,
-    extras_require=EXTRAS,
-    # $ setup.py publish support.
-    cmdclass={
-        'upload': UploadCommand,
-        'install': InstallCommand,
-    },
-    classifiers=[
-        # Trove classifiers
-        # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-        'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy'
-    ]
+setup = _post_install(
+    setup(
+        version=about['__version__'],
+        long_description=long_description,
+        long_description_content_type='text/markdown',
+        # If your package is a single module, use this instead of 'packages':
+        #py_modules=['prlsnapshotter'],
+        data_files=get_data_files(),
+        install_requires=REQUIRED,
+        packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+        include_package_data = True,
+        extras_require=EXTRAS,
+        # $ setup.py publish support.
+        cmdclass={
+            'upload': UploadCommand,
+            'install': InstallCommand,
+        },
+        classifiers=[
+            # Trove classifiers
+            # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
+            'License :: OSI Approved :: MIT License',
+            'Programming Language :: Python',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: Implementation :: CPython',
+            'Programming Language :: Python :: Implementation :: PyPy'
+        ]
+    )
+
 )

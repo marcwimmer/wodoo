@@ -51,6 +51,32 @@ def _get_default_project_name(restrict):
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
+def install_completion_callback(ctx, attr, value):
+    def setup_for_shell_generic(shell, shell_call):
+        path = Path(f"/etc/{shell}_completion.d")
+        completion = (SCRIPT_DIRECTORY / "completions" / f"odoo.{shell}").read_bytes()
+        if path.exists():
+            if os.access(path, os.W_OK):
+                (path / shell_call).write_bytes(completion)
+                return
+
+        # if not (path / shell_call).exists():
+        #     rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
+        #     if not rc.exists():
+        #         return
+        #     complete_file = rc.parent / f'.{shell_call}-completion.sh'
+        #     complete_file.write_bytes(completion)
+        #     if complete_file.name not in rc.read_text():
+        #         content = rc.read_text()
+        #         content += '\nsource ~/' + complete_file.name
+        #         rc.write_text(content)
+
+    name = Path(sys.argv[0]).name
+    for console in ['zsh', 'bash', 'fish']:
+        setup_for_shell_generic(console, name)
+    sys.exit(0)
+
+
 @click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
 @click.option("-v", "--verbose", is_flag=True)
@@ -58,6 +84,7 @@ pass_config = click.make_pass_decorator(Config, ensure=True)
 @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
 @click.option("-p", '--project-name', help="Set Project-Name")
 @click.option("--chdir", help="Set Working Directory")
+@click.option("--install-completion", callback=install_completion_callback, expose_value=False, is_flag=True)
 @pass_config
 def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir):
     config.force = force

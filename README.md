@@ -103,3 +103,15 @@ services:
           odoo_framework.apply_env: 0  # do not apply global environment from settings here
 
 ```
+
+# How to upload new version
+
+  * increase version in setup.py
+  * one time: pipenv install twine --dev
+  ```bash
+  pipenv shell
+  pip install build
+  rm dist -Rf
+  python -m build 
+  twine upload dist/*
+  ```
