@@ -1,3 +1,0 @@
-_ODOO_COMPLETE=zsh_source odoo
-_ODOO_COMPLETE=bash_source odoo
-_ODOO_COMPLETE=fish_source odoo
