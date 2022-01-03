@@ -156,6 +156,8 @@ setup(
     #py_modules=['prlsnapshotter'],
     data_files=get_data_files(),
     install_requires=REQUIRED,
+    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    include_package_data = True,
     extras_require=EXTRAS,
     # $ setup.py publish support.
     cmdclass={

@@ -1,4 +1,3 @@
-import time
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -6,7 +5,6 @@ from .click_config import Config
 import imp
 import inspect
 import os
-import glob
 
 # from .myconfigparser import MyConfigParser  # NOQA load this module here, otherwise following lines and sublines get error
 from .init_functions import load_dynamic_modules
