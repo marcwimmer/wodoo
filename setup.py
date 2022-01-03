@@ -162,7 +162,7 @@ setup(
         'upload': UploadCommand,
         'install': InstallCommand,
     },
-    classifiers={
+    classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
         'License :: OSI Approved :: MIT License',
@@ -171,5 +171,5 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy'
-    }
+    ]
 )
