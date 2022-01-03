@@ -10,7 +10,6 @@ default_dirs = {
     'run': '${run}',
     'run/proxy': '${run}/proxy',
     'run/restore': '${run}/restore',
-    'images': 'images',
     'images/proxy': 'images/proxy',
     'telegrambot': 'config/telegrambat',
     'venv': "${run}/venv",
@@ -22,7 +21,7 @@ default_dirs = {
     'odoo_data_dir': "~/.odoo/files",
     'user_conf_dir': "~/.odoo",
     'cicd_delegator': '~/.odoo/cicd_delegator',
-    'artefacts_temp': '~/.odoo/artefacts',
+    'images': '~/.odoo/images',
 }
 
 default_files = {

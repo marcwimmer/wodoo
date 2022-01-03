@@ -149,19 +149,6 @@ def attach(ctx, config, machine):
         from .lib_control_with_docker import attach as lib_attach
     lib_attach(ctx, config, machine)
 
-def download_artefacts(config):
-    """
-    Searches for .artefacts files and downloads the content
-    """
-    config.dirs['artefacts_temp'].mkdir(exist_ok=True, parents=True)
-    for artefact_file in config.dirs['images'].glob("**/.artefacts"):
-        artefacts = json.loads(artefact_file.read_text())
-        for path, files in artefacts.items():
-            for file in files:
-                dest = config.dirs['artefacts_temp'] / Path(file).name
-                if not dest.exists():
-                    download_file_and_move(file, dest)
-
 @docker.command()
 @click.argument('machines', nargs=-1)
 @click.option('--no-cache', is_flag=True)
@@ -172,7 +159,6 @@ def download_artefacts(config):
 def build(ctx, config, machines, pull, no_cache, push):
     if config.use_docker:
         from .lib_control_with_docker import build as lib_build
-    download_artefacts(config)
     lib_build(ctx, config, machines, pull, no_cache, push)
 
 @docker.command()

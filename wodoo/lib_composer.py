@@ -71,6 +71,7 @@ def config(ctx, config, service_name, full=True):
 
 
 @composer.command(name='reload', help="Switches to project in current working directory.")
+@click.option('-i', '--images-url', default="https://github.com/marcwimmer/wodoo-images")
 @click.option("--demo", is_flag=True, help="Enabled demo data.")
 @click.option("-d", "--db", required=False)
 @click.option("-p", "--proxy-port", required=False)
@@ -80,8 +81,9 @@ def config(ctx, config, service_name, full=True):
 @click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config, images_url):
     from .myconfigparser import MyConfigParser
+    config.images_url = images_url
 
     if headless and proxy_port:
         click.secho("Proxy Port and headless together not compatible.", fg='red')
@@ -181,6 +183,7 @@ def _do_compose(config, db='', demo=False, **forced_values):
     click.secho(f"*****************************************************", fg='yellow')
 
     defaults = {}
+    _download_images(config)
     _set_defaults(config, defaults)
     setup_settings_file(config, db, demo, **defaults)
     _export_settings(config, forced_values)
@@ -190,6 +193,16 @@ def _do_compose(config, db='', demo=False, **forced_values):
     _prepare_yml_files_from_template_files(config)
 
     click.echo("Built the docker-compose file.")
+
+def _download_images(config):
+    if not config.dirs['images'].exists():
+        subprocess.run([
+            "git",
+            "clone",
+            config.images_url,
+            config.dirs['images']
+        ])
+    subprocess.run(["git", "pull"], cwd=config.dirs['images'])
 
 
 def _prepare_filesystem(config):

@@ -1,9 +1,6 @@
 from collections import ChainMap
-import sys
-import psutil
 import importlib
 import os
-import subprocess
 from pathlib import Path
 from .myconfigparser import MyConfigParser  # NOQA
 try:

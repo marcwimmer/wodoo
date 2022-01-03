@@ -38,27 +38,26 @@ def _export_settings(config, forced_values):
     from . import odoo_config
     from .myconfigparser import MyConfigParser
 
-    if not config.files['settings'].exists():
-        raise Exception("Please call ./odoo compose <CUSTOMS> initially.")
-
     setting_files = _collect_settings_files(config)
     _make_settings_file(config.files['settings'], setting_files)
     # constants
-    config = MyConfigParser(config.files['settings'])
-    if 'OWNER_UID' not in config.keys():
+    settings = MyConfigParser(config.files['settings'])
+    if 'OWNER_UID' not in settings.keys():
         config['OWNER_UID'] = str(os.getenv("SUDO_UID", os.getuid()))
 
     # forced values:
     for k, v in forced_values.items():
-        config[k] = v
+        settings[k] = v
 
-    config.write()
+    settings['ODOO_IMAGES'] = config.dirs['images']
+
+    settings.write()
 
 def _collect_settings_files(config, quiet=False):
     _files = []
 
     if config.dirs:
-        _files.append(config.dirs['odoo_home'] / 'images/defaults')
+        _files.append(config.dirs['images'] / 'defaults')
         # optimize
         for filename in config.dirs['images'].glob("**/default.settings"):
             _files.append(config.dirs['images'] / filename)
