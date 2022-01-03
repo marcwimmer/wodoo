@@ -102,6 +102,11 @@ class UploadCommand(Command):
 
         sys.exit()
 
+class UninstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        install.run(self)
+        raise Exception('stop1')
 class InstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
@@ -133,10 +138,7 @@ class InstallCommand(install):
 
         def setup_for_shell_generic(shell):
             path = Path(f"/etc/{shell}_completion.d")
-            technical_name = SHELL_CALL.upper().replace("-", "_")
-            completion = check_output([str(Path(self.install_scripts) / SHELL_CALL)], env={
-                f"_{technical_name}_COMPLETE": f"{shell}_source"
-            })
+            completion = (Path("completions") / f"odoo.{shell}").read_bytes()
             if path.exists():
                 if os.access(path, os.W_OK):
                     (path / SHELL_CALL).write_bytes(completion)
@@ -172,7 +174,7 @@ def get_data_files():
         if file.name in ['requirements.txt']:
             continue
         path = str(file.relative_to(current_dir))
-        data_files.append((str(PREFIX / path), [path]))
+        data_files.append((str(path), [path]))
 
     return data_files
 

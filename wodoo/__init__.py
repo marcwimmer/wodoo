@@ -7,6 +7,7 @@ import imp
 import inspect
 import os
 import glob
+
 # from .myconfigparser import MyConfigParser  # NOQA load this module here, otherwise following lines and sublines get error
 from .init_functions import load_dynamic_modules
 from .init_functions import _get_customs_root
@@ -52,12 +53,22 @@ def _get_default_project_name(restrict):
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
+def install_callback(ctx, attr, value):
+    if not value or ctx.resilient_parsing:
+        return value
+    shell, path = click_completion.core.install()
+    click.echo('%s completion installed in %s' % (shell, path))
+    exit(0)
+os.environ['BASH_COMP'] = 'complete'
+
 @click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
 @click.option("-v", "--verbose", is_flag=True)
 @click.option("-xs", '--restrict-setting', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
 @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
 @click.option("-p", '--project-name', help="Set Project-Name")
+@click.option('--install', is_flag=True, callback=install_callback, expose_value=False,
+              help="Install completion for the current shell.")
 @click.option("--chdir", help="Set Working Directory")
 @pass_config
 def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir):
