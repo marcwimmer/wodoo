@@ -98,7 +98,7 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
         except NoProjectNameException:
             config.project_name = ""
     os.environ['project_name'] = config.project_name
-    os.environ['docker_compose'] = str(config.files['docker_compose'])
+    os.environ['docker_compose'] = str(config.files['docker_compose']) or ''
 
     load_dynamic_modules(config.dirs['images'])
 
