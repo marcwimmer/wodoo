@@ -93,7 +93,10 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
     if project_name:
         config.project_name = project_name
     else:
-        config.project_name = _get_default_project_name(config.restrict['settings'])
+        try:
+            config.project_name = _get_default_project_name(config.restrict['settings'])
+        except NoProjectNameExceptionj:
+            pass
     os.environ['project_name'] = config.project_name
     os.environ['docker_compose'] = str(config.files['docker_compose'])
 
