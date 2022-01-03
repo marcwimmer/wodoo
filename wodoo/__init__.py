@@ -29,6 +29,8 @@ Commands = GlobalCommands()
 os.environ['HOST_HOME'] = os.getenv("HOME", "")
 os.environ['ODOO_HOME'] = str(SCRIPT_DIRECTORY)
 
+class NoProjectNameException(Exception): pass
+
 def _get_default_project_name(restrict):
     def _get_project_name_from_file(path):
         if not path.exists():
@@ -51,7 +53,7 @@ def _get_default_project_name(restrict):
         root = Path(customs_root)
         if (root / "MANIFEST").exists():
             return root.name
-    raise Exception("No default project name could be determined.")
+    raise NoProjectNameException("No default project name could be determined.")
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
