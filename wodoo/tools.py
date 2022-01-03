@@ -871,3 +871,16 @@ def search_env_path(executable_file):
     if res:
         return res[0]
     raise Exception(f"Not found: {executable_file}")
+
+def download_file_and_move(self, url, dest_parent_path):
+    file = self.download_file(url)
+    file.rename(Path(dest_parent_path) / file.name)
+
+def download_file(self, url):
+    print(f"Downloading {url}")
+    local_filename = url.split('/')[-1]
+    with requests.get(url, stream=True) as r:
+        with open(local_filename, 'wb') as f:
+            shutil.copyfileobj(r.raw, f)
+
+    return Path(local_filename)
