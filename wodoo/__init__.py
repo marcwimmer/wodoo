@@ -60,16 +60,16 @@ def install_completion_callback(ctx, attr, value):
                 (path / shell_call).write_bytes(completion)
                 return
 
-        # if not (path / shell_call).exists():
-        #     rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
-        #     if not rc.exists():
-        #         return
-        #     complete_file = rc.parent / f'.{shell_call}-completion.sh'
-        #     complete_file.write_bytes(completion)
-        #     if complete_file.name not in rc.read_text():
-        #         content = rc.read_text()
-        #         content += '\nsource ~/' + complete_file.name
-        #         rc.write_text(content)
+        if not (path / shell_call).exists():
+            rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
+            if not rc.exists():
+                return
+            complete_file = rc.parent / f'.{shell_call}-completion.sh'
+            complete_file.write_bytes(completion)
+            if complete_file.name not in rc.read_text():
+                content = rc.read_text()
+                content += '\nsource ~/' + complete_file.name
+                rc.write_text(content)
 
     name = Path(sys.argv[0]).name
     for console in ['zsh', 'bash', 'fish']:
