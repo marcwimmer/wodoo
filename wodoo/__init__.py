@@ -46,9 +46,11 @@ def _get_default_project_name(restrict):
         if pj:
             return pj
 
-    root = Path(_get_customs_root(Path(os.getcwd())))
-    if (root / "MANIFEST").exists():
-        return root.name
+    customs_root = _get_customs_root(Path(os.getcwd()))
+    if customs_root:
+        root = Path(customs_root)
+        if (root / "MANIFEST").exists():
+            return root.name
     raise Exception("No default project name could be determined.")
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
