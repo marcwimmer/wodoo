@@ -97,45 +97,11 @@ class UploadCommand(Command):
 
         sys.exit()
 
-class UninstallCommand(install):
-    """Post-installation for installation mode."""
-    def run(self):
-        install.run(self)
-        raise Exception('stop1')
 class InstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
         install.run(self)
         self.setup_click_autocompletion()
-        self.download_artefacts()
-
-    def download_artefacts(self):
-        path = Path("artefacts")
-        if not path.exists():
-            return
-        artefacts = json.loads(path.read_text())
-        base_path = Path(self.install_lib) / metadata['name']
-        for path, files in artefacts.items():
-            path = base_path / path
-            path.mkdir(exist_ok=True, parents=True)
-            for file in files:
-                self.download_file_and_move(
-                    file,
-                    path
-                )
-
-    def download_file_and_move(self, url, dest_parent_path):
-        file = self.download_file(url)
-        file.rename(Path(dest_parent_path) / file.name)
-
-    def download_file(self, url):
-        print(f"Downloading {url}")
-        local_filename = url.split('/')[-1]
-        with requests.get(url, stream=True) as r:
-            with open(local_filename, 'wb') as f:
-                shutil.copyfileobj(r.raw, f)
-
-        return Path(local_filename)
 
     def setup_click_autocompletion(self):
 
