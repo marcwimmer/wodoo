@@ -1,10 +1,12 @@
 import sys
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from .click_config import Config
 import imp
 import inspect
 import os
+import shellingham
 
 # from .myconfigparser import MyConfigParser  # NOQA load this module here, otherwise following lines and sublines get error
 from .init_functions import load_dynamic_modules
@@ -54,7 +56,10 @@ pass_config = click.make_pass_decorator(Config, ensure=True)
 def install_completion_callback(ctx, attr, value):
     def setup_for_shell_generic(shell, shell_call):
         path = Path(f"/etc/{shell}_completion.d")
-        completion = (SCRIPT_DIRECTORY / "completions" / f"odoo.{shell}").read_bytes()
+        NAME = shell_call.upper().replace("-", "_")
+        if '_source' in (os.getenv(f"_{NAME}_COMPLETE") or ''):
+            sys.exit(0)
+        completion = subprocess.check_output([sys.argv[0]], env={f"_{NAME}_COMPLETE": f"{shell}_source"}, shell=True)
         if path.exists():
             if os.access(path, os.W_OK):
                 (path / shell_call).write_bytes(completion)
@@ -72,8 +77,7 @@ def install_completion_callback(ctx, attr, value):
                 rc.write_text(content)
 
     name = Path(sys.argv[0]).name
-    for console in ['zsh', 'bash', 'fish']:
-        setup_for_shell_generic(console, name)
+    setup_for_shell_generic(shellingham.detect_shell()[0], name)
     sys.exit(0)
 
 
@@ -84,9 +88,12 @@ def install_completion_callback(ctx, attr, value):
 @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
 @click.option("-p", '--project-name', help="Set Project-Name")
 @click.option("--chdir", help="Set Working Directory")
-@click.option("--install-completion", callback=install_completion_callback, expose_value=False, is_flag=True)
+@click.option("--install-completion", is_flag=True)
 @pass_config
-def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir):
+def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir, install_completion):
+    if install_completion:
+        install_completion_callback()
+        return
     config.force = force
     config.verbose = verbose
     config.restrict = {}
@@ -117,6 +124,7 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
     os.environ['project_name'] = config.project_name
     os.environ['docker_compose'] = str(config.files['docker_compose'])
 
+    load_dynamic_modules(config.dirs['images'])
 
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
@@ -131,11 +139,8 @@ from . import lib_src # NOQA
 from . import lib_docker_registry # NOQA
 from . import lib_venv # NOQA
 from . import lib_turnintodev # NOQA
-# from . import lib_setup # NOQA
 
 # import container specific commands
 from .tools import abort # NOQA
 from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
-
-load_dynamic_modules((SCRIPT_DIRECTORY / 'images'))

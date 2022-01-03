@@ -114,4 +114,5 @@ services:
   rm dist -Rf
   python -m build 
   twine upload dist/*
+  exit
   ```

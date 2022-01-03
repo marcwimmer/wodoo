@@ -18,4 +18,4 @@ iscompatible
 buttervolume>=3.7
 pudb
 gimera
-click_completion
+shellingham
