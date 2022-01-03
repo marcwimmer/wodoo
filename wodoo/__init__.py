@@ -53,31 +53,6 @@ def _get_default_project_name(restrict):
 
 pass_config = click.make_pass_decorator(Config, ensure=True)
 
-def install_completion_callback(ctx, attr, value):
-    def setup_for_shell_generic(shell, shell_call):
-        path = Path(f"/etc/{shell}_completion.d")
-        NAME = shell_call.upper().replace("-", "_")
-        completion = subprocess.check_output([sys.argv[0]], env={f"_{NAME}_COMPLETE": f"{shell}_source"}, shell=True)
-        if path.exists():
-            if os.access(path, os.W_OK):
-                (path / shell_call).write_bytes(completion)
-                return
-
-        if not (path / shell_call).exists():
-            rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
-            if not rc.exists():
-                return
-            complete_file = rc.parent / f'.{shell_call}-completion.sh'
-            complete_file.write_bytes(completion)
-            if complete_file.name not in rc.read_text():
-                content = rc.read_text()
-                content += '\nsource ~/' + complete_file.name
-                rc.write_text(content)
-
-    name = Path(sys.argv[0]).name
-    setup_for_shell_generic(shellingham.detect_shell()[0], name)
-    sys.exit(0)
-
 
 @click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
@@ -86,12 +61,8 @@ def install_completion_callback(ctx, attr, value):
 @click.option("-xd", '--restrict-docker-compose', multiple=True, help="Several parameters; limit to special configuration files settings and docker-compose files. All other configuration files will be ignored.")
 @click.option("-p", '--project-name', help="Set Project-Name")
 @click.option("--chdir", help="Set Working Directory")
-@click.option("--install-completion", is_flag=True)
 @pass_config
-def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir, install_completion):
-    if install_completion:
-        install_completion_callback()
-        return
+def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_compose, chdir):
     config.force = force
     config.verbose = verbose
     config.restrict = {}
@@ -142,3 +113,29 @@ from . import lib_turnintodev # NOQA
 from .tools import abort # NOQA
 from .tools import __dcrun # NOQA
 from .tools import __dc # NOQA
+
+@cli.command()
+def install_completion():
+    def setup_for_shell_generic(shell, shell_call):
+        path = Path(f"/etc/{shell}_completion.d")
+        NAME = shell_call.upper().replace("-", "_")
+        completion = subprocess.check_output([sys.argv[0]], env={f"_{NAME}_COMPLETE": f"{shell}_source"}, shell=True)
+        if path.exists():
+            if os.access(path, os.W_OK):
+                (path / shell_call).write_bytes(completion)
+                return
+
+        if not (path / shell_call).exists():
+            rc = Path(os.path.expanduser("~")) / f'.{shell}rc'
+            if not rc.exists():
+                return
+            complete_file = rc.parent / f'.{shell_call}-completion.sh'
+            complete_file.write_bytes(completion)
+            if complete_file.name not in rc.read_text():
+                content = rc.read_text()
+                content += '\nsource ~/' + complete_file.name
+                rc.write_text(content)
+
+    name = Path(sys.argv[0]).name
+    setup_for_shell_generic(shellingham.detect_shell()[0], name)
+    sys.exit(0)
