@@ -22,6 +22,7 @@ default_dirs = {
     'odoo_data_dir': "~/.odoo/files",
     'user_conf_dir': "~/.odoo",
     'cicd_delegator': '~/.odoo/cicd_delegator',
+    'artefacts_temp': '~/.odoo/artefacts',
 }
 
 default_files = {

@@ -1,4 +1,5 @@
 import platform
+import requests
 import stat
 from contextlib import contextmanager
 import re
@@ -872,11 +873,11 @@ def search_env_path(executable_file):
         return res[0]
     raise Exception(f"Not found: {executable_file}")
 
-def download_file_and_move(self, url, dest_parent_path):
-    file = self.download_file(url)
-    file.rename(Path(dest_parent_path) / file.name)
+def download_file_and_move(url, dest):
+    file = download_file(url)
+    file.rename(dest)
 
-def download_file(self, url):
+def download_file(url):
     print(f"Downloading {url}")
     local_filename = url.split('/')[-1]
     with requests.get(url, stream=True) as r:

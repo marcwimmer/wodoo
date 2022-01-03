@@ -4,7 +4,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import execute_script
 import subprocess
 import json
-from tools import download_file_and_move
+from .tools import download_file_and_move
 from pathlib import Path
 
 @cli.group(cls=AliasedGroup)
@@ -153,15 +153,14 @@ def download_artefacts(config):
     """
     Searches for .artefacts files and downloads the content
     """
-    for file in config.dirs['images'].glob("**/.artefacts"):
-        artefacts = json.loads(path.read_text())
+    config.dirs['artefacts_temp'].mkdir(exist_ok=True, parents=True)
+    for artefact_file in config.dirs['images'].glob("**/.artefacts"):
+        artefacts = json.loads(artefact_file.read_text())
         for path, files in artefacts.items():
-            path = artefacts.parent / path
-            path.mkdir(exist_ok=True, parents=True)
             for file in files:
-                file = path / file
-                if not file.exists():
-                    download_file_and_move(file, path)
+                dest = config.dirs['artefacts_temp'] / Path(file).name
+                if not dest.exists():
+                    download_file_and_move(file, dest)
 
 @docker.command()
 @click.argument('machines', nargs=-1)

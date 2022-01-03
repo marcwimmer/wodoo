@@ -33,7 +33,7 @@ def after_compose(config, settings, yml, globals):
     python_tgz = Path(dir) / 'python' / f"Python-{settings['ODOO_PYTHON_VERSION']}.tgz"
     if not python_tgz.exists():
         PYVERSION = settings['ODOO_PYTHON_VERSION']
-        click.secho(f"Execute:\nwget https://www.python.org/ftp/python/{PYVERSION}/Python-{PYVERSION}.tgz -P {python_tgz.parent}", fg='red')
+        click.secho(f"Append python version in images/odoo/.artefacts: {PYVERSION}", fg='red')
         sys.exit(-1)
 
     PYTHON_VERSION = tuple([int(x) for x in config.ODOO_PYTHON_VERSION.split(".")])
