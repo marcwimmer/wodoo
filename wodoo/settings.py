@@ -43,7 +43,7 @@ def _export_settings(config, forced_values):
     # constants
     settings = MyConfigParser(config.files['settings'])
     if 'OWNER_UID' not in settings.keys():
-        config['OWNER_UID'] = str(os.getenv("SUDO_UID", os.getuid()))
+        settings['OWNER_UID'] = str(os.getenv("SUDO_UID", os.getuid()))
 
     # forced values:
     for k, v in forced_values.items():
