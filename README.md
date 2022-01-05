@@ -29,6 +29,7 @@ odoo install-completion
 ### Give sudo rights
 
 To be not blocked when working on btrfs volumes and so, this is suggested on dev machines:
+
 ```bash
 > /usr/local/sbin/odoo <EOF
 #!/bin/bash
