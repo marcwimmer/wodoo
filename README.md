@@ -18,40 +18,46 @@ Provides functionalities:
 
 ## How to install
 
-- clone repository to /opt/odoo
+### Install minimum
+
+```bash
+# as root:
+pip3 install wodoo
+odoo install-completion
+```
+
+### Give sudo rights
+
+To be not blocked when working on btrfs volumes and so, this is suggested on dev machines:
+```bash
 - make a bin file /usr/local/bin/odoo and chmod a+x
 
 ```bash
+> /usr/local/sbin/odoo <EOF
 #!/bin/bash
 sudo -E /opt/odoo/odoo "$@"
+EOF
 ```
 
-- make entry `/etc/sudoers.d/odoo
-
 ```bash
+> /etc/sudoers.d/odoo <EOF
 Cmnd_Alias ODOO_COMMANDS_ODOO = /usr/bin/find *, /opt/odoo/odoo *, /usr/bin/btrfs subvolume *, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rsync *, /usr/bin/rm *,  /usr/bin/du *, /usr/local/bin/odoo *, /opt/odoo/odoo *, /usr/bin/btrfs subvol show *, /usr/sbin/gosu *
 odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
+
+EOF
 ```
 
-## Make new empty odoo
-
-- make an empty directory and cd into it
-- then:
+## Make new empty odoo instance
 
 ```bash
-odoo init
-```
-
-- You will be asked for a version, then building begins
-- After that:
-
-```bash
+odoo init <folder>
+cd <folder>
 odoo reload
 odoo -f db reset
 odoo up -d
-```
 
-- Then you should see the odoo instance empty at ```http://localhost:80```
+# now open browser on http://localhost
+```
 
 ## Store settings not in ~/.odoo but local inside the current directory in .odoo
 
