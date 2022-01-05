@@ -30,13 +30,12 @@ odoo install-completion
 
 To be not blocked when working on btrfs volumes and so, this is suggested on dev machines:
 ```bash
-- make a bin file /usr/local/bin/odoo and chmod a+x
-
-```bash
 > /usr/local/sbin/odoo <EOF
 #!/bin/bash
 sudo -E /opt/odoo/odoo "$@"
 EOF
+
+chmod a+x /usr/local/sbin/odoo
 ```
 
 ```bash
