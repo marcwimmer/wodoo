@@ -14,7 +14,7 @@ from setuptools.config import read_configuration
 
 from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
-from subprocess import check_call, check_output
+import subprocess
 
 import inspect
 import os
@@ -150,14 +150,4 @@ setup(
             'upload': UploadCommand,
             'install': InstallCommand,
         },
-        classifiers=[
-            # Trove classifiers
-            # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
-            'License :: OSI Approved :: MIT License',
-            'Programming Language :: Python',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: Implementation :: CPython',
-            'Programming Language :: Python :: Implementation :: PyPy'
-        ]
 )
