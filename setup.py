@@ -104,6 +104,20 @@ class InstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
         install.run(self)
+        self.setup_click_autocompletion()
+
+    def setup_click_autocompletion(self):
+        for console_script in setup_cfg['options']['entry_points']['console_scripts']:
+            console_call = console_script.split("=")[0].strip()
+
+            # if click completion helper is fresh installed and not available now
+            subprocess.run(["pip3", "install", "click-completion-helper"])
+            subprocess.run([
+                "click-completion-helper",
+                "setup",
+                console_call,
+            ])
+
 
 def get_data_files():
     data_files = []
@@ -119,15 +133,8 @@ def get_data_files():
 
     return data_files
 
-def _post_install(setup):
-    def _post_actions():
-        Path("/tmp/post").write_text("HI")
-    _post_actions()
-    return setup
-
 # Where the magic happens:
-setup = _post_install(
-    setup(
+setup(
         version=about['__version__'],
         long_description=long_description,
         long_description_content_type='text/markdown',
@@ -153,6 +160,4 @@ setup = _post_install(
             'Programming Language :: Python :: Implementation :: CPython',
             'Programming Language :: Python :: Implementation :: PyPy'
         ]
-    )
-
 )
