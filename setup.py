@@ -22,7 +22,7 @@ from pathlib import Path
 current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 setup_cfg = read_configuration("setup.cfg")
 metadata = setup_cfg['metadata']
-
+NAME = metadata['name']
 
 # Package meta-data.
 # What packages are required for this module to be executed?
@@ -75,15 +75,19 @@ class UploadCommand(Command):
     def finalize_options(self):
         pass
 
+    def clear_builds(self):
+        for path in ['dist', 'build', NAME.replace("-", "_") + ".egg-info"]:
+            try:
+                self.status(f'Removing previous builds from {path}')
+                rmtree(os.path.join(here, path))
+            except OSError:
+                pass
+
     def run(self):
-        try:
-            self.status('Removing previous builds…')
-            rmtree(os.path.join(here, 'dist'))
-        except OSError:
-            pass
+        self.clear_builds()
 
         self.status('Building Source and Wheel (universal) distribution…')
-        os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
+        os.system('{0} setup.py sdist'.format(sys.executable))
 
         self.status('Uploading the package to PyPI via Twine…')
         os.system('twine upload dist/*')
@@ -91,6 +95,8 @@ class UploadCommand(Command):
         self.status('Pushing git tags…')
         os.system('git tag v{0}'.format(about['__version__']))
         os.system('git push --tags')
+
+        self.clear_builds()
 
         sys.exit()
 
