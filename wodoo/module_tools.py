@@ -1032,13 +1032,26 @@ class Module(object):
         for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
             to_remove.getparent().remove(to_remove)
 
-        if not doc.xpath("//link| //script"):
-            if filepath.exists():
-                filepath.unlink()
+        if current_version() >= 15.0:
+            manifest = self.path / '__manifest__.py'
+            yml = eval(manifest.read_text())
+            yml.setdefault('assets', {})
+            for asset_name, files in files_per_assets.items():
+                yml['assets'].setdefault(asset_name, [])
+                for files in files.values():
+                    for file in files:
+                        if file not in yml['assets'][asset_name]:
+                            yml['assets'][asset_name].append(file)
+                del file
+            manifest.write_text(str(yml))
         else:
-            filepath.parent.mkdir(exist_ok=True)
-            with filepath.open('wb') as f:
-                f.write(etree.tostring(doc, pretty_print=True))
+            if not doc.xpath("//link| //script"):
+                if filepath.exists():
+                    filepath.unlink()
+            else:
+                filepath.parent.mkdir(exist_ok=True)
+                with filepath.open('wb') as f:
+                    f.write(etree.tostring(doc, pretty_print=True))
 
     def get_all_files_of_module(self):
         for file in self.path.glob("**/*"):
@@ -1064,8 +1077,9 @@ class Module(object):
 
         mod[DATA_NAME] = []
         mod["demo"] = []
-        mod["css"] = []
-        mod['qweb'] = []
+        if current_version() <= 13.0:
+            mod["css"] = []
+            mod['qweb'] = []
         is_web = False
 
         for local_path in all_files:
@@ -1078,20 +1092,23 @@ class Module(object):
                     # contains qweb file
                     is_web = True
                     if local_path.suffix == '.xml':
-                        mod['qweb'].append(str(local_path))
+                        if mod.get('qweb'):
+                            mod['qweb'].append(str(local_path))
                 else:
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == '.js':
                 pass
             elif local_path.suffix in ['.css', '.less', '.scss']:
-                mod["css"].append(str(local_path))
+                if mod.get('css'):
+                    mod["css"].append(str(local_path))
 
         # keep test empty: use concrete call to test-file instead of testing on every module update
         mod["test"] = []
 
         # sort
         mod[DATA_NAME].sort()
-        mod["css"].sort()
+        if mod.get('css'):
+            mod["css"].sort()
         if 'depends' in mod:
             mod["depends"].sort()
 

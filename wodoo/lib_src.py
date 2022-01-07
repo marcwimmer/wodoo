@@ -106,6 +106,13 @@ def update_addons_path():
     m.rewrite()
 
 @src.command()
+@click.argument('name')
+def update_module_file(name):
+    from .module_tools import Module
+    module = Module.get_by_name(name)
+    module.update_module_file()
+
+@src.command()
 @pass_config
 def setup_venv(config):
     dir = customs_dir()

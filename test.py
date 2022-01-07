@@ -7,7 +7,7 @@ import inspect
 import os
 from pathlib import Path
 current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
-os.environ['PYTHONPATH'] = str(current_dir / 'framework')
+os.environ['PYTHONPATH'] = str(current_dir / 'wodoo')
 
 from wodoo import cli
 if __name__ == '__main__':
