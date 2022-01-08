@@ -29,24 +29,10 @@ setup_cfg = read_configuration("setup.cfg")
 metadata = setup_cfg['metadata']
 NAME = metadata['name']
 
-# Package meta-data.
-# What packages are required for this module to be executed?
 REQUIRED = list(filter(bool, (current_dir / metadata['name'] / 'requirements.txt').read_text().split("\n")))
-
-# What packages are optional?
-EXTRAS = {
-    # 'fancy feature': ['django'],
-}
-
-# The rest you shouldn't have to touch too much :)
-# ------------------------------------------------
-# Except, perhaps the License and Trove Classifiers!
-# If you do change the License, remember to change the Trove Classifier for that!
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-# Import the README and use it as the long-description.
-# Note: this will only work if 'README.md' is present in your MANIFEST.in file!
 try:
     with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
         long_description = '\n' + f.read()
@@ -149,7 +135,6 @@ setup(
         install_requires=REQUIRED,
         packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
         include_package_data = True,
-        extras_require=EXTRAS,
         # $ setup.py publish support.
         cmdclass={
             'upload': UploadCommand,
