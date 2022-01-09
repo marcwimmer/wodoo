@@ -498,12 +498,17 @@ def __try_to_set_owner(UID, path, recursive=False, autofix=False):
                 return
 
             runs = ['sudo'] if os.getenv("SUDO_UID") else ['', 'sudo']
-            for run in runs:
+            for irun, run in enumerate(runs):
                 # dont set to UID:UID --> group not necessarily matches user id
                 for line in res:
                     if not line: continue
                     GID = os.stat(line).st_gid
-                    os.chown(line, UID, GID)
+                    try:
+                        os.chown(line, UID, GID)
+                    except:
+                        click.secho(traceback.format_stack())
+                        click.secho(f"Could not set owner {UID} {GID} on directory {line}")
+                        sys.exit(-1)
 
         finally:
             if filename.exists():

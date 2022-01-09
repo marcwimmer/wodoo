@@ -133,8 +133,6 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
             'RUN_MAIL': 1,
             'RUN_CUPS': 0,
         })
-        if str(os.getenv("SUOD_UID", os.getuid())) == "0":
-            defaults.update({'OWNER_UID': 1000})
     if proxy_port:
         defaults['PROXY_PORT'] = proxy_port
     if mailclient_gui_port:

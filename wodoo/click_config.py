@@ -72,10 +72,6 @@ class Config(object):
     def forced(self):
         return Config.Forced(self)
 
-    def _get_default_value(self, name_lower):
-        if name_lower == 'owner_uid':
-            return os.getuid()
-
     def __getattribute__(self, name):
         try:
             value = super(Config, self).__getattribute__(name)
@@ -101,8 +97,6 @@ class Config(object):
 
                 value = myconfig.get(tries, "")
                 break
-            else:
-                value = self._get_default_value(name.lower())
 
             if convert:
                 if convert == 'asint':
