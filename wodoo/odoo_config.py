@@ -176,8 +176,6 @@ class MANIFEST_CLASS(object):
             self['version'] = float(d['version'])
 
     def _get_data(self):
-        if isinstance(self.path, str):
-            import pudb;pudb.set_trace()
         return OrderedDict(eval(self.path.read_text() or "{}"))
 
     def __getitem__(self, key):
