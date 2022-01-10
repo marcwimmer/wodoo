@@ -29,7 +29,7 @@ def odoo_module(config):
 
 @odoo_module.command(name='abort-upgrade')
 @pass_config
-def abort_upgrade():
+def abort_upgrade(config):
     click.echo("Aborting upgrade...")
     SQL = """
         UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
