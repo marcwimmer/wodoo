@@ -18,7 +18,6 @@ import subprocess
 
 import inspect
 import os
-from pathlib import Path
 
 # HACK to ignore wheel building from pip and just to source distribution
 if 'bdist_wheel' in sys.argv:
@@ -135,7 +134,6 @@ setup(
         install_requires=REQUIRED,
         packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
         include_package_data = True,
-        # $ setup.py publish support.
         cmdclass={
             'upload': UploadCommand,
             'install': InstallCommand,
