@@ -1,3 +1,4 @@
+import traceback
 import collections
 import grp
 import base64
@@ -270,10 +271,18 @@ def _execute_after_compose(config, yml):
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        module.after_compose(config, settings, yml, dict(
-            Modules=Modules(),
-            tools=tools,
-        ))
+        try:
+            module.after_compose(config, settings, yml, dict(
+                Modules=Modules(),
+                tools=tools,
+            ))
+
+        except Exception as ex:
+            msg = traceback.format_exc()
+            click.secho(f"Failed: {module.__file__}", fg='red')
+            click.secho(msg)
+            sys.exit(-1)
+
     settings.write()
     return yml
 

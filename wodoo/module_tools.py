@@ -528,6 +528,7 @@ class Modules(object):
 
     def __init__(self):
         cache_file = self._get_cache_path()
+
         if self.is_git_clean():
             if not cache_file or not cache_file.exists():
                 modules = self._get_modules()
@@ -535,7 +536,11 @@ class Modules(object):
                     cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
             else:
-                self.modules = pickle.loads(cache_file.read_bytes())
+                try:
+                    self.modules = pickle.loads(cache_file.read_bytes())
+                except:
+                    cache_file.unlink()
+                    modules = self._get_modules()
         else:
             self.modules = self._get_modules()
 
