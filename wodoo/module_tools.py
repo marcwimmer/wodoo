@@ -323,11 +323,6 @@ def make_customs(path):
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
     subprocess.call(['gimera', 'apply', '--update'], cwd=path)
-    subprocess.call([
-        'rsync',
-        '-ar',
-        str(src_dir.parent.parent / 'images' / 'odoo' / 'odoo_modules' / str(manifest['version'])) + "/",
-        'addons_tools/'], cwd=path)
 
     click.secho("Initialized - please call following now.", fg='green')
     click.secho("odoo db reset", fg='green')

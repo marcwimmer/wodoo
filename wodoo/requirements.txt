@@ -1,4 +1,4 @@
-pyyaml
+pyyaml>=5.4.1
 arrow>=0.14.6
 Click>=8.0.3
 click-default-group>=1.2.1
@@ -13,7 +13,7 @@ requests>=2.20.1
 lxml>=4.4.1
 psutil>=5.6.3
 GitPython>=3.1.11
-docker-compose==1.27.3
+docker-compose==1.29.2
 iscompatible
 buttervolume>=3.7
 pudb

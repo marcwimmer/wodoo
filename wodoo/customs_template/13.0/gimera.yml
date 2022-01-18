@@ -1,0 +1,24 @@
+repos:
+  - path: odoo
+    url: https://github.com/odoo/odoo
+    branch: "13.0"
+    type: integrated
+    patches: 
+      - odoo.patches
+
+  - path: "addons_OCA/queue"
+    url: https://github.com/OCA/queue
+    branch: "13.0"
+    type: integrated
+    patches:
+      - addons_OCA/queue.patches
+
+  - path: "addons_tools/anonymize"
+    url: https://github.com/marcwimmer/odoo-anonymize.git
+    branch: "13.0"
+    type: integrated
+
+  - path: "addons_tools/cleardb"
+    url: https://github.com/marcwimmer/odoo-cleardb.git
+    branch: "13.0"
+    type: integrated
