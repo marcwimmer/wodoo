@@ -42,7 +42,7 @@ def _get_default_project_name(restrict):
         paths = restrict
     else:
         paths = [Path(os.path.expanduser("~/.odoo/settings"))]
-    
+
     for path in paths:
         pj = _get_project_name_from_file(path)
         if pj:
