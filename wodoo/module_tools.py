@@ -340,7 +340,7 @@ def make_module(parent_path, module_name):
         raise Exception("Path already exists: {}".format(complete_path))
     odoo_root = os.environ['ODOO_HOME']
 
-    shutil.copytree(str(Path(odoo_root) / 'tools/module_template' / str(version)), complete_path)
+    shutil.copytree(str(Path(odoo_root) / 'module_template' / str(version)), complete_path)
     for root, dirs, _files in os.walk(complete_path):
         if '.git' in dirs:
             dirs.remove('.git')
