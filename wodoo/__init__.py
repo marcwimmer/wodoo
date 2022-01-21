@@ -99,6 +99,7 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
             config.project_name = ""
     os.environ['project_name'] = config.project_name
     os.environ['docker_compose'] = str(config.files.get('docker_compose')) or ''
+    os.environ['CUSTOMS_DIR'] = str(config.WORKING_DIR)
 
     load_dynamic_modules(config.dirs['images'])
 
