@@ -204,6 +204,9 @@ def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
         if '--pull' not in options:
             options += ['--pull']
 
+    if config.verbose:
+        os.environ['BUILDKIT_PROGRESS'] = 'plain'
+
     __dc(['build'] + options + list(machines), env={
         'ODOO_VERSION': config.odoo_version,  # at you developer: do not mismatch with build args
     })
