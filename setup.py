@@ -130,7 +130,6 @@ setup(
         long_description_content_type='text/markdown',
         # If your package is a single module, use this instead of 'packages':
         #py_modules=['prlsnapshotter'],
-        data_files=get_data_files(),
         install_requires=REQUIRED,
         packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
         include_package_data = True,
