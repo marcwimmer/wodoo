@@ -29,3 +29,5 @@ PSYCOPG_TIMEOUT=30
 # set customized docker label for identifying all containers
 DOCKER_LABEL_ODOOCOMPOSE=1
 RESTART_CONTAINERS=0
+IMAGES_URL=https://github.com/marcwimmer/wodoo-images
+IMAGES_BRANCH=master
