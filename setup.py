@@ -109,7 +109,7 @@ class InstallCommand(install):
             ])
 
 
-def get_data_files():
+def gcomplete_pathet_data_files():
     data_files = []
     for i, file in enumerate((current_dir / metadata['name']).rglob("*")):
         if not file.is_file():
