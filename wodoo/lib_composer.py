@@ -1,4 +1,5 @@
 import traceback
+import time
 import collections
 import grp
 import base64
@@ -201,14 +202,16 @@ def _download_images(config):
         ])
     subprocess.run(["git", "pull"], cwd=config.dirs['images'])
     branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=config.dirs['images'], encoding='utf-8').strip()
-    if branch != config.IMAGES_BRANCH:
-        if subprocess.check_output(["git", "diff", "--stat"], cwd=config.dirs['images']).strip():
-            click.secho(f"{config.dirs['images']} is dirty - cannot switch to branch {config.IMAGES_BRANCH}", fg='red')
-            sys.exit(-1)
-        subprocess.run(["git", "checkout", "-f", config.IMAGES_BRANCH], cwd=config.dirs['images'])
-        subprocess.run(["git", "clean", "-xdff"], cwd=config.dirs['images'])
-        subprocess.run(["git", "pull"], cwd=config.dirs['images'])
-
+    sha = subprocess.check_output(["git", "log", "-n1", "--pretty=format:%H"], cwd=config.dirs['images'], encoding='utf-8').strip()
+    click.secho("--------------------------------------------------")
+    click.secho(f"Images Branch: {branch}", fg='yellow')
+    click.secho(f"Images SHA: {sha}", fg='yellow')
+    if subprocess.check_output(["git", "diff", "--stat"], cwd=config.dirs['images']).strip():
+        click.secho(f"{config.dirs['images']} is dirty", fg='red')
+    else:
+        click.secho(f"Clean repository", fg='yellow')
+    click.secho("--------------------------------------------------")
+    time.sleep(1.0)
 
 
 def _prepare_filesystem(config):
