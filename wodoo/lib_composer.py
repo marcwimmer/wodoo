@@ -202,6 +202,15 @@ def _download_images(config):
             config.dirs['images']
         ])
     subprocess.run(["git", "pull"], cwd=config.dirs['images'])
+    branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=config.dirs['images'], encoding='utf-8').strip()
+    if branch != config.IMAGES_BRANCH:
+        if subprocess.check_output(["git", "diff", "--stat"], cwd=config.dirs['images']).strip():
+            click.secho(f"{config.dirs['images']} is dirty - cannot switch to branch {config.IMAGES_BRANCH}", fg='red')
+            sys.exit(-1)
+        subprocess.run(["git", "checkout", "-f", config.IMAGES_BRANCH], cwd=config.dirs['images'])
+        subprocess.run(["git", "clean", "-xdff"], cwd=config.dirs['images'])
+        subprocess.run(["git", "pull"], cwd=config.dirs['images'])
+
 
 
 def _prepare_filesystem(config):
