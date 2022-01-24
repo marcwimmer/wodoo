@@ -323,6 +323,10 @@ def make_customs(path):
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
     subprocess.call(['gimera', 'apply', '--update'], cwd=path)
+    if os.getenv("SUDO_USER"):
+        subprocess.run(["chown", os.environ['SUDO_USER'], ".", '-R'], cwd=path)
+        subprocess.run(["chgrp", os.environ['SUDO_USER'], ".", '-R'], cwd=path)
+
 
     click.secho("Initialized - please call following now.", fg='green')
     click.secho("odoo db reset", fg='green')
@@ -373,6 +377,11 @@ def make_module(parent_path, module_name):
     modules = m['install']
     modules.append(module_name)
     m['install'] = modules
+
+    # correct file permissions
+    if os.getenv("SUDO_USER"):
+        subprocess.run(["chown", os.environ['SUDO_USER'], ".", '-R'], cwd=complete_path)
+        subprocess.run(["chgrp", os.environ['SUDO_USER'], ".", '-R'], cwd=complete_path)
 
 def restart(quick):
     if quick:
