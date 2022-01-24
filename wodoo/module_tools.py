@@ -286,7 +286,7 @@ def make_customs(path):
     import inquirer
     from git import Repo
     from .tools import copy_dir_contents
-    dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+    dir = get_template_dir()
     src_dir = dir / 'customs_template'
 
     def _floatify(x):
@@ -328,6 +328,21 @@ def make_customs(path):
     click.secho("odoo db reset", fg='green')
     sys.exit(0)
 
+def get_template_dir():
+    path = Path(os.path.expanduser("~/.odoo/templates"))
+    url = 'https://github.com/marcwimmer/wodoo-templates'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        subprocess.check_call(['git', 'clone', url, path])
+    try:
+        subprocess.check_call(['git', 'pull'], cwd=path)
+    except:
+        if path.exists():
+            shutil.rmtree(path)
+        subprocess.check_call(['git', 'clone', url, path])
+    return path
+
+
 def make_module(parent_path, module_name):
     """
     Creates a new odoo module based on a provided template.
@@ -340,7 +355,8 @@ def make_module(parent_path, module_name):
         raise Exception("Path already exists: {}".format(complete_path))
     odoo_root = os.environ['ODOO_HOME']
 
-    shutil.copytree(str(Path(odoo_root) / 'module_template' / str(version)), complete_path)
+    source = get_template_dir()
+    shutil.copytree(str(source / 'module_template' / str(version)), complete_path)
     for root, dirs, _files in os.walk(complete_path):
         if '.git' in dirs:
             dirs.remove('.git')
