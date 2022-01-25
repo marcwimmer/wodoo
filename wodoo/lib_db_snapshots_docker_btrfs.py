@@ -118,8 +118,11 @@ def make_snapshot(config, name):
     # check if name already exists, and if so abort
     dest_path = path / name
     if dest_path.exists():
-        click.secho(f"Path {dest_path} already exists.", fg='red')
-        sys.exit(-1)
+        if config.force:
+            remove(config, name)
+        else:
+            click.secho(f"Path {dest_path} already exists.", fg='red')
+            sys.exit(-1)
 
     subprocess.check_output(
         _get_cmd_butter_volume() + [
