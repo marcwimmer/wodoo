@@ -286,7 +286,7 @@ def make_customs(path):
     import inquirer
     from git import Repo
     from .tools import copy_dir_contents
-    dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+    dir = get_template_dir()
     src_dir = dir / 'customs_template'
 
     def _floatify(x):
@@ -323,15 +323,29 @@ def make_customs(path):
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
     subprocess.call(['gimera', 'apply', '--update'], cwd=path)
-    subprocess.call([
-        'rsync',
-        '-ar',
-        str(src_dir.parent.parent / 'images' / 'odoo' / 'odoo_modules' / str(manifest['version'])) + "/",
-        'addons_tools/'], cwd=path)
+    if os.getenv("SUDO_USER"):
+        subprocess.run(["chown", os.environ['SUDO_USER'], ".", '-R'], cwd=path)
+        subprocess.run(["chgrp", os.environ['SUDO_USER'], ".", '-R'], cwd=path)
+
 
     click.secho("Initialized - please call following now.", fg='green')
     click.secho("odoo db reset", fg='green')
     sys.exit(0)
+
+def get_template_dir():
+    path = Path(os.path.expanduser("~/.odoo/templates"))
+    url = 'https://github.com/marcwimmer/wodoo-templates'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if not path.exists():
+        subprocess.check_call(['git', 'clone', url, path])
+    try:
+        subprocess.check_call(['git', 'pull'], cwd=path)
+    except:
+        if path.exists():
+            shutil.rmtree(path)
+        subprocess.check_call(['git', 'clone', url, path])
+    return path
+
 
 def make_module(parent_path, module_name):
     """
@@ -345,7 +359,9 @@ def make_module(parent_path, module_name):
         raise Exception("Path already exists: {}".format(complete_path))
     odoo_root = os.environ['ODOO_HOME']
 
-    shutil.copytree(str(Path(odoo_root) / 'module_template' / str(version)), complete_path)
+    source = get_template_dir()
+    shutil.copytree(str(source / 'module_template' / str(version)), complete_path)
+
     for root, dirs, _files in os.walk(complete_path):
         if '.git' in dirs:
             dirs.remove('.git')
@@ -362,6 +378,11 @@ def make_module(parent_path, module_name):
     modules = m['install']
     modules.append(module_name)
     m['install'] = modules
+
+    # correct file permissions
+    if os.getenv("SUDO_USER"):
+        subprocess.run(["chown", os.environ['SUDO_USER'], ".", '-R'], cwd=complete_path)
+        subprocess.run(["chgrp", os.environ['SUDO_USER'], ".", '-R'], cwd=complete_path)
 
 def restart(quick):
     if quick:
@@ -528,6 +549,7 @@ class Modules(object):
 
     def __init__(self):
         cache_file = self._get_cache_path()
+
         if self.is_git_clean():
             if not cache_file or not cache_file.exists():
                 modules = self._get_modules()
@@ -535,7 +557,11 @@ class Modules(object):
                     cache_file.write_bytes(pickle.dumps(modules))
                 self.modules = modules
             else:
-                self.modules = pickle.loads(cache_file.read_bytes())
+                try:
+                    self.modules = pickle.loads(cache_file.read_bytes())
+                except:
+                    cache_file.unlink()
+                    modules = self._get_modules()
         else:
             self.modules = self._get_modules()
 

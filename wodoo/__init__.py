@@ -42,7 +42,7 @@ def _get_default_project_name(restrict):
         paths = restrict
     else:
         paths = [Path(os.path.expanduser("~/.odoo/settings"))]
-    
+
     for path in paths:
         pj = _get_project_name_from_file(path)
         if pj:
@@ -99,6 +99,7 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
             config.project_name = ""
     os.environ['project_name'] = config.project_name
     os.environ['docker_compose'] = str(config.files.get('docker_compose')) or ''
+    os.environ['CUSTOMS_DIR'] = str(config.WORKING_DIR)
 
     load_dynamic_modules(config.dirs['images'])
 

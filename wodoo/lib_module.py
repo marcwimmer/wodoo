@@ -500,8 +500,12 @@ def _exec_update(config, params):
 @click.option('-a', '--all', is_flag=True)
 @click.option('-t', '--tag', is_flag=False)
 @click.option('-n', '--test_name', is_flag=False)
+@click.option('-p', '--param', multiple=True, help="e.g. --param key1=value1 --param key2=value2")
 @pass_config
-def robotest(config, file, user, all, tag, test_name):
+def robotest(config, file, user, all, tag, test_name, param):
+    PARAM = param
+    del param
+
     from .odoo_config import MANIFEST, MANIFEST_FILE
     from .module_tools import Module
     from pathlib import Path
@@ -568,6 +572,12 @@ def robotest(config, file, user, all, tag, test_name):
             params['test_name'] = test_name
         if tag:
             params['include'] = [tag]
+
+        for param in PARAM:
+            k, v = param.split("=")
+            params[k] = v
+            del param
+
         return params
 
     data = json.dumps({
