@@ -2,7 +2,7 @@ from pathlib import Path
 from .init_functions import _search_path
 VERSIONS = [7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0]
 YAML_VERSION = '3.7'
-DEFAULT_IMAGES_REPO = "ssh://git@github.com/marcwimmer/wodoo-images"
+DEFAULT_IMAGES_REPO = "https://github.com/marcwimmer/wodoo-images"
 
 default_dirs = {
     'admin': 'admin',
