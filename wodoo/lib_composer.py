@@ -193,11 +193,12 @@ def _do_compose(config, db='', demo=False, **forced_values):
     click.echo("Built the docker-compose file.")
 
 def _download_images(config):
+    from . import consts
     if not config.dirs['images'].exists():
         subprocess.run([
             "git",
             "clone",
-            config.IMAGES_URL,
+            config.IMAGES_URL or consts.DEFAULT_IMAGES_REPO,
             config.dirs['images']
         ])
     subprocess.run(["git", "pull"], cwd=config.dirs['images'])
@@ -211,6 +212,8 @@ def _download_images(config):
     else:
         click.secho(f"Clean repository", fg='yellow')
     click.secho("--------------------------------------------------")
+    if os.getenv("SUDO_UID"):
+        subprocess.check_call(["chown", os.environ['SUDO_USER'], '-R', config.dirs['images']])
     time.sleep(1.0)
 
 
