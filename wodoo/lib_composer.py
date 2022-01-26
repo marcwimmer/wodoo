@@ -1,4 +1,5 @@
 import traceback
+from tabulate import tabulate
 import time
 import collections
 import grp
@@ -169,16 +170,19 @@ def _do_compose(config, db='', demo=False, **forced_values):
     else:
         whoami = str(pwd.getpwuid(os.getuid())[0])
 
-    click.secho(f"*****************************************************", fg='yellow')
-    click.secho(f" project-name:         {config.project_name}"                          , fg='yellow')
-    click.secho(f" cwd:         {os.getcwd()}"                          , fg='yellow')
-    click.secho(f" whoami:      {whoami}"                               , fg='yellow')
-    click.secho(f" cmd:         {' '.join(sys.argv)}"                   , fg='yellow')
+    rows = []
+    headers = ["Name", "Value"]
+    rows.append(('project-name', config.project_name))
+    rows.append(('cwd', os.getcwd()))
+    rows.append(('whoami', whoami))
+    rows.append(('run-dir', config.dirs['run']))
+    rows.append(('cmd', ' '.join(sys.argv)))
     if config.restrict:
         for file in config.restrict:
-            click.secho(f" restrict to:         {file}"                   , fg='yellow')
+            rows.append(("restrict to", file))
             del file
-    click.secho(f"*****************************************************", fg='yellow')
+
+    click.secho(tabulate(rows, headers, tablefmt="fancy_grid"), fg='yellow')
 
     defaults = {}
     _download_images(config)
