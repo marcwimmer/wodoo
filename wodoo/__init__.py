@@ -103,6 +103,9 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
 
     load_dynamic_modules(config.dirs['images'])
 
+    if config.verbose:
+        print(config.files['docker_compose'])
+
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer # NOQA
 from . import lib_backup # NOQA

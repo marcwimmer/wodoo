@@ -330,7 +330,7 @@ def __dcrun(cmd, interactive=False, env={}, returncode=False, pass_stdin=None):
             optional_params['universal_newlines'] = True
         else:
             optional_params['stdin'] = sys.stdin
-        subprocess.run(cmd, check=True, **optional_params)
+        return subprocess.run(cmd, check=True, **optional_params)
     else:
         if returncode:
             process = subprocess.Popen(cmd)

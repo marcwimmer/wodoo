@@ -90,28 +90,33 @@ def pgcli(config, dbname, params, host, port, user, password):
 @click.argument('dbname', required=False)
 @click.argument('params', nargs=-1)
 @click.option("--sql", required=False)
+@click.option("-ni", "--non-interactive", is_flag=True)
 @pass_config
-def psql(config, dbname, params, sql):
+def psql(config, dbname, params, sql, non_interactive):
     dbname = dbname or config.dbname
     os.environ['ODOO_FRAMEWORK_KEEP_SQL_CONNECTION'] = '1'  # will be executed there so connection string will point to postgres
     conn = config.get_odoo_conn().clone(dbname=dbname)
-    return _psql(config, conn, params, sql=sql)
+    return _psql(config, conn, params, sql=sql, interactive=not non_interactive)
 
-def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None):
+def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None, interactive=True):
     dbname = conn.dbname
     if not dbname and len(params) == 1:
         if params[0] in ['postgres', dbname]:
             dbname = params[0]
             params = []
     params = " ".join(params)
-    psql_args = ['-h', conn.host, '-p', str(conn.port), '-U', conn.user]
+    psql_args = ['-h', conn.host, '-p', str(conn.port), '-U', conn.user, '-v', 'ON_ERROR_STOP=1']
+    if sql:
+        psql_args += ['-c', sql]
+    if not interactive:
+        psql_args += ['-q']
     try:
         cmd = psql_args
         cmd += [
             dbname,
         ]
         if use_docker_container or (config.use_docker and config.run_postgres):
-            __dcrun(['pgtools', bin] + cmd, interactive=True, env={
+            res = __dcrun(['pgtools', bin] + cmd, interactive=interactive, env={
                 "PGPASSWORD": conn.pwd,
             })
         else:
