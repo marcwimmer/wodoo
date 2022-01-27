@@ -607,8 +607,7 @@ def robotest(config, file, user, all, tag, test_name, param):
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
     click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
     # fix security on that folder:
-    __try_to_set_owner(os.environ['OWNER_UID'], output_path, recursive=True
-    subprocess.chown(["chown", 
+    __try_to_set_owner(os.environ['OWNER_UID'], output_path)
     if failds:
         sys.exit(-1)
 
