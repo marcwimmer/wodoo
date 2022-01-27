@@ -105,7 +105,9 @@ def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None,
             dbname = params[0]
             params = []
     params = " ".join(params)
-    psql_args = ['-h', conn.host, '-p', str(conn.port), '-U', conn.user, '-v', 'ON_ERROR_STOP=1']
+    psql_args = ['-h', conn.host, '-p', str(conn.port), '-U', conn.user]
+    if bin == 'psql':
+        psql_args += ['-v', 'ON_ERROR_STOP=1']
     if sql:
         psql_args += ['-c', sql]
     if not interactive:
