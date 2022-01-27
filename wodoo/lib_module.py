@@ -18,6 +18,7 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
+from .tools import __try_to_set_owner
 from pathlib import Path
 
 class UpdateException(Exception): pass
@@ -605,6 +606,9 @@ def robotest(config, file, user, all, tag, test_name, param):
     click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
     click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
+    # fix security on that folder:
+    __try_to_set_owner(os.environ['OWNER_UID'], output_path, recursive=True
+    subprocess.chown(["chown", 
     if failds:
         sys.exit(-1)
 

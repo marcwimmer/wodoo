@@ -228,7 +228,6 @@ def _prepare_filesystem(config):
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
             config.dirs['user_conf_dir'],
-            autofix=True,
         )
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
         path = config.dirs['run'] / subdir
@@ -236,7 +235,6 @@ def _prepare_filesystem(config):
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
             path,
-            autofix=config.devmode
         )
 
 def get_db_name(db, project_name):
