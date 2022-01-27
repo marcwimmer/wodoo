@@ -266,12 +266,6 @@ def setup_settings_file(config, db, demo, **forced_values):
         if settings.get(k, '') != v:
             settings[k] = v
             settings.write()
-    config_compose_minimum = MyConfigParser(config.files['settings_auto'])
-    config_compose_minimum.clear()
-    for k in vals.keys():
-        config_compose_minimum[k] = vals[k]
-
-    config_compose_minimum.write()
 
 def _execute_after_compose(config, yml):
     """

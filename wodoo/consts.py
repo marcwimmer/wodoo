@@ -28,7 +28,6 @@ default_dirs = {
 default_files = {
     'after_reload_script': "/usr/local/bin/after-odoo-reload.sh",
     'after_up_script': "/usr/local/bin/after-odoo-up.sh",
-    'settings_auto': "${run}/settings.auto",
     'project_settings': "~/.odoo/settings.${project_name}",
     'project_docker_compose.home': "~/.odoo/docker-compose.yml",
     'project_docker_compose.home.project': "~/.odoo/docker-compose.${project_name}.yml",
