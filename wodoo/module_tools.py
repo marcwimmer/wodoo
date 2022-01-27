@@ -583,7 +583,6 @@ class Modules(object):
             try_to_set_owner(
                 int(os.environ['SUDO_UID']),
                 parent,
-                autofix=True,
             )
         
         return parent / sha
