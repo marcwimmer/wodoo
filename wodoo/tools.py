@@ -623,24 +623,17 @@ def remove_webassets(conn):
     click.echo("Removing web assets")
     conn = conn.get_psyco_connection()
     cr = conn.cursor()
-    urls_to_ignore = [
-        '/website/static/src/scss/options/user_values.custom.web.assets_common.scss',
-        '/website/static/src/scss/options/colors/user_color_palette.custom.web.assets_common.scss'
-    ]
-    ignore_url_str = ''
-    for url in urls_to_ignore:
-        ignore_url_str += f" and url = '{url}'"
     try:
-        cr.execute(f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%' {ignore_url_str};")
-        cr.execute(f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%web_editor.summernote%' {ignore_url_str};")
-        cr.execute(f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.less%' {ignore_url_str};")
-        cr.execute(f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.scss%' {ignore_url_str};")
-        cr.execute(f"delete from ir_attachment where name ilike '/web/%web%asset%' {ignore_url_str}")
-        cr.execute(f"delete from ir_attachment where name ilike 'import_bootstrap.less' {ignore_url_str}")
-        cr.execute(f"delete from ir_attachment where name ilike '%.less' {ignore_url_str}")
-        cr.execute(f"delete from ir_attachment where name ilike '%.scss' {ignore_url_str}")
-        cr.execute(f"delete from ir_attachment where name ilike 'web_icon_data' {ignore_url_str}")
-        cr.execute(f"delete from ir_attachment where name ilike 'web_editor.summernote.%' {ignore_url_str}")
+        cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%';")
+        cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%web_editor.summernote%';")
+        cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.less%';")
+        cr.execute("delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.scss%';")
+        cr.execute("delete from ir_attachment where name ilike '/web/%web%asset%'")
+        cr.execute("delete from ir_attachment where name ilike 'import_bootstrap.less'")
+        cr.execute("delete from ir_attachment where name ilike '%.less'")
+        cr.execute("delete from ir_attachment where name ilike '%.scss'")
+        cr.execute("delete from ir_attachment where name ilike 'web_icon_data'")
+        cr.execute("delete from ir_attachment where name ilike 'web_editor.summernote.%'")
         conn.commit()
     finally:
         cr.close()
