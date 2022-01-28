@@ -629,7 +629,7 @@ def remove_webassets(conn):
     ]
     ignore_url_str = ''
     for url in urls_to_ignore:
-        ignore_url_str += f" and url = '{url}'"
+        ignore_url_str += f" and url != '{url}'"
     try:
         cr.execute(f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%' {ignore_url_str};")
         cr.execute(f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%web_editor.summernote%' {ignore_url_str};")
