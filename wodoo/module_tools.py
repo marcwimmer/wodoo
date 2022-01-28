@@ -616,7 +616,7 @@ class Modules(object):
     def is_git_clean(self):
         if not ((Path(os.getcwd())) / '.git').exists():
             return True
-        status = subprocess.check_output(['/usr/bin/git', 'status', '--porcelain']).decode('utf-8').strip()
+        status = subprocess.check_output(['git', 'status', '--porcelain']).decode('utf-8').strip()
         if status:
             click.secho(f'unclean git: {status}')
         return not status

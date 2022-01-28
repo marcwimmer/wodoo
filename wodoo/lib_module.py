@@ -126,7 +126,7 @@ def run_tests(ctx, config):
 @click.pass_context
 def download_openupgrade(ctx, config, version):
     dir_openupgrade = Path(tempfile.mktemp())
-    subprocess.check_call(['/usr/bin/git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
+    subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
 
     if float(version) < 14.0:
         destination_path = 'odoo'
