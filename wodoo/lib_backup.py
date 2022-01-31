@@ -157,9 +157,10 @@ def restore_files(filename):
 @click.argument('filename', required=False, default='')
 @click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
 @click.option('--no-dev-scripts', default=False, is_flag=True)
+@click.option('--no-remove-webassets', default=False, is_flag=True)
 @pass_config
 @click.pass_context
-def restore_db(ctx, config, filename, latest, no_dev_scripts):
+def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webassets):
     if not filename:
         filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
     if not filename:
@@ -246,6 +247,8 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts):
         from .lib_db import __turn_into_devdb
         if config.devmode and not no_dev_scripts:
             __turn_into_devdb(config, conn)
+            if not no_remove_webassets:
+                remove_webassets(conn)
         __rename_db_drop_target(conn.clone(dbname='postgres'), DBNAME_RESTORING, config.dbname)
         _remove_postgres_connections(conn.clone(dbname=dest_db))
 

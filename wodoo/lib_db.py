@@ -312,8 +312,6 @@ def __turn_into_devdb(config, conn):
             msg = traceback.format_exc()
             print("failed un-critical sql:", msg)
 
-    remove_webassets(conn)
-
 @db.command(name='show-table-sizes')
 @pass_config
 @click.pass_context
