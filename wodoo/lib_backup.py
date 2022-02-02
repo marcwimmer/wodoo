@@ -19,6 +19,7 @@ import tempfile
 import click
 from pathlib import Path
 from .tools import _dropdb
+from .tools import remove_webassets
 from .tools import __assert_file_exists
 from .tools import __safe_filename
 from .tools import __read_file
