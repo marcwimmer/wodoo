@@ -77,14 +77,18 @@ class UploadCommand(Command):
         self.clear_builds()
 
         self.status('Building Source and Wheel (universal) distribution…')
-        os.system('{0} setup.py sdist'.format(sys.executable))
+        subprocess.check_call([sys.executable, "setup.py", "sdist"])
 
         self.status('Uploading the package to PyPI via Twine…')
-        os.system('twine upload dist/*')
+        subprocess.check_call(["twine", "upload", "dist/*"])
 
         self.status('Pushing git tags…')
-        os.system('git tag v{0}'.format(about['__version__']))
-        os.system('git push --tags')
+        version = 'v' + str(about['__version__'])
+        subprocess.check_call(["git", "tag", version])
+        subprocess.check_call(["git", "push", "--tags"])
+
+        subprocess.check_call(["git", "add", "."])
+        subprocess.check_call(["git", "commit", "-m", str(about['__version__'])])
 
         self.clear_builds()
 
