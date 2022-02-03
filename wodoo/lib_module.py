@@ -611,15 +611,19 @@ def robotest(config, file, user, all, tag, test_name, param):
     if failds:
         sys.exit(-1)
 
-def _get_all_unittest_files():
+def _get_all_unittest_files(all_files=False):
     from .odoo_config import MANIFEST, MANIFEST_FILE
     from .module_tools import Module
     testfiles = []
-    for testmodule in MANIFEST().get('tests', []):
-        testmodule = Module.get_by_name(testmodule)
-        for _file in testmodule.path.glob("tests/test*.py"):
-            testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
-            del _file
+
+    if not all_files:
+        for testmodule in MANIFEST().get('tests', []):
+            testmodule = Module.get_by_name(testmodule)
+            for _file in testmodule.path.glob("tests/test*.py"):
+                testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
+                del _file
+    else:
+        raise Exception('needs implementation')
     return testfiles
 
 def _get_all_robottest_files():
@@ -636,9 +640,10 @@ def _get_all_robottest_files():
     return testfiles
 
 @odoo_module.command()
+@click.option('-a', '--all', is_flag=True)
 @pass_config
-def list_unit_test_files(config):
-    files = _get_all_unittest_files()
+def list_unit_test_files(config, all):
+    files = _get_all_unittest_files(all_files=all)
     click.secho("!!!")
     for file in files:
         click.secho(file)
@@ -668,7 +673,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = _get_all_unittest_files()
+    testfiles = _get_all_unittest_files(all_files=True)
 
     if file:
         if '/' in file:
