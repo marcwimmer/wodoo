@@ -711,7 +711,7 @@ def _use_file(config, path):
             return True
 
         # requires general run:
-        if getattr(config, 'run_{}'.format(path.parent.name)):
+        if getattr(config, 'run_{}'.format(path.parent.name)) or 'run_' in path.name:
             run = list(filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")]))
             for run in run:
                 if getattr(config, run):
