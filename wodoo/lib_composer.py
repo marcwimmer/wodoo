@@ -73,6 +73,13 @@ def config(ctx, config, service_name, full=True):
     process.communicate()
 
 
+def _get_arch():
+    arch = subprocess.check_output(["uname", "-m"], encoding='UTF-8').strip()
+    return {
+        "x86_64": "amd64",
+        "aarch64": "arm64",
+    }[arch]
+
 @composer.command(name='reload', help="Switches to project in current working directory.")
 @click.option("--demo", is_flag=True, help="Enabled demo data.")
 @click.option("-d", "--db", required=False)
@@ -89,6 +96,8 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, 
     if headless and proxy_port:
         click.secho("Proxy Port and headless together not compatible.", fg='red')
         sys.exit(-1)
+
+    config.TARGETARCH = _get_arch()
 
     click.secho("Current Project Name: {}".format(config.project_name), bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
@@ -425,6 +434,13 @@ def post_process_complete_yaml_config(config, yml):
         for service in yml['services']:
             if 'restart' in yml['services'][service]:
                 yml['services'][service].pop('restart')
+
+    # apply build architecture
+    for service_name, service in yml['services'].items():
+        if not service.get('build', False):
+            continue
+        service['build'].setdefault('args', {})
+        service['build']['args']['TARGETARCH'] = config.TARGETARCH
 
     # set hub source for all images, that are built:
     for service_name, service in yml['services'].items():
