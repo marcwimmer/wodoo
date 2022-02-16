@@ -667,8 +667,9 @@ def list_robot_test_files(config):
 @click.argument('file', required=False)
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debug', is_flag=True)
+@click.option('-a', '--all', is_flag=True)
 @pass_config
-def unittest(config, repeat, file, remote_debug, wait_for_remote):
+def unittest(config, repeat, file, remote_debug, wait_for_remote, all):
     """
     Collects unittest files and offers to run
     """
@@ -677,7 +678,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = _get_all_unittest_files(config, all_files=True)
+    testfiles = _get_all_unittest_files(config, all_files=all)
 
     if file:
         if '/' in file:
