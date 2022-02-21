@@ -668,8 +668,9 @@ def list_robot_test_files(config):
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debug', is_flag=True)
 @click.option('-a', '--all', is_flag=True)
+@click.option('-n', '--non-interactive', is_flag=True)
 @pass_config
-def unittest(config, repeat, file, remote_debug, wait_for_remote, all):
+def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_interactive):
     """
     Collects unittest files and offers to run
     """
@@ -719,7 +720,9 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all):
     if not interactive:
         params += ['--not-interactive']
 
-    __dcrun(params + ['--log-level=debug'], interactive=True)
+    if non_interactive:
+        interactive = False
+    __dcrun(params + ['--log-level=debug'], interactive=interactive)
 
 @odoo_module.command()
 @click.argument("name", required=True)
