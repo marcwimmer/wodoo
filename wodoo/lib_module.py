@@ -713,6 +713,11 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
     if wait_for_remote:
         remote_debug = True
         interactive = False
+
+    if non_interactive:
+        interactive = False
+    del non_interactive
+
     if remote_debug:
         params += ["--remote-debug"]
     if wait_for_remote:
@@ -720,8 +725,6 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
     if not interactive:
         params += ['--not-interactive']
 
-    if non_interactive:
-        interactive = False
     __dcrun(params + ['--log-level=debug'], interactive=interactive)
 
 @odoo_module.command()
