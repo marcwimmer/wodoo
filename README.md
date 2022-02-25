@@ -59,7 +59,7 @@ odoo up -d
 # now open browser on http://localhost
 ```
 
-## Store settings not in ~/.odoo but local inside the current directory in .odoo
+## Store settings in ./odoo of source code
 
 This is excellent for jenkins jobs where different branches are tested.
 
