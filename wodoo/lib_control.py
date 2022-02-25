@@ -1,4 +1,5 @@
 import click
+import os
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import execute_script
@@ -154,9 +155,12 @@ def attach(ctx, config, machine):
 @click.option('--no-cache', is_flag=True)
 @click.option('--pull', is_flag=True)
 @click.option('--push', is_flag=True)
+@click.option('-p', '--plain', is_flag=True)
 @pass_config
 @click.pass_context
-def build(ctx, config, machines, pull, no_cache, push):
+def build(ctx, config, machines, pull, no_cache, push, plain):
+    if plain:
+        os.environ['BUILDKIT_PROGRESS'] = 'plain'
     if config.use_docker:
         from .lib_control_with_docker import build as lib_build
     lib_build(ctx, config, machines, pull, no_cache, push)

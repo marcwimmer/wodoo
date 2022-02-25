@@ -485,7 +485,7 @@ def __make_file_executable(filepath):
     st = os.stat(filepath)
     os.chmod(filepath, st.st_mode | stat.S_IEXEC)
 
-def __try_to_set_owner(UID, path, recursive=False, autofix=False):
+def __try_to_set_owner(UID, path):
     if path.is_dir():
         filename = tempfile.mktemp(suffix='.findoutput')
         find_command = f"find '{path}' -not -type l -not -user {UID}"

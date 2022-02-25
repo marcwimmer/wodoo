@@ -583,7 +583,6 @@ class Modules(object):
             try_to_set_owner(
                 int(os.environ['SUDO_UID']),
                 parent,
-                autofix=True,
             )
         
         return parent / sha
@@ -617,7 +616,7 @@ class Modules(object):
     def is_git_clean(self):
         if not ((Path(os.getcwd())) / '.git').exists():
             return True
-        status = subprocess.check_output(['/usr/bin/git', 'status', '--porcelain']).decode('utf-8').strip()
+        status = subprocess.check_output(['git', 'status', '--porcelain']).decode('utf-8').strip()
         if status:
             click.secho(f'unclean git: {status}')
         return not status
@@ -1118,14 +1117,14 @@ class Module(object):
                     # contains qweb file
                     is_web = True
                     if local_path.suffix == '.xml':
-                        if mod.get('qweb'):
+                        if 'qweb' in mod:
                             mod['qweb'].append(str(local_path))
                 else:
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == '.js':
                 pass
             elif local_path.suffix in ['.css', '.less', '.scss']:
-                if mod.get('css'):
+                if 'css' in mod:
                     mod["css"].append(str(local_path))
 
         # keep test empty: use concrete call to test-file instead of testing on every module update

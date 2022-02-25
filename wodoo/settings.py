@@ -70,9 +70,6 @@ def _collect_settings_files(config, quiet=False):
     if config.restrict['settings']:
         _files += config.restrict['settings']
     else:
-        if 'settings_auto' in _files:
-            _files.append(config.files['settings_auto'])
-
         for dir in filter(lambda x: x.exists(), _get_settings_files(config)):
             if not quiet:
                 click.secho("Searching for settings in: {}".format(dir), fg='cyan')

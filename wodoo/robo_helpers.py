@@ -1,4 +1,5 @@
 from pathlib import Path
+import click
 import subprocess
 import shutil
 import tempfile
@@ -15,7 +16,6 @@ def collect_all(root_dir, subdir_name, glob, dest_folder):
         glob (string): glob pattern like *.py, *.robot
         dest_folder (string/path): Destination path
     """
-
     for dir in root_dir.glob(f"**/{subdir_name}"):
         if not dir.is_dir():
             continue
@@ -23,7 +23,8 @@ def collect_all(root_dir, subdir_name, glob, dest_folder):
         for file in files:
             dest_path = dest_folder / subdir_name / file.name
             if dest_path.exists():
-                raise Exception(f"Destination path '{dest_path}' already exists.")
+                click.secho(f"Warning: Path {dest_path} already exists and is overwritten by {file}.", fg='yellow')
+                #raise Exception(f"Destination path '{dest_path}' already exists.")
             dest_path.parent.mkdir(exist_ok=True)
             shutil.copy(file, dest_path)
 
