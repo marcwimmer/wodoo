@@ -73,6 +73,13 @@ def config(ctx, config, service_name, full=True):
     process.communicate()
 
 
+def _get_arch():
+    arch = subprocess.check_output(["uname", "-m"], encoding='UTF-8').strip()
+    return {
+        "x86_64": "amd64",
+        "aarch64": "arm64",
+    }[arch]
+
 @composer.command(name='reload', help="Switches to project in current working directory.")
 @click.option("--demo", is_flag=True, help="Enabled demo data.")
 @click.option("-d", "--db", required=False)
@@ -89,6 +96,8 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, 
     if headless and proxy_port:
         click.secho("Proxy Port and headless together not compatible.", fg='red')
         sys.exit(-1)
+
+    config.TARGETARCH = _get_arch()
 
     click.secho("Current Project Name: {}".format(config.project_name), bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
@@ -228,7 +237,6 @@ def _prepare_filesystem(config):
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
             config.dirs['user_conf_dir'],
-            autofix=True,
         )
     for subdir in ['config', 'sqlscripts', 'debug', 'proxy']:
         path = config.dirs['run'] / subdir
@@ -236,7 +244,6 @@ def _prepare_filesystem(config):
         __try_to_set_owner(
             int(fileconfig['OWNER_UID']),
             path,
-            autofix=config.devmode
         )
 
 def get_db_name(db, project_name):
@@ -266,12 +273,6 @@ def setup_settings_file(config, db, demo, **forced_values):
         if settings.get(k, '') != v:
             settings[k] = v
             settings.write()
-    config_compose_minimum = MyConfigParser(config.files['settings_auto'])
-    config_compose_minimum.clear()
-    for k in vals.keys():
-        config_compose_minimum[k] = vals[k]
-
-    config_compose_minimum.write()
 
 def _execute_after_compose(config, yml):
     """
@@ -433,6 +434,13 @@ def post_process_complete_yaml_config(config, yml):
         for service in yml['services']:
             if 'restart' in yml['services'][service]:
                 yml['services'][service].pop('restart')
+
+    # apply build architecture
+    for service_name, service in yml['services'].items():
+        if not service.get('build', False):
+            continue
+        service['build'].setdefault('args', {})
+        service['build']['args']['TARGETARCH'] = config.TARGETARCH
 
     # set hub source for all images, that are built:
     for service_name, service in yml['services'].items():
@@ -719,7 +727,7 @@ def _use_file(config, path):
             return True
 
         # requires general run:
-        if getattr(config, 'run_{}'.format(path.parent.name)):
+        if getattr(config, 'run_{}'.format(path.parent.name)) or 'run_' in path.name:
             run = list(filter(lambda x: x.startswith("run_"), [y for x in path.parts for y in x.split(".")]))
             for run in run:
                 if getattr(config, run):

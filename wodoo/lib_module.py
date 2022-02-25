@@ -18,6 +18,7 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
+from .tools import __try_to_set_owner
 from pathlib import Path
 
 class UpdateException(Exception): pass
@@ -125,7 +126,7 @@ def run_tests(ctx, config):
 @click.pass_context
 def download_openupgrade(ctx, config, version):
     dir_openupgrade = Path(tempfile.mktemp())
-    subprocess.check_call(['/usr/bin/git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
+    subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
 
     if float(version) < 14.0:
         destination_path = 'odoo'
@@ -608,15 +609,25 @@ def robotest(config, file, user, all, tag, test_name, param):
     if failds:
         sys.exit(-1)
 
-def _get_all_unittest_files():
+def _get_all_unittest_files(config, all_files=False):
     from .odoo_config import MANIFEST, MANIFEST_FILE
     from .module_tools import Module
+    from .odoo_config import customs_dir
     testfiles = []
-    for testmodule in MANIFEST().get('tests', []):
-        testmodule = Module.get_by_name(testmodule)
-        for _file in testmodule.path.glob("tests/test*.py"):
-            testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
-            del _file
+
+    if not all_files:
+        for testmodule in MANIFEST().get('tests', []):
+            testmodule = Module.get_by_name(testmodule)
+            for _file in testmodule.path.glob("tests/test*.py"):
+                testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
+                del _file
+    else:
+
+        modules = __get_installed_modules(config)
+        for file in customs_dir().glob("**/tests/test*.py"):
+            module_name = file.parent.parent.name
+            if module_name in modules:
+                testfiles.append(file.relative_to(MANIFEST_FILE().parent))
     return testfiles
 
 def _get_all_robottest_files():
@@ -633,9 +644,10 @@ def _get_all_robottest_files():
     return testfiles
 
 @odoo_module.command()
+@click.option('-a', '--all', is_flag=True)
 @pass_config
-def list_unit_test_files(config):
-    files = _get_all_unittest_files()
+def list_unit_test_files(config, all):
+    files = _get_all_unittest_files(config, all_files=all)
     click.secho("!!!")
     for file in files:
         click.secho(file)
@@ -655,8 +667,10 @@ def list_robot_test_files(config):
 @click.argument('file', required=False)
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debug', is_flag=True)
+@click.option('-a', '--all', is_flag=True)
+@click.option('-n', '--non-interactive', is_flag=True)
 @pass_config
-def unittest(config, repeat, file, remote_debug, wait_for_remote):
+def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_interactive):
     """
     Collects unittest files and offers to run
     """
@@ -665,7 +679,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = _get_all_unittest_files()
+    testfiles = _get_all_unittest_files(config, all_files=all)
 
     if file:
         if '/' in file:
@@ -699,6 +713,11 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     if wait_for_remote:
         remote_debug = True
         interactive = False
+
+    if non_interactive:
+        interactive = False
+    del non_interactive
+
     if remote_debug:
         params += ["--remote-debug"]
     if wait_for_remote:
@@ -706,7 +725,7 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote):
     if not interactive:
         params += ['--not-interactive']
 
-    __dcrun(params + ['--log-level=debug'], interactive=True)
+    __dcrun(params + ['--log-level=debug'], interactive=interactive)
 
 @odoo_module.command()
 @click.argument("name", required=True)
