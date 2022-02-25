@@ -609,26 +609,28 @@ def robotest(config, file, user, all, tag, test_name, param):
     if failds:
         sys.exit(-1)
 
-def _get_all_unittest_files(config, all_files=False):
-    from .odoo_config import MANIFEST, MANIFEST_FILE
+def _get_unittests_from_module(module_name):
     from .module_tools import Module
-    from .odoo_config import customs_dir
+    from .odoo_config import MANIFEST_FILE
+
     testfiles = []
-
-    if not all_files:
-        for testmodule in MANIFEST().get('tests', []):
-            testmodule = Module.get_by_name(testmodule)
-            for _file in testmodule.path.glob("tests/test*.py"):
-                testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
-                del _file
-    else:
-
-        modules = __get_installed_modules(config)
-        for file in customs_dir().glob("**/tests/test*.py"):
-            module_name = file.parent.parent.name
-            if module_name in modules:
-                testfiles.append(file.relative_to(MANIFEST_FILE().parent))
+    module = Module.get_by_name(module_name)
+    parent_dir = MANIFEST_FILE().parent
+    for _file in module.path.glob("tests/test*.py"):
+        testfiles.append(_file.relative_to(parent_dir))
     return testfiles
+
+def _get_unittests_from_modules(module_names):
+    testfiles = []
+    for module in module_names:
+        testfiles += _get_unittests_from_module(module)
+    return testfiles
+
+def _get_all_unittest_files(config, all_files=False):
+    from .odoo_config import MANIFEST
+    
+    modules = all_files and __get_installed_modules(config) or MANIFEST().get('install', [])
+    return _get_unittests_from_modules(modules)
 
 def _get_all_robottest_files():
     from .odoo_config import MANIFEST, MANIFEST_FILE
