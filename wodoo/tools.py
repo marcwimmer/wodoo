@@ -625,7 +625,8 @@ def remove_webassets(conn):
     cr = conn.cursor()
     urls_to_ignore = [
         '/website/static/src/scss/options/user_values.custom.web.assets_common.scss',
-        '/website/static/src/scss/options/colors/user_color_palette.custom.web.assets_common.scss'
+        '/website/static/src/scss/options/colors/user_color_palette.custom.web.assets_common.scss',
+        '/web/static/src/scss/asset_styles_company_report.scss',
     ]
     ignore_url_str = ''
     for url in urls_to_ignore:
