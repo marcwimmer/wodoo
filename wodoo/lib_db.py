@@ -59,6 +59,7 @@ def pgactivity(config):
         "pgtools", 'pg_activity',
         '-p', str(conn.port),
         '-U', conn.user,
+        '-d', conn.dbname,
         '-h', conn.host, 
         ], env={
             "PGPASSWORD": conn.pwd,
