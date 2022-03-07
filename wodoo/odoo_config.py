@@ -138,13 +138,6 @@ def customs_dir():
             click.secho("no MANIFEST file found in current directory.")
     return Path(env_customs_dir)
 
-def run_dir():
-    "returns ~/odoo/run"
-    from . import HOST_RUN_DIR
-    if HOST_RUN_DIR is None:
-        raise Exception("No RUN_DIR specified. Is HOST_HOME set?")
-    return HOST_RUN_DIR
-
 def plaintextfile():
     path = customs_dir() / '.odoo.ast'
     return path
