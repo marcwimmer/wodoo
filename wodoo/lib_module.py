@@ -167,8 +167,8 @@ def _add_outdated_versioned_modules(modules):
                 continue
             try:
                 version = tuple([int(x) for x in version.split(".")])
-            except:
-                click.secho(f"Broken version name in module {module}: {version}")
+            except Exception:
+                click.secho(f"Broken version name in module {meta_info}: {version}", fg='red')
                 sys.exit(-1)
             new_version = mods.modules[dep].manifest_dict.get('version')
             if not new_version:
