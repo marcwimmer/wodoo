@@ -514,7 +514,7 @@ def robotest(config, file, user, all, tag, test_name, param):
     from .odoo_config import MANIFEST, MANIFEST_FILE
     from .module_tools import Module
     from pathlib import Path
-    from .odoo_config import customs_dir
+    from .odoo_config import run_dir, customs_dir
     from .robo_helpers import _make_archive
 
     if not config.devmode:
@@ -596,7 +596,7 @@ def robotest(config, file, user, all, tag, test_name, param):
     ]
     __dcrun(params, pass_stdin=data.decode('utf-8'), interactive=True)
 
-    output_path = customs_dir() / 'robot_output'
+    output_path = run_dir() / 'odoo_outdir' / 'robot_output'
     test_results = json.loads((output_path / 'results.json').read_text())
     failds = [x for x in test_results if x['result'] != 'ok']
     color_info = 'green'
