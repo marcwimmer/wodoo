@@ -589,7 +589,7 @@ def robotest(config, file, user, all, tag, test_name, param):
         'test_file': archive,
         'params': params(),
     })
-    data = base64.encodestring(data.encode('utf-8'))
+    data = base64.b64encode(data.encode('utf-8'))
 
     params = [
         'robot',
