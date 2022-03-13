@@ -89,6 +89,7 @@ class UploadCommand(Command):
 
         subprocess.check_call(["git", "add", "."])
         subprocess.check_call(["git", "commit", "-m", str(about['__version__'])])
+        subprocess.check_call(["git", "push"])
 
         self.clear_builds()
 
@@ -105,7 +106,7 @@ class InstallCommand(install):
             console_call = console_script.split("=")[0].strip()
 
             # if click completion helper is fresh installed and not available now
-            subprocess.run(["pip3", "install", "click-completion-helper"])
+            subprocess.run([sys.executable, "-mpip", "install", "click-completion-helper"])
             subprocess.run([
                 "click-completion-helper",
                 "setup",
