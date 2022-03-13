@@ -22,7 +22,6 @@ Provides functionalities:
 
 ```bash
 # as root:
-pip3 install wheel
 pip3 install wodoo
 ```
 
