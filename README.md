@@ -22,7 +22,11 @@ Provides functionalities:
 
 ```bash
 # as root:
-pip3 install wodoo
+python3 -m venv /var/lib/wodoo_env
+. /var/lib/wodoo_env/bin/activate
+python3 -mpip install wheel
+python3 -mpip install gimera
+python3 -mpip install wodoo
 ```
 
 ### Give sudo rights
