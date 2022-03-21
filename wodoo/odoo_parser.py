@@ -13,6 +13,7 @@ cache_xml_ids = {}
 SEP_FILE = ":::"
 SEP_LINENO = ":"
 
+
 def try_to_get_filepath(filepath):
     filepath = Path(filepath)
     if not filepath.is_file():
@@ -425,8 +426,17 @@ def _remove_entries(plain_text_file, rel_path):
     with open(plain_text_file, 'r') as f:
         lines = f.readlines()
     match = "{}{}{}".format(SEP_FILE, rel_path, SEP_LINENO)
-    temp = tempfile.mktemp(suffix='.tmp')
-    os.system("cat '{plain_text_file}' | grep -v '{match}' > '{temp}'; cp '{temp}' '{plain_text_file}'".format(**locals()))
+    try:
+        temp = Path(tempfile.mktemp(suffix='.tmp'))
+
+        os.system((
+            f"cat '{plain_text_file}' | "
+            f"grep -v '{match}' > '{temp}'; "
+            f"cp '{temp}' '{plain_text_file}'"
+        ))
+    finally:
+        if temp.exists():
+            temp.unlink()
 
 def update_cache(arg_modified_filename=None):
     """
@@ -484,24 +494,24 @@ def update_cache(arg_modified_filename=None):
             if '.' in xmlid['id']:
                 name = xmlid['id']
             else:
-                name = u"{}.{}".format(xmlid['module'], xmlid['id'])
+                name = "{}.{}".format(xmlid['module'], xmlid['id'])
             name += " model:" + xmlid['model']
             f.write(TEMPLATE.format(type="xmlid", module=xmlid['module'], name=name, filepath=translate_path_relative_to_customs_root(xmlid['filepath']), line=xmlid['line']))
             f.write("\n")
         for method in methods:
-            name = u"{model}.{method}".format(**method)
+            name = "{model}.{method}".format(**method)
             f.write(TEMPLATE.format(type="def", module=method['module'], name=name, filepath=translate_path_relative_to_customs_root(method['filepath']), line=method['line']))
             f.write("\n")
         for field in fields:
-            name = u"{model}.{field}".format(**field)
+            name = "{model}.{field}".format(**field)
             f.write(TEMPLATE.format(type="field", module=field['module'], name=name, filepath=translate_path_relative_to_customs_root(field['filepath']), line=field['line']))
             f.write("\n")
         for view in views:
-            name = u"{res_model} ~{type} {id} [inherit_id={inherit_id}]".format(**view)
+            name = "{res_model} ~{type} {id} [inherit_id={inherit_id}]".format(**view)
             f.write(TEMPLATE.format(type="view", module=view['module'], name=name, filepath=translate_path_relative_to_customs_root(view['filepath']), line=view['line']))
             f.write("\n")
         for qwebtemplate in qwebtemplates:
-            name = u"~{type} {id} [inherit_id={inherit_id}]".format(**qwebtemplate)
+            name = "~{type} {id} [inherit_id={inherit_id}]".format(**qwebtemplate)
             f.write(TEMPLATE.format(type="qweb", module=qwebtemplate['module'], name=name, filepath=translate_path_relative_to_customs_root(qwebtemplate['filepath']), line=qwebtemplate['line']))
             f.write("\n")
     finally:
