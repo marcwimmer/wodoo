@@ -439,7 +439,7 @@ def update_i18n(ctx, config, module, no_restart):
         params = [','.join(module)]
         params += ['--non-interactive']
         params += ['--no-update-modulelist']
-        params += ['no-dangling-check']
+        params += ['--no-dangling-check']
         params += ['--only-i18n']
         _exec_update(config, params)
     except Exception:
