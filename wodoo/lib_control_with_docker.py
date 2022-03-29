@@ -62,7 +62,7 @@ def dev(ctx, config, build, kill):
     """
     from .myconfigparser import MyConfigParser
     myconfig = MyConfigParser(config.files['settings'])
-    if not config.devmode:
+    if not config.devmode and not config.force:
         click.echo("Requires dev mode.")
         sys.exit(-1)
     if build:

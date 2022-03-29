@@ -550,7 +550,8 @@ def dict_merge(dct, merge_dct):
         if k in dct and not dct[k] and isinstance(merge_dct[k], dict):
             dct[k] = {}
 
-        if (k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], collections.Mapping)):
+        if (k in dct and isinstance(dct[k], dict) and isinstance(
+                merge_dct[k], collections.abc.Mapping)):
             dict_merge(dct[k], merge_dct[k])
         else:
 

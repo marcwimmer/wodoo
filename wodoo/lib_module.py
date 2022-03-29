@@ -58,7 +58,7 @@ def update_module_file(module):
 @click.pass_context
 def run_tests(ctx, config):
     started = datetime.now()
-    if not config.devmode:
+    if not config.devmode and not config.force:
         click.secho("Devmode required to run unit tests. Database will be destroyed.", fg='red')
         sys.exit(-1)
 
@@ -147,7 +147,7 @@ def _add_outdated_versioned_modules(modules):
     If db is newer then update is required.
 
     This usually habens after an update of odoo core.
-    
+
     """
     from .module_tools import Modules, DBModules
     from .odoo_config import MANIFEST
@@ -270,14 +270,14 @@ def update(
     """
     click.secho("""
 
-           _                               _       _       
-          | |                             | |     | |      
-  ___   __| | ___   ___    _   _ _ __   __| | __ _| |_ ___ 
+           _                               _       _
+          | |                             | |     | |
+  ___   __| | ___   ___    _   _ _ __   __| | __ _| |_ ___
  / _ \\ / _` |/ _ \\ / _ \\  | | | | '_ \\ / _` |/ _` | __/ _ \\
 | (_) | (_| | (_) | (_) | | |_| | |_) | (_| | (_| | ||  __/
  \\___/ \\__,_|\\___/ \\___/   \\__,_| .__/ \\__,_|\\__,_|\\__\\___|
-                                | |                        
-                                |_|   
+                                | |
+                                |_|
     """, fg='green')
     from .module_tools import Modules, DBModules
     # ctx.invoke(module_link)
@@ -506,18 +506,19 @@ def _exec_update(config, params):
 @click.option('-t', '--tag', is_flag=False)
 @click.option('-n', '--test_name', is_flag=False)
 @click.option('-p', '--param', multiple=True, help="e.g. --param key1=value1 --param key2=value2")
+@click.option('--install-required-modules', is_flag=True, help="No tests run - just the dependencies are installed like e.g. web_selenium")
 @pass_config
-def robotest(config, file, user, all, tag, test_name, param):
+@click.pass_context
+def robotest(ctx, config, file, user, all, tag, test_name, param, install_required_modules):
     PARAM = param
     del param
 
-    from .odoo_config import MANIFEST, MANIFEST_FILE
-    from .module_tools import Module
     from pathlib import Path
     from .odoo_config import customs_dir
     from .robo_helpers import _make_archive
+    from .module_tools import DBModules
 
-    if not config.devmode:
+    if not config.devmode and not config.force:
         click.secho("Devmode required to run unit tests. Database will be destroyed.", fg='red')
         sys.exit(-1)
 
@@ -559,7 +560,25 @@ def robotest(config, file, user, all, tag, test_name, param):
 
     click.secho('\n'.join(map(str, filename)), fg='green', bold=True)
 
-    archive = _make_archive(filename, customs_dir())
+    odoo_modules, archive = _make_archive(config.verbose, filename, customs_dir())
+    odoo_modules = list(set(odoo_modules) | set(['web_selenium', 'robot_utils']))
+
+    if odoo_modules:
+
+        def not_installed(module):
+            return DBModules.get_meta_data(module)['state'] == 'uninstalled'
+        modules_to_install = list(filter(not_installed, odoo_modules))
+        if modules_to_install:
+            click.secho((
+                "Installing required modules for robot tests: "
+                f"{','.join(modules_to_install)}"
+            ), fg='yellow')
+            Commands.invoke(
+                ctx, 'update', module=modules_to_install, no_dangling_check=True)
+
+    if install_required_modules:
+        click.secho("Dependencies are installed - exiting", fg='yellow')
+        return
 
     pwd = config.DEFAULT_DEV_PASSWORD
     if pwd == "True" or pwd is True:

@@ -4,6 +4,8 @@
 # Note: To use the 'upload' functionality of this file, you must:
 #   $ pipenv install twine --dev
 
+import re
+import json
 import io
 import os
 import sys
@@ -73,22 +75,39 @@ class UploadCommand(Command):
             except OSError:
                 pass
 
+    def inc_version(self):
+        file = Path('setup.cfg')
+        lines = file.read_text()
+        find = re.findall(r'version = (.*)', lines)
+        old_version = 'version = ' + find[-1]
+        version = list(map(int, find[-1].split('.')))
+        version[-1] += 1
+        version_string = '.'.join(map(str, version))
+        new_version = 'version = ' + version_string
+        lines = lines.replace(old_version, new_version)
+        file.write_text(lines)
+        return version_string
+
     def run(self):
         self.clear_builds()
 
+        # increase version
+        about['__version__'] = self.inc_version()
+
         self.status('Building Source and Wheel (universal) distribution…')
         subprocess.check_call([sys.executable, "setup.py", "sdist"])
+        subprocess.check_call(["git", "add", "."])
+        subprocess.check_call(["git", "commit", "-am", f"upload {about['__version__']}"])
 
         self.status('Uploading the package to PyPI via Twine…')
-        subprocess.check_call(["twine", "upload", "dist/*"])
+        env = json.loads(Path(
+            os.path.expanduser("~/.pypi_access")).read_text())
+        subprocess.check_call(["/usr/local/bin/twine", "upload", "dist/*"], env=env)
 
         self.status('Pushing git tags…')
-        version = 'v' + str(about['__version__'])
-        subprocess.check_call(["git", "tag", version])
+        subprocess.check_call(["git", "tag", f"v{about['__version__']}"])
         subprocess.check_call(["git", "push", "--tags"])
-
-        subprocess.check_call(["git", "add", "."])
-        subprocess.check_call(["git", "commit", "-m", str(about['__version__'])])
+        subprocess.check_call(["git", "push"])
 
         self.clear_builds()
 
@@ -105,7 +124,7 @@ class InstallCommand(install):
             console_call = console_script.split("=")[0].strip()
 
             # if click completion helper is fresh installed and not available now
-            subprocess.run(["pip3", "install", "click-completion-helper"])
+            subprocess.run([sys.executable, "-mpip", "install", "click-completion-helper"])
             subprocess.run([
                 "click-completion-helper",
                 "setup",

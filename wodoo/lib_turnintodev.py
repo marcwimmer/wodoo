@@ -24,7 +24,7 @@ def hash_password(config, password):
 @turn_into_dev.command(name='turn-into-dev')
 @pass_config
 def turn_into_dev_(config):
-    if not config.devmode:
+    if not config.devmode and not config.force:
         raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
 Please set DEVMODE=1 to allow this""")
     __turn_into_devdb(config, config.get_odoo_conn())
