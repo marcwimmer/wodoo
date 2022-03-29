@@ -221,10 +221,48 @@ def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
         params += ["--allow-serie"]
     if force_version:
         params += ["--force-version", force_version]
-    
+
     params = ['run', 'odoo', '/usr/local/bin/marabunta'] + params
     return __cmd_interactive(*params)
 
+@odoo_module.command(help=(
+    "If menu items are missing, then recomputing the parent store"
+    "can help"
+))
+@pass_config
+@click.pass_context
+def recompute_parent_store(ctx, config):
+    if config.use_docker:
+        from .lib_control_with_docker import shell as lib_shell
+
+    click.secho("Recomputing parent store...", fg='blue')
+    lib_shell((
+        "for model in self.env['ir.model'].search([]):\n"
+        "   try:\n"
+        "       obj = self.env[model.model]\n"
+        "   except KeyError: pass\n"
+        "   else: obj._parent_store_compute()\n"
+    ))
+    click.secho("Recompute parent store done.", fg='green')
+
+
+@odoo_module.command(help=(
+    "As the name says: if db was transferred, web-icons are restored"
+    " on missing assets"
+))
+@pass_config
+@click.pass_context
+def restore_web_icons(ctx, config):
+    if config.use_docker:
+        from .lib_control_with_docker import shell as lib_shell
+
+    click.secho("Restoring web icons...", fg='blue')
+    lib_shell((
+        "for x in self.env['ir.ui.menu'].search([]):\n"
+        "   if not x.web_icon: continue\n"
+        "   x.web_icon_data = x._compute_web_icon_data(x.web_icon)\n"
+    ))
+    click.secho("Restored web icons.", fg='green')
 
 @odoo_module.command()
 @click.argument('module', nargs=-1, required=False)
