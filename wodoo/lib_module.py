@@ -241,7 +241,9 @@ def recompute_parent_store(ctx, config):
         "   try:\n"
         "       obj = self.env[model.model]\n"
         "   except KeyError: pass\n"
-        "   else: obj._parent_store_compute()\n"
+        "   else:\n"
+        "       obj._parent_store_compute()\n"
+        "       env.cr.commit()\n"
     ))
     click.secho("Recompute parent store done.", fg='green')
 
@@ -261,6 +263,7 @@ def restore_web_icons(ctx, config):
         "for x in self.env['ir.ui.menu'].search([]):\n"
         "   if not x.web_icon: continue\n"
         "   x.web_icon_data = x._compute_web_icon_data(x.web_icon)\n"
+        "   env.cr.commit()\n"
     ))
     click.secho("Restored web icons.", fg='green')
 
