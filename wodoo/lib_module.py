@@ -140,7 +140,7 @@ def download_openupgrade(ctx, config, version):
     )
     shutil.rmtree(dir_openupgrade)
 
-def _add_outdated_versioned_modules(modules):
+def _get_outdated_versioned_modules_of_deptree(modules):
     """
 
     Gets dependency tree of modules and copmares version in manifest with version in database.
@@ -154,7 +154,6 @@ def _add_outdated_versioned_modules(modules):
     mods = Modules()
 
     for module in modules:
-        yield module
         if module == 'base':
             continue
 
@@ -326,7 +325,7 @@ def update(
         Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
         Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
 
-    if not uninstall:
+    def _perform_install(module):
         if since_git_sha and module:
             raise Exception("Conflict: since-git-sha and modules")
         if since_git_sha:
@@ -347,7 +346,7 @@ def update(
         if not module and not since_git_sha:
             module = _get_default_modules_to_update()
 
-        module = list(set(_add_outdated_versioned_modules(module)))
+        outdated_modules = list(set(_get_outdated_versioned_modules_of_deptree(module)))
 
         if not no_restart:
             if config.use_docker:
@@ -373,7 +372,7 @@ def update(
             module += __get_installed_modules(config)
         if dangling_modules:
             module += [x[0] for x in DBModules.get_dangling_modules()]
-        module = list(filter(lambda x: x, module))
+        module = list(filter(bool, module))
         if not module:
             raise Exception("no modules to update")
 
@@ -382,40 +381,45 @@ def update(
             with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
                 f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-        try:
-            params = [','.join(module)]
-            if no_extra_addons_paths:
-                params += ['--no-extra-addons-paths']
-            if non_interactive:
-                params += ['--non-interactive']
-            if no_install_server_wide_first:
-                params += ['--no-install-server-wide-first']
-            if no_update_module_list:
-                params += ['--no-update-modulelist']
-            if no_dangling_check:
-                params += ['--no-dangling-check']
-            if i18n:
-                params += ['--i18n']
-            if not tests:
-                params += ['--no-tests']
-            if server_wide_modules:
-                params += ['--server-wide-modules', server_wide_modules]
-            if additional_addons_paths:
-                params += ['--additional-addons-paths', additional_addons_paths]
-            params += ["--config-file=" + config_file]
-            rc = _exec_update(config, params)
-            if rc:
-                raise UpdateException(module)
+        def _technically_update(modules):
+            try:
+                params = [','.join(modules)]
+                if no_extra_addons_paths:
+                    params += ['--no-extra-addons-paths']
+                if non_interactive:
+                    params += ['--non-interactive']
+                if no_install_server_wide_first:
+                    params += ['--no-install-server-wide-first']
+                if no_update_module_list:
+                    params += ['--no-update-modulelist']
+                if no_dangling_check:
+                    params += ['--no-dangling-check']
+                if i18n:
+                    params += ['--i18n']
+                if not tests:
+                    params += ['--no-tests']
+                if server_wide_modules:
+                    params += ['--server-wide-modules', server_wide_modules]
+                if additional_addons_paths:
+                    params += ['--additional-addons-paths', additional_addons_paths]
+                params += ["--config-file=" + config_file]
+                rc = _exec_update(config, params)
+                if rc:
+                    raise UpdateException(module)
 
-        except UpdateException:
-            raise
-        except Exception:
-            click.echo(traceback.format_exc())
-            ctx.invoke(show_install_state, suppress_error=True)
-            raise Exception("Error at /update_modules.py - aborting update process.")
+            except UpdateException:
+                raise
+            except Exception:
+                click.echo(traceback.format_exc())
+                ctx.invoke(show_install_state, suppress_error=True)
+                raise Exception("Error at /update_modules.py - aborting update process.")
 
-        if check_install_state:
-            ctx.invoke(show_install_state, suppress_error=no_dangling_check)
+            if check_install_state:
+                ctx.invoke(show_install_state, suppress_error=no_dangling_check)
+
+        if outdated_modules:
+            _technically_update(outdated_modules)
+        _technically_update(module)
 
         if not no_restart and config.use_docker:
             Commands.invoke(ctx, 'restart', machines=['odoo'])
@@ -460,6 +464,8 @@ self.env.cr.commit()
             click.secho(f"Failed to uninstall: {','.join(to_uninstall)}", fg='red')
             sys.exit(-1)
 
+    if not uninstall:
+        _perform_install(module)
     _uninstall_marked_modules()
 
 @odoo_module.command(name="update-i18n", help="Just update translations")
