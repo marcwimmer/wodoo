@@ -1,3 +1,4 @@
+from codecs import ignore_errors
 import sys
 import docker
 import threading
@@ -173,7 +174,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webasset
             container.kill()
             container.remove()
 
-        Commands.invoke(ctx, 'down')
+        Commands.invoke(ctx, 'down', ignore_errors=True)
         Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     Commands.invoke(ctx, 'wait_for_container_postgres', missing_ok=True)
     conn = config.get_odoo_conn()
