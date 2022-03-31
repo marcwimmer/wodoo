@@ -644,6 +644,12 @@ def _apply_variables(config, contents, env):
     for content in contents:
         if not content:
             continue
+
+        if isinstance(content, str):
+            from .tools import abort
+            abort((
+                f"Invalid content {content}"
+            ))
         for networkname, network in content.get('networks', {}).items():
             default_network['networks'][networkname] = network
 
