@@ -60,7 +60,7 @@ def pgactivity(config):
         '-p', str(conn.port),
         '-U', conn.user,
         '-d', conn.dbname,
-        '-h', conn.host, 
+        '-h', conn.host,
         ], env={
             "PGPASSWORD": conn.pwd,
         }, interactive=True)
@@ -385,18 +385,17 @@ def excel(config, sql, file):
         filepath = Path(os.getcwd()) / file
     else:
         filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
- 
+
     # Workbook() takes one, non-optional, argument
     # which is the filename that we want to create.
     workbook = xlsxwriter.Workbook(str(filepath))
-    
+
     # The workbook object is then used to add new
     # worksheet via the add_worksheet() method.
     worksheet = workbook.add_worksheet()
 
     for icol, col in enumerate(columns):
         worksheet.write(0, icol, col)
-
 
     for irow, rec in enumerate(rows):
         for icol, col in enumerate(rec):
