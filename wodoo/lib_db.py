@@ -375,10 +375,11 @@ ORDER BY total_bytes DESC;
 @db.command(help="Export as excel")
 @click.argument("sql", required=True)
 @click.option('-f', '--file')
+@click.option('-b', '--base64', is_flag=True)
 @pass_config
-def excel(config, sql, file):
-    if sql.startswith("'") and sql.endswith("'"):
-        sql = sql[1:-1]
+def excel(config, sql, file, base64):
+    if base64:
+        sql = base64.b64decode(sql)
     import xlsxwriter
     conn = config.get_odoo_conn()
     columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
