@@ -405,6 +405,9 @@ def excel(config, sql, file):
 
     workbook.close()
     click.secho(f"File created: {filepath}")
+    if config.owner_uid:
+        cmd = f'chown {config.owner_uid}:{config.owner_uid} "{filepath}"'
+        os.system(cmd)
 
 
 Commands.register(reset_db, 'reset-db')
