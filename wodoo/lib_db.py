@@ -377,6 +377,8 @@ ORDER BY total_bytes DESC;
 @click.option('-f', '--file')
 @pass_config
 def excel(config, sql, file):
+    if sql.startswith("'") and sql.endswith("'"):
+        sql = sql[1:-1]
     import xlsxwriter
     conn = config.get_odoo_conn()
     columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
@@ -386,8 +388,6 @@ def excel(config, sql, file):
     else:
         filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
 
-    if sql.startswith("'") and sql.endswith("'"):
-        sql = sql[1:-1]
 
     # Workbook() takes one, non-optional, argument
     # which is the filename that we want to create.
