@@ -404,6 +404,7 @@ def excel(config, sql, file):
             click.secho(f"Done {irow} rows...")
 
     workbook.close()
+
     click.secho(f"File created: {filepath}")
     if config.owner_uid:
         cmd = f'chown {config.owner_uid}:{config.owner_uid} "{filepath}"'
