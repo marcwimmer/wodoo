@@ -380,7 +380,7 @@ ORDER BY total_bytes DESC;
 def excel(config, sql, file, base64):
     import base64 as Base64
     if base64:
-        sql = Base64.decodestring(sql)
+        sql = Base64.b64decode(sql)
     import xlsxwriter
     conn = config.get_odoo_conn()
     columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
