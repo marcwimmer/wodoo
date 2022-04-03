@@ -386,6 +386,9 @@ def excel(config, sql, file):
     else:
         filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
 
+    if sql.startswith("'") and sql.endswith("'"):
+        sql = sql[1:-1]
+
     # Workbook() takes one, non-optional, argument
     # which is the filename that we want to create.
     workbook = xlsxwriter.Workbook(str(filepath))
