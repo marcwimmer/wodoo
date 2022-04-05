@@ -17,4 +17,4 @@ buttervolume>=3.7
 pudb
 gimera
 shellingham
-xlsxwriter>=3.0.3
+xlsxwriter>=1.1.2

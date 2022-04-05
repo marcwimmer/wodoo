@@ -1,3 +1,7 @@
+"""
+configure:
+HUB_URL=registry.name:port/user/project:version
+"""
 import yaml
 from pathlib import Path
 import subprocess
@@ -21,22 +25,19 @@ def login(config):
     hub = split_hub_url(config)
 
     def _login():
-        click.secho(f"Using {hub['username']} with {hub['password']}", fg='blue')
+        click.secho(f"Using {hub['username']}", fg='yellow')
         res = subprocess.check_output([
             'docker', 'login',
             f"{hub['url']}",
             '-u', hub['username'],
             '-p', hub['password'],
-        ])
-        if "Login Succeeded" in res:
+        ], encoding='utf-8')
+        if "Login succeeded" in res:
             return True
         return False
 
-    try:
-        if _login():
-            return
-    except Exception:
-        click.secho(f"Please self sign certificate for {hub['url']} with command 'self-sign-hub-certificate'", bold=True, fg='red')
+    if _login():
+        return
 
 @docker_registry.command()
 @click.argument('machines', nargs=-1)

@@ -835,11 +835,18 @@ def split_hub_url(config):
     """
     url = config.HUB_URL
     if not url:
+        click.secho((
+            "No docker registry hub configured."
+            "Please set setting HUB_URL in settings file."
+        ), fg='yellow')
         return None
     username, password = url.split(":", 1)
     password = password.split("@")[0]
     url = url.split("@")[1]
     url, prefix = url.split("/", 1)
+    click.secho((
+        f"Using docker hub {url}"
+    ), fg='green')
     return {
         'url': url,
         'password': password,
