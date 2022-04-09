@@ -46,6 +46,7 @@ host = "http://localhost:8069"
 username = "admin"
 pwd = "1"
 
+class NotInAddonsPath(Exception): pass
 
 def exe(*params):
     config = get_settings()
@@ -566,7 +567,7 @@ class Modules(object):
             self.modules = self._get_modules()
 
     def _get_cache_path(self):
-        # 
+        #
         from git import Repo
         if not (Path(os.getcwd()) / '.git').exists():
             return None
@@ -584,7 +585,7 @@ class Modules(object):
                 int(os.environ['SUDO_UID']),
                 parent,
             )
-        
+
         return parent / sha
 
     def _get_modules(self):
@@ -645,8 +646,8 @@ class Modules(object):
 
         - fetches to be installed modules from install-file
         - selects all installed, to_be_installed, to_upgrade modules from db and checks wether
-          they are from "us" or OCA
-          (often those modules are forgotten to be updated)
+            they are from "us" or OCA
+            (often those modules are forgotten to be updated)
 
         """
         assert mode in [None, 'to_update', 'to_install']
@@ -656,6 +657,7 @@ class Modules(object):
         if mode == 'to_install':
             modules = [x for x in modules if not DBModules.is_module_installed(x)]
 
+        modules = list(map(lambda x: Module.get_by_name(x), modules))
         return modules
 
     def get_module_dependency_tree(self, module):
@@ -680,7 +682,10 @@ class Modules(object):
                 try:
                     dep_mod = dep_mod[0]
                 except Exception:
-                    click.secho(f"Module not found: {dep}\n\n\n{list(sorted(map(lambda x: x.name, self.modules.values())))}", fg='red', bold=True)
+                    click.secho((
+                        f"Module not found: {dep}\n\n\n"
+                        f"{list(sorted(map(lambda x: x.name, self.modules.values())))}"
+                    ), fg='red', bold=True)
                     sys.exit(-1)
                 data[mod.name][dep] = {}
                 append_deps(dep_mod, data[mod.name][dep])
@@ -702,7 +707,49 @@ class Modules(object):
 
         x(deptree)
         assert all(isinstance(x, str) for x in result)
+        result = list(map(lambda x: Module.get_by_name(x), list(result)))
         return sorted(list(result))
+
+    def get_all_auto_install_modules(self):
+        auto_install_modules = []
+        for module in Modules()._get_modules():
+            try:
+                module = Module.get_by_name(module)
+            except NotInAddonsPath:
+                continue
+            if module.manifest_dict.get('auto_install', False):
+                auto_install_modules.append(module)
+        return auto_install_modules
+
+    def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
+        module_list = list(map(lambda x: Module.get_by_name(x), module_list))
+
+        complete_modules = set()
+        for mod in module_list:
+            complete_modules |= set(list(self.get_module_flat_dependency_tree(mod)))
+
+        def _get(all_modules):
+            for auto_install_module in all_modules:
+                dependencies = set(list(
+                    self.get_module_flat_dependency_tree(auto_install_module)))
+                installed_dependencies = set([
+                    x for x in dependencies
+                    if x.manifest_dict.get('auto_install') or x in complete_modules
+                ])
+                if dependencies == installed_dependencies:
+                    yield auto_install_module
+
+                    if all(x in module_list for x in dependencies):
+                        yield auto_install_module
+
+        modules = self.get_all_auto_install_modules()
+        while True:
+            before = list(sorted(set(map(lambda x: x.name, modules))))
+            modules = list(_get(modules))
+            after = list(sorted(set(map(lambda x: x.name, modules))))
+            if after == before:
+                break
+        return modules
 
     def get_all_used_modules(self):
         """
@@ -710,40 +757,23 @@ class Modules(object):
         """
         result = set()
         modules = self.get_customs_modules()
+        auto_install_modules = self.get_filtered_auto_install_modules_based_on_module_list(modules)
+        modules += auto_install_modules
 
-        auto_install_modules = []
         for module in modules:
-            module = Module.get_by_name(module)
             result.add(module.name)
-            if module.manifest_dict.get('auto_install', False):
-                auto_install_modules.append(module)
             dependencies = self.get_module_flat_dependency_tree(module)
             for dep in dependencies:
                 result.add(dep)
-
-        # check for auto install modules - auto install could refer to other auto install
-        while True:
-            changed = False
-            for module in list(auto_install_modules):
-                depends = [x for x in module.manifest_dict.get('depends', []) if x != 'base']
-                if all(x in modules for x in depends) and module.name not in result:
-                    changed = True
-                    result.append(module.name)
-                    auto_install_modules.remove(module)
-            if not changed:
-                break
 
         return list(result)
 
     def get_all_external_dependencies(self, additional_modules=[]):
         modules = self.get_all_used_modules()
-        modules = list(sorted(set(modules) | set(additional_modules)))
+        modules = list(sorted(set(modules) | set(additional_modules), key=lambda x: x.name))
         pydeps = []
         deb_deps = []
         for module in modules:
-            if module == 'master':
-                import pudb;pudb.set_trace()
-            module = self.modules[module]
             file = (module.path / 'external_dependencies.txt')
             new_deps = []
             if file.exists():
@@ -838,6 +868,22 @@ class Module(object):
 
     class IsNot(Exception): pass
 
+    def __str__(self):
+        return (
+            f"{self.name}"
+        )
+
+    def __repr__(self):
+        return (
+            f"{self.name}"
+        )
+
+    def __lt__(self, other):
+        return self.name < other.name
+
+    def __gt__(self, other):
+        return self.name > other.name
+
     def __init__(self, path):
         self.version = float(current_version())
         path = Path(path)
@@ -889,6 +935,11 @@ class Module(object):
     def export_lang(self, current_file, LANG):
         write_debug_instruction('export_i18n:{}:{}'.format(LANG, self.name))
 
+    @property
+    def hash(self):
+        from .tools import get_directory_hash
+        return get_directory_hash(self.path)
+
     @classmethod
     def get_by_name(clazz, name):
         from .odoo_config import get_odoo_addons_paths
@@ -899,7 +950,7 @@ class Module(object):
                 path = dir
             del dir
         if not path:
-            raise Exception("Could not get path for {}".format(name))
+            raise NotInAddonsPath(f"Could not get path for {name}")
         if path.exists():
             path = path.resolve()
 

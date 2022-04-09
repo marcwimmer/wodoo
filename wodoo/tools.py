@@ -1,4 +1,5 @@
 import platform
+import hashlib
 import requests
 import stat
 from contextlib import contextmanager
@@ -905,3 +906,19 @@ def download_file(url):
             shutil.copyfileobj(r.raw, f)
 
     return Path(local_filename)
+
+def get_hash(text):
+    if isinstance(text, str):
+        text = text.encode('utf8')
+    return hashlib.md5(text).hexdigest()
+
+def get_directory_hash(path):
+    hex = b""
+    for file in sorted(path.glob("**/*")):
+        if file.name.startswith("."):
+            continue
+        if file.is_dir():
+            continue
+        hex = get_hash(hex + file.read_bytes()).encode('utf8')
+    return str(hex)
+

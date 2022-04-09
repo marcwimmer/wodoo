@@ -10,6 +10,8 @@ import shutil
 import os
 import tempfile
 import click
+from .tools import get_hash
+from .tools import get_directory_hash
 from .tools import sync_folder
 from .tools import __dcrun
 from .tools import __cmd_interactive
@@ -158,7 +160,8 @@ def _get_outdated_versioned_modules_of_deptree(modules):
             continue
 
         for dep in mods.get_module_flat_dependency_tree(mods.modules[module]):
-            meta_info = DBModules.get_meta_data(dep)
+            import pudb;pudb.set_trace()
+            meta_info = DBModules.get_meta_data(dep.name)
             if not meta_info:
                 continue
             version = meta_info['version']
@@ -856,7 +859,7 @@ def _get_changed_files(git_sha):
             submodule_path = cwd / filepath
             submodule_relative_path = filepath
             for filepath in list(filter(bool, subprocess.check_output([
-                'git', 'diff', 
+                'git', 'diff',
                 f"{old_commit}..{new_commit}",
                 "--name-only",
                 ], cwd=submodule_path).decode('utf-8').split("\n"))):
@@ -866,7 +869,7 @@ def _get_changed_files(git_sha):
             filepaths2.append(filepath)
 
     return filepaths2
-    
+
 
 def _get_changed_modules(git_sha):
     from .module_tools import Module
@@ -908,6 +911,37 @@ def list_changed_files(ctx, config, start):
     click.secho("---")
     for file in files:
         click.secho(file)
+
+@odoo_module.command()
+@click.argument("module")
+@click.pass_context
+@pass_config
+def list_deps(ctx, config, module):
+    from .module_tools import Modules, DBModules, Module
+    from .odoo_config import customs_dir
+    modules = Modules()
+    module = Module(module)
+
+    data = {'modules': []}
+    data['modules'] = sorted(map(
+        lambda x: x.name, Modules().get_module_flat_dependency_tree(module)))
+    data['auto_install'] = sorted(map(
+        lambda x: x.name, Modules().get_filtered_auto_install_modules_based_on_module_list(
+            data['modules'])))
+
+    # get some hashes:
+    hash = ""
+    for path in ['odoo']:
+        path = customs_dir() / path
+        hash = get_hash(hash + get_directory_hash(path))
+    for mod in data['modules']:
+        hash = get_hash(hash + Module.get_by_name(mod).hash)
+    for mod in data['auto_install']:
+        hash = get_hash(hash + Module.get_by_name(mod).hash)
+    data['hash'] = hash
+
+    click.secho("---")
+    click.secho(json.dumps(data, indent=4))
 
 
 Commands.register(progress)
