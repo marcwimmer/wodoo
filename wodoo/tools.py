@@ -910,7 +910,7 @@ def download_file(url):
 def get_hash(text):
     if isinstance(text, str):
         text = text.encode('utf8')
-    return hashlib.md5(text).hexdigest()
+    return hashlib.sha1(text).hexdigest()
 
 def get_directory_hash(path):
     hex = b""
