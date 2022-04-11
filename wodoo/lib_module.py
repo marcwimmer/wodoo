@@ -348,7 +348,8 @@ def update(
         if not module and not since_git_sha:
             module = _get_default_modules_to_update()
 
-        outdated_modules = list(set(_get_outdated_versioned_modules_of_deptree(module)))
+        outdated_modules = list(map(
+            lambda x: x.name, set(_get_outdated_versioned_modules_of_deptree(module))))
 
         if not no_restart:
             if config.use_docker:
