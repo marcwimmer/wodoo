@@ -46,6 +46,8 @@ host = "http://localhost:8069"
 username = "admin"
 pwd = "1"
 
+name_cache = {}
+
 class NotInAddonsPath(Exception): pass
 
 def exe(*params):
@@ -546,47 +548,14 @@ def update_view_in_db(filepath, lineno):
                         exe("ir.ui.view", "write", view_ids, {'arch_db': arch})
 
 
+all_modules_cache = None
 class Modules(object):
 
     def __init__(self):
-        cache_file = self._get_cache_path()
-
-        if self.is_git_clean():
-            if not cache_file or not cache_file.exists():
-                modules = self._get_modules()
-                if cache_file:
-                    cache_file.write_bytes(pickle.dumps(modules))
-                self.modules = modules
-            else:
-                try:
-                    self.modules = pickle.loads(cache_file.read_bytes())
-                except:
-                    cache_file.unlink()
-                    modules = self._get_modules()
-        else:
-            self.modules = self._get_modules()
-
-    def _get_cache_path(self):
-        #
-        from git import Repo
-        if not (Path(os.getcwd()) / '.git').exists():
-            return None
-        repo = Repo(os.getcwd())
-        sha = repo.head.commit.hexsha
-        full_path = os.getcwd().replace('/', '_')
-        if os.getenv("SUDO_UID"):
-            uid = int(os.getenv("SUDO_UID"))
-        else:
-            uid = os.getuid()
-        parent = Path(f"/tmp/.odoo.modules.{uid}.{full_path}")
-        parent.mkdir(exist_ok=True)
-        if os.getenv("SUDO_USER"):
-            try_to_set_owner(
-                int(os.environ['SUDO_UID']),
-                parent,
-            )
-
-        return parent / sha
+        global all_modules_cache
+        if not all_modules_cache:
+            all_modules_cache = self._get_modules()
+        self.modules = all_modules_cache
 
     def _get_modules(self):
         modnames = set()
@@ -775,7 +744,6 @@ class Modules(object):
         pydeps = []
         deb_deps = []
         for module in modules:
-            import pudb;pudb.set_trace()
             module = Module.get_by_name(module)
             file = (module.path / 'external_dependencies.txt')
             new_deps = []
@@ -948,7 +916,20 @@ class Module(object):
         return get_directory_hash(self.path)
 
     @classmethod
+    def __get_by_name_cached(cls, name):
+        if name not in name_cache:
+            name_cache.setdefault(
+                name, cls._get_by_name(name))
+        return name_cache[name]
+
+    @classmethod
     def get_by_name(cls, name):
+        if isinstance(name, Module):
+            return name
+        return cls.__get_by_name_cached(name)
+
+    @classmethod
+    def _get_by_name(cls, name):
         from .odoo_config import get_odoo_addons_paths
         if isinstance(name, Module):
             name = name.name
