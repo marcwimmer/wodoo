@@ -768,12 +768,15 @@ class Modules(object):
 
         return list(result)
 
-    def get_all_external_dependencies(self, additional_modules=[]):
+    def get_all_external_dependencies(self, additional_modules=None):
+        additional_modules = additional_modules or []
         modules = self.get_all_used_modules()
-        modules = list(sorted(set(modules) | set(additional_modules), key=lambda x: x.name))
+        modules = list(sorted(set(modules) | set(additional_modules)))
         pydeps = []
         deb_deps = []
         for module in modules:
+            import pudb;pudb.set_trace()
+            module = Module.get_by_name(module)
             file = (module.path / 'external_dependencies.txt')
             new_deps = []
             if file.exists():
@@ -879,9 +882,13 @@ class Module(object):
         )
 
     def __lt__(self, other):
+        if isinstance(other, str):
+            return self.name < other
         return self.name < other.name
 
     def __gt__(self, other):
+        if isinstance(other, str):
+            return self.name > other
         return self.name > other.name
 
     def __init__(self, path):
@@ -941,8 +948,10 @@ class Module(object):
         return get_directory_hash(self.path)
 
     @classmethod
-    def get_by_name(clazz, name):
+    def get_by_name(cls, name):
         from .odoo_config import get_odoo_addons_paths
+        if isinstance(name, Module):
+            name = name.name
         path = None
         for addon_path in get_odoo_addons_paths():
             dir = addon_path / name
@@ -963,7 +972,6 @@ class Module(object):
 
         # could be an odoo module then
         for path in get_odoo_addons_paths():
-            print(path)
             if (path / name).resolve().is_dir():
                 return Module(path / name)
         raise Exception("Module not found or not linked: {}".format(name))

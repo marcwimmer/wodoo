@@ -852,9 +852,6 @@ def split_hub_url(config):
     password = password.split("@")[0]
     url = url.split("@")[1]
     url, prefix = url.split("/", 1)
-    click.secho((
-        f"Using docker hub {url}"
-    ), fg='green')
     return {
         'url': url,
         'password': password,
