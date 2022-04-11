@@ -171,7 +171,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
             except Exception:
                 click.secho(f"Broken version name in module {meta_info}: {version}", fg='red')
                 sys.exit(-1)
-            new_version = mods.modules[dep].manifest_dict.get('version')
+            new_version = Module.get_by_name(dep).manifest_dict.get('version')
             if not new_version:
                 continue
             new_version = tuple([int(x) for x in new_version.split('.')])
