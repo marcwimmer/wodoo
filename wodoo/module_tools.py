@@ -849,6 +849,9 @@ class Module(object):
             f"{self.name}"
         )
 
+    def __add__(self, other):
+        return self.name + other
+
     def __lt__(self, other):
         if isinstance(other, str):
             return self.name < other

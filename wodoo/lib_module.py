@@ -321,7 +321,7 @@ def update(
                                 | |
                                 |_|
     """, fg='green')
-    from .module_tools import Modules, DBModules
+    from .module_tools import Modules, DBModules, Module
     # ctx.invoke(module_link)
     if config.run_postgres:
         Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
@@ -343,21 +343,26 @@ def update(
                 click.secho("No module update required - exiting.")
                 return
         else:
-            module = list(filter(lambda x: x, sum(map(lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
+            module = list(filter(lambda x: x, sum(map(
+                lambda x: x.split(','), module), [])))  # '1,2 3' --> ['1', '2', '3']
 
         if not module and not since_git_sha:
             module = _get_default_modules_to_update()
 
         outdated_modules = list(map(
-            lambda x: x.name, set(_get_outdated_versioned_modules_of_deptree(module))))
+            lambda x: x.name, set(
+                _get_outdated_versioned_modules_of_deptree(module))))
 
         if not no_restart:
             if config.use_docker:
-                Commands.invoke(ctx, 'kill', machines=get_services(config, 'odoo_base'))
+                Commands.invoke(
+                    ctx, 'kill', machines=get_services(config, 'odoo_base'))
                 if config.run_redis:
-                    Commands.invoke(ctx, 'up', machines=['redis'], daemon=True)
+                    Commands.invoke(
+                        ctx, 'up', machines=['redis'], daemon=True)
                 if config.run_postgres:
-                    Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
+                    Commands.invoke(
+                        ctx, 'up', machines=['postgres'], daemon=True)
                 Commands.invoke(ctx, 'wait_for_container_postgres')
 
         if not no_dangling_check:
@@ -386,6 +391,8 @@ def update(
 
         def _technically_update(modules):
             try:
+                modules = list(map(
+                    lambda x: x.name if isinstance(x, Module) else x, modules))
                 params = [','.join(modules)]
                 if no_extra_addons_paths:
                     params += ['--no-extra-addons-paths']
@@ -412,10 +419,12 @@ def update(
 
             except UpdateException:
                 raise
-            except Exception:
+            except Exception as ex:
                 click.echo(traceback.format_exc())
                 ctx.invoke(show_install_state, suppress_error=True)
-                raise Exception("Error at /update_modules.py - aborting update process.")
+                raise Exception((
+                    "Error at /update_modules.py - "
+                    "aborting update process.")) from ex
 
             if check_install_state:
                 ctx.invoke(show_install_state, suppress_error=no_dangling_check)
