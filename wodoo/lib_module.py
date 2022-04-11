@@ -151,7 +151,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
     This usually habens after an update of odoo core.
 
     """
-    from .module_tools import Modules, DBModules
+    from .module_tools import Modules, DBModules, Module
     from .odoo_config import MANIFEST
     mods = Modules()
 
@@ -159,8 +159,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
         if module == 'base':
             continue
 
-        for dep in mods.get_module_flat_dependency_tree(mods.modules[module]):
-            import pudb;pudb.set_trace()
+        for dep in mods.get_module_flat_dependency_tree(Module.get_by_name(module)):
             meta_info = DBModules.get_meta_data(dep.name)
             if not meta_info:
                 continue
