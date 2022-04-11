@@ -194,6 +194,8 @@ def _wait_postgres(config):
         client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
+            if not container_id:
+                continue
             container = client.containers.get(container_id)
             if not container:
                 continue
@@ -203,6 +205,11 @@ def _wait_postgres(config):
 
         # if running containers wait for health state:
         if not postgres_containers:
+            abort((
+                "No running postgres container found. "
+                "Perhaps you have to start it with "
+                "'odoo up -d postgres' first?"
+            ))
             raise Exception("No running container found!")
 
         _wait_for_port(conn.host, conn.port, timeout=30)

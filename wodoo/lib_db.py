@@ -141,7 +141,7 @@ def reset_db(ctx, config, dbname, do_not_install_base):
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
-    if config.run_docker:
+    if config.run_postgres:
         Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)
     _wait_postgres(config)
     conn = config.get_odoo_conn().clone(dbname=dbname)
