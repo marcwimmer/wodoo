@@ -861,6 +861,7 @@ class Module(object):
 
     def __init__(self, path):
         self.version = float(current_version())
+        self._manifest_dict = None
         path = Path(path)
         p = path if path.is_dir() else path.parent
 
@@ -881,16 +882,20 @@ class Module(object):
 
     @property
     def manifest_dict(self):
-        try:
-            content = self.manifest_path.read_text()
-            content = '\n'.join(filter(lambda x: not x.strip().startswith("#"), content.split("\n")))
-            return eval(content) # TODO safe
-        except SyntaxError:
-            click.secho("error at file: %s" % self.manifest_path, fg='red')
-            raise
-        except Exception:
-            click.secho("error at file: %s" % self.manifest_path, fg='red')
-            raise
+        if not self._manifest_dict:
+            try:
+                content = self.manifest_path.read_text()
+                content = '\n'.join(filter(lambda x: not x.strip().startswith("#"), content.split("\n")))
+                return eval(content) # TODO safe
+            except SyntaxError:
+                click.secho("error at file: %s" % self.manifest_path, fg='red')
+                raise
+            except Exception:
+                click.secho("error at file: %s" % self.manifest_path, fg='red')
+                raise
+            else:
+                self._manifest_dict = content
+        return self._manifest_dict
 
     def __make_path_relative(self, path):
         path = path.resolve().absolute()
@@ -904,11 +909,11 @@ class Module(object):
         pofile_path - pathin in the machine
         """
         pofile_path = self.__make_path_relative(pofile_path)
-        LANG = pofile_path.name.split(".po")[0]
-        write_debug_instruction('import_i18n:{}:{}'.format(LANG, pofile_path))
+        lang = pofile_path.name.split(".po")[0]
+        write_debug_instruction('import_i18n:{}:{}'.format(lang, pofile_path))
 
-    def export_lang(self, current_file, LANG):
-        write_debug_instruction('export_i18n:{}:{}'.format(LANG, self.name))
+    def export_lang(self, current_file, lang):
+        write_debug_instruction('export_i18n:{}:{}'.format(lang, self.name))
 
     @property
     def hash(self):
