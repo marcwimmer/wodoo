@@ -875,7 +875,9 @@ class Module(object):
                 self._manifest_path = p / manifest_file_names()
                 break
         if not getattr(self, '_manifest_path', ''):
-            raise Module.IsNot("no module found for {}".format(path))
+            raise Module.IsNot((
+                f"no module found for {path}"
+            ))
         self.name = self._manifest_path.parent.name
         self.path = self._manifest_path.parent
 
