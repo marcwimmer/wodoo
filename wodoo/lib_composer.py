@@ -208,14 +208,20 @@ def _do_compose(config, db='', demo=False, **forced_values):
 def _download_images(config):
     from . import consts
     if not config.dirs['images'].exists():
-        subprocess.run([
+        subprocess.check_call([
             "git",
             "clone",
             config.IMAGES_URL or consts.DEFAULT_IMAGES_REPO,
             config.dirs['images']
         ])
-    subprocess.run(["git", "pull"], cwd=config.dirs['images'])
-    branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=config.dirs['images'], encoding='utf-8').strip()
+    subprocess.check_call([
+        "git", "config", "--global",
+        "--add", config.dirs['images']], cwd=config.dirs['images'])
+    subprocess.check_call([
+        "git", "pull"], cwd=config.dirs['images'])
+    branch = subprocess.check_output([
+        "git", "rev-parse", "--abbrev-ref",
+        "HEAD"], cwd=config.dirs['images'], encoding='utf-8').strip()
     sha = subprocess.check_output(["git", "log", "-n1", "--pretty=format:%H"], cwd=config.dirs['images'], encoding='utf-8').strip()
     click.secho("--------------------------------------------------")
     click.secho(f"Images Branch: {branch}", fg='yellow')
