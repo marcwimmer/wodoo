@@ -216,7 +216,7 @@ def _download_images(config):
         ])
     subprocess.check_call([
         "git", "config", "--global",
-        "--add", config.dirs['images']], cwd=config.dirs['images'])
+        "--add", "safe.directory", str(config.dirs['images'])], cwd=config.dirs['images'])
     subprocess.check_call([
         "git", "pull"], cwd=config.dirs['images'])
     branch = subprocess.check_output([
