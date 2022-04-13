@@ -688,7 +688,7 @@ class Modules(object):
                 continue
             if module.manifest_dict.get('auto_install', False):
                 auto_install_modules.append(module)
-        return auto_install_modules
+        return list(sorted(set(auto_install_modules)))
 
     def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
         module_list = list(map(lambda x: Module.get_by_name(x), module_list))
@@ -718,7 +718,7 @@ class Modules(object):
             after = list(sorted(set(map(lambda x: x.name, modules))))
             if after == before:
                 break
-        return modules
+        return list(sorted(set(modules)))
 
     def get_all_used_modules(self):
         """
