@@ -929,13 +929,13 @@ def list_deps(ctx, config, module):
     from .module_tools import Modules, DBModules, Module
     from .odoo_config import customs_dir
     modules = Modules()
-    module = Module(module)
+    module = Module.get_by_name(module)
 
     data = {'modules': []}
     data['modules'] = sorted(map(
-        lambda x: x.name, Modules().get_module_flat_dependency_tree(module)))
+        lambda x: x.name, modules.get_module_flat_dependency_tree(module)))
     data['auto_install'] = sorted(map(
-        lambda x: x.name, Modules().get_filtered_auto_install_modules_based_on_module_list(
+        lambda x: x.name, modules.get_filtered_auto_install_modules_based_on_module_list(
             data['modules'])))
 
     # get some hashes:
