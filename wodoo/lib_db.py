@@ -1,4 +1,5 @@
 import subprocess
+import time
 from pathlib import Path
 import yaml
 import arrow
@@ -415,6 +416,65 @@ def excel(config, sql, file, base64):
     if config.owner_uid:
         cmd = f'chown {config.owner_uid}:{config.owner_uid} "{filepath}"'
         os.system(cmd)
+
+@db.command()
+@click.option('--no-scram', is_flag=True)
+@pass_config
+def pghba_conf_wide_open(config, no_scram):
+    conn = config.get_odoo_conn().clone(dbname='postgres')
+    setting = _execute_sql(
+        conn,
+        "select setting from pg_settings where name like '%hba%';",
+        fetchone=True)
+
+    if not setting:
+        click.secho("No pghba.conf location found.")
+        return
+    pghba_conf = setting[0]
+
+    _execute_sql(
+        conn, "drop table if exists hba;"
+    )
+    _execute_sql(
+        conn, "create table hba ( lines text );"
+    )
+
+    _execute_sql(conn, f"copy hba from '{pghba_conf}';")
+    import pudb
+    pudb.set_trace()
+    _execute_sql(
+        conn, (
+            "delete from hba "
+            "where lines like 'host%all%all%all%md5'"
+    ))
+    _execute_sql(
+        conn, (
+            "insert into hba (lines) "
+            "values ('"
+            f"host all all all md5"
+            "');"
+    ))
+    if no_scram:
+        _execute_sql(
+            conn, (
+                "update hba "
+                " set lines = replace(lines, 'scram-sha-256', 'md5')"
+        ))
+    _execute_sql(conn, f"copy hba to '{pghba_conf}';")
+    _execute_sql(conn, "select pg_reload_conf();")
+    _execute_sql(conn, "drop table hba")
+    _execute_sql(
+        conn, "create table hba ( lines text );"
+    )
+    _execute_sql(conn, f"copy hba from '{pghba_conf}';")
+
+    rows = _execute_sql(conn, (
+        "select * from hba;"
+    ), fetchall=True)
+    for x in rows:
+        if x[0].startswith("#"):
+            continue
+        print(x[0])
 
 
 Commands.register(reset_db, 'reset-db')
