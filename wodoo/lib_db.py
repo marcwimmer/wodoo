@@ -162,6 +162,7 @@ def reset_db(ctx, config, dbname, do_not_install_base):
             'update',
             module=['base'],
             since_git_sha=False,
+            no_extra_addons_paths=True,
             no_restart=True,
             no_dangling_check=True,
             no_update_module_list=True,
