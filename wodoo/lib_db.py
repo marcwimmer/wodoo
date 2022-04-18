@@ -440,8 +440,6 @@ def pghba_conf_wide_open(config, no_scram):
     )
 
     _execute_sql(conn, f"copy hba from '{pghba_conf}';")
-    import pudb
-    pudb.set_trace()
     _execute_sql(
         conn, (
             "delete from hba "
