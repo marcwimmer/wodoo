@@ -1,4 +1,5 @@
 import sys
+import threading
 import json
 import base64
 import subprocess
@@ -926,6 +927,7 @@ def list_deps(ctx, config, module):
     from .odoo_config import customs_dir
     modules = Modules()
     module = Module.get_by_name(module)
+    # import pudb;pudb.set_trace()
 
     data = {'modules': []}
     data['modules'] = sorted(map(
@@ -938,17 +940,35 @@ def list_deps(ctx, config, module):
     print(f"part1: {part1.total_seconds()}")
 
     # get some hashes:
-    hash = ""
+    paths = []
     for path in ['odoo']:
         path = customs_dir() / path
-        hash = get_hash(hash + get_directory_hash(path))
+        paths.append(path)
     for mod in data['modules']:
-        hash = get_hash(hash + Module.get_by_name(mod).hash)
+        paths.append(Module.get_by_name(mod).path)
     for mod in data['auto_install']:
-        hash = get_hash(hash + Module.get_by_name(mod).hash)
+        paths.append(Module.get_by_name(mod).path)
+
+    threads = []
+    hashes = {}
+    def _get_hash(path):
+        hashes[path] = get_directory_hash(path)
+
+    for path in list(sorted(set(paths))):
+        t = threading.Thread(target=_get_hash, args=(path,))
+        t.daemon = True
+        t.start()
+        threads.append(t)
+    [x.join() for x in threads]
+
+    to_hash = ""
+    for k in sorted(hashes.keys()):
+        to_hash += hashes[k]
+
+    hash = get_hash(to_hash)
     data['hash'] = hash
     part2 = arrow.get() - started
-    print(f"part2: {part1.total_seconds()}")
+    print(f"part2: {part2.total_seconds()}")
 
     click.secho("---")
     click.secho(json.dumps(data, indent=4))
