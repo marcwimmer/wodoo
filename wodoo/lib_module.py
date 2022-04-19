@@ -842,13 +842,10 @@ def generate_update_command(ctx, config):
 
 def _get_changed_files(git_sha):
     from .module_tools import Module
-    filepaths = list(filter(bool, subprocess.check_output([
-        'git',
-        'diff',
-        f"{git_sha}..HEAD",
-        "--name-only",
-    ]).decode('utf-8').split("\n")))
-    repo = Repo(os.getcwd())
+    from .tools import git_diff_files
+    cwd = os.getcwd()
+    filepaths = git_diff_files(cwd, git_sha, "HEAD")
+    repo = Repo(cwd)
 
     # check if there are submodules:
     filepaths2 = []
@@ -867,13 +864,10 @@ def _get_changed_files(git_sha):
             # now diff the submodule
             submodule_path = cwd / filepath
             submodule_relative_path = filepath
-            for filepath in list(filter(bool, subprocess.check_output([
-                'git', 'diff',
-                f"{old_commit}..{new_commit}",
-                "--name-only",
-                ], cwd=submodule_path).decode('utf-8').split("\n"))):
-
-                filepaths2.append(submodule_relative_path + "/" + filepath)
+            for filepath2 in git_diff_files(
+                submodule_path, old_commit, new_commit
+            ):
+                filepaths2.append(submodule_relative_path + "/" + filepath2)
         else:
             filepaths2.append(filepath)
 
@@ -926,6 +920,8 @@ def list_changed_files(ctx, config, start):
 @click.pass_context
 @pass_config
 def list_deps(ctx, config, module):
+    import arrow
+    started = arrow.get()
     from .module_tools import Modules, DBModules, Module
     from .odoo_config import customs_dir
     modules = Modules()
@@ -937,6 +933,9 @@ def list_deps(ctx, config, module):
     data['auto_install'] = sorted(map(
         lambda x: x.name, modules.get_filtered_auto_install_modules_based_on_module_list(
             data['modules'])))
+    part1 = arrow.get() - started
+    started = arrow.get()
+    print(f"part1: {part1.total_seconds()}")
 
     # get some hashes:
     hash = ""
@@ -948,6 +947,8 @@ def list_deps(ctx, config, module):
     for mod in data['auto_install']:
         hash = get_hash(hash + Module.get_by_name(mod).hash)
     data['hash'] = hash
+    part2 = arrow.get() - started
+    print(f"part2: {part1.total_seconds()}")
 
     click.secho("---")
     click.secho(json.dumps(data, indent=4))

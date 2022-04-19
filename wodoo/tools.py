@@ -917,12 +917,20 @@ def get_hash(text):
     return hashlib.sha1(text).hexdigest()
 
 def get_directory_hash(path):
-    hex = b""
-    for file in sorted(path.glob("**/*")):
-        if file.name.startswith("."):
-            continue
-        if file.is_dir():
-            continue
-        hex = get_hash(hex + file.read_bytes()).encode('utf8')
-    return str(hex)
+    hex = subprocess.check_output((
+        "find . -type f "
+        "-not -path '*/.*' -print0 "
+        "| sort -z | xargs -0 sha1sum | sha1sum"
+    ), encoding='utf8', shell=True).strip().split(" ")[0]
+    return hex
 
+def git_diff_files(path, commit1, commit2):
+    output = subprocess.check_output([
+        'git',
+        'diff',
+        "--name-only",
+        commit1,
+        commit2,
+    ], encoding='utf8', cwd=path)
+    filepaths = list(filter(bool, output.splitlines()))
+    return filepaths
