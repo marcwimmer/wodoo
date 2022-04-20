@@ -944,7 +944,7 @@ class Module(object):
     @classmethod
     def _get_by_name(cls, name):
 
-        if name in all_modules_cache:
+        if all_modules_cache and name in all_modules_cache:
             return all_modules_cache[name]
 
         from .odoo_config import get_odoo_addons_paths
