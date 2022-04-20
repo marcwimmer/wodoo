@@ -70,6 +70,8 @@ def cli(config, force, verbose, project_name, restrict_setting, restrict_docker_
     config.force = force
     config.verbose = verbose
     config.restrict = {}
+    if verbose:
+        os.environ['WODOO_VERBOSE'] = '1'
     if chdir:
         os.chdir(chdir)
         config.WORKING_DIR = chdir
