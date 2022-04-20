@@ -17,6 +17,7 @@ except Exception:
 from .tools import _extract_python_libname
 from .tools import _exists_table
 from .tools import _execute_sql
+from .tools import measure_time
 from .odoo_config import get_conn_autoclose, manifest_file_names
 from .odoo_config import current_version
 from .odoo_config import get_settings
@@ -563,6 +564,7 @@ class Modules(object):
         modnames = set()
         from .odoo_config import get_odoo_addons_paths
 
+        @measure_time
         def get_all_manifests():
             """
             Returns a list of full paths of all manifests
@@ -681,7 +683,7 @@ class Modules(object):
 
     def get_all_auto_install_modules(self):
         auto_install_modules = []
-        for module in Modules()._get_modules():
+        for module in Modules().modules:
             try:
                 module = Module.get_by_name(module)
             except NotInAddonsPath:
@@ -890,16 +892,16 @@ class Module(object):
         if not self._manifest_dict:
             try:
                 content = self.manifest_path.read_text()
-                content = '\n'.join(filter(lambda x: not x.strip().startswith("#"), content.split("\n")))
-                return eval(content) # TODO safe
-            except SyntaxError:
-                click.secho("error at file: %s" % self.manifest_path, fg='red')
+                content = '\n'.join(filter(
+                    lambda x: not x.strip().startswith("#"),
+                    content.splitlines()))
+                self._manifest_dict = eval(content)  # TODO safe
+
+            except (SyntaxError, Exception):
+                click.secho((
+                    f"error at file: {self.manifest_path}"
+                ), fg='red')
                 raise
-            except Exception:
-                click.secho("error at file: %s" % self.manifest_path, fg='red')
-                raise
-            else:
-                self._manifest_dict = content
         return self._manifest_dict
 
     def __make_path_relative(self, path):
