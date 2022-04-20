@@ -917,10 +917,48 @@ def list_changed_files(ctx, config, start):
         click.secho(file)
 
 @odoo_module.command()
+@click.pass_context
+@pass_config
+def make_dir_hashes(ctx, config):
+    from tqdm import tqdm
+    from .odoo_config import customs_dir
+    customs_dir = customs_dir()
+    hashes = subprocess.check_output([
+        "sha1deep", "-r", "-l", "-j", "5", customs_dir],
+        encoding="utf8").strip()
+
+    file_hashes = {}
+    customs_dir = str(customs_dir)
+    for hash in hashes.splitlines():
+        hash, file = hash.split(" ", 1)
+        file = file.strip()
+        if file.startswith("./"):
+            file = file[2:]
+        elif file.startswith(customs_dir):
+            file = file[len(customs_dir) + 1:]
+
+        file_hashes[file] = hash
+
+    paths = []
+    path_hashes = {}
+    for path in Path(customs_dir).glob("**/*"):
+        if path.is_dir():
+            if not (path / '__manifest__.py').exists() and path.name != 'odoo':
+                continue
+            paths.append(path)
+    for path in tqdm(paths):
+        relpath = str(path.relative_to(customs_dir))
+        files = list(sorted(filter(
+            lambda x: str(x).startswith(relpath), file_hashes.keys())))
+        hashstring = ''.join(file_hashes[file] for file in files)
+        path_hashes[relpath] = get_hash(hashstring)
+    (Path(customs_dir) / '.dirhashes').write_text(json.dumps(path_hashes, indent=4))
+
+@odoo_module.command()
 @click.argument("module")
 @click.pass_context
 @pass_config
-def list_deps(ctx, config, module):
+def list_deps(config, ctx, module):
     import arrow
     started = arrow.get()
     from .module_tools import Modules, DBModules, Module
@@ -937,7 +975,8 @@ def list_deps(ctx, config, module):
             data['modules'])))
     part1 = arrow.get() - started
     started = arrow.get()
-    print(f"part1: {part1.total_seconds()}")
+    if config.verbose:
+        print(f"part1: {part1.total_seconds()}")
 
     # get some hashes:
     paths = []
@@ -949,26 +988,23 @@ def list_deps(ctx, config, module):
     for mod in data['auto_install']:
         paths.append(Module.get_by_name(mod).path)
 
-    threads = []
-    hashes = {}
-    def _get_hash(path):
-        hashes[path] = get_directory_hash(path)
+    dir_hashes = json.loads((customs_dir() / '.dirhashes').read_text())
 
+    # hash python version
+    python_version = config.ODOO_PYTHON_VERSION
+    to_hash = str(python_version)
     for path in list(sorted(set(paths))):
-        t = threading.Thread(target=_get_hash, args=(path,))
-        t.daemon = True
-        t.start()
-        threads.append(t)
-    [x.join() for x in threads]
-
-    to_hash = ""
-    for k in sorted(hashes.keys()):
-        to_hash += hashes[k]
+        relpath = path.relative_to(customs_dir())
+        _hash = dir_hashes.get(str(relpath))
+        if _hash is None:
+            _hash = get_directory_hash(path)
+        to_hash += _hash
 
     hash = get_hash(to_hash)
     data['hash'] = hash
     part2 = arrow.get() - started
-    print(f"part2: {part2.total_seconds()}")
+    if config.verbose:
+        print(f"part2: {part2.total_seconds()}")
 
     click.secho("---")
     click.secho(json.dumps(data, indent=4))
@@ -977,3 +1013,4 @@ def list_deps(ctx, config, module):
 Commands.register(progress)
 Commands.register(update)
 Commands.register(show_install_state)
+Commands.register(make_dir_hashes)

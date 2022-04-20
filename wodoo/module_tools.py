@@ -66,12 +66,14 @@ def delete_qweb(config, modules):
 
     with get_conn_autoclose(config) as cr:
         if modules != 'all':
-            cr.execute("select name from ir_module_module where name = %s", (modules,))
+            cr.execute("select name from ir_module_module where name = %s", (
+                modules,))
         else:
             cr.execute("select name from ir_module_module; ")
 
         def erase_view(view_id):
-            cr.execute("select id from ir_ui_view where inherit_id = %s;", (view_id, ))
+            cr.execute("select id from ir_ui_view where inherit_id = %s;", (
+                view_id, ))
             for child_view_id in [x[0] for x in cr.fetchall()]:
                 erase_view(child_view_id)
             cr.execute("""
@@ -85,18 +87,17 @@ def delete_qweb(config, modules):
             data_ids = [x[0] for x in cr.fetchall()]
 
             for data_id in data_ids:
-                cr.execute("delete from ir_model_data where id = %s", (data_id,))
+                cr.execute("delete from ir_model_data where id = %s", (
+                    data_id,))
 
             sp = 'sp' + uuid.uuid4().hex
-            cr.execute("savepoint {}".format(sp))
+            cr.execute(f"savepoint {sp}")
             try:
-                cr.execute("""
-                   delete from ir_ui_view where id = %s;
-                """, [view_id])
-                cr.execute("release savepoint {}".format(sp))
+                cr.execute("delete from ir_ui_view where id = %s;", [view_id])
+                cr.execute(f"release savepoint {sp}")
 
             except IntegrityError:
-                cr.execute("rollback to savepoint {}".format(sp))
+                cr.execute(f"rollback to savepoint {sp}")
 
         for module in cr.fetchall():
             if not DBModules.is_module_installed(module):
@@ -942,6 +943,10 @@ class Module(object):
 
     @classmethod
     def _get_by_name(cls, name):
+
+        if name in all_modules_cache:
+            return all_modules_cache[name]
+
         from .odoo_config import get_odoo_addons_paths
         if isinstance(name, Module):
             name = name.name

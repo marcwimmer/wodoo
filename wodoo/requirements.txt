@@ -18,3 +18,4 @@ pudb
 gimera
 shellingham
 xlsxwriter>=1.1.2
+tqdm>=4.64.0
