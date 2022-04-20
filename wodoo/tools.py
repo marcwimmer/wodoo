@@ -826,7 +826,10 @@ def measure_time(method):
         started = datetime.now()
         result = method(*args, **kwargs)
         ended = datetime.now()
-        click.secho("Took: {} seconds".format((ended - started).total_seconds()), fg='yellow')
+        duration = (ended - started).total_seconds()
+        click.secho((
+            f"Took: {duration} seconds for {method}"
+        ), fg='yellow')
         return result
     return wrapper
 

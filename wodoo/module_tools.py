@@ -9,6 +9,7 @@ import os
 import shutil
 import uuid
 from .tools import __try_to_set_owner as try_to_set_owner
+from .tools import measure_time
 try:
     from psycopg2 import IntegrityError
 except Exception:
@@ -557,9 +558,9 @@ class Modules(object):
             all_modules_cache = self._get_modules()
         self.modules = all_modules_cache
 
+    @measure_time
     def _get_modules(self):
         modnames = set()
-        started = arrow.get()
         from .odoo_config import get_odoo_addons_paths
 
         def get_all_manifests():
@@ -580,7 +581,6 @@ class Modules(object):
             modules[m.parent.name] = Module(m)
 
         # if directory is clear, we may cache
-        click.secho(f"Took: {(arrow.get() - started).total_seconds()}")
         return modules
 
     def is_git_clean(self):
