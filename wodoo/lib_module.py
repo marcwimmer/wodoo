@@ -970,6 +970,8 @@ def list_deps(config, ctx, module):
     data = {'modules': []}
     data['modules'] = sorted(map(
         lambda x: x.name, modules.get_module_flat_dependency_tree(module)))
+    data['modules'].append(module)
+
     data['auto_install'] = sorted(map(
         lambda x: x.name, modules.get_filtered_auto_install_modules_based_on_module_list(
             data['modules'])))
@@ -987,6 +989,7 @@ def list_deps(config, ctx, module):
         paths.append(Module.get_by_name(mod).path)
     for mod in data['auto_install']:
         paths.append(Module.get_by_name(mod).path)
+
 
     dir_hashes = json.loads((customs_dir() / '.dirhashes').read_text())
 
