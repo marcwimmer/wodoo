@@ -1,3 +1,4 @@
+pyyaml<6.0
 arrow>=0.14.6
 Click>=8.0.3
 click-default-group>=1.2.1
