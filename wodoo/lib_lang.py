@@ -20,12 +20,9 @@ def export_i18n(lang, modules):
 @lang.command(name='list')
 @pass_config
 def get_all_langs(config):
-    langs = [x[0] for x in _execute_sql(
-        user=config.db_user,
-        pwd=config.db_pwd,
-        host=config.db_host,
-        port=config.db_port,
-        sql="select distinct code from res_lang;",
+    conn = config.get_odoo_conn()
+    langs = [x[0] for x in _execute_sql(conn,
+        sql="select distinct code from res_lang where active=true;",
         fetchall=True
     )]
     for lang in sorted(langs):
