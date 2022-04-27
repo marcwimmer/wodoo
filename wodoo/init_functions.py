@@ -1,4 +1,5 @@
 from collections import ChainMap
+import sys
 import importlib
 import os
 from pathlib import Path
@@ -30,7 +31,14 @@ def load_dynamic_modules(parent_dir):
 def _search_path(filename):
     filename = Path(filename)
     filename = filename.name
-    for path in os.getenv('PATH', "").split(":"):
+    paths = os.getenv('PATH', "").split(":")
+
+    # add probable pyenv path also:
+    execparent = Path(sys.executable).parent
+    if execparent.name in ['bin', 'sbin']:
+        paths = [execparent] + paths
+    
+    for path in paths:
         path = Path(path)
         if (path / filename).exists():
             return str(path / filename)
