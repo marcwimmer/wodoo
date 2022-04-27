@@ -89,6 +89,7 @@ def _get_arch():
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
 @click.option("--devmode", is_flag=True)
 @click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
+@click.option("--no-dir-hashes", is_flag=True)
 @pass_config
 @click.pass_context
 def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config):
