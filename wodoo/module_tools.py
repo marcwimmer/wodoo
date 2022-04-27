@@ -652,11 +652,14 @@ class Modules(object):
                 dep_mod = [x for x in self.modules.values() if x.name == dep]
                 try:
                     dep_mod = dep_mod[0]
-                except Exception:
+                except IndexError:
+                    # if it is a module, which is probably just auto install
+                    # but not in the manifest, then it is not critical
                     click.secho((
-                        f"Module not found: {dep}\n\n\n"
-                        f"{list(sorted(map(lambda x: x.name, self.modules.values())))}"
-                    ), fg='red', bold=True)
+                        f"Module not found at resolving dependencies: {dep}"
+                        f". Not necessarily a problem at auto install modules."
+                        "\n\n\n"
+                    ), fg='yellow', bold=True)
                     sys.exit(-1)
                 data[mod.name][dep] = {}
                 append_deps(dep_mod, data[mod.name][dep])
