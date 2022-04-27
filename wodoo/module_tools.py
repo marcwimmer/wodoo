@@ -660,9 +660,9 @@ class Modules(object):
                         f". Not necessarily a problem at auto install modules."
                         "\n\n\n"
                     ), fg='yellow', bold=True)
-                    sys.exit(-1)
-                data[mod.name][dep] = {}
-                append_deps(dep_mod, data[mod.name][dep])
+                else:
+                    data[mod.name][dep] = {}
+                    append_deps(dep_mod, data[mod.name][dep])
 
         append_deps(module, result)
         return result
