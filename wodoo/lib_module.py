@@ -481,6 +481,12 @@ self.env.cr.commit()
         _perform_install(module)
     _uninstall_marked_modules()
 
+    if not single_module:
+        # no hard error; could be update of outdated versions, then just
+        # inform the user;
+        DBModules.check_if_all_modules_from_install_are_installed()
+
+
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument('module', nargs=-1, required=False)
 @click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
@@ -530,7 +536,14 @@ def show_install_state(config, suppress_error=False):
     for row in dangling:
         click.echo("{}: {}".format(row[0], row[1]))
 
-    if dangling and not suppress_error:
+    # get modules, that are not installed:
+    missing = DBModules.check_if_all_modules_from_install_are_installed()
+    for missing_item in missing:
+        click.secho((
+            f"Module {missing_item} not installed!"
+        ), fg='red')
+
+    if (dangling or missing) and not suppress_error:
         raise Exception("Dangling modules detected - please fix installation problems and retry!")
 
 @odoo_module.command(name='show-addons-paths')

@@ -131,7 +131,7 @@ class DBModules(object):
     def check_if_all_modules_from_install_are_installed(clazz):
         for module in get_modules_from_install_file():
             if not clazz.is_module_installed(module):
-                click.secho(f"Module {module} not installed!", fg='red')
+                yield module
 
     @classmethod
     def abort_upgrade(clazz):
