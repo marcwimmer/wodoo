@@ -202,7 +202,6 @@ def _do_compose(config, db='', demo=False, **forced_values):
     click.secho(tabulate(rows, headers, tablefmt="fancy_grid"), fg='yellow')
 
     defaults = {}
-    _download_images(config)
     _set_defaults(config, defaults)
     setup_settings_file(config, db, demo, **defaults)
     _export_settings(config, forced_values)
@@ -213,13 +212,13 @@ def _do_compose(config, db='', demo=False, **forced_values):
 
     click.echo("Built the docker-compose file.")
 
-def _download_images(config):
+def _download_images(config, images_url):
     from . import consts
     if not config.dirs['images'].exists():
         subprocess.check_call([
             "git",
             "clone",
-            config.IMAGES_URL or consts.DEFAULT_IMAGES_REPO,
+            images_url or consts.DEFAULT_IMAGES_REPO,
             config.dirs['images']
         ])
     subprocess.check_call([
