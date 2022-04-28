@@ -112,3 +112,57 @@ services:
           odoo_framework.apply_env: 0  # do not apply global environment from settings here
 
 ```
+
+## Using the registry
+
+### Pushing
+
+* Configure HUB_URL on the pusher side.
+* `>odoo login`
+* `>odoo build`
+* `>odoo regpush`
+* All images even base images like redis are pushed; tag name contains SHA name
+
+### Pulling
+
+* Configure `REGISTRY=1` in settings and setup `HUB_URL`
+* `>odoo login`
+* `>odoo regpull`
+* All images will be pulled from registry
+
+## Services Explained
+
+### Proxy
+
+* nodejs application
+* between user browser and odoo
+* if odoo is being restarted catches the requests, holds them and releases them to odoo if it is up again
+* manages handling of /longpolling path; so if used in custom proxy setups, just refer to that one port here
+
+
+## Tools
+
+## Backup and Restore
+
+```
+odoo backup odoo-db <path> (or default name used)
+odoo restore odoo-db <path> (or select from list)
+```
+
+### Show Database activity
+
+```
+odoo pgactivity
+```
+
+
+## Configurations in ~/.odoo/settings explained
+
+| Setting      | Description|
+| :---        |    :----   |
+| PROJECT_NAME| Pasted into container names, postgres volumes and so on; please keep it as short as possible, as there are limits example docker containername 53 characters at time of writing|
+| DBNAME | Uses projectname or a configured one|
+| HUB_URL=value| user:password@host:port/paths.. to configure|
+| REGISTRY=1      | Rewrites all build and images urls to HUB_URL. Should be used on production systems to force pull only from registry and block any local buildings.|
+| RUN_PROXY=1| If the built-in nodejs proxy is enabled |
+| POSTGRES_VERSION=13| Choose from 11, 12, 13, 14|
