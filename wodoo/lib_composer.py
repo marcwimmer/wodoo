@@ -222,8 +222,10 @@ def _download_images(config, images_url):
         ])
     subprocess.check_call([
         "git", "config", "--global",
-        "--add", "safe.directory", str(config.dirs['images'])], cwd=config.dirs['images'])
-    if subprocess.check_output(["git", "remote"], encoding="utf8").strip():
+        "--add", "safe.directory", str(
+            config.dirs['images'])], cwd=config.dirs['images'])
+    if subprocess.check_output([
+        "git", "remote"], encoding="utf8", cwd=config.dirs['images']).strip():
         subprocess.check_call([
             "git", "pull"], cwd=config.dirs['images'])
     branch = subprocess.check_output([
