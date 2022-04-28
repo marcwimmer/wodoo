@@ -471,7 +471,7 @@ def post_process_complete_yaml_config(config, yml):
                 service.setdefault('labels', {})
                 service['labels'][label_name] = label_value
 
-    if config.REGISTRY == '1':
+    if config.REGISTRY:
         from .lib_docker_registry import _rewrite_compose_with_tags
         _rewrite_compose_with_tags(config, yml)
 
