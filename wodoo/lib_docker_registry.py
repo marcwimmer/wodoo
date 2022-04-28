@@ -96,7 +96,7 @@ def _get_service_tagname(config, service_name):
     global current_sha
     if not current_sha:
         current_sha = subprocess.check_output([
-            "git", "log", "-n", "1", "--pretty=%H"], encoding="utf-8").strip()
+            "git", "log", "-n1", "--pretty=%H"], encoding="utf-8").strip()
 
     hub = split_hub_url(config)
     if not hub:
