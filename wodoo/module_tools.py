@@ -131,7 +131,7 @@ class DBModules(object):
     def check_if_all_modules_from_install_are_installed(clazz):
         for module in get_modules_from_install_file():
             if not clazz.is_module_installed(module):
-                click.secho(f"Module {module} not installed!", fg='red')
+                yield module
 
     @classmethod
     def abort_upgrade(clazz):
@@ -652,14 +652,17 @@ class Modules(object):
                 dep_mod = [x for x in self.modules.values() if x.name == dep]
                 try:
                     dep_mod = dep_mod[0]
-                except Exception:
+                except IndexError:
+                    # if it is a module, which is probably just auto install
+                    # but not in the manifest, then it is not critical
                     click.secho((
-                        f"Module not found: {dep}\n\n\n"
-                        f"{list(sorted(map(lambda x: x.name, self.modules.values())))}"
-                    ), fg='red', bold=True)
-                    sys.exit(-1)
-                data[mod.name][dep] = {}
-                append_deps(dep_mod, data[mod.name][dep])
+                        f"Module not found at resolving dependencies: {dep}"
+                        f". Not necessarily a problem at auto install modules."
+                        "\n\n\n"
+                    ), fg='yellow', bold=True)
+                else:
+                    data[mod.name][dep] = {}
+                    append_deps(dep_mod, data[mod.name][dep])
 
         append_deps(module, result)
         return result

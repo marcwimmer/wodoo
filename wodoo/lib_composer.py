@@ -88,18 +88,22 @@ def _get_arch():
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
 @click.option("--devmode", is_flag=True)
 @click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
+@click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
+@click.option("--no-dir-hashes", is_flag=True)
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config):
+def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config, images_url, no_dir_hashes):
     from .myconfigparser import MyConfigParser
 
     def make_dir_hashes():
             Commands.invoke(ctx, 'make_dir_hashes')
-    threading.Thread(target=make_dir_hashes).start()
+    if not no_dir_hashes:
+        threading.Thread(target=make_dir_hashes).start()
     if headless and proxy_port:
         click.secho("Proxy Port and headless together not compatible.", fg='red')
         sys.exit(-1)
 
+    _download_images(config, images_url)
     config.TARGETARCH = _get_arch()
 
     click.secho("Current Project Name: {}".format(config.project_name), bold=True, fg='green')
@@ -197,7 +201,6 @@ def _do_compose(config, db='', demo=False, **forced_values):
     click.secho(tabulate(rows, headers, tablefmt="fancy_grid"), fg='yellow')
 
     defaults = {}
-    _download_images(config)
     _set_defaults(config, defaults)
     setup_settings_file(config, db, demo, **defaults)
     _export_settings(config, forced_values)
@@ -208,13 +211,13 @@ def _do_compose(config, db='', demo=False, **forced_values):
 
     click.echo("Built the docker-compose file.")
 
-def _download_images(config):
+def _download_images(config, images_url):
     from . import consts
     if not config.dirs['images'].exists():
         subprocess.check_call([
             "git",
             "clone",
-            config.IMAGES_URL or consts.DEFAULT_IMAGES_REPO,
+            images_url or consts.DEFAULT_IMAGES_REPO,
             config.dirs['images']
         ])
     subprocess.check_call([

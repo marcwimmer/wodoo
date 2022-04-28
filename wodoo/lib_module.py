@@ -481,6 +481,16 @@ self.env.cr.commit()
         _perform_install(module)
     _uninstall_marked_modules()
 
+    missing_modules = list(
+        DBModules.check_if_all_modules_from_install_are_installed())
+    if missing_modules and not no_dangling_check:
+        click.secho((
+            f"Not installed: {','.join(missing_modules)}"
+        ), fg='red')
+        sys.exit(-88)
+
+
+
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument('module', nargs=-1, required=False)
 @click.option('--no-restart', default=False, is_flag=True, help="If set, no machines are restarted afterwards")
@@ -524,14 +534,26 @@ def progress(config):
 @pass_config
 def show_install_state(config, suppress_error=False):
     from .module_tools import DBModules
-    dangling = DBModules.get_dangling_modules()
+    dangling = list(DBModules.get_dangling_modules())
     if dangling:
         click.echo("Displaying dangling modules:")
     for row in dangling:
         click.echo("{}: {}".format(row[0], row[1]))
 
-    if dangling and not suppress_error:
-        raise Exception("Dangling modules detected - please fix installation problems and retry!")
+    # get modules, that are not installed:
+    missing = list(DBModules.check_if_all_modules_from_install_are_installed())
+    for missing_item in missing:
+        click.secho((
+            f"Module {missing_item} not installed!"
+        ), fg='red')
+
+    if (dangling or missing) and not suppress_error:
+        raise Exception((
+            "Dangling modules detected - "
+            " please fix installation problems and retry! \n"
+            f"Dangling: {dangling}\n"
+            f"Missing: {missing}\n"
+        ))
 
 @odoo_module.command(name='show-addons-paths')
 def show_addons_paths():
