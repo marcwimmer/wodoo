@@ -12,7 +12,7 @@ import click
 from .tools import __dc
 from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
-from .tools import split_hub_url
+from .tools import split_hub_url, abort
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -40,19 +40,22 @@ def login(config):
         return
 
 @docker_registry.command()
-@click.argument('machines', nargs=-1)
 @pass_config
-def regpush(config, machines):
-    if not machines:
-        machines = list(yaml.load(config.files['docker_compose'].read_text())['services'])
-    for machine in machines:
-        click.secho(f"Pushing {machine}", fg='green', bold=True)
-        __dc(['push', machine])
+@click.pass_context
+def regpush(ctx, config):
+    ctx.invoke(login)
+    tags = list(_apply_tags(config))
+    for tag in tags:
+        subprocess.check_call([
+            "docker", "push", tags])
 
 @docker_registry.command()
 @click.argument('machines', nargs=-1)
 @pass_config
-def regpull(config, machines):
+@click.pass_context
+def regpull(ctx, config, machines):
+    ctx.invoke(login)
+
     if not machines:
         machines = list(yaml.load(config.files['docker_compose'].read_text())['services'])
     for machine in machines:
@@ -87,3 +90,52 @@ def self_sign_hub_certificate(config):
     subprocess.check_call(['service', 'docker', 'restart'])
     click.secho("Updating ca certificates...", fg='green')
     subprocess.check_call(['update-ca-certificates'])
+
+current_sha = None
+def _get_service_tagname(config, service_name):
+    global current_sha
+    if not current_sha:
+        current_sha = subprocess.check_output([
+            "git", "log", "-n", "1", "--pretty=%H"], encoding="utf-8").strip()
+
+    hub = split_hub_url(config)
+    if not hub:
+        abort((
+            "No HUB_URL configured."
+        ))
+    hub = "/".join([
+        hub['url'],
+        hub['prefix'],
+    ])
+    return f"{hub}/{service_name}:{current_sha}"
+
+def _apply_tags(config):
+    """
+    Tags all containers by their name and sha of the git repository
+    of the project. The production system can fetch the image by their
+    sha then.
+    """
+    compose = yaml.load(config.files['docker_compose'].read_text())
+    hub = config.hub_url
+    hub = hub.split("/")
+    assert config.project_name
+
+    for service, item in compose['services'].items():
+        if item.get('build'):
+            expected_image_name = f"{config.project_name}_{service}"
+        else:
+            expected_image_name = item['image']
+        tag = _get_service_tagname(config, service)
+        subprocess.check_call([
+            "docker", "tag", expected_image_name,
+            tag])
+        click.secho((
+            f"Applied tag {tag} on {expected_image_name}"
+        ), fg='green')
+        yield tag
+
+def _rewrite_compose_with_tags(config, yml):
+    # set hub source for all images, that are built:
+    for service_name, service in yml['services'].items():
+        service.pop('build', None)
+        service['image'] = _get_service_tagname(config, service_name)

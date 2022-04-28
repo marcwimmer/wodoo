@@ -30,7 +30,6 @@ from .tools import __remove_tree
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
-from .tools import split_hub_url
 from .tools import execute_script
 
 @cli.group(cls=AliasedGroup)
@@ -130,7 +129,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, 
             additional_config_file.unlink()
 
 def get_arch():
-    return platform.uname().machine # aarch64 
+    return platform.uname().machine # aarch64
 
 def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mailclient_gui_port, additional_config=None):
     defaults = {
@@ -455,19 +454,6 @@ def post_process_complete_yaml_config(config, yml):
         service['build'].setdefault('args', {})
         service['build']['args']['TARGETARCH'] = config.TARGETARCH
 
-    # set hub source for all images, that are built:
-    for service_name, service in yml['services'].items():
-        if not service.get('build', False):
-            continue
-        hub = split_hub_url(config)
-        if hub:
-            # click.secho(f"Adding reference to hub {hub}")
-            service['image'] = "/".join([
-                hub['url'],
-                hub['prefix'],
-                config.project_name,
-                service_name + ":latest"
-            ])
 
     # set container name to service name (to avoid dns names with _1)
     for service in yml['services']:
@@ -483,6 +469,10 @@ def post_process_complete_yaml_config(config, yml):
                 label_value = service['environment'][key]
                 service.setdefault('labels', {})
                 service['labels'][label_name] = label_value
+
+    if config.REGISTRY == '1':
+        from .lib_docker_registry import _rewrite_compose_with_tags
+        _rewrite_compose_with_tags(config, yml)
 
     return yml
 
