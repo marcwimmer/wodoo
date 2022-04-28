@@ -47,7 +47,7 @@ def regpush(ctx, config):
     tags = list(_apply_tags(config))
     for tag in tags:
         subprocess.check_call([
-            "docker", "push", tags])
+            "docker", "push", tag])
 
 @docker_registry.command()
 @click.argument('machines', nargs=-1)
@@ -126,6 +126,10 @@ def _apply_tags(config):
         else:
             expected_image_name = item['image']
         tag = _get_service_tagname(config, service)
+        if config.verbose:
+            click.secho((
+                f"Applying {tag} on {expected_image_name}"
+            ), fg='yellow')
         subprocess.check_call([
             "docker", "tag", expected_image_name,
             tag])
