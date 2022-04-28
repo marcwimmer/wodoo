@@ -311,6 +311,7 @@ def update(
 
 
     """
+    param_module = module
     click.secho("""
 
            _                               _       _
@@ -481,13 +482,14 @@ self.env.cr.commit()
         _perform_install(module)
     _uninstall_marked_modules()
 
-    missing_modules = list(
-        DBModules.check_if_all_modules_from_install_are_installed())
-    if missing_modules and not no_dangling_check:
-        click.secho((
-            f"Not installed: {','.join(missing_modules)}"
-        ), fg='red')
-        sys.exit(-88)
+    if param_module not in ['all', 'base']:
+        missing_modules = list(
+            DBModules.check_if_all_modules_from_install_are_installed())
+        if missing_modules and not no_dangling_check:
+            click.secho((
+                f"Not installed: {','.join(missing_modules)}"
+            ), fg='red')
+            sys.exit(-88)
 
 
 
