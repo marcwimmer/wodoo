@@ -371,11 +371,18 @@ def update(
             if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
                 for x in DBModules.get_dangling_modules():
                     click.echo("{}: {}".format(*x[:2]))
-                if non_interactive or input("Uninstallable modules found - shall I set them to 'uninstalled'? [y/N]").lower() == 'y':
-                    _execute_sql(config.get_odoo_conn(), "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+                if non_interactive or input((
+                    "Uninstallable modules found - "
+                    "shall I set them to 'uninstalled'? [y/N]"
+                )).lower() == 'y':
+                    _execute_sql(config.get_odoo_conn(), (
+                        "update ir_module_module set state = "
+                        "'uninstalled' where state = 'uninstallable';"
+                    ))
             if DBModules.get_dangling_modules() and not dangling_modules:
                 if not no_dangling_check:
-                    Commands.invoke(ctx, 'show_install_state', suppress_error=True)
+                    Commands.invoke(
+                        ctx, 'show_install_state', suppress_error=True)
                     input("Abort old upgrade and continue? (Ctrl+c to break)")
                     ctx.invoke(abort_upgrade)
         if installed_modules:
@@ -388,8 +395,10 @@ def update(
 
         click.echo("Run module update")
         if config.odoo_update_start_notification_touch_file_in_container:
-            with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
-                f.write(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            Path(
+                    config.odoo_update_start_notification_touch_file_in_container).write_text(
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            )
 
         def _technically_update(modules):
             try:
@@ -423,7 +432,7 @@ def update(
                 raise
             except Exception as ex:
                 click.echo(traceback.format_exc())
-                ctx.invoke(show_install_state, suppress_error=True)
+                ctx.invoke(show_install_state, suppress_error=no_dangling_check)
                 raise Exception((
                     "Error at /update_modules.py - "
                     "aborting update process.")) from ex
@@ -445,8 +454,8 @@ def update(
 
         Commands.invoke(ctx, 'status')
         if config.odoo_update_start_notification_touch_file_in_container:
-            with open(config.odoo_update_start_notification_touch_file_in_container, 'w') as f:
-                f.write("0")
+            Path(
+                config.odoo_update_start_notification_touch_file_in_container).write_text("0")
 
     def _uninstall_marked_modules():
         """
@@ -843,7 +852,9 @@ def set_ribbon(ctx, config, name):
     res = _execute_sql(config.get_odoo_conn(), SQL, fetchone=True)
     if not (res and res[0] == 'installed'):
         try:
-            Commands.invoke(ctx, 'update', module=['web_environment_ribbon'], no_dangling_check=True)
+            Commands.invoke(
+                ctx, 'update', module=['web_environment_ribbon'],
+                no_dangling_check=True)
         except Exception as ex:
             print(ex)
 
