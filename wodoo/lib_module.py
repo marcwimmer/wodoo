@@ -312,6 +312,12 @@ def update(
 
     """
     param_module = module
+
+    click.secho((
+        "Started with parameters: \n"
+        f"no_dangling_check: {no_dangling_check}\n",
+        f"modules: {module}\n"
+    ))
     click.secho("""
 
            _                               _       _
