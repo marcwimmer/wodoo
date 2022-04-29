@@ -95,8 +95,16 @@ current_sha = None
 def _get_service_tagname(config, service_name):
     global current_sha
     if not current_sha:
-        current_sha = subprocess.check_output([
-            "git", "log", "-n1", "--pretty=%H"], encoding="utf-8").strip()
+        if (Path(os.getcwd()) / '.git').exists():
+            current_sha = subprocess.check_output([
+                "git", "log", "-n1", "--pretty=%H"], encoding="utf-8").strip()
+        else:
+            if not config.DOCKER_IMAGE_TAG:
+                abort((
+                    "If you dont have a local git repository, then "
+                    "please configure DOCKER_IMAGE_TAG=sha"
+                ))
+            current_sha = config.DOCKER_IMAGE_TAG
 
     hub = split_hub_url(config)
     if not hub:
