@@ -827,7 +827,7 @@ def measure_time(method):
         result = method(*args, **kwargs)
         ended = datetime.now()
         duration = (ended - started).total_seconds()
-        if os.getenv("WODOO_VERBOSE") == "1":
+        if os.getenv("WODOO_VERBOSE", "") == "1":
             click.secho((
                 f"Took: {duration} seconds for {method}"
             ), fg='yellow')

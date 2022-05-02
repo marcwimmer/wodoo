@@ -667,6 +667,7 @@ class Modules(object):
         append_deps(module, result)
         return result
 
+    @measure_time
     def get_module_flat_dependency_tree(self, module):
         deptree = self.get_module_dependency_tree(module)
         result = set()
@@ -695,6 +696,7 @@ class Modules(object):
                 auto_install_modules.append(module)
         return list(sorted(set(auto_install_modules)))
 
+    @measure_time
     def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
         module_list = list(map(lambda x: Module.get_by_name(x), module_list))
 
