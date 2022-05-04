@@ -275,17 +275,19 @@ def logall(machines, follow, lines):
     if follow:
         cmd += ['-f']
     if lines:
-        cmd += ['--tail={}'.format(lines)]
+        cmd += [f'--tail={lines}']
     cmd += list(machines)
     __dc(cmd)
 
 
-def shell(command=""):
-    __cmd_interactive(
+def shell(command="", queuejobs=False):
+    cmd = [
         'run',
         '--rm',
         'odoo',
         'python3',
         '/odoolib/shell.py',
-        command,
-    )
+    ]
+    if queuejobs:
+        cmd += ['--queuejobs']
+    __cmd_interactive(*(cmd + [command]))

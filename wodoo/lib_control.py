@@ -208,12 +208,14 @@ def logall(config, machines, follow, lines):
 
 @docker.command()
 @click.argument('command', nargs=-1)
+@click.option("-q", "--queuejobs", is_flag=True, help=(
+    "Dont delay queuejobs / execute queuejob code"))
 @pass_config
-def shell(config, command):
+def shell(config, command, queuejobs):
     command = "\n".join(command)
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
-    lib_shell(command)
+    lib_shell(command, queuejobs)
 
 @docker.command()
 @click.option('-f', '--filter')
