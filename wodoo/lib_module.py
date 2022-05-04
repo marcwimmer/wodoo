@@ -22,6 +22,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from .tools import __try_to_set_owner
+from .tools import measure_time
 from pathlib import Path
 
 class UpdateException(Exception): pass
@@ -1031,6 +1032,12 @@ def list_deps(config, ctx, module):
     for mod in data['auto_install']:
         paths.append(Module.get_by_name(mod).path)
 
+    threads = []
+    hashes = {}
+
+    @measure_time
+    def _get_hash(path):
+        hashes[path] = get_directory_hash(path)
 
     dir_hashes = json.loads((customs_dir() / '.dirhashes').read_text())
 
