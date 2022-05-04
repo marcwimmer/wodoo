@@ -8,17 +8,12 @@ import pipes
 import re
 import traceback
 import sys
-import shutil
-import hashlib
 import os
 import tempfile
 import click
-import inquirer
-from datetime import datetime
 from .tools import __replace_all_envs_in_str
 from .tools import _wait_postgres
 from .tools import _dropdb
-from .tools import remove_webassets
 from .tools import __dcrun, _remove_postgres_connections, _execute_sql
 from .tools import exec_file_in_path
 from . import cli, pass_config, Commands

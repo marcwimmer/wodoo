@@ -1,10 +1,6 @@
 import click
-import arrow
-import re
-import traceback
-from datetime import datetime
+import os
 from .tools import remove_webassets
-from .tools import __replace_all_envs_in_str
 from .tools import _execute_sql
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
@@ -14,6 +10,18 @@ from .tools import __hash_odoo_password
 @pass_config
 def turn_into_dev(config):
     pass
+
+@turn_into_dev.command()
+@click.argument("password")
+@click.pass_context
+@pass_config
+def set_password_all_users(config, ctx, password):
+    from .tools import DBConnection
+    pwd = __hash_odoo_password(password)
+    conn = config.get_odoo_conn().clone()
+    _execute_sql(conn, (
+        f"update res_users set password='{pwd}'"
+    ))
 
 @turn_into_dev.command()
 @click.argument('password')
