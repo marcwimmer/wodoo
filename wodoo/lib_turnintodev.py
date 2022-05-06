@@ -125,14 +125,14 @@ def __turn_into_devdb(config, conn):
 @pass_config
 def prolong(config):
     conn = config.get_odoo_conn()
-    date = arrow.get().shift(months=6).strftime("%Y-%m-%d %H:%M:%S"))
+    date = arrow.get().shift(months=6).strftime("%Y-%m-%d %H:%M:%S")
     _execute_sql(conn, (
         "UPDATE \n"
         "   ir_config_parameter "
         "SET "
         f"value = '{date}' "
         "WHERE "
-        "key = 'database.expiration_date'";
+        "key = 'database.expiration_date'"
     ))
 
 @turn_into_dev.command()
