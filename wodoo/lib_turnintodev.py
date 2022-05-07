@@ -101,7 +101,7 @@ def __turn_into_devdb(config, conn):
                             f"select count(*) "
                             f"from information_schema.columns "
                             f"where table_schema='public' and "
-                            f"table_name='{table}' and column_name='{column}'",
+                            f"table_name='{table}' and column_name='{column}'"
                         ),
                         fetchone=True
                     )
