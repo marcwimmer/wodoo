@@ -1,3 +1,6 @@
+import traceback
+import arrow
+import re
 import click
 import os
 from .tools import remove_webassets
@@ -5,6 +8,7 @@ from .tools import _execute_sql
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
+from .tools import __replace_all_envs_in_str
 
 @cli.group(cls=AliasedGroup, name='dev-env')
 @pass_config
@@ -16,7 +20,6 @@ def turn_into_dev(config):
 @click.pass_context
 @pass_config
 def set_password_all_users(config, ctx, password):
-    from .tools import DBConnection
     pwd = __hash_odoo_password(password)
     conn = config.get_odoo_conn().clone()
     _execute_sql(conn, (
@@ -33,8 +36,12 @@ def hash_password(config, password):
 @pass_config
 def turn_into_dev_(config):
     if not config.devmode and not config.force:
-        raise Exception("""When applying this sql scripts, the database is not usable anymore for production environments.
-Please set DEVMODE=1 to allow this""")
+        raise Exception((
+            "When applying this sql scripts, "
+            "the database is not usable anymore "
+            "for production environments.\n"
+            "Please set DEVMODE=1 to allow this"
+        ))
     __turn_into_devdb(config, config.get_odoo_conn())
 
 def __collect_other_turndb2dev_sql():
@@ -90,8 +97,12 @@ def __turn_into_devdb(config, conn):
                 if 'if-column-exists' in comment:
                     table, column = comment.split("if-column-exists")[1].strip().split('.')
                     res = _execute_sql(
-                        conn,
-                        "select count(*) from information_schema.columns where table_schema='public' and table_name='{}' and column_name='{}'".format(table, column),
+                        conn, (
+                            f"select count(*) "
+                            f"from information_schema.columns "
+                            f"where table_schema='public' and "
+                            f"table_name='{table}' and column_name='{column}'",
+                        ),
                         fetchone=True
                     )
                     return not res[0]
@@ -114,14 +125,15 @@ def __turn_into_devdb(config, conn):
 @pass_config
 def prolong(config):
     conn = config.get_odoo_conn()
-    _execute_sql(conn, """
-        UPDATE
-            ir_config_parameter
-        SET
-            value = '{}'
-        WHERE
-            key = 'database.expiration_date';
-    """.format(arrow.get().shift(months=6).strftime("%Y-%m-%d %H:%M:%S")))
+    date = arrow.get().shift(months=6).strftime("%Y-%m-%d %H:%M:%S")
+    _execute_sql(conn, (
+        "UPDATE \n"
+        "   ir_config_parameter "
+        "SET "
+        f"value = '{date}' "
+        "WHERE "
+        "key = 'database.expiration_date'"
+    ))
 
 @turn_into_dev.command()
 @click.option('--settings', required=True)

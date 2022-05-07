@@ -129,6 +129,7 @@ def run_tests(ctx, config):
 @click.option('--version', help="Destination Version", required=True)
 @click.pass_context
 def download_openupgrade(ctx, config, version):
+    from .odoo_config import customs_dir
     dir_openupgrade = Path(tempfile.mktemp())
     subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
 
@@ -139,7 +140,7 @@ def download_openupgrade(ctx, config, version):
 
     sync_folder(
         dir_openupgrade / 'openupgrade',
-        config.dirs['customs'] / destination_path,
+        customs_dir() / destination_path,
         excludes=['.git'],
     )
     shutil.rmtree(dir_openupgrade)
@@ -1059,6 +1060,18 @@ def list_deps(config, ctx, module):
 
     click.secho("---")
     click.secho(json.dumps(data, indent=4))
+
+@odoo_module.command()
+def migrate():
+    click.secho((
+        "To migrate odoo 14.0 to 15.0 you would do:\n\n"
+        "  * odoo download-openupgrade\n"
+        "  * change gimera.yml to point to odoo 15 (and other modules)\n"
+        "  * change version in MANIFEST to version 15\n"
+        "  * gimera apply --update \n"
+        "  * odoo update --config-file config_migration\n"
+        "\n"
+    ), fg='green')
 
 
 Commands.register(progress)
