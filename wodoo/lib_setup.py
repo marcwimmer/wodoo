@@ -1,4 +1,6 @@
 import click
+import sys
+import subprocess
 from .tools import _askcontinue
 from .tools import remove_webassets
 from . import cli, pass_config
@@ -50,5 +52,12 @@ def status(config):
     click.secho(config.dbname, fg=color, bold=True)
 
 
+@setup.command(help="Upgrade wodoo")
+def upgrade():
+    cmd = [
+        sys.executable, "-mpip", "install",
+        "wodoo", '-U'
+    ]
+    subprocess.check_call(cmd)
 
 Commands.register(status)
