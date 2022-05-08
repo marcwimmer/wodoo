@@ -1,15 +1,10 @@
 import subprocess
-import time
 from pathlib import Path
-import yaml
-import arrow
-import json
-import pipes
+import sys
 import re
 import traceback
-import sys
 import os
-import tempfile
+import arrow
 import click
 from .tools import __replace_all_envs_in_str
 from .tools import _wait_postgres
@@ -27,7 +22,10 @@ def db(config):
     """
     Database related actions.
     """
-    click.echo("database-name: {}, in ram: {}".format(config.dbname, config.run_postgres_in_ram))
+    click.echo((
+        f"database-name: {config.dbname}, "
+        f"in ram: {config.run_postgres_in_ram}"
+    ))
 
 @db.command()
 @click.argument('dbname', required=True)
@@ -37,7 +35,8 @@ def drop_db(config, dbname):
         click.secho("Either DEVMODE or force required", fg='red')
         sys.exit(-1)
     conn = config.get_odoo_conn().clone(dbname='postgres')
-    _remove_postgres_connections(conn, sql_afterwards="drop database {};".format(dbname))
+    _remove_postgres_connections(
+        conn, sql_afterwards=f"drop database {dbname};")
     click.echo("Database {} dropped.".format(dbname))
 
 @db.command()
@@ -115,7 +114,7 @@ def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None,
             dbname,
         ]
         if use_docker_container or (config.use_docker and config.run_postgres):
-            res = __dcrun(['pgtools', bin] + cmd, interactive=interactive, env={
+            __dcrun(['pgtools', bin] + cmd, interactive=interactive, env={
                 "PGPASSWORD": conn.pwd,
             })
         else:
@@ -145,9 +144,7 @@ def reset_db(ctx, config, dbname, do_not_install_base):
     conn = config.get_odoo_conn().clone(dbname='postgres')
     _execute_sql(
         conn,
-        "create database {}".format(
-            dbname
-        ),
+        f"create database {dbname}",
         notransaction=True
     )
 
@@ -285,7 +282,12 @@ def __turn_into_devdb(config, conn):
                     table = comment.split("if-table-exists")[1].strip()
                     res = _execute_sql(
                         conn,
-                        "select count(*) from information_schema.tables where table_schema='public' and table_name='{}'".format(table),
+                        (
+                            "select count(*) "
+                            "from information_schema.tables "
+                            "where table_schema='public' and "
+                            f"table_name='{table}'"
+                        ),
                         fetchone=True
                     )
                     return not res[0]
@@ -293,13 +295,21 @@ def __turn_into_devdb(config, conn):
                     table, column = comment.split("if-column-exists")[1].strip().split(".")
                     res = _execute_sql(
                         conn,
-                        "select count(*) from information_schema.columns where table_schema='public' and table_name='{}' and column_name='{}' ".format(table.strip(), column.strip()),
+                        (
+                            "select count(*) "
+                            "from information_schema.columns "
+                            "where table_schema='public' and "
+                            f"table_name='{table.strip()}' and "
+                            "column_name='{column.strip()}' "
+                        ),
                         fetchone=True
                     )
                     return not res[0]
                 return False
 
-            if any(list(ignore_line(comment) for comment in comment[0].split(";"))):
+            if any(list(
+                    ignore_line(comment) for comment in comment[0].split(
+                        ";"))):
                 continue
         try:
             print(line)
@@ -330,18 +340,18 @@ SELECT table_schema
     , pg_size_pretty(index_bytes) AS INDEX
     , pg_size_pretty(toast_bytes) AS toast
     , pg_size_pretty(table_bytes) AS TABLE
-  FROM (
+    FROM (
     SELECT *, total_bytes-index_bytes-COALESCE(toast_bytes,0) AS table_bytes
     FROM (
-         SELECT c.oid
-              , nspname AS table_schema
-              , relname AS TABLE_NAME
-              , SUM(c.reltuples) OVER (partition BY parent) AS row_estimate
-              , SUM(pg_total_relation_size(c.oid)) OVER (partition BY parent) AS total_bytes
-              , SUM(pg_indexes_size(c.oid)) OVER (partition BY parent) AS index_bytes
-              , SUM(pg_total_relation_size(reltoastrelid)) OVER (partition BY parent) AS toast_bytes
-              , parent
-          FROM (
+        SELECT c.oid
+            , nspname AS table_schema
+            , relname AS TABLE_NAME
+            , SUM(c.reltuples) OVER (partition BY parent) AS row_estimate
+            , SUM(pg_total_relation_size(c.oid)) OVER (partition BY parent) AS total_bytes
+            , SUM(pg_indexes_size(c.oid)) OVER (partition BY parent) AS index_bytes
+            , SUM(pg_total_relation_size(reltoastrelid)) OVER (partition BY parent) AS toast_bytes
+            , parent
+        FROM (
                 SELECT pg_class.oid
                     , reltuples
                     , relname
@@ -351,10 +361,10 @@ SELECT table_schema
                 FROM pg_class
                     LEFT JOIN pg_inherit_short ON inhrelid = oid
                 WHERE relkind IN ('r', 'p')
-             ) c
-             LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
-  ) a
-  WHERE oid = parent
+            ) c
+            LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+    ) a
+    WHERE oid = parent
 ) a
 ORDER BY total_bytes DESC;
     """
@@ -367,7 +377,8 @@ ORDER BY total_bytes DESC;
     from tabulate import tabulate
     if top:
         rows = rows[:top]
-    click.echo(tabulate(rows, ["TABLE_NAME", "row_estimate", "total", 'INDEX', 'toast', 'TABLE']))
+    click.echo(tabulate(rows, [
+        "TABLE_NAME", "row_estimate", "total", 'INDEX', 'toast', 'TABLE']))
 
 @db.command(help="Export as excel")
 @click.argument("sql", required=True)
@@ -385,8 +396,10 @@ def excel(config, sql, file, base64):
     if file:
         filepath = Path(os.getcwd()) / file
     else:
-        filepath = Path(os.getcwd()) / f"{conn.dbname}_{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
-
+        filepath = Path(os.getcwd()) / (
+            f"{conn.dbname}_"
+            f"{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
+        )
 
     # Workbook() takes one, non-optional, argument
     # which is the filename that we want to create.
