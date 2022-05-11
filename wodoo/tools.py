@@ -634,6 +634,9 @@ def remove_webassets(conn):
     urls_to_ignore = [
         '/website/static/src/scss/options/user_values.custom.web.assets_common.scss',
         '/website/static/src/scss/options/colors/user_color_palette.custom.web.assets_common.scss',
+        '/website/static/src/scss/options/colors/user_theme_color_palette.custom.web.assets_common.scss',
+        '/website/static/src/scss/options/colors/user_gray_color_palette.scss',
+        '/website/static/src/scss/options/user_values.scss',
         '/web/static/src/scss/asset_styles_company_report.scss',
     ]
     ignore_url_str = ''
