@@ -320,6 +320,20 @@ def __turn_into_devdb(config, conn):
             msg = traceback.format_exc()
             print("failed un-critical sql:", msg)
 
+@db.command()
+@pass_config
+@click.pass_context
+def db_size(ctx, config):
+    sql = f"select pg_database_size('{config.DBNAME}')"
+    conn = config.get_odoo_conn()
+    rows = _execute_sql(conn, sql, fetchall=True)
+    if not rows:
+        size = 0
+    else:
+        size = rows[0][0]
+    click.secho("---")
+    click.secho(size)
+
 @db.command(name='show-table-sizes')
 @pass_config
 @click.pass_context
