@@ -149,5 +149,6 @@ def _apply_tags(config):
 def _rewrite_compose_with_tags(config, yml):
     # set hub source for all images, that are built:
     for service_name, service in yml['services'].items():
-        service.pop('build', None)
-        service['image'] = _get_service_tagname(config, service_name)
+        if config.HUB_URL:
+            service.pop('build', None)
+            service['image'] = _get_service_tagname(config, service_name)
