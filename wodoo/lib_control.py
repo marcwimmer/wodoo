@@ -14,6 +14,15 @@ def docker(config):
     pass
 
 @docker.command()
+@pass_config
+@click.pass_context
+def pull(ctx, config):
+    if config.use_docker:
+        from .lib_control_with_docker import pull as lib_pull
+    return lib_pull(ctx, config)
+
+
+@docker.command()
 @click.option("-b", "--build", is_flag=True)
 @click.option("-k", "--kill", is_flag=True)
 @pass_config

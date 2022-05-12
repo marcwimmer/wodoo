@@ -192,6 +192,9 @@ def attach(ctx, config, machine):
     bash = _get_bash_for_machine(machine)
     __cmd_interactive('exec', machine, bash)
 
+def pull(ctx, config):
+    __dc(['pull'])
+
 def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
