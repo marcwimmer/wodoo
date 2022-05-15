@@ -155,7 +155,6 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
     __dc(['up'] + options + machines)
 
 def down(ctx, config, machines=[], volumes=False, remove_orphans=True):
-    import pudb;pudb.set_trace()
     machines = list(machines)
 
     options = []
