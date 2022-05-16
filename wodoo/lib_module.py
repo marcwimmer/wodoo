@@ -22,7 +22,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from .tools import __try_to_set_owner
-from .tools import measure_time
+from .tools import measure_time, abort
 from pathlib import Path
 
 class UpdateException(Exception): pass
@@ -882,10 +882,11 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
     output_path.unlink()
     passed = [x for x in test_result if not x['rc']]
     errors = [x for x in test_result if x['rc']]
-    for passed in passed:
-        click.secho(f"PASS: {passed}", fg='green')
-    for error in errors:
-        click.secho(f"FAILED: {error}", fg='red')
+    from tabulate import tabulate
+    if passed:
+        click.secho(tabulate(passed, headers='keys', tablefmt='fancy_grid'), fg='green')
+    if errors:
+        click.secho(tabulate(errors, headers='keys', tablefmt='fancy_grid'), fg='red')
 
 
 @odoo_module.command()
