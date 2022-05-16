@@ -791,8 +791,12 @@ def list_robot_test_files(config):
 @click.option('-r', '--remote-debug', is_flag=True)
 @click.option('-a', '--all', is_flag=True)
 @click.option('-n', '--non-interactive', is_flag=True)
+@click.option('--output-json', is_flag=True)
 @pass_config
-def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_interactive):
+def unittest(
+    config, repeat, file, remote_debug, wait_for_remote,
+    all, non_interactive, output_json
+):
     """
     Collects unittest files and offers to run
     """
@@ -880,13 +884,17 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
         abort("No testoutput generated - seems to be a technical problem.")
     test_result = json.loads(output_path.read_text())
     output_path.unlink()
-    passed = [x for x in test_result if not x['rc']]
-    errors = [x for x in test_result if x['rc']]
-    from tabulate import tabulate
-    if passed:
-        click.secho(tabulate(passed, headers='keys', tablefmt='fancy_grid'), fg='green')
-    if errors:
-        click.secho(tabulate(errors, headers='keys', tablefmt='fancy_grid'), fg='red')
+    if output_json:
+        click.secho("---")
+        click.secho(json.dumps(test_result, indent=4))
+    else:
+        passed = [x for x in test_result if not x['rc']]
+        errors = [x for x in test_result if x['rc']]
+        from tabulate import tabulate
+        if passed:
+            click.secho(tabulate(passed, headers='keys', tablefmt='fancy_grid'), fg='green')
+        if errors:
+            click.secho(tabulate(errors, headers='keys', tablefmt='fancy_grid'), fg='red')
 
 
 @odoo_module.command()
