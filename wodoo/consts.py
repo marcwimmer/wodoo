@@ -56,3 +56,5 @@ default_files = {
 default_commands = {
     'dc': ['${docker_compose_bin}', "-p", "${project_name}", "-f",  "${docker_compose}"],
 }
+
+FILE_DIRHASHES = '.dirhashes'

@@ -634,6 +634,9 @@ def remove_webassets(conn):
     urls_to_ignore = [
         '/website/static/src/scss/options/user_values.custom.web.assets_common.scss',
         '/website/static/src/scss/options/colors/user_color_palette.custom.web.assets_common.scss',
+        '/website/static/src/scss/options/colors/user_theme_color_palette.custom.web.assets_common.scss',
+        '/website/static/src/scss/options/colors/user_gray_color_palette.scss',
+        '/website/static/src/scss/options/user_values.scss',
         '/web/static/src/scss/asset_styles_company_report.scss',
     ]
     ignore_url_str = ''
@@ -938,3 +941,24 @@ def git_diff_files(path, commit1, commit2):
     ], encoding='utf8', cwd=path)
     filepaths = list(filter(bool, output.splitlines()))
     return filepaths
+
+def _binary_zip(folder, destpath):
+    count_files = \
+        len(subprocess.check_output([
+            "find", folder], encoding='utf8').splitlines())
+    proc = subprocess.Popen([
+        "tar", "Jcfv", destpath, '.'], cwd=folder, stdout=subprocess.PIPE)
+    i = 0
+    from tqdm import tqdm
+    with tqdm(total=count_files) as pbar:
+        pbar.set_description(f"Zipping {folder} to {destpath}")
+        while proc.returncode is None:
+            line  = proc.stdout.readline().decode('utf-8')
+            pbar.update(1)
+            proc.poll()
+
+    if proc.returncode:
+        if destpath.exists():
+            destpath.unlink()
+        abort("Failed at zipping")
+

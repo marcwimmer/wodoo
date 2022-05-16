@@ -1,41 +1,28 @@
 from codecs import ignore_errors
+from .tools import abort
 import sys
 import docker
-import threading
-import time
 import json
 import importlib.util
-import re
 from retrying import retry
 import traceback
 from threading import Thread
 import subprocess
-import pipes
 import shutil
 from datetime import datetime
 import inquirer
-import hashlib
 import os
-import tempfile
 import click
 from pathlib import Path
 from .tools import _dropdb
 from .tools import remove_webassets
-from .tools import __assert_file_exists
-from .tools import __safe_filename
-from .tools import __read_file
-from .tools import __dc, __dc_out
-from .tools import __write_file
-from .tools import __append_line
-from .tools import __get_odoo_commit
+from .tools import __dc
 from .tools import __get_dump_type
-from .tools import _wait_postgres
-from .tools import __dcrun
 from .tools import _execute_sql
-from .tools import _askcontinue
 from .tools import __rename_db_drop_target
 from .tools import _remove_postgres_connections
 from .tools import _get_dump_files
+from .tools import _binary_zip
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 try:
@@ -66,43 +53,61 @@ def backup_all(ctx, config):
     ctx.invoke(backup_db)
     ctx.invoke(backup_files)
 
-
 @backup.command(name='odoo-db')
 @pass_config
 @click.pass_context
 @click.argument('filename', required=False, default="")
 @click.option('--dbname', required=False)
 @click.option('--column-inserts', is_flag=True)
-@click.option('--dumptype', type=click.Choice(["custom", "plain", "directory"]), default='custom')
+@click.option('--dumptype', type=click.Choice([
+    "custom", "plain", "directory", "binary_zip"]), default='custom')
 def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
     filename = Path(filename or f'{config.project_name}.{config.dbname}.odoo' + '.dump.gz')
     if len(filename.parts) == 1:
         filename = Path(config.dumps_path) / filename
-    click.secho(f"Backup file will be stored there: {filename.parent}")
-    cmd = [
-        'run',
-        '--rm',
-        '-v',
-        f'{filename.parent}:/host/dumps2',
-        'cronjobshell',
-        'postgres.py',
-        'backup',
-        dbname or config.DBNAME,
-        config.DB_HOST,
-        config.DB_PORT,
-        config.DB_USER,
-        config.DB_PWD,
-        '/host/dumps2/' + filename.name,
-        "--dumptype", dumptype,
-    ]
-    if column_inserts:
-        cmd += [
-            "--column-inserts"
-        ]
 
-    res = __dc(cmd)
-    if res:
-        raise Exception('Backup failed!')
+    if dumptype == 'binary_zip':
+        if not config.run_postgres:
+            abort((
+                "Binary ZIP requires own postgres container. DB is also "
+                "stopped for that."
+            ))
+        Commands.invoke(ctx, 'stop', machines=['postgres'])
+        path = json.loads(subprocess.check_output([
+            "docker", 'volume', 'inspect',
+            f'{config.PROJECT_NAME}_odoo_postgres_volume',
+        ]))[0]['Mountpoint']
+        _binary_zip(path, filename)
+
+        Commands.invoke(ctx, 'up', daemon=True, machines=['postgres'])
+
+    else:
+
+        click.secho(f"Backup file will be stored there: {filename.parent}")
+        cmd = [
+            'run',
+            '--rm',
+            '-v',
+            f'{filename.parent}:/host/dumps2',
+            'cronjobshell',
+            'postgres.py',
+            'backup',
+            dbname or config.DBNAME,
+            config.DB_HOST,
+            config.DB_PORT,
+            config.DB_USER,
+            config.DB_PWD,
+            '/host/dumps2/' + filename.name,
+            "--dumptype", dumptype,
+        ]
+        if column_inserts:
+            cmd += [
+                "--column-inserts"
+            ]
+
+        res = __dc(cmd)
+        if res:
+            raise Exception('Backup failed!')
 
 
 @backup.command(name='files')

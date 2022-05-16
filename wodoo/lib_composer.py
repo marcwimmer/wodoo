@@ -95,8 +95,6 @@ def _get_arch():
 def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config, images_url, no_dir_hashes):
     from .myconfigparser import MyConfigParser
 
-    def make_dir_hashes():
-            Commands.invoke(ctx, 'make_dir_hashes')
     if not no_dir_hashes:
         threading.Thread(target=make_dir_hashes).start()
     if headless and proxy_port:

@@ -23,6 +23,8 @@ def docker_registry(config):
 @pass_config
 def login(config):
     hub = split_hub_url(config)
+    if not hub:
+        abort("No HUB Configured - cannt login.")
 
     def _login():
         click.secho(f"Using {hub['username']}", fg='yellow')
@@ -149,5 +151,6 @@ def _apply_tags(config):
 def _rewrite_compose_with_tags(config, yml):
     # set hub source for all images, that are built:
     for service_name, service in yml['services'].items():
-        service.pop('build', None)
-        service['image'] = _get_service_tagname(config, service_name)
+        if config.HUB_URL:
+            service.pop('build', None)
+            service['image'] = _get_service_tagname(config, service_name)

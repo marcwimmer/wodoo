@@ -993,11 +993,16 @@ def list_changed_files(ctx, config, start):
 
 @odoo_module.command()
 @click.pass_context
+@click.option('--on-need', is_flag=True)
 @pass_config
-def make_dir_hashes(ctx, config):
+def make_dir_hashes(ctx, config, on_need):
     from tqdm import tqdm
     from .odoo_config import customs_dir
+    from .consts import FILE_DIRHASHES
     customs_dir = customs_dir()
+    file_dirhashes = (Path(customs_dir) / FILE_DIRHASHES)
+    if on_need and file_dirhashes.exists():
+        return
     hashes = subprocess.check_output([
         "sha1deep", "-r", "-l", "-j", "5", customs_dir],
         encoding="utf8").strip()
@@ -1027,7 +1032,7 @@ def make_dir_hashes(ctx, config):
             lambda x: str(x).startswith(relpath), file_hashes.keys())))
         hashstring = ''.join(file_hashes[file] for file in files)
         path_hashes[relpath] = get_hash(hashstring)
-    (Path(customs_dir) / '.dirhashes').write_text(json.dumps(path_hashes, indent=4))
+    file_dirhashes.write_text(json.dumps(path_hashes, indent=4))
 
 @odoo_module.command()
 @click.argument("module")
@@ -1041,6 +1046,7 @@ def list_deps(config, ctx, module):
     modules = Modules()
     module = Module.get_by_name(module)
     # import pudb;pudb.set_trace()
+    ctx.invoke(make_dir_hashes, on_need=True)
 
     data = {'modules': []}
     data['modules'] = sorted(map(
@@ -1065,14 +1071,14 @@ def list_deps(config, ctx, module):
     for mod in data['auto_install']:
         paths.append(Module.get_by_name(mod).path)
 
-    threads = []
     hashes = {}
 
     @measure_time
     def _get_hash(path):
         hashes[path] = get_directory_hash(path)
 
-    dir_hashes = json.loads((customs_dir() / '.dirhashes').read_text())
+    from .consts import FILE_DIRHASHES
+    dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
 
     # hash python version
     python_version = config.ODOO_PYTHON_VERSION

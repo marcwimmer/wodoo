@@ -60,4 +60,13 @@ def upgrade():
     ]
     subprocess.check_call(cmd)
 
+@setup.command()
+@click.argument("lines")
+def produce_test_lines(lines):
+    import lorem
+    lines = int(lines)
+    for i in range(lines):
+        click.secho(lorem.paragraph())
+
 Commands.register(status)
+
