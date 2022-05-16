@@ -22,7 +22,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services
 from .tools import __try_to_set_owner
-from .tools import measure_time
+from .tools import measure_time, abort
 from pathlib import Path
 
 class UpdateException(Exception): pass
@@ -791,29 +791,47 @@ def list_robot_test_files(config):
 @click.option('-r', '--remote-debug', is_flag=True)
 @click.option('-a', '--all', is_flag=True)
 @click.option('-n', '--non-interactive', is_flag=True)
+@click.option('--output-json', is_flag=True)
 @pass_config
-def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_interactive):
+def unittest(
+    config, repeat, file, remote_debug, wait_for_remote,
+    all, non_interactive, output_json
+):
     """
     Collects unittest files and offers to run
     """
-    from .odoo_config import MANIFEST, MANIFEST_FILE
+    from .odoo_config import MANIFEST, MANIFEST_FILE, customs_dir
     from .module_tools import Module
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
     testfiles = _get_all_unittest_files(config, all_files=all)
 
-    if file:
-        if '/' in file:
-            filename = Path(file)
+    if file and '/' not in file:
+        try:
+            module = Module.get_by_name(file)
+        except:
+            pass
         else:
-            match = [x for x in testfiles if x.name == file or x.name == file + '.py']
-            if match:
-                filename = match[0]
+            tests = module.path.glob("tests/test*")
+            file = ','.join(map(
+                lambda x: str(x.relative_to(customs_dir())), tests))
 
-        if filename not in testfiles:
-            click.secho(f"Not found: {filename}", fg='red')
-            sys.exit(-1)
+    todo = []
+    if file:
+        for file in file.split(','):
+            filename = None
+            if '/' in file:
+                filename = Path(file)
+            else:
+                match = [x for x in testfiles if x.name == file or x.name == file + '.py']
+                if match:
+                    filename = match[0]
+
+            if not filename or filename not in testfiles:
+                click.secho(f"Not found: {filename}", fg='red')
+                sys.exit(-1)
+            todo.append(filename)
     else:
         if repeat and last_unittest:
             filename = last_unittest
@@ -821,16 +839,22 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
             testfiles = sorted(testfiles)
             message = "Please choose the unittest to run."
             filename = inquirer.prompt([inquirer.List('filename', message, choices=testfiles)]).get('filename')
+        todo.append(filename)
 
-    if not filename:
+    if not todo:
         return
+
     config.runtime_settings.set('last_unittest', filename)
     click.secho(str(filename), fg='green', bold=True)
-    container_file = Path('/opt/src/') / filename
+
+    def filepath_to_container(filepath):
+        return Path('/opt/src/') / filepath
+
+    container_files = list(map(filepath_to_container, todo))
 
     interactive = True # means pudb trace turned on
     params = [
-        'odoo', '/odoolib/unit_test.py', f'{container_file}',
+        'odoo', '/odoolib/unit_test.py', f'{",".join(map(str, container_files))}',
     ]
     if wait_for_remote:
         remote_debug = True
@@ -847,7 +871,31 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
     if not interactive:
         params += ['--not-interactive']
 
-    __dcrun(params + ['--log-level=debug'], interactive=interactive)
+    results_filename = next(tempfile._get_candidate_names())
+    params += ["--resultsfile", f"/opt/out_dir/{results_filename}"]
+
+    try:
+        __dcrun(params + ['--log-level=debug'], interactive=interactive)
+    except subprocess.CalledProcessError:
+        pass
+
+    output_path = config.HOST_RUN_DIR / 'odoo_outdir' / results_filename
+    if not output_path.exists():
+        abort("No testoutput generated - seems to be a technical problem.")
+    test_result = json.loads(output_path.read_text())
+    output_path.unlink()
+    if output_json:
+        click.secho("---")
+        click.secho(json.dumps(test_result, indent=4))
+    else:
+        passed = [x for x in test_result if not x['rc']]
+        errors = [x for x in test_result if x['rc']]
+        from tabulate import tabulate
+        if passed:
+            click.secho(tabulate(passed, headers='keys', tablefmt='fancy_grid'), fg='green')
+        if errors:
+            click.secho(tabulate(errors, headers='keys', tablefmt='fancy_grid'), fg='red')
+
 
 @odoo_module.command()
 @click.argument("name", required=True)
