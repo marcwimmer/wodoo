@@ -870,9 +870,14 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
     results_filename = next(tempfile._get_candidate_names())
     params += ["--resultsfile", f"/opt/out_dir/{results_filename}"]
 
-    __dcrun(params + ['--log-level=debug'], interactive=interactive)
+    try:
+        __dcrun(params + ['--log-level=debug'], interactive=interactive)
+    except subprocess.CalledProcessError:
+        pass
 
     output_path = config.HOST_RUN_DIR / 'odoo_outdir' / results_filename
+    if not output_path.exists():
+        abort("No testoutput generated - seems to be a technical problem.")
     test_result = json.loads(output_path.read_text())
     output_path.unlink()
     passed = [x for x in test_result if not x['rc']]
