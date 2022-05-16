@@ -875,9 +875,11 @@ def unittest(config, repeat, file, remote_debug, wait_for_remote, all, non_inter
     output_path = config.HOST_RUN_DIR / 'odoo_outdir' / results_filename
     test_result = json.loads(output_path.read_text())
     output_path.unlink()
-    for passed in test_result['passed']:
+    passed = [x for x in result_result if not x['rc']]
+    errors = [x for x in result_result if x['rc']]
+    for passed in passed:
         click.secho(f"PASS: {passed}", fg='green')
-    for error in test_result['errors']:
+    for error in errors:
         click.secho(f"FAILED: {error}", fg='red')
 
 
