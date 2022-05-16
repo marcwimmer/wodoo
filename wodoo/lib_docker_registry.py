@@ -23,6 +23,8 @@ def docker_registry(config):
 @pass_config
 def login(config):
     hub = split_hub_url(config)
+    if not hub:
+        abort("No HUB Configured - cannt login.")
 
     def _login():
         click.secho(f"Using {hub['username']}", fg='yellow')

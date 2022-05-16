@@ -37,7 +37,7 @@ def _search_path(filename):
     execparent = Path(sys.executable).parent
     if execparent.name in ['bin', 'sbin']:
         paths = [execparent] + paths
-    
+
     for path in paths:
         path = Path(path)
         if (path / filename).exists():

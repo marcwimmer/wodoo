@@ -96,7 +96,7 @@ def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, 
     from .myconfigparser import MyConfigParser
 
     def make_dir_hashes():
-            Commands.invoke(ctx, 'make_dir_hashes')
+        Commands.invoke(ctx, 'make_dir_hashes')
     if not no_dir_hashes:
         threading.Thread(target=make_dir_hashes).start()
     if headless and proxy_port:
