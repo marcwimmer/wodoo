@@ -6,6 +6,7 @@ import traceback
 import os
 import arrow
 import click
+from .tools import abort
 from .tools import __replace_all_envs_in_str
 from .tools import _wait_postgres
 from .tools import _dropdb
@@ -26,6 +27,23 @@ def db(config):
         f"database-name: {config.dbname}, "
         f"in ram: {config.run_postgres_in_ram}"
     ))
+
+@db.command()
+@pass_config
+def db_health_check(config):
+    conn = config.get_odoo_conn()
+    click.secho((
+        f"Connecting to {conn.host}:{conn.port}/{config.dbname}"
+    ))
+    try:
+        _execute_sql(conn,
+        "select * from pg_catalog.pg_tables;", fetchall=True)
+    except Exception:  # pylint: disable=broad-except
+        abort("Listing tables failed for connection to {conn.host}")
+    else:
+        click.secho((
+            'Success'
+        ), fg='green')
 
 @db.command()
 @click.argument('dbname', required=True)
