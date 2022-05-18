@@ -64,7 +64,7 @@ def upgrade():
 @click.argument("lines")
 def produce_test_lines(lines):
     import lorem
-    lines = int(lines)rs-deu
+    lines = int(lines)
     for i in range(lines):
         click.secho(lorem.paragraph())
 
