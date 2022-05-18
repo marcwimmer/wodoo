@@ -17,12 +17,12 @@ from pathlib import Path
 from .tools import _dropdb
 from .tools import remove_webassets
 from .tools import __dc
-from .tools import __get_dump_type
 from .tools import _execute_sql
 from .tools import __rename_db_drop_target
 from .tools import _remove_postgres_connections
 from .tools import _get_dump_files
 from .tools import _binary_zip
+from .tools import autocleanpaper
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 try:
@@ -77,7 +77,13 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
             "docker", 'volume', 'inspect',
             f'{config.PROJECT_NAME}_odoo_postgres_volume',
         ]))[0]['Mountpoint']
-        _binary_zip(path, filename)
+
+        with autocleanpaper() as tempfile_zip:
+            _binary_zip(path, tempfile_zip)
+
+            with autocleanpaper() as tempfile:
+                tempfile.write_text("WODOO_BIN\n")
+                os.system(f"cat {tempfile} {tempfile_zip} > {filename}")
 
         Commands.invoke(ctx, 'up', daemon=True, machines=['postgres'])
 
@@ -140,13 +146,15 @@ def __get_default_backup_filename(config):
     return datetime.now().strftime(f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz")
 
 @restore.command('show-dump-type')
+@click.argument('filename')
 @pass_config
 def get_dump_type(config, filename):
     BACKUPDIR = Path(config.dumps_path)
-    filename = _inquirer_dump_file(config, '', config.dbname)
+    if not filename:
+        filename = _inquirer_dump_file(config, '', config.dbname)
     if filename:
         dump_file = BACKUPDIR / filename
-        dump_type = __get_dump_type(dump_file)
+        dump_type = _add_cronjob_scripts(config)['postgres'].__get_dump_type(dump_file)
         click.echo(dump_type)
 
 @restore.command(name='list')
@@ -281,7 +289,6 @@ def _add_cronjob_scripts(config):
     spec = importlib.util.spec_from_file_location("bin", config.dirs['images'] / 'cronjobs' / 'bin' / 'postgres.py')
     postgres = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(postgres)
-    print(postgres.__get_dump_type)
     return {
         'postgres': postgres,
     }
