@@ -748,8 +748,9 @@ def _get_unittests_from_modules(module_names):
 
 def _get_all_unittest_files(config, all_files=False):
     from .odoo_config import MANIFEST
+    from .module_tools import Modules
 
-    modules = all_files and __get_installed_modules(config) or MANIFEST().get('install', [])
+    modules = Modules().get_all_modules_installed_by_manifest()
     return _get_unittests_from_modules(modules)
 
 def _get_all_robottest_files():
@@ -789,13 +790,12 @@ def list_robot_test_files(config):
 @click.argument('file', required=False)
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debug', is_flag=True)
-@click.option('-a', '--all', is_flag=True)
 @click.option('-n', '--non-interactive', is_flag=True)
 @click.option('--output-json', is_flag=True)
 @pass_config
 def unittest(
     config, repeat, file, remote_debug, wait_for_remote,
-    all, non_interactive, output_json
+    non_interactive, output_json
 ):
     """
     Collects unittest files and offers to run

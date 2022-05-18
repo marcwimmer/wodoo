@@ -667,6 +667,19 @@ class Modules(object):
         append_deps(module, result)
         return result
 
+    def get_all_modules_installed_by_manifest(self):
+        all_modules = set()
+        for module in MANIFEST().get('install', []):
+            all_modules.add(module)
+            module = Module.get_by_name(module)
+            for module2 in self.get_module_flat_dependency_tree(module):
+                all_modules.add(module2.name)
+        for module in self.get_all_auto_install_modules():
+            all_modules.add(module)
+            for module2 in self.get_module_flat_dependency_tree(module):
+                all_modules.add(module2.name)
+        return list(all_modules)
+
     @measure_time
     def get_module_flat_dependency_tree(self, module):
         deptree = self.get_module_dependency_tree(module)
