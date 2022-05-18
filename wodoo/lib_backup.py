@@ -72,6 +72,9 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
                 "Binary ZIP requires own postgres container. DB is also "
                 "stopped for that."
             ))
+        conn = config.get_odoo_conn()
+        version = _execute_sql(conn, "select version()", fetchone=True)[0]
+        version = version.split("(")[0]
         Commands.invoke(ctx, 'stop', machines=['postgres'])
         path = json.loads(subprocess.check_output([
             "docker", 'volume', 'inspect',
@@ -82,7 +85,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
             _binary_zip(path, tempfile_zip)
 
             with autocleanpaper() as tempfile:
-                tempfile.write_text("WODOO_BIN\n")
+                tempfile.write_text(f"WODOO_BIN\n{version}\n")
                 os.system(f"cat {tempfile} {tempfile_zip} > {filename}")
 
         Commands.invoke(ctx, 'up', daemon=True, machines=['postgres'])
