@@ -749,7 +749,7 @@ def _get_unittests_from_modules(module_names):
         testfiles += _get_unittests_from_module(module)
     return testfiles
 
-def _get_all_unittest_files(config, all_files=False):
+def _get_all_unittest_files(config):
     from .odoo_config import MANIFEST
     from .module_tools import Modules
 
