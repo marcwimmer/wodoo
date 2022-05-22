@@ -771,7 +771,7 @@ def _get_all_robottest_files():
 
 @odoo_module.command()
 @pass_config
-def list_unit_test_files(config, all):
+def list_unit_test_files(config):
     files = _get_all_unittest_files(config)
     click.secho("!!!")
     for file in files:
