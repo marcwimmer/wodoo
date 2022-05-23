@@ -89,17 +89,20 @@ def _get_arch():
 @click.option("--devmode", is_flag=True)
 @click.option("-c", "--additional_config", help="Base64 encoded configuration like in settings")
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
-@click.option("--no-dir-hashes", is_flag=True)
+@click.option("--no-update-images", is_flag=True)
 @pass_config
 @click.pass_context
-def do_reload(ctx, config, db, demo, proxy_port, mailclient_gui_port, headless, devmode, additional_config, images_url, no_dir_hashes):
+def do_reload(
+    ctx, config, db, demo, proxy_port, mailclient_gui_port, headless,
+    devmode, additional_config, images_url, no_update_images):
     from .myconfigparser import MyConfigParser
 
     if headless and proxy_port:
         click.secho("Proxy Port and headless together not compatible.", fg='red')
         sys.exit(-1)
 
-    _download_images(config, images_url)
+    if not no_update_images:
+        _download_images(config, images_url)
     config.TARGETARCH = _get_arch()
 
     click.secho("Current Project Name: {}".format(config.project_name), bold=True, fg='green')
