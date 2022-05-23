@@ -749,7 +749,7 @@ def _get_unittests_from_modules(module_names):
         testfiles += _get_unittests_from_module(module)
     return testfiles
 
-def _get_all_unittest_files(config, all_files=False):
+def _get_all_unittest_files(config):
     from .odoo_config import MANIFEST
     from .module_tools import Modules
 
@@ -770,10 +770,9 @@ def _get_all_robottest_files():
     return testfiles
 
 @odoo_module.command()
-@click.option('-a', '--all', is_flag=True)
 @pass_config
-def list_unit_test_files(config, all):
-    files = _get_all_unittest_files(config, all_files=all)
+def list_unit_test_files(config):
+    files = _get_all_unittest_files(config)
     click.secho("!!!")
     for file in files:
         click.secho(file)
@@ -808,7 +807,7 @@ def unittest(
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = _get_all_unittest_files(config, all_files=all)
+    testfiles = _get_all_unittest_files(config)
 
     if file and '/' not in file:
         try:
