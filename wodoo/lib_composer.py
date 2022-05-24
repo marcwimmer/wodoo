@@ -27,6 +27,7 @@ from .tools import _makedirs
 from .tools import __try_to_set_owner
 from .tools import __empty_dir
 from .tools import __remove_tree
+from .tools import abort
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
@@ -98,14 +99,17 @@ def do_reload(
     from .myconfigparser import MyConfigParser
 
     if headless and proxy_port:
-        click.secho("Proxy Port and headless together not compatible.", fg='red')
+        click.secho((
+            "Proxy Port and headless together not compatible."
+        ), fg='red')
         sys.exit(-1)
 
     if not no_update_images:
         _download_images(config, images_url)
     config.TARGETARCH = _get_arch()
 
-    click.secho("Current Project Name: {}".format(config.project_name), bold=True, fg='green')
+    click.secho(
+        f"Current Project Name: {config.project_name}", bold=True, fg='green')
     SETTINGS_FILE = config.files.get('settings')
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
@@ -225,8 +229,20 @@ def _download_images(config, images_url):
             config.dirs['images'])], cwd=config.dirs['images'])
     if subprocess.check_output([
         "git", "remote"], encoding="utf8", cwd=config.dirs['images']).strip():
-        subprocess.check_call([
-            "git", "pull"], cwd=config.dirs['images'])
+
+        trycount = 0
+        for i in range(10):
+            trycount += 1
+            try:
+                subprocess.check_call([
+                    "git", "pull"], cwd=config.dirs['images'])
+            except Exception as ex:
+                if trycount < 5:
+                    time.sleep(random.randint(5, 30))
+                else:
+                    abort(str(ex))
+            else:
+                break
     branch = subprocess.check_output([
         "git", "rev-parse", "--abbrev-ref",
         "HEAD"], cwd=config.dirs['images'], encoding='utf-8').strip()
