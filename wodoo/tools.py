@@ -127,14 +127,16 @@ def __get_odoo_commit():
         raise Exception("No odoo commit defined.")
     return commit
 
-def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=False, no_try=False, params=None, return_columns=False):
+def _execute_sql(connection, sql, fetchone=False, fetchall=False,
+    notransaction=False, no_try=False, params=None, return_columns=False):
 
     @retry(wait_random_min=500, wait_random_max=800, stop_max_delay=30000)
     def try_connect(connection):
         try:
             if hasattr(connection, 'clone'):
                 connection = connection.clone(dbname='postgres')
-            _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True)
+            _execute_sql(
+                connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True)
         except Exception as e:
             click.secho(str(e), fg='red')
 
@@ -169,7 +171,7 @@ def _execute_sql(connection, sql, fetchone=False, fetchall=False, notransaction=
         return _call_cr(connection)
 
 def _exists_db(conn):
-    sql = "select count(*) from pg_database where datname='{}'".format(conn.dbname)
+    sql = f"select count(*) from pg_database where datname='{conn.dbname}'"
     conn = conn.clone()
     conn.dbname = 'postgres'
     record = _execute_sql(conn, sql, fetchone=True)
@@ -179,19 +181,21 @@ def _exists_db(conn):
 
 
 def _exists_table(conn, table_name):
-    record = _execute_sql(conn, """
-    select exists(
-        select 1
-        from information_schema.tables
-        where table_name = '{}'
-    )
-    """.format(table_name), fetchone=True)
+    record = _execute_sql(conn, (
+        "select exists( "
+        "   select 1 "
+        "   from information_schema.tables "
+        f"   where table_name = '{table_name}' "
+        ")"), fetchone=True)
     return record[0]
 
 def _wait_postgres(config):
     if config.run_postgres:
         conn = config.get_odoo_conn().clone(dbname='postgres')
-        container_ids = __dc_out(['ps', '-a', '-q', '--filter', 'name=postgres']).decode('utf-8').strip().split("\n")
+        container_ids = __dc_out([
+            'ps', '-a', '-q',
+            '--filter', 'name=postgres'
+        ]).decode('utf-8').strip().splitlines()
         client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
@@ -234,7 +238,9 @@ def _is_container_running(machine_name):
     import docker
     container_id = __dc_out(['ps', '-q', machine_name]).strip()
     if container_id:
-        container = list(filter(lambda container: container.id == container_id, docker.from_env().containers.list()))
+        container = list(filter(
+            lambda container: container.id == container_id,
+            docker.from_env().containers.list()))
         if container:
             container = container[0]
             return container.status == 'running'
@@ -242,7 +248,9 @@ def _is_container_running(machine_name):
 
 def is_up(*machine_name):
     assert len(machine_name) == 1
-    click.echo('Running' if _is_container_running(machine_name[0]) else 'Not Running', machine_name[0])
+    click.echo(
+        'Running' if _is_container_running(machine_name[0]) else
+        'Not Running', machine_name[0])
 
 def _isfloat(x):
     try:
@@ -256,7 +264,7 @@ def _makedirs(path):
     path.mkdir(exist_ok=True, parents=True)
 
 def _remove_postgres_connections(connection, sql_afterwards=""):
-    click.echo("Removing all current connections from {}".format(connection.dbname))
+    click.echo(f"Removing all current connections from {connection.dbname}")
     if os.getenv("POSTGRES_DONT_DROP_ACTIVITIES", "") != "1":
         if _exists_db(connection):
             SQL = """
@@ -265,17 +273,26 @@ def _remove_postgres_connections(connection, sql_afterwards=""):
                 WHERE pg_stat_activity.datname = '{}'
                 AND pid <> pg_backend_pid();
             """.format(connection.dbname, sql_afterwards)
-            _execute_sql(connection.clone(dbname='postgres'), SQL, notransaction=True)
+            _execute_sql(connection.clone(
+                dbname='postgres'), SQL, notransaction=True)
             if sql_afterwards:
-                _execute_sql(connection.clone(dbname='postgres'), sql_afterwards, notransaction=True)
+                _execute_sql(connection.clone(
+                    dbname='postgres'), sql_afterwards, notransaction=True)
 
 def __rename_db_drop_target(conn, from_db, to_db):
     if to_db in ('postgres', 'template1'):
         raise Exception("Invalid: {}".format(to_db))
     _remove_postgres_connections(conn.clone(dbname=from_db))
     _remove_postgres_connections(conn.clone(dbname=to_db))
-    _execute_sql(conn.clone(dbname='postgres'), "drop database if exists {to_db}".format(**locals()), notransaction=True)
-    _execute_sql(conn.clone(dbname='postgres'), "alter database {from_db} rename to {to_db};".format(**locals()), notransaction=True)
+    _execute_sql(conn.clone(
+        dbname='postgres'),
+        (
+            f"drop database if exists {to_db}"
+        ), notransaction=True)
+    _execute_sql(conn.clone(
+        dbname='postgres'), (
+            f"alter database {from_db} rename to {to_db};"
+        ), notransaction=True)
     _remove_postgres_connections(conn.clone(dbname=to_db))
 
 def _merge_env_dict(env):
@@ -380,7 +397,8 @@ def __rmtree(path):
         raise Exception("Not allowed: {}".format(path))
     if not path.startswith("/"):
         raise Exception("Not allowed: {}".format(path))
-    if not any(path.startswith(config.dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
+    if not any(path.startswith(
+            config.dirs['odoo_home'] + x) for x in ['/tmp', '/run/']):
         if "/tmp" in path:
             pass
         else:
@@ -417,11 +435,11 @@ def __empty_dir(dir, user_out=False):
         for x in dir.glob("*"):
             if x.is_dir():
                 if user_out:
-                    click.secho("Removing {}".format(x.absolute()))
+                    click.secho(f"Removing {x.absolute()}")
                 shutil.rmtree(x.absolute())
             else:
                 if user_out:
-                    click.secho("Removing {}".format(x.absolute()))
+                    click.secho(f"Removing {x.absolute()}")
                 x.unlink()
     except:
         click.secho(f"Could not delete: {dir}", fg='red')
@@ -433,13 +451,13 @@ def __file_default_content(path, default_content):
         path.write_text(default_content)
 
 def __file_get_lines(path):
-    return path.read_text().strip().split("\n")
+    return path.read_text().strip().splitlines()
 
 def _get_machines():
     config = _get_missing_click_config()
     cmd = config.commands['dc'] + ['ps', '--services']
     out = subprocess.check_output(cmd, cwd=config.dirs['odoo_home'])
-    out = set(filter(lambda x: x, out.split("\n")))
+    out = set(filter(lambda x: x, out.splitlines()))
     return list(sorted(out))
 
 
@@ -451,7 +469,9 @@ if retry:
         container id; seems to be race condition or so
         """
         hostname = os.environ['HOSTNAME']
-        result = [x for x in subprocess.check_output(["/opt/docker/docker", "inspect", hostname]).split("\n") if "\"Image\"" in x]
+        result = [x for x in subprocess.check_output([
+            "/opt/docker/docker", "inspect", hostname]).splitlines()
+            if "\"Image\"" in x]
         if result:
             result = result[0].split("sha256:")[-1].split('"')[0]
             return result[:12]
@@ -475,7 +495,10 @@ def __get_installed_modules(config):
     conn = config.get_odoo_conn()
     rows = _execute_sql(
         conn,
-        sql="SELECT name, state from ir_module_module where state in ('installed', 'to upgrade');",
+        sql=(
+            "SELECT name, state from ir_module_module where "
+            "state in ('installed', 'to upgrade');"
+        ),
         fetchall=True
     )
     return [x[0] for x in rows]
@@ -515,7 +538,9 @@ def __try_to_set_owner(UID, path):
                         os.chown(line, UID, GID)
                     except:
                         click.secho(traceback.format_stack())
-                        click.secho(f"Could not set owner {UID} {GID} on directory {line}")
+                        click.secho((
+                            f"Could not set owner {UID} "
+                            f"{GID} on directory {line}"))
                         sys.exit(-1)
 
         finally:
@@ -556,7 +581,8 @@ def _get_dump_files(backupdir, fnfilter=None):
         except Exception:
             return 0
     rows = []
-    for i, file in enumerate(sorted(filter(lambda x: _get_ctime(x), _files), reverse=True, key=_get_ctime)):
+    for i, file in enumerate(sorted(filter(
+        lambda x: _get_ctime(x), _files), reverse=True, key=_get_ctime)):
         filepath = backupdir / file
         delta = arrow.get() - arrow.get(filepath.stat().st_mtime)
         rows.append((
@@ -568,58 +594,23 @@ def _get_dump_files(backupdir, fnfilter=None):
 
     return rows
 
-def __get_dump_type(filepath):
-    temp = Path(tempfile.mktemp(suffix='.check'))
-    MARKER = "PostgreSQL database dump"
-    FNULL = open(os.devnull, 'w')
-    proc = subprocess.Popen(['gunzip', '-c', filepath], stdout=subprocess.PIPE, stderr=FNULL, bufsize=1)
-
-    def reader(proc, pipe):
-        try:
-            lines = 0
-            with pipe:
-                for line in iter(pipe.readline, ''):
-                    with temp.open('a') as f:
-                        f.write(line.decode("utf-8", errors='ignore'))
-                        lines += 1
-                        if lines > 20:
-                            break
-        finally:
-            if not proc.returncode:
-                proc.kill()
-
-    Thread(target=reader, args=[proc, proc.stdout]).start()
-    proc.wait()
-
-    if temp.exists():
-        content = temp.read_text()
-        if MARKER in content:
-            return 'zipped_sql'
-        if content.startswith("PGDMP"):
-            return "zipped_pgdump"
-    with open(filepath, 'r') as f:
-        for i, line in enumerate(f):
-            if i == 0 and line.startswith("PGDMP"):
-                return 'pgdump'
-            if i > 50:
-                break
-            if MARKER in line:
-                return "plain_text"
-    return 'unzipped_pgdump'
-
 def _dropdb(config, conn):
-    import inquirer
     if _exists_db(conn):
         # TODO ask for name
         if not config.force:
             questions = [
-                inquirer.Text('name',
-                              message="Database {} will be dropped. Please enter the name to delete it ({})".format(conn.dbname, conn.shortstr()))
+                inquirer.Text(
+                    'name', message=(
+                        f"Database {conn.dbname} will be dropped. "
+                        "Please enter the name to delete it "
+                        f"({conn.shortstr()})"
+                    ))
             ]
             answer = inquirer.prompt(questions)
             if answer['name'] != conn.dbname:
-                click.secho("Dropping aborted - you did not answer: {}".format(conn.dbname), fg='red')
-                sys.exit(1)
+                abort((
+                    f"Dropping aborted - you did not answer: {conn.dbname}"
+                ))
     else:
         click.echo("Database does not exist yet: {}".format(conn.dbname))
     click.echo("Stopping all services and creating new database")
@@ -672,12 +663,14 @@ def get_volume_names():
     return [f"{project_name}_{x}" for x in vols]
 
 def __running_as_root_or_sudo():
-    output = subprocess.check_output(["/usr/bin/id", '-u']).strip().decode('utf-8')
+    output = subprocess.check_output([
+        "/usr/bin/id", '-u']).strip().decode('utf-8')
     return output == "0"
 
 def __replace_all_envs_in_str(content, env):
     """
-    Docker does not allow to replace volume names or service names, so we do it by hand
+    Docker does not allow to replace volume names or
+    service names, so we do it by hand
     """
     all_params = re.findall(r'\$\{[^\}]*?\}', content)
     for param in all_params:
@@ -735,7 +728,10 @@ def sync_folder(dir, dest_dir, excludes=None):
             dest_dir
         ))
     if platform.system() in ['Linux', 'Darwin']:
-        cmd = ['rsync', str(dir) + "/", str(dest_dir) + "/", "-r", "--delete-after"]
+        cmd = [
+            'rsync', str(dir) + "/",
+            str(dest_dir) + "/", "-r", "--delete-after"
+        ]
         for exclude in (excludes or []):
             cmd += ["--exclude={}".format(exclude)]
         subprocess.check_call(cmd)
@@ -768,7 +764,9 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
 
     def raise_error():
         if assert_clean:
-            click.secho("Dirty directory - please cleanup: {}".format(repo.working_dir), bold=True, fg='red')
+            click.secho((
+                "Dirty directory - please cleanup: {repo.working_dir}"
+            ), bold=True, fg='red')
             sys.exit(42)
 
     if repo.is_dirty() or repo.untracked_files:
@@ -784,9 +782,11 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
                 try:
                     sub_repo = Repo(submodule.path)
                 except InvalidGitRepositoryError:
-                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+                    click.secho(
+                        f"Invalid Repo: {submodule}", bold=True, fg='red')
                 except NoSuchPathError:
-                    click.secho("Invalid Repo: {}".format(submodule), bold=True, fg='red')
+                    click.secho(
+                        f"Invalid Repo: {submodule}", bold=True, fg='red')
                 else:
                     if _is_dirty(sub_repo, True, assert_clean=assert_clean):
                         raise_error()
@@ -798,7 +798,9 @@ def __assure_gitignore(gitignore_file, content):
     if not p.exists():
         p.write(content + "\n")
         return
-    exists = [l for l in gitignore_file.read_text().split("\n") if l.strip() == content]
+    exists = [
+        l for
+        l in gitignore_file.read_text().split("\n") if l.strip() == content]
     if not exists:
         with p.open('a') as f:
             f.write(content)
@@ -953,7 +955,7 @@ def _binary_zip(folder, destpath):
     with tqdm(total=count_files) as pbar:
         pbar.set_description(f"Zipping {folder} to {destpath}")
         while proc.returncode is None:
-            line  = proc.stdout.readline().decode('utf-8')
+            proc.stdout.readline()
             pbar.update(1)
             proc.poll()
 
@@ -962,3 +964,18 @@ def _binary_zip(folder, destpath):
             destpath.unlink()
         abort("Failed at zipping")
 
+
+@contextmanager
+def autocleanpaper():
+    filepath = Path(
+        tempfile._get_default_tempdir()
+    ) / next(tempfile._get_candidate_names())
+
+    try:
+        yield filepath
+    finally:
+        if filepath.exists():
+            if filepath.is_dir():
+                shutil.rmtree(filepath)
+            else:
+                filepath.unlink()

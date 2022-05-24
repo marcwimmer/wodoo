@@ -131,7 +131,10 @@ def run_tests(ctx, config):
 def download_openupgrade(ctx, config, version):
     from .odoo_config import customs_dir
     dir_openupgrade = Path(tempfile.mktemp())
-    subprocess.check_call(['git', 'clone', '--depth', '1', '--branch', version, 'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
+    subprocess.check_call([
+        'git', 'clone', '--depth',
+        '1', '--branch', version,
+        'https://github.com/OCA/OpenUpgrade', dir_openupgrade / 'openupgrade'])
 
     if float(version) < 14.0:
         destination_path = 'odoo'
@@ -765,10 +768,11 @@ def _get_unittests_from_modules(module_names):
         testfiles += _get_unittests_from_module(module)
     return testfiles
 
-def _get_all_unittest_files(config, all_files=False):
+def _get_all_unittest_files(config):
     from .odoo_config import MANIFEST
+    from .module_tools import Modules
 
-    modules = all_files and __get_installed_modules(config) or MANIFEST().get('install', [])
+    modules = Modules().get_all_modules_installed_by_manifest()
     return _get_unittests_from_modules(modules)
 
 def _get_all_robottest_files():
@@ -785,10 +789,9 @@ def _get_all_robottest_files():
     return testfiles
 
 @odoo_module.command()
-@click.option('-a', '--all', is_flag=True)
 @pass_config
-def list_unit_test_files(config, all):
-    files = _get_all_unittest_files(config, all_files=all)
+def list_unit_test_files(config):
+    files = _get_all_unittest_files(config)
     click.secho("!!!")
     for file in files:
         click.secho(file)
@@ -808,13 +811,12 @@ def list_robot_test_files(config):
 @click.argument('file', required=False)
 @click.option('-w', '--wait-for-remote', is_flag=True)
 @click.option('-r', '--remote-debug', is_flag=True)
-@click.option('-a', '--all', is_flag=True)
 @click.option('-n', '--non-interactive', is_flag=True)
 @click.option('--output-json', is_flag=True)
 @pass_config
 def unittest(
     config, repeat, file, remote_debug, wait_for_remote,
-    all, non_interactive, output_json
+    non_interactive, output_json
 ):
     """
     Collects unittest files and offers to run
@@ -824,7 +826,7 @@ def unittest(
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = _get_all_unittest_files(config, all_files=all)
+    testfiles = _get_all_unittest_files(config)
 
     if file and '/' not in file:
         try:
