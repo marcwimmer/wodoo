@@ -489,13 +489,14 @@ def update(
                 from .lib_control_with_docker import shell as lib_shell
             for module in to_uninstall:
                 click.secho(f"Uninstall {module}", fg='red')
-                lib_shell("""
-self.env['ir.module.module'].search([
-('name', '=', '{}'),
-('state', 'in', ['to upgrade', 'to install', 'installed'])
-]).module_uninstall()
-self.env.cr.commit()
-                """.format(module))
+                lib_shell((
+                    "self.env['ir.module.module'].search(["
+                    f('name', '=', '{module}'),"
+                    "('state', 'in', "
+                    "['to upgrade', 'to install', 'installed']"
+                    ")]).module_uninstall()\n"
+                    "self.env.cr.commit()"
+                ))
 
         to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
         if to_uninstall:
