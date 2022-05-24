@@ -491,7 +491,7 @@ def update(
                 click.secho(f"Uninstall {module}", fg='red')
                 lib_shell((
                     "self.env['ir.module.module'].search(["
-                    f('name', '=', '{module}'),"
+                    f"('name', '=', '{module}'),"
                     "('state', 'in', "
                     "['to upgrade', 'to install', 'installed']"
                     ")]).module_uninstall()\n"
