@@ -375,6 +375,14 @@ def update(
                         ctx, 'up', machines=['postgres'], daemon=True)
                 Commands.invoke(ctx, 'wait_for_container_postgres')
 
+        def show_dangling():
+            dangling = list(DBModules.get_dangling_modules())
+            if dangling:
+                click.echo("Displaying dangling modules:")
+                for row in dangling:
+                    click.echo("{}: {}".format(row[0], row[1]))
+            return bool(dangling)
+
         if not no_dangling_check:
             if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
                 for x in DBModules.get_dangling_modules():
@@ -389,10 +397,9 @@ def update(
                     ))
             if DBModules.get_dangling_modules() and not dangling_modules:
                 if not no_dangling_check:
-                    Commands.invoke(
-                        ctx, 'show_install_state', suppress_error=True)
-                    input("Abort old upgrade and continue? (Ctrl+c to break)")
-                    ctx.invoke(abort_upgrade)
+                    if show_dangling():
+                        input("Abort old upgrade and continue? (Ctrl+c to break)")
+                        ctx.invoke(abort_upgrade)
         if installed_modules:
             module += __get_installed_modules(config)
         if dangling_modules:
@@ -445,9 +452,6 @@ def update(
                     "Error at /update_modules.py - "
                     "aborting update process.")) from ex
 
-            if check_install_state:
-                ctx.invoke(show_install_state, suppress_error=no_dangling_check)
-
         if outdated_modules:
             _technically_update(outdated_modules)
         _technically_update(module)
@@ -492,23 +496,37 @@ self.env.cr.commit()
 
         to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
         if to_uninstall:
-            click.secho(f"Failed to uninstall: {','.join(to_uninstall)}", fg='red')
-            sys.exit(-1)
+            abort(f"Failed to uninstall: {','.join(to_uninstall)}")
 
     if not uninstall:
         _perform_install(module)
     _uninstall_marked_modules()
 
-    if param_module not in ['all', 'base']:
-        missing_modules = list(
-            DBModules.check_if_all_modules_from_install_are_installed())
-        if missing_modules and not no_dangling_check:
-            click.secho((
-                f"Not installed: {','.join(missing_modules)}"
-            ), fg='red')
-            sys.exit(-88)
+    all_modules = not param_module or \
+        len(param_module) == 1 and param_module[0] in [
+            'all', 'base', False, None, '']
 
+    # check danglings
+    if not no_dangling_check and all_modules:
+        ctx.invoke(show_install_state, suppress_error=False)
 
+    if check_install_state:
+        if all_modules:
+            ctx.invoke(
+                show_install_state,
+                suppress_error=no_dangling_check,
+                missing_as_error=True
+            )
+        else:
+            missing = list(DBModules.check_if_all_modules_from_install_are_installed())
+            problem_missing = set()
+            for module in module:
+                if module in missing:
+                    problem_missing.add(module)
+            if problem_missing:
+                for missing in sorted(problem_missing):
+                    click.secho("Missing: {missing}", fg='red')
+                abort("Missing after installation")
 
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument('module', nargs=-1, required=False)
@@ -551,7 +569,7 @@ def progress(config):
 
 @odoo_module.command(name='show-install-state')
 @pass_config
-def show_install_state(config, suppress_error=False):
+def show_install_state(config, suppress_error=False, missing_as_error=False):
     from .module_tools import DBModules
     dangling = list(DBModules.get_dangling_modules())
     if dangling:
@@ -566,13 +584,14 @@ def show_install_state(config, suppress_error=False):
             f"Module {missing_item} not installed!"
         ), fg='red')
 
-    if (dangling or missing) and not suppress_error:
-        raise Exception((
-            "Dangling modules detected - "
-            " please fix installation problems and retry! \n"
-            f"Dangling: {dangling}\n"
-            f"Missing: {missing}\n"
-        ))
+    if not suppress_error:
+        if dangling or (missing_as_error and missing):
+            raise Exception((
+                "Dangling modules detected - "
+                " please fix installation problems and retry! \n"
+                f"Dangling: {dangling}\n"
+                f"Missing: {missing}\n"
+            ))
 
 @odoo_module.command(name='show-addons-paths')
 def show_addons_paths():
@@ -1061,7 +1080,6 @@ def list_deps(config, ctx, module):
     from .odoo_config import customs_dir
     modules = Modules()
     module = Module.get_by_name(module)
-    # import pudb;pudb.set_trace()
     ctx.invoke(make_dir_hashes, on_need=True)
 
     data = {'modules': []}
