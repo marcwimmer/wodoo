@@ -320,7 +320,7 @@ def update(
 
     click.secho((
         "Started with parameters: \n"
-        f"no_dangling_check: {no_dangling_check}\n",
+        f"no_dangling_check: {no_dangling_check}\n"
         f"modules: {module}\n"
     ))
     click.secho("""
