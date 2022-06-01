@@ -148,7 +148,6 @@ def internal_reload(config, db, demo, devmode, headless, local, proxy_port, mail
         defaults.update({
             'RUN_PROXY': 1,
             'RUN_PROXY_PUBLISHED': 0,
-            'RUN_SSLPROXY': 0,
             'RUN_ROUNDCUBE': 1,
             'RUN_MAIL': 1,
             'RUN_CUPS': 0,
