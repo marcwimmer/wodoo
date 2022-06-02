@@ -635,9 +635,15 @@ def _exec_update(config, params):
     "No tests run - just the dependencies are "
     "installed like e.g. web_selenium"))
 @click.option('--parallel', default=1, help="Parallel runs of robots.")
+@click.option("-j", "--output-json", is_flag=True, help=(
+    "If set, then a json is printed to console, with detailed informations"
+))
 @pass_config
 @click.pass_context
-def robotest(ctx, config, file, user, all, tag, test_name, param, install_required_modules, parallel):
+def robotest(
+    ctx, config, file, user, all, tag, test_name, param, 
+    install_required_modules, parallel, output_json
+):
     PARAM = param
     del param
     started = arrow.utcnow()
@@ -775,6 +781,11 @@ def robotest(ctx, config, file, user, all, tag, test_name, param, install_requir
     ), fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
     click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
+
+    if output_json:
+        click.secho("---")
+        click.secho(json.dumps(test_results, indent=4))
+
     if failds:
         sys.exit(-1)
 
