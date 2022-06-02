@@ -754,9 +754,12 @@ def robotest(ctx, config, file, user, all, tag, test_name, param, install_requir
         if not rows:
             return
         from tabulate import tabulate
-        headers = ['name', 'count', 'avg_duration', 'min_duration', 'max_duration']
+        headers = [
+            'name', 'all_ok', 'count',
+            'avg_duration', 'min_duration', 'max_duration'
+        ]
         def data(row):
-            return [row[x] for x in headers]
+            return [row.get(x) for x in headers]
 
         click.secho(tabulate(
             map(data, rows),
