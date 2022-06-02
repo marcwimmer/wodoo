@@ -780,7 +780,9 @@ def robotest(
         f"Duration: {(arrow.utcnow() - started).total_seconds()}s"
     ), fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
-    click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
+    click.secho((
+        "Watch the logs online at: "
+        f"http://host:{config.PROXY_PORT}/robot-output"))
 
     if output_json:
         click.secho("---")
