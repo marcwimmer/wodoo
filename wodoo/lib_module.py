@@ -1,4 +1,5 @@
 import sys
+import arrow
 import threading
 import json
 import base64
@@ -630,12 +631,16 @@ def _exec_update(config, params):
 @click.option('-t', '--tag', is_flag=False)
 @click.option('-n', '--test_name', is_flag=False)
 @click.option('-p', '--param', multiple=True, help="e.g. --param key1=value1 --param key2=value2")
-@click.option('--install-required-modules', is_flag=True, help="No tests run - just the dependencies are installed like e.g. web_selenium")
+@click.option('--install-required-modules', is_flag=True, help=(
+    "No tests run - just the dependencies are "
+    "installed like e.g. web_selenium"))
+@click.option('--parallel', default=1, help="Parallel runs of robots.")
 @pass_config
 @click.pass_context
-def robotest(ctx, config, file, user, all, tag, test_name, param, install_required_modules):
+def robotest(ctx, config, file, user, all, tag, test_name, param, install_required_modules, parallel):
     PARAM = param
     del param
+    started = arrow.utcnow()
 
     from pathlib import Path
     from .odoo_config import customs_dir
@@ -715,6 +720,7 @@ def robotest(ctx, config, file, user, all, tag, test_name, param, install_requir
             "dbname": config.DBNAME,
             "password": config.DEFAULT_DEV_PASSWORD,
             "selenium_timeout": 20, # selenium timeout,
+            "parallel": parallel
         }
         if test_name:
             params['test_name'] = test_name
@@ -741,12 +747,29 @@ def robotest(ctx, config, file, user, all, tag, test_name, param, install_requir
 
     output_path = config.HOST_RUN_DIR / 'odoo_outdir' / 'robot_output'
     test_results = json.loads((output_path / 'results.json').read_text())
-    failds = [x for x in test_results if x['result'] != 'ok']
+    failds = [x for x in test_results if not x['all_ok']]
     color_info = 'green'
-    for failed in failds:
-        color_info = 'red'
-        click.secho(f"Test failed: {failed['name']} - Duration: {failed['duration']}", fg='red')
-    click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
+
+    def print_row(rows, fg):
+        if not rows:
+            return
+        from tabulate import tabulate
+        headers = ['name', 'count', 'avg_duration', 'min_duration', 'max_duration']
+        def data(row):
+            return [row[x] for x in headers]
+
+        click.secho(tabulate(
+            map(data, rows),
+            headers=headers,
+            tablefmt='fancy_grid'
+        ), fg=fg)
+
+    print_row(list(filter(lambda x: x['all_ok'], test_results)), fg='green')
+    print_row(list(filter(lambda x: not x['all_ok'], test_results)), fg='red')
+
+    click.secho((
+        f"Duration: {(arrow.utcnow() - started).total_seconds()}s"
+    ), fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
     click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
     if failds:
