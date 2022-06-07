@@ -807,7 +807,6 @@ def unittest(
     from pathlib import Path
     last_unittest = config.runtime_settings.get('last_unittest')
 
-    testfiles = _get_all_unittest_files(config)
 
     if file and '/' not in file:
         try:
@@ -822,19 +821,9 @@ def unittest(
     todo = []
     if file:
         for file in file.split(','):
-            filename = None
-            if '/' in file:
-                filename = Path(file)
-            else:
-                match = [x for x in testfiles if x.name == file or x.name == file + '.py']
-                if match:
-                    filename = match[0]
-
-            if not filename or filename not in testfiles:
-                click.secho(f"Not found: {filename}", fg='red')
-                sys.exit(-1)
-            todo.append(filename)
+            todo.append(file)
     else:
+        testfiles = _get_all_unittest_files(config)
         if repeat and last_unittest:
             filename = last_unittest
         else:
@@ -846,8 +835,10 @@ def unittest(
     if not todo:
         return
 
-    config.runtime_settings.set('last_unittest', filename)
-    click.secho(str(filename), fg='green', bold=True)
+    config.runtime_settings.set('last_unittest', file)
+    for todoitem in todo:
+        click.secho(str(todoitem), fg='green', bold=True)
+
 
     def filepath_to_container(filepath):
         return Path('/opt/src/') / filepath
