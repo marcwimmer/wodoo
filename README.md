@@ -164,5 +164,9 @@ odoo pgactivity
 | DBNAME | Uses projectname or a configured one|
 | HUB_URL=value| user:password@host:port/paths.. to configure|
 | REGISTRY=1      | Rewrites all build and images urls to HUB_URL. Should be used on production systems to force pull only from registry and block any local buildings.|
-| RUN_PROXY=1| If the built-in nodejs proxy is enabled |
 | POSTGRES_VERSION=13| Choose from 11, 12, 13, 14|
+| ENABLE_DB_MANAGER| Enables the odoo db manager|
+| DEVMODE=1 | At restore runs safety scripts to disable cronjobs and mailserver and resets passwords|
+| RUN_PROXY=1| If the built-in nodejs proxy is enabled |
+| RUN_PROXY_PUBLISHED=0/1| If the proxy is reachable from outside the docker network example from 127.0.0.1:8069|
+| PROXY_PORT| The port on which you can access with plain http the odoo|

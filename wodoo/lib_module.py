@@ -1,4 +1,5 @@
 import sys
+import arrow
 import threading
 import json
 import base64
@@ -320,7 +321,7 @@ def update(
 
     click.secho((
         "Started with parameters: \n"
-        f"no_dangling_check: {no_dangling_check}\n",
+        f"no_dangling_check: {no_dangling_check}\n"
         f"modules: {module}\n"
     ))
     click.secho("""
@@ -378,6 +379,14 @@ def update(
                         ctx, 'up', machines=['postgres'], daemon=True)
                 Commands.invoke(ctx, 'wait_for_container_postgres')
 
+        def show_dangling():
+            dangling = list(DBModules.get_dangling_modules())
+            if dangling:
+                click.echo("Displaying dangling modules:")
+                for row in dangling:
+                    click.echo("{}: {}".format(row[0], row[1]))
+            return bool(dangling)
+
         if not no_dangling_check:
             if any(x[1] == 'uninstallable' for x in DBModules.get_dangling_modules()):
                 for x in DBModules.get_dangling_modules():
@@ -392,10 +401,9 @@ def update(
                     ))
             if DBModules.get_dangling_modules() and not dangling_modules:
                 if not no_dangling_check:
-                    Commands.invoke(
-                        ctx, 'show_install_state', suppress_error=True)
-                    input("Abort old upgrade and continue? (Ctrl+c to break)")
-                    ctx.invoke(abort_upgrade)
+                    if show_dangling():
+                        input("Abort old upgrade and continue? (Ctrl+c to break)")
+                        ctx.invoke(abort_upgrade)
         if installed_modules:
             module += __get_installed_modules(config)
         if dangling_modules:
@@ -448,9 +456,6 @@ def update(
                     "Error at /update_modules.py - "
                     "aborting update process.")) from ex
 
-            if check_install_state:
-                ctx.invoke(show_install_state, suppress_error=no_dangling_check)
-
         if outdated_modules:
             _technically_update(outdated_modules)
         _technically_update(module)
@@ -485,33 +490,48 @@ def update(
                 from .lib_control_with_docker import shell as lib_shell
             for module in to_uninstall:
                 click.secho(f"Uninstall {module}", fg='red')
-                lib_shell("""
-self.env['ir.module.module'].search([
-('name', '=', '{}'),
-('state', 'in', ['to upgrade', 'to install', 'installed'])
-]).module_uninstall()
-self.env.cr.commit()
-                """.format(module))
+                lib_shell((
+                    "self.env['ir.module.module'].search(["
+                    f"('name', '=', '{module}'),"
+                    "('state', 'in', "
+                    "['to upgrade', 'to install', 'installed']"
+                    ")]).module_uninstall()\n"
+                    "self.env.cr.commit()"
+                ))
 
         to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
         if to_uninstall:
-            click.secho(f"Failed to uninstall: {','.join(to_uninstall)}", fg='red')
-            sys.exit(-1)
+            abort(f"Failed to uninstall: {','.join(to_uninstall)}")
 
     if not uninstall:
         _perform_install(module)
     _uninstall_marked_modules()
 
-    if param_module not in ['all', 'base']:
-        missing_modules = list(
-            DBModules.check_if_all_modules_from_install_are_installed())
-        if missing_modules and not no_dangling_check:
-            click.secho((
-                f"Not installed: {','.join(missing_modules)}"
-            ), fg='red')
-            sys.exit(-88)
+    all_modules = not param_module or \
+        len(param_module) == 1 and param_module[0] in [
+            'all', 'base', False, None, '']
 
+    # check danglings
+    if not no_dangling_check and all_modules:
+        ctx.invoke(show_install_state, suppress_error=False)
 
+    if check_install_state:
+        if all_modules:
+            ctx.invoke(
+                show_install_state,
+                suppress_error=no_dangling_check,
+                missing_as_error=True
+            )
+        else:
+            missing = list(DBModules.check_if_all_modules_from_install_are_installed())
+            problem_missing = set()
+            for module in module:
+                if module in missing:
+                    problem_missing.add(module)
+            if problem_missing:
+                for missing in sorted(problem_missing):
+                    click.secho("Missing: {missing}", fg='red')
+                abort("Missing after installation")
 
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument('module', nargs=-1, required=False)
@@ -554,7 +574,7 @@ def progress(config):
 
 @odoo_module.command(name='show-install-state')
 @pass_config
-def show_install_state(config, suppress_error=False):
+def show_install_state(config, suppress_error=False, missing_as_error=False):
     from .module_tools import DBModules
     dangling = list(DBModules.get_dangling_modules())
     if dangling:
@@ -569,13 +589,14 @@ def show_install_state(config, suppress_error=False):
             f"Module {missing_item} not installed!"
         ), fg='red')
 
-    if (dangling or missing) and not suppress_error:
-        raise Exception((
-            "Dangling modules detected - "
-            " please fix installation problems and retry! \n"
-            f"Dangling: {dangling}\n"
-            f"Missing: {missing}\n"
-        ))
+    if not suppress_error:
+        if dangling or (missing_as_error and missing):
+            raise Exception((
+                "Dangling modules detected - "
+                " please fix installation problems and retry! \n"
+                f"Dangling: {dangling}\n"
+                f"Missing: {missing}\n"
+            ))
 
 @odoo_module.command(name='show-addons-paths')
 def show_addons_paths():
@@ -610,12 +631,22 @@ def _exec_update(config, params):
 @click.option('-t', '--tag', is_flag=False)
 @click.option('-n', '--test_name', is_flag=False)
 @click.option('-p', '--param', multiple=True, help="e.g. --param key1=value1 --param key2=value2")
-@click.option('--install-required-modules', is_flag=True, help="No tests run - just the dependencies are installed like e.g. web_selenium")
+@click.option('--install-required-modules', is_flag=True, help=(
+    "No tests run - just the dependencies are "
+    "installed like e.g. web_selenium"))
+@click.option('--parallel', default=1, help="Parallel runs of robots.")
+@click.option("-j", "--output-json", is_flag=True, help=(
+    "If set, then a json is printed to console, with detailed informations"
+))
 @pass_config
 @click.pass_context
-def robotest(ctx, config, file, user, all, tag, test_name, param, install_required_modules):
+def robotest(
+    ctx, config, file, user, all, tag, test_name, param, 
+    install_required_modules, parallel, output_json
+):
     PARAM = param
     del param
+    started = arrow.utcnow()
 
     from pathlib import Path
     from .odoo_config import customs_dir
@@ -695,6 +726,7 @@ def robotest(ctx, config, file, user, all, tag, test_name, param, install_requir
             "dbname": config.DBNAME,
             "password": config.DEFAULT_DEV_PASSWORD,
             "selenium_timeout": 20, # selenium timeout,
+            "parallel": parallel
         }
         if test_name:
             params['test_name'] = test_name
@@ -721,14 +753,41 @@ def robotest(ctx, config, file, user, all, tag, test_name, param, install_requir
 
     output_path = config.HOST_RUN_DIR / 'odoo_outdir' / 'robot_output'
     test_results = json.loads((output_path / 'results.json').read_text())
-    failds = [x for x in test_results if x['result'] != 'ok']
+    failds = [x for x in test_results if not x['all_ok']]
     color_info = 'green'
-    for failed in failds:
-        color_info = 'red'
-        click.secho(f"Test failed: {failed['name']} - Duration: {failed['duration']}", fg='red')
-    click.secho(f"Duration: {sum(map(lambda x: x['duration'], test_results))}s", fg=color_info)
+
+    def print_row(rows, fg):
+        if not rows:
+            return
+        from tabulate import tabulate
+        headers = [
+            'name', 'all_ok', 'count',
+            'avg_duration', 'min_duration', 'max_duration'
+        ]
+        def data(row):
+            return [row.get(x) for x in headers]
+
+        click.secho(tabulate(
+            map(data, rows),
+            headers=headers,
+            tablefmt='fancy_grid'
+        ), fg=fg)
+
+    print_row(list(filter(lambda x: x['all_ok'], test_results)), fg='green')
+    print_row(list(filter(lambda x: not x['all_ok'], test_results)), fg='red')
+
+    click.secho((
+        f"Duration: {(arrow.utcnow() - started).total_seconds()}s"
+    ), fg=color_info)
     click.secho(f"Outputs are generated in {output_path}", fg='yellow')
-    click.secho(f"Watch the logs online at: http://host:{config.PROXY_PORT}/robot-output")
+    click.secho((
+        "Watch the logs online at: "
+        f"http://host:{config.PROXY_PORT}/robot-output"))
+
+    if output_json:
+        click.secho("---")
+        click.secho(json.dumps(test_results, indent=4))
+
     if failds:
         sys.exit(-1)
 
@@ -1054,7 +1113,6 @@ def list_deps(config, ctx, module):
     from .odoo_config import customs_dir
     modules = Modules()
     module = Module.get_by_name(module)
-    # import pudb;pudb.set_trace()
     ctx.invoke(make_dir_hashes, on_need=True)
 
     data = {'modules': []}
