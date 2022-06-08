@@ -931,7 +931,7 @@ def robotest(
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     test_results = json.loads((output_path / "results.json").read_text())
-    failds = [x for x in test_results if not x["all_ok"]]
+    failds = [x for x in test_results if not x.get("all_ok")]
     color_info = "green"
 
     def print_row(rows, fg):
