@@ -208,12 +208,12 @@ def _restore_wodoo_bin(ctx, config, filepath):
     with autocleanpaper() as scriptfile:
         scriptfile.write_text((
             "#!/bin/bash\n"
-            "set -ex\n"
+            "set -e\n"
             f"rm -Rf '{mountpoint}'\n"
             f"mkdir '{mountpoint}'\n"
             f"cd '{mountpoint}'\n"
             f"dd if={filepath} bs=1 skip={cutoff} | "
-            f"tar Jx\n"
+            f"pigz -dc | tar x\n"
         ))
         subprocess.check_call(["/bin/bash", scriptfile])
     Commands.invoke(ctx, 'up', machines=['postgres'], daemon=True)

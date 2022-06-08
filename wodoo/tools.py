@@ -945,25 +945,12 @@ def git_diff_files(path, commit1, commit2):
     return filepaths
 
 def _binary_zip(folder, destpath):
-    count_files = \
-        len(subprocess.check_output([
-            "find", folder], encoding='utf8').splitlines())
-    proc = subprocess.Popen([
-        "tar", "Jcfv", destpath, '.'], cwd=folder, stdout=subprocess.PIPE)
-    i = 0
-    from tqdm import tqdm
-    with tqdm(total=count_files) as pbar:
-        pbar.set_description(f"Zipping {folder} to {destpath}")
-        while proc.returncode is None:
-            proc.stdout.readline()
-            pbar.update(1)
-            proc.poll()
-
-    if proc.returncode:
-        if destpath.exists():
-            destpath.unlink()
-        abort("Failed at zipping")
-
+    os.system((
+        f"cd '{folder}';"
+        f"tar c . | pv | pigz > '{destpath}'"
+    ))
+    if not destpath.exists():
+        raise Exception(f"file {destpath} not generated")
 
 @contextmanager
 def autocleanpaper():
