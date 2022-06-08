@@ -7,22 +7,22 @@ from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from . import Commands
 
+
 @cli.group(cls=AliasedGroup)
 @pass_config
 def setup(config):
     pass
+
 
 @setup.command()
 @pass_config
 @click.pass_context
 def show_effective_settings(ctx, config):
     from . import MyConfigParser
-    config = MyConfigParser(config.files['settings'])
+
+    config = MyConfigParser(config.files["settings"])
     for k in sorted(config.keys()):
-        click.echo("{}={}".format(
-            k,
-            config[k]
-        ))
+        click.echo("{}={}".format(k, config[k]))
 
 
 @setup.command(name="remove-web-assets")
@@ -34,16 +34,18 @@ def remove_web_assets(ctx, config):
     they are usually recreated when admin login
     """
     from .odoo_config import current_version
+
     _askcontinue(config)
     conn = config.get_odoo_conn().clone(dbname=config.dbname)
     remove_webassets(conn)
     if current_version() <= 10.0:
         click.echo("Please login as admin, so that assets are recreated.")
 
+
 @setup.command()
 @pass_config
 def status(config):
-    color = 'yellow'
+    color = "yellow"
     click.secho("projectname: ", nl=False)
     click.secho(config.project_name, fg=color, bold=True)
     click.secho("version: ", nl=False)
@@ -54,19 +56,18 @@ def status(config):
 
 @setup.command(help="Upgrade wodoo")
 def upgrade():
-    cmd = [
-        sys.executable, "-mpip", "install",
-        "wodoo", '-U'
-    ]
+    cmd = [sys.executable, "-mpip", "install", "wodoo", "-U"]
     subprocess.check_call(cmd)
+
 
 @setup.command()
 @click.argument("lines")
 def produce_test_lines(lines):
     import lorem
+
     lines = int(lines)
     for i in range(lines):
         click.secho(lorem.paragraph())
 
-Commands.register(status)
 
+Commands.register(status)

@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 
+
 class Config(object):
     class Forced:
         def __init__(self, config):
@@ -20,6 +21,7 @@ class Config(object):
         from . import odoo_config  # NOQA
 
         from .init_functions import _get_customs_root
+
         self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
         self._host_run_dir = None
         self.project_name = project_name
@@ -38,10 +40,10 @@ class Config(object):
     def project_name(self, value):
         self._project_name = value
         if self._project_name:
-            os.environ['PROJECT_NAME'] = value
-            self.HOST_RUN_DIR = Path(os.environ['HOME']) / '.odoo' / 'run' / value
+            os.environ["PROJECT_NAME"] = value
+            self.HOST_RUN_DIR = Path(os.environ["HOME"]) / ".odoo" / "run" / value
         else:
-            os.environ['PROJECT_NAME'] = ""
+            os.environ["PROJECT_NAME"] = ""
         self.setup_files_and_folders()
 
     @property
@@ -52,22 +54,25 @@ class Config(object):
     def HOST_RUN_DIR(self, value):
         self._host_run_dir = value
         if value:
-            os.environ['HOST_RUN_DIR'] = str(value)
+            os.environ["HOST_RUN_DIR"] = str(value)
         self.setup_files_and_folders()
 
     def setup_files_and_folders(self):
         from .init_functions import get_use_docker
         from . import odoo_config  # NOQA
+
         self.dirs = {}
         self.files = {}
         self.commands = {}
 
         self.use_docker = get_use_docker(self.files)
         from .init_functions import make_absolute_paths
+
         make_absolute_paths(self, self.dirs, self.files, self.commands)
 
         from .program_settings import ProgramSettings
-        self.runtime_settings = ProgramSettings(self.files['runtime_settings'])
+
+        self.runtime_settings = ProgramSettings(self.files["runtime_settings"])
 
     def forced(self):
         return Config.Forced(self)
@@ -78,20 +83,21 @@ class Config(object):
             return value
         except AttributeError:
             from .myconfigparser import MyConfigParser  # NOQA
-            if 'settings' not in self.files:
+
+            if "settings" not in self.files:
                 return None
-            myconfig = MyConfigParser(self.files['settings'])
+            myconfig = MyConfigParser(self.files["settings"])
 
             convert = None
-            if name.endswith('_as_int'):
-                convert = 'asint'
-                name = name[:-len('_as_int')]
-            elif name.endswith('_as_bool'):
-                convert = 'asbool'
-                name = name[:-len('_as_bool')]
+            if name.endswith("_as_int"):
+                convert = "asint"
+                name = name[: -len("_as_int")]
+            elif name.endswith("_as_bool"):
+                convert = "asbool"
+                name = name[: -len("_as_bool")]
 
             for tries in [name, name.lower(), name.upper()]:
-                value = ''
+                value = ""
                 if tries not in myconfig.keys():
                     continue
 
@@ -99,8 +105,8 @@ class Config(object):
                 break
 
             if convert:
-                if convert == 'asint':
-                    value = int(value or '0')
+                if convert == "asint":
+                    value = int(value or "0")
 
             if value == "1":
                 value = True
@@ -111,14 +117,9 @@ class Config(object):
             raise
 
     def get_odoo_conn(self):
-        from .odoo_config import get_postgres_connection_params # NOQA
+        from .odoo_config import get_postgres_connection_params  # NOQA
         from .tools import DBConnection
+
         host, port, user, password = get_postgres_connection_params()
-        conn = DBConnection(
-            self.dbname,
-            host,
-            port,
-            user,
-            password
-        )
+        conn = DBConnection(self.dbname, host, port, user, password)
         return conn
