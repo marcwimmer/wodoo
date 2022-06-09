@@ -8,7 +8,7 @@ from .myconfigparser import MyConfigParser  # NOQA
 try:
     import click
 except ImportError:
-  click = None
+    click = None
 
 
 def get_use_docker(files):
@@ -28,7 +28,7 @@ def load_dynamic_modules(parent_dir):
             continue
         spec = importlib.util.spec_from_file_location(
             "dynamic_loaded_module",
-           str(module),
+            str(module),
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -57,13 +57,12 @@ def _get_customs_root(p):
             if (p / "MANIFEST").exists():
                 return p
             p = p.parent
-    # click.echo("Missing MANIFEST - file here in {}".format(arg_dir))
 
 
 def make_absolute_paths(config, dirs, files, commands):
     from .consts import default_dirs, default_files, default_commands
 
-for (input, output) in [
+    for (input, output) in [
         (default_dirs, dirs),
         (default_files, files),
         (default_commands, commands),
