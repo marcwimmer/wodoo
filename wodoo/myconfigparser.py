@@ -2,7 +2,6 @@
 import sys
 from pathlib import Path
 
-
 def _get_ignore_case_item(d, k):
     try:
         return d[k]
@@ -18,6 +17,7 @@ def _get_ignore_case_item(d, k):
 
 
 class MyConfigParser:
+
     def __init__(self, fileName, debug=False):
         if isinstance(fileName, dict):
             self.fileName = None
@@ -50,17 +50,14 @@ class MyConfigParser:
         for line in content.split("\n"):
             # If it isn't a comment get the variable and value and put it on a dict
             if not line.startswith("#") and len(line) > 1:
-                if "=" not in line:
+                if '=' not in line:
                     import click
-
-                    click.secho(
-                        f"Invalid configuration option '{line}' ignored.", fg="red"
-                    )
+                    click.secho(f"Invalid configuration option '{line}' ignored.", fg='red')
                     continue
-                (key, val) = line.rstrip("\n").split("=", 1)
+                (key, val) = line.rstrip('\n').split('=', 1)
                 val = val.strip()
-                val = val.strip('"')
-                val = val.strip("'")
+                val = val.strip('\"')
+                val = val.strip('\'')
                 self.configOptions[key.strip()] = val
 
     def write(self):
@@ -81,16 +78,14 @@ class MyConfigParser:
 
                 def write_line(key, val):
                     if val is None:
-                        import pudb
-
-                        pudb.set_trace()
+                        import pudb;pudb.set_trace()
                         raise Exception("None value not allowed for: {}".format(key))
                     return key + "=" + str(val)
 
                 # Loop through the file to change with new values in dict
                 for line in lines:
                     if not line.startswith("#") and len(line) > 1:
-                        (key, val) = line.rstrip("\n").split("=", 1)
+                        (key, val) = line.rstrip('\n').split('=', 1)
                         key = key.strip()
                         if key in self.configOptions:
                             newVal = self.configOptions[key]
@@ -102,9 +97,7 @@ class MyConfigParser:
                     file.write(line.strip() + "\n")
                 for key in self.configOptions.keys():
                     if key not in handled_keys:
-                        file.write(
-                            write_line(key, self.configOptions[key]).strip() + "\n"
-                        )
+                        file.write(write_line(key, self.configOptions[key]).strip() + "\n")
         except IOError as e:
             print("ERROR opening file " + self.fileName + ": " + e.strerror + "\n")
 
@@ -122,10 +115,10 @@ class MyConfigParser:
 
     def __setitem__(self, key, value):
         if isinstance(value, list):
-            value_list = "("
+            value_list = '('
             for item in value:
-                value_list += ' "' + item + '"'
-            value_list += " )"
+                value_list += ' \"' + item + '\"'
+            value_list += ' )'
             self.configOptions[key] = value_list
         else:
             self.configOptions[key] = value

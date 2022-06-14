@@ -111,6 +111,7 @@ def make_absolute_paths(config, dirs, files, commands):
 
     make_absolute(dirs)
     make_absolute(files, dirs)
+
     for k in commands:
         commands[k] = [
             replace_keys(x, ChainMap(config.__dict__, files, dirs)) for x in commands[k]
