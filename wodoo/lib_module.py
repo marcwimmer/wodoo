@@ -79,10 +79,13 @@ def run_tests(ctx, config):
         sys.exit(-1)
 
     if not config.force:
-        click.secho((
-            "Please provide parameter -f - database will be dropped. Otherwise "
-            "tests are run against existing db. \n\nodoo -f run-tests"),
-            fg="yellow")
+        click.secho(
+            (
+                "Please provide parameter -f - database will be dropped. Otherwise "
+                "tests are run against existing db. \n\nodoo -f run-tests"
+            ),
+            fg="yellow",
+        )
 
     from .odoo_config import MANIFEST
 
@@ -475,10 +478,12 @@ def update(
             from .odoo_config import MANIFEST
 
             module = list(filter(lambda x: x in MANIFEST()["install"], module))
-            click.secho((
-                "Following modules change since last sha "
-                f"(filtered to manifest): {' '.join(module)}"
-            ))
+            click.secho(
+                (
+                    "Following modules change since last sha "
+                    f"(filtered to manifest): {' '.join(module)}"
+                )
+            )
 
             if not module:
                 click.secho("No module update required - exiting.")
@@ -967,7 +972,7 @@ def robotest(
     )
 
     if output_json:
-        click.secho("---")
+        click.secho("---!!!---###---")
         click.secho(json.dumps(test_results, indent=4))
 
     if failds:
@@ -1057,7 +1062,6 @@ def unittest(
 
     last_unittest = config.runtime_settings.get("last_unittest")
 
-
     if file and "/" not in file:
         try:
             module = Module.get_by_name(file)
@@ -1069,7 +1073,7 @@ def unittest(
 
     todo = []
     if file:
-        for file in file.split(','):
+        for file in file.split(","):
             todo.append(file)
     else:
         testfiles = _get_all_unittest_files(config)
@@ -1086,10 +1090,9 @@ def unittest(
     if not todo:
         return
 
-    config.runtime_settings.set('last_unittest', file)
+    config.runtime_settings.set("last_unittest", file)
     for todoitem in todo:
-        click.secho(str(todoitem), fg='green', bold=True)
-
+        click.secho(str(todoitem), fg="green", bold=True)
 
     def filepath_to_container(filepath):
         return Path("/opt/src/") / filepath
