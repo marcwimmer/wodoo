@@ -1,4 +1,5 @@
 import sys
+import uuid
 import arrow
 import threading
 import json
@@ -12,6 +13,8 @@ import shutil
 import os
 import tempfile
 import click
+
+from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
 from .tools import get_hash
 from .tools import get_directory_hash
 from .tools import sync_folder
@@ -823,7 +826,6 @@ def robotest(
 
     from pathlib import Path
     from .odoo_config import customs_dir
-    from .robo_helpers import _make_archive
     from .module_tools import DBModules
 
     if not config.devmode and not config.force:
@@ -833,50 +835,19 @@ def robotest(
         )
         sys.exit(-1)
 
-    testfiles = _get_all_robottest_files()
+    from .robo_helpers import _select_robot_filename
 
-    if file and all:
-        click.secho("Cannot provide all and file together!", fg="red")
-        sys.exit(-1)
+    filenames = _select_robot_filename(file, run_all=all)
+    del file
 
-    if file:
-        if "/" in file:
-            filename = Path(file)
-        else:
-            match = [x for x in testfiles if file in x.name]
-            if len(match) > 1:
-                click.secho("Not unique: {file}", fg="red")
-                sys.exit(-1)
-
-            if match:
-                filename = match[0]
-
-        if filename not in testfiles:
-            click.secho(f"Not found: {filename}", fg="red")
-            sys.exit(-1)
-        filename = [filename]
-    else:
-        testfiles = sorted(testfiles)
-        if not all:
-            message = "Please choose the unittest to run."
-            try:
-                filename = [
-                    inquirer.prompt(
-                        [inquirer.List("filename", message, choices=testfiles)]
-                    ).get("filename")
-                ]
-            except Exception:
-                sys.exit(-1)
-        else:
-            filename = list(sorted(testfiles))
-
-    if not filename:
+    if not filenames:
         return
 
-    click.secho("\n".join(map(str, filename)), fg="green", bold=True)
+    click.secho("\n".join(map(str, filenames)), fg="green", bold=True)
 
-    odoo_modules, archive = _make_archive(config.verbose, filename, customs_dir())
-    odoo_modules = list(set(odoo_modules) | set(["web_selenium", "robot_utils"]))
+    from .robo_helpers import get_odoo_modules
+    odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
+    odoo_modules = list(odoo_modules | set(["web_selenium", "robot_utils"]))
 
     if odoo_modules:
 
@@ -905,7 +876,7 @@ def robotest(
             "url": "http://proxy",
             "user": user,
             "dbname": config.DBNAME,
-            "password": config.DEFAULT_DEV_PASSWORD,
+            "password": pwd,
             "selenium_timeout": 20,  # selenium timeout,
             "parallel": parallel,
         }
@@ -921,9 +892,11 @@ def robotest(
 
         return params
 
+    token = str(uuid.uuid4())
     data = json.dumps(
         {
-            "test_file": archive,
+            "test_files": list(map(str, filenames)),
+            "token": token,
             "params": params(),
         }
     )
@@ -935,48 +908,8 @@ def robotest(
     __dcrun(params, pass_stdin=data.decode("utf-8"), interactive=True)
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
-    test_results = json.loads((output_path / "results.json").read_text())
-    failds = [x for x in test_results if not x.get("all_ok")]
-    color_info = "green"
-
-    def print_row(rows, fg):
-        if not rows:
-            return
-        from tabulate import tabulate
-
-        headers = [
-            "name",
-            "all_ok",
-            "count",
-            "avg_duration",
-            "min_duration",
-            "max_duration",
-        ]
-
-        def data(row):
-            return [row.get(x) for x in headers]
-
-        click.secho(
-            tabulate(map(data, rows), headers=headers, tablefmt="fancy_grid"), fg=fg
-        )
-
-    print_row(list(filter(lambda x: x["all_ok"], test_results)), fg="green")
-    print_row(list(filter(lambda x: not x["all_ok"], test_results)), fg="red")
-
-    click.secho(
-        (f"Duration: {(arrow.utcnow() - started).total_seconds()}s"), fg=color_info
-    )
-    click.secho(f"Outputs are generated in {output_path}", fg="yellow")
-    click.secho(
-        ("Watch the logs online at: " f"http://host:{config.PROXY_PORT}/robot-output")
-    )
-
-    if output_json:
-        click.secho("---!!!---###---")
-        click.secho(json.dumps(test_results, indent=4))
-
-    if failds:
-        sys.exit(-1)
+    from .robo_helpers import _eval_robot_output
+    _eval_robot_output(config, output_path, started, output_json, token)
 
 
 def _get_unittests_from_module(module_name):
@@ -1006,22 +939,6 @@ def _get_all_unittest_files(config):
     return _get_unittests_from_modules(modules)
 
 
-def _get_all_robottest_files():
-    from .odoo_config import MANIFEST, MANIFEST_FILE
-    from .module_tools import Module
-    from .odoo_config import customs_dir
-
-    testfiles = []
-    for _file in customs_dir().glob("**/*.robot"):
-        if "keywords" in _file.parts:
-            continue
-        if "library" in _file.parts:
-            continue
-        testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
-        del _file
-    return testfiles
-
-
 @odoo_module.command()
 @pass_config
 def list_unit_test_files(config):
@@ -1035,6 +952,7 @@ def list_unit_test_files(config):
 @odoo_module.command()
 @pass_config
 def list_robot_test_files(config):
+    from .robo_helpers import _get_all_robottest_files
     files = _get_all_robottest_files()
     click.secho("!!!")
     for file in files:
