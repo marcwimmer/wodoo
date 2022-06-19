@@ -91,6 +91,7 @@ def collect_all(root_dir, robo_file_content):
         root_dir (string): name of the directory, where to start searching
         robo_file_content (string): Robot File Content
     """
+    import pudb;pudb.set_trace()
     yield from _get_required_odoo_modules_from_robot_file(robo_file_content)
     try:
         for line in robo_file_content.splitlines():
@@ -136,7 +137,7 @@ def get_odoo_modules(verbose, test_files, root_dir):
 
     for file in test_files:
         file_content = file.read_text()
-        yield from collect_all(root_dir, file_content)
+        yield from collect_all(file.parent, file_content)
 
 
 def _eval_robot_output(config, output_path, started, output_json, token):
