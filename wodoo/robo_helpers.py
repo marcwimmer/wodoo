@@ -96,7 +96,7 @@ def collect_all(root_dir, robo_file_content):
         for line in robo_file_content.splitlines():
             line = _normalize_robot_line(line)
             if line.startswith("Resource") and line.endswith(".robot"):
-                _, filepath = line.split("  ")[1]
+                filepath = line.split("  ")[1]
                 filepath = root_dir / filepath
                 content = filepath.read_text()
                 yield from collect_all(filepath.parent, content)
