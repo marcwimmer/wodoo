@@ -983,7 +983,7 @@ def unittest(
     if file and "/" not in file:
         try:
             module = Module.get_by_name(file)
-        except:
+        except Exception:
             pass
         else:
             tests = module.path.glob("tests/test*")
