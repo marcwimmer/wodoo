@@ -798,9 +798,16 @@ def _exec_update(config, params):
 
         return lib_control_native._update_command(config, params)
 
+def _get_available_robottests(ctx, param, incomplete):
+    from .robo_helpers import _get_all_robottest_files
+    testfiles = list(map(str, _get_all_robottest_files()))
+    if param:
+        testfiles = list(filter(lambda x: incomplete in x, testfiles))
+    return sorted(testfiles)
+
 
 @odoo_module.command()
-@click.argument("file", required=False)
+@click.argument("file", required=False, shell_complete=_get_available_robottests)
 @click.option("-u", "--user", default="admin")
 @click.option("-a", "--all", is_flag=True)
 @click.option("-t", "--tag", is_flag=False)
