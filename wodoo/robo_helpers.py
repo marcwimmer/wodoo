@@ -98,6 +98,10 @@ def collect_all(root_dir, robo_file_content):
             if line.startswith("Resource") and line.endswith(".robot"):
                 filepath = line.split("  ")[1]
                 filepath = root_dir / filepath
+                if not filepath.exists():
+                    abort((
+                        f"Could not find file {filepath}"
+                    ))
                 content = filepath.read_text()
                 yield from collect_all(filepath.parent, content)
 
