@@ -64,17 +64,18 @@ def _normalize_robot_line(line):
     return line
 
 
-def _get_all_robottest_files():
-    from .odoo_config import MANIFEST_FILE
+def _get_all_robottest_files(path=None):
     from .odoo_config import customs_dir
 
     testfiles = []
-    for _file in customs_dir().glob("**/*.robot"):
+    path = path or customs_dir()
+    for _file in path.glob("**/*.robot"):
         if "keywords" in _file.parts:
             continue
         if "library" in _file.parts:
             continue
-        testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
+
+        testfiles.append(_file.relative_to(path))
         del _file
     return testfiles
 
@@ -206,18 +207,16 @@ def _select_robot_filename(file, run_all):
         sys.exit(-1)
 
     if file:
-        if "/" in file:
-            filename = Path(file)
-        else:
-            match = [x for x in testfiles if file in x.name]
-            if len(match) > 1:
-                click.secho("Not unique: {file}", fg="red")
-                sys.exit(-1)
+        match = [x for x in map(str, testfiles) if file in x]
+        if len(match) > 1:
+            click.secho("Not unique: {file}", fg="red")
+            sys.exit(-1)
 
-            if match:
-                filename = match[0]
+        if match:
+            filename = Path(match[0])
 
         if filename not in testfiles:
+            import pudb;pudb.set_trace()
             click.secho(f"Not found: {filename}", fg="red")
             sys.exit(-1)
         filename = [filename]
