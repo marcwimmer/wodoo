@@ -7,11 +7,7 @@ Sample robo file
 
 *** Settings ***
 Documentation     MyTest1
-#!Fetch   /robotests/robot_utils/keywords  keywords
-#!Fetch   /robotests/robot_utils/library   library
-Resource          keywords/odoo_13_ee.robot
-Resource          /customrobs/robot1.robot
-Resource          ../customrobs/robot2.robot
+Resource          ../path/to/robot_utils/keywords/odoo_ee.robot
 #Asset             /robdata
 
 
@@ -91,6 +87,7 @@ def collect_all(root_dir, robo_file_content):
         root_dir (string): name of the directory, where to start searching
         robo_file_content (string): Robot File Content
     """
+    import pudb;pudb.set_trace()
     yield from _get_required_odoo_modules_from_robot_file(robo_file_content)
     try:
         for line in robo_file_content.splitlines():
@@ -103,7 +100,7 @@ def collect_all(root_dir, robo_file_content):
                         f"Could not find file {filepath}"
                     ))
                 content = filepath.read_text()
-                yield from collect_all(filepath.parent, content)
+                yield from collect_all(filepath.resolve().parent, content)
 
     except Exception as ex:  # pylint: disable=broad-except
         abort(str(ex))
