@@ -801,7 +801,7 @@ def _exec_update(config, params):
 def _get_available_robottests(ctx, param, incomplete):
     from .robo_helpers import _get_all_robottest_files
     testfiles = list(map(str, _get_all_robottest_files()))
-    if param:
+    if incomplete:
         testfiles = list(filter(lambda x: incomplete in x, testfiles))
     return sorted(testfiles)
 
