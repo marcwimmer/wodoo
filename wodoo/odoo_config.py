@@ -135,7 +135,17 @@ def customs_dir():
         if manifest_file.exists():
             return manifest_file.parent
         else:
+            here = Path(os.getcwd())
+            while not (here / "MANIFEST").exists():
+                here = here.parent
+                if here.parent == here:
+                    break
+            if (here / "MANIFEST").exists():
+                return here
+
             click.secho("no MANIFEST file found in current directory.")
+    if not env_customs_dir:
+        return None
     return Path(env_customs_dir)
 
 def plaintextfile():
@@ -150,7 +160,10 @@ def _read_file(path, default=None):
         return default
 
 def MANIFEST_FILE():
-    return customs_dir().resolve().absolute() / "MANIFEST"
+    _customs_dir = customs_dir()
+    if not _customs_dir:
+        return None
+    return _customs_dir.resolve().absolute() / "MANIFEST"
 
 class MANIFEST_CLASS(object):
     def __init__(self):

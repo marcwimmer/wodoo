@@ -798,9 +798,19 @@ def _exec_update(config, params):
 
         return lib_control_native._update_command(config, params)
 
+def _get_available_robottests(ctx, param, incomplete):
+    from .robo_helpers import _get_all_robottest_files
+    from .odoo_config import customs_dir
+    path = customs_dir() or Path(os.getcwd())
+    path = path / (Path(os.getcwd()).relative_to(path))
+    testfiles = list(map(str, _get_all_robottest_files(path))) or []
+    if incomplete:
+        testfiles = list(filter(lambda x: incomplete in x, testfiles))
+    return sorted(testfiles)
+
 
 @odoo_module.command()
-@click.argument("file", required=False)
+@click.argument("file", required=False, shell_complete=_get_available_robottests)
 @click.option("-u", "--user", default="admin")
 @click.option("-a", "--all", is_flag=True)
 @click.option("-t", "--tag", is_flag=False)
@@ -846,6 +856,7 @@ def robotest(
     click.secho("\n".join(map(str, filenames)), fg="green", bold=True)
 
     from .robo_helpers import get_odoo_modules
+    os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
     odoo_modules = list(odoo_modules | set(["web_selenium", "robot_utils"]))
 
@@ -905,6 +916,10 @@ def robotest(
     params = [
         "robot",
     ]
+
+    workingdir = customs_dir() / (Path(os.getcwd()).relative_to(customs_dir()))
+    os.chdir(workingdir)
+
     __dcrun(params, pass_stdin=data.decode("utf-8"), interactive=True)
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"

@@ -7,11 +7,7 @@ Sample robo file
 
 *** Settings ***
 Documentation     MyTest1
-#!Fetch   /robotests/robot_utils/keywords  keywords
-#!Fetch   /robotests/robot_utils/library   library
-Resource          keywords/odoo_13_ee.robot
-Resource          /customrobs/robot1.robot
-Resource          ../customrobs/robot2.robot
+Resource          ../path/to/robot_utils/keywords/odoo_ee.robot
 #Asset             /robdata
 
 
@@ -68,17 +64,18 @@ def _normalize_robot_line(line):
     return line
 
 
-def _get_all_robottest_files():
-    from .odoo_config import MANIFEST_FILE
+def _get_all_robottest_files(path=None):
     from .odoo_config import customs_dir
 
     testfiles = []
-    for _file in customs_dir().glob("**/*.robot"):
+    path = path or customs_dir()
+    for _file in path.glob("**/*.robot"):
         if "keywords" in _file.parts:
             continue
         if "library" in _file.parts:
             continue
-        testfiles.append(_file.relative_to(MANIFEST_FILE().parent))
+
+        testfiles.append(_file.relative_to(path))
         del _file
     return testfiles
 
@@ -96,10 +93,14 @@ def collect_all(root_dir, robo_file_content):
         for line in robo_file_content.splitlines():
             line = _normalize_robot_line(line)
             if line.startswith("Resource") and line.endswith(".robot"):
-                _, filepath = line.split("  ")[1]
+                filepath = line.split("  ")[1]
                 filepath = root_dir / filepath
+                if not filepath.exists():
+                    abort((
+                        f"Could not find file {filepath}"
+                    ))
                 content = filepath.read_text()
-                yield from collect_all(filepath.parent, content)
+                yield from collect_all(filepath.resolve().parent, content)
 
     except Exception as ex:  # pylint: disable=broad-except
         abort(str(ex))
@@ -136,7 +137,7 @@ def get_odoo_modules(verbose, test_files, root_dir):
 
     for file in test_files:
         file_content = file.read_text()
-        yield from collect_all(root_dir, file_content)
+        yield from collect_all(file.parent, file_content)
 
 
 def _eval_robot_output(config, output_path, started, output_json, token):
@@ -206,18 +207,16 @@ def _select_robot_filename(file, run_all):
         sys.exit(-1)
 
     if file:
-        if "/" in file:
-            filename = Path(file)
-        else:
-            match = [x for x in testfiles if file in x.name]
-            if len(match) > 1:
-                click.secho("Not unique: {file}", fg="red")
-                sys.exit(-1)
+        match = [x for x in map(str, testfiles) if file in x]
+        if len(match) > 1:
+            click.secho("Not unique: {file}", fg="red")
+            sys.exit(-1)
 
-            if match:
-                filename = match[0]
+        if match:
+            filename = Path(match[0])
 
         if filename not in testfiles:
+            import pudb;pudb.set_trace()
             click.secho(f"Not found: {filename}", fg="red")
             sys.exit(-1)
         filename = [filename]
