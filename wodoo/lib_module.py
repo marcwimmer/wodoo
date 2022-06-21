@@ -993,8 +993,6 @@ def unittest(
     from .module_tools import Module
     from pathlib import Path
 
-    last_unittest = config.runtime_settings.get("last_unittest")
-
     if file and "/" not in file:
         try:
             module = Module.get_by_name(file)
@@ -1023,7 +1021,6 @@ def unittest(
     if not todo:
         return
 
-    config.runtime_settings.set("last_unittest", file)
     for todoitem in todo:
         click.secho(str(todoitem), fg="green", bold=True)
 
