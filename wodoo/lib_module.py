@@ -805,7 +805,10 @@ def _get_available_robottests(ctx, param, incomplete):
     path = path / (Path(os.getcwd()).relative_to(path))
     testfiles = list(map(str, _get_all_robottest_files(path))) or []
     if incomplete:
-        testfiles = list(filter(lambda x: incomplete in x, testfiles))
+        if '/' in incomplete:
+            testfiles = list(filter(lambda x: str(x).startswith(incomplete), testfiles))
+        else:
+            testfiles = list(filter(lambda x: incomplete in x, testfiles))
     return sorted(testfiles)
 
 
