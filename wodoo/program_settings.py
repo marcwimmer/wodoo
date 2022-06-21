@@ -1,4 +1,6 @@
 import json
+import tempfile
+import shutil
 from pathlib import Path
 
 class ProgramSettings(object):
@@ -16,4 +18,7 @@ class ProgramSettings(object):
             value = str(value)
         data = json.loads(self.filename.read_text().strip() or "{}")
         data[name] = value
-        self.filename.write_text(json.dumps(data))
+        file = Path(tempfile.mktemp(suffix='.'))
+        file.write_text(json.dumps(data))
+        # concurrency support
+        shutil.move(file, self.filename)
