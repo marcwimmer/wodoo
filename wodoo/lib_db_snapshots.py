@@ -63,9 +63,7 @@ def do_list(config):
 def snapshot_make(config, name):
     config.snapshot_manager.assert_environment(config)
     if not name:
-        from git import Repo
-        repo = Repo(os.getcwd())
-        name = repo.active_branch.name
+        name = arrow.get().strftime("%Y%m%d")
         click.secho(f"Using {name} as snapshot name")
 
     # remove existing snaps
