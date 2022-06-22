@@ -194,10 +194,9 @@ def _get_postgres_version(conn):
     return version
 
 
-def _restore_wodoo_bin(ctx, config, filepath):
+def _restore_wodoo_bin(ctx, config, filepath, verify):
     if not config.run_postgres:
         abort("WODOO-BIN files may only be restored if RUN_POSTGRES=1")
-    Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
     with open(filepath, "rb") as file:
         content = file.read(1024)
         count_lineendings = 0
