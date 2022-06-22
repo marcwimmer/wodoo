@@ -1,4 +1,6 @@
 from contextlib import contextmanager
+import shutil
+import tempfile
 from datetime import datetime
 try:
     import arrow
@@ -199,7 +201,9 @@ class MANIFEST_CLASS(object):
     def _update(self, d):
         d['install'] = list(sorted(d['install']))
         s = json.dumps(d, indent=4)
-        MANIFEST_FILE().write_text(s)
+        tfile = Path(tempfile.mktemp(suffix='.MANIFEST'))
+        tfile.write_text(s)
+        shutil.move(s, MANIFEST_FILE())
 
     def rewrite(self):
         self._update(self._get_data())
