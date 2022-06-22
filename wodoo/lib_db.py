@@ -447,7 +447,7 @@ def excel(config, sql, file, base64):
     for irow, rec in enumerate(rows):
         for icol, col in enumerate(rec):
             worksheet.write(irow + 1, icol, col)
-        if not irow % 1000:
+        if not irow % 1000 and irow:
             click.secho(f"Done {irow} rows...")
 
     workbook.close()

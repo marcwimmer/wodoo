@@ -50,7 +50,6 @@ default_files = {
     'native_collected_requirements_from_modules': "${run_native_bin_dir}/customs-requirements.txt",
     'start-dev': '~/.odoo/start-dev',
     'cicd_delegator_registry': '${cicd_delegator}/registry.json',
-    'runtime_settings': '~/.odoo/.script_settings',
 }
 
 default_commands = {

@@ -66,8 +66,6 @@ class Config(object):
         from .init_functions import make_absolute_paths
         make_absolute_paths(self, self.dirs, self.files, self.commands)
 
-        from .program_settings import ProgramSettings
-        self.runtime_settings = ProgramSettings(self.files['runtime_settings'])
 
     def forced(self):
         return Config.Forced(self)
