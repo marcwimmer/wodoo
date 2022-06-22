@@ -73,6 +73,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
                 "stopped for that."
             ))
         conn = config.get_odoo_conn()
+        version = None
         version = _get_postgres_version(conn)
         Commands.invoke(ctx, 'stop', machines=['postgres'])
         path = json.loads(subprocess.check_output([
@@ -178,10 +179,9 @@ def _get_postgres_version(conn):
     click.secho(f"Identified version {version}", fg='green')
     return version
 
-def _restore_wodoo_bin(ctx, config, filepath):
+def _restore_wodoo_bin(ctx, config, filepath, verify):
     if not config.run_postgres:
         abort("WODOO-BIN files may only be restored if RUN_POSTGRES=1")
-    Commands.invoke(ctx, 'up', daemon=True, machines=['postgres'])
     with open(filepath, 'rb') as file:
         content = file.read(1024)
         count_lineendings = 0
@@ -192,12 +192,14 @@ def _restore_wodoo_bin(ctx, config, filepath):
                 count_lineendings += 1
             if count_lineendings == 2:
                 break
-    postgres_version = content.decode(
-        'utf-8', errors='ignore').split("\n")[1].strip()
-    conn = config.get_odoo_conn()
-    version = _get_postgres_version(conn)
-    if version != postgres_version:
-        abort(f"Version mismatch: {version} != {postgres_version}")
+    if verify:
+        Commands.invoke(ctx, 'up', daemon=True, machines=['postgres'])
+        postgres_version = content.decode(
+            'utf-8', errors='ignore').split("\n")[1].strip()
+        conn = config.get_odoo_conn()
+        version = _get_postgres_version(conn)
+        if version != postgres_version:
+            abort(f"Version mismatch: {version} != {postgres_version}")
 
     assert config.run_postgres
     Commands.invoke(ctx, 'down')
@@ -212,7 +214,7 @@ def _restore_wodoo_bin(ctx, config, filepath):
             f"rm -Rf '{mountpoint}'\n"
             f"mkdir '{mountpoint}'\n"
             f"cd '{mountpoint}'\n"
-            f"dd if={filepath} bs=1 skip={cutoff} | "
+            f"tail '{filepath}' -c +{cutoff + 1} | "
             f"pigz -dc | tar x\n"
         ))
         subprocess.check_call(["/bin/bash", scriptfile])
@@ -223,9 +225,10 @@ def _restore_wodoo_bin(ctx, config, filepath):
 @click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
 @click.option('--no-dev-scripts', default=False, is_flag=True)
 @click.option('--no-remove-webassets', default=False, is_flag=True)
+@click.option('--verify', default=False, is_flag=True)
 @pass_config
 @click.pass_context
-def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webassets):
+def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webassets, verify):
     if not filename:
         filename = _inquirer_dump_file(config, "Choose filename to restore", config.dbname, latest=latest)
     if not filename:
@@ -250,7 +253,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webasset
         filename = Path(filename_absolute).name
 
     if dump_type.startswith("wodoo_bin"):
-        _restore_wodoo_bin(ctx, config, filename_absolute)
+        _restore_wodoo_bin(ctx, config, filename_absolute, verify)
 
     else:
         if config.run_postgres:
