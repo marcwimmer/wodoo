@@ -180,8 +180,9 @@ def _eval_robot_output(config, output_path, started, output_json, token):
         if dest_path.exists() and dest_path.is_dir():
             if dest_path.exists():
                 shutil.rmtree(dest_path)
-            shutil.move(filepath, dest_path)
-            generated_output_paths.append(dest_path)
+        shutil.move(filepath, dest_path)
+        generated_output_paths.append(dest_path)
+
 
     shutil.rmtree(output_path / token)
 

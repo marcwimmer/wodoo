@@ -979,7 +979,6 @@ def list_robot_test_files(config):
 
 
 @odoo_module.command()
-@click.option("-r", "--repeat", is_flag=True)
 @click.argument("file", required=False)
 @click.option("-w", "--wait-for-remote", is_flag=True)
 @click.option("-r", "--remote-debug", is_flag=True)
@@ -987,7 +986,7 @@ def list_robot_test_files(config):
 @click.option("--output-json", is_flag=True)
 @pass_config
 def unittest(
-    config, repeat, file, remote_debug, wait_for_remote, non_interactive, output_json
+    config, file, remote_debug, wait_for_remote, non_interactive, output_json
 ):
     """
     Collects unittest files and offers to run
@@ -1010,15 +1009,11 @@ def unittest(
         for file in file.split(","):
             todo.append(file)
     else:
-        testfiles = _get_all_unittest_files(config)
-        if repeat and last_unittest:
-            filename = last_unittest
-        else:
-            testfiles = sorted(testfiles)
-            message = "Please choose the unittest to run."
-            filename = inquirer.prompt(
-                [inquirer.List("filename", message, choices=testfiles)]
-            ).get("filename")
+        testfiles = list(sorted(_get_all_unittest_files(config)))
+        message = "Please choose the unittest to run."
+        filename = inquirer.prompt(
+            [inquirer.List("filename", message, choices=testfiles)]
+        ).get("filename")
         todo.append(filename)
 
     if not todo:
