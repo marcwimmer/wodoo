@@ -88,7 +88,6 @@ def collect_all(root_dir, robo_file_content):
         root_dir (string): name of the directory, where to start searching
         robo_file_content (string): Robot File Content
     """
-    import pudb;pudb.set_trace()
     yield from _get_required_odoo_modules_from_robot_file(robo_file_content)
     try:
         for line in robo_file_content.splitlines():
@@ -181,8 +180,9 @@ def _eval_robot_output(config, output_path, started, output_json, token):
         if dest_path.exists() and dest_path.is_dir():
             if dest_path.exists():
                 shutil.rmtree(dest_path)
-            shutil.move(filepath, dest_path)
-            generated_output_paths.append(dest_path)
+        shutil.move(filepath, dest_path)
+        generated_output_paths.append(dest_path)
+
 
     shutil.rmtree(output_path / token)
 
