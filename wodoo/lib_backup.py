@@ -163,13 +163,8 @@ def __get_default_backup_filename(config):
 @click.argument("filename")
 @pass_config
 def get_dump_type(config, filename):
-    BACKUPDIR = Path(config.dumps_path)
-    if not filename:
-        filename = _inquirer_dump_file(config, "", config.dbname)
-    if filename:
-        dump_file = BACKUPDIR / filename
-        dump_type = _add_cronjob_scripts(config)["postgres"].__get_dump_type(dump_file)
-        click.echo(dump_type)
+    dump_type = _add_cronjob_scripts(config)["postgres"].__get_dump_type(filename)
+    click.echo(dump_type)
 
 
 @restore.command(name="list")
@@ -241,7 +236,6 @@ def _restore_wodoo_bin(ctx, config, filepath):
         )
         subprocess.check_call(["/bin/bash", scriptfile])
     Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
-
 
 @restore.command(name="odoo-db")
 @click.argument("filename", required=False, default="")
