@@ -798,14 +798,16 @@ def _exec_update(config, params):
 
         return lib_control_native._update_command(config, params)
 
+
 def _get_available_robottests(ctx, param, incomplete):
     from .robo_helpers import _get_all_robottest_files
     from .odoo_config import customs_dir
+
     path = customs_dir() or Path(os.getcwd())
     path = path / (Path(os.getcwd()).relative_to(path))
     testfiles = list(map(str, _get_all_robottest_files(path))) or []
     if incomplete:
-        if '/' in incomplete:
+        if "/" in incomplete:
             testfiles = list(filter(lambda x: str(x).startswith(incomplete), testfiles))
         else:
             testfiles = list(filter(lambda x: incomplete in x, testfiles))
@@ -816,12 +818,20 @@ def _get_available_robottests(ctx, param, incomplete):
 @click.argument("file", required=False, shell_complete=_get_available_robottests)
 @click.option("-u", "--user", default="admin")
 @click.option("-a", "--all", is_flag=True)
-@click.option("-t", "--tag", is_flag=False)
 @click.option("-n", "--test_name", is_flag=False)
 @click.option(
     "-p", "--param", multiple=True, help="e.g. --param key1=value1 --param key2=value2"
 )
 @click.option("--parallel", default=1, help="Parallel runs of robots.")
+@click.option(
+    "-t",
+    "--tag",
+    is_flag=False,
+    help=(
+        "Tags can be comined with AND OR or just comma separated; "
+        "may include wilcards and some regex expressions"
+    ),
+)
 @click.option(
     "-j",
     "--output-json",
@@ -831,7 +841,7 @@ def _get_available_robottests(ctx, param, incomplete):
 @pass_config
 @click.pass_context
 def robotest(
-    ctx, config, file, user, all, tag, test_name, param, parallel, output_json
+    ctx, config, file, user, all, tags, test_name, param, parallel, output_json
 ):
     PARAM = param
     del param
@@ -859,6 +869,7 @@ def robotest(
     click.secho("\n".join(map(str, filenames)), fg="green", bold=True)
 
     from .robo_helpers import get_odoo_modules
+
     os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
     odoo_modules = list(odoo_modules | set(["web_selenium", "robot_utils"]))
@@ -896,8 +907,8 @@ def robotest(
         }
         if test_name:
             params["test_name"] = test_name
-        if tag:
-            params["include"] = [tag]
+        if tags:
+            params["tags"] = tags
 
         for param in PARAM:
             k, v = param.split("=")
@@ -927,6 +938,7 @@ def robotest(
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
+
     _eval_robot_output(config, output_path, started, output_json, token)
 
 
@@ -971,6 +983,7 @@ def list_unit_test_files(config):
 @pass_config
 def list_robot_test_files(config):
     from .robo_helpers import _get_all_robottest_files
+
     files = _get_all_robottest_files()
     click.secho("!!!")
     for file in files:
@@ -985,9 +998,7 @@ def list_robot_test_files(config):
 @click.option("-n", "--non-interactive", is_flag=True)
 @click.option("--output-json", is_flag=True)
 @pass_config
-def unittest(
-    config, file, remote_debug, wait_for_remote, non_interactive, output_json
-):
+def unittest(config, file, remote_debug, wait_for_remote, non_interactive, output_json):
     """
     Collects unittest files and offers to run
     """
