@@ -825,7 +825,7 @@ def _get_available_robottests(ctx, param, incomplete):
 @click.option("--parallel", default=1, help="Parallel runs of robots.")
 @click.option(
     "-t",
-    "--tag",
+    "--tags",
     is_flag=False,
     help=(
         "Tags can be comined with AND OR or just comma separated; "
@@ -996,9 +996,12 @@ def list_robot_test_files(config):
 @click.option("-w", "--wait-for-remote", is_flag=True)
 @click.option("-r", "--remote-debug", is_flag=True)
 @click.option("-n", "--non-interactive", is_flag=True)
+@click.option("-t", "--tags", is_flag=True)
 @click.option("--output-json", is_flag=True)
 @pass_config
-def unittest(config, file, remote_debug, wait_for_remote, non_interactive, output_json):
+def unittest(
+    config, file, remote_debug, wait_for_remote, non_interactive, output_json, tags
+):
     """
     Collects unittest files and offers to run
     """
