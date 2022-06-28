@@ -10,6 +10,7 @@ import shutil
 import uuid
 from .tools import __try_to_set_owner as try_to_set_owner
 from .tools import measure_time
+
 try:
     from psycopg2 import IntegrityError
 except Exception:
@@ -33,6 +34,7 @@ import re
 import pprint
 from lxml import etree
 import subprocess
+
 try:
     import xmlrpclib
 except Exception:
@@ -42,7 +44,7 @@ import inspect
 import sys
 from .tools import _get_missing_click_config
 
-LANG = os.getenv("ODOO_LANG", 'de_DE')  # todo from environment
+LANG = os.getenv("ODOO_LANG", "de_DE")  # todo from environment
 host = "http://localhost:8069"
 
 username = "admin"
@@ -50,47 +52,52 @@ pwd = "1"
 
 name_cache = {}
 
-class NotInAddonsPath(Exception): pass
+
+class NotInAddonsPath(Exception):
+    pass
+
 
 def exe(*params):
     config = get_settings()
+
     def login(username, password):
-        socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/common' % (host))
-        return socket_obj.login(config['DBNAME'], username, password)
+        socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/common" % (host))
+        return socket_obj.login(config["DBNAME"], username, password)
+
     uid = login(username, pwd)
-    socket_obj = xmlrpclib.ServerProxy('%s/xmlrpc/object' % (host))
-    return socket_obj.execute(config['DBNAME'], uid, pwd, *params)
+    socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/object" % (host))
+    return socket_obj.execute(config["DBNAME"], uid, pwd, *params)
 
 
 def delete_qweb(config, modules):
 
     with get_conn_autoclose(config) as cr:
-        if modules != 'all':
-            cr.execute("select name from ir_module_module where name = %s", (
-                modules,))
+        if modules != "all":
+            cr.execute("select name from ir_module_module where name = %s", (modules,))
         else:
             cr.execute("select name from ir_module_module; ")
 
         def erase_view(view_id):
-            cr.execute("select id from ir_ui_view where inherit_id = %s;", (
-                view_id, ))
+            cr.execute("select id from ir_ui_view where inherit_id = %s;", (view_id,))
             for child_view_id in [x[0] for x in cr.fetchall()]:
                 erase_view(child_view_id)
-            cr.execute("""
+            cr.execute(
+                """
             select
                 id
             from
                 ir_model_data
             where
                 model='ir.ui.view' and res_id =%s
-            """, (view_id,))
+            """,
+                (view_id,),
+            )
             data_ids = [x[0] for x in cr.fetchall()]
 
             for data_id in data_ids:
-                cr.execute("delete from ir_model_data where id = %s", (
-                    data_id,))
+                cr.execute("delete from ir_model_data where id = %s", (data_id,))
 
-            sp = 'sp' + uuid.uuid4().hex
+            sp = "sp" + uuid.uuid4().hex
             cr.execute(f"savepoint {sp}")
             try:
                 cr.execute("delete from ir_ui_view where id = %s;", [view_id])
@@ -102,16 +109,20 @@ def delete_qweb(config, modules):
         for module in cr.fetchall():
             if not DBModules.is_module_installed(module):
                 continue
-            cr.execute("""
+            cr.execute(
+                """
                 select
                     res_id
                 from
                     ir_model_data
                 where
                     module=%s and model='ir.ui.view' and res_id in (select id from ir_ui_view where type='qweb');
-            """, [module])
+            """,
+                [module],
+            )
             for view_id in [x[0] for x in cr.fetchall()]:
                 erase_view(view_id)
+
 
 def get_all_langs(config):
     sql = "select distinct code from res_lang where active = true;"
@@ -120,8 +131,10 @@ def get_all_langs(config):
         langs = [x[0] for x in cr.fetchall() if x[0]]
     return langs
 
+
 def get_modules_from_install_file():
-    return MANIFEST()['install']
+    return MANIFEST()["install"]
+
 
 class DBModules(object):
     def __init__(self):
@@ -151,23 +164,28 @@ class DBModules(object):
             print("{}: {}".format(row[0], row[1]))
 
         if dangling and raise_error:
-            raise Exception("Dangling modules detected - please fix installation problems and retry!")
+            raise Exception(
+                "Dangling modules detected - please fix installation problems and retry!"
+            )
 
     @classmethod
     def set_uninstallable_uninstalled(clazz):
         with get_conn_autoclose() as cr:
-            _execute_sql(cr, "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';")
+            _execute_sql(
+                cr,
+                "update ir_module_module set state = 'uninstalled' where state = 'uninstallable';",
+            )
 
     @classmethod
     def get_dangling_modules(clazz):
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, "ir_module_module"):
                 return []
 
             rows = _execute_sql(
                 cr,
                 sql="SELECT name, state from ir_module_module where state not in ('installed', 'uninstalled', 'uninstallable');",
-                fetchall=True
+                fetchall=True,
             )
         return rows
 
@@ -177,12 +195,12 @@ class DBModules(object):
         for mod in clazz.get_all_installed_modules():
             if mod not in mods.modules:
                 continue
-            version_new = mods.modules[mod].manifest_dict.get('version', False)
+            version_new = mods.modules[mod].manifest_dict.get("version", False)
             if not version_new:
                 continue
-            if len(list(x for x in version_new if x == '.')) <= 2:
-                version_new = str(odoo_version) + '.' + version_new
-            version = clazz.get_meta_data(mod)['version']
+            if len(list(x for x in version_new if x == ".")) <= 2:
+                version_new = str(odoo_version) + "." + version_new
+            version = clazz.get_meta_data(mod)["version"]
             if version and version != version_new:
                 yield mod
 
@@ -207,7 +225,7 @@ class DBModules(object):
                 mprior.state = 'uninstalled';
         """
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, "ir_module_module"):
                 return []
             cr.execute(sql)
             return [x[0] for x in cr.fetchall()]
@@ -215,43 +233,51 @@ class DBModules(object):
     @classmethod
     def dangling_modules(clazz):
         with get_conn_autoclose() as cr:
-            cr.execute("select count(*) from ir_module_module where state in ('to install', 'to upgrade', 'to remove');")
+            cr.execute(
+                "select count(*) from ir_module_module where state in ('to install', 'to upgrade', 'to remove');"
+            )
             return cr.fetchone()[0]
 
     @classmethod
     def get_all_installed_modules(clazz):
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, "ir_module_module"):
                 return []
-            cr.execute("select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');")
+            cr.execute(
+                "select name from ir_module_module where state not in ('uninstalled', 'uninstallable', 'to remove');"
+            )
             return [x[0] for x in cr.fetchall()]
 
     @classmethod
     def get_meta_data(clazz, module):
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, "ir_module_module"):
                 return {}
-            cr.execute("select id, state, name, latest_version from ir_module_module where name = %s", (module,))
+            cr.execute(
+                "select id, state, name, latest_version from ir_module_module where name = %s",
+                (module,),
+            )
             record = cr.fetchone()
             if not record:
                 return {
-                    'name': module,
-                    'state': 'uninstalled',
-                    'version': False,
-                    'id': False,
-
+                    "name": module,
+                    "state": "uninstalled",
+                    "version": False,
+                    "id": False,
                 }
             return {
-                'name': record[2],
-                'state': record[1],
-                'id': record[0],
-                'version': record[3],
+                "name": record[2],
+                "state": record[1],
+                "id": record[0],
+                "version": record[3],
             }
 
     @classmethod
     def get_module_state(clazz, module):
         with get_conn_autoclose() as cr:
-            cr.execute("select name, state from ir_module_module where name = %s", (module,))
+            cr.execute(
+                "select name, state from ir_module_module where name = %s", (module,)
+            )
             state = cr.fetchone()
             if not state:
                 return False
@@ -260,9 +286,11 @@ class DBModules(object):
     @classmethod
     def is_module_listed(clazz, module):
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, "ir_module_module"):
                 return False
-            cr.execute("select count(*) from ir_module_module where name = %s", (module,))
+            cr.execute(
+                "select count(*) from ir_module_module where name = %s", (module,)
+            )
             return bool(cr.fetchone()[0])
 
     @classmethod
@@ -270,19 +298,23 @@ class DBModules(object):
         if not module:
             raise Exception("no module given")
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, 'ir_module_module'):
+            if not _exists_table(cr, "ir_module_module"):
                 if raise_exception_not_initialized:
                     raise UserWarning("Database not initialized")
                 return False
-            cr.execute("select name, state from ir_module_module where name = %s", (module,))
+            cr.execute(
+                "select name, state from ir_module_module where name = %s", (module,)
+            )
             state = cr.fetchone()
             if not state:
                 return False
-            return state[1] in ['installed', 'to upgrade']
+            return state[1] in ["installed", "to upgrade"]
+
 
 def make_customs(path):
     from .tools import abort
     import click
+
     if not path.exists():
         abort("Path does not exist: {}".format(path))
     elif list(path.glob("*")):
@@ -291,8 +323,9 @@ def make_customs(path):
     import inquirer
     from git import Repo
     from .tools import copy_dir_contents
+
     dir = get_template_dir()
-    src_dir = dir / 'customs_template'
+    src_dir = dir / "customs_template"
 
     def _floatify(x):
         try:
@@ -300,8 +333,12 @@ def make_customs(path):
         except Exception:
             return 0
 
-    versions = sorted([x.name for x in src_dir.glob("*")], key=lambda x: _floatify(x), reverse=True)
-    version = inquirer.prompt([inquirer.List('version', "", choices=versions)])['version']
+    versions = sorted(
+        [x.name for x in src_dir.glob("*")], key=lambda x: _floatify(x), reverse=True
+    )
+    version = inquirer.prompt([inquirer.List("version", "", choices=versions)])[
+        "version"
+    ]
     del versions
 
     copy_dir_contents(src_dir / version, path)
@@ -311,44 +348,44 @@ def make_customs(path):
 
     click.echo("Checking for odoo repo at env variable 'ODOO_REPO'")
     if os.getenv("ODOO_REPO", ""):
-        odoo_path = path / 'odoo'
-        repo_path = Path(os.environ['ODOO_REPO'])
+        odoo_path = path / "odoo"
+        repo_path = Path(os.environ["ODOO_REPO"])
         repo = Repo(repo_path)
         repo.git.checkout(str(version))
         odoo_path.mkdir()
         sha = repo.head.object.hexsha
         sha = repo.git.rev_parse(sha)
         click.echo("Copying odoo with sha to local directory [{}]".format(sha))
-        copy_dir_contents(repo_path, odoo_path, exclude=['.git'])
-        manifest['odoo_commit'] = sha
+        copy_dir_contents(repo_path, odoo_path, exclude=[".git"])
+        manifest["odoo_commit"] = sha
 
     manifest_file.write_text(json.dumps(manifest, indent=4))
 
     subprocess.call(["git", "init"], cwd=path)
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
-    subprocess.call(['gimera', 'apply', '--update'], cwd=path)
+    subprocess.call(["gimera", "apply", "--update"], cwd=path)
     if os.getenv("SUDO_USER"):
-        subprocess.run(["chown", os.environ['SUDO_USER'], ".", '-R'], cwd=path)
-        subprocess.run(["chgrp", os.environ['SUDO_USER'], ".", '-R'], cwd=path)
+        subprocess.run(["chown", os.environ["SUDO_USER"], ".", "-R"], cwd=path)
+        subprocess.run(["chgrp", os.environ["SUDO_USER"], ".", "-R"], cwd=path)
 
-
-    click.secho("Initialized - please call following now.", fg='green')
-    click.secho("odoo db reset", fg='green')
+    click.secho("Initialized - please call following now.", fg="green")
+    click.secho("odoo db reset", fg="green")
     sys.exit(0)
+
 
 def get_template_dir():
     path = Path(os.path.expanduser("~/.odoo/templates"))
-    url = 'https://github.com/marcwimmer/wodoo-templates'
+    url = "https://github.com/marcwimmer/wodoo-templates"
     path.parent.mkdir(parents=True, exist_ok=True)
     if not path.exists():
-        subprocess.check_call(['git', 'clone', url, path])
+        subprocess.check_call(["git", "clone", url, path])
     try:
-        subprocess.check_call(['git', 'pull'], cwd=path)
+        subprocess.check_call(["git", "pull"], cwd=path)
     except:
         if path.exists():
             shutil.rmtree(path)
-        subprocess.check_call(['git', 'clone', url, path])
+        subprocess.check_call(["git", "clone", url, path])
     return path
 
 
@@ -362,50 +399,55 @@ def make_module(parent_path, module_name):
     del parent_path
     if complete_path.exists():
         raise Exception("Path already exists: {}".format(complete_path))
-    odoo_root = os.environ['ODOO_HOME']
+    odoo_root = os.environ["ODOO_HOME"]
 
     source = get_template_dir()
-    shutil.copytree(str(source / 'module_template' / str(version)), complete_path)
+    shutil.copytree(str(source / "module_template" / str(version)), complete_path)
 
     for root, dirs, _files in os.walk(complete_path):
-        if '.git' in dirs:
-            dirs.remove('.git')
+        if ".git" in dirs:
+            dirs.remove(".git")
         for filepath in _files:
             filepath = os.path.join(root, filepath)
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 content = f.read()
             content = content.replace("___module_name___", module_name)
-            with open(filepath, 'w') as f:
+            with open(filepath, "w") as f:
                 f.write(content)
 
     # enter in install file
     m = MANIFEST()
-    modules = m['install']
+    modules = m["install"]
     modules.append(module_name)
-    m['install'] = modules
+    m["install"] = modules
 
     # correct file permissions
     if os.getenv("SUDO_USER"):
-        subprocess.run(["chown", os.environ['SUDO_USER'], ".", '-R'], cwd=complete_path)
-        subprocess.run(["chgrp", os.environ['SUDO_USER'], ".", '-R'], cwd=complete_path)
+        subprocess.run(["chown", os.environ["SUDO_USER"], ".", "-R"], cwd=complete_path)
+        subprocess.run(["chgrp", os.environ["SUDO_USER"], ".", "-R"], cwd=complete_path)
+
 
 def restart(quick):
     if quick:
-        write_debug_instruction('quick_restart')
+        write_debug_instruction("quick_restart")
     else:
-        write_debug_instruction('restart')
+        write_debug_instruction("restart")
+
 
 def run_test_file(path):
     if not path:
-        instruction = 'last_unit_test'
+        instruction = "last_unit_test"
     else:
-        instruction = 'unit_test:{}'.format(path)
+        instruction = "unit_test:{}".format(path)
     write_debug_instruction(instruction)
 
+
 def search_qweb(template_name, root_path=None):
-    root_path = root_path or os.environ['ODOO_HOME']
+    root_path = root_path or os.environ["ODOO_HOME"]
     pattern = "*.xml"
-    for path, dirs, _files in os.walk(str(root_path.resolve().absolute()), followlinks=True):
+    for path, dirs, _files in os.walk(
+        str(root_path.resolve().absolute()), followlinks=True
+    ):
         for filename in fnmatch.filter(_files, pattern):
             if filename.name.startswith("."):
                 continue
@@ -415,15 +457,23 @@ def search_qweb(template_name, root_path=None):
             filecontent = filename.read_text()
             for idx, line in enumerate(filecontent.split("\n")):
                 for apo in ['"', "'"]:
-                    if "t-name={0}{1}{0}".format(apo, template_name) in line and "t-extend" not in line:
+                    if (
+                        "t-name={0}{1}{0}".format(apo, template_name) in line
+                        and "t-extend" not in line
+                    ):
                         return filename, idx + 1
+
 
 def update_module(filepath, full=False):
     module = Module(filepath)
-    write_debug_instruction('update_module{}:{}'.format('_full' if full else '', module.name))
+    write_debug_instruction(
+        "update_module{}:{}".format("_full" if full else "", module.name)
+    )
+
 
 def update_view_in_db_in_debug_file(filepath, lineno):
-    write_debug_instruction('update_view_in_db:{}:{}'.format(filepath, lineno))
+    write_debug_instruction("update_view_in_db:{}:{}".format(filepath, lineno))
+
 
 def update_view_in_db(filepath, lineno):
     filepath = translate_path_into_machine_path(filepath)
@@ -437,7 +487,7 @@ def update_view_in_db(filepath, lineno):
             line2 = line
             while line2 < lineno:
                 # with search:
-                match = re.findall(r'\ id=[\"\']([^\"^\']*)[\"\']', xml[line2])
+                match = re.findall(r"\ id=[\"\']([^\"^\']*)[\"\']", xml[line2])
                 if match:
                     xmlid = match[0]
                     break
@@ -445,8 +495,8 @@ def update_view_in_db(filepath, lineno):
 
         line -= 1
 
-    if '.' not in xmlid:
-        xmlid = module.name + '.' + xmlid
+    if "." not in xmlid:
+        xmlid = module.name + "." + xmlid
 
     def extract_html(parent_node):
         arch = parent_node.xpath("*")
@@ -465,35 +515,39 @@ def update_view_in_db(filepath, lineno):
 
     def get_arch():
         _xml = xml
-        if xml and xml[0] and 'encoding' in xml[0]:
+        if xml and xml[0] and "encoding" in xml[0]:
             _xml = _xml[1:]
         doc = etree.XML("\n".join(_xml))
-        for node in doc.xpath("//*[@id='{}' or @id='{}']".format(xmlid, xmlid.split('.')[-1])):
-            if node.tag == 'record':
+        for node in doc.xpath(
+            "//*[@id='{}' or @id='{}']".format(xmlid, xmlid.split(".")[-1])
+        ):
+            if node.tag == "record":
                 arch = node.xpath("field[@name='arch']")
-            elif node.tag == 'template':
+            elif node.tag == "template":
                 arch = [node]
             else:
                 raise Exception("impl")
 
             if arch:
                 html = extract_html(arch[0])
-                if node.tag == 'template':
+                if node.tag == "template":
                     doc = etree.XML(html)
                     datanode = doc.xpath("/data")[0]
-                    if node.get('inherit_id', False):
-                        datanode.set('inherit_id', node.get('inherit_id'))
-                        datanode.set('name', node.get('name', ''))
+                    if node.get("inherit_id", False):
+                        datanode.set("inherit_id", node.get("inherit_id"))
+                        datanode.set("name", node.get("name", ""))
                     else:
-                        datanode.set('t-name', xmlid)
-                        datanode.tag = 't'
+                        datanode.set("t-name", xmlid)
+                        datanode.tag = "t"
                     html = etree.tounicode(doc, pretty_print=True)
 
                 # if not inherited from anything, then base tag must not be <data>
                 doc = etree.XML(html)
                 if not doc.xpath("/data/*[@position] | /*[@position]"):
                     if doc.xpath("/data"):
-                        html = etree.tounicode(doc.xpath("/data/*", pretty_print=True)[0])
+                        html = etree.tounicode(
+                            doc.xpath("/data/*", pretty_print=True)[0]
+                        )
 
                 print(html)
                 return html
@@ -502,57 +556,74 @@ def update_view_in_db(filepath, lineno):
 
     if xmlid:
         arch = get_arch()
-        if '.' in xmlid:
-            module, xmlid = xmlid.split('.', 1)
+        if "." in xmlid:
+            module, xmlid = xmlid.split(".", 1)
         if arch:
             with get_conn_autoclose() as cr:
-                cr.execute("select column_name from information_schema.columns where table_name = 'ir_ui_view'")
+                cr.execute(
+                    "select column_name from information_schema.columns where table_name = 'ir_ui_view'"
+                )
                 columns = [x[0] for x in cr.fetchall()]
-                arch_column = 'arch_db' if 'arch_db' in columns else 'arch'
-                arch_fs_column = 'arch_fs' if 'arch_fs' in columns else None
+                arch_column = "arch_db" if "arch_db" in columns else "arch"
+                arch_fs_column = "arch_fs" if "arch_fs" in columns else None
                 module = Module.get_by_name(module)
                 print("Searching view/template for {}.{}".format(module.name, xmlid))
-                cr.execute("select res_id from ir_model_data where model='ir.ui.view' and module=%s and name=%s",
-                            [
-                                module.name,
-                                xmlid
-                            ])
+                cr.execute(
+                    "select res_id from ir_model_data where model='ir.ui.view' and module=%s and name=%s",
+                    [module.name, xmlid],
+                )
                 res = cr.fetchone()
                 if not res:
                     print("No view found for {}.{}".format(module.name, xmlid))
                 else:
-                    print('updating view of xmlid: %s.%s' % (module.name, xmlid))
+                    print("updating view of xmlid: %s.%s" % (module.name, xmlid))
                     view_ids = [res[0]]
-                    cr.execute("select type, name from ir_ui_view where id in %s", (tuple(view_ids),))
+                    cr.execute(
+                        "select type, name from ir_ui_view where id in %s",
+                        (tuple(view_ids),),
+                    )
                     view_type, view_name = cr.fetchone()
 
-                    if view_type == 'qweb':
-                        cr.execute("select id from ir_ui_view where type ='qweb' and name = %s", (view_name,))
+                    if view_type == "qweb":
+                        cr.execute(
+                            "select id from ir_ui_view where type ='qweb' and name = %s",
+                            (view_name,),
+                        )
                         view_ids = set(cr.fetchall())
 
-                    cr.execute("update ir_ui_view set {}=%s where id in %s".format(arch_column), [
-                        arch,
-                        tuple(view_ids)
-                    ])
+                    cr.execute(
+                        "update ir_ui_view set {}=%s where id in %s".format(
+                            arch_column
+                        ),
+                        [arch, tuple(view_ids)],
+                    )
                     cr.connection.commit()
                     if arch_fs_column:
                         try:
-                            rel_path = module.name + "/" + str(filepath.relative_to(module.path))
-                            cr.execute("update ir_ui_view set arch_fs=%s where id in %s", [
-                                rel_path,
-                                tuple(view_ids),
-                            ])
+                            rel_path = (
+                                module.name
+                                + "/"
+                                + str(filepath.relative_to(module.path))
+                            )
+                            cr.execute(
+                                "update ir_ui_view set arch_fs=%s where id in %s",
+                                [
+                                    rel_path,
+                                    tuple(view_ids),
+                                ],
+                            )
                             cr.connection.commit()
                         except Exception:
                             cr.connection.rollback()
 
                     if res:
-                        exe("ir.ui.view", "write", view_ids, {'arch_db': arch})
+                        exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
 
 
 all_modules_cache = None
-class Modules(object):
 
+
+class Modules(object):
     def __init__(self):
         global all_modules_cache
         if not all_modules_cache:
@@ -570,7 +641,7 @@ class Modules(object):
             Returns a list of full paths of all manifests
             """
             for path in get_odoo_addons_paths():
-                for file in path.glob("**/" + manifest_file_names()):
+                for file in path.glob("*/" + manifest_file_names()):
                     modname = file.parent.name
                     if modname in modnames:
                         continue
@@ -586,20 +657,30 @@ class Modules(object):
         return modules
 
     def is_git_clean(self):
-        if not ((Path(os.getcwd())) / '.git').exists():
+        if not ((Path(os.getcwd())) / ".git").exists():
             return True
-        status = subprocess.check_output(['git', 'status', '--porcelain']).decode('utf-8').strip()
+        status = (
+            subprocess.check_output(["git", "status", "--porcelain"])
+            .decode("utf-8")
+            .strip()
+        )
         if status:
-            click.secho(f'unclean git: {status}')
+            click.secho(f"unclean git: {status}")
         return not status
 
     def get_changed_modules(self, sha_start):
-        filepaths = subprocess.check_output([
-            'git',
-            'diff',
-            f"{sha_start}..HEAD",
-            "--name-only",
-        ]).decode('utf-8').split("\n")
+        filepaths = (
+            subprocess.check_output(
+                [
+                    "git",
+                    "diff",
+                    f"{sha_start}..HEAD",
+                    "--name-only",
+                ]
+            )
+            .decode("utf-8")
+            .split("\n")
+        )
         modules = []
         root = Path(os.getcwd())
         for filepath in filepaths:
@@ -621,11 +702,11 @@ class Modules(object):
             (often those modules are forgotten to be updated)
 
         """
-        assert mode in [None, 'to_update', 'to_install']
+        assert mode in [None, "to_update", "to_install"]
 
         modules = get_modules_from_install_file()
 
-        if mode == 'to_install':
+        if mode == "to_install":
             modules = [x for x in modules if not DBModules.is_module_installed(x)]
 
         modules = list(map(lambda x: Module.get_by_name(x), modules))
@@ -646,8 +727,8 @@ class Modules(object):
 
         def append_deps(mod, data):
             data[mod.name] = {}
-            for dep in mod.manifest_dict.get('depends', []):
-                if dep == 'base':
+            for dep in mod.manifest_dict.get("depends", []):
+                if dep == "base":
                     continue
                 dep_mod = [x for x in self.modules.values() if x.name == dep]
                 try:
@@ -655,11 +736,15 @@ class Modules(object):
                 except IndexError:
                     # if it is a module, which is probably just auto install
                     # but not in the manifest, then it is not critical
-                    click.secho((
-                        f"Module not found at resolving dependencies: {dep}"
-                        f". Not necessarily a problem at auto install modules."
-                        "\n\n\n"
-                    ), fg='yellow', bold=True)
+                    click.secho(
+                        (
+                            f"Module not found at resolving dependencies: {dep}"
+                            f". Not necessarily a problem at auto install modules."
+                            "\n\n\n"
+                        ),
+                        fg="yellow",
+                        bold=True,
+                    )
                 else:
                     data[mod.name][dep] = {}
                     append_deps(dep_mod, data[mod.name][dep])
@@ -669,7 +754,7 @@ class Modules(object):
 
     def get_all_modules_installed_by_manifest(self):
         all_modules = set()
-        for module in MANIFEST().get('install', []):
+        for module in MANIFEST().get("install", []):
             all_modules.add(module)
             module = Module.get_by_name(module)
             for module2 in self.get_module_flat_dependency_tree(module):
@@ -680,7 +765,8 @@ class Modules(object):
             len_modules = len(all_modules)
             for auto_install_module in all_auto_installed_modules:
                 for module2 in self.get_module_flat_dependency_tree(
-                        auto_install_module):
+                    auto_install_module
+                ):
                     if module2 not in all_modules:
                         break
                 else:
@@ -714,7 +800,7 @@ class Modules(object):
                 module = Module.get_by_name(module)
             except NotInAddonsPath:
                 continue
-            if module.manifest_dict.get('auto_install', False):
+            if module.manifest_dict.get("auto_install", False):
                 auto_install_modules.append(module)
         return list(sorted(set(auto_install_modules)))
 
@@ -728,12 +814,16 @@ class Modules(object):
 
         def _get(all_modules):
             for auto_install_module in all_modules:
-                dependencies = set(list(
-                    self.get_module_flat_dependency_tree(auto_install_module)))
-                installed_dependencies = set([
-                    x for x in dependencies
-                    if x.manifest_dict.get('auto_install') or x in complete_modules
-                ])
+                dependencies = set(
+                    list(self.get_module_flat_dependency_tree(auto_install_module))
+                )
+                installed_dependencies = set(
+                    [
+                        x
+                        for x in dependencies
+                        if x.manifest_dict.get("auto_install") or x in complete_modules
+                    ]
+                )
                 if dependencies == installed_dependencies:
                     yield auto_install_module
 
@@ -751,11 +841,14 @@ class Modules(object):
 
     def get_all_used_modules(self):
         """
-        Returns all modules that are directly or indirectly (auto install, depends) installed.
+        Returns all modules that are directly or indirectly
+        (auto install, depends) installed.
         """
         result = set()
         modules = self.get_customs_modules()
-        auto_install_modules = self.get_filtered_auto_install_modules_based_on_module_list(modules)
+        auto_install_modules = (
+            self.get_filtered_auto_install_modules_based_on_module_list(modules)
+        )
         modules += auto_install_modules
 
         for module in modules:
@@ -774,30 +867,31 @@ class Modules(object):
         deb_deps = []
         for module in modules:
             module = Module.get_by_name(module)
-            file = (module.path / 'external_dependencies.txt')
+            file = module.path / "external_dependencies.txt"
             new_deps = []
             if file.exists():
                 try:
                     content = json.loads(file.read_text())
                 except Exception as e:
-                    click.secho("Error parsing json in\n{}:\n{}".format(file, e), fg='red')
-                    click.secho(file.read_text(), fg='red')
+                    click.secho(
+                        "Error parsing json in\n{}:\n{}".format(file, e), fg="red"
+                    )
+                    click.secho(file.read_text(), fg="red")
                     sys.exit(1)
                 new_deps = content.get("pip", [])
                 pydeps += new_deps
-                deb_deps += content.get('deb', [])
+                deb_deps += content.get("deb", [])
             else:
-                new_deps = module.manifest_dict.get('external_dependencies', {}).get('python', [])
+                new_deps = module.manifest_dict.get("external_dependencies", {}).get(
+                    "python", []
+                )
                 pydeps += new_deps
 
-            #if new_deps:
+            # if new_deps:
             #    click.secho(f"Adding python dependencies {','.join(new_deps)} from {module.name}", fg='yellow')
 
         pydeps = self.resolve_pydeps(pydeps)
-        return {
-            'pip': pydeps,
-            'deb': deb_deps
-        }
+        return {"pip": pydeps, "deb": deb_deps}
 
     def resolve_pydeps(self, pydeps):
         pydeps = list(set(pydeps))
@@ -816,7 +910,9 @@ class Modules(object):
         parsed_requirements = []
         for inst in pydeps:
             libname = _extract_python_libname(inst)
-            for parsed in [_map(x) for x in pydeps if _extract_python_libname(x) == libname]:
+            for parsed in [
+                _map(x) for x in pydeps if _extract_python_libname(x) == libname
+            ]:
                 for x in parsed:
                     parsed_requirements.append((libname, x))
         """
@@ -827,7 +923,7 @@ class Modules(object):
         ]
         """
 
-        allowed = ['==', '>=']
+        allowed = ["==", ">="]
         unallowed = [x for x in parsed_requirements if x[1][0] not in allowed]
         if unallowed:
             raise Exception(f"Unhandled: {unallowed} - only {allowed} allowed")
@@ -835,21 +931,27 @@ class Modules(object):
         for libname in libnames:
             # mixed == and >=
             reqs = list(set([x[1] for x in parsed_requirements if x[0] == libname]))
-            ge = sorted([x for x in reqs if x[0] == '>='], key=lambda x: x[1])
-            gt = sorted([x for x in reqs if x[0] == '>'], key=lambda x: x[1]) # very unusual, not seen yet
-            eq = [x for x in reqs if x[0] == '==']
+            ge = sorted([x for x in reqs if x[0] == ">="], key=lambda x: x[1])
+            gt = sorted(
+                [x for x in reqs if x[0] == ">"], key=lambda x: x[1]
+            )  # very unusual, not seen yet
+            eq = [x for x in reqs if x[0] == "=="]
             no = [x for x in reqs if not x]
 
             if ge or eq and no:
                 no = []
 
             if eq and len(eq) > 1 and not all(x[1] == eq[0][1] for x in eq):
-                click.secho(f"Dependency conflict: {libname} {eq[0]} - {eq[1:]}", fg='red')
+                click.secho(
+                    f"Dependency conflict: {libname} {eq[0]} - {eq[1:]}", fg="red"
+                )
                 sys.exit(-1)
 
             if eq and ge:
                 if eq[-1][1] < ge[-1][1]:
-                    click.secho(f"Dependency conflict: {libname} {ge[0]} - {eq[0]}", fg='red')
+                    click.secho(
+                        f"Dependency conflict: {libname} {ge[0]} - {eq[0]}", fg="red"
+                    )
                     sys.exit(-1)
 
             if gt:
@@ -865,18 +967,14 @@ class Modules(object):
 
 
 class Module(object):
-
-    class IsNot(Exception): pass
+    class IsNot(Exception):
+        pass
 
     def __str__(self):
-        return (
-            f"{self.name}"
-        )
+        return f"{self.name}"
 
     def __repr__(self):
-        return (
-            f"{self.name}"
-        )
+        return f"{self.name}"
 
     def __add__(self, other):
         return self.name + other
@@ -899,14 +997,12 @@ class Module(object):
 
         for p in [p] + list(p.parents):
             if (p / manifest_file_names()).exists():
-                if '.git' in p.parts:
+                if ".git" in p.parts:
                     continue
                 self._manifest_path = p / manifest_file_names()
                 break
-        if not getattr(self, '_manifest_path', ''):
-            raise Module.IsNot((
-                f"no module found for {path}"
-            ))
+        if not getattr(self, "_manifest_path", ""):
+            raise Module.IsNot((f"no module found for {path}"))
         self.name = self._manifest_path.parent.name
         self.path = self._manifest_path.parent
 
@@ -919,15 +1015,15 @@ class Module(object):
         if not self._manifest_dict:
             try:
                 content = self.manifest_path.read_text()
-                content = '\n'.join(filter(
-                    lambda x: not x.strip().startswith("#"),
-                    content.splitlines()))
+                content = "\n".join(
+                    filter(
+                        lambda x: not x.strip().startswith("#"), content.splitlines()
+                    )
+                )
                 self._manifest_dict = eval(content)  # TODO safe
 
             except (SyntaxError, Exception):
-                click.secho((
-                    f"error at file: {self.manifest_path}"
-                ), fg='red')
+                click.secho((f"error at file: {self.manifest_path}"), fg="red")
                 raise
         return self._manifest_dict
 
@@ -944,21 +1040,21 @@ class Module(object):
         """
         pofile_path = self.__make_path_relative(pofile_path)
         lang = pofile_path.name.split(".po")[0]
-        write_debug_instruction('import_i18n:{}:{}'.format(lang, pofile_path))
+        write_debug_instruction("import_i18n:{}:{}".format(lang, pofile_path))
 
     def export_lang(self, current_file, lang):
-        write_debug_instruction('export_i18n:{}:{}'.format(lang, self.name))
+        write_debug_instruction("export_i18n:{}:{}".format(lang, self.name))
 
     @property
     def hash(self):
         from .tools import get_directory_hash
+
         return get_directory_hash(self.path)
 
     @classmethod
     def __get_by_name_cached(cls, name):
         if name not in name_cache:
-            name_cache.setdefault(
-                name, cls._get_by_name(name))
+            name_cache.setdefault(name, cls._get_by_name(name))
         return name_cache[name]
 
     @classmethod
@@ -974,6 +1070,7 @@ class Module(object):
             return all_modules_cache[name]
 
         from .odoo_config import get_odoo_addons_paths
+
         if isinstance(name, Module):
             name = name.name
         path = None
@@ -1006,13 +1103,13 @@ class Module(object):
         per modulename all dependencies - no hierarchy
         """
         result = {}
-        for dep in self.manifest_dict.get('depends', []):
+        for dep in self.manifest_dict.get("depends", []):
             result.add(Module.get_by_name(dep))
 
         return result
 
     def get_lang_file(self, lang):
-        lang_file = (self.path / "i18n" / lang).with_suffix('.po')
+        lang_file = (self.path / "i18n" / lang).with_suffix(".po")
         if lang_file.exists():
             return lang_file
 
@@ -1020,7 +1117,7 @@ class Module(object):
     def in_version(self):
         if self.version >= 10.0:
             try:
-                version = self.manifest_dict.get('version', "")
+                version = self.manifest_dict.get("version", "")
             except SyntaxError:
                 return False
             # enterprise modules from odoo have versions: "", "1.0" and so on... ok
@@ -1029,16 +1126,16 @@ class Module(object):
             if len(version.split(".")) <= 3:
                 # allow 1.0 2.2 etc.
                 return True
-            check = str(self.version).split('.')[0] + '.'
+            check = str(self.version).split(".")[0] + "."
             return version.startswith(check)
         else:
-            info_file = self.path / '.ln'
+            info_file = self.path / ".ln"
             if info_file.exists():
                 info = eval(info_file.read_text())
                 if isinstance(info, (float, int)):
                     min_ver = info
                     max_ver = info
-                    info = {'minimum_version': min_ver, 'maximum_version': max_ver}
+                    info = {"minimum_version": min_ver, "maximum_version": max_ver}
                 else:
                     min_ver = info.get("minimum_version", 1.0)
                     max_ver = info.get("maximum_version", 1000.0)
@@ -1048,7 +1145,7 @@ class Module(object):
                     return True
 
             elif "OCA" in self.path.parts:
-                relpath = str(self.path).split(u"/OCA/")[1].split("/")
+                relpath = str(self.path).split("/OCA/")[1].split("/")
                 return len(relpath) == 2
         return False
 
@@ -1070,8 +1167,8 @@ class Module(object):
 
         def default_dict():
             return {
-                'stylesheets': [],
-                'js': [],
+                "stylesheets": [],
+                "js": [],
             }
 
         files_per_assets = {
@@ -1080,10 +1177,10 @@ class Module(object):
             # 'web.assets_frontend': default_dict(),
         }
         # try to keep assets id
-        filepath = self.path / 'views/assets.xml'
+        filepath = self.path / "views/assets.xml"
         current_id = None
         if filepath.exists():
-            with filepath.open('r') as f:
+            with filepath.open("r") as f:
                 xml = f.read()
                 doc = etree.XML(xml)
                 for t in doc.xpath("//template/@inherit_id"):
@@ -1091,49 +1188,61 @@ class Module(object):
 
         all_files = self.get_all_files_of_module()
         if current_version() < 11.0:
-            module_path = Path(str(self.path).replace("/{}/".format(current_version()), ""))
+            module_path = Path(
+                str(self.path).replace("/{}/".format(current_version()), "")
+            )
             if str(module_path).endswith("/{}".format(current_version())):
                 module_path = "/".join(str(module_path).split("/")[:-1])
 
         prefix_static = f"/{self.name}/"
         for local_file_path in all_files:
-            if local_file_path.name.startswith('.'):
+            if local_file_path.name.startswith("."):
                 continue
 
             if current_id:
                 parent = current_id
-            elif 'static' in local_file_path.parts:
+            elif "static" in local_file_path.parts:
                 parent = DEFAULT_ASSETS
-            elif 'report' in local_file_path.parts or 'reports' in local_file_path.parts:
-                parent = 'web.report_assets_common'
+            elif (
+                "report" in local_file_path.parts or "reports" in local_file_path.parts
+            ):
+                parent = "web.report_assets_common"
             else:
                 continue
             files_per_assets.setdefault(parent, default_dict())
 
             url = prefix_static + str(local_file_path)
-            if local_file_path.suffix in ['.less', '.css', '.scss']:
-                files_per_assets[parent]['stylesheets'].append(url)
-            elif local_file_path.suffix in ['.js']:
-                files_per_assets[parent]['js'].append(url)
+            if local_file_path.suffix in [".less", ".css", ".scss"]:
+                files_per_assets[parent]["stylesheets"].append(url)
+            elif local_file_path.suffix in [".js"]:
+                files_per_assets[parent]["js"].append(url)
             del local_file_path
             del url
 
         doc = etree.XML(assets_template)
         for asset_inherit_id, _files in files_per_assets.items():
             parent = deepcopy(doc.xpath("//template")[0])
-            parent.set('inherit_id', asset_inherit_id)
-            parent.set('id', asset_inherit_id.split('.')[-1])
+            parent.set("inherit_id", asset_inherit_id)
+            parent.set("id", asset_inherit_id.split(".")[-1])
             parent_xpath = parent.xpath("xpath")[0]
-            for style in _files['stylesheets']:
-                etree.SubElement(parent_xpath, 'link', {
-                    'rel': 'stylesheet',
-                    'href': str(style),
-                })
-            for js in _files['js']:
-                etree.SubElement(parent_xpath, 'script', {
-                    'type': 'text/javascript',
-                    'src': str(js),
-                })
+            for style in _files["stylesheets"]:
+                etree.SubElement(
+                    parent_xpath,
+                    "link",
+                    {
+                        "rel": "stylesheet",
+                        "href": str(style),
+                    },
+                )
+            for js in _files["js"]:
+                etree.SubElement(
+                    parent_xpath,
+                    "script",
+                    {
+                        "type": "text/javascript",
+                        "src": str(js),
+                    },
+                )
             doc.xpath("/odoo/data")[0].append(parent)
 
         # remove empty assets and the first template template
@@ -1141,15 +1250,15 @@ class Module(object):
             to_remove.getparent().remove(to_remove)
 
         if current_version() >= 15.0:
-            manifest = self.path / '__manifest__.py'
+            manifest = self.path / "__manifest__.py"
             yml = eval(manifest.read_text())
-            yml.setdefault('assets', {})
+            yml.setdefault("assets", {})
             for asset_name, files in files_per_assets.items():
-                yml['assets'].setdefault(asset_name, [])
+                yml["assets"].setdefault(asset_name, [])
                 for files in files.values():
                     for file in files:
-                        if file not in yml['assets'][asset_name]:
-                            yml['assets'][asset_name].append(file)
+                        if file not in yml["assets"][asset_name]:
+                            yml["assets"][asset_name].append(file)
                 del file
             manifest.write_text(str(yml))
         else:
@@ -1158,7 +1267,7 @@ class Module(object):
                     filepath.unlink()
             else:
                 filepath.parent.mkdir(exist_ok=True)
-                with filepath.open('wb') as f:
+                with filepath.open("wb") as f:
                     f.write(etree.tostring(doc, pretty_print=True))
 
     def get_all_files_of_module(self):
@@ -1179,35 +1288,35 @@ class Module(object):
 
         all_files = list(self.get_all_files_of_module())
         # first collect all xml files and ignore test and static
-        DATA_NAME = 'data'
+        DATA_NAME = "data"
         if current_version() <= 7.0:
-            DATA_NAME = 'update_xml'
+            DATA_NAME = "update_xml"
 
         mod[DATA_NAME] = []
         mod["demo"] = []
         if current_version() <= 13.0:
             mod["css"] = []
-            mod['qweb'] = []
+            mod["qweb"] = []
         is_web = False
 
         for local_path in all_files:
-            if 'test' in local_path.parts:
+            if "test" in local_path.parts:
                 continue
-            if local_path.suffix in ['.xml', '.csv', '.yml']:
+            if local_path.suffix in [".xml", ".csv", ".yml"]:
                 if local_path.name.startswith("demo%s" % os.sep):
                     mod["demo"].append(str(local_path))
-                elif 'static' in local_path.parts:
+                elif "static" in local_path.parts:
                     # contains qweb file
                     is_web = True
-                    if local_path.suffix == '.xml':
-                        if 'qweb' in mod:
-                            mod['qweb'].append(str(local_path))
+                    if local_path.suffix == ".xml":
+                        if "qweb" in mod:
+                            mod["qweb"].append(str(local_path))
                 else:
                     mod[DATA_NAME].append(str(local_path))
-            elif local_path.suffix == '.js':
+            elif local_path.suffix == ".js":
                 pass
-            elif local_path.suffix in ['.css', '.less', '.scss']:
-                if 'css' in mod:
+            elif local_path.suffix in [".css", ".less", ".scss"]:
+                if "css" in mod:
                     mod["css"].append(str(local_path))
 
         # keep test empty: use concrete call to test-file instead of testing on every module update
@@ -1215,31 +1324,35 @@ class Module(object):
 
         # sort
         mod[DATA_NAME].sort()
-        if mod.get('css'):
+        if mod.get("css"):
             mod["css"].sort()
-        if 'depends' in mod:
+        if "depends" in mod:
             mod["depends"].sort()
 
         # now sort again by inspecting file content - if __openerp__.sequence NUMBER is found, then
         # set this index; reason: some times there are wizards that reference forms and vice versa
         # but cannot find action ids
         # 06.05.2014: put the ir.model.acces.csv always at the end, because it references others, but security/groups always in front
-        sorted_by_index = [] # contains tuples (index, filename)
+        sorted_by_index = []  # contains tuples (index, filename)
         for filename in mod[DATA_NAME]:
             filename_xml = filename
             filename = self.path / filename
             sequence = 0
-            with filename.open('r') as f:
+            with filename.open("r") as f:
                 content = f.read()
-                if '__openerp__.sequence' in content:
-                    sequence = int(re.search(r'__openerp__.sequence[^\d]*(\d*)', content).group(1))
-                elif 'odoo.sequence' in content:
-                    sequence = int(re.search(r'odoo.sequence[^\d]*(\d*)', content).group(1))
-                elif filename.name == 'menu.xml':
+                if "__openerp__.sequence" in content:
+                    sequence = int(
+                        re.search(r"__openerp__.sequence[^\d]*(\d*)", content).group(1)
+                    )
+                elif "odoo.sequence" in content:
+                    sequence = int(
+                        re.search(r"odoo.sequence[^\d]*(\d*)", content).group(1)
+                    )
+                elif filename.name == "menu.xml":
                     sequence = 1000
-                elif filename.name == 'groups.xml':
+                elif filename.name == "groups.xml":
                     sequence = -999999
-                elif filename.name == 'ir.model.access.csv':
+                elif filename.name == "ir.model.access.csv":
                     sequence = 999999
             sorted_by_index.append((sequence, filename_xml))
 
@@ -1254,9 +1367,10 @@ class Module(object):
         self.write_manifest(mod)
 
     def write_manifest(self, data):
-        with self.manifest_path.open('w') as file:
+        with self.manifest_path.open("w") as file:
             pp = pprint.PrettyPrinter(indent=4, stream=file)
             pp.pprint(data)
 
+
 def write_debug_instruction(instruction):
-    (customs_dir() / '.debug').write_text(instruction)
+    (customs_dir() / ".debug").write_text(instruction)
