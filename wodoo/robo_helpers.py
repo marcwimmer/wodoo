@@ -175,16 +175,19 @@ def _eval_robot_output(config, output_path, started, output_json, token):
 
     # move completed runs without token to parent to reduce the amount of intermediate files
     generated_output_paths = []
-    for filepath in (output_path / token).glob("*"):
+    token_path = output_path / token
+    for filepath in token_path.glob("*"):
         dest_path = output_path / filepath.name
         if dest_path.exists() and dest_path.is_dir():
-            if dest_path.exists():
-                shutil.rmtree(dest_path)
+            shutil.rmtree(dest_path)
+        elif dest_path.exists():
+            dest_path.unlink()
         shutil.move(filepath, dest_path)
         generated_output_paths.append(dest_path)
 
 
-    shutil.rmtree(output_path / token)
+    if token_path.exists():
+        shutil.rmtree(token_path)
 
     for path in generated_output_paths:
         click.secho(f"Outputs are generated in {path}", fg="yellow")
