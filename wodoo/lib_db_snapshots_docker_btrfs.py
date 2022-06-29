@@ -9,7 +9,6 @@ from .tools import __dc
 from .tools import search_env_path
 from . import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
-from .tools import __hash_odoo_password
 from pathlib import Path
 
 DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
@@ -22,12 +21,6 @@ def __get_postgres_volume_name(config):
 
 def _get_cmd_butter_volume():
     return ["sudo", search_env_path("btrfs"), "subvolume"]
-
-
-@cli.group(cls=AliasedGroup)
-@pass_config
-def snapshot(config):
-    pass
 
 
 def __assert_btrfs(config):
@@ -205,6 +198,7 @@ def purge_inactive(config):
             next(DOCKER_VOLUMES.glob(vol.name))
         except StopIteration:
             for snapshot in vol.glob("*"):
+                click.secho(f"Deleting snapshot {snapshot}", fg='red')
                 subprocess.check_call(
                     [
                         "sudo",
@@ -214,4 +208,5 @@ def purge_inactive(config):
                         str(snapshot)
                     ]
                 )
+            click.secho(f"Deleting {vol}", fg='red')
             shutil.rmtree(vol)

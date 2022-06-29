@@ -24,11 +24,6 @@ from .tools import __hash_odoo_password
 from . import project_name
 from .tools import _remove_postgres_connections, _execute_sql
 
-@cli.group(cls=AliasedGroup)
-@pass_config
-def snapshot(config):
-    pass
-
 def __get_snapshots(config):
     conn = config.get_odoo_conn().clone(dbname='postgres')
     snapshots = [x[0] for x in _execute_sql(
