@@ -104,3 +104,12 @@ def snapshot_clear_all(ctx, config):
         for snap in snapshots:
             config.snapshot_manager.remove(config, snap)
     ctx.invoke(do_list)
+
+@snapshot.command(name="purge-inactive-subvolumes", help=(
+    "Compares subvolumes to docker volumes. If the "
+    "volume is not used anymore, then its subvolumes are cleared."))
+@pass_config
+@click.pass_context
+def snapshots_purge_inactive_subvolumes(ctx, config):
+    config.snapshot_manager.assert_environment(config)
+    config.snapshot_manager.purge_inactive(config)
