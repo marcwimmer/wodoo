@@ -13,7 +13,6 @@ from .tools import _remove_postgres_connections, _execute_sql
 @cli.group(cls=AliasedGroup)
 @pass_config
 def snapshot(config):
-    import pudb;pudb.set_trace()
     config.__choose_snapshot = __choose_snapshot
     if config.use_docker:
         from . import lib_db_snapshots_docker_btrfs as snapshot_manager
@@ -51,7 +50,6 @@ def do_list(config):
 @click.argument('name', required=False)
 @pass_config
 def snapshot_make(config, name):
-    import pudb;pudb.set_trace()
 
     config.snapshot_manager.assert_environment(config)
     if not name:
@@ -103,6 +101,5 @@ def snapshot_clear_all(ctx, config):
 @pass_config
 @click.pass_context
 def snapshot_purge_inactive_subvolumes(ctx, config):
-    import pudb;pudb.set_trace()
     config.snapshot_manager.assert_environment(config)
     config.snapshot_manager.purge_inactive(config)
