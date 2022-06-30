@@ -33,7 +33,7 @@ python3 -mpip install wodoo
 
 
 ```bash
-> /usr/local/sbin/odoo <EOF
+cat << EOF > /usr/local/sbin/odoo
 #!/bin/bash
 sudo -E /opt/odoo/odoo "$@"
 EOF
@@ -45,7 +45,7 @@ chmod a+x /usr/local/sbin/odoo
 
 
 ```bash
-> /etc/sudoers.d/odoo <EOF
+cat << EOF > /etc/sudoers.d/odoo
 Cmnd_Alias ODOO_COMMANDS_ODOO = /usr/bin/find *, /opt/odoo/odoo *, /usr/bin/btrfs subvolume *, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rsync *, /usr/bin/rm *,  /usr/bin/du *, /usr/local/bin/odoo *, /opt/odoo/odoo *, /usr/bin/btrfs subvol show *, /usr/sbin/gosu *
 odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
 
