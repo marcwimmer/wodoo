@@ -28,6 +28,18 @@ python3 -mpip install wheel
 python3 -mpip install gimera
 python3 -mpip install wodoo
 ```
+### setup global command
+
+Make file /usr/local/sbin/odoo
+```bash
+#!/usr/bin/env bash
+sudo -E '/var/lib/wodoo_env/bin/odoo' "$@"
+```
+
+and make it executable
+```bash
+chmod a+x /usr/local/sbin/odoo
+```
 
 ### Give sudo rights
 
