@@ -96,9 +96,7 @@ def collect_all(root_dir, robo_file_content):
                 filepath = line.split("  ")[1]
                 filepath = root_dir / filepath
                 if not filepath.exists():
-                    abort((
-                        f"Could not find file {filepath}"
-                    ))
+                    abort((f"Could not find file {filepath}"))
                 content = filepath.read_text()
                 yield from collect_all(filepath.resolve().parent, content)
 
@@ -140,8 +138,11 @@ def get_odoo_modules(verbose, test_files, root_dir):
         yield from collect_all(file.parent, file_content)
 
 
-def _eval_robot_output(config, output_path, started, output_json, token):
-    test_results = json.loads((output_path / token / "results.json").read_text())
+def _eval_robot_output(
+    config, output_path, started, output_json, token, rm_tokendir, results_file
+):
+    results_json = output_path / (results_file or "results.json")
+    test_results = json.loads(results_json.read_text())
     failds = [x for x in test_results if not x.get("all_ok")]
     color_info = "green"
 
@@ -174,30 +175,38 @@ def _eval_robot_output(config, output_path, started, output_json, token):
     )
 
     # move completed runs without token to parent to reduce the amount of intermediate files
-    generated_output_paths = []
+    find_results_path = None
     token_path = output_path / token
     for filepath in token_path.glob("*"):
+        if not filepath.is_dir():
+            continue
         dest_path = output_path / filepath.name
         if dest_path.exists() and dest_path.is_dir():
             shutil.rmtree(dest_path)
         elif dest_path.exists():
             dest_path.unlink()
-        shutil.move(filepath, dest_path)
-        generated_output_paths.append(dest_path)
+        if rm_tokendir:
+            shutil.move(filepath, dest_path)
+            find_results_path = dest_path
+        else:
+            shutil.copytree(filepath, dest_path)
+            find_results_path = filepath
 
-
-    if token_path.exists():
+    if rm_tokendir and token_path.exists():
         shutil.rmtree(token_path)
 
-    for path in generated_output_paths:
-        click.secho(f"Outputs are generated in {path}", fg="yellow")
+    click.secho(f"Outputs are generated in {find_results_path}", fg="yellow")
     click.secho(
         ("Watch the logs online at: " f"http://host:{config.PROXY_PORT}/robot-output")
     )
 
+    for line in test_results:
+        line["testoutput"] = str(find_results_path)
+
     if output_json:
         click.secho("---!!!---###---")
         click.secho(json.dumps(test_results, indent=4))
+    results_json.write_text(json.dumps(test_results, indent=4))
 
     if failds:
         sys.exit(-1)
@@ -213,7 +222,7 @@ def _select_robot_filename(file, run_all):
     if file:
         match = [x for x in map(str, testfiles) if file in x]
         if len(match) > 1:
-            if '/' in file:
+            if "/" in file:
                 match = [x for x in match if x == file]
             if len(match) > 1:
                 click.secho("Not unique: {file}", fg="red")
@@ -223,7 +232,6 @@ def _select_robot_filename(file, run_all):
             filename = Path(match[0])
 
         if filename not in testfiles:
-            import pudb;pudb.set_trace()
             click.secho(f"Not found: {filename}", fg="red")
             sys.exit(-1)
         filename = [filename]
