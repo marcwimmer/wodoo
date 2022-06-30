@@ -31,7 +31,6 @@ python3 -mpip install wodoo
 
 ### Make global executable **odoo** command
 
-To be not blocked when working on btrfs volumes and so, this is suggested on dev machines:
 
 ```bash
 > /usr/local/sbin/odoo <EOF
@@ -42,6 +41,9 @@ EOF
 chmod a+x /usr/local/sbin/odoo
 ```
 
+### optional: To be not blocked when working on btrfs volumes and so, this is suggested on dev machines:
+
+
 ```bash
 > /etc/sudoers.d/odoo <EOF
 Cmnd_Alias ODOO_COMMANDS_ODOO = /usr/bin/find *, /opt/odoo/odoo *, /usr/bin/btrfs subvolume *, /usr/bin/mkdir *, /usr/bin/mv *, /usr/bin/rsync *, /usr/bin/rm *,  /usr/bin/du *, /usr/local/bin/odoo *, /opt/odoo/odoo *, /usr/bin/btrfs subvol show *, /usr/sbin/gosu *
@@ -50,7 +52,7 @@ odoo ALL=NOPASSWD:SETENV: ODOO_COMMANDS_ODOO
 EOF
 ```
 
-## Make new empty odoo instance
+## How To: Make new empty odoo instance
 
 ```bash
 odoo init <folder>
@@ -64,11 +66,6 @@ odoo up -d
 
 ## Store settings in ./odoo of source code
 
-This is excellent for jenkins jobs where different branches are tested.
-
-```bash
-odoo reload --local --devmode --headless --project-name 'unique_name'
-```
 
 ## How to extend an existing service
 
