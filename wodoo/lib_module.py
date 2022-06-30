@@ -1001,7 +1001,7 @@ def list_robot_test_files(config):
 @pass_config
 def unittest(
     config, file, remote_debug, wait_for_remote, non_interactive, output_json, tags
-):
+g):
     """
     Collects unittest files and offers to run
     """
