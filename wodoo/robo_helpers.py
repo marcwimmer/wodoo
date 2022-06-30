@@ -223,7 +223,6 @@ def _select_robot_filename(file, run_all):
             filename = Path(match[0])
 
         if filename not in testfiles:
-            import pudb;pudb.set_trace()
             click.secho(f"Not found: {filename}", fg="red")
             sys.exit(-1)
         filename = [filename]
