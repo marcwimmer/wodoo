@@ -230,6 +230,9 @@ def _select_robot_filename(file, run_all):
 
         if match:
             filename = Path(match[0])
+        else:
+            click.secho(f"Not found: {file}", fg="red")
+            sys.exit(-1)
 
         if filename not in testfiles:
             click.secho(f"Not found: {filename}", fg="red")
