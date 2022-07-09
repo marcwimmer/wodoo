@@ -153,7 +153,7 @@ def completion(execute):
                 content.splitlines(),
             )
         ):
-            content += f"\n{line}"
+            content += [f"\n{line}"]
             click.secho(
                 f"Inserted successfully\n{line}"
                 "\n\nPlease restart you shell."
