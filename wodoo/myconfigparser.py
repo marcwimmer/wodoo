@@ -111,7 +111,7 @@ class MyConfigParser:
                 keys = self.configOptions.keys()
                 return _get_ignore_case_item(self.configOptions[keys[key]])
             else:
-                raise KeyError("Key " + key + " doesn't exist")
+                raise KeyError(f"Key {key} doesn't exist in {self.fileName}")
 
     def __setitem__(self, key, value):
         if isinstance(value, list):

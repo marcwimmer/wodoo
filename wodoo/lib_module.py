@@ -824,6 +824,11 @@ def _get_available_robottests(ctx, param, incomplete):
 )
 @click.option("--parallel", default=1, help="Parallel runs of robots.")
 @click.option(
+    "--keep-token-dir",
+    is_flag=True,
+    help="If set, then the intermediate run directory is kept. Helps to separate test runs of same robot file safely.",
+)
+@click.option(
     "-t",
     "--tags",
     is_flag=False,
@@ -838,10 +843,22 @@ def _get_available_robottests(ctx, param, incomplete):
     is_flag=True,
     help=("If set, then a json is printed to console, with detailed informations"),
 )
+@click.option("--results-file", help="concrete filename where the results.json is stored")
 @pass_config
 @click.pass_context
 def robotest(
-    ctx, config, file, user, all, tags, test_name, param, parallel, output_json
+    ctx,
+    config,
+    file,
+    user,
+    all,
+    tags,
+    test_name,
+    param,
+    parallel,
+    output_json,
+    keep_token_dir,
+    results_file,
 ):
     PARAM = param
     del param
@@ -922,6 +939,7 @@ def robotest(
         {
             "test_files": list(map(str, filenames)),
             "token": token,
+            "results_file": results_file or "",
             "params": params(),
         }
     )
@@ -939,7 +957,10 @@ def robotest(
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
 
-    _eval_robot_output(config, output_path, started, output_json, token)
+    _eval_robot_output(
+        config, output_path, started, output_json, token, rm_tokendir=not keep_token_dir,
+        results_file=results_file
+    )
 
 
 def _get_unittests_from_module(module_name):
