@@ -134,6 +134,26 @@ def cli(
         print(config.files["docker_compose"])
 
 
+from . import lib_clickhelpers  # NOQA
+from . import lib_composer  # NOQA
+from . import lib_backup  # NOQA
+from . import lib_control  # NOQA
+from . import lib_db  # NOQA
+from . import lib_db_snapshots  # NOQA
+from . import lib_lang  # NOQA
+from . import lib_module  # NOQA
+from . import lib_setup  # NOQA
+from . import lib_src  # NOQA
+from . import lib_docker_registry  # NOQA
+from . import lib_venv  # NOQA
+from . import lib_turnintodev  # NOQA
+
+# import container specific commands
+from .tools import abort  # NOQA
+from .tools import __dcrun  # NOQA
+from .tools import __dc  # NOQA
+
+
 @cli.command()
 @click.option(
     "-x",
@@ -166,28 +186,6 @@ def completion(execute):
     click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo 'line' >> {rc_file}" "\n\n")
 
 
-from . import lib_clickhelpers  # NOQA
-from . import lib_composer  # NOQA
-from . import lib_backup  # NOQA
-from . import lib_control  # NOQA
-from . import lib_db  # NOQA
-from . import lib_db_snapshots  # NOQA
-from . import lib_lang  # NOQA
-from . import lib_module  # NOQA
-from . import lib_setup  # NOQA
-from . import lib_src  # NOQA
-from . import lib_docker_registry  # NOQA
-from . import lib_venv  # NOQA
-from . import lib_turnintodev  # NOQA
-
-# import container specific commands
-from .tools import abort  # NOQA
-from .tools import __dcrun  # NOQA
-from .tools import __dc  # NOQA
-
-
-@cli.command()
-def install_completion():
     def setup_for_shell_generic(shell, shell_call):
         path = Path(f"/etc/{shell}_completion.d")
         NAME = shell_call.upper().replace("-", "_")
