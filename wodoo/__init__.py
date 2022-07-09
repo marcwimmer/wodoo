@@ -143,7 +143,7 @@ def cli(
 )
 def completion(execute):
     shell = os.environ["SHELL"].split("/")[-1]
-    rc_file = os.path.expanduser(f"~/.{shell}rc")
+    rc_file = Path(os.path.expanduser(f"~/.{shell}rc"))
     line = f'eval "$(_ODOO_COMPLETE={shell}_source odoo)"'
     if execute:
         content = rc_file.read_text()
