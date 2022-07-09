@@ -158,6 +158,7 @@ def completion(execute):
                 f"Inserted successfully\n{line}"
                 "\n\nPlease restart you shell."
                 )
+            rc_file.write_text('\n'.join(content))
         else:
             click.secho("Nothing done - already existed.")
 
