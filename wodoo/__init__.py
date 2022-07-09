@@ -134,7 +134,7 @@ def cli(
         print(config.files["docker_compose"])
 
 
-@cli.command
+@cli.command()
 @click.option(
     "-x",
     "--execute",
