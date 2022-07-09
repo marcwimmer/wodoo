@@ -146,11 +146,11 @@ def completion(execute):
     rc_file = Path(os.path.expanduser(f"~/.{shell}rc"))
     line = f'eval "$(_ODOO_COMPLETE={shell}_source odoo)"'
     if execute:
-        content = rc_file.read_text()
+        content = rc_file.read_text().splitlines()
         if not list(
             filter(
                 lambda x: line in x and not x.strip().startswith("#"),
-                content.splitlines(),
+                content,
             )
         ):
             content += [f"\n{line}"]
