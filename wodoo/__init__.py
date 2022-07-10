@@ -183,5 +183,5 @@ def completion(execute):
             click.secho("Nothing done - already existed.")
 
 
-    click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo 'line' >> {rc_file}" "\n\n")
+    click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo '{line}' >> {rc_file}" "\n\n")
     sys.exit(0)
