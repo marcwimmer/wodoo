@@ -173,7 +173,7 @@ def completion(execute):
                 content,
             )
         ):
-            content += [f"\n{line}"]
+            content += [f"\n{line}\n"]
             click.secho(
                 f"Inserted successfully\n{line}"
                 "\n\nPlease restart you shell."
