@@ -184,30 +184,4 @@ def completion(execute):
 
 
     click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo 'line' >> {rc_file}" "\n\n")
-
-
-    def setup_for_shell_generic(shell, shell_call):
-        path = Path(f"/etc/{shell}_completion.d")
-        NAME = shell_call.upper().replace("-", "_")
-        completion = subprocess.check_output(
-            [sys.argv[0]], env={f"_{NAME}_COMPLETE": f"{shell}_source"}, shell=True
-        )
-        if path.exists():
-            if os.access(path, os.W_OK):
-                (path / shell_call).write_bytes(completion)
-                return
-
-        if not (path / shell_call).exists():
-            rc = Path(os.path.expanduser("~")) / f".{shell}rc"
-            if not rc.exists():
-                return
-            complete_file = rc.parent / f".{shell_call}-completion.sh"
-            complete_file.write_bytes(completion)
-            if complete_file.name not in rc.read_text():
-                content = rc.read_text()
-                content += "\nsource ~/" + complete_file.name
-                rc.write_text(content)
-
-    name = Path(sys.argv[0]).name
-    setup_for_shell_generic(shellingham.detect_shell()[0], name)
     sys.exit(0)
