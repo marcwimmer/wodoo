@@ -181,7 +181,6 @@ def completion(execute):
             rc_file.write_text('\n'.join(content))
         else:
             click.secho("Nothing done - already existed.")
-
-
-    click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo '{line}' >> {rc_file}" "\n\n")
+    else:
+        click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo '{line}' >> {rc_file}" "\n\n")
     sys.exit(0)
