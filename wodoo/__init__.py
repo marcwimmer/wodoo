@@ -134,38 +134,6 @@ def cli(
         print(config.files["docker_compose"])
 
 
-@cli.command
-@click.option(
-    "-x",
-    "--execute",
-    is_flag=True,
-    help=("Execute the script to insert completion into users rc-file."),
-)
-def completion(execute):
-    shell = os.environ["SHELL"].split("/")[-1]
-    rc_file = Path(os.path.expanduser(f"~/.{shell}rc"))
-    line = f'eval "$(_ODOO_COMPLETE={shell}_source odoo)"'
-    if execute:
-        content = rc_file.read_text().splitlines()
-        if not list(
-            filter(
-                lambda x: line in x and not x.strip().startswith("#"),
-                content,
-            )
-        ):
-            content += [f"\n{line}"]
-            click.secho(
-                f"Inserted successfully\n{line}"
-                "\n\nPlease restart you shell."
-                )
-            rc_file.write_text('\n'.join(content))
-        else:
-            click.secho("Nothing done - already existed.")
-
-
-    click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo 'line' >> {rc_file}" "\n\n")
-
-
 from . import lib_clickhelpers  # NOQA
 from . import lib_composer  # NOQA
 from . import lib_backup  # NOQA
@@ -187,29 +155,32 @@ from .tools import __dc  # NOQA
 
 
 @cli.command()
-def install_completion():
-    def setup_for_shell_generic(shell, shell_call):
-        path = Path(f"/etc/{shell}_completion.d")
-        NAME = shell_call.upper().replace("-", "_")
-        completion = subprocess.check_output(
-            [sys.argv[0]], env={f"_{NAME}_COMPLETE": f"{shell}_source"}, shell=True
-        )
-        if path.exists():
-            if os.access(path, os.W_OK):
-                (path / shell_call).write_bytes(completion)
-                return
-
-        if not (path / shell_call).exists():
-            rc = Path(os.path.expanduser("~")) / f".{shell}rc"
-            if not rc.exists():
-                return
-            complete_file = rc.parent / f".{shell_call}-completion.sh"
-            complete_file.write_bytes(completion)
-            if complete_file.name not in rc.read_text():
-                content = rc.read_text()
-                content += "\nsource ~/" + complete_file.name
-                rc.write_text(content)
-
-    name = Path(sys.argv[0]).name
-    setup_for_shell_generic(shellingham.detect_shell()[0], name)
+@click.option(
+    "-x",
+    "--execute",
+    is_flag=True,
+    help=("Execute the script to insert completion into users rc-file."),
+)
+def completion(execute):
+    shell = os.environ["SHELL"].split("/")[-1]
+    rc_file = Path(os.path.expanduser(f"~/.{shell}rc"))
+    line = f'eval "$(_ODOO_COMPLETE={shell}_source odoo)"'
+    if execute:
+        content = rc_file.read_text().splitlines()
+        if not list(
+            filter(
+                lambda x: line in x and not x.strip().startswith("#"),
+                content,
+            )
+        ):
+            content += [f"\n{line}\n"]
+            click.secho(
+                f"Inserted successfully\n{line}"
+                "\n\nPlease restart you shell."
+                )
+            rc_file.write_text('\n'.join(content))
+        else:
+            click.secho("Nothing done - already existed.")
+    else:
+        click.secho("\n\n" f"Insert into {rc_file}\n\n" f"echo '{line}' >> {rc_file}" "\n\n")
     sys.exit(0)
