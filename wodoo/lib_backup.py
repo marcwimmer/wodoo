@@ -286,7 +286,10 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webasset
                 container.kill()
                 container.remove()
 
-            Commands.invoke(ctx, "down")
+            try:
+                Commands.invoke(ctx, "down")
+            except:
+                pass
             Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
         conn = config.get_odoo_conn()
