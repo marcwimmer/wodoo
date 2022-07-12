@@ -591,19 +591,16 @@ def post_process_complete_yaml_config(config, yml):
 def __run_docker_compose_config(config, contents, env):
     import yaml
 
-    temp_path = config.dirs["run"] / ".tmp.compose"
-    if temp_path.is_dir():
-        __empty_dir(temp_path)
-    temp_path.mkdir(parents=True, exist_ok=True)
-
-    files = []
-    for i, content in enumerate(contents):
-        file_path = temp_path / f"docker-compose-{str(i).zfill(5)}.yml"
-        file_path.write_text(yaml.dump(content, default_flow_style=False))
-        files.append(file_path)
-        del file_path
+    temp_path = Path(tempfile.mkdtemp())
 
     try:
+        files = []
+        for i, content in enumerate(contents):
+            file_path = temp_path / f"docker-compose-{str(i).zfill(5)}.yml"
+            file_path.write_text(yaml.dump(content, default_flow_style=False))
+            files.append(file_path)
+            del file_path
+
         cmdline = [
             str(config.files["docker_compose_bin"]),
         ]
@@ -621,13 +618,13 @@ def __run_docker_compose_config(config, contents, env):
 
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         conf = yaml.safe_load(conf)
-        shutil.rmtree(temp_path)
         return conf
 
     except Exception:
         raise
     finally:
-        pass
+        if temp_path.exists():
+            shutil.rmtree(temp_path)
 
 
 def dict_merge(dct, merge_dct):
