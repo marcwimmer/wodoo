@@ -37,7 +37,6 @@ class DBConnection(object):
     def __init__(self, dbname, host, port, user, pwd):
         assert dbname
         assert host
-        assert port
         assert user
         assert pwd
         self.dbname = dbname
@@ -62,7 +61,7 @@ class DBConnection(object):
             user=self.user,
             password=self.pwd,
             host=self.host,
-            port=self.port,
+            port=self.port or None,
             connect_timeout=int(os.getenv("PSYCOPG_TIMEOUT", "3")),
         )
         return conn
@@ -217,7 +216,7 @@ def _wait_postgres(config):
             ))
             raise Exception("No running container found!")
 
-        _wait_for_port(conn.host, conn.port, timeout=30)
+        # _wait_for_port(conn.host, conn.port, timeout=30)  # unix sockets...
         trycount = 0
         try:
             _execute_sql(conn, sql="""

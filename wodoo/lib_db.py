@@ -90,14 +90,13 @@ def pgcli(config, dbname, params, host, port, user, password):
     from .tools import DBConnection
 
     dbname = dbname or config.dbname
-    os.environ['ODOO_FRAMEWORK_KEEP_SQL_CONNECTION'] = '1'  # will be executed there so connection string will point to postgres
 
     if host:
         if any(not x for x in [port, user, password]):
             click.secho("If you provide a host, then provide please all connection informations.")
         conn = DBConnection(dbname, host, int(port), user, password)
     else:
-        conn = config.get_odoo_conn().clone(dbname=dbname)
+        conn = config.get_odoo_conn(inside_container=True).clone(dbname=dbname)
     return _pgcli(config, conn, params, use_docker_container=True)
 
 @db.command()
@@ -108,8 +107,7 @@ def pgcli(config, dbname, params, host, port, user, password):
 @pass_config
 def psql(config, dbname, params, sql, non_interactive):
     dbname = dbname or config.dbname
-    os.environ['ODOO_FRAMEWORK_KEEP_SQL_CONNECTION'] = '1'  # will be executed there so connection string will point to postgres
-    conn = config.get_odoo_conn().clone(dbname=dbname)
+    conn = config.get_odoo_conn(inside_container=True).clone(dbname=dbname)
     return _psql(config, conn, params, sql=sql, interactive=not non_interactive)
 
 def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None, interactive=True):
@@ -119,7 +117,9 @@ def _psql(config, conn, params, bin='psql', sql=None, use_docker_container=None,
             dbname = params[0]
             params = []
     params = " ".join(params)
-    psql_args = ['-h', conn.host, '-p', str(conn.port), '-U', conn.user]
+    psql_args = ['-h', str(conn.host), '-U', conn.user]
+    if conn.port:
+        psql_args += ['-p', str(conn.port)]
     if bin == 'psql':
         psql_args += ['-v', 'ON_ERROR_STOP=1']
     if sql:
