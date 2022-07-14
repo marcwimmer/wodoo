@@ -1124,12 +1124,9 @@ def set_ribbon(ctx, config, name):
     """
     res = _execute_sql(config.get_odoo_conn(), SQL, fetchone=True)
     if not (res and res[0] == "installed"):
-        try:
-            Commands.invoke(
-                ctx, "update", module=["web_environment_ribbon"], no_dangling_check=True
-            )
-        except Exception as ex:
-            print(ex)
+        Commands.invoke(
+            ctx, "update", module=["web_environment_ribbon"], no_dangling_check=True
+        )
 
     _execute_sql(
         config.get_odoo_conn(),
