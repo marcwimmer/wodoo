@@ -583,3 +583,4 @@ def pghba_conf_wide_open(config, no_scram):
 
 
 Commands.register(reset_db, 'reset-db')
+Commands.register(pghba_conf_wide_open, 'pghba_conf_wide_open')
