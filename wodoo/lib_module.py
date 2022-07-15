@@ -1247,7 +1247,12 @@ def make_dir_hashes(ctx, config, on_need):
     file_dirhashes = Path(customs_dir) / FILE_DIRHASHES
     if on_need and file_dirhashes.exists():
         return
-    
+
+    if not config.force:
+        raise Exception(
+            "Needs force option, because I call git clean -xdff and "
+            "all your work is lost. (Stashing before)")
+    subprocess.check_call(["git", "stash", "--include-untracked"])
     subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir)
     hashes = subprocess.check_output(
         ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
