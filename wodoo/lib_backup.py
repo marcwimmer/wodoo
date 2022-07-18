@@ -143,10 +143,8 @@ def backup_files(config, filename):
         filepath = Path(config.dumps_path) / filepath
 
     if filepath.exists():
-
-        second = filepath.with_suffix(filepath.suffix + ".bak")
-        second.exists() and second.unlink()
-        shutil.move(filepath, second)
+        # dont loose files
+        __do_restore_files(config, filepath)
 
     files_dir = config.dirs["odoo_data_dir"] / "filestore" / config.dbname
     if not files_dir.exists():
@@ -177,8 +175,9 @@ def list_dumps(config):
 
 @restore.command(name="files")
 @click.argument("filename", required=True)
-def restore_files(filename):
-    __do_restore_files(filename)
+@pass_config
+def restore_files(config, filename):
+    __do_restore_files(config, filename)
 
 
 def _get_postgres_version(conn):
@@ -422,20 +421,22 @@ def _inquirer_dump_file(config, message, filter, latest=False):
 
 
 def __do_restore_files(config, filepath):
+    # https://askubuntu.com/questions/128492/is-there-a-way-to-tar-extract-without-clobbering
     # remove the postgres volume and reinit
-    if filepath.startswith("/"):
-        raise Exception("No absolute path allowed")
     filepath = Path(filepath)
-    files_dir = config.dirs["odoo_data_dir"] / config.dbname
+    if len(filepath.parts) == 1:
+        filepath = Path(config.dumps_path) / filepath
+    files_dir = config.dirs["odoo_data_dir"] / 'filestore' / config.dbname
+    files_dir.mkdir(exist_ok=True, parents=True)
     subprocess.check_call(
         [
             "tar",
-            "xfz",
+            "xzf",
             filepath,
         ],
         cwd=files_dir,
     )
-    click.secho("Files restored {}".format(filepath), fg="green")
+    click.secho(f"Files restored from {filepath} to {files_dir}", fg="green")
 
 
 def __restore_check(filepath, config):
