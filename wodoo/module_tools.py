@@ -1259,7 +1259,7 @@ class Module(object):
                     for file in files:
                         if file not in yml["assets"][asset_name]:
                             yml["assets"][asset_name].append(file)
-                del file
+                        del file
             manifest.write_text(str(yml))
         else:
             if not doc.xpath("//link| //script"):
