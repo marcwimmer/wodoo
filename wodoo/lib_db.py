@@ -55,7 +55,7 @@ def drop_db(config, dbname):
     conn = config.get_odoo_conn().clone(dbname='postgres')
     _remove_postgres_connections(
         conn, sql_afterwards=f"drop database {dbname};")
-    click.echo("Database {} dropped.".format(dbname))
+    click.echo(f"Database {dbname} dropped.")
 
 @db.command()
 @pass_config
@@ -462,57 +462,125 @@ def excel(config, sql, file, base64):
 @pass_config
 def pghba_conf_wide_open(config, no_scram):
     conn = config.get_odoo_conn().clone(dbname='postgres')
-    setting = _execute_sql(
-        conn,
-        "select setting from pg_settings where name like '%hba%';",
-        fetchone=True)
 
-    if not setting:
-        click.secho("No pghba.conf location found.")
-        return
-    pghba_conf = setting[0]
+    def adapt_pghba_conf():
+        setting = _execute_sql(
+            conn,
+            "select setting from pg_settings where name like '%hba%';",
+            fetchone=True)
 
-    _execute_sql(
-        conn, "drop table if exists hba;"
-    )
-    _execute_sql(
-        conn, "create table hba ( lines text );"
-    )
+        if not setting:
+            click.secho("No pghba.conf location found.")
+            return
+        pghba_conf = setting[0]
 
-    _execute_sql(conn, f"copy hba from '{pghba_conf}';")
-    _execute_sql(
-        conn, (
-            "delete from hba "
-            "where lines like 'host%all%all%all%md5'"
-    ))
-    _execute_sql(
-        conn, (
-            "insert into hba (lines) "
-            "values ('"
-            f"host all all all md5"
-            "');"
-    ))
-    if no_scram:
+        _execute_sql(
+            conn, "drop table if exists hba;"
+        )
+        _execute_sql(
+            conn, "create table hba ( lines text );"
+        )
+
+        _execute_sql(conn, f"copy hba from '{pghba_conf}';")
         _execute_sql(
             conn, (
-                "update hba "
-                " set lines = replace(lines, 'scram-sha-256', 'md5')"
+                "delete from hba "
+                "where lines like 'host%all%all%all%md5'"
         ))
-    _execute_sql(conn, f"copy hba to '{pghba_conf}';")
-    _execute_sql(conn, "select pg_reload_conf();")
-    _execute_sql(conn, "drop table hba")
-    _execute_sql(
-        conn, "create table hba ( lines text );"
-    )
-    _execute_sql(conn, f"copy hba from '{pghba_conf}';")
+        for method in ['trust', 'scram', 'md5']:
+            _execute_sql(
+                conn, (
+                    "delete from hba "
+                    f"where lines like 'host%all%all%all%{method}'"
+            ))
 
-    rows = _execute_sql(conn, (
-        "select * from hba;"
-    ), fetchall=True)
-    for x in rows:
-        if x[0].startswith("#"):
-            continue
-        print(x[0])
+        def trustline():
+            if config.devmode:
+                trustline = "host all all all trust"
+            else:
+                if no_scram:
+                    trustline = "host all all all md5"
+                else:
+                    trustline = "host all all all scram-sha-256"
+            _execute_sql(
+                conn, (
+                    f"insert into hba(lines) values('{trustline}');"
+            ))
+        trustline()
+
+        _execute_sql(conn, f"copy hba to '{pghba_conf}';")
+        _execute_sql(conn, "select pg_reload_conf();")
+        _execute_sql(conn, "drop table hba")
+        _execute_sql(
+            conn, "create table hba ( lines text );"
+        )
+        _execute_sql(conn, f"copy hba from '{pghba_conf}';")
+
+        rows = _execute_sql(conn, (
+            "select * from hba;"
+        ), fetchall=True)
+        for x in rows:
+            if x[0].startswith("#"):
+                continue
+            print(x[0])
+
+    def adapt_postgres_conf():
+        setting = _execute_sql(
+            conn,
+            "select setting from pg_settings where name = 'config_file';",
+            fetchone=True)
+
+        if not setting:
+            click.secho("No postgresql.conf location found.")
+            return
+        conf = setting[0]
+
+        _execute_sql(
+            conn, "drop table if exists hba;"
+        )
+        _execute_sql(
+            conn, "create table hba ( lines text );"
+        )
+
+        _execute_sql(conn, f"copy hba from '{conf}' with (delimiter E'~');")
+        _execute_sql(
+            conn, (
+                "delete from hba "
+                "where lines like '%password_encryption%'"
+        ))
+        _execute_sql(conn, (
+            "update hba set lines = replace(lines, '\t', ' ')"
+        ))
+        if no_scram:
+            _execute_sql(
+                conn, (
+                    "insert into hba (lines) "
+                    "values ('"
+                    f"password_encryption=md5"
+                    "');"
+            ))
+        _execute_sql(conn, f"copy hba to '{conf}';")
+        _execute_sql(conn, "select pg_reload_conf();")
+        _execute_sql(conn, "drop table hba")
+        _execute_sql(
+            conn, "create table hba ( lines text );"
+        )
+        _execute_sql(conn, f"copy hba from '{conf}';")
+
+        rows = _execute_sql(conn, (
+            "select * from hba;"
+        ), fetchall=True)
+        for x in rows:
+            if x[0].startswith("#"):
+                continue
+            print(x[0])
+
+
+    adapt_pghba_conf()
+    adapt_postgres_conf()
+
+
 
 
 Commands.register(reset_db, 'reset-db')
+Commands.register(pghba_conf_wide_open, 'pghba_conf_wide_open')

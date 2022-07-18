@@ -1116,17 +1116,19 @@ def unittest(
 
 @odoo_module.command()
 @click.argument("name", required=True)
+@click.option("-Q", "--quick", is_flag=True)
 @pass_config
 @click.pass_context
-def set_ribbon(ctx, config, name):
-    SQL = """
-        Select state from ir_module_module where name = 'web_environment_ribbon';
-    """
-    res = _execute_sql(config.get_odoo_conn(), SQL, fetchone=True)
-    if not (res and res[0] == "installed"):
-        Commands.invoke(
-            ctx, "update", module=["web_environment_ribbon"], no_dangling_check=True
-        )
+def set_ribbon(ctx, config, name, quick):
+    if not quick:
+        SQL = """
+            Select state from ir_module_module where name = 'web_environment_ribbon';
+        """
+        res = _execute_sql(config.get_odoo_conn(), SQL, fetchone=True)
+        if not (res and res[0] == "installed"):
+            Commands.invoke(
+                ctx, "update", module=["web_environment_ribbon"], no_dangling_check=True
+            )
 
     _execute_sql(
         config.get_odoo_conn(),
@@ -1245,6 +1247,8 @@ def make_dir_hashes(ctx, config, on_need):
     file_dirhashes = Path(customs_dir) / FILE_DIRHASHES
     if on_need and file_dirhashes.exists():
         return
+    
+    subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir)
     hashes = subprocess.check_output(
         ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
     ).strip()

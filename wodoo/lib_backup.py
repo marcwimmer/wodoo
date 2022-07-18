@@ -389,6 +389,8 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webasset
     if config.run_postgres:
         __dc(["up", "-d", "postgres"])
         Commands.invoke(ctx, "wait_for_container_postgres")
+        if config.devmode:
+            Commands.invoke(ctx, "pghba_conf_wide_open")
 
 
 def _add_cronjob_scripts(config):
