@@ -314,6 +314,7 @@ def restore_db(
                     no_dev_scripts=no_dev_scripts,
                     no_remove_webassets=no_remove_webassets,
                 )
+                return
 
     if dump_type.startswith("wodoo_bin"):
         _restore_wodoo_bin(ctx, config, filename_absolute, verify)
