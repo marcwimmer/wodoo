@@ -1,4 +1,5 @@
 from codecs import ignore_errors
+import uuid
 from .tools import abort
 import sys
 import docker
@@ -14,6 +15,7 @@ import inquirer
 import os
 import click
 from pathlib import Path
+from .tools import put_appendix_into_file
 from .tools import _dropdb
 from .tools import remove_webassets
 from .tools import __dc
@@ -45,15 +47,35 @@ def restore(config):
 
 
 @backup.command(name="all")
+@click.argument("filename", required=False)
 @pass_config
 @click.pass_context
-def backup_all(ctx, config):
+def backup_all(ctx, config, filename):
     """
     Runs backup-db and backup-files
     """
     config.force = True
-    ctx.invoke(backup_db)
-    ctx.invoke(backup_files)
+    filename = Path(filename or (config.dbname + ".db_and_files"))
+    if len(filename.parts) == 1:
+        filename = Path(config.dumps_path) / filename
+    with autocleanpaper(Path(config.dumps_path) / str(uuid.uuid4())) as tmppath:
+        filepath_db = ctx.invoke(backup_db, filename=tmppath / "db", dumptype="plain")
+        filepath_files = ctx.invoke(backup_files, filename=tmppath / "files")
+        assert filepath_db.parent == filepath_files.parent
+        with autocleanpaper() as tmpfile:
+            subprocess.check_call(
+                [
+                    "tar",
+                    "cfz",
+                    tmpfile,
+                    "-C",
+                    filepath_db.parent,
+                    filepath_db.name,
+                    filepath_files.name,
+                ]
+            )
+            put_appendix_into_file("dump_all\n", tmpfile, filename)
+    click.secho(f"Created dump-file {filename}", fg="green")
 
 
 @backup.command(name="odoo-db")
@@ -100,9 +122,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         with autocleanpaper() as tempfile_zip:
             _binary_zip(path, tempfile_zip)
 
-            with autocleanpaper() as tempfile:
-                tempfile.write_text(f"WODOO_BIN\n{version}\n")
-                os.system(f"cat {tempfile} {tempfile_zip} > {filename}")
+            put_appendix_into_file(f"WODOO_BIN\n{version}\n", tempfile_zip, filename)
 
         Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
 
@@ -132,6 +152,7 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         res = __dc(cmd)
         if res:
             raise Exception("Backup failed!")
+    return filename
 
 
 @backup.command(name="files")
@@ -152,6 +173,7 @@ def backup_files(config, filename):
     subprocess.check_call(["tar", "cfz", filepath, "."], cwd=files_dir)
     __apply_dump_permissions(filepath)
     click.secho(f"Backup files done to {filepath}", fg="green")
+    return filepath
 
 
 def __get_default_backup_filename(config):
@@ -202,9 +224,10 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
             if count_lineendings == 2:
                 break
     if verify:
-        Commands.invoke(ctx, 'up', daemon=True, machines=['postgres'])
-        postgres_version = content.decode(
-            'utf-8', errors='ignore').split("\n")[1].strip()
+        Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
+        postgres_version = (
+            content.decode("utf-8", errors="ignore").split("\n")[1].strip()
+        )
         conn = config.get_odoo_conn()
         version = _get_postgres_version(conn)
         if version != postgres_version:
@@ -225,27 +248,34 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
     )
     mountpoint = volume[0]["Mountpoint"]
     with autocleanpaper() as scriptfile:
-        scriptfile.write_text((
-            "#!/bin/bash\n"
-            "set -e\n"
-            f"rm -Rf '{mountpoint}'\n"
-            f"mkdir '{mountpoint}'\n"
-            f"cd '{mountpoint}'\n"
-            f"tail '{filepath}' -c +{cutoff + 1} | "
-            f"pigz -dc | tar x\n"
-        ))
+        scriptfile.write_text(
+            (
+                "#!/bin/bash\n"
+                "set -e\n"
+                f"rm -Rf '{mountpoint}'\n"
+                f"mkdir '{mountpoint}'\n"
+                f"cd '{mountpoint}'\n"
+                f"tail '{filepath}' -c +{cutoff + 1} | "
+                f"pigz -dc | tar x\n"
+            )
+        )
         subprocess.check_call(["/bin/bash", scriptfile])
     Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
 
-@restore.command(name='odoo-db')
-@click.argument('filename', required=False, default='')
-@click.option('--latest', default=False, is_flag=True, help="Restore latest dump")
-@click.option('--no-dev-scripts', default=False, is_flag=True)
-@click.option('--no-remove-webassets', default=False, is_flag=True)
-@click.option('--verify', default=False, is_flag=True, help="Wodoo-bin: checks postgres version")
+
+@restore.command(name="odoo-db")
+@click.argument("filename", required=False, default="")
+@click.option("--latest", default=False, is_flag=True, help="Restore latest dump")
+@click.option("--no-dev-scripts", default=False, is_flag=True)
+@click.option("--no-remove-webassets", default=False, is_flag=True)
+@click.option(
+    "--verify", default=False, is_flag=True, help="Wodoo-bin: checks postgres version"
+)
 @pass_config
 @click.pass_context
-def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webassets, verify):
+def restore_db(
+    ctx, config, filename, latest, no_dev_scripts, no_remove_webassets, verify
+):
     if not filename:
         filename = _inquirer_dump_file(
             config, "Choose filename to restore", config.dbname, latest=latest
@@ -272,6 +302,19 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webasset
         dumps_path = Path(filename_absolute).parent
         filename = Path(filename_absolute).name
 
+    if dump_type.startswith("dump_all"):
+        with autocleanpaper() as tmpdir:
+            with _add_cronjob_scripts(config)["postgres"].extract_dumps_all(
+                tmpdir, filename_absolute
+            ) as (dbfile, files_file):
+                ctx.invoke(restore_files, filename=files_file)
+                ctx.invoke(
+                    restore_db,
+                    filename=dbfile,
+                    no_dev_scripts=no_dev_scripts,
+                    no_remove_webassets=no_remove_webassets,
+                )
+
     if dump_type.startswith("wodoo_bin"):
         _restore_wodoo_bin(ctx, config, filename_absolute, verify)
 
@@ -287,7 +330,7 @@ def restore_db(ctx, config, filename, latest, no_dev_scripts, no_remove_webasset
 
             try:
                 Commands.invoke(ctx, "down")
-            except:
+            except Exception as ex:
                 pass
             Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
@@ -426,7 +469,7 @@ def __do_restore_files(config, filepath):
     filepath = Path(filepath)
     if len(filepath.parts) == 1:
         filepath = Path(config.dumps_path) / filepath
-    files_dir = config.dirs["odoo_data_dir"] / 'filestore' / config.dbname
+    files_dir = config.dirs["odoo_data_dir"] / "filestore" / config.dbname
     files_dir.mkdir(exist_ok=True, parents=True)
     subprocess.check_call(
         [
