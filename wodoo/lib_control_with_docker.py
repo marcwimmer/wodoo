@@ -252,7 +252,7 @@ def debug(ctx, config, machine, ports, cmd=None):
     else:
         __dcexec([machine, cmd], interactive=True)
 
-def run(ctx, config, volume, machine, args, **kwparams):
+def run(ctx, config, machine, args, **kwparams):
     """
     extract volume mounts
 

@@ -190,10 +190,10 @@ def debug(ctx, config, machine, ports, command):
 @click.argument('args', nargs=-1)
 @pass_config
 @click.pass_context
-def run(ctx, config, volume, machine, args, **kwparams):
+def run(ctx, config, machine, args, **kwparams):
     if config.use_docker:
         from .lib_control_with_docker import run as lib_run
-    lib_run(ctx, config, volume, machine, args, **kwparams)
+    lib_run(ctx, config, machine, args, **kwparams)
 
 @cli.command()
 @click.argument('machine', required=True)
