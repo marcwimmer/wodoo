@@ -1,4 +1,5 @@
 from codecs import ignore_errors
+import sys
 import uuid
 from .tools import abort
 import sys
@@ -27,6 +28,11 @@ from .tools import _binary_zip
 from .tools import autocleanpaper
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
+
+import inspect
+import os
+from pathlib import Path
+current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
 
 try:
     import tabulate
@@ -132,10 +138,11 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         cmd = [
             "run",
             "--rm",
+            "--entrypoint",
+            "python3 /usr/local/bin/postgres.py",
             "-v",
             f"{filename.parent}:/host/dumps2",
             "cronjobshell",
-            "postgres.py",
             "backup",
             dbname or config.DBNAME,
             config.DB_HOST,
@@ -377,6 +384,8 @@ def restore_db(
                 cmd = [
                     "run",
                     "--rm",
+                    "--entrypoint",
+                    "python3 /usr/local/bin/postgres.py",
                 ]
 
                 parent_path_in_container = "/host/dumps2"
@@ -387,7 +396,6 @@ def restore_db(
 
                 cmd += [
                     "cronjobshell",
-                    "postgres.py",
                     "restore",
                     DBNAME_RESTORING,
                     effective_host_name,
