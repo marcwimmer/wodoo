@@ -1351,7 +1351,7 @@ def list_deps(config, ctx, module):
         _hash = dir_hashes.get(str(relpath))
         if _hash is None:
             _hash = get_directory_hash(path)
-        to_hash += _hash + ","
+        to_hash += f"{path} {_hash},"
 
 
     if config.verbose:
