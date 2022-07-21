@@ -1077,6 +1077,7 @@ def get_directory_hash(path):
         )
         .strip()
         .split(" ")[0]
+        .strip()
     )
     return hex
 
