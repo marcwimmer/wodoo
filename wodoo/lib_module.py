@@ -1345,12 +1345,17 @@ def list_deps(config, ctx, module):
     python_version = config.ODOO_PYTHON_VERSION
     to_hash = str(python_version)
     for path in list(sorted(set(paths))):
+        if config.verbose:
+            click.secho(f"Hashing path: {path}")
         relpath = path.relative_to(customs_dir())
         _hash = dir_hashes.get(str(relpath))
         if _hash is None:
             _hash = get_directory_hash(path)
         to_hash += _hash
 
+
+    if config.verbose:
+        click.secho(f"\n\nTo Hash: {to_hash}\n\n")
     hash = get_hash(to_hash)
     data["hash"] = hash
     part2 = arrow.get() - started
