@@ -217,15 +217,26 @@ def _exists_table(conn, table_name):
     return record[0]
 
 
-def _wait_postgres(config):
+def _wait_postgres(config, timeout=600):
     if config.run_postgres:
         conn = config.get_odoo_conn().clone(dbname="postgres")
         container_ids = (
-            __dc_out(["ps", "-a", "-q", "--filter", "name=postgres"])
-            .decode("utf-8")
+            subprocess.check_output(
+                [
+                    "docker",
+                    "ps",
+                    "-a",
+                    "-q",
+                    "--no-trunc",
+                    "--filter",
+                    f"name=^/{config.PROJECT_NAME}_postgres$",
+                ],
+                encoding="utf8",
+            )
             .strip()
             .splitlines()
         )
+
         client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
@@ -247,30 +258,30 @@ def _wait_postgres(config):
                     "'odoo up -d postgres' first?"
                 )
             )
-            raise Exception("No running container found!")
 
         # _wait_for_port(conn.host, conn.port, timeout=30)  # unix sockets...
-        trycount = 0
-        try:
-            _execute_sql(
-                conn,
-                sql="""
-            SELECT table_schema,table_name
-            FROM information_schema.tables
-            ORDER BY table_schema,table_name
-            LIMIT 1;
-            """,
-            )
-        except Exception as ex:
-            if 'FATAL: the database system is starting up' in str(ex):
-                time.sleep(5)
-            else:
-                if trycount > 20:
-                    raise
-                else:
-                    click.secho("Waiting again for postgres...")
-                    time.sleep(3)
-                    trycount += 1
+        deadline = arrow.get().shift(seconds=timeout)
+        last_ex = None
+        while True:
+            if arrow.get() > deadline:
+                raise Exception(f"Timeout waiting postgres reached: {timeout}seconds")
+            try:
+                _execute_sql(
+                    conn,
+                    sql="""
+                SELECT table_schema,table_name
+                FROM information_schema.tables
+                ORDER BY table_schema,table_name
+                LIMIT 1;
+                """,
+                )
+                break
+
+            except Exception as ex:
+                if str(ex) != str(last_ex):
+                    click.secho(f"Waiting again for postgres. Last error is: {str(ex)}")
+                last_ex = ex
+                time.sleep(1)
 
 
 def _is_container_running(machine_name):
@@ -628,7 +639,10 @@ def __try_to_set_owner(UID, path):
                         except:
                             click.secho(traceback.format_stack())
                             click.secho(
-                                (f"Could not set owner {UID} " f"{GID} on directory {line}")
+                                (
+                                    f"Could not set owner {UID} "
+                                    f"{GID} on directory {line}"
+                                )
                             )
                             sys.exit(-1)
                     except FileNotFoundError:
