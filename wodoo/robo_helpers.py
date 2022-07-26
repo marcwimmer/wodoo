@@ -225,7 +225,7 @@ def _select_robot_filename(file, run_all):
             if "/" in file:
                 match = [x for x in match if x == file]
             if len(match) > 1:
-                click.secho("Not unique: {file}", fg="red")
+                click.secho(f"Not unique: {file}", fg="red")
                 sys.exit(-1)
 
         if match:
