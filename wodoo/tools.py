@@ -261,13 +261,16 @@ def _wait_postgres(config):
             LIMIT 1;
             """,
             )
-        except Exception:
-            if trycount > 20:
-                raise
+        except Exception as ex:
+            if 'FATAL: the database system is starting up' in str(ex):
+                time.sleep(5)
             else:
-                click.secho("Waiting again for postgres...")
-                time.sleep(3)
-                trycount += 1
+                if trycount > 20:
+                    raise
+                else:
+                    click.secho("Waiting again for postgres...")
+                    time.sleep(3)
+                    trycount += 1
 
 
 def _is_container_running(machine_name):
