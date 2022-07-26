@@ -618,15 +618,18 @@ def __try_to_set_owner(UID, path):
                 for line in res:
                     if not line:
                         continue
-                    GID = os.stat(line).st_gid
                     try:
-                        os.chown(line, UID, GID)
-                    except:
-                        click.secho(traceback.format_stack())
-                        click.secho(
-                            (f"Could not set owner {UID} " f"{GID} on directory {line}")
-                        )
-                        sys.exit(-1)
+                        GID = os.stat(line).st_gid
+                        try:
+                            os.chown(line, UID, GID)
+                        except:
+                            click.secho(traceback.format_stack())
+                            click.secho(
+                                (f"Could not set owner {UID} " f"{GID} on directory {line}")
+                            )
+                            sys.exit(-1)
+                    except FileNotFoundError:
+                        continue
 
         finally:
             if filename.exists():
