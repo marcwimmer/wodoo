@@ -281,6 +281,7 @@ def _wait_postgres(config, timeout=600):
                     click.secho(f"Waiting again for postgres. Last error is: {str(ex)}")
                 last_ex = ex
                 time.sleep(1)
+        click.secho("Postgres now available.", fg='green')
 
 
 def _is_container_running(machine_name):
