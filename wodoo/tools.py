@@ -250,16 +250,15 @@ def _wait_postgres(config, timeout=600):
             postgres_containers += [container]
 
         # if running containers wait for health state:
-        # if not postgres_containers:
-        #     abort(
-        #         (
-        #             "No running postgres container found. "
-        #             "Perhaps you have to start it with "
-        #             "'odoo up -d postgres' first?"
-        #         )
-        #     )
+        if not postgres_containers:
+            abort(
+                (
+                    "No running postgres container found. "
+                    "Perhaps you have to start it with "
+                    "'odoo up -d postgres' first?"
+                )
+            )
 
-        # _wait_for_port(conn.host, conn.port, timeout=30)  # unix sockets...
         deadline = arrow.get().shift(seconds=timeout)
         last_ex = None
         while True:
