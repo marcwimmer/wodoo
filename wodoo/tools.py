@@ -249,20 +249,20 @@ def _wait_postgres(config, timeout=600):
                 continue
             postgres_containers += [container]
 
-        # if running containers wait for health state:
-        if not postgres_containers:
-            abort(
-                (
-                    "No running postgres container found. "
-                    "Perhaps you have to start it with "
-                    "'odoo up -d postgres' first?"
-                )
-            )
-
         deadline = arrow.get().shift(seconds=timeout)
         last_ex = None
         while True:
             if arrow.get() > deadline:
+                # if running containers wait for health state:
+                if not postgres_containers:
+                    abort(
+                        (
+                            "No running postgres container found. "
+                            "Perhaps you have to start it with "
+                            "'odoo up -d postgres' first?"
+                        )
+                    )
+
                 raise Exception(f"Timeout waiting postgres reached: {timeout}seconds")
             try:
                 _execute_sql(
@@ -282,6 +282,7 @@ def _wait_postgres(config, timeout=600):
                 last_ex = ex
                 time.sleep(1)
         click.secho("Postgres now available.", fg='green')
+
 
 
 def _is_container_running(machine_name):
