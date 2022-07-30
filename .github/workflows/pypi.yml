@@ -1,0 +1,76 @@
+name: Test and Upload Pypi
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+
+    - name: setup merge
+      run: |
+        set -x
+        git config --global user.email 'github-action@github.com'
+        git config --global user.name 'github-action@github.com'
+        git fetch
+
+    - name: increment version
+      run: |
+        python3 << EOF
+        import re
+        from pathlib import Path
+        file = Path('setup.cfg')
+        lines = file.read_text()
+        find = re.findall(r'version = (.*)', lines)
+        old_version_string = find[-1]
+        old_version = f'version = {old_version_string}'
+        version = list(map(int, find[-1].split('.')))
+        version[-1] += 1
+        version_string = '.'.join(map(str, version))
+        new_version = 'version = ' + version_string
+        lines = lines.replace(old_version, new_version)
+        file.write_text(lines)
+        Path(".version").write_text(version_string)
+        EOF
+
+    - name: commit and tag new version
+      run: |
+        set -x
+        git fetch --tags
+
+        COMMIT_MSG='autocommit by github action'
+        if [ $(git log -n1 | grep -q "$COMMIT_MSG") ]; then
+          echo "No new commit"
+          echo "DO_PYPI=0" >> "$GITHUB_ENV"
+        else
+          git add .
+          git commit -am "$COMMIT_MSG"
+          VERSION=$(cat .version)
+          git tag ${VERSION}
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git push origin --tags
+          git push
+          python3 setup.py sdist
+          echo "DO_PYPI=1" >> "$GITHUB_ENV"
+        fi
+
+    - name: Publish to PyPi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+      if: env.DO_PYPI == '1'
