@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# Note: To use the 'upload' functionality of this file, you must:
-#   $ pipenv install twine --dev
-
-import re
-import json
 import io
 import os
 import sys
@@ -16,7 +10,6 @@ from setuptools.config import read_configuration
 
 from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
-import subprocess
 
 import inspect
 import os
@@ -53,71 +46,6 @@ else:
     about["__version__"] = metadata["version"]
 
 
-class UploadCommand(Command):
-    """Support setup.py upload."""
-
-    description = "Build and publish the package."
-    user_options = []
-
-    @staticmethod
-    def status(s):
-        """Prints things in bold."""
-        print("\033[1m{0}\033[0m".format(s))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def clear_builds(self):
-        for path in ["dist", "build", NAME.replace("-", "_") + ".egg-info"]:
-            try:
-                self.status(f"Removing previous builds from {path}")
-                rmtree(os.path.join(here, path))
-            except OSError:
-                pass
-
-    def inc_version(self):
-        file = Path("setup.cfg")
-        lines = file.read_text()
-        find = re.findall(r"version = (.*)", lines)
-        old_version = "version = " + find[-1]
-        version = list(map(int, find[-1].split(".")))
-        version[-1] += 1
-        version_string = ".".join(map(str, version))
-        new_version = "version = " + version_string
-        lines = lines.replace(old_version, new_version)
-        file.write_text(lines)
-        return version_string
-
-    def run(self):
-        self.clear_builds()
-
-        # increase version
-        about["__version__"] = self.inc_version()
-
-        self.status("Building Source and Wheel (universal) distribution…")
-        subprocess.check_call([sys.executable, "setup.py", "sdist"])
-        subprocess.check_call(["git", "add", "."])
-        subprocess.check_call(
-            ["git", "commit", "-am", f"upload {about['__version__']}"]
-        )
-
-        self.status("Uploading the package to PyPI via Twine…")
-        env = json.loads(Path(os.path.expanduser("~/.pypi_access")).read_text())
-        subprocess.check_call(["/usr/local/bin/twine", "upload", "dist/*"], env=env)
-
-        self.status("Pushing git tags…")
-        subprocess.check_call(["git", "tag", f"v{about['__version__']}"])
-        subprocess.check_call(["git", "push", "--tags"])
-        subprocess.check_call(["git", "push"])
-
-        self.clear_builds()
-
-        sys.exit()
-
-
 def get_data_files():
     data_files = []
     for i, file in enumerate((current_dir / metadata["name"]).rglob("*")):
@@ -145,6 +73,5 @@ setup(
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
     include_package_data=True,
     cmdclass={
-        "upload": UploadCommand,
     },
 )
