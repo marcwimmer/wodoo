@@ -415,7 +415,7 @@ def restore_db(
                     Path(config.dumps_path) / filename,
                 )
 
-            from .lib_db import __turn_into_devdb
+            from .lib_turnintodev import __turn_into_devdb
 
             if config.devmode and not no_dev_scripts:
                 __turn_into_devdb(config, conn)
