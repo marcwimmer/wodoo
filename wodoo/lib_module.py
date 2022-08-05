@@ -1235,9 +1235,9 @@ def list_changed_files(ctx, config, start):
 
 
 @odoo_module.command()
-@click.pass_context
 @click.option("--on-need", is_flag=True)
 @pass_config
+@click.pass_context
 def make_dir_hashes(ctx, config, on_need):
     from tqdm import tqdm
     from .odoo_config import customs_dir
@@ -1289,9 +1289,9 @@ def make_dir_hashes(ctx, config, on_need):
 
 @odoo_module.command()
 @click.argument("module")
-@click.pass_context
 @pass_config
-def list_deps(config, ctx, module):
+@click.pass_context
+def list_deps(ctx, config, module):
     import arrow
 
     started = arrow.get()
