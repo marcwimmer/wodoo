@@ -190,3 +190,29 @@ def daddy_cleanup(config, path, dry_run, dont_touch, recursive):
         size = print_files(deletion_candidates)
         print("Going to delete ", humanize.naturalsize(size))
         rm(deletion_candidates, dry_run=dry_run)
+
+
+@click.argument("path", required=True, nargs=-1)
+@click.option("-n", "--dry-run",
+    is_flag=True,
+    help="Do not touch the last X days from today. Defaults to 1=yesterday")
+@click.option("-N", "--dont-touch",
+    default=1,
+    help="Do not touch the last X days from today. Defaults to 1=yesterday")
+@pass_config
+def keep_last_file_of_day(config, path, dry_run):
+    raise Exception("Test!")
+    if config.verbose:
+        log.setLevel(logging.DEBUG)
+    for path in path:
+        files = []
+        for file in Path(os.getcwd()).glob(path)
+            mtime = arrow.get(path.stat().st_mtime)
+            files.append((mtime, file))
+        files = list(sorted(files, key=lambda x: x[0], reverse=True))
+        for file in files[1:]:
+            if dry_run:
+                click.secho(f"Would delete: {file}")
+            else:
+                file.unlink()
+                click.secho(f"Deleted: {file}")
