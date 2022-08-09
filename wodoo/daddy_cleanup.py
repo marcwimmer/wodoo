@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 import os
+from glob import glob
 import arrow
 from pathlib import Path
 import calendar
 import humanize
-import glob
 import argparse
 import pathlib
 import logging
 import datetime as dt
 import click
 from . import cli, pass_config, Commands
+from .tools import abort
 
 DTF = "%Y-%m-%d %H:%M:%S"
 
@@ -18,20 +19,29 @@ DTF = "%Y-%m-%d %H:%M:%S"
 log = logging.getLogger()
 
 
-def genPathInfos(arg_paths, recursive):
-    for arg_path in arg_paths:
-        po = pathlib.Path(arg_path)
-        log.debug(po)
-        glob = "*" if not recursive else "**/*"
-        for path in arg_path.glob(glob):
-            if not path.name:
-                continue
-            mtime = path.stat().st_mtime
+def _get_files_if_dir(path):
+    for path in glob(str(path)):
+        path = Path(path)
+        if not path.name:
+            continue
+        if path.is_dir():
+            for file in path.glob("*"):
+                if file.is_file():
+                    yield next(_get_files_if_dir(file))
+        elif path.is_file():
+            mtime = arrow.get(path.stat().st_mtime)
             is_dir = path.is_dir()
             is_file = path.is_file()
             log.debug(f"{path}: mtime {mtime} dir? {is_dir} file? {is_file}")
-            if is_file:
-                yield (path, arrow.get(mtime))
+            yield (path, mtime)
+
+
+def genPathInfos(arg_paths):
+
+    for arg_path in arg_paths:
+        po = pathlib.Path(arg_path)
+        log.debug(po)
+        yield from _get_files_if_dir(arg_path)
 
 
 def rm(path_list, dry_run):
@@ -112,7 +122,7 @@ def get_bins():
     yield from get_years()
 
 
-def get_to_delete_files(path_list, days_notouch, recursive):
+def get_to_delete_files(path_list, days_notouch):
     now = dt.datetime.utcnow()
     log.debug(f"Now: {now}")
     bins = {}
@@ -121,7 +131,7 @@ def get_to_delete_files(path_list, days_notouch, recursive):
 
     keep_safe = set()
     to_delete = []
-    for path, mt in genPathInfos(path_list, recursive):
+    for path, mt in genPathInfos(path_list):
         if (arrow.utcnow() - mt).days <= days_notouch:
             print("Ignoring", path)
             keep_safe.add(path)
@@ -159,60 +169,79 @@ def print_files(files):
     for path in list(set(files)):
         size += path.stat().st_size
         date = arrow.get(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-        click.secho(
-            f"{path}: {date}")
+        click.secho(f"{path}: {date}")
     return size
 
 
-@cli.command(help=(
-    "Deletes file matching the given glob in PATH and keeps "
-    "youngest files of last weeks, months, quarters and years. "
-    "By providing --doNt-touch files can be provided, that are "
-    "never touched. "
-))
+@cli.command(
+    help=(
+        "Deletes file matching the given glob in PATH and keeps "
+        "youngest files of last weeks, months, quarters and years. "
+        "By providing --doNt-touch files can be provided, that are "
+        "never touched. "
+    )
+)
 @click.argument("path", required=True, nargs=-1)
-@click.option("-n", "--dry-run",
+@click.option(
+    "-n",
+    "--dry-run",
     is_flag=True,
-    help="Do not touch the last X days from today. Defaults to 1=yesterday")
-@click.option("-N", "--dont-touch",
+    help="Do not touch the last X days from today. Defaults to 1=yesterday",
+)
+@click.option(
+    "-N",
+    "--dont-touch",
     default=1,
-    help="Do not touch the last X days from today. Defaults to 1=yesterday")
-@click.option("-r", "--recursive", help="Search recursive", is_flag=True)
+    help="Do not touch the last X days from today. Defaults to 1=yesterday",
+)
 @pass_config
-def daddy_cleanup(config, path, dry_run, dont_touch, recursive):
+def daddy_cleanup(config, path, dry_run, dont_touch):
     if config.verbose:
         log.setLevel(logging.DEBUG)
     path = [Path(os.getcwd()) / x for x in path]
-    deletion_candidates = list(
-        sorted(set(get_to_delete_files(path, dont_touch, recursive)))
-    )
+    deletion_candidates = list(sorted(set(get_to_delete_files(path, dont_touch))))
     if deletion_candidates:
         size = print_files(deletion_candidates)
         print("Going to delete ", humanize.naturalsize(size))
         rm(deletion_candidates, dry_run=dry_run)
 
 
+@cli.command()
 @click.argument("path", required=True, nargs=-1)
-@click.option("-n", "--dry-run",
+@click.option(
+    "-n",
+    "--dry-run",
     is_flag=True,
-    help="Do not touch the last X days from today. Defaults to 1=yesterday")
-@click.option("-N", "--dont-touch",
+    help="Do not touch the last X days from today. Defaults to 1=yesterday",
+)
+@click.option(
+    "-N",
+    "--dont-touch",
     default=1,
-    help="Do not touch the last X days from today. Defaults to 1=yesterday")
+    help="Do not touch the last X days from today. Defaults to 1=yesterday",
+)
 @pass_config
-def keep_last_file_of_day(config, path, dry_run):
-    raise Exception("Test!")
+def keep_last_file_of_day(config, path, dry_run, dont_touch):
     if config.verbose:
         log.setLevel(logging.DEBUG)
+    files = []
     for path in path:
-        files = []
-        for file in Path(os.getcwd()).glob(path):
-            mtime = arrow.get(path.stat().st_mtime)
-            files.append((mtime, file))
-        files = list(sorted(files, key=lambda x: x[0], reverse=True))
-        for file in files[1:]:
-            if dry_run:
-                click.secho(f"Would delete: {file}")
-            else:
-                file.unlink()
-                click.secho(f"Deleted: {file}")
+        for file, mtime in _get_files_if_dir(path):
+            if (arrow.utcnow() - mtime).days <= dont_touch:
+                continue
+            files.append((file, mtime))
+    if not files:
+        abort("No files matching")
+    size = 0
+    files = sorted(files, key=lambda x: x[1], reverse=False)
+    for file, mtime in files[:-1]:
+        size += file.stat().st_size
+        if dry_run:
+            click.secho(f"Would delete: {file}", fg="yellow")
+        else:
+            file.unlink()
+            click.secho(f"Deleted: {file}", fg="red")
+    click.secho(f"Keeping: {files[-1][0]}", fg="green")
+    click.secho(
+        f"{'Theoretically' if dry_run else ''} Deleted size: {humanize.naturalsize(size)}"
+    )
