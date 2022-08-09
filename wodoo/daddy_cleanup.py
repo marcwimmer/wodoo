@@ -206,7 +206,7 @@ def keep_last_file_of_day(config, path, dry_run):
         log.setLevel(logging.DEBUG)
     for path in path:
         files = []
-        for file in Path(os.getcwd()).glob(path)
+        for file in Path(os.getcwd()).glob(path):
             mtime = arrow.get(path.stat().st_mtime)
             files.append((mtime, file))
         files = list(sorted(files, key=lambda x: x[0], reverse=True))
