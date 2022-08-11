@@ -167,3 +167,5 @@ odoo pgactivity
 | RUN_PROXY=1| If the built-in nodejs proxy is enabled |
 | RUN_PROXY_PUBLISHED=0/1| If the proxy is reachable from outside the docker network example from 127.0.0.1:8069|
 | PROXY_PORT| The port on which you can access with plain http the odoo|
+| ODOO_IMAGES_BRANCH| The branch used for ~/.odoo/images|
+| ODOO_INSTALL_LIBPOSTAL| If set, then the libpostal lib is installed|
