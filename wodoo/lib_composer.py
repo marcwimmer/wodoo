@@ -279,6 +279,12 @@ def _download_images(config, images_url):
         ],
         cwd=config.dirs["images"],
     )
+    current_branch = subprocess.check_output(
+        ["git", "branch", "--show-current"], encoding="utf8", cwd=config.dirs['images']
+    ).strip()
+    if config.ODOO_IMAGES_BRANCH and config.ODOO_IMAGES_BRANCH != current_branch:
+        subprocess.check_call(["git", "checkout", config.ODOO_IMAGES_BRANCH])
+
     if subprocess.check_output(
         ["git", "remote"], encoding="utf8", cwd=config.dirs["images"]
     ).strip():
