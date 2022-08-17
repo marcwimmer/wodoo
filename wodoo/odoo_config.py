@@ -229,7 +229,7 @@ class MANIFEST_CLASS(object):
         s = json.dumps(d, indent=4)
         tfile = Path(tempfile.mktemp(suffix=".MANIFEST"))
         tfile.write_text(s)
-        shutil.move(s, MANIFEST_FILE())
+        shutil.move(tfile, MANIFEST_FILE())
 
     def rewrite(self):
         self._update(self._get_data())
