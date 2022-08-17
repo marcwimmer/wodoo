@@ -281,8 +281,7 @@ def _wait_postgres(config, timeout=600):
                     click.secho(f"Waiting again for postgres. Last error is: {str(ex)}")
                 last_ex = ex
                 time.sleep(1)
-        click.secho("Postgres now available.", fg='green')
-
+        click.secho("Postgres now available.", fg="green")
 
 
 def _is_container_running(machine_name):
@@ -1145,3 +1144,12 @@ def put_appendix_into_file(appendix, input_filepath, output_filepath):
     with autocleanpaper() as tempfile:
         tempfile.write_text(f"{appendix}")
         os.system(f"cat {tempfile} {input_filepath} > {output_filepath}")
+
+
+def _get_version():
+    import inspect
+    import os
+    from pathlib import Path
+    current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+    version = (current_dir / 'version.txt').read_text().strip()
+    return version

@@ -45,7 +45,7 @@ jobs:
         new_version = 'version = ' + version_string
         lines = lines.replace(old_version, new_version)
         file.write_text(lines)
-        Path(".version").write_text(version_string)
+        Path("wodoo/version.txt").write_text(version_string)
         EOF
 
     - name: commit and tag new version
@@ -60,7 +60,7 @@ jobs:
         else
           git add .
           git commit -am "$COMMIT_MSG"
-          VERSION=$(cat .version)
+          VERSION=$(cat wodoo/version.txt)
           git tag ${VERSION}
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
           git push origin --tags

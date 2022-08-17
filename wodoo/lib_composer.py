@@ -28,6 +28,7 @@ from .tools import __try_to_set_owner
 from .tools import __empty_dir
 from .tools import __remove_tree
 from .tools import abort
+from .tools import _get_version
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
@@ -174,6 +175,7 @@ def internal_reload(
         "demo": demo,
         "LOCAL_SETTINGS": "1" if local else "0",
         "CUSTOMS_DIR": config.WORKING_DIR,
+        "WODOO_VERSION": _get_version(),
     }
     if devmode:
         defaults["DEVMODE"] = 1

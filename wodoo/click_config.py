@@ -16,7 +16,7 @@ class Config(object):
         def __exit__(self, type, value, traceback):
             self.config.force = self.force
 
-    def __init__(self, quiet=False, project_name=None, force=False, verbose=False):
+    def __init__(self, quiet=False, project_name=None, force=False, verbose=False, version=None):
         from .consts import YAML_VERSION
         from . import odoo_config  # NOQA
 
