@@ -1,4 +1,7 @@
 {
     "python.pythonPath": "/usr/bin/python3",
-    "restructuredtext.languageServer.disabled": true
+    "restructuredtext.languageServer.disabled": true,
+    "workbench.colorCustomizations": {
+        "titleBar.activeBackground": "#e04ac5"
+    }
 }
