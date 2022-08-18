@@ -116,6 +116,7 @@ def _get_snapshots(path):
                 subprocess.check_output(
                     ["sudo", zfs, "list", "-t", "snapshot", str(path)],
                     encoding="utf8",
+                    stderr=subprocess.DEVNULL,  # ignore output of 'no datasets available'
                 )
                 .strip()
                 .splitlines()[1:]
@@ -228,15 +229,13 @@ def restore(config, name):
         subprocess.check_call(["sudo", zfs, "rollback", snapshot["fullpath"]])
     else:
         next_path = _get_next_snapshotpath(config)
-        snapshot_path = snapshot["fullpath"]
-        volume_path = snapshot_path.split("@")[0]
         poolname = _get_poolname_of_path(snapshot["path"])
         full_next_path = poolname + str(next_path)
         subprocess.check_call(
-            ["sudo", zfs, "rename", volume_path, full_next_path]
+            ["sudo", zfs, "rename", poolname + str(path), full_next_path]
         )
         subprocess.check_call(
-            ["sudo", zfs, "clone", full_next_path + "@" + name, volume_path]
+            ["sudo", zfs, "clone", snapshot['fullpath'], poolname + str(path)]
         )
     __dc(["rm", "-f"] + ["postgres"])
     __dc(["up", "-d"] + ["postgres"])
