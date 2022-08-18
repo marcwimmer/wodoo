@@ -11,17 +11,22 @@ from .tools import __hash_odoo_password
 from .tools import _remove_postgres_connections, _execute_sql
 from .tools import get_filesystem_of_folder
 
+def _decide_snapshots_possible(config):
+    if not config.use_docker:
+        return False
+    if ttype := get_filesystem_of_folder("/var/lib/docker") in ['zfs', 'btrfs']:
+        return ttype
+
 @cli.group(cls=AliasedGroup)
 @pass_config
 def snapshot(config):
-    config.__choose_snapshot = __choose_snapshot
-    if config.use_docker:
-        if get_filesystem_of_folder("/var/lib/docker") == "zfs":
-            from . import lib_db_snapshots_docker_zfs as snapshot_manager
-        else:
-            from . import lib_db_snapshots_docker_btrfs as snapshot_manager
+    if ttype := _decide_snapshots_possible(config) == 'zfs':
+        from . import lib_db_snapshots_docker_zfs as snapshot_manager
+    elif ttype == 'btrfs':
+        from . import lib_db_snapshots_docker_btrfs as snapshot_manager
     else:
         from . import lib_db_snapshots_plain_postgres as snapshot_manager
+    config.__choose_snapshot = __choose_snapshot
     config.snapshot_manager = snapshot_manager
 
 def __choose_snapshot(config, take=False):
@@ -107,3 +112,20 @@ def snapshot_clear_all(ctx, config):
 def snapshot_purge_inactive_subvolumes(ctx, config):
     config.snapshot_manager.assert_environment(config)
     config.snapshot_manager.purge_inactive(config)
+
+
+@snapshot.command()
+@pass_config
+@click.pass_context
+def remove_postgres_volume(context, config):
+    """
+    Called when odoo down -v or odoo down --postgres-volume is called
+    """
+    if not config.RUN_POSTGRES:
+        return
+    if _decide_snapshots_possible(config) != 'zfs':
+        return
+    config.snapshot_manager.remove_volume(
+
+
+Commands.register(remove_postgres_volume)
