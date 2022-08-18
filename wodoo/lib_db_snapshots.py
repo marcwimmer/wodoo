@@ -11,23 +11,30 @@ from .tools import __hash_odoo_password
 from .tools import _remove_postgres_connections, _execute_sql
 from .tools import get_filesystem_of_folder
 
+
 def _decide_snapshots_possible(config):
     if not config.use_docker:
         return False
-    if ttype := get_filesystem_of_folder("/var/lib/docker") in ['zfs', 'btrfs']:
-        return ttype
+    if ttype := get_filesystem_of_folder("/var/lib/docker"):
+        if ttype in ["zfs", "btrfs"]:
+            return ttype
 
-@cli.group(cls=AliasedGroup)
-@pass_config
-def snapshot(config):
-    if ttype := _decide_snapshots_possible(config) == 'zfs':
+def _setup_manager(config):
+    if ttype := _decide_snapshots_possible(config) == "zfs":
         from . import lib_db_snapshots_docker_zfs as snapshot_manager
-    elif ttype == 'btrfs':
+    elif ttype == "btrfs":
         from . import lib_db_snapshots_docker_btrfs as snapshot_manager
     else:
         from . import lib_db_snapshots_plain_postgres as snapshot_manager
     config.__choose_snapshot = __choose_snapshot
     config.snapshot_manager = snapshot_manager
+
+
+@cli.group(cls=AliasedGroup)
+@pass_config
+def snapshot(config):
+    _setup_manager(config)
+
 
 def __choose_snapshot(config, take=False):
     snapshots = list(config.snapshot_manager.__get_snapshots(config))
@@ -36,13 +43,13 @@ def __choose_snapshot(config, take=False):
     if take:
         return take
 
-    answer = inquirer.prompt([inquirer.List('snapshot', "", choices=snapshots_choices)])
+    answer = inquirer.prompt([inquirer.List("snapshot", "", choices=snapshots_choices)])
     if not answer:
         sys.exit(0)
-    snapshot = answer['snapshot']
+    snapshot = answer["snapshot"]
     snapshot = snapshots[snapshots_choices.index(snapshot)]
 
-    return snapshot['name']
+    return snapshot["name"]
 
 
 @snapshot.command(name="list")
@@ -51,12 +58,13 @@ def do_list(config):
     config.snapshot_manager.assert_environment(config)
     snapshots = config.snapshot_manager.__get_snapshots(config)
     from tabulate import tabulate
-    rows = [(x['name'], x['date'], x['path']) for x in snapshots]
+
+    rows = [(x["name"], x["date"], x["path"]) for x in snapshots]
     click.echo(tabulate(rows, ["Name", "Date", "Path"]))
 
 
 @snapshot.command(name="save")
-@click.argument('name', required=False)
+@click.argument("name", required=False)
 @pass_config
 def snapshot_make(config, name):
 
@@ -67,10 +75,11 @@ def snapshot_make(config, name):
 
     # remove existing snaps
     snapshot = config.snapshot_manager.make_snapshot(config, name)
-    click.secho("Made snapshot: {}".format(snapshot), fg='green')
+    click.secho("Made snapshot: {}".format(snapshot), fg="green")
+
 
 @snapshot.command(name="restore")
-@click.argument('name', required=False)
+@click.argument("name", required=False)
 @pass_config
 @click.pass_context
 def snapshot_restore(ctx, config, name):
@@ -80,8 +89,9 @@ def snapshot_restore(ctx, config, name):
         return
     config.snapshot_manager.restore(config, name)
 
+
 @snapshot.command(name="remove")
-@click.argument('name', required=False)
+@click.argument("name", required=False)
 @pass_config
 @click.pass_context
 def snapshot_remove(ctx, config, name):
@@ -91,6 +101,7 @@ def snapshot_remove(ctx, config, name):
     if not snapshot:
         return
     config.snapshot_manager.remove(config, snapshot)
+
 
 @snapshot.command(name="clear", help="Removes all snapshots")
 @pass_config
@@ -104,9 +115,14 @@ def snapshot_clear_all(ctx, config):
             config.snapshot_manager.remove(config, snap)
     ctx.invoke(do_list)
 
-@snapshot.command(name="purge-inactive-subvolumes", help=(
-    "Compares subvolumes to docker volumes. If the "
-    "volume is not used anymore, then its subvolumes are cleared."))
+
+@snapshot.command(
+    name="purge-inactive-subvolumes",
+    help=(
+        "Compares subvolumes to docker volumes. If the "
+        "volume is not used anymore, then its subvolumes are cleared."
+    ),
+)
 @pass_config
 @click.pass_context
 def snapshot_purge_inactive_subvolumes(ctx, config):
@@ -121,11 +137,12 @@ def remove_postgres_volume(context, config):
     """
     Called when odoo down -v or odoo down --postgres-volume is called
     """
+    _setup_manager(config)
     if not config.RUN_POSTGRES:
         return
-    if _decide_snapshots_possible(config) != 'zfs':
+    if _decide_snapshots_possible(config) != "zfs":
         return
-    config.snapshot_manager.remove_volume(
+    config.snapshot_manager.remove_volume(config)
 
 
 Commands.register(remove_postgres_volume)

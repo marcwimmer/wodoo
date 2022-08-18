@@ -114,13 +114,12 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
     if config.use_docker:
         from .lib_control_with_docker import down as lib_down
 
-    from .lib_db_snapshots import _on_down_postgres_volume
     if postgres_volume or volumes:
         if postgres_volume:
             if not config.force:
                 abort("Please use force when call with postgres volume")
-        ctx.invoke(context, 'remove_postgres_volume')
-        _on_down_postgres_volume(ctx, config)
+        lib_down(ctx, config, machines, volumes=False, remove_orphans=False)
+        Commands.invoke(ctx, 'remove_postgres_volume')
 
     lib_down(ctx, config, machines, volumes, remove_orphans)
 

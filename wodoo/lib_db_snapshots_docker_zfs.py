@@ -160,7 +160,7 @@ def _turn_into_subvolume(path):
             assert str(path).startswith("/")
             subprocess.check_call(["sudo", "mkdir", path])
             fullpath = ex.poolname + str(path)
-            subprocess.check_output(["sudo", zfs, "create", "-p", fullpath])
+            subprocess.check_output(["sudo", zfs, "create", fullpath])
             click.secho(
                 f"Writing back the files to original position: from {filename}/ to {path}/"
             )
@@ -258,7 +258,9 @@ def remove(config, snapshot):
 def remove_volume(config):
     zfs = search_env_path("zfs")
     volume_path = _get_path(config)
+    pool_name = _get_poolname_of_path(volume_path)
     for path in _get_possible_snapshot_paths(volume_path):
         if not path.exists():
             continue
-        subprocess.check_call(["sudo", zfs, "destroy", "-R", path])
+        subprocess.check_call(["sudo", zfs, "destroy", "-R", pool_name + str(path)])
+        click.secho(f"Removed: {path}", fg='yellow')
