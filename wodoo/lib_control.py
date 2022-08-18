@@ -113,13 +113,17 @@ def up(ctx, config, machines, daemon):
 def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
     if config.use_docker:
         from .lib_control_with_docker import down as lib_down
+    from .lib_db_snapshots_docker_zfs import NotZFS
 
     if postgres_volume or volumes:
         if postgres_volume:
             if not config.force:
                 abort("Please use force when call with postgres volume")
         lib_down(ctx, config, machines, volumes=False, remove_orphans=False)
-        Commands.invoke(ctx, 'remove_postgres_volume')
+        try:
+            Commands.invoke(ctx, 'remove_postgres_volume')
+        except NotZFS:
+            pass
 
     lib_down(ctx, config, machines, volumes, remove_orphans)
 
