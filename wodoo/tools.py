@@ -1150,6 +1150,17 @@ def _get_version():
     import inspect
     import os
     from pathlib import Path
-    current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
-    version = (current_dir / 'version.txt').read_text().strip()
+
+    current_dir = Path(
+        os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    )
+    version = (current_dir / "version.txt").read_text().strip()
     return version
+
+
+def get_filesystem_of_folder(path):
+    lines = subprocess.check_output(
+        ["/usr/bin/df", "-T", path], encoding="utf8"
+    ).strip().splitlines()
+    fstype = lines[1].split(" ")[1]
+    return fstype

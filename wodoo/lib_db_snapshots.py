@@ -9,13 +9,17 @@ from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from .tools import _remove_postgres_connections, _execute_sql
+from .tools import get_filesystem_of_folder
 
 @cli.group(cls=AliasedGroup)
 @pass_config
 def snapshot(config):
     config.__choose_snapshot = __choose_snapshot
     if config.use_docker:
-        from . import lib_db_snapshots_docker_btrfs as snapshot_manager
+        if get_filesystem_of_folder("/var/lib/docker") == "zfs":
+            from . import lib_db_snapshots_docker_zfs as snapshot_manager
+        else:
+            from . import lib_db_snapshots_docker_btrfs as snapshot_manager
     else:
         from . import lib_db_snapshots_plain_postgres as snapshot_manager
     config.snapshot_manager = snapshot_manager
