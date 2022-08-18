@@ -56,6 +56,10 @@ def _get_volume_size(volume):
     except Exception:
         return 'n/a'
 
+def _start_postgres_before(config):
+    __dc(['up', "-d", "postgres"])
+    _wait_postgres(config)
+
 def dev(ctx, config, build, kill):
     """
     starts developing in the odoo container
@@ -71,6 +75,7 @@ def dev(ctx, config, build, kill):
         click.echo("Killing all docker containers")
         do_kill(ctx, config, machines=[], brutal=True)
         rm(ctx, config, machines=[])
+    _start_postgres_before(config)
     __dc(['up', '-d'])
     Commands.invoke(ctx, 'kill', machines=["odoo"])
     ip = _get_host_ip()
@@ -152,6 +157,9 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
         options += ['-d']
     if remove_orphans:
         options += ['--remove-orphans']
+
+    if not machines and config.run_postgres and daemon and config.USE_DOCKER:
+        _start_postgres_before(config)
     __dc(['up'] + options + machines)
 
 def down(ctx, config, machines=[], volumes=False, remove_orphans=True):
