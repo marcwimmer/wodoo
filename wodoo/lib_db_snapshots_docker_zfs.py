@@ -48,6 +48,25 @@ def _get_path(config):
     return path
 
 
+def _get_next_snapshotpath(config):
+    counter = 0
+    while True:
+        path = _get_path(config)
+        path = Path(str(path) + f".{counter}")
+        if not path.exists():
+            break
+        counter += 1
+    return path
+
+
+def _get_possible_snapshot_paths(path):
+    """
+    :param path: root path
+    """
+    yield Path(path)
+    yield from Path(path).parent.glob(f"{path.name}.*")
+
+
 def _get_poolname_of_path(path):
     """
     output of "df -T <path>"
@@ -61,7 +80,7 @@ def _get_poolname_of_path(path):
     while str(path).endswith("/"):
         path = Path(str(path[:-1]))
     dfout = subprocess.check_output(["df", "-T", path], encoding="utf8").splitlines()[1]
-    fullpath, fstype, f1, f2, f3, f4, df_path = unify(dfout.strip()).split(" ")
+    fullpath, fstype, _, _, _, _, df_path = unify(dfout.strip()).split(" ")
     poolname = str(fullpath).replace(df_path, "")
     assert fullpath.startswith(poolname)
 
@@ -90,31 +109,36 @@ def __get_snapshots(config):
 def _get_snapshots(path):
     zfs = search_env_path("zfs")
     poolname = _get_poolname_of_path(path)
-    for line in (
-        subprocess.check_output(
-            ["sudo", zfs, "list", "-t", "snapshot", str(path)],
-            encoding="utf8",
-        )
-        .strip()
-        .splitlines()[1:]
-    ):
-        snapshotname = unify(line.split(" "))[0]
-        creation = unify(
-            subprocess.check_output(
-                ["sudo", zfs, "get", "-p", "creation", snapshotname], encoding="utf8"
-            )
-            .strip()
-            .splitlines()[1]
-        )
-        _, _, timestamp, _ = creation.split(" ")
-        timestamp = arrow.get(int(timestamp)).datetime
-        info = {}
-        info["date"] = timestamp
-        info["fullpath"] = snapshotname
-        info["name"] = snapshotname.split("@")[1]
-        info["pool"] = poolname
-        info["path"] = snapshotname.replace(poolname, "").split("@")[0]
-        yield info
+
+    def _get_snaps(path):
+        for path in _get_possible_snapshot_paths(path):
+            for line in (
+                subprocess.check_output(
+                    ["sudo", zfs, "list", "-t", "snapshot", str(path)],
+                    encoding="utf8",
+                )
+                .strip()
+                .splitlines()[1:]
+            ):
+                snapshotname = unify(line.split(" "))[0]
+                creation = unify(
+                    subprocess.check_output(
+                        ["sudo", zfs, "get", "-p", "creation", snapshotname],
+                        encoding="utf8",
+                    )
+                    .strip()
+                    .splitlines()[1]
+                )
+                _, _, timestamp, _ = creation.split(" ")
+                timestamp = arrow.get(int(timestamp)).datetime
+                info = {}
+                info["date"] = timestamp
+                info["fullpath"] = snapshotname
+                info["name"] = snapshotname.split("@")[1]
+                info["pool"] = poolname
+                info["path"] = snapshotname.replace(poolname, "").split("@")[0]
+                yield info
+    yield from sorted(_get_snaps(path), key=lambda x: x['date'], reverse=True)
 
 
 def assert_environment(config):
@@ -187,12 +211,33 @@ def restore(config, name):
 
     path = _get_path(config)
     snapshots = list(_get_snapshots(path))
+    default_volume_path = Path(_get_path(config))
     snapshot = list(filter(lambda x: x["name"] == name, snapshots))
     if not snapshot:
         abort(f"Snapshot {name} does not exist.")
+    snapshot = snapshot[0]
+    snapshots_of_volume = [x for x in snapshots if Path(x['path']) == default_volume_path]
+    try:
+        index = list(map(lambda x: x['name'], snapshots_of_volume)).index(name)
+    except ValueError:
+        index = -1
 
     __dc(["stop", "-t 1"] + ["postgres"])
-    subprocess.check_call(["sudo", zfs, "rollback", "-r", snapshot[0]["fullpath"]])
+    if index == 0:
+        # restore last one is easy in the volumefolder it self; happiest case
+        subprocess.check_call(["sudo", zfs, "rollback", snapshot["fullpath"]])
+    else:
+        next_path = _get_next_snapshotpath(config)
+        snapshot_path = snapshot["fullpath"]
+        volume_path = snapshot_path.split("@")[0]
+        poolname = _get_poolname_of_path(snapshot["path"])
+        full_next_path = poolname + str(next_path)
+        subprocess.check_call(
+            ["sudo", zfs, "rename", volume_path, full_next_path]
+        )
+        subprocess.check_call(
+            ["sudo", zfs, "clone", full_next_path + "@" + name, volume_path]
+        )
     __dc(["rm", "-f"] + ["postgres"])
     __dc(["up", "-d"] + ["postgres"])
 
@@ -208,3 +253,12 @@ def remove(config, snapshot):
         snapshot = snapshots[0]
     if snapshot["fullpath"] in map(itemgetter("fullpath"), snapshots):
         subprocess.check_call(["sudo", zfs, "destroy", snapshot["fullpath"]])
+
+
+def remove_volume(config):
+    zfs = search_env_path("zfs")
+    volume_path = _get_path(config)
+    for path in _get_possible_snapshot_paths(volume_path):
+        if not path.exists():
+            continue
+        subprocess.check_call(["sudo", zfs, "destroy", "-R", path])

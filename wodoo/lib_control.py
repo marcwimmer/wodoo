@@ -5,8 +5,8 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import execute_script
 import subprocess
 import json
-from .tools import download_file_and_move
 from pathlib import Path
+from .tools import abort
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -107,11 +107,21 @@ def up(ctx, config, machines, daemon):
 @click.argument('machines', nargs=-1)
 @click.option('-v', '--volumes', is_flag=True)
 @click.option('--remove-orphans', is_flag=True)
+@click.option('--postgres-volume', is_flag=True)
 @pass_config
 @click.pass_context
-def down(ctx, config, machines, volumes, remove_orphans):
+def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
     if config.use_docker:
         from .lib_control_with_docker import down as lib_down
+
+    from .lib_db_snapshots import _on_down_postgres_volume
+    if postgres_volume or volumes:
+        if postgres_volume:
+            if not config.force:
+                abort("Please use force when call with postgres volume")
+        ctx.invoke(context, 'remove_postgres_volume')
+        _on_down_postgres_volume(ctx, config)
+
     lib_down(ctx, config, machines, volumes, remove_orphans)
 
 @docker.command()
