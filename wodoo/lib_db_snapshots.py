@@ -25,7 +25,7 @@ def snapshot(config):
     config.snapshot_manager = snapshot_manager
 
 def __choose_snapshot(config, take=False):
-    snapshots = config.snapshot_manager.__get_snapshots(config)
+    snapshots = list(config.snapshot_manager.__get_snapshots(config))
     snapshots_choices = [f"{x['name']} from {x['date']}" for x in snapshots]
 
     if take:
@@ -37,7 +37,7 @@ def __choose_snapshot(config, take=False):
     snapshot = answer['snapshot']
     snapshot = snapshots[snapshots_choices.index(snapshot)]
 
-    return snapshot['path']
+    return snapshot['name']
 
 
 @snapshot.command(name="list")
