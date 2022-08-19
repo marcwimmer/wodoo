@@ -1,4 +1,5 @@
 import traceback
+import arrow
 import threading
 from tabulate import tabulate
 import time
@@ -387,6 +388,7 @@ def _execute_after_compose(config, yml):
     from .module_tools import Modules
 
     settings = MyConfigParser(config.files["settings"])
+    modules = Modules()
     for module in config.dirs["images"].glob("*/__after_compose.py"):
         if module.is_dir():
             continue
@@ -396,13 +398,14 @@ def _execute_after_compose(config, yml):
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
+        started = arrow.get()
         try:
             module.after_compose(
                 config,
                 settings,
                 yml,
                 dict(
-                    Modules=Modules(),
+                    Modules=modules,
                     tools=tools,
                 ),
             )
@@ -412,6 +415,10 @@ def _execute_after_compose(config, yml):
             click.secho(f"Failed: {module.__file__}", fg="red")
             click.secho(msg)
             sys.exit(-1)
+
+        duration = (arrow.get() - started).total_seconds()
+        if duration > 2:
+            click.secho(f"Processing took {module} seconds", fg='yellow')
 
     settings.write()
     return yml
