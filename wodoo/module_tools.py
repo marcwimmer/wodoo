@@ -627,7 +627,7 @@ class ModulesCache(object):
     @classmethod
     def _get_cache_file(clazz):
         _customs_dir = customs_dir()
-        if not is_git_clean(_customs_dir):
+        if not is_git_clean(_customs_dir, ignore_files=["requirements.txt"]):
             return None
         from gimera import gimera
         if not gimera._check_all_submodules_initialized:
@@ -643,10 +643,12 @@ class ModulesCache(object):
     def cache(clazz):
         if not ModulesCache.__cache:
             file = clazz._get_cache_file()
-            if not file.exists():
+            if not file or not file.exists():
                 data = Modules._get_modules()
+            else:
+                data = pickle.loads(file.read_bytes())
+            if file and not file.exists():
                 file.write_bytes(pickle.dumps(data))
-            data = pickle.loads(file.read_bytes())
             ModulesCache.__cache = data
 
         return ModulesCache.__cache

@@ -1174,13 +1174,21 @@ def get_git_hash(path=None):
     ).strip()
 
 
-def is_git_clean(path=None):
+def is_git_clean(path=None, ignore_files=None):
+    ignore_files = ignore_files or []
     path = path or Path(os.getcwd())
     if not (path / ".git").exists():
         return True
-    status = subprocess.check_output(
-        ["git", "status", "--porcelain"], encoding="utf8", cwd=path
-    ).strip()
+    status = (
+        subprocess.check_output(
+            ["git", "status", "--porcelain"], encoding="utf8", cwd=path
+        )
+        .strip()
+        .splitlines()
+    )
+    status = list(
+        filter(lambda x: x.strip().split(" ", 1)[1] not in ignore_files, status)
+    )
     if status:
         click.secho(f"unclean git: {status}")
     return not status
