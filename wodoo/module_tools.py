@@ -8,8 +8,10 @@ import pickle
 import os
 import shutil
 import uuid
+from .tools import get_hash, get_git_hash
 from .tools import __try_to_set_owner as try_to_set_owner
 from .tools import measure_time
+from .tools import is_git_clean
 
 try:
     from psycopg2 import IntegrityError
@@ -619,17 +621,46 @@ def update_view_in_db(filepath, lineno):
                     if res:
                         exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
 
+class ModulesCache(object):
+    __cache = {}
 
-all_modules_cache = None
+    @classmethod
+    def _get_cache_file(clazz):
+        _customs_dir = customs_dir()
+        if not is_git_clean(_customs_dir):
+            return None
+        from gimera import gimera
+        if not gimera._check_all_submodules_initialized:
+            return None
+        hash_git = get_git_hash(_customs_dir)
+        mani_hash = get_hash(MANIFEST_FILE().read_text())
+        hash = get_hash(f"{hash_git}{mani_hash}")
+        file = Path(f"/tmp/wodoo_modules_index/{hash}.bin")
+        file.parent.mkdir(exist_ok=True)
+        return file
+
+    @classmethod
+    def cache(clazz):
+        if not ModulesCache.__cache:
+            file = clazz._get_cache_file()
+            if not file.exists():
+                data = Modules._get_modules()
+                file.write_bytes(pickle.dumps(data))
+            data = pickle.loads(file.read_bytes())
+            ModulesCache.__cache = data
+
+        return ModulesCache.__cache
+
+    @classmethod
+    def get(clazz, name):
+        return ModulesCache.cache()[name]
 
 
 class Modules(object):
     def __init__(self):
-        global all_modules_cache
-        if not all_modules_cache:
-            all_modules_cache = self._get_modules()
-        self.modules = all_modules_cache
+        self.modules = ModulesCache.cache()
 
+    @classmethod
     @measure_time
     def _get_modules(self):
         modnames = set()
@@ -655,18 +686,6 @@ class Modules(object):
 
         # if directory is clear, we may cache
         return modules
-
-    def is_git_clean(self):
-        if not ((Path(os.getcwd())) / ".git").exists():
-            return True
-        status = (
-            subprocess.check_output(["git", "status", "--porcelain"])
-            .decode("utf-8")
-            .strip()
-        )
-        if status:
-            click.secho(f"unclean git: {status}")
-        return not status
 
     def get_changed_modules(self, sha_start):
         filepaths = (
@@ -1066,8 +1085,10 @@ class Module(object):
     @classmethod
     def _get_by_name(cls, name):
 
-        if all_modules_cache and name in all_modules_cache:
-            return all_modules_cache[name]
+        try:
+            ModulesCache.get(name)
+        except IndexError:
+            pass
 
         from .odoo_config import get_odoo_addons_paths
 

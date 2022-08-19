@@ -1159,8 +1159,28 @@ def _get_version():
 
 
 def get_filesystem_of_folder(path):
-    lines = subprocess.check_output(
-        ["/usr/bin/df", "-T", path], encoding="utf8"
-    ).strip().splitlines()
+    lines = (
+        subprocess.check_output(["/usr/bin/df", "-T", path], encoding="utf8")
+        .strip()
+        .splitlines()
+    )
     fstype = lines[1].split(" ")[1]
     return fstype
+
+
+def get_git_hash(path=None):
+    return subprocess.check_output(
+        ["git", "log", "-n", "1", "--format=%H"], cwd=path or os.getcwd()
+    ).strip()
+
+
+def is_git_clean(path=None):
+    path = path or Path(os.getcwd())
+    if not (path / ".git").exists():
+        return True
+    status = subprocess.check_output(
+        ["git", "status", "--porcelain"], encoding="utf8", cwd=path
+    ).strip()
+    if status:
+        click.secho(f"unclean git: {status}")
+    return not status
