@@ -38,6 +38,8 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
     _exec_in_virtualenv(config, ['python', _path_odoolib() / 'run.py'])
 
 
+
+
 @control.command()
 def shell(config):
     subprocess.call([

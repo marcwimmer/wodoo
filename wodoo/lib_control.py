@@ -239,6 +239,20 @@ def shell(config, command, queuejobs):
         from .lib_control_with_docker import shell as lib_shell
     lib_shell(command, queuejobs)
 
+# problem with stdin: debug then display missing
+# @docker.command()
+# @click.argument("id", required=True)
+# @click.option("-q", "--queuejobs", is_flag=True, help=(
+#     "Dont delay queuejobs / execute queuejob code"))
+# @pass_config
+# def queuejob(config, id, queuejobs):
+#     if config.use_docker:
+#         from .lib_control_with_docker import shell as lib_shell
+#     command = (
+#         f"env['queue.job'].browse({id}).run_now()"
+#     )
+#     lib_shell(command, queuejobs)
+
 @docker.command()
 @click.option('-f', '--filter')
 @pass_config
