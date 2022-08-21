@@ -277,7 +277,7 @@ def _download_images(config, images_url):
         cwd=config.dirs["images"],
     )
     current_branch = subprocess.check_output(
-        ["git", "branch", "--show-current"], encoding="utf8", cwd=config.dirs['images']
+        ["git", "branch", "--show-current"], encoding="utf8", cwd=config.dirs["images"]
     ).strip()
     if config.ODOO_IMAGES_BRANCH and config.ODOO_IMAGES_BRANCH != current_branch:
         subprocess.check_call(["git", "checkout", config.ODOO_IMAGES_BRANCH])
@@ -319,9 +319,7 @@ def _download_images(config, images_url):
         click.secho(f"Clean repository", fg="yellow")
     click.secho("--------------------------------------------------")
     if os.getenv("SUDO_UID"):
-        subprocess.check_call(
-            ["chown", whoami(), "-R", config.dirs["images"]]
-        )
+        subprocess.check_call(["chown", whoami(), "-R", config.dirs["images"]])
     time.sleep(1.0)
 
 
@@ -412,7 +410,7 @@ def _execute_after_compose(config, yml):
 
         duration = (arrow.get() - started).total_seconds()
         if duration > 2:
-            click.secho(f"Processing took {module} seconds", fg='yellow')
+            click.secho(f"Processing took {module} seconds", fg="yellow")
 
     settings.write()
     return yml
