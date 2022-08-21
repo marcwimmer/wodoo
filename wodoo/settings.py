@@ -46,7 +46,6 @@ def _export_settings(config, forced_values):
     settings = MyConfigParser(config.files['settings'])
     if 'OWNER_UID' not in settings.keys():
         settings['OWNER_UID'] = whoami(id=True)
-        settings['OWNER_UID'] = str(UID)
 
     # forced values:
     for k, v in forced_values.items():
