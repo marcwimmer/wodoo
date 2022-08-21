@@ -1195,9 +1195,23 @@ def is_git_clean(path=None, ignore_files=None):
 
 
 def whoami(id=False):
-    if id:
+    if os.getenv("SUDO_USER") and id:
+        return int(
+            subprocess.check_output(
+                ["/usr/bin/id", "-u", os.environ["SUDO_USER"]], encoding="utf8"
+            ).strip()
+        )
+    elif os.getenv("SUDO_USER") and not id:
+        return os.getenv("SUDO_USER")
+    elif os.getenv("SUDO_UID") and id:
+        return int(os.getenv("SUDO_UID"))
+    elif os.getenv("SUDO_UID") and not id:
+        return subprocess.check_output(
+                ["/usr/bin/id", "-u", "-n", os.environ["SUDO_UID"]], encoding="utf8"
+            ).strip()
+    elif id:
         whoami = subprocess.check_output(["/usr/bin/id", "-u"], encoding="utf8").strip()
         return int(whoami)
-
-    whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
-    return whoami
+    else:
+        whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
+        return whoami
