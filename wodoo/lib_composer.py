@@ -26,8 +26,7 @@ from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
 from .tools import _makedirs
 from .tools import __try_to_set_owner
-from .tools import __empty_dir
-from .tools import __remove_tree
+from .tools import whoami
 from .tools import abort
 from .tools import _get_version
 from . import cli, pass_config, Commands
@@ -228,16 +227,11 @@ def _do_compose(config, db="", demo=False, **forced_values):
     from .myconfigparser import MyConfigParser
     from .settings import _export_settings
 
-    if os.getenv("SUDO_UID"):
-        whoami = f"{os.environ['SUDO_USER']} {os.environ['SUDO_UID']}"
-    else:
-        whoami = str(pwd.getpwuid(os.getuid())[0])
-
     rows = []
     headers = ["Name", "Value"]
     rows.append(("project-name", config.project_name))
     rows.append(("cwd", os.getcwd()))
-    rows.append(("whoami", whoami))
+    rows.append(("whoami", whoami()))
     rows.append(("run-dir", config.dirs["run"]))
     rows.append(("cmd", " ".join(sys.argv)))
     if config.restrict:
@@ -326,7 +320,7 @@ def _download_images(config, images_url):
     click.secho("--------------------------------------------------")
     if os.getenv("SUDO_UID"):
         subprocess.check_call(
-            ["chown", os.environ["SUDO_USER"], "-R", config.dirs["images"]]
+            ["chown", whoami(), "-R", config.dirs["images"]]
         )
     time.sleep(1.0)
 

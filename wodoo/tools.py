@@ -1192,3 +1192,12 @@ def is_git_clean(path=None, ignore_files=None):
     if status:
         click.secho(f"unclean git: {status}")
     return not status
+
+
+def whoami(id=False):
+    if id:
+        whoami = subprocess.check_output(["/usr/bin/id", "-u"], encoding="utf8").strip()
+        return int(whoami)
+
+    whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
+    return whoami
