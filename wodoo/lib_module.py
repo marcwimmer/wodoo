@@ -21,6 +21,7 @@ from .tools import sync_folder
 from .tools import __dcrun
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
+from .tools import __concurrent_safe_write_file
 from . import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
@@ -1293,7 +1294,7 @@ def make_dir_hashes(ctx, config, on_need):
         path_hashes[relpath] = get_hash(hashstring)
 
     content = json.dumps(path_hashes, indent=4)
-    file_dirhashes.write_text(content)
+    __concurrent_safe_write_file(file_dirhashes, content)
     os.chown(file_dirhashes, int(config.OWNER_UID), -1)
     return content
 
