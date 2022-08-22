@@ -969,9 +969,8 @@ def _get_unittests_from_module(module_name):
 
     testfiles = []
     module = Module.get_by_name(module_name)
-    parent_dir = MANIFEST_FILE().parent
     for _file in module.path.glob("tests/test*.py"):
-        testfiles.append(_file.relative_to(parent_dir))
+        testfiles.append(_file)
     return testfiles
 
 
@@ -1037,7 +1036,7 @@ def unittest(
             pass
         else:
             tests = module.path.glob("tests/test*")
-            file = ",".join(map(lambda x: str(x.relative_to(customs_dir())), tests))
+            file = ",".join(map(lambda x: str(x), tests))
 
     todo = []
     if file:
@@ -1347,11 +1346,10 @@ def list_deps(ctx, config, module):
     for path in list(sorted(set(paths))):
         if config.verbose:
             click.secho(f"Hashing path: {path}")
-        relpath = path.relative_to(customs_dir())
-        _hash = dir_hashes.get(str(relpath))
+        _hash = dir_hashes.get(str(path))
         if _hash is None:
             _hash = get_directory_hash(path)
-        to_hash += f"{relpath} {_hash},"
+        to_hash += f"{path} {_hash},"
 
 
     if config.verbose:

@@ -1094,6 +1094,7 @@ def get_directory_hash(path):
             ),
             encoding="utf8",
             shell=True,
+            cwd=path,
         )
         .strip()
         .split(" ")[0]
