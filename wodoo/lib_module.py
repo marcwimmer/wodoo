@@ -1301,7 +1301,6 @@ def _make_dir_hashes(ctx, config, on_need, module=None):
 @click.pass_context
 def list_deps(ctx, config, module):
     import arrow
-    import pudb;pudb.set_trace()
 
     started = arrow.get()
     from .module_tools import Modules, DBModules, Module
