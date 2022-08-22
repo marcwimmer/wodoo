@@ -843,7 +843,9 @@ def _get_available_robottests(ctx, param, incomplete):
     is_flag=True,
     help=("If set, then a json is printed to console, with detailed informations"),
 )
-@click.option("--results-file", help="concrete filename where the results.json is stored")
+@click.option(
+    "--results-file", help="concrete filename where the results.json is stored"
+)
 @pass_config
 @click.pass_context
 def robotest(
@@ -958,8 +960,13 @@ def robotest(
     from .robo_helpers import _eval_robot_output
 
     _eval_robot_output(
-        config, output_path, started, output_json, token, rm_tokendir=not keep_token_dir,
-        results_file=results_file
+        config,
+     output_path,
+  started,
+    output_json,
+      token,
+   rm_tokendir=not keep_token_dir,
+        results_file=results_file,
     )
 
 
@@ -1238,10 +1245,6 @@ def list_changed_files(ctx, config, start):
 @pass_config
 @click.pass_context
 def make_dir_hashes(ctx, config, on_need):
-    return _make_dir_hashes(ctx, config, on_need)
-
-
-def _make_dir_hashes(ctx, config, on_need, module=None):
     from tqdm import tqdm
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
@@ -1254,17 +1257,13 @@ def _make_dir_hashes(ctx, config, on_need, module=None):
     if not config.force:
         raise Exception(
             "Needs force option, because I call git clean -xdff and "
-            "all your work is lost. (Stashing before)")
+            "all your work is lost. (Stashing before)"
+        )
     subprocess.check_call(["git", "stash", "--include-untracked"])
     subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir)
-    if module:
-        hashes = subprocess.check_output(
-            ["sha1deep", "-r", "-l", "-j", "5", customs_dir / module.path], encoding="utf8"
-        ).strip()
-    else:
-        hashes = subprocess.check_output(
-            ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
-        ).strip()
+    hashes = subprocess.check_output(
+        ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
+    ).strip()
 
     file_hashes = {}
     customs_dir = str(customs_dir)
@@ -1292,11 +1291,15 @@ def _make_dir_hashes(ctx, config, on_need, module=None):
         )
         hashstring = "".join(file_hashes[file] for file in files)
         path_hashes[relpath] = get_hash(hashstring)
-    file_dirhashes.write_text(json.dumps(path_hashes, indent=4))
+
+    content = json.dumps(path_hashes, indent=4)
+    file_dirhashes.write_text(content)
+    os.chown(file_dirhashes, int(config.OWNER_UID), -1)
+    return content
 
 
 @odoo_module.command()
-@click.argument("module")
+@click.argument("module", required=True)
 @pass_config
 @click.pass_context
 def list_deps(ctx, config, module):
@@ -1305,14 +1308,16 @@ def list_deps(ctx, config, module):
     started = arrow.get()
     from .module_tools import Modules, DBModules, Module
     from .odoo_config import customs_dir
+    from .consts import FILE_DIRHASHES
 
     modules = Modules()
     module = Module.get_by_name(module)
     # fast lane for base
-    if module.name == 'base':
-        _make_dir_hashes(ctx, config, on_need=False, module=module)
+    if module.name in ["base"]:
+        dir_hashes = {}
     else:
-        _make_dir_hashes(ctx, config, on_need=True)
+        ctx.invoke(make_dir_hashes, on_need=True)
+        dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
 
     data = {"modules": []}
     data["modules"] = sorted(
@@ -1343,16 +1348,6 @@ def list_deps(ctx, config, module):
     for mod in data["auto_install"]:
         paths.append(Module.get_by_name(mod).path)
 
-    hashes = {}
-
-    @measure_time
-    def _get_hash(path):
-        hashes[path] = get_directory_hash(path)
-
-    from .consts import FILE_DIRHASHES
-
-    dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
-
     # hash python version
     python_version = config.ODOO_PYTHON_VERSION
     to_hash = str(python_version) + ";"
@@ -1363,7 +1358,6 @@ def list_deps(ctx, config, module):
         if _hash is None:
             _hash = get_directory_hash(path)
         to_hash += f"{path} {_hash},"
-
 
     if config.verbose:
         click.secho(f"\n\nTo Hash:\n{to_hash}\n\n")
