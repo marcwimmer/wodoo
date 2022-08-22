@@ -1014,6 +1014,9 @@ class Module(object):
         self.version = float(current_version())
         self._manifest_dict = None
         path = Path(path)
+        cwd = Path(os.getcwd())
+        if str(path).startswith("/"):
+            path = path.relative_to(cwd)
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
