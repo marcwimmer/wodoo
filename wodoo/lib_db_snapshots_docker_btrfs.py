@@ -192,6 +192,7 @@ def remove(config, snapshot):
             ]
         )
 
+
 def purge_inactive(config):
     for vol in SNAPSHOT_DIR.glob("*"):
         if not vol.is_dir():
@@ -200,15 +201,9 @@ def purge_inactive(config):
             next(DOCKER_VOLUMES.glob(vol.name))
         except StopIteration:
             for snapshot in vol.glob("*"):
-                click.secho(f"Deleting snapshot {snapshot}", fg='red')
+                click.secho(f"Deleting snapshot {snapshot}", fg="red")
                 subprocess.check_call(
-                    [
-                        "sudo",
-                        "btrfs",
-                        "subvolume",
-                        "delete",
-                        str(snapshot)
-                    ]
+                    ["sudo", "btrfs", "subvolume", "delete", str(snapshot)]
                 )
-            click.secho(f"Deleting {vol}", fg='red')
+            click.secho(f"Deleting {vol}", fg="red")
             shutil.rmtree(vol)

@@ -1238,6 +1238,10 @@ def list_changed_files(ctx, config, start):
 @pass_config
 @click.pass_context
 def make_dir_hashes(ctx, config, on_need):
+    return _make_dir_hashes(ctx, config, on_need)
+
+
+def _make_dir_hashes(ctx, config, on_need, module=None):
     from tqdm import tqdm
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
@@ -1253,9 +1257,14 @@ def make_dir_hashes(ctx, config, on_need):
             "all your work is lost. (Stashing before)")
     subprocess.check_call(["git", "stash", "--include-untracked"])
     subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir)
-    hashes = subprocess.check_output(
-        ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
-    ).strip()
+    if module:
+        hashes = subprocess.check_output(
+            ["sha1deep", "-r", "-l", "-j", "5", customs_dir / module.path], encoding="utf8"
+        ).strip()
+    else:
+        hashes = subprocess.check_output(
+            ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
+        ).strip()
 
     file_hashes = {}
     customs_dir = str(customs_dir)
@@ -1292,6 +1301,7 @@ def make_dir_hashes(ctx, config, on_need):
 @click.pass_context
 def list_deps(ctx, config, module):
     import arrow
+    import pudb;pudb.set_trace()
 
     started = arrow.get()
     from .module_tools import Modules, DBModules, Module
@@ -1299,7 +1309,11 @@ def list_deps(ctx, config, module):
 
     modules = Modules()
     module = Module.get_by_name(module)
-    ctx.invoke(make_dir_hashes, on_need=True)
+    # fast lane for base
+    if module.name == 'base':
+        _make_dir_hashes(ctx, config, on_need=False, module=module)
+    else:
+        _make_dir_hashes(ctx, config, on_need=True)
 
     data = {"modules": []}
     data["modules"] = sorted(
