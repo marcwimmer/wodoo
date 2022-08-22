@@ -106,6 +106,19 @@ def __write_file(path, content):
     with open(path, "w") as f:
         f.write(content)
 
+def __concurrent_safe_write_file(file, content, as_string=True):
+    import pudb;pudb.set_trace()
+    tmpfilename = file.parent / (file.name + ".tmp.safewritefile")
+    if tmpfilename.exists():
+        tmpfilename.unlink()
+    if as_string:
+        tmpfilename.write_text(content)
+    else:
+        tmpfilename.write_bytes(content)
+    if file.exists():
+        file.unlink()
+    shutil.move(tmpfilename, file)
+
 
 def __append_line(path, line):
     if not Path(path).exists():
