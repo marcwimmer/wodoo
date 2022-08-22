@@ -20,7 +20,8 @@ def _decide_snapshots_possible(config):
             return ttype
 
 def _setup_manager(config):
-    if ttype := _decide_snapshots_possible(config) == "zfs":
+    ttype = _decide_snapshots_possible(config)
+    if ttype == "zfs":
         from . import lib_db_snapshots_docker_zfs as snapshot_manager
     elif ttype == "btrfs":
         from . import lib_db_snapshots_docker_btrfs as snapshot_manager
