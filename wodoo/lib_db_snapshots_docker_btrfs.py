@@ -92,6 +92,8 @@ def _turn_into_subvolume(path):
         ):
             click.secho(f"Turning {path} into a subvolume.")
             filename = path.parent / Path(tempfile.mktemp()).name
+            if filename.exists():
+                raise Exception(f"Path {filename} should not exist.")
             shutil.move(path, filename)
             try:
                 subprocess.check_output(["sudo", "btrfs", "subvolume", "create", path])

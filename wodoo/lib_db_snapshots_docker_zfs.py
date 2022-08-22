@@ -156,6 +156,8 @@ def _turn_into_subvolume(path):
         zfs = search_env_path("zfs")
         click.secho(f"Turning {path} into a zfs pool.", fg="green")
         filename = path.parent / Path(tempfile.mktemp()).name
+        if filename.exists():
+            raise Exception(f"Path {filename} should not exist.")
         shutil.move(path, filename)
         try:
             assert str(path).startswith("/")
