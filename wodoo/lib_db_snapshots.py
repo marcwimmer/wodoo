@@ -15,7 +15,7 @@ from .tools import get_filesystem_of_folder
 def _decide_snapshots_possible(config):
     if not config.use_docker:
         return False
-    ttype = get_filesystem_of_folder("/var/lib/docker"):
+    ttype = get_filesystem_of_folder("/var/lib/docker")
     if ttype in ["zfs", "btrfs"]:
         return ttype
 
