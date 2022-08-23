@@ -1016,7 +1016,10 @@ class Module(object):
         path = Path(path)
         cwd = Path(os.getcwd())
         if str(path).startswith("/"):
-            path = path.relative_to(cwd)
+            try:
+                path = path.relative_to(cwd)
+            except ValueError:
+                path = path.relative_to(customs_dir())
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
