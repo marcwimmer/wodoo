@@ -1014,12 +1014,14 @@ class Module(object):
         self.version = float(current_version())
         self._manifest_dict = None
         path = Path(path)
+        remember_cwd = os.getcwd()
         cwd = Path(os.getcwd())
         if str(path).startswith("/"):
             try:
                 path = path.relative_to(cwd)
             except ValueError:
                 path = path.relative_to(customs_dir())
+                os.chdir(customs_dir())  # reset later; required that parents works
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
@@ -1032,6 +1034,7 @@ class Module(object):
             raise Module.IsNot((f"no module found for {path}"))
         self.name = self._manifest_path.parent.name
         self.path = self._manifest_path.parent
+        os.chdir(remember_cwd)
 
     @property
     def manifest_path(self):
