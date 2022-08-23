@@ -95,6 +95,9 @@ def _get_arch():
 @click.option(
     "-c", "--additional_config", help="Base64 encoded configuration like in settings"
 )
+@click.option(
+    "-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0"
+)
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
 @click.option("--no-update-images", is_flag=True)
 @pass_config
@@ -109,6 +112,7 @@ def do_reload(
     headless,
     devmode,
     additional_config,
+    additional_config_raw,
     images_url,
     no_update_images,
 ):
@@ -137,6 +141,11 @@ def do_reload(
             click.secho(f"Additional config provided in {additional_config_file}:")
             for line in additional_config_text.decode("utf-8").split("\n"):
                 click.secho("\t" + line)
+
+        if additional_config_raw:
+            additional_config_raw = '\n'.join(additional_config_raw.split(";"))
+            additional_config = additional_config or ''
+            additional_config += "\n" + additional_config_raw
 
         internal_reload(
             config,
