@@ -79,7 +79,10 @@ def _get_poolname_of_path(path):
     """
     while str(path).endswith("/"):
         path = Path(str(path[:-1]))
-    dfout = subprocess.check_output(["df", "-T", path], encoding="utf8").splitlines()[1]
+    if path.exists():
+        dfout = subprocess.check_output(["df", "-T", path], encoding="utf8").splitlines()[1]
+    else:
+        return None
     fullpath, fstype, _, _, _, _, df_path = unify(dfout.strip()).split(" ")
     poolname = str(fullpath).replace(df_path, "")
     assert fullpath.startswith(poolname)
