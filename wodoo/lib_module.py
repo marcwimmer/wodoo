@@ -1295,15 +1295,17 @@ def make_dir_hashes(ctx, config, on_need):
 
     content = json.dumps(path_hashes, indent=4)
     __concurrent_safe_write_file(file_dirhashes, content)
-    os.chown(file_dirhashes, int(config.OWNER_UID), -1)
+    if config.OWNER_UID:
+        os.chown(file_dirhashes, int(config.OWNER_UID), -1)
     return content
 
 
 @odoo_module.command()
 @click.argument("module", required=True)
+@click.option("-N", "--no-cache", is_flag=True)
 @pass_config
 @click.pass_context
-def list_deps(ctx, config, module):
+def list_deps(ctx, config, module, no_cache):
     import arrow
 
     started = arrow.get()
@@ -1317,7 +1319,7 @@ def list_deps(ctx, config, module):
     if module.name in ["base"]:
         dir_hashes = {}
     else:
-        ctx.invoke(make_dir_hashes, on_need=True)
+        ctx.invoke(make_dir_hashes, on_need=not no_cache)
         dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
 
     data = {"modules": []}
@@ -1342,8 +1344,7 @@ def list_deps(ctx, config, module):
     # get some hashes:
     paths = []
     for path in ["odoo"]:
-        path = customs_dir() / path
-        paths.append(path)
+        paths.append(Path(path))
     for mod in data["modules"]:
         paths.append(Module.get_by_name(mod).path)
     for mod in data["auto_install"]:
