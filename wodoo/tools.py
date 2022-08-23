@@ -107,7 +107,6 @@ def __write_file(path, content):
         f.write(content)
 
 def __concurrent_safe_write_file(file, content, as_string=True):
-    import pudb;pudb.set_trace()
     tmpfilename = file.parent / (file.name + ".tmp.safewritefile")
     if tmpfilename.exists():
         tmpfilename.unlink()
