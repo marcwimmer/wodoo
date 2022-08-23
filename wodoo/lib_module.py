@@ -1103,12 +1103,12 @@ def unittest(
         abort("No testoutput generated - seems to be a technical problem.")
     test_result = json.loads(output_path.read_text())
     output_path.unlink()
+    passed = [x for x in test_result if not x["rc"]]
+    errors = [x for x in test_result if x["rc"]]
     if output_json:
         click.secho("---")
         click.secho(json.dumps(test_result, indent=4))
     else:
-        passed = [x for x in test_result if not x["rc"]]
-        errors = [x for x in test_result if x["rc"]]
         from tabulate import tabulate
 
         if passed:
@@ -1119,6 +1119,8 @@ def unittest(
             click.secho(
                 tabulate(errors, headers="keys", tablefmt="fancy_grid"), fg="red"
             )
+    if errors:
+        sys.exit(-1)
 
 
 @odoo_module.command()
