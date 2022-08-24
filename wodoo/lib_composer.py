@@ -199,6 +199,8 @@ def internal_reload(
     }
     if devmode:
         defaults["DEVMODE"] = 1
+    if demo:
+        defaults["ODOO_DEMO"] = 1
     if headless:
         defaults.update(
             {
