@@ -79,7 +79,7 @@ def _get_poolname_of_path(path):
     """
     while str(path).endswith("/"):
         path = Path(str(path[:-1]))
-    if path.exists():
+    if Path(path).exists():
         dfout = subprocess.check_output(["df", "-T", path], encoding="utf8").splitlines()[1]
     else:
         return None
@@ -263,6 +263,8 @@ def remove_volume(config):
     zfs = search_env_path("zfs")
     volume_path = _get_path(config)
     pool_name = _get_poolname_of_path(volume_path)
+    if not pool_name:
+        return
     for path in _get_possible_snapshot_paths(volume_path):
         if not path.exists():
             continue
