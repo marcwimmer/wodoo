@@ -630,7 +630,7 @@ class ModulesCache(object):
         if not is_git_clean(_customs_dir, ignore_files=["requirements.txt"]):
             return None
         from gimera import gimera
-        if not gimera._check_all_submodules_initialized:
+        if not gimera._check_all_submodules_initialized():
             return None
         hash_git = get_git_hash(_customs_dir)
         mani_hash = get_hash(MANIFEST_FILE().read_text())
