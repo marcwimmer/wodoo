@@ -330,9 +330,8 @@ def translate_path_relative_to_customs_root(path):
     MANIFEST to indicate the root of the customs
     """
 
-    cmf = MANIFEST_FILE().absolute()
+    cmf = MANIFEST_FILE().absolute().resolve().absolute()
     if not str(path).startswith("/"):
-        path = cmf.parent / path
         return path
 
     try:
@@ -340,16 +339,7 @@ def translate_path_relative_to_customs_root(path):
     except Exception:
         pass
 
-    for parent in path.resolve().parents:
-        if parent.resolve().absolute() == cmf.parent:
-            path = str(path)[len(str(parent)) + 1 :]
-            return path
-    else:
-        raise Exception(
-            "No Customs MANIFEST File found. started at: {}, Manifest: {}".format(
-                path, cmf
-            )
-        )
+    return path.relative_to(cmf.parent)
 
 
 def manifest_file_names():
