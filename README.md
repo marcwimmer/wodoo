@@ -21,27 +21,11 @@ Provides functionalities:
 ### Install minimum
 
 ```bash
-# as root:
-python3 -m venv /var/lib/wodoo_env
-. /var/lib/wodoo_env/bin/activate
-python3 -mpip install wheel
-python3 -mpip install gimera
-python3 -mpip install wodoo
+pipx install wodoo
 ```
 
-### Make global executable **odoo** command
 
-
-```bash
-cat << 'EOF' > /usr/local/sbin/odoo
-#!/bin/bash
-sudo -E /var/lib/wodoo_env/bin/odoo "$@"
-EOF
-
-chmod a+x /usr/local/sbin/odoo
-```
-
-### optional: To be not blocked when working on btrfs volumes and so, this is suggested on dev machines:
+### optional: To be not blocked when working on btrfs/zfs volumes and so, this is suggested on dev machines:
 
 
 ```bash
