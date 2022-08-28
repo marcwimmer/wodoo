@@ -1040,6 +1040,9 @@ def unittest(
     if file and "/" not in file:
         try:
             module = Module.get_by_name(file)
+
+            # walk to root - otherwise the files are not found
+            os.chdir(customs_dir())
         except Exception:
             pass
         else:
