@@ -152,5 +152,5 @@ odoo pgactivity
 | RUN_PROXY_PUBLISHED=0/1| If the proxy is reachable from outside the docker network example from 127.0.0.1:8069|
 | PROXY_PORT| The port on which you can access with plain http the odoo|
 | ODOO_IMAGES_BRANCH| The branch used for ~/.odoo/images|
-| ODOO_INSTALL_LIBPOSTAL| If set, then the libpostal lib is installed|
+| ODOO_INSTALL_LIBPOSTAL=1| If set, then the libpostal lib is installed|
 | ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER=1 | Runs queuejobs and cronjob in the odoo container where also the web application resides|
