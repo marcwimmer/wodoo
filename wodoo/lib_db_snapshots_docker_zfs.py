@@ -185,7 +185,7 @@ def _turn_into_subvolume(path):
         return
 
 
-def make_snapshot(config, name):
+def make_snapshot(ctx, config, name):
     zfs = search_env_path("zfs")
     __dc(["stop", "-t 1"] + ["postgres"])
     path = _get_path(config)

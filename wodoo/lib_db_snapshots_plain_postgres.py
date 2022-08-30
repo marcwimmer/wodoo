@@ -55,20 +55,11 @@ def restore(config, snap):
     ])
 
 @measure_time
-def make_snapshot(config, name):
-    snapshot_name = "{}_{}_snapshot_{}".format(
-        config.dbname,
-        name,
-        datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-    )
-    conn = config.get_odoo_conn()
-    _remove_postgres_connections(conn)
-    subprocess.call([
-        exec_file_in_path('createdb'),
-        '-T',
-        config.dbname,
-        snapshot_name,
-    ])
+@pass_context
+def make_snapshot(ctx, config, name):
+    now = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    snapshot_name = f"{config.dbname}_{name}_snapshot_{now}"
+    Commands.invoke(ctx, "backup", snapshot_name)
     return snapshot_name
 
 def remove(config, snapshot):

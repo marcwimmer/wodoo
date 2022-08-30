@@ -13,6 +13,7 @@ from .tools import get_filesystem_of_folder
 
 
 def _decide_snapshots_possible(config):
+    return False  # TODO undo
     if not config.use_docker:
         return False
     ttype = get_filesystem_of_folder("/var/lib/docker")
@@ -67,7 +68,8 @@ def do_list(config):
 @snapshot.command(name="save")
 @click.argument("name", required=False)
 @pass_config
-def snapshot_make(config, name):
+@click.pass_context
+def snapshot_make(ctx, config, name):
 
     config.snapshot_manager.assert_environment(config)
     if not name:
@@ -75,7 +77,7 @@ def snapshot_make(config, name):
         click.secho(f"Using {name} as snapshot name")
 
     # remove existing snaps
-    snapshot = config.snapshot_manager.make_snapshot(config, name)
+    snapshot = config.snapshot_manager.make_snapshot(ctx, config, name)
     click.secho("Made snapshot: {}".format(snapshot), fg="green")
 
 

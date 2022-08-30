@@ -1177,7 +1177,7 @@ def get_filesystem_of_folder(path):
         .strip()
         .splitlines()
     )
-    fstype = lines[1].split(" ")[1]
+    fstype = list(filter(bool, lines[1].split(" ")))[1]
     return fstype
 
 
