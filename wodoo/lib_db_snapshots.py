@@ -13,7 +13,6 @@ from .tools import get_filesystem_of_folder
 
 
 def _decide_snapshots_possible(config):
-    return False  # TODO undo
     if not config.use_docker:
         return False
     ttype = get_filesystem_of_folder("/var/lib/docker")
