@@ -106,6 +106,7 @@ def __write_file(path, content):
     with open(path, "w") as f:
         f.write(content)
 
+
 def __concurrent_safe_write_file(file, content, as_string=True):
     tmpfilename = file.parent / (file.name + ".tmp.safewritefile")
     if tmpfilename.exists():
@@ -1172,12 +1173,13 @@ def _get_version():
 
 
 def get_filesystem_of_folder(path):
+    df = search_env_path("df")
     lines = (
-        subprocess.check_output(["/usr/bin/df", "-T", path], encoding="utf8")
+        subprocess.check_output([df, "-T", path], encoding="utf8")
         .strip()
         .splitlines()
     )
-    fstype = list(filter(bool, lines[1].split(" ")))[1]
+    fstype = list(filter(bool, lines[1].replace("\t", " ").split(" ")))[1]
     return fstype
 
 
@@ -1220,8 +1222,8 @@ def whoami(id=False):
         return int(os.getenv("SUDO_UID"))
     elif os.getenv("SUDO_UID") and not id:
         return subprocess.check_output(
-                ["/usr/bin/id", "-u", "-n", os.environ["SUDO_UID"]], encoding="utf8"
-            ).strip()
+            ["/usr/bin/id", "-u", "-n", os.environ["SUDO_UID"]], encoding="utf8"
+        ).strip()
     elif id:
         whoami = subprocess.check_output(["/usr/bin/id", "-u"], encoding="utf8").strip()
         return int(whoami)
