@@ -630,6 +630,9 @@ class ModulesCache(object):
         if not is_git_clean(_customs_dir, ignore_files=["requirements.txt"]):
             return None
         from gimera import gimera
+        if not (_customs_dir / '.git').exists():
+            # case production system no git history for example
+            return None
         if not gimera._check_all_submodules_initialized():
             return None
         hash_git = get_git_hash(_customs_dir)
