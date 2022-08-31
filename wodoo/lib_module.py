@@ -657,13 +657,15 @@ def update(
 
     if not uninstall:
         _perform_install(module)
-    _uninstall_marked_modules()
 
     all_modules = (
         not param_module
         or len(param_module) == 1
         and param_module[0] in ["all", "base", False, None, ""]
     )
+
+    if uninstall or all_modules:
+        _uninstall_marked_modules()
 
     # check danglings
     if not no_dangling_check and all_modules:
