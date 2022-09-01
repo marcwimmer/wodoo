@@ -5,6 +5,7 @@ import stat
 from contextlib import contextmanager
 import re
 import docker
+import inquirer
 
 try:
     import arrow
