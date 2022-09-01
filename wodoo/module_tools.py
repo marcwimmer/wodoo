@@ -12,6 +12,7 @@ from .tools import get_hash, get_git_hash
 from .tools import __try_to_set_owner as try_to_set_owner
 from .tools import measure_time
 from .tools import is_git_clean
+from .tools import whoami
 
 try:
     from psycopg2 import IntegrityError
@@ -366,10 +367,8 @@ def make_customs(path):
     subprocess.call(["git", "init"], cwd=path)
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
-    subprocess.call(["gimera", "apply", "--update"], cwd=path)
-    if os.getenv("SUDO_USER"):
-        subprocess.run(["chown", os.environ["SUDO_USER"], ".", "-R"], cwd=path)
-        subprocess.run(["chgrp", os.environ["SUDO_USER"], ".", "-R"], cwd=path)
+    subprocess.call(["gimera", "apply", "--update", "--recursive"], cwd=path)
+    try_to_set_owner(whoami(), path)
 
     click.secho("Initialized - please call following now.", fg="green")
     click.secho("odoo db reset", fg="green")
@@ -424,9 +423,7 @@ def make_module(parent_path, module_name):
     m["install"] = modules
 
     # correct file permissions
-    if os.getenv("SUDO_USER"):
-        subprocess.run(["chown", os.environ["SUDO_USER"], ".", "-R"], cwd=complete_path)
-        subprocess.run(["chgrp", os.environ["SUDO_USER"], ".", "-R"], cwd=complete_path)
+    try_to_set_owner(whoami(), complete_path)
 
 
 def restart(quick):
@@ -638,8 +635,11 @@ class ModulesCache(object):
         hash_git = get_git_hash(_customs_dir)
         mani_hash = get_hash(MANIFEST_FILE().read_text())
         hash = get_hash(f"{hash_git}{mani_hash}")
-        file = Path(f"/tmp/wodoo_modules_index/{hash}.bin")
-        file.parent.mkdir(exist_ok=True)
+
+        file = Path(os.path.expanduser("~/.local/cache/wodoo/modules/{hash}.bin"))
+        file.parent.mkdir(exist_ok=True, parents=True)
+        import pudb;pudb.set_trace()
+        try_to_set_owner(whoami(), file.parent.parent)
         return file
 
     @classmethod
@@ -652,6 +652,7 @@ class ModulesCache(object):
                 data = pickle.loads(file.read_bytes())
             if file and not file.exists():
                 file.write_bytes(pickle.dumps(data))
+                try_to_set_owner(whoami(), file)
             ModulesCache.__cache = data
 
         return ModulesCache.__cache

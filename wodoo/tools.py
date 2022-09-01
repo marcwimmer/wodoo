@@ -629,42 +629,38 @@ def __make_file_executable(filepath):
 
 
 def __try_to_set_owner(UID, path):
-    if path.is_dir():
-        filename = tempfile.mktemp(suffix=".findoutput")
-        find_command = f"find '{path}' -not -type l -not -user {UID}"
-        os.system(f"{find_command} > '{filename}'")
-        filename = Path(filename)
+    find_command = f"find '{path}' -not -type l -not -user {UID}"
+    res = (
+        subprocess.check_output(find_command, encoding="utf8", shell=True)
+        .strip()
+        .splitlines()
+    )
+    find_command = f"find '{path}' -not -type l -group 0"
+    res += (
+        subprocess.check_output(find_command, encoding="utf8", shell=True)
+        .strip()
+        .splitlines()
+    )
+    if not res:
+        return
+    for line in res:
+        if not line:
+            continue
         try:
-            res = filename.read_text().strip().split("\n")
-            filename.unlink()
-            if not res:
-                return
+            try:
+                shutil.chown(line, UID)
+            except:
+                click.secho(traceback.format_stack())
+                abort(f"Could not set owner {UID} " f"on directory {line}")
 
-            runs = ["sudo"] if os.getenv("SUDO_UID") else ["", "sudo"]
-            for irun, run in enumerate(runs):
-                # dont set to UID:UID --> group not necessarily matches user id
-                for line in res:
-                    if not line:
-                        continue
-                    try:
-                        GID = os.stat(line).st_gid
-                        try:
-                            os.chown(line, UID, GID)
-                        except:
-                            click.secho(traceback.format_stack())
-                            click.secho(
-                                (
-                                    f"Could not set owner {UID} "
-                                    f"{GID} on directory {line}"
-                                )
-                            )
-                            sys.exit(-1)
-                    except FileNotFoundError:
-                        continue
+            try:
+                shutil.chown(line, UID, UID)
+            except:
+                pass
 
-        finally:
-            if filename.exists():
-                filename.unlink()
+        except FileNotFoundError:
+            continue
+
 
 
 def _display_machine_tips(config, machine_name):
@@ -1176,9 +1172,7 @@ def _get_version():
 def get_filesystem_of_folder(path):
     df = search_env_path("df")
     lines = (
-        subprocess.check_output([df, "-T", path], encoding="utf8")
-        .strip()
-        .splitlines()
+        subprocess.check_output([df, "-T", path], encoding="utf8").strip().splitlines()
     )
     fstype = list(filter(bool, lines[1].replace("\t", " ").split(" ")))[1]
     return fstype
@@ -1228,6 +1222,5 @@ def whoami(id=False):
     elif id:
         whoami = subprocess.check_output(["/usr/bin/id", "-u"], encoding="utf8").strip()
         return int(whoami)
-    else:
-        whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
-        return whoami
+    whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
+    return whoami

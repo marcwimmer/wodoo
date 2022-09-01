@@ -349,12 +349,6 @@ def _prepare_filesystem(config):
     from .myconfigparser import MyConfigParser
 
     fileconfig = MyConfigParser(config.files["settings"])
-    # is very big at cicd; should not be required to do
-    # if os.getenv("SUDO_USER") and config.dirs["user_conf_dir"].exists():
-    #     __try_to_set_owner(
-    #         int(fileconfig["OWNER_UID"]),
-    #         config.dirs["user_conf_dir"],
-    #     )
     for subdir in ["config", "sqlscripts", "debug", "proxy"]:
         path = config.dirs["run"] / subdir
         _makedirs(path)
