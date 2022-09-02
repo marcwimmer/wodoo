@@ -618,6 +618,7 @@ def update_view_in_db(filepath, lineno):
                     if res:
                         exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
 
+
 class ModulesCache(object):
     __cache = {}
 
@@ -627,7 +628,8 @@ class ModulesCache(object):
         if not is_git_clean(_customs_dir, ignore_files=["requirements.txt"]):
             return None
         from gimera import gimera
-        if not (_customs_dir / '.git').exists():
+
+        if not (_customs_dir / ".git").exists():
             # case production system no git history for example
             return None
         if not gimera._check_all_submodules_initialized():
@@ -636,9 +638,8 @@ class ModulesCache(object):
         mani_hash = get_hash(MANIFEST_FILE().read_text())
         hash = get_hash(f"{hash_git}{mani_hash}")
 
-        file = Path(os.path.expanduser("~/.local/cache/wodoo/modules/{hash}.bin"))
+        file = Path(os.path.expanduser(f"~/.local/cache/wodoo/modules/{hash}.bin"))
         file.parent.mkdir(exist_ok=True, parents=True)
-        import pudb;pudb.set_trace()
         try_to_set_owner(whoami(), file.parent.parent)
         return file
 
