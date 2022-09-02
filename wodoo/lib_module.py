@@ -405,6 +405,9 @@ def restore_web_icons(ctx, config):
 @click.option(
     "--uninstall", is_flag=True, help="Executes just uninstallation of modules."
 )
+@click.option(
+    "--test-tags", help="e.g. at_install/account_accountant,post_install/account_accountant"
+)
 @pass_config
 @click.pass_context
 def update(
@@ -423,6 +426,7 @@ def update(
     no_restart=True,
     i18n=False,
     tests=False,
+    test_tags=False,
     config_file=False,
     server_wide_modules=False,
     additional_addons_paths=False,
@@ -584,6 +588,8 @@ def update(
                     params += ["--i18n"]
                 if not tests:
                     params += ["--no-tests"]
+                if test_tags:
+                    params += ["--test-tags=" + test_tags]
                 if server_wide_modules:
                     params += ["--server-wide-modules", server_wide_modules]
                 if additional_addons_paths:
