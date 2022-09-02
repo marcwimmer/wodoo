@@ -798,7 +798,7 @@ def show_conflicting_modules():
 
 def _exec_update(config, params):
     if config.use_docker:
-        params = ["run", "odoo_update", "/update_modules.py"] + params
+        params = ["run", "--rm", "odoo_update", "/update_modules.py"] + params
         return __cmd_interactive(*params)
     else:
         from . import lib_control_native
