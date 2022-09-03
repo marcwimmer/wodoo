@@ -628,14 +628,21 @@ def __make_file_executable(filepath):
     os.chmod(filepath, st.st_mode | stat.S_IEXEC)
 
 
+def _get_user_primary_group(UID):
+    id = search_env_path("id")
+    return subprocess.check_output([id, "-gn", str(UID)], encoding="utf8").strip()
+
+
 def __try_to_set_owner(UID, path):
+    breakpoint()
+    primary_group = _get_user_primary_group(UID)
     find_command = f"find '{path}' -not -type l -not -user {UID}"
     res = (
         subprocess.check_output(find_command, encoding="utf8", shell=True)
         .strip()
         .splitlines()
     )
-    find_command = f"find '{path}' -not -type l -group 0"
+    find_command = f"find '{path}' -not -type l -not -group {primary_group}"
     res += (
         subprocess.check_output(find_command, encoding="utf8", shell=True)
         .strip()
@@ -654,13 +661,12 @@ def __try_to_set_owner(UID, path):
                 abort(f"Could not set owner {UID} " f"on directory {line}")
 
             try:
-                shutil.chown(line, UID, UID)
+                shutil.chown(line, UID, primary_group)
             except:
                 pass
 
         except FileNotFoundError:
             continue
-
 
 
 def _display_machine_tips(config, machine_name):
