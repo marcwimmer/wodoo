@@ -35,14 +35,23 @@ def get_odoo_addons_paths(
     addons_paths = m["addons_paths"]
     if additional_addons_paths:
         addons_paths += additional_addons_paths
+
+    MUST = ["odoo/odoo/addons", "odoo/addons"]
+    for must in reversed(MUST):
+        if must in addons_paths:
+            continue
+        addons_paths.insert(0, must)
+
     for x in addons_paths:
         if no_extra_addons_paths:
-            if x not in ["odoo/addons", "odoo/odoo/addons"]:
+            if x not in MUST:
                 continue
         if relative:
             res.append(x)
         else:
             res.append(c / x)
+
+
     return res
 
 
