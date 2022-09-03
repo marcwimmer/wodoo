@@ -1399,6 +1399,19 @@ def migrate():
         fg="green",
     )
 
+@odoo_module.command()
+@pass_config
+@click.pass_context
+def list_modules(ctx, config):
+    from .module_tools import Modules, DBModules
+
+    mods = Modules()
+    modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
+    print("---")
+    for m in modules:
+        print(m)
+
+
 
 Commands.register(progress)
 Commands.register(update)
