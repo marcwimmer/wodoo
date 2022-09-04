@@ -634,7 +634,6 @@ def _get_user_primary_group(UID):
 
 
 def __try_to_set_owner(UID, path):
-    breakpoint()
     primary_group = _get_user_primary_group(UID)
     find_command = f"find '{path}' -not -type l -not -user {UID}"
     res = (
