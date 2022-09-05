@@ -30,6 +30,8 @@ from .tools import __try_to_set_owner
 from .tools import measure_time, abort
 from pathlib import Path
 
+DTF = "%Y-%m-%d %H:%M:%S"
+
 
 class UpdateException(Exception):
     pass
@@ -469,8 +471,8 @@ def update(
         fg="green",
     )
     from .module_tools import Modules, DBModules, Module
+    from .odoo_config import MANIFEST
 
-    # ctx.invoke(module_link)
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
@@ -483,7 +485,6 @@ def update(
 
             # filter modules to defined ones in MANIFEST
             click.secho(f"Following modules change since last sha: {' '.join(module)}")
-            from .odoo_config import MANIFEST
 
             module = list(filter(lambda x: x in MANIFEST()["install"], module))
             click.secho(
@@ -497,9 +498,7 @@ def update(
                 click.secho("No module update required - exiting.")
                 return
         else:
-            module = list(
-                filter(lambda x: x, sum(map(lambda x: x.split(","), module), []))
-            )  # '1,2 3' --> ['1', '2', '3']
+            module = _parse_modules(module)
 
         if not module and not since_git_sha:
             module = _get_default_modules_to_update()
@@ -566,7 +565,7 @@ def update(
         if config.odoo_update_start_notification_touch_file_in_container:
             Path(
                 config.odoo_update_start_notification_touch_file_in_container
-            ).write_text(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            ).write_text(datetime.now().strftime(DTF))
 
         def _technically_update(modules):
             try:
@@ -626,44 +625,11 @@ def update(
                 config.odoo_update_start_notification_touch_file_in_container
             ).write_text("0")
 
-    def _uninstall_marked_modules():
-        """
-        Checks for file "uninstall" in customs root and sets modules to uninstalled.
-        """
-        from .odoo_config import MANIFEST
-
-        if float(config.odoo_version) < 11.0:
-            return
-        # check if something is todo
-        to_uninstall = MANIFEST().get("uninstall", [])
-        to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
-        if to_uninstall:
-            click.secho(
-                "Going to uninstall {}".format(", ".join(to_uninstall)), fg="red"
-            )
-
-            if config.use_docker:
-                from .lib_control_with_docker import shell as lib_shell
-            for module in to_uninstall:
-                click.secho(f"Uninstall {module}", fg="red")
-                lib_shell(
-                    (
-                        "self.env['ir.module.module'].search(["
-                        f"('name', '=', '{module}'),"
-                        "('state', 'in', "
-                        "['to upgrade', 'to install', 'installed']"
-                        ")]).module_uninstall()\n"
-                        "self.env.cr.commit()"
-                    )
-                )
-
-        to_uninstall = [x for x in to_uninstall if DBModules.is_module_installed(x)]
-        if to_uninstall:
-            abort(f"Failed to uninstall: {','.join(to_uninstall)}")
 
     if not uninstall:
         _perform_install(module)
-    _uninstall_marked_modules()
+
+    _uninstall_marked_modules(config, MANIFEST().get("uninstall", []))
 
     all_modules = (
         not param_module
@@ -693,6 +659,61 @@ def update(
                     click.secho("Missing: {missing}", fg="red")
                 abort("Missing after installation")
 
+def _parse_modules(modules):
+    if isinstance(modules, (str, bytes)):
+        modules = modules.split(',')
+    modules = list(
+        filter(lambda x: x, sum(map(lambda x: x.split(","), modules), []))
+    )  # '1,2 3' --> ['1', '2', '3']
+    return modules
+
+@odoo_module.command()
+@click.argument("modules", nargs=-1, required=False)
+@pass_config
+@click.pass_context
+def uninstall(ctx, config, modules):
+    modules = _parse_modules(modules)
+    _uninstall_marked_modules(config, modules)
+
+def _uninstall_marked_modules(config, modules):
+    """
+    Checks for file "uninstall" in customs root and sets modules to uninstalled.
+    """
+    from .module_tools import Modules, DBModules, Module
+    assert not isinstance(modules, str)
+
+    if not modules:
+        return
+
+    if float(config.odoo_version) < 11.0:
+        return
+    modules = [x for x in modules if DBModules.is_module_installed(x)]
+    if not modules:
+        return
+    click.secho(
+        f"Going to uninstall {','.join(modules)}", fg="red"
+    )
+
+    if config.use_docker:
+        from .lib_control_with_docker import shell as lib_shell
+
+    for module in modules:
+        click.secho(f"Uninstall {module}", fg="red")
+        lib_shell(
+            (
+                "self.env['ir.module.module'].search(["
+                f"('name', '=', '{module}'),"
+                "('state', 'in', "
+                "['to upgrade', 'to install', 'installed']"
+                ")]).module_uninstall()\n"
+                "self.env.cr.commit()"
+            )
+        )
+        del module
+
+    modules = [x for x in modules if DBModules.is_module_installed(x)]
+    if modules:
+        abort(f"Failed to uninstall: {','.join(modules)}")
 
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument("module", nargs=-1, required=False)
