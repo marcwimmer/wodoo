@@ -1398,6 +1398,17 @@ def list_deps(ctx, config, module, no_cache):
         to_hash += f"{path} {_hash},"
 
     if config.verbose:
+        # break the hash in chunks and output the hash
+        todo = to_hash
+        i = 0
+        while todo:
+            i += 1
+            SIZE = 100
+            part = todo[:SIZE]
+            todo = todo[SIZE:]
+            click.secho(f"{i}.\n{part}", fg='blue')
+            click.secho(get_hash(part), fg='yellow')
+
         click.secho(f"\n\nTo Hash:\n{to_hash}\n\n")
     hash = get_hash(to_hash)
     data["hash"] = hash
