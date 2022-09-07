@@ -1375,7 +1375,7 @@ def list_deps(ctx, config, module, no_cache):
 
     # get some hashes:
     paths = []
-    for path in ["odoo"]:
+    for path in ["odoo/odoo"]:
         paths.append(Path(path))
     for mod in data["modules"]:
         paths.append(Module.get_by_name(mod).path)
