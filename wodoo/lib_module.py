@@ -408,7 +408,8 @@ def restore_web_icons(ctx, config):
     "--uninstall", is_flag=True, help="Executes just uninstallation of modules."
 )
 @click.option(
-    "--test-tags", help="e.g. at_install/account_accountant,post_install/account_accountant"
+    "--test-tags",
+    help="e.g. at_install/account_accountant,post_install/account_accountant",
 )
 @pass_config
 @click.pass_context
@@ -625,17 +626,17 @@ def update(
                 config.odoo_update_start_notification_touch_file_in_container
             ).write_text("0")
 
-
     if not uninstall:
         _perform_install(module)
-
-    _uninstall_marked_modules(config, MANIFEST().get("uninstall", []))
 
     all_modules = (
         not param_module
         or len(param_module) == 1
         and param_module[0] in ["all", "base", False, None, ""]
     )
+
+    if uninstall or all_modules:
+        _uninstall_marked_modules(config, MANIFEST().get("uninstall", []))
 
     # check danglings
     if not no_dangling_check and all_modules:
@@ -659,13 +660,15 @@ def update(
                     click.secho("Missing: {missing}", fg="red")
                 abort("Missing after installation")
 
+
 def _parse_modules(modules):
     if isinstance(modules, (str, bytes)):
-        modules = modules.split(',')
+        modules = modules.split(",")
     modules = list(
         filter(lambda x: x, sum(map(lambda x: x.split(","), modules), []))
     )  # '1,2 3' --> ['1', '2', '3']
     return modules
+
 
 @odoo_module.command()
 @click.argument("modules", nargs=-1, required=False)
@@ -675,11 +678,13 @@ def uninstall(ctx, config, modules):
     modules = _parse_modules(modules)
     _uninstall_marked_modules(config, modules)
 
+
 def _uninstall_marked_modules(config, modules):
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
     from .module_tools import Modules, DBModules, Module
+
     assert not isinstance(modules, str)
 
     if not modules:
@@ -690,9 +695,7 @@ def _uninstall_marked_modules(config, modules):
     modules = [x for x in modules if DBModules.is_module_installed(x)]
     if not modules:
         return
-    click.secho(
-        f"Going to uninstall {','.join(modules)}", fg="red"
-    )
+    click.secho(f"Going to uninstall {','.join(modules)}", fg="red")
 
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
@@ -714,6 +717,7 @@ def _uninstall_marked_modules(config, modules):
     modules = [x for x in modules if DBModules.is_module_installed(x)]
     if modules:
         abort(f"Failed to uninstall: {','.join(modules)}")
+
 
 @odoo_module.command(name="update-i18n", help="Just update translations")
 @click.argument("module", nargs=-1, required=False)
@@ -989,11 +993,11 @@ def robotest(
 
     _eval_robot_output(
         config,
-     output_path,
-  started,
-    output_json,
-      token,
-   rm_tokendir=not keep_token_dir,
+        output_path,
+        started,
+        output_json,
+        token,
+        rm_tokendir=not keep_token_dir,
         results_file=results_file,
     )
 
@@ -1420,6 +1424,7 @@ def migrate():
         fg="green",
     )
 
+
 @odoo_module.command()
 @pass_config
 @click.pass_context
@@ -1431,7 +1436,6 @@ def list_modules(ctx, config):
     print("---")
     for m in modules:
         print(m)
-
 
 
 Commands.register(progress)
