@@ -755,6 +755,7 @@ class Modules(object):
             data[mod.name] = {}
             for dep in mod.manifest_dict.get("depends", []):
                 if dep == "base":
+                    data[mod.name][dep] = {}
                     continue
                 dep_mod = [x for x in self.modules.values() if x.name == dep]
                 try:
