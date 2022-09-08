@@ -411,6 +411,11 @@ def restore_web_icons(ctx, config):
     "--test-tags",
     help="e.g. at_install/account_accountant,post_install/account_accountant",
 )
+@click.option(
+    "--log",
+    is_flag=True,
+    help="display logs with :DEBUG",
+)
 @pass_config
 @click.pass_context
 def update(
@@ -434,6 +439,7 @@ def update(
     server_wide_modules=False,
     additional_addons_paths=False,
     uninstall=False,
+    log=False,
 ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -594,6 +600,8 @@ def update(
                     params += ["--server-wide-modules", server_wide_modules]
                 if additional_addons_paths:
                     params += ["--additional-addons-paths", additional_addons_paths]
+                if log:
+                    params += ["--log"]
                 params += ["--config-file=" + config_file]
                 rc = _exec_update(config, params)
                 if rc:
@@ -1057,9 +1065,10 @@ def list_robot_test_files(config):
 @click.option("-n", "--non-interactive", is_flag=True)
 @click.option("-t", "--tags", is_flag=True)
 @click.option("--output-json", is_flag=True)
+@click.option("--log", is_flag=True)
 @pass_config
 def unittest(
-    config, file, remote_debug, wait_for_remote, non_interactive, output_json, tags
+    config, file, remote_debug, wait_for_remote, non_interactive, output_json, tags, log
 ):
     """
     Collects unittest files and offers to run
@@ -1126,9 +1135,13 @@ def unittest(
 
     results_filename = next(tempfile._get_candidate_names())
     params += ["--resultsfile", f"/opt/out_dir/{results_filename}"]
+    if log:
+        params += ["--log-level=debug"]
+    else:
+        params += ["--log-level=info"]
 
     try:
-        __dcrun(params + ["--log-level=debug"], interactive=interactive)
+        __dcrun(params, interactive=interactive)
     except subprocess.CalledProcessError:
         pass
 
