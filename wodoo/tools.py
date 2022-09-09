@@ -1229,3 +1229,25 @@ def whoami(id=False):
         return int(whoami)
     whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
     return whoami
+
+@contextmanager
+def download_file(url):
+    local_filename = url.split('/')[-1]
+    file = Path(tempfile.mktemp(suffix='.download'))
+    file.mkdir(parents=True)
+    file = file / local_filename
+    del local_filename
+
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(file, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                # If you have chunk encoded response uncomment if
+                # and set chunk_size parameter to None.
+                #if chunk:
+                f.write(chunk)
+    try:
+        yield file
+    finally:
+        if file.exists():
+            file.unlink()
