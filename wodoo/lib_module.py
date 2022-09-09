@@ -1381,18 +1381,13 @@ def list_deps(ctx, config, module, no_cache):
 
     modules = Modules()
     module = Module.get_by_name(module)
-    # fast lane for base
-    if module.name in ["base"]:
-        dir_hashes = {}
-    else:
-        ctx.invoke(make_dir_hashes, on_need=not no_cache)
-        dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
+    ctx.invoke(make_dir_hashes, on_need=not no_cache)
+    dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
 
     data = {"modules": []}
     data["modules"] = sorted(
         map(lambda x: x.name, modules.get_module_flat_dependency_tree(module))
     )
-    data["modules"].append(module.name)
 
     data["auto_install"] = sorted(
         map(
@@ -1418,11 +1413,9 @@ def list_deps(ctx, config, module, no_cache):
     python_version = config.ODOO_PYTHON_VERSION
     to_hash = str(python_version) + ";"
     for path in list(sorted(set(paths))):
-        if config.verbose:
-            click.secho(f"Hashing path: {path}")
         _hash = dir_hashes.get(str(path))
         if _hash is None:
-            _hash = get_directory_hash(path)
+            raise Exception(f"No hash found for {path} try it again with --no-cache")
         to_hash += f"{path} {_hash},"
 
     if config.verbose:
