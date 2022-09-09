@@ -1289,6 +1289,18 @@ def list_changed_files(ctx, config, start):
     for file in files:
         click.secho(file)
 
+def _get_global_hash_paths(relative_to_customs_dir=False):
+    from .odoo_config import customs_dir
+    customs_dir_path = customs_dir()
+    odoo_path = customs_dir_path / 'odoo'
+    global_hash_paths = [
+        odoo_path / 'odoo',
+        odoo_path / 'requirements.txt',
+        odoo_path / 'odoo-bin',
+    ]
+    if not relative_to_customs_dir:
+        return global_hash_paths
+    return [p.relative_to(customs_dir_path) for p in global_hash_paths]
 
 @odoo_module.command()
 @click.option("--on-need", is_flag=True)
@@ -1300,7 +1312,10 @@ def make_dir_hashes(ctx, config, on_need):
     from .consts import FILE_DIRHASHES
 
     customs_dir = customs_dir()
-    file_dirhashes = Path(customs_dir) / FILE_DIRHASHES
+    customs_dir_path = Path(customs_dir)
+    customs_dir = str(customs_dir)
+
+    file_dirhashes = customs_dir_path / FILE_DIRHASHES
     if on_need and file_dirhashes.exists():
         return
 
@@ -1316,7 +1331,6 @@ def make_dir_hashes(ctx, config, on_need):
     ).strip()
 
     file_hashes = {}
-    customs_dir = str(customs_dir)
     for hash in hashes.splitlines():
         hash, file = hash.split(" ", 1)
         file = file.strip()
@@ -1326,14 +1340,17 @@ def make_dir_hashes(ctx, config, on_need):
             file = file[len(customs_dir) + 1 :]
 
         file_hashes[file] = hash
-
+    
+    global_hash_paths = _get_global_hash_paths()
     paths = []
-    path_hashes = {}
-    for path in Path(customs_dir).glob("**/*"):
-        if path.is_dir():
-            if not (path / "__manifest__.py").exists() and path.name != "odoo":
-                continue
+    for path in customs_dir_path.glob("**/*"):
+        if (
+            path in global_hash_paths or
+            path.is_dir() and (path / "__manifest__.py").exists()
+        ):
             paths.append(path)
+    
+    path_hashes = {}
     for path in tqdm(paths):
         relpath = str(path.relative_to(customs_dir))
         files = list(
@@ -1391,9 +1408,7 @@ def list_deps(ctx, config, module, no_cache):
         print(f"part1: {part1.total_seconds()}")
 
     # get some hashes:
-    paths = []
-    for path in ["odoo/odoo"]:
-        paths.append(Path(path))
+    paths = _get_global_hash_paths(True)
     for mod in data["modules"]:
         paths.append(Module.get_by_name(mod).path)
     for mod in data["auto_install"]:
