@@ -351,7 +351,12 @@ def restore_db(
 
         _execute_sql(
             conn.clone(dbname="postgres"),
-            "create database {};".format(DBNAME_RESTORING),
+            (
+                f"create database {DBNAME_RESTORING} "
+                "LC_COLLATE 'C' "
+                "ENCODING 'unicode'"
+                ";"
+            ),
             notransaction=True,
         )
         effective_host_name = config.DB_HOST
