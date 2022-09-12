@@ -154,6 +154,8 @@ def _turn_into_subvolume(path):
     """
     Makes a zfs pool out of a path.
     """
+    if not path.exists():
+        abort("Please start postgres container at least once")
     try:
         _get_poolname_of_path(path)
     except NotZFS as ex:
@@ -167,7 +169,13 @@ def _turn_into_subvolume(path):
             assert str(path).startswith("/")
             subprocess.check_call(["sudo", "mkdir", path])
             fullpath = ex.poolname + str(path)
-            subprocess.check_output(["sudo", zfs, "create", fullpath])
+            try:
+                subprocess.check_output(["sudo", zfs, "create", fullpath])
+            except Exception as ex:
+                if 'dataset already exists' in str(ex):
+                    subprocess.check_output(["sudo", zfs, "destroy", fullpath])
+                subprocess.check_output(["sudo", zfs, "create", fullpath])
+
             click.secho(
                 f"Writing back the files to original position: from {filename}/ to {path}/"
             )
@@ -257,7 +265,7 @@ def remove(config, snapshot):
             sys.exit(-1)
         snapshot = snapshots[0]
     if snapshot["fullpath"] in map(itemgetter("fullpath"), snapshots):
-        subprocess.check_call(["sudo", zfs, "destroy", snapshot["fullpath"]])
+        subprocess.check_call(["sudo", zfs, "destroy", "-R", snapshot["fullpath"]])
 
 
 def remove_volume(config):
