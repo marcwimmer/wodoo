@@ -353,9 +353,9 @@ def restore_db(
             conn.clone(dbname="postgres"),
             (
                 f"create database {DBNAME_RESTORING} "
-                "LC_COLLATE 'C' "
                 "ENCODING 'unicode' "
-                "WITH TEMPLATE template0 "
+                "LC_COLLATE 'C' "
+                "TEMPLATE template0 "
                 ";"
             ),
             notransaction=True,
