@@ -354,7 +354,8 @@ def restore_db(
             (
                 f"create database {DBNAME_RESTORING} "
                 "LC_COLLATE 'C' "
-                "ENCODING 'unicode'"
+                "ENCODING 'unicode' "
+                "WITH TEMPLATE template0 "
                 ";"
             ),
             notransaction=True,
