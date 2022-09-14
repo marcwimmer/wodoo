@@ -1135,7 +1135,10 @@ def git_diff_files(path, commit1, commit2):
 
 
 def _binary_zip(folder, destpath):
-    os.system((f"cd '{folder}';" f"tar c . | pv | pigz > '{destpath}'"))
+    assert not destpath.exists()
+    if not Path(folder).exists():
+        raise Exception(f"Could not zip folder: {folder}")
+    os.system((f"cd '{folder}' && tar c . | pv | pigz > '{destpath}'"))
     if not destpath.exists():
         raise Exception(f"file {destpath} not generated")
 
