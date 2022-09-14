@@ -414,6 +414,7 @@ def restore_web_icons(ctx, config):
 @click.option(
     "-l", "--log",
     default="info",
+    type=click.Choice(['info', 'debug', 'error']),
     help="display logs with given level",
 )
 @pass_config
