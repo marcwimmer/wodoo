@@ -412,9 +412,9 @@ def restore_web_icons(ctx, config):
     help="e.g. at_install/account_accountant,post_install/account_accountant",
 )
 @click.option(
-    "--log",
-    is_flag=True,
-    help="display logs with :DEBUG",
+    "-l", "--log",
+    default="info",
+    help="display logs with given level",
 )
 @pass_config
 @click.pass_context
@@ -601,7 +601,7 @@ def update(
                 if additional_addons_paths:
                     params += ["--additional-addons-paths", additional_addons_paths]
                 if log:
-                    params += ["--log"]
+                    params += [f"--log={log}"]
                 params += ["--config-file=" + config_file]
                 rc = _exec_update(config, params)
                 if rc:
@@ -1289,18 +1289,21 @@ def list_changed_files(ctx, config, start):
     for file in files:
         click.secho(file)
 
+
 def _get_global_hash_paths(relative_to_customs_dir=False):
     from .odoo_config import customs_dir
+
     customs_dir_path = customs_dir()
-    odoo_path = customs_dir_path / 'odoo'
+    odoo_path = customs_dir_path / "odoo"
     global_hash_paths = [
-        odoo_path / 'odoo',
-        odoo_path / 'requirements.txt',
-        odoo_path / 'odoo-bin',
+        odoo_path / "odoo",
+        odoo_path / "requirements.txt",
+        odoo_path / "odoo-bin",
     ]
     if not relative_to_customs_dir:
         return global_hash_paths
     return [p.relative_to(customs_dir_path) for p in global_hash_paths]
+
 
 @odoo_module.command()
 @click.option("--on-need", is_flag=True)
@@ -1340,16 +1343,17 @@ def make_dir_hashes(ctx, config, on_need):
             file = file[len(customs_dir) + 1 :]
 
         file_hashes[file] = hash
-    
+
     global_hash_paths = _get_global_hash_paths()
     paths = []
     for path in customs_dir_path.glob("**/*"):
         if (
-            path in global_hash_paths or
-            path.is_dir() and (path / "__manifest__.py").exists()
+            path in global_hash_paths
+            or path.is_dir()
+            and (path / "__manifest__.py").exists()
         ):
             paths.append(path)
-    
+
     path_hashes = {}
     for path in tqdm(paths):
         relpath = str(path.relative_to(customs_dir))
@@ -1427,8 +1431,8 @@ def list_deps(ctx, config, module, no_cache):
             SIZE = 100
             part = todo[:SIZE]
             todo = todo[SIZE:]
-            click.secho(f"{i}.\n{part}", fg='blue')
-            click.secho(get_hash(part), fg='yellow')
+            click.secho(f"{i}.\n{part}", fg="blue")
+            click.secho(get_hash(part), fg="yellow")
 
         click.secho(f"\n\nTo Hash:\n{to_hash}\n\n")
     hash = get_hash(to_hash)
