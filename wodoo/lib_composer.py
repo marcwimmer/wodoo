@@ -97,7 +97,7 @@ def _get_arch():
 )
 @click.option("-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0")
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
-@click.option("--no-update-images", is_flag=True)
+@click.option("-I", "--no-update-images", is_flag=True)
 @pass_config
 @click.pass_context
 def do_reload(
