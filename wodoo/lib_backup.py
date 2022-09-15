@@ -220,6 +220,7 @@ def _get_postgres_version(conn):
 def _restore_wodoo_bin(ctx, config, filepath, verify):
     if not config.run_postgres:
         abort("WODOO-BIN files may only be restored if RUN_POSTGRES=1")
+    click.secho(f"Unzipping {filepath}...", fg='yellow')
     with open(filepath, "rb") as file:
         content = file.read(1024)
         count_lineendings = 0
@@ -231,6 +232,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
             if count_lineendings == 2:
                 break
     if verify:
+        click.secho(f"Verifying version postgres", fg='yellow')
         Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
         postgres_version = (
             content.decode("utf-8", errors="ignore").split("\n")[1].strip()
@@ -239,6 +241,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
         version = _get_postgres_version(conn)
         if version != postgres_version:
             abort(f"Version mismatch: {version} != {postgres_version}")
+        click.secho(f"Versions match", fg='green')
 
     assert config.run_postgres
     Commands.invoke(ctx, "down")
@@ -254,6 +257,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
         )
     )
     mountpoint = volume[0]["Mountpoint"]
+    click.secho(f"Identified mountpoint {mountpoint}", fg='yellow')
     with autocleanpaper() as scriptfile:
         scriptfile.write_text(
             (
@@ -266,7 +270,15 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
                 f"pigz -dc | tar x\n"
             )
         )
-        subprocess.check_call(["/bin/bash", scriptfile])
+        for mode in ["", "sudo"]:
+            try:
+                subprocess.check_call(list(filter(bool, [mode, "/bin/bash", scriptfile])))
+            except Exception:
+                if mode:
+                    raise
+                click.secho("Retrying to restore the files in sudo mode - ignore previous errors please", fg='yellow')
+            else:
+                break
     Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
 
 
