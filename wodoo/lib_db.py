@@ -161,7 +161,7 @@ def reset_db(ctx, config, dbname, do_not_install_base, collatec):
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
     conn = config.get_odoo_conn().clone(dbname='postgres')
-    cmd = ""
+    cmd2 = ""
     if collatec:
         cmd2 = "LC_CTYPE 'C' LC_COLLATE 'C' ENCODING 'utf8' TEMPLATE template0"
     cmd = f"create database {dbname} {cmd2} "
