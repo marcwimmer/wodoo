@@ -270,7 +270,15 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
                 f"pigz -dc | tar x\n"
             )
         )
-        subprocess.check_call(["/bin/bash", scriptfile])
+        for mode in ["", "sudo"]:
+            try:
+                subprocess.check_call(list(filter(bool, [mode, "/bin/bash", scriptfile])))
+            except Exception:
+                if mode:
+                    raise
+                click.secho("Retrying to restore the files in sudo mode - ignore previous errors please", fg='yellow')
+            else:
+                break
     Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
 
 
