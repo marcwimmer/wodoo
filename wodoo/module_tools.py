@@ -1341,7 +1341,7 @@ class Module(object):
             if "test" in local_path.parts:
                 continue
             if local_path.suffix in [".xml", ".csv", ".yml"]:
-                if local_path.name.startswith("demo%s" % os.sep):
+                if 'demo' in local_path.parts:
                     mod["demo"].append(str(local_path))
                 elif "static" in local_path.parts:
                     # contains qweb file
