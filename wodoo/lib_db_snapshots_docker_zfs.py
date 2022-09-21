@@ -6,7 +6,7 @@ zfs create zfs_pool1/docker/volumes
 set /etc/odoo/settings ZFS_PATH_VOLUMES=zfs_pool1/docker/volumes  then
 
 """
-from .tools import _abort
+from .tools import abort
 from operator import itemgetter
 import subprocess
 import arrow
@@ -59,7 +59,7 @@ def _get_path(config):
 
 def _get_zfs_path(config):
     if not config.ZFS_PATH_VOLUMES:
-        _abort(
+        abort(
             "Please configure the snapshot root folder for docker "
             "snapshots in ZFS_PATH_VOLUMES"
         )
