@@ -6,6 +6,7 @@ zfs create zfs_pool1/docker/volumes
 set /etc/odoo/settings ZFS_PATH_VOLUMES=zfs_pool1/docker/volumes  then
 
 """
+from .tools import _abort
 from operator import itemgetter
 import subprocess
 import arrow
@@ -55,9 +56,16 @@ def _get_path(config):
     path = DOCKER_VOLUMES / __get_postgres_volume_name(config)
     return path
 
+
 def _get_zfs_path(config):
+    if not config.ZFS_PATH_VOLUMES:
+        _abort(
+            "Please configure the snapshot root folder for docker "
+            "snapshots in ZFS_PATH_VOLUMES"
+        )
     path = config.ZFS_PATH_VOLUMES + "/" + __get_postgres_volume_name(config)
     return path
+
 
 def _get_next_snapshotpath(config):
     counter = 0
@@ -76,12 +84,13 @@ def _get_possible_snapshot_paths(config):
     """
     all_zfs_folders = _get_all_zfs()
     zfs_path = _get_zfs_path(config)
-    root_zfs_path = '/'.join(zfs_path.split("/")[:-1])
+    root_zfs_path = "/".join(zfs_path.split("/")[:-1])
     for folder in all_zfs_folders:
         if folder == zfs_path:
             yield folder
         if folder.startswith(zfs_path + "."):
             yield folder
+
 
 def __get_postgres_volume_name(config):
     return f"{config.project_name}_odoo_postgres_volume"
@@ -126,20 +135,25 @@ def _get_snapshots(config):
                 info["name"] = snapshotname.split("@")[1]
                 info["path"] = snapshotname.split("/")[-1]
                 yield info
-    yield from sorted(_get_snaps(), key=lambda x: x['date'], reverse=True)
+
+    yield from sorted(_get_snaps(), key=lambda x: x["date"], reverse=True)
 
 
 def _get_all_zfs():
     zfs = search_env_path("zfs")
-    folders = subprocess.check_output(["sudo", zfs, "list"], encoding="utf8").splitlines()
+    folders = subprocess.check_output(
+        ["sudo", zfs, "list"], encoding="utf8"
+    ).splitlines()
     folders = list(map(lambda x: x.split(" ")[0], folders))
     return folders
+
 
 def __is_zfs_fs(path_zfs):
     assert " " not in path_zfs
     folders = _get_all_zfs()
     folders = [x for x in folders if x.split(" ")[0] == path_zfs]
     return folders
+
 
 def assert_environment(config):
     pass
@@ -214,9 +228,11 @@ def restore(config, name):
         abort(f"Snapshot {name} does not exist.")
     snapshot = snapshot[0]
     zfs_full_path = _get_zfs_path(config)
-    snapshots_of_volume = [x for x in snapshots if x['fullpath'].split("@")[0].startswith(zfs_full_path)]
+    snapshots_of_volume = [
+        x for x in snapshots if x["fullpath"].split("@")[0].startswith(zfs_full_path)
+    ]
     try:
-        index = list(map(lambda x: x['name'], snapshots_of_volume)).index(name)
+        index = list(map(lambda x: x["name"], snapshots_of_volume)).index(name)
     except ValueError:
         index = -1
 
@@ -229,11 +245,15 @@ def restore(config, name):
         subprocess.check_call(
             ["sudo", umount, zfs_full_path],
         )
+        subprocess.check_call(["sudo", zfs, "rename", zfs_full_path, full_next_path])
         subprocess.check_call(
-            ["sudo", zfs, "rename", zfs_full_path, full_next_path]
-        )
-        subprocess.check_call(
-            ["sudo", zfs, "clone", full_next_path + "@" + snapshot['name'], zfs_full_path]
+            [
+                "sudo",
+                zfs,
+                "clone",
+                full_next_path + "@" + snapshot["name"],
+                zfs_full_path,
+            ]
         )
     __dc(["rm", "-f"] + ["postgres"])
     __dc(["up", "-d"] + ["postgres"])
@@ -256,9 +276,10 @@ def remove_volume(config):
     zfs = search_env_path("zfs")
     umount = search_env_path("umount")
     for path in _get_possible_snapshot_paths(config):
+        # subprocess.check_call(["sudo", zfs, "set", "canmount=noauto", path])
         try:
             subprocess.check_call(["sudo", umount, path])
         except:
             pass
         subprocess.check_call(["sudo", zfs, "destroy", "-R", path])
-        click.secho(f"Removed: {path}", fg='yellow')
+        click.secho(f"Removed: {path}", fg="yellow")
