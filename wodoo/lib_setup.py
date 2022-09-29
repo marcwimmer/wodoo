@@ -43,6 +43,9 @@ def remove_web_assets(ctx, config):
 @setup.command()
 @pass_config
 def status(config):
+    _status(config)
+
+def _status(config):
     color = 'yellow'
     click.secho("projectname: ", nl=False)
     click.secho(config.project_name, fg=color, bold=True)
@@ -50,7 +53,9 @@ def status(config):
     click.secho(config.odoo_version, fg=color, bold=True)
     click.secho("db: ", nl=False)
     click.secho(config.dbname, fg=color, bold=True)
-
+    if config.PROXY_PORT:
+        click.secho("url: ", nl=False)
+        click.secho(f"http://localhost:{config.PROXY_PORT}", fg=color, bold=True)
 
 @setup.command(help="Upgrade wodoo")
 def upgrade():
