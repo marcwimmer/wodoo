@@ -276,7 +276,7 @@ def remove_volume(config):
     zfs = search_env_path("zfs")
     umount = search_env_path("umount")
     for path in _get_possible_snapshot_paths(config):
-        # subprocess.check_call(["sudo", zfs, "set", "canmount=noauto", path])
+        subprocess.check_call(["sudo", zfs, "set", "canmount=noauto", path])
         try:
             subprocess.check_call(["sudo", umount, path])
         except:
