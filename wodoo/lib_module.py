@@ -417,6 +417,11 @@ def restore_web_icons(ctx, config):
     type=click.Choice(['info', 'debug', 'error']),
     help="display logs with given level",
 )
+@click.option(
+    "-dt", "--default-test-tags",
+    is_flag=True,
+    help="Adds at_install/{module},post_install/{module},standard/{module}"
+)
 @pass_config
 @click.pass_context
 def update(
@@ -436,6 +441,7 @@ def update(
     i18n=False,
     tests=False,
     test_tags=False,
+    default_test_tags=False,
     config_file=False,
     server_wide_modules=False,
     additional_addons_paths=False,
@@ -466,7 +472,6 @@ def update(
     )
     click.secho(
         """
-
            _                               _       _
           | |                             | |     | |
   ___   __| | ___   ___    _   _ _ __   __| | __ _| |_ ___
@@ -480,6 +485,9 @@ def update(
     )
     from .module_tools import Modules, DBModules, Module
     from .odoo_config import MANIFEST
+
+    if test_tags and default_test_tags:
+        abort("Conflict: parameter test-tags and default-test-tags")
 
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
@@ -568,6 +576,9 @@ def update(
         module = list(filter(bool, module))
         if not module:
             raise Exception("no modules to update")
+        if default_test_tags:
+            test_tags = ','.join(
+                f"at_install/{x},post_install{x},standard/{x}" for x in module)
 
         click.echo("Run module update")
         if config.odoo_update_start_notification_touch_file_in_container:
