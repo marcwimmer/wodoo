@@ -576,9 +576,13 @@ def update(
         module = list(filter(bool, module))
         if not module:
             raise Exception("no modules to update")
-        if default_test_tags:
-            test_tags = ','.join(
-                f"at_install/{x},post_install{x},standard/{x}" for x in module)
+
+        def _effective_test_tags():
+            if default_test_tags:
+                return ','.join(
+                    f"at_install/{x},post_install{x},standard/{x}" for x in module)
+            else:
+                return test_tags or ""
 
         click.echo("Run module update")
         if config.odoo_update_start_notification_touch_file_in_container:
@@ -607,7 +611,7 @@ def update(
                 if not tests:
                     params += ["--no-tests"]
                 if test_tags:
-                    params += ["--test-tags=" + test_tags]
+                    params += ["--test-tags=" + _effective_test_tags()]
                 if server_wide_modules:
                     params += ["--server-wide-modules", server_wide_modules]
                 if additional_addons_paths:
