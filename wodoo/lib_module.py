@@ -610,8 +610,8 @@ def update(
                     params += ["--i18n"]
                 if not tests:
                     params += ["--no-tests"]
-                if test_tags:
-                    params += ["--test-tags=" + _effective_test_tags()]
+                if _test_tags := _effective_test_tags():
+                    params += ["--test-tags=" + _test_tags]
                 if server_wide_modules:
                     params += ["--server-wide-modules", server_wide_modules]
                 if additional_addons_paths:
@@ -992,7 +992,7 @@ def robotest(
 
         return params
 
-    token = str(uuid.uuid4())
+    token = arrow.get().strftime("%Y-%m-%d_%H%M%S_") + str(uuid.uuid4())
     data = json.dumps(
         {
             "test_files": list(map(str, filenames)),

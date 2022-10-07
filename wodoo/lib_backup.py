@@ -32,7 +32,10 @@ from .lib_clickhelpers import AliasedGroup
 import inspect
 import os
 from pathlib import Path
-current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
+current_dir = Path(
+    os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+)
 
 try:
     import tabulate
@@ -89,13 +92,18 @@ def backup_all(ctx, config, filename):
 @click.pass_context
 @click.argument("filename", required=False, default="")
 @click.option("--dbname", required=False)
-@click.option("--column-inserts", is_flag=True)
+@click.option("-T", "--exclude", multiple=True)
+@click.option(
+    "--column-inserts",
+    is_flag=True,
+    help="Makes restore slow but compatible with other databases",
+)
 @click.option(
     "--dumptype",
     type=click.Choice(["custom", "plain", "directory", "wodoobin"]),
     default="custom",
 )
-def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
+def backup_db(ctx, config, filename, dbname, dumptype, column_inserts, exclude):
     filename = Path(
         filename or f"{config.project_name}.{config.dbname}.odoo" + ".dump.gz"
     )
@@ -133,7 +141,6 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
         Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
 
     else:
-
         click.secho(f"Backup file will be stored there: {filename.parent}")
         cmd = [
             "run",
@@ -153,6 +160,8 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts):
             "--dumptype",
             dumptype,
         ]
+        for exclude in exclude:
+            cmd += ["--exclude", exclude]
         if column_inserts:
             cmd += ["--column-inserts"]
 
@@ -220,7 +229,7 @@ def _get_postgres_version(conn):
 def _restore_wodoo_bin(ctx, config, filepath, verify):
     if not config.run_postgres:
         abort("WODOO-BIN files may only be restored if RUN_POSTGRES=1")
-    click.secho(f"Unzipping {filepath}...", fg='yellow')
+    click.secho(f"Unzipping {filepath}...", fg="yellow")
     with open(filepath, "rb") as file:
         content = file.read(1024)
         count_lineendings = 0
@@ -232,7 +241,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
             if count_lineendings == 2:
                 break
     if verify:
-        click.secho(f"Verifying version postgres", fg='yellow')
+        click.secho(f"Verifying version postgres", fg="yellow")
         Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
         postgres_version = (
             content.decode("utf-8", errors="ignore").split("\n")[1].strip()
@@ -241,7 +250,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
         version = _get_postgres_version(conn)
         if version != postgres_version:
             abort(f"Version mismatch: {version} != {postgres_version}")
-        click.secho(f"Versions match", fg='green')
+        click.secho(f"Versions match", fg="green")
 
     assert config.run_postgres
     Commands.invoke(ctx, "down")
@@ -257,7 +266,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
         )
     )
     mountpoint = volume[0]["Mountpoint"]
-    click.secho(f"Identified mountpoint {mountpoint}", fg='yellow')
+    click.secho(f"Identified mountpoint {mountpoint}", fg="yellow")
     with autocleanpaper() as scriptfile:
         scriptfile.write_text(
             (
@@ -272,11 +281,16 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
         )
         for mode in ["", "sudo"]:
             try:
-                subprocess.check_call(list(filter(bool, [mode, "/bin/bash", scriptfile])))
+                subprocess.check_call(
+                    list(filter(bool, [mode, "/bin/bash", scriptfile]))
+                )
             except Exception:
                 if mode:
                     raise
-                click.secho("Retrying to restore the files in sudo mode - ignore previous errors please", fg='yellow')
+                click.secho(
+                    "Retrying to restore the files in sudo mode - ignore previous errors please",
+                    fg="yellow",
+                )
             else:
                 break
     Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
@@ -284,20 +298,26 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
 
 @restore.command(name="odoo-db")
 @click.argument("filename", required=False, default="")
-@click.option("--latest", default=False, is_flag=True, help="Restore latest dump")
 @click.option("--no-dev-scripts", default=False, is_flag=True)
 @click.option("--no-remove-webassets", default=False, is_flag=True)
+@click.option("-j", "--workers", default=5)
 @click.option(
     "--verify", default=False, is_flag=True, help="Wodoo-bin: checks postgres version"
 )
 @pass_config
 @click.pass_context
 def restore_db(
-    ctx, config, filename, latest, no_dev_scripts, no_remove_webassets, verify
+    ctx,
+    config,
+    filename,
+    no_dev_scripts,
+    no_remove_webassets,
+    verify,
+    workers,
 ):
     if not filename:
         filename = _inquirer_dump_file(
-            config, "Choose filename to restore", config.dbname, latest=latest
+            config, "Choose filename to restore", config.dbname
         )
     if not filename:
         return
@@ -309,7 +329,7 @@ def restore_db(
     filename_absolute = (BACKUPDIR / filename).absolute()
     del filename
 
-    if not config.force and not latest:
+    if not config.force:
         __restore_check(filename_absolute, config)
 
     dump_type = _add_cronjob_scripts(config)["postgres"].__get_dump_type(
@@ -365,9 +385,9 @@ def restore_db(
             conn.clone(dbname="postgres"),
             (
                 f"create database {DBNAME_RESTORING} "
-                #"ENCODING 'unicode' "
-                #"LC_COLLATE 'C' "
-                #"TEMPLATE template0 "
+                # "ENCODING 'unicode' "
+                # "LC_COLLATE 'C' "
+                # "TEMPLATE template0 "
                 ";"
             ),
             notransaction=True,
@@ -411,7 +431,6 @@ def restore_db(
                     "-v",
                     f"{dumps_path}:{parent_path_in_container}",
                 ]
-
                 cmd += [
                     "cronjobshell",
                     "restore",
@@ -421,6 +440,7 @@ def restore_db(
                     config.DB_USER,
                     config.DB_PWD,
                     f"{parent_path_in_container}/{filename}",
+                    "-j", str(workers),
                 ]
                 __dc(cmd)
             else:
@@ -476,14 +496,9 @@ def _add_cronjob_scripts(config):
     }
 
 
-def _inquirer_dump_file(config, message, filter, latest=False):
+def _inquirer_dump_file(config, message, filter):
     BACKUPDIR = Path(config.dumps_path)
     __files = _get_dump_files(BACKUPDIR)
-    if latest:
-        if not __files:
-            click.secho("No dump file found - option latest given.", fg="red")
-            sys.exit(1)
-        return __files[0][1]
     filename = inquirer.prompt([inquirer.List("filename", message, choices=__files)])
     if filename:
         filename = filename["filename"][1]

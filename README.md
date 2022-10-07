@@ -154,3 +154,4 @@ odoo pgactivity
 | ODOO_IMAGES_BRANCH| The branch used for ~/.odoo/images|
 | ODOO_INSTALL_LIBPOSTAL=1| If set, then the libpostal lib is installed|
 | ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER=1 | Runs queuejobs and cronjob in the odoo container where also the web application resides|
+| ODOO_QUEUEJOBS_CHANNELS=root:40,magento2:1 | Configures queues for queuejob module |
