@@ -205,13 +205,16 @@ def _get_outdated_versioned_modules_of_deptree(modules):
     from .odoo_config import MANIFEST
 
     mods = Modules()
+    cache_db_modules = {}
 
-    for module in modules:
+    for module in sorted(modules):
         if module == "base":
             continue
 
         for dep in mods.get_module_flat_dependency_tree(Module.get_by_name(module)):
-            meta_info = DBModules.get_meta_data(dep.name)
+            if dep.name not in cache_db_modules:
+                cache_db_modules[dep.name] = DBModules.get_meta_data(dep.name)
+            meta_info = cache_db_modules[dep.name]
             if not meta_info:
                 continue
             version = meta_info["version"]
