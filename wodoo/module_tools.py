@@ -638,7 +638,7 @@ class ModulesCache(object):
         mani_hash = get_hash(MANIFEST_FILE().read_text())
         hash = get_hash(f"{hash_git}{mani_hash}")
 
-        file = Path(os.path.expanduser(f"~/.local/cache/wodoo/modules/{hash}.v2.bin"))
+        file = Path(os.path.expanduser(f"~/.local/cache/wodoo/modules/{hash}.v3.bin"))
         file.parent.mkdir(exist_ok=True, parents=True)
         try_to_set_owner(whoami(), file.parent.parent)
         return file
@@ -689,8 +689,12 @@ class Modules(object):
         modules = {}
         all_manifests = get_all_manifests()
         for m in all_manifests:
-            modules[m.parent.name] = Module(m)
-            modules[m.parent.name].manifest_dict.get("just read manifest")
+            module = Module(m)
+            module.manifest_dict.get("just read manifest")
+            modules[m.parent.name] = module
+
+        for module in modules.values():
+            Modules._get_module_dependency_tree(modules, module)
 
         # if directory is clear, we may cache
         return modules
@@ -740,6 +744,10 @@ class Modules(object):
         return modules
 
     def get_module_dependency_tree(self, module):
+        return self._get_module_dependency_tree(self.modules, module)
+
+    @classmethod
+    def _get_module_dependency_tree(cls, modules, module):
         """
         Dict of dicts
 
@@ -758,7 +766,7 @@ class Modules(object):
                 if dep == "base":
                     data[mod.name][dep] = {}
                     continue
-                dep_mod = [x for x in self.modules.values() if x.name == dep]
+                dep_mod = [x for x in modules.values() if x.name == dep]
                 try:
                     dep_mod = dep_mod[0]
                 except IndexError:
@@ -777,8 +785,10 @@ class Modules(object):
                     data[mod.name][dep] = {}
                     append_deps(dep_mod, data[mod.name][dep])
 
-        append_deps(module, result)
-        return result
+        if module._dep_tree is None:
+            append_deps(module, result)
+            module._dep_tree = result
+        return module._dep_tree
 
     def get_all_modules_installed_by_manifest(self):
         all_modules = set()
@@ -1042,6 +1052,7 @@ class Module(object):
         self.name = self._manifest_path.parent.name
         self.path = self._manifest_path.parent
         os.chdir(remember_cwd)
+        self._dep_tree = None
 
     @property
     def manifest_path(self):
@@ -1084,6 +1095,7 @@ class Module(object):
 
     @property
     def hash(self):
+        import pudb;pudb.set_trace()
         from .tools import get_directory_hash
 
         return get_directory_hash(self.path)
@@ -1102,8 +1114,6 @@ class Module(object):
 
     @classmethod
     def _get_by_name(cls, name):
-        print("_get_by_name")
-
         try:
             res = ModulesCache.get(name)
         except IndexError:

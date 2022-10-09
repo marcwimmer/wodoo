@@ -1326,7 +1326,7 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
 def _clean_customs(ctx, config):
     from .odoo_config import customs_dir
     if not config.force:
-        raise Exception(
+        abort(
             "Needs force option, because I call git clean -xdff and "
             "all your work is lost. (Stashing before)"
         )
@@ -1336,10 +1336,7 @@ def _clean_customs(ctx, config):
 hash_cache = {}
 def _get_directory_hash(path):
     if path not in hash_cache:
-        click.secho(f"Calculating hash for {path}", fg='yellow')
-        hash_cache[path] = subprocess.check_output(
-            ["dtreetrawl", "--hash", "-R", path], encoding="utf8"
-        ).strip()
+        hash_cache[path] = get_directory_hash(path)
     return hash_cache[path]
 
 
@@ -1356,11 +1353,11 @@ def list_deps(ctx, config, module, no_cache):
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
 
+    _clean_customs(ctx, config)
+
     click.secho("Loading Modules...", fg='yellow')
     modules = Modules()
     module = Module.get_by_name(module)
-    test = module.manifest_dict.get("TEST") # TODO undo
-    test = module.manifest_dict.get("TEST") # TODO undo
 
     data = {"modules": []}
     data["modules"] = sorted(

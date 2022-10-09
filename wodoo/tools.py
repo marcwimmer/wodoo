@@ -1100,16 +1100,10 @@ def get_hash(text):
 
 
 def get_directory_hash(path):
+    click.secho(f"Calculating hash for {path}", fg="yellow")
     hex = (
         subprocess.check_output(
-            (
-                "find . -type f "
-                "-not -path '*/.*' -print0 "
-                "| sort -z | xargs -0 sha1sum | sha1sum"
-            ),
-            encoding="utf8",
-            shell=True,
-            cwd=path,
+            ["dtreetrawl", "--hash", "-R", path], encoding="utf8"
         )
         .strip()
         .split(" ")[0]
@@ -1233,21 +1227,22 @@ def whoami(id=False):
     whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
     return whoami
 
+
 @contextmanager
 def download_file(url):
-    local_filename = url.split('/')[-1]
-    file = Path(tempfile.mktemp(suffix='.download'))
+    local_filename = url.split("/")[-1]
+    file = Path(tempfile.mktemp(suffix=".download"))
     file.mkdir(parents=True)
     file = file / local_filename
     del local_filename
 
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
-        with open(file, 'wb') as f:
+        with open(file, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 # If you have chunk encoded response uncomment if
                 # and set chunk_size parameter to None.
-                #if chunk:
+                # if chunk:
                 f.write(chunk)
     try:
         yield file
