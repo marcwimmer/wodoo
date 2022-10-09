@@ -9,3 +9,8 @@ repos:
   sha: 390f12b761dc8934a5db3ad54233f41815707406
   type: integrated
   url: git@git.itewimmer.de:odoo/asterisk_customs.git
+- branch: master
+  path: tools/dtreetrawl
+  sha: 379e6fff7e7e5c1a3ae131c518c3f1d8cc690bce
+  type: integrated
+  url: https://github.com/raamsri/dtreetrawl.git
