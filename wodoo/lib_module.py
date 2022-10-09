@@ -412,15 +412,17 @@ def restore_web_icons(ctx, config):
     help="e.g. at_install/account_accountant,post_install/account_accountant",
 )
 @click.option(
-    "-l", "--log",
+    "-l",
+    "--log",
     default="info",
-    type=click.Choice(['info', 'debug', 'error']),
+    type=click.Choice(["info", "debug", "error"]),
     help="display logs with given level",
 )
 @click.option(
-    "-dt", "--default-test-tags",
+    "-dt",
+    "--default-test-tags",
     is_flag=True,
-    help="Adds at_install/{module},post_install/{module},standard/{module}"
+    help="Adds at_install/{module},post_install/{module},standard/{module}",
 )
 @pass_config
 @click.pass_context
@@ -579,8 +581,9 @@ def update(
 
         def _effective_test_tags():
             if default_test_tags:
-                return ','.join(
-                    f"at_install/{x},post_install{x},standard/{x}" for x in module)
+                return ",".join(
+                    f"at_install/{x},post_install{x},standard/{x}" for x in module
+                )
             else:
                 return test_tags or ""
 
@@ -1320,70 +1323,24 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
         return global_hash_paths
     return [p.relative_to(customs_dir_path) for p in global_hash_paths]
 
-
-@odoo_module.command()
-@click.option("--on-need", is_flag=True)
-@pass_config
-@click.pass_context
-def make_dir_hashes(ctx, config, on_need):
-    from tqdm import tqdm
+def _clean_customs(ctx, config):
     from .odoo_config import customs_dir
-    from .consts import FILE_DIRHASHES
-
-    customs_dir = customs_dir()
-    customs_dir_path = Path(customs_dir)
-    customs_dir = str(customs_dir)
-
-    file_dirhashes = customs_dir_path / FILE_DIRHASHES
-    if on_need and file_dirhashes.exists():
-        return
-
     if not config.force:
         raise Exception(
             "Needs force option, because I call git clean -xdff and "
             "all your work is lost. (Stashing before)"
         )
-    subprocess.check_call(["git", "stash", "--include-untracked"])
-    subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir)
-    hashes = subprocess.check_output(
-        ["sha1deep", "-r", "-l", "-j", "5", customs_dir], encoding="utf8"
-    ).strip()
+    subprocess.check_call(["git", "stash", "--include-untracked"], cwd=customs_dir())
+    subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir())
 
-    file_hashes = {}
-    for hash in hashes.splitlines():
-        hash, file = hash.split(" ", 1)
-        file = file.strip()
-        if file.startswith("./"):
-            file = file[2:]
-        elif file.startswith(customs_dir):
-            file = file[len(customs_dir) + 1 :]
-
-        file_hashes[file] = hash
-
-    global_hash_paths = _get_global_hash_paths()
-    paths = []
-    for path in customs_dir_path.glob("**/*"):
-        if (
-            path in global_hash_paths
-            or path.is_dir()
-            and (path / "__manifest__.py").exists()
-        ):
-            paths.append(path)
-
-    path_hashes = {}
-    for path in tqdm(paths):
-        relpath = str(path.relative_to(customs_dir))
-        files = list(
-            sorted(filter(lambda x: str(x).startswith(relpath), file_hashes.keys()))
-        )
-        hashstring = "".join(file_hashes[file] for file in files)
-        path_hashes[relpath] = get_hash(hashstring)
-
-    content = json.dumps(path_hashes, indent=4)
-    __concurrent_safe_write_file(file_dirhashes, content)
-    if config.OWNER_UID:
-        os.chown(file_dirhashes, int(config.OWNER_UID), -1)
-    return content
+hash_cache = {}
+def _get_directory_hash(path):
+    if path not in hash_cache:
+        click.secho(f"Calculating hash for {path}", fg='yellow')
+        hash_cache[path] = subprocess.check_output(
+            ["dtreetrawl", "--hash", "-R", path], encoding="utf8"
+        ).strip()
+    return hash_cache[path]
 
 
 @odoo_module.command()
@@ -1399,10 +1356,11 @@ def list_deps(ctx, config, module, no_cache):
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
 
+    click.secho("Loading Modules...", fg='yellow')
     modules = Modules()
     module = Module.get_by_name(module)
-    ctx.invoke(make_dir_hashes, on_need=not no_cache)
-    dir_hashes = json.loads((customs_dir() / FILE_DIRHASHES).read_text())
+    test = module.manifest_dict.get("TEST") # TODO undo
+    test = module.manifest_dict.get("TEST") # TODO undo
 
     data = {"modules": []}
     data["modules"] = sorted(
@@ -1433,7 +1391,7 @@ def list_deps(ctx, config, module, no_cache):
     python_version = config.ODOO_PYTHON_VERSION
     to_hash = str(python_version) + ";"
     for path in list(sorted(set(paths))):
-        _hash = dir_hashes.get(str(path))
+        _hash = _get_directory_hash(path)
         if _hash is None:
             raise Exception(f"No hash found for {path} try it again with --no-cache")
         to_hash += f"{path} {_hash},"
@@ -1493,4 +1451,3 @@ def list_modules(ctx, config):
 Commands.register(progress)
 Commands.register(update)
 Commands.register(show_install_state)
-Commands.register(make_dir_hashes)

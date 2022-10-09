@@ -638,7 +638,7 @@ class ModulesCache(object):
         mani_hash = get_hash(MANIFEST_FILE().read_text())
         hash = get_hash(f"{hash_git}{mani_hash}")
 
-        file = Path(os.path.expanduser(f"~/.local/cache/wodoo/modules/{hash}.bin"))
+        file = Path(os.path.expanduser(f"~/.local/cache/wodoo/modules/{hash}.v2.bin"))
         file.parent.mkdir(exist_ok=True, parents=True)
         try_to_set_owner(whoami(), file.parent.parent)
         return file
@@ -690,6 +690,7 @@ class Modules(object):
         all_manifests = get_all_manifests()
         for m in all_manifests:
             modules[m.parent.name] = Module(m)
+            modules[m.parent.name].manifest_dict.get("just read manifest")
 
         # if directory is clear, we may cache
         return modules
@@ -822,7 +823,7 @@ class Modules(object):
 
     def get_all_auto_install_modules(self):
         auto_install_modules = []
-        for module in Modules().modules:
+        for module in sorted(Modules().modules):
             try:
                 module = Module.get_by_name(module)
             except NotInAddonsPath:
@@ -847,7 +848,7 @@ class Modules(object):
                 installed_dependencies = set(
                     [
                         x
-                        for x in dependencies
+                        for x in sorted(dependencies)
                         if x.manifest_dict.get("auto_install") or x in complete_modules
                     ]
                 )
@@ -857,7 +858,7 @@ class Modules(object):
                     if all(x in module_list for x in dependencies):
                         yield auto_install_module
 
-        modules = self.get_all_auto_install_modules()
+        modules = list(sorted(self.get_all_auto_install_modules()))
         while True:
             before = list(sorted(set(map(lambda x: x.name, modules))))
             modules = list(_get(modules))
@@ -1101,11 +1102,14 @@ class Module(object):
 
     @classmethod
     def _get_by_name(cls, name):
+        print("_get_by_name")
 
         try:
-            ModulesCache.get(name)
+            res = ModulesCache.get(name)
         except IndexError:
             pass
+        else:
+            return res
 
         from .odoo_config import get_odoo_addons_paths
 
