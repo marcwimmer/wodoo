@@ -103,7 +103,18 @@ def backup_all(ctx, config, filename):
     type=click.Choice(["custom", "plain", "directory", "wodoobin"]),
     default="custom",
 )
-def backup_db(ctx, config, filename, dbname, dumptype, column_inserts, exclude):
+@click.option(
+    "--pigz",
+    is_flag=True,
+)
+@click.option(
+    "-Z",
+    "--compression",
+    default=5,
+)
+def backup_db(
+    ctx, config, filename, dbname, dumptype, column_inserts, exclude, pigz, compression
+):
     filename = Path(
         filename or f"{config.project_name}.{config.dbname}.odoo" + ".dump.gz"
     )
@@ -159,11 +170,15 @@ def backup_db(ctx, config, filename, dbname, dumptype, column_inserts, exclude):
             "/host/dumps2/" + filename.name,
             "--dumptype",
             dumptype,
+            "--compression",
+            str(compression),
         ]
         for exclude in exclude:
             cmd += ["--exclude", exclude]
         if column_inserts:
             cmd += ["--column-inserts"]
+        if pigz:
+            cmd += ["--pigz"]
 
         res = __dc(cmd)
         if res:
@@ -440,7 +455,8 @@ def restore_db(
                     config.DB_USER,
                     config.DB_PWD,
                     f"{parent_path_in_container}/{filename}",
-                    "-j", str(workers),
+                    "-j",
+                    str(workers),
                 ]
                 __dc(cmd)
             else:
