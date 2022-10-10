@@ -15,6 +15,7 @@ import tempfile
 import click
 
 from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
+from .tools import is_git_clean
 from .tools import get_hash
 from .tools import get_directory_hash
 from .tools import sync_folder
@@ -1328,13 +1329,15 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
 
 def _clean_customs(ctx, config):
     from .odoo_config import customs_dir
+    path = customs_dir()
     if not config.force:
         abort(
             "Needs force option, because I call git clean -xdff and "
             "all your work is lost. (Stashing before)"
         )
-    subprocess.check_call(["git", "stash", "--include-untracked"], cwd=customs_dir())
-    subprocess.check_call(["git", "clean", "-xdff"], cwd=customs_dir())
+    if not is_git_clean(path):
+        subprocess.check_call(["git", "stash", "--include-untracked"], cwd=path)
+    subprocess.check_call(["git", "clean", "-xdff"], cwd=path)
 
 hash_cache = {}
 def _get_directory_hash(path):
