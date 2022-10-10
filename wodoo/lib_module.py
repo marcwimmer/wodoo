@@ -617,8 +617,8 @@ def update(
                     params += ["--i18n"]
                 if not tests:
                     params += ["--no-tests"]
-                if _test_tags := _effective_test_tags():
-                    params += ["--test-tags=" + _test_tags]
+                if _effective_test_tags():
+                    params += ["--test-tags=" + _effective_test_tags()]
                 if server_wide_modules:
                     params += ["--server-wide-modules", server_wide_modules]
                 if additional_addons_paths:
