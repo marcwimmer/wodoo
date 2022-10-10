@@ -1,3 +1,5 @@
+from multiprocessing.dummy import Process
+import re
 import sys
 import uuid
 import arrow
@@ -35,6 +37,10 @@ DTF = "%Y-%m-%d %H:%M:%S"
 
 
 class UpdateException(Exception):
+    pass
+
+
+class RepeatUpdate(Exception):
     pass
 
 
@@ -375,9 +381,7 @@ def restore_web_icons(ctx, config):
     is_flag=True,
     help="Does not install/update module list module",
 )
-@click.option(
-    "--non-interactive", "-I", default=True, is_flag=True, help="Not interactive"
-)
+@click.option("--non-interactive", "-I", is_flag=True, help="Not interactive")
 @click.option(
     "--check-install-state",
     default=True,
@@ -428,6 +432,7 @@ def restore_web_icons(ctx, config):
     is_flag=True,
     help="Adds at_install/{module},post_install/{module},standard/{module}",
 )
+@click.option("--recover-view-error", is_flag=True, help="Can happen if per update fields are removed and views still referencing this field.")
 @pass_config
 @click.pass_context
 def update(
@@ -453,6 +458,7 @@ def update(
     additional_addons_paths=False,
     uninstall=False,
     log=False,
+    recover_view_error=False,
 ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -468,6 +474,11 @@ def update(
 
     """
     param_module = module
+
+    if recover_view_error and not non_interactive:
+        abort(
+            "Recover view error requires non interactive execution (stdout parse required)"
+        )
 
     click.secho(
         (
@@ -541,40 +552,8 @@ def update(
                     Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
                 Commands.invoke(ctx, "wait_for_container_postgres")
 
-        def show_dangling():
-            dangling = list(DBModules.get_dangling_modules())
-            if dangling:
-                click.echo("Displaying dangling modules:")
-                for row in dangling:
-                    click.echo("{}: {}".format(row[0], row[1]))
-            return bool(dangling)
-
         if not no_dangling_check:
-            if any(x[1] == "uninstallable" for x in DBModules.get_dangling_modules()):
-                for x in DBModules.get_dangling_modules():
-                    click.echo("{}: {}".format(*x[:2]))
-                if (
-                    non_interactive
-                    or input(
-                        (
-                            "Uninstallable modules found - "
-                            "shall I set them to 'uninstalled'? [y/N]"
-                        )
-                    ).lower()
-                    == "y"
-                ):
-                    _execute_sql(
-                        config.get_odoo_conn(),
-                        (
-                            "update ir_module_module set state = "
-                            "'uninstalled' where state = 'uninstallable';"
-                        ),
-                    )
-            if DBModules.get_dangling_modules() and not dangling_modules:
-                if not no_dangling_check:
-                    if show_dangling():
-                        input("Abort old upgrade and continue? (Ctrl+c to break)")
-                        ctx.invoke(abort_upgrade)
+            _do_dangling_check(ctx, config, dangling_modules, non_interactive)
         if installed_modules:
             module += __get_installed_modules(config)
         if dangling_modules:
@@ -626,11 +605,26 @@ def update(
                 if log:
                     params += [f"--log={log}"]
                 params += ["--config-file=" + config_file]
-                rc = _exec_update(config, params)
+                rc = list(_exec_update(config, params, non_interactive=non_interactive))
+                if len(rc) == 1:
+                    rc = rc[0]
+                else:
+                    rc, output = rc
+
                 if rc:
-                    raise UpdateException(module)
+                    if recover_view_error:
+                        try:
+                            _try_to_recover_view_error(config, output)
+                        except RepeatUpdate:
+                            raise
+                        except Exception as ex:
+                            raise UpdateException(module) from ex
+                    else:
+                        raise UpdateException(module)
 
             except UpdateException:
+                raise
+            except RepeatUpdate:
                 raise
             except Exception as ex:
                 click.echo(traceback.format_exc())
@@ -639,9 +633,15 @@ def update(
                     ("Error at /update_modules.py - " "aborting update process.")
                 ) from ex
 
-        if outdated_modules:
-            _technically_update(outdated_modules)
-        _technically_update(module)
+        while True:
+            try:
+                if outdated_modules:
+                    _technically_update(outdated_modules)
+                _technically_update(module)
+            except RepeatUpdate:
+                click.secho("Retrying update.")
+            else:
+                break
 
         if not no_restart and config.use_docker:
             Commands.invoke(ctx, "restart", machines=["odoo"])
@@ -674,22 +674,95 @@ def update(
         ctx.invoke(show_install_state, suppress_error=False)
 
     if check_install_state:
-        if all_modules:
-            ctx.invoke(
-                show_install_state,
-                suppress_error=no_dangling_check,
-                missing_as_error=True,
+        _do_check_install_state(ctx, config, all_modules, no_dangling_check)
+
+
+def _try_to_recover_view_error(config, output):
+    """
+    If a field is removed it can be that views still reference it, so
+    remove the item from the view.
+
+    Field "product_not_show_ax_code" does not exist in model "res.company"
+    """
+    import pudb
+
+    pudb.set_trace()
+    lines = output.splitlines()
+
+    for line in lines:
+        field = re.findall('Field "([^"]*?)" does not exist in model', line)
+        if field:
+            _execute_sql(
+                config.get_odoo_conn(),
+                (
+                    "update ir_ui_view set arch_db = replace(arch_db, "
+                    f"'{field[0]}', 'create_date')"
+                ),
             )
-        else:
-            missing = list(DBModules.check_if_all_modules_from_install_are_installed())
-            problem_missing = set()
-            for module in module:
-                if module in missing:
-                    problem_missing.add(module)
-            if problem_missing:
-                for missing in sorted(problem_missing):
-                    click.secho("Missing: {missing}", fg="red")
-                abort("Missing after installation")
+            raise RepeatUpdate()
+
+
+def show_dangling():
+    from .module_tools import Modules, DBModules, Module
+
+    dangling = list(DBModules.get_dangling_modules())
+    if dangling:
+        click.echo("Displaying dangling modules:")
+        for row in dangling:
+            click.echo("{}: {}".format(row[0], row[1]))
+    return bool(dangling)
+
+
+def _do_check_install_state(ctx, config, all_modules, no_dangling_check):
+    from .module_tools import Modules, DBModules, Module
+
+    if all_modules:
+        ctx.invoke(
+            show_install_state,
+            suppress_error=no_dangling_check,
+            missing_as_error=True,
+        )
+    else:
+        missing = list(DBModules.check_if_all_modules_from_install_are_installed())
+        problem_missing = set()
+        for module in module:
+            if module in missing:
+                problem_missing.add(module)
+        if problem_missing:
+            for missing in sorted(problem_missing):
+                click.secho("Missing: {missing}", fg="red")
+            abort("Missing after installation")
+
+
+def _do_dangling_check(ctx, config, dangling_modules, non_interactive):
+    from .module_tools import Modules, DBModules, Module
+
+    if any(x[1] == "uninstallable" for x in DBModules.get_dangling_modules()):
+        if non_interactive:
+            abort("Danling modules exist. Provide --no-dangling-check otherwise.")
+        for x in DBModules.get_dangling_modules():
+            click.echo("{}: {}".format(*x[:2]))
+        if (
+            non_interactive
+            or input(
+                (
+                    "Uninstallable modules found - "
+                    "shall I set them to 'uninstalled'? [y/N]"
+                )
+            ).lower()
+            == "y"
+        ):
+            _execute_sql(
+                config.get_odoo_conn(),
+                (
+                    "update ir_module_module set state = "
+                    "'uninstalled' where state = 'uninstallable';"
+                ),
+            )
+    if DBModules.get_dangling_modules() and not dangling_modules:
+        if show_dangling():
+            input("Abort old upgrade and continue? (Ctrl+c to break)")
+            ctx.invoke(abort_upgrade)
 
 
 def _parse_modules(modules):
@@ -777,7 +850,9 @@ def update_i18n(ctx, config, module, no_restart):
         params += ["--no-update-modulelist"]
         params += ["--no-dangling-check"]
         params += ["--only-i18n"]
-        _exec_update(config, params)
+        retcode = next(_exec_update(config, params, non_interactive=True))
+        if retcode:
+            raise Exception("Error at update i18n happened.")
     except Exception:
         click.echo(traceback.format_exc())
         ctx.invoke(show_install_state, suppress_error=True)
@@ -852,14 +927,25 @@ def show_conflicting_modules():
     get_odoo_addons_paths()
 
 
-def _exec_update(config, params):
-    if config.use_docker:
-        params = ["run", "--rm", "odoo_update", "/update_modules.py"] + params
-        return __cmd_interactive(*params)
+def _exec_update(config, params, non_interactive=False):
+    params = ["odoo_update", "/update_modules.py"] + params
+    if not non_interactive:
+        yield __cmd_interactive(
+            *(
+                [
+                    "run",
+                    "--rm",
+                ]
+                + params
+            )
+        )
     else:
-        from . import lib_control_native
-
-        return lib_control_native._update_command(config, params)
+        try:
+            returncode, output = __dcrun(list(params), returnproc=True)
+            yield returncode
+            yield output
+        except subprocess.CalledProcessError as ex:
+            yield ex.returncode
 
 
 def _get_available_robottests(ctx, param, incomplete):
@@ -1327,8 +1413,10 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
         return global_hash_paths
     return [p.relative_to(customs_dir_path) for p in global_hash_paths]
 
+
 def _clean_customs(ctx, config):
     from .odoo_config import customs_dir
+
     path = customs_dir()
     if not config.force:
         abort(
@@ -1339,7 +1427,10 @@ def _clean_customs(ctx, config):
         subprocess.check_call(["git", "stash", "--include-untracked"], cwd=path)
     subprocess.check_call(["git", "clean", "-xdff"], cwd=path)
 
+
 hash_cache = {}
+
+
 def _get_directory_hash(path):
     if path not in hash_cache:
         hash_cache[path] = get_directory_hash(path)
@@ -1361,7 +1452,7 @@ def list_deps(ctx, config, module, no_cache):
 
     _clean_customs(ctx, config)
 
-    click.secho("Loading Modules...", fg='yellow')
+    click.secho("Loading Modules...", fg="yellow")
     modules = Modules()
     module = Module.get_by_name(module)
 

@@ -1,4 +1,5 @@
 import platform
+from subprocess import PIPE, STDOUT
 import hashlib
 import requests
 import stat
@@ -423,7 +424,9 @@ def __dcexec(cmd, interactive=True, env=None):
         return subprocess.check_output(cmd)
 
 
-def __dcrun(cmd, interactive=False, env={}, returncode=False, pass_stdin=None):
+def __dcrun(
+    cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
+):
     env = _set_default_envs(env)
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ["run"]
@@ -444,10 +447,21 @@ def __dcrun(cmd, interactive=False, env={}, returncode=False, pass_stdin=None):
             optional_params["stdin"] = sys.stdin
         return subprocess.run(cmd, check=True, **optional_params)
     else:
-        if returncode:
-            process = subprocess.Popen(cmd)
+        if returncode or returnproc:
+            process = subprocess.Popen(
+                cmd, stdout=PIPE, stderr=STDOUT, close_fds=True,
+            )
+            output = ""
+            for line in iter(process.stdout.readline, b''):
+                line = line.decode('utf-8').strip()
+                print(line)
+                output += line + "\n"
+
+            process.communicate()
             process.wait()
-            return process.returncode
+            if returncode:
+                return process.returncode
+            return process.returncode, output
         else:
             optional_params = {}
             if pass_stdin:
@@ -516,10 +530,12 @@ def __get_cmd():
     return cmd
 
 
-def __cmd_interactive(*params):
+def __cmd_interactive(*params, return_proc=False):
     cmd = __get_cmd() + list(params)
     proc = subprocess.Popen(cmd)
     proc.wait()
+    if return_proc:
+        return proc
     return proc.returncode
     # ctrl+c leads always to error otherwise
     # if proc.returncode:
@@ -1102,9 +1118,7 @@ def get_hash(text):
 def get_directory_hash(path):
     click.secho(f"Calculating hash for {path}", fg="yellow")
     hex = (
-        subprocess.check_output(
-            ["dtreetrawl", "--hash", "-R", path], encoding="utf8"
-        )
+        subprocess.check_output(["dtreetrawl", "--hash", "-R", path], encoding="utf8")
         .strip()
         .split(" ")[0]
         .strip()
