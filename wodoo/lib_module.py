@@ -674,7 +674,7 @@ def update(
         ctx.invoke(show_install_state, suppress_error=False)
 
     if check_install_state:
-        _do_check_install_state(ctx, config, all_modules, no_dangling_check)
+        _do_check_install_state(ctx, config, module, all_modules, no_dangling_check)
 
 
 def _try_to_recover_view_error(config, output):
@@ -713,7 +713,7 @@ def show_dangling():
     return bool(dangling)
 
 
-def _do_check_install_state(ctx, config, all_modules, no_dangling_check):
+def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check):
     from .module_tools import Modules, DBModules, Module
 
     if all_modules:
