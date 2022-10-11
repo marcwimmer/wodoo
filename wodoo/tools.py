@@ -1117,8 +1117,9 @@ def get_hash(text):
 
 def get_directory_hash(path):
     click.secho(f"Calculating hash for {path}", fg="yellow")
+    # "-N required because absolute path is used"
     hex = (
-        subprocess.check_output(["dtreetrawl", "--hash", "-R", path], encoding="utf8")
+        subprocess.check_output(["dtreetrawl", "-N", "--hash", "-R", path], encoding="utf8")
         .strip()
         .split(" ")[0]
         .strip()
