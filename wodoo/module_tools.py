@@ -1095,7 +1095,6 @@ class Module(object):
 
     @property
     def hash(self):
-        import pudb;pudb.set_trace()
         from .tools import get_directory_hash
 
         return get_directory_hash(self.path)

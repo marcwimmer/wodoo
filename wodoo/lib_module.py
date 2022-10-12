@@ -688,9 +688,6 @@ def _try_to_recover_view_error(config, output):
 
     Field "product_not_show_ax_code" does not exist in model "res.company"
     """
-    import pudb
-
-    pudb.set_trace()
     lines = output.splitlines()
 
     for line in lines:
