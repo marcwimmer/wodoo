@@ -1,4 +1,5 @@
 from multiprocessing.dummy import Process
+import time
 import re
 import sys
 import uuid
@@ -240,10 +241,10 @@ def _get_outdated_versioned_modules_of_deptree(modules):
             new_version = tuple([int(x) for x in new_version.split(".")])
             if len(new_version) == 2:
                 # add odoo version in front
-                new_version = tuple(
-                    [int(x) for x in str(MANIFEST()["version"]).split(".")]
-                    + list(new_version)
-                )
+                odoo_version = str(MANIFEST()["version"]).split(".")
+                assert len(odoo_version) == 2, "Version in manifest should be like 16.0"
+                new_version = tuple(list(map(int, odoo_version)) + list(new_version))
+                del odoo_version
 
             if new_version > version:
                 yield dep
@@ -540,12 +541,13 @@ def update(
         if not module and not since_git_sha:
             module = _get_default_modules_to_update()
 
-        outdated_modules = list(
-            map(
-                lambda x: x.name,
-                set(_get_outdated_versioned_modules_of_deptree(module)),
+        def _get_outdated_modules():
+            return list(
+                map(
+                    lambda x: x.name,
+                    set(_get_outdated_versioned_modules_of_deptree(module)),
+                )
             )
-        )
 
         if not no_restart:
             if config.use_docker:
@@ -639,7 +641,10 @@ def update(
 
         while True:
             try:
+                outdated_modules = _get_outdated_modules()
                 if outdated_modules:
+                    click.secho(f"Outdated modules: {','.join(outdated_modules)}", fg='yellow')
+                    time.sleep(0.3)
                     _technically_update(outdated_modules)
                 _technically_update(module)
             except RepeatUpdate:
@@ -1496,7 +1501,9 @@ def list_deps(ctx, config, module, no_cache):
         for path in list(sorted(set(paths))):
             _hash = _get_directory_hash(path)
             if _hash is None:
-                raise Exception(f"No hash found for {path} try it again with --no-cache")
+                raise Exception(
+                    f"No hash found for {path} try it again with --no-cache"
+                )
             to_hash += f"{path} {_hash},"
 
         if config.verbose:
