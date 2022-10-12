@@ -233,6 +233,7 @@ def _exists_table(conn, table_name):
 
 
 def _wait_postgres(config, timeout=600):
+    started = arrow.get()
     if config.run_postgres:
         conn = config.get_odoo_conn().clone(dbname="postgres")
         container_ids = (
@@ -292,9 +293,11 @@ def _wait_postgres(config, timeout=600):
                 break
 
             except Exception as ex:
-                if str(ex) != str(last_ex):
-                    click.secho(f"Waiting again for postgres. Last error is: {str(ex)}")
-                last_ex = ex
+                seconds = (arrow.get() - started).total_seconds()
+                if seconds > 5:
+                    if str(ex) != str(last_ex):
+                        click.secho(f"Waiting again for postgres. Last error is: {str(ex)}")
+                    last_ex = ex
                 time.sleep(1)
         click.secho("Postgres now available.", fg="green")
 
@@ -449,11 +452,14 @@ def __dcrun(
     else:
         if returncode or returnproc:
             process = subprocess.Popen(
-                cmd, stdout=PIPE, stderr=STDOUT, close_fds=True,
+                cmd,
+                stdout=PIPE,
+                stderr=STDOUT,
+                close_fds=True,
             )
             output = ""
-            for line in iter(process.stdout.readline, b''):
-                line = line.decode('utf-8').strip()
+            for line in iter(process.stdout.readline, b""):
+                line = line.decode("utf-8").strip()
                 print(line)
                 output += line + "\n"
 
@@ -1119,7 +1125,9 @@ def get_directory_hash(path):
     click.secho(f"Calculating hash for {path}", fg="yellow")
     # "-N required because absolute path is used"
     hex = (
-        subprocess.check_output(["dtreetrawl", "-N", "--hash", "-R", path], encoding="utf8")
+        subprocess.check_output(
+            ["dtreetrawl", "-N", "--hash", "-R", path], encoding="utf8"
+        )
         .strip()
         .split(" ")[0]
         .strip()
