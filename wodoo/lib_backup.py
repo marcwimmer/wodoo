@@ -112,8 +112,10 @@ def backup_all(ctx, config, filename):
     "--compression",
     default=5,
 )
+@click.option("-j", "--worker", default=1)
 def backup_db(
-    ctx, config, filename, dbname, dumptype, column_inserts, exclude, pigz, compression
+    ctx, config, filename, dbname, dumptype, column_inserts, exclude, pigz, compression,
+    worker,
 ):
     filename = Path(
         filename or f"{config.project_name}.{config.dbname}.odoo" + ".dump.gz"
@@ -172,6 +174,8 @@ def backup_db(
             dumptype,
             "--compression",
             str(compression),
+            "-j",
+            str(worker),
         ]
         for exclude in exclude:
             cmd += ["--exclude", exclude]
