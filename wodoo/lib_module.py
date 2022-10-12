@@ -432,7 +432,11 @@ def restore_web_icons(ctx, config):
     is_flag=True,
     help="Adds at_install/{module},post_install/{module},standard/{module}",
 )
-@click.option("--recover-view-error", is_flag=True, help="Can happen if per update fields are removed and views still referencing this field.")
+@click.option(
+    "--recover-view-error",
+    is_flag=True,
+    help="Can happen if per update fields are removed and views still referencing this field.",
+)
 @pass_config
 @click.pass_context
 def update(
@@ -1454,63 +1458,76 @@ def list_deps(ctx, config, module, no_cache):
 
     click.secho("Loading Modules...", fg="yellow")
     modules = Modules()
-    module = Module.get_by_name(module)
+    if module == "all":
+        do_all = True
+        module = [Module.get_by_name(x) for x in modules.modules]
+    else:
+        do_all = False
+        module = [Module.get_by_name(module)]
 
-    data = {"modules": []}
-    data["modules"] = sorted(
-        map(lambda x: x.name, modules.get_module_flat_dependency_tree(module))
-    )
+    result = {}
+    for module in module:
 
-    data["auto_install"] = sorted(
-        map(
-            lambda x: x.name,
-            modules.get_filtered_auto_install_modules_based_on_module_list(
-                data["modules"]
-            ),
+        data = {"modules": []}
+        data["modules"] = sorted(
+            map(lambda x: x.name, modules.get_module_flat_dependency_tree(module))
         )
-    )
-    part1 = arrow.get() - started
-    started = arrow.get()
-    if config.verbose:
-        print(f"part1: {part1.total_seconds()}")
 
-    # get some hashes:
-    paths = _get_global_hash_paths(True)
-    for mod in data["modules"]:
-        paths.append(Module.get_by_name(mod).path)
-    for mod in data["auto_install"]:
-        paths.append(Module.get_by_name(mod).path)
+        data["auto_install"] = sorted(
+            map(
+                lambda x: x.name,
+                modules.get_filtered_auto_install_modules_based_on_module_list(
+                    data["modules"]
+                ),
+            )
+        )
+        part1 = arrow.get() - started
+        started = arrow.get()
+        if config.verbose:
+            print(f"part1: {part1.total_seconds()}")
 
-    # hash python version
-    python_version = config.ODOO_PYTHON_VERSION
-    to_hash = str(python_version) + ";"
-    for path in list(sorted(set(paths))):
-        _hash = _get_directory_hash(path)
-        if _hash is None:
-            raise Exception(f"No hash found for {path} try it again with --no-cache")
-        to_hash += f"{path} {_hash},"
+        # get some hashes:
+        paths = _get_global_hash_paths(True)
+        for mod in data["modules"]:
+            paths.append(Module.get_by_name(mod).path)
+        for mod in data["auto_install"]:
+            paths.append(Module.get_by_name(mod).path)
 
-    if config.verbose:
-        # break the hash in chunks and output the hash
-        todo = to_hash
-        i = 0
-        while todo:
-            i += 1
-            SIZE = 100
-            part = todo[:SIZE]
-            todo = todo[SIZE:]
-            click.secho(f"{i}.\n{part}", fg="blue")
-            click.secho(get_hash(part), fg="yellow")
+        # hash python version
+        python_version = config.ODOO_PYTHON_VERSION
+        to_hash = str(python_version) + ";"
+        for path in list(sorted(set(paths))):
+            _hash = _get_directory_hash(path)
+            if _hash is None:
+                raise Exception(f"No hash found for {path} try it again with --no-cache")
+            to_hash += f"{path} {_hash},"
 
-        click.secho(f"\n\nTo Hash:\n{to_hash}\n\n")
-    hash = get_hash(to_hash)
-    data["hash"] = hash
-    part2 = arrow.get() - started
-    if config.verbose:
-        print(f"part2: {part2.total_seconds()}")
+        if config.verbose:
+            # break the hash in chunks and output the hash
+            todo = to_hash
+            i = 0
+            while todo:
+                i += 1
+                SIZE = 100
+                part = todo[:SIZE]
+                todo = todo[SIZE:]
+                click.secho(f"{i}.\n{part}", fg="blue")
+                click.secho(get_hash(part), fg="yellow")
+
+            click.secho(f"\n\nTo Hash:\n{to_hash}\n\n")
+        hash = get_hash(to_hash)
+        data["hash"] = hash
+        part2 = arrow.get() - started
+        if config.verbose:
+            print(f"part2: {part2.total_seconds()}")
+
+        if not do_all:
+            result = data
+        else:
+            result[module.name] = data
 
     click.secho("---")
-    click.secho(json.dumps(data, indent=4))
+    click.secho(json.dumps(result, indent=4))
 
 
 @odoo_module.command()
