@@ -6,6 +6,7 @@ zfs create zfs_pool1/docker/volumes
 set /etc/odoo/settings ZFS_PATH_VOLUMES=zfs_pool1/docker/volumes  then
 
 """
+import inquirer
 from .tools import abort
 from operator import itemgetter
 import subprocess
@@ -77,14 +78,12 @@ def _get_next_snapshotpath(config):
         counter += 1
     return path
 
-
 def _get_possible_snapshot_paths(config):
     """
     :param path: root path
     """
     all_zfs_folders = _get_all_zfs()
     zfs_path = _get_zfs_path(config)
-    root_zfs_path = "/".join(zfs_path.split("/")[:-1])
     for folder in all_zfs_folders:
         if folder == zfs_path:
             yield folder
@@ -148,9 +147,12 @@ def _get_all_zfs():
     return folders
 
 
+_cache_is_zfz_fs = {}
 def __is_zfs_fs(path_zfs):
     assert " " not in path_zfs
-    folders = _get_all_zfs()
+    if 'folders' not in _cache_is_zfz_fs:
+        _cache_is_zfz_fs.setdefault("folders", _get_all_zfs())
+    folders = _cache_is_zfz_fs['folders']
     folders = [x for x in folders if x.split(" ")[0] == path_zfs]
     return folders
 
@@ -195,16 +197,15 @@ def _turn_into_subvolume(config):
 def make_snapshot(ctx, config, name):
     zfs = search_env_path("zfs")
     __dc(["stop", "-t 1"] + ["postgres"])
-    path = _get_path(config)
     _turn_into_subvolume(config)
     snapshots = list(_get_snapshots(config))
     snapshot = list(filter(lambda x: x["name"] == name, snapshots))
     if snapshot:
-        if config.force:
-            subprocess.check_call(["sudo", zfs, "destroy", snapshot[0]["fullpath"]])
-        else:
-            click.secho(f"Snapshot {name} already exists.", fg="red")
-            sys.exit(-1)
+        if not config.force:
+            answer = inquirer.prompt([inquirer.Confirm("continue", message=("Snapshot already exists - overwrite?"))])
+            if not answer["continue"]:
+                sys.exit(-1)
+        subprocess.check_call(["sudo", zfs, "destroy", snapshot[0]["fullpath"]])
 
     assert " " not in name
     fullpath = _get_zfs_path(config) + "@" + name
@@ -215,6 +216,7 @@ def make_snapshot(ctx, config, name):
 
 def restore(config, name):
     zfs = search_env_path("zfs")
+    import pudb;pudb.set_trace()
     umount = search_env_path("umount")
     if not name:
         return
@@ -242,16 +244,19 @@ def restore(config, name):
         subprocess.check_call(["sudo", zfs, "rollback", snapshot["fullpath"]])
     else:
         full_next_path = _get_next_snapshotpath(config)
-        subprocess.check_call(
-            ["sudo", umount, zfs_full_path],
-        )
+        try:
+            subprocess.check_call(
+                ["sudo", umount, zfs_full_path],
+            )
+        except subprocess.CalledProcessError:
+            click.secho(f"Could not umount {zfs_full_path}. Perhaps not a problem.", fg='yellow')
         subprocess.check_call(["sudo", zfs, "rename", zfs_full_path, full_next_path])
         subprocess.check_call(
             [
                 "sudo",
                 zfs,
                 "clone",
-                full_next_path + "@" + snapshot["name"],
+                snapshot['fullpath'],
                 zfs_full_path,
             ]
         )
