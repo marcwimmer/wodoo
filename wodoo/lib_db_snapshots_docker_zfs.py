@@ -216,7 +216,6 @@ def make_snapshot(ctx, config, name):
 
 def restore(config, name):
     zfs = search_env_path("zfs")
-    import pudb;pudb.set_trace()
     umount = search_env_path("umount")
     if not name:
         return
