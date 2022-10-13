@@ -114,7 +114,15 @@ def backup_all(ctx, config, filename):
 )
 @click.option("-j", "--worker", default=1)
 def backup_db(
-    ctx, config, filename, dbname, dumptype, column_inserts, exclude, pigz, compression,
+    ctx,
+    config,
+    filename,
+    dbname,
+    dumptype,
+    column_inserts,
+    exclude,
+    pigz,
+    compression,
     worker,
 ):
     filename = Path(
@@ -470,9 +478,12 @@ def restore_db(
                     f"{parent_path_in_container}/{filename}",
                     "-j",
                     str(workers),
-                    "--exclude-tables",
-                    ",".join(exclude_tables),
                 ]
+                if exclude_tables:
+                    cmd += [
+                        "--exclude-tables",
+                        ",".join(exclude_tables),
+                    ]
                 if verbose:
                     cmd += ["--verbose"]
                 __dc(cmd)
