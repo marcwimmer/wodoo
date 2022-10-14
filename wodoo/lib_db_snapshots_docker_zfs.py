@@ -311,6 +311,7 @@ def remove_volume(config):
             pass
         subprocess.check_call(["sudo", zfs, "destroy", "-R", path])
         click.secho(f"Removed: {path}", fg="yellow")
+    clear_all(config)
 
 def clear_all(config):
     zfs = search_env_path("zfs")
