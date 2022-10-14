@@ -115,6 +115,7 @@ def snapshot_clear_all(ctx, config):
     if snapshots:
         for snap in snapshots:
             config.snapshot_manager.remove(config, snap)
+    config.snapshot_manager.clear_all(config)
     ctx.invoke(do_list)
 
 
