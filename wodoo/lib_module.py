@@ -445,6 +445,11 @@ def restore_web_icons(ctx, config):
     is_flag=True,
     help="Can happen if per update fields are removed and views still referencing this field.",
 )
+@click.option(
+    "--no-outdated-modules",
+    is_flag=True,
+    help="dont check for outdated modules (for migrations suitable)"
+)
 @pass_config
 @click.pass_context
 def update(
@@ -471,6 +476,7 @@ def update(
     uninstall=False,
     log=False,
     recover_view_error=False,
+    no_outdated_modules=False,
 ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -648,11 +654,12 @@ def update(
 
         while True:
             try:
-                outdated_modules = _get_outdated_modules()
-                if outdated_modules:
-                    click.secho(f"Outdated modules: {','.join(outdated_modules)}", fg='yellow')
-                    time.sleep(0.3)
-                    _technically_update(outdated_modules)
+                if not no_outdated_modules:
+                    outdated_modules = _get_outdated_modules()
+                    if outdated_modules:
+                        click.secho(f"Outdated modules: {','.join(outdated_modules)}", fg='yellow')
+                        time.sleep(0.3)
+                        _technically_update(outdated_modules)
                 _technically_update(module)
             except RepeatUpdate:
                 click.secho("Retrying update.")
