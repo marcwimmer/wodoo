@@ -219,7 +219,14 @@ def _get_outdated_versioned_modules_of_deptree(modules):
         if module == "base":
             continue
 
-        for dep in mods.get_module_flat_dependency_tree(Module.get_by_name(module)):
+        try:
+            mod = Module.get_by_name(module)
+        except KeyError:
+            click.secho(
+                f"Warning module not found: {module}", fg='yellow',
+            )
+            continue
+        for dep in mods.get_module_flat_dependency_tree(mod):
             if dep.name not in cache_db_modules:
                 cache_db_modules[dep.name] = DBModules.get_meta_data(dep.name)
             meta_info = cache_db_modules[dep.name]
