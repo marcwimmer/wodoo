@@ -338,6 +338,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
     help="Exclude tables from restore like --exclude=mail_message",
 )
 @click.option("-v", "--verbose", is_flag=True)
+@click.option("--ignore-errors", is_flag=True, help="Example if some extensions are missing (replication)")
 @pass_config
 @click.pass_context
 def restore_db(
@@ -350,6 +351,7 @@ def restore_db(
     workers,
     exclude_tables,
     verbose,
+    ignore_errors,
 ):
     if not filename:
         filename = _inquirer_dump_file(
@@ -479,6 +481,10 @@ def restore_db(
                     "-j",
                     str(workers),
                 ]
+                if ignore_errors:
+                    cmd += [
+                        "--ignore-errors"
+                    ]
                 if exclude_tables:
                     cmd += [
                         "--exclude-tables",
