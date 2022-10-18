@@ -145,12 +145,10 @@ _cache = {}
 def _get_all_zfs():
     if "folders" not in _cache:
         zfs = search_env_path("zfs")
-        folders = map(
-            lambda x: x.strip(x),
-            subprocess.check_output(
-                ["sudo", zfs, "list", "-oname"], encoding="utf8"
-            ).splitlines(),
-        )
+        output = subprocess.check_output(
+            ["sudo", zfs, "list", "-oname"], encoding="utf8"
+        ).splitlines()
+        folders = map(lambda x: x.strip(), output)
         folders = list(map(lambda x: x.strip(), folders))
         _cache["folders"] = folders
     return _cache["folders"]
@@ -286,7 +284,6 @@ def restore(config, name):
 
 
 def remove(config, snapshot):
-    import pudb;pudb.set_trace()
     zfs = search_env_path("zfs")
     snapshots = __get_snapshots(config)
     if isinstance(snapshot, str):
@@ -312,6 +309,7 @@ def remove_volume(config):
         subprocess.check_call(["sudo", zfs, "destroy", "-R", path])
         click.secho(f"Removed: {path}", fg="yellow")
     clear_all(config)
+
 
 def clear_all(config):
     zfs = search_env_path("zfs")

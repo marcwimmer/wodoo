@@ -57,7 +57,7 @@ def __choose_snapshot(config, take=False):
 @pass_config
 def do_list(config):
     config.snapshot_manager.assert_environment(config)
-    snapshots = config.snapshot_manager.__get_snapshots(config)
+    snapshots = list(config.snapshot_manager.__get_snapshots(config))
     from tabulate import tabulate
 
     rows = [(x["name"], x["date"], x["path"]) for x in snapshots]
