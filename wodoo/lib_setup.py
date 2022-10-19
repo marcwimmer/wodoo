@@ -57,6 +57,19 @@ def _status(config):
         click.secho("url: ", nl=False)
         click.secho(f"http://localhost:{config.PROXY_PORT}", fg=color, bold=True)
 
+    for key in [
+        "DEFAULT_DEV_PASSWORD",
+        "ODOO_DEMO", 
+        "ODOO_QUEUEJOBS_CHANNELS",
+        "ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER",
+        "ODOO_CRON_IN_ONE_CONTAINER",
+        "RUN_ODOO_CRONJOBS",
+        "RUN_ODOO_QUEUEJOBS",
+
+    ]:
+        click.secho(f"{key}:", nl=False,fg=color)
+        click.secho(getattr(config, key))
+
 @setup.command(help="Upgrade wodoo")
 def upgrade():
     cmd = [
