@@ -296,7 +296,9 @@ def _wait_postgres(config, timeout=600):
                 seconds = (arrow.get() - started).total_seconds()
                 if seconds > 5:
                     if str(ex) != str(last_ex):
-                        click.secho(f"Waiting again for postgres. Last error is: {str(ex)}")
+                        click.secho(
+                            f"Waiting again for postgres. Last error is: {str(ex)}"
+                        )
                     last_ex = ex
                 time.sleep(1)
         click.secho("Postgres now available.", fg="green")
@@ -784,38 +786,26 @@ def remove_webassets(conn):
     ignore_url_str = ""
     for url in urls_to_ignore:
         ignore_url_str += f" and url != '{url}'"
+
+    queries = [
+        f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%' {ignore_url_str};",
+        f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%web_editor.summernote%' {ignore_url_str};",
+        f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.less%' {ignore_url_str};",
+        f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.scss%' {ignore_url_str};",
+        f"delete from ir_attachment where name ilike '/web/%web%asset%' {ignore_url_str}",
+        f"delete from ir_attachment where name ilike 'import_bootstrap.less' {ignore_url_str}",
+        f"delete from ir_attachment where name ilike '%.less' {ignore_url_str}",
+        f"delete from ir_attachment where name ilike '%.scss' {ignore_url_str}",
+        f"delete from ir_attachment where name ilike 'web_icon_data' {ignore_url_str}",
+        f"delete from ir_attachment where name ilike 'web_editor.summernote.%' {ignore_url_str}",
+    ]
     try:
-        cr.execute(
-            f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%' {ignore_url_str};"
-        )
-        cr.execute(
-            f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%web_editor.summernote%' {ignore_url_str};"
-        )
-        cr.execute(
-            f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.less%' {ignore_url_str};"
-        )
-        cr.execute(
-            f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%.scss%' {ignore_url_str};"
-        )
-        cr.execute(
-            f"delete from ir_attachment where name ilike '/web/%web%asset%' {ignore_url_str}"
-        )
-        cr.execute(
-            f"delete from ir_attachment where name ilike 'import_bootstrap.less' {ignore_url_str}"
-        )
-        cr.execute(
-            f"delete from ir_attachment where name ilike '%.less' {ignore_url_str}"
-        )
-        cr.execute(
-            f"delete from ir_attachment where name ilike '%.scss' {ignore_url_str}"
-        )
-        cr.execute(
-            f"delete from ir_attachment where name ilike 'web_icon_data' {ignore_url_str}"
-        )
-        cr.execute(
-            f"delete from ir_attachment where name ilike 'web_editor.summernote.%' {ignore_url_str}"
-        )
-        conn.commit()
+        for query in queries:
+            try:
+                cr.execute(query)
+                conn.commit()
+            except:
+                continue
     finally:
         cr.close()
         conn.close()
