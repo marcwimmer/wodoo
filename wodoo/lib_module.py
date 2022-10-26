@@ -446,6 +446,7 @@ def restore_web_icons(ctx, config):
     help="Can happen if per update fields are removed and views still referencing this field.",
 )
 @click.option(
+    "-O",
     "--no-outdated-modules",
     is_flag=True,
     help="dont check for outdated modules (for migrations suitable)"

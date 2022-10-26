@@ -802,6 +802,7 @@ def remove_webassets(conn):
     try:
         for query in queries:
             try:
+                click.secho(query, fg='grey')
                 cr.execute(query)
                 conn.commit()
             except:
