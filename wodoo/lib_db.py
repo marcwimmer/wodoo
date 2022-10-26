@@ -182,6 +182,7 @@ def reset_db(ctx, config, dbname, do_not_install_base, collatec):
             no_dangling_check=True,
             no_update_module_list=True,
             non_interactive=True,
+            no_outdated_modules=True,
         )
 
 @db.command()
