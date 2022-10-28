@@ -38,6 +38,7 @@ systemctl start docker
 
 DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
 
+zfs = search_env_path("zfs")
 
 class NotZFS(Exception):
     def __init__(self, msg, poolname):
@@ -109,8 +110,6 @@ def __get_snapshots(config):
 
 
 def _get_snapshots(config):
-    zfs = search_env_path("zfs")
-
     def _get_snaps():
         for path in _get_possible_snapshot_paths(config):
             for line in (
@@ -148,7 +147,6 @@ _cache = {}
 
 def _get_all_zfs():
     if "folders" not in _cache:
-        zfs = search_env_path("zfs")
         output = subprocess.check_output(
             ["sudo", zfs, "list", "-oname"], encoding="utf8"
         ).splitlines()
@@ -159,6 +157,7 @@ def _get_all_zfs():
 
 
 def __is_zfs_fs(path_zfs):
+    path_zfs = str(path_zfs)
     assert " " not in path_zfs
     folders = _get_all_zfs()
     folders = [x for x in folders if x == path_zfs]
@@ -176,6 +175,7 @@ def _turn_into_subvolume(config):
     zfs = search_env_path("zfs")
     fullpath = _get_path(config)
     fullpath_zfs = _get_zfs_path(config)
+    import pudb;pudb.set_trace()
     if __is_zfs_fs(fullpath_zfs):
         # is zfs - do nothing
         return
@@ -314,12 +314,28 @@ def remove_volume(config):
         click.secho(f"Removed: {path}", fg="yellow")
     clear_all(config)
 
+def _get_pool_mountpoint(poolname):
+    mountpoint = subprocess.check_output(["sudo", zfs, "get", "mountpoint", "-H",  "-o", "value", poolname], encoding="utf8").strip()
+    return Path(mountpoint)
+
+def translate_poolPath_to_fullPath(path):
+    path = Path(path)
+    pool = path.parts[0]
+    poolpath = _get_pool_mountpoint(pool)
+    path = poolpath / path.relative_to(pool)
+    return path
 
 def clear_all(config):
     zfs = search_env_path("zfs")
     zfs_full_path = _get_zfs_path(config)
     _try_umount(config)
+<<<<<<< HEAD
     try:
         subprocess.check_call(["sudo", zfs, "destroy", "-r", zfs_full_path])
     except subprocess.CalledProcessError as ex:
         click.secho(f"Ignoring:\n{ex}", fg='red')
+=======
+    diskpath = translate_poolPath_to_fullPath(zfs_full_path)
+    if __is_zfs_fs(diskpath):
+        subprocess.check_call(["sudo", zfs, "destroy", "-r", zfs_full_path])
+>>>>>>> 750889cab53d93da83d758213f4c0d74ea9ddb5d
