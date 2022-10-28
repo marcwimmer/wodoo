@@ -172,6 +172,8 @@ def _turn_into_subvolume(config):
     """
     Makes a zfs pool out of a path.
     """
+    if config.NAMED_ODOO_POSTGRES_VOLUME:
+        abort("Not compatible with NAMED_ODOO_POSTGRES_VOLUME by now.")
     zfs = search_env_path("zfs")
     fullpath = _get_path(config)
     fullpath_zfs = _get_zfs_path(config)
