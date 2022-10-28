@@ -328,13 +328,6 @@ def clear_all(config):
     zfs = search_env_path("zfs")
     zfs_full_path = _get_zfs_path(config)
     _try_umount(config)
-<<<<<<< HEAD
-    try:
-        subprocess.check_call(["sudo", zfs, "destroy", "-r", zfs_full_path])
-    except subprocess.CalledProcessError as ex:
-        click.secho(f"Ignoring:\n{ex}", fg='red')
-=======
     diskpath = translate_poolPath_to_fullPath(zfs_full_path)
     if __is_zfs_fs(diskpath):
         subprocess.check_call(["sudo", zfs, "destroy", "-r", zfs_full_path])
->>>>>>> 750889cab53d93da83d758213f4c0d74ea9ddb5d
