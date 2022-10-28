@@ -175,7 +175,6 @@ def _turn_into_subvolume(config):
     zfs = search_env_path("zfs")
     fullpath = _get_path(config)
     fullpath_zfs = _get_zfs_path(config)
-    import pudb;pudb.set_trace()
     if __is_zfs_fs(fullpath_zfs):
         # is zfs - do nothing
         return
