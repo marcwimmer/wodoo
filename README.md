@@ -156,3 +156,4 @@ odoo pgactivity
 | ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER=1 | Runs queuejobs and cronjob in the odoo container where also the web application resides|
 | ODOO_QUEUEJOBS_CHANNELS=root:40,magento2:1 | Configures queues for queuejob module |
 |NAMED_ODOO_POSTGRES_VOLUME| Use a specific external volume; not dropped with down -v command|
+|CRONJOB_DADDY_CLEANUP=0 */1 * * * ${JOB_DADDY_CLEANUP}|Turn on grandfather-principle based backup|
