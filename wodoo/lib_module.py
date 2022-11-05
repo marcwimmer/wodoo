@@ -358,9 +358,15 @@ def restore_web_icons(ctx, config):
     )
     click.secho("Restored web icons.", fg="green")
 
+def _get_available_modules(ctx, param, incomplete):
+    from .odoo_config import MANIFEST
+    modules = MANIFEST()['install']
+    if incomplete:
+        modules = [x for x in modules if incomplete in x]
+    return sorted(modules)
 
 @odoo_module.command()
-@click.argument("module", nargs=-1, required=False)
+@click.argument("module", nargs=-1, required=False, shell_complete=_get_available_modules)
 @click.option(
     "--since-git-sha",
     "-i",
