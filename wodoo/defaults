@@ -31,6 +31,3 @@ DOCKER_LABEL_ODOOCOMPOSE=1
 RESTART_CONTAINERS=0
 IMAGES_URL=https://github.com/marcwimmer/wodoo-images
 IMAGES_BRANCH=master
-
-
-WEB_WORKERS=8
