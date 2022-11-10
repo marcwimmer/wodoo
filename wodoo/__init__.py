@@ -3,7 +3,6 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 from .click_config import Config
-import imp
 import inspect
 import os
 
