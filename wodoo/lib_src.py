@@ -63,12 +63,6 @@ def goto_inherited(filepath, lineno):
     if filepath:
         print(f"FILEPATH:{filepath}:{lineno}")
 
-@src.command()
-@pass_config
-def rmpyc(config):
-    for file in config.dirs['customs'].glob("**/*.pyc"):
-        file.unlink()
-
 @src.command(name='show-addons-paths')
 def show_addons_paths():
     from .odoo_config import get_odoo_addons_paths

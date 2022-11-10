@@ -257,60 +257,6 @@ def _get_outdated_versioned_modules_of_deptree(modules):
                 yield dep
 
 
-@odoo_module.command()
-@click.argument("migration-file", required=True)
-@click.argument("mode", required=True)
-@click.option("--allow-serie", is_flag=True)
-@click.option("--force-version")
-@pass_config
-@click.pass_context
-def marabunta(ctx, config, migration_file, mode, allow_serie, force_version):
-    click.secho(
-        """
-            _.._.-..-._
-        .-'  .'  /\\  \\`._
-        /    /  .'  `-.\\  `.
-            :_.'  ..    :       _.../\\
-            |           ;___ .-'   //\\\\.
-            \\  _..._  /    `/\\   //  \\\\\\
-            `-.___.-'  /\\ //\\\\       \\\\:
-                |    //\\V/ :\\\\       \\\\
-                    \\      \\\\/  \\\\      /\\\\
-                    `.____.\\\\   \\\\   .'  \\\\
-                    //   /\\\\---\\\\-'     \\\\
-                fsc  //   // \\\\   \\\\       \\\\
-    """,
-        fg="red",
-    )
-
-    click.secho("=================================", fg="yellow")
-    click.secho("MARABUNTA", fg="yellow")
-    click.secho("=================================", fg="yellow")
-    params = [
-        "--migration-file",
-        "/opt/src/" + migration_file,
-        "--database",
-        config.dbname,
-        "--db-user",
-        config.db_user,
-        "--db-password",
-        config.db_pwd,
-        "--db-port",
-        config.db_port,
-        "--db-host",
-        config.db_host,
-        "--mode",
-        mode,
-    ]
-    if allow_serie:
-        params += ["--allow-serie"]
-    if force_version:
-        params += ["--force-version", force_version]
-
-    params = ["run", "odoo", "/usr/local/bin/marabunta"] + params
-    return __cmd_interactive(*params)
-
-
 @odoo_module.command(
     help=("If menu items are missing, then recomputing the parent store" "can help")
 )
