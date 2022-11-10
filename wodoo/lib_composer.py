@@ -173,7 +173,6 @@ def do_reload(
         if additional_config_file and additional_config_file.exists():
             additional_config_file.unlink()
 
-
 def get_arch():
     return platform.uname().machine  # aarch64
 

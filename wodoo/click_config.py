@@ -30,7 +30,7 @@ class Config(object):
         self.force = force
         self.compose_version = YAML_VERSION
         self.quiet = quiet
-        self.restrict = []
+        self.restrict = {}
 
     @property
     def project_name(self):
