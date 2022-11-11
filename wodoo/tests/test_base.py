@@ -13,7 +13,7 @@ from ..lib_composer import do_reload
 from ..lib_control import build, up
 from ..click_config import Config
 from ..lib_db import reset_db
-from ..lib_module import update
+from ..lib_module import update, uninstall
 
 current_dir = Path(
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -60,30 +60,54 @@ def _eval_res(res):
         raise Exception("Execution failed")
 
 
-def test_smoke(runner, temppath):
-    from .. import pass_config
+def _adapt_requirement_for_m1(path):
+    file = path / "odoo" / "requirements.txt"
+    reqs = file.read_text().splitlines()
+    version = float(eval((path / "MANIFEST").read_text())["version"])
+    if version <= 15:
+        reqs = [x for x in reqs if "greenlet" not in x]
+        reqs = [x for x in reqs if "gevent" not in x]
+        reqs.append("greenlet")
+        reqs.append("gevent==21.12.0")
 
+    file.write_text(",".join(reqs))
+
+
+def _prepare_path(project_name, temppath, configuration):
     path = temppath / "smoke"
     path.mkdir()
     os.chdir(path)
-    project_name = "wodootestsmoke"
-
-    # -------------------------------------------------------
     _setup_odoo(path)
-    config_path(project_name).write_text("RUN_CRONJOBS=0")
+    config_path(project_name).write_text(configuration)
     config = Config(force=True, project_name=project_name)
+    return config, path
+
+
+def _install_module(config, path):
+    shutil.copytree(path, Path(os.getcwd()) / "odoo" / "addons" / path.name)
+    _eval_res(runner.invoke(update, [path.name, "-O"], obj=config, catch_exceptions=True))
+
+def test_smoke(runner, temppath):
+    from .. import pass_config
+
+    (
+        config,
+        path,
+    ) = _prepare_path("smoketest", temppath, configuration=("RUN_CRONJOBS=0"))
+    # -------------------------------------------------------
     _eval_res(runner.invoke(do_reload, obj=config, catch_exceptions=True))
 
 
 def test_update_with_broken_view(runner, temppath):
-    path = temppath / "smoke"
-    path.mkdir()
-    os.chdir(path)
-    project_name = "wodootestsmoke"
-    _setup_odoo(path)
-    config_path(project_name).write_text("RUN_CRONJOBS=0")
-    config = Config(force=True, project_name=project_name)
-    _eval_res(runner.invoke(do_reload, demo=True, obj=config, catch_exceptions=True))
-    _eval_res(runner.invoke(build, demo=True, obj=config, catch_exceptions=True))
+    (
+        config,
+        path,
+    ) = _prepare_path("smoketest", temppath, configuration=("RUN_CRONJOBS=0"))
+
+    _adapt_requirement_for_m1(path)
+    _eval_res(runner.invoke(do_reload, ["--demo"], obj=config, catch_exceptions=True))
+    _eval_res(runner.invoke(build, obj=config, catch_exceptions=True))
     _eval_res(runner.invoke(reset_db, obj=config, catch_exceptions=True))
     _eval_res(runner.invoke(update, obj=config, catch_exceptions=True))
+    _install_module(current_dir / 'module_respartner_dummyfield1')
+    _eval_res(runner.invoke(uninstall, ["module_respartner_dummyfield1"], obj=config, catch_exceptions=True))

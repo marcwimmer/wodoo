@@ -252,6 +252,7 @@ def _wait_postgres(config, timeout=600):
             .splitlines()
         )
 
+        import docker
         client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
