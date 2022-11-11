@@ -26,7 +26,7 @@ from .tools import __dc
 from .tools import _get_host_ip
 from .tools import __needs_docker
 import subprocess
-from . import Commands
+from .cli import Commands
 
 
 def _get_volume_hostpath(volume):
@@ -242,6 +242,7 @@ def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """
+    import pudb;pudb.set_trace()
     options = []
     if pull:
         options += ["--pull"]

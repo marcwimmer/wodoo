@@ -1263,3 +1263,31 @@ def download_file(url):
     finally:
         if file.exists():
             file.unlink()
+
+def _get_default_project_name(restrict):
+    from .init_functions import _get_customs_root
+    from .exceptions import NoProjectNameException
+    def _get_project_name_from_file(path):
+        if not path.exists():
+            return
+        pj = [x for x in path.read_text().split("\n") if "PROJECT_NAME" in x]
+        if pj:
+            return pj[0].split("=")[-1].strip()
+
+    if restrict:
+        paths = restrict
+    else:
+        paths = [Path(os.path.expanduser("~/.odoo/settings"))]
+
+    for path in paths:
+        pj = _get_project_name_from_file(path)
+        if pj:
+            return pj
+
+    customs_root = _get_customs_root(Path(os.getcwd()))
+    if customs_root:
+        root = Path(customs_root)
+        if (root / "MANIFEST").exists():
+            return root.name
+    raise NoProjectNameException("No default project name could be determined.")
+

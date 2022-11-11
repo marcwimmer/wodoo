@@ -12,7 +12,7 @@ from .tools import _wait_postgres
 from .tools import _dropdb
 from .tools import __dcrun, _remove_postgres_connections, _execute_sql
 from .tools import exec_file_in_path
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 

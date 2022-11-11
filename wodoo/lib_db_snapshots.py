@@ -5,7 +5,7 @@ import inquirer
 from .tools import remove_webassets
 from .tools import _askcontinue
 from .tools import get_volume_names
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from .tools import _remove_postgres_connections, _execute_sql

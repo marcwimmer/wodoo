@@ -1,10 +1,12 @@
 model	[module_respartner_dummyfield2]	res.partner	:::module_respartner_dummyfield2/partner.py:3
-xmlid	[module_respartner_dummyfield2]	module_respartner_dummyfield2.view_res_partner_form model:ir.ui.view	:::module_respartner_dummyfield2/partnerview.xml:3
 field	[module_respartner_dummyfield2]	res.partner.dummy2	:::module_respartner_dummyfield2/partner.py:6
-view	[module_respartner_dummyfield2]	 ~ module_respartner_dummyfield2.view_res_partner_form [inherit_id=base.view_partner_form]	:::module_respartner_dummyfield2/partnerview.xml:3
 model	[module_respartner_dummyfield1]	res.partner	:::module_respartner_dummyfield1/partner.py:3
 field	[module_respartner_dummyfield1]	res.partner.dummy1	:::module_respartner_dummyfield1/partner.py:6
 model	[module_respartner_dummyfield1]	res.partner	:::module_respartner_dummyfield1/partner.py:3
 xmlid	[module_respartner_dummyfield1]	module_respartner_dummyfield1.view_res_partner_form model:ir.ui.view	:::module_respartner_dummyfield1/partnerview.xml:3
 field	[module_respartner_dummyfield1]	res.partner.dummy1	:::module_respartner_dummyfield1/partner.py:6
 view	[module_respartner_dummyfield1]	 ~ module_respartner_dummyfield1.view_res_partner_form [inherit_id=base.view_partner_form]	:::module_respartner_dummyfield1/partnerview.xml:3
+model	[module_respartner_dummyfield2]	res.partner	:::module_respartner_dummyfield2/partner.py:3
+xmlid	[module_respartner_dummyfield2]	module_respartner_dummyfield2.view_res_partner_form model:ir.ui.view	:::module_respartner_dummyfield2/partnerview.xml:3
+field	[module_respartner_dummyfield2]	res.partner.dummy2	:::module_respartner_dummyfield2/partner.py:6
+view	[module_respartner_dummyfield2]	 ~ module_respartner_dummyfield2.view_res_partner_form [inherit_id=base.view_partner_form]	:::module_respartner_dummyfield2/partnerview.xml:3

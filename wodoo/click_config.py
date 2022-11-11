@@ -22,15 +22,47 @@ class Config(object):
 
         from .init_functions import _get_customs_root
 
-        self.WORKING_DIR = _get_customs_root(Path(os.getcwd()))
+        self._WORKING_DIR = _get_customs_root(Path(os.getcwd()))
         self._host_run_dir = None
         self.project_name = project_name
         self.YAML_VERSION = YAML_VERSION
-        self.verbose = verbose
+        self._verbose = verbose
         self.force = force
         self.compose_version = YAML_VERSION
         self.quiet = quiet
         self.restrict = {}
+
+    def _collect_files(self, files):
+        import click
+        for test in files:
+            test = Path(test)
+            if not test.exists():
+                click.secho(f"Not found: {test}", fg="red")
+                sys.exit(-1)
+            yield test.absolute()
+
+    def set_restrict(self, key, files):
+        files = self._collect_files(files)
+        self.restrict[key] = files
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value):
+        self._verbose = value
+        os.environ['WODOO_VERBOSE'] = "1"
+
+    @property
+    def WORKING_DIR(self):
+        return self._WORKING_DIR
+
+    @WORKING_DIR.setter
+    def WORKING_DIR(self, value):
+        self._WORKING_DIR = value
+        os.environ['CUSTOMS_DIR'] = self._WORKING_DIR
+
 
     @property
     def project_name(self):

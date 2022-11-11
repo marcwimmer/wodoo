@@ -17,7 +17,7 @@ import tempfile
 import click
 from .tools import __dc
 from .tools import search_env_path
-from . import cli, pass_config
+from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from pathlib import Path
 from .tools import abort

@@ -26,7 +26,7 @@ from .tools import _remove_postgres_connections
 from .tools import _get_dump_files
 from .tools import _binary_zip
 from .tools import autocleanpaper
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 
 import inspect

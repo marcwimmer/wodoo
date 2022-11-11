@@ -5,7 +5,7 @@ import click
 import os
 from .tools import remove_webassets
 from .tools import _execute_sql
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from .tools import __replace_all_envs_in_str

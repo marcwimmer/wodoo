@@ -3,9 +3,8 @@ import sys
 import subprocess
 from .tools import _askcontinue
 from .tools import remove_webassets
-from . import cli, pass_config
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-from . import Commands
 
 @cli.group(cls=AliasedGroup)
 @pass_config

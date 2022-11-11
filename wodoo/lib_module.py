@@ -26,7 +26,7 @@ from .tools import __dcrun
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
 from .tools import __concurrent_safe_write_file
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
 from .tools import get_services

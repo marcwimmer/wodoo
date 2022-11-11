@@ -9,7 +9,7 @@ from .odoo_config import current_version
 from .odoo_config import MANIFEST
 from .tools import _is_dirty
 from .odoo_config import customs_dir
-from . import cli, pass_config
+from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from .tools import split_hub_url
 

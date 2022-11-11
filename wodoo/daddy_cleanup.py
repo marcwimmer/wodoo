@@ -10,7 +10,7 @@ import pathlib
 import logging
 import datetime as dt
 import click
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .tools import abort
 
 DTF = "%Y-%m-%d %H:%M:%S"

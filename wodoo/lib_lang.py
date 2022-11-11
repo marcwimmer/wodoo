@@ -2,7 +2,7 @@ import click
 from .tools import __dcrun
 from .tools import __dcexec
 from .tools import _execute_sql
-from . import cli, pass_config
+from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 
 
