@@ -10,7 +10,7 @@ from pathlib import Path
 import subprocess
 from click.testing import CliRunner
 from ..lib_composer import do_reload
-from ..lib_control import build, up
+from ..lib_control import build, up, down
 from ..click_config import Config
 from ..lib_db import reset_db
 from ..lib_module import update, uninstall
@@ -85,7 +85,19 @@ def _prepare_path(project_name, temppath, configuration):
 
 def _install_module(config, path):
     shutil.copytree(path, Path(os.getcwd()) / "odoo" / "addons" / path.name)
-    _eval_res(runner.invoke(update, [path.name, "-O"], obj=config, catch_exceptions=True))
+    _eval_res(
+        runner.invoke(update, [path.name, "-O"], obj=config, catch_exceptions=True)
+    )
+
+
+def _remove_dockercontainers(project_name):
+    assert len(project_name) > 5
+    for containerid in subprocess.check_output(
+        ["docker", "ps", "-a", "-q", "--filter", f"name={project_name}"], encoding="utf8",
+    ).splitlines():
+        subprocess.check_call(["docker", "stop", containerid])
+        subprocess.check_call(["docker", "rm", "-f", containerid])
+
 
 def test_smoke(runner, temppath):
     from .. import pass_config
@@ -95,19 +107,45 @@ def test_smoke(runner, temppath):
         path,
     ) = _prepare_path("smoketest", temppath, configuration=("RUN_CRONJOBS=0"))
     # -------------------------------------------------------
+    _remove_dockercontainers(config.project_name)
     _eval_res(runner.invoke(do_reload, obj=config, catch_exceptions=True))
+    try:
+        pass
+    except Exception:
+        try:
+            _eval_res(runner.invoke(down, ["-v"], obj=config, catch_exceptions=True))
+        except:
+            pass
+        raise
 
 
 def test_update_with_broken_view(runner, temppath):
     (
         config,
         path,
-    ) = _prepare_path("smoketest", temppath, configuration=("RUN_CRONJOBS=0"))
+    ) = _prepare_path("wodooviewconflict", temppath, configuration=("RUN_CRONJOBS=0"))
 
+    _remove_dockercontainers(config.project_name)
     _adapt_requirement_for_m1(path)
     _eval_res(runner.invoke(do_reload, ["--demo"], obj=config, catch_exceptions=True))
     _eval_res(runner.invoke(build, obj=config, catch_exceptions=True))
-    _eval_res(runner.invoke(reset_db, obj=config, catch_exceptions=True))
-    _eval_res(runner.invoke(update, obj=config, catch_exceptions=True))
-    _install_module(current_dir / 'module_respartner_dummyfield1')
-    _eval_res(runner.invoke(uninstall, ["module_respartner_dummyfield1"], obj=config, catch_exceptions=True))
+    _eval_res(runner.invoke(up, ["-d"], obj=config, catch_exceptions=True))
+    try:
+        _eval_res(runner.invoke(reset_db, obj=config, catch_exceptions=True))
+        _eval_res(runner.invoke(update, obj=config, catch_exceptions=True))
+        _install_module(current_dir / "module_respartner_dummyfield1")
+        _eval_res(
+            runner.invoke(
+                uninstall,
+                ["module_respartner_dummyfield1"],
+                obj=config,
+                catch_exceptions=True,
+            )
+        )
+
+    except Exception:
+        try:
+            _eval_res(runner.invoke(down, ["-v"], obj=config, catch_exceptions=True))
+        except:
+            pass
+        raise
