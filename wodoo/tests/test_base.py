@@ -84,10 +84,7 @@ def _prepare_path(project_name, temppath, configuration):
     config_path(project_name).write_text(configuration)
     config = Config(force=True, project_name=project_name)
     # make a convenient file for easy testing
-    Path("odoo.sh").write_text(
-        "#!/bin/bash\n"
-        f"odoo -p {project_name} \"$@\"\n"
-    )
+    Path("odoo.sh").write_text("#!/bin/bash\n" f'odoo -p {project_name} "$@"\n')
     os.system("chmod a+x odoo.sh")
     return config, path
 
@@ -155,7 +152,7 @@ def test_update_with_broken_view(runner, temppath):
     Situation:
     Two modules add fields and adapt same view by inheriting them.
     Then field is removed in one of the modules.
-    
+
     """
     (
         config,
@@ -175,19 +172,27 @@ def test_update_with_broken_view(runner, temppath):
 
         # now drop dumm1 field and update both modules
         Path("odoo/addons/module_respartner_dummyfield2/__init__.py").write_text("")
-        view_file = Path(
-            "odoo/addons/module_respartner_dummyfield2/partnerview.xml"
-        )
+        view_file = Path("odoo/addons/module_respartner_dummyfield2/partnerview.xml")
         _replace_in_file(view_file, "dummy1", "create_date")
-        _eval_res(
-            runner.invoke(
-                update,
-                ["module_respartner_dummyfield1", "module_respartner_dummyfield2"],
-                obj=config,
-                catch_exceptions=True,
-            )
+        res = runner.invoke(
+            update,
+            ["module_respartner_dummyfield1", "module_respartner_dummyfield2"],
+            obj=config,
+            catch_exceptions=True,
         )
-        import pudb;pudb.set_trace()
+        assert res.exit_code
+        res = runner.invoke(
+            update,
+            [
+                "module_respartner_dummyfield1",
+                "module_respartner_dummyfield2",
+                "--recover-view-error",
+            ],
+            obj=config,
+            catch_exceptions=True,
+        )
+        import pudb
+        pudb.set_trace()
 
     except Exception:
         try:

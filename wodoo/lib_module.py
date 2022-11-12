@@ -500,7 +500,7 @@ def update(
             module = list(filter(lambda x: x in MANIFEST()["install"], module))
             click.secho(
                 (
-                    "Following modules change since last sha "
+                    "Following modules changed since last sha "
                     f"(filtered to manifest): {' '.join(module)}"
                 )
             )
@@ -673,6 +673,7 @@ def _try_to_recover_view_error(config, output):
     lines = output.splitlines()
 
     for line in lines:
+        import pudb;pudb.set_trace()
         field = re.findall('Field "([^"]*?)" does not exist in model', line)
         if field:
             _execute_sql(
