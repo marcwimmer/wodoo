@@ -50,7 +50,7 @@ def ps(config):
 def execute(config, machine, args):
     if config.use_docker:
         from .lib_control_with_docker import execute as lib_execute
-    lib_execute(machine, args)
+    lib_execute(config, machine, args)
 
 
 @docker.command(name="kill")
@@ -252,7 +252,7 @@ def runbash(ctx, config, machine, args, **kwparams):
 def logall(config, machines, follow, lines):
     from .lib_control_with_docker import logall as lib_logall
 
-    lib_logall(machines, follow, lines)
+    lib_logall(config, machines, follow, lines)
 
 
 @docker.command()
@@ -268,7 +268,7 @@ def shell(config, command, queuejobs):
     command = "\n".join(command)
     from .lib_control_with_docker import shell as lib_shell
 
-    lib_shell(command, queuejobs)
+    lib_shell(config, command, queuejobs)
 
 
 # problem with stdin: debug then display missing

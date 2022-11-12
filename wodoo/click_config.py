@@ -84,6 +84,8 @@ class Config(object):
             self.HOST_RUN_DIR = (
                 Path(os.environ["HOME"]) / ".odoo" / "run" / self._project_name
             )
+        else:
+            self.HOST_RUN_DIR = ""
         os.environ["PROJECT_NAME"] = self._project_name or ""
         os.environ["project_name"] = self._project_name or ""
         self._setup_files_and_folders()
@@ -224,7 +226,22 @@ class Config(object):
 
         for k in self.commands:
             self.commands[k] = [
-                replace_keys(x, ChainMap(self.__dict__, self.files, self.dirs))
+                replace_keys(
+                    x,
+                    ChainMap(
+                        {
+                            "project_name": self.project_name,
+                            "PROJECT_NAME": self.project_name,
+                            "working_dir": self.WORKING_DIR,
+                            "WORKING_DIR": self.WORKING_DIR,
+                            "host_run_dir": self.HOST_RUN_DIR,
+                            "HOST_RUN_DIR": self.HOST_RUN_DIR,
+                        },
+                        self.__dict__,
+                        self.files,
+                        self.dirs,
+                    ),
+                )
                 for x in self.commands[k]
             ]
 

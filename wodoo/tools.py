@@ -307,7 +307,7 @@ def _wait_postgres(config, timeout=600):
 def _is_container_running(machine_name):
     import docker
 
-    container_id = __dc_out(["ps", "-q", machine_name]).strip()
+    container_id = __dc_out(config, ["ps", "-q", machine_name]).strip()
     if container_id:
         container = list(
             filter(
@@ -401,21 +401,21 @@ def _set_default_envs(env):
     return env
 
 
-def __dc(cmd, env={}):
-    c = __get_cmd() + cmd
+def __dc(config, cmd, env={}):
+    c = __get_cmd(config) + cmd
     env = _set_default_envs(env)
     return subprocess.check_call(c, env=_merge_env_dict(env))
 
 
-def __dc_out(cmd, env={}):
-    c = __get_cmd() + cmd
+def __dc_out(config, cmd, env={}):
+    c = __get_cmd(config) + cmd
     env = _set_default_envs(env)
     return subprocess.check_output(c, env=_merge_env_dict(env))
 
 
-def __dcexec(cmd, interactive=True, env=None):
+def __dcexec(config, cmd, interactive=True, env=None):
     env = _set_default_envs(env)
-    c = __get_cmd()
+    c = __get_cmd(config)
     c += ["exec"]
     if not interactive:
         c += ["-T"]
@@ -430,7 +430,7 @@ def __dcexec(cmd, interactive=True, env=None):
 
 
 def __dcrun(
-    cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
+    config, cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
 ):
     env = _set_default_envs(env)
     cmd2 = [os.path.expandvars(x) for x in cmd]
@@ -442,7 +442,7 @@ def __dcrun(
         cmd += ["-e{}={}".format(k, v)]
     cmd += cmd2
     del cmd2
-    cmd = __get_cmd() + cmd
+    cmd = __get_cmd(config) + cmd
     if interactive:
         optional_params = {}
         if pass_stdin:
@@ -505,8 +505,7 @@ def __rm_file_if_exists(path):
         path.unlink()
 
 
-def __rmtree(path):
-    config = _get_missing_click_config()
+def __rmtree(config, path):
     if not path or path == "/":
         raise Exception("Not allowed: {}".format(path))
     if not path.startswith("/"):
@@ -531,15 +530,14 @@ def __safeget(array, index, exception_on_missing, file_options=None):
     return array[index]
 
 
-def __get_cmd():
-    config = _get_missing_click_config()
+def __get_cmd(config):
     cmd = config.commands["dc"]
     cmd = [os.path.expandvars(x) for x in cmd]
     return cmd
 
 
-def __cmd_interactive(*params, return_proc=False):
-    cmd = __get_cmd() + list(params)
+def __cmd_interactive(config, *params, return_proc=False):
+    cmd = __get_cmd(config) + list(params)
     proc = subprocess.Popen(cmd)
     proc.wait()
     if return_proc:
@@ -577,8 +575,7 @@ def __file_get_lines(path):
     return path.read_text().strip().splitlines()
 
 
-def _get_machines():
-    config = _get_missing_click_config()
+def _get_machines(config):
     cmd = config.commands["dc"] + ["ps", "--services"]
     out = subprocess.check_output(cmd, cwd=config.dirs["odoo_home"])
     out = set(filter(lambda x: x, out.splitlines()))
@@ -1043,18 +1040,6 @@ def split_hub_url(config):
         "username": username,
         "prefix": prefix,
     }
-
-
-def _get_missing_click_config():
-    from .click_config import Config
-
-    config = Config(quiet=True)
-    for stack in inspect.stack():
-        frame = stack.frame
-        if "ctx" in frame.f_locals and "config" in frame.f_locals:
-            config = frame.f_locals["config"]
-    return config
-
 
 def execute_script(config, script, message):
     if script.exists():

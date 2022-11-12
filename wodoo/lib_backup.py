@@ -192,7 +192,7 @@ def backup_db(
         if pigz:
             cmd += ["--pigz"]
 
-        res = __dc(cmd)
+        res = __dc(config, cmd)
         if res:
             raise Exception("Backup failed!")
     return filename
@@ -440,8 +440,8 @@ def restore_db(
                 # if postgres docker is used, then make a temporary config to restart docker container
                 # with external directory mapped; after that remove config
                 if config.run_postgres:
-                    __dc(["kill", "postgres"])
-                    __dc(
+                    __dc(config, ["kill", "postgres"])
+                    __dc(config, 
                         [
                             "run",
                             "-d",
@@ -492,7 +492,7 @@ def restore_db(
                     ]
                 if verbose:
                     cmd += ["--verbose"]
-                __dc(cmd)
+                __dc(config, cmd)
             else:
                 _add_cronjob_scripts(config)["postgres"]._restore(
                     DBNAME_RESTORING,
@@ -526,7 +526,7 @@ def restore_db(
                 subprocess.check_output(["docker", "rm", "-f", postgres_name])
 
     if config.run_postgres:
-        __dc(["up", "-d", "postgres"])
+        __dc(config, ["up", "-d", "postgres"])
         Commands.invoke(ctx, "wait_for_container_postgres")
         if config.devmode:
             Commands.invoke(ctx, "pghba_conf_wide_open")

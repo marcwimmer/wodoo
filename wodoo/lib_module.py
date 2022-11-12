@@ -132,7 +132,7 @@ def run_tests(ctx, config):
             if config.use_docker:
                 params = ["odoo", "/odoolib/unit_test.py", f"{file}"]
                 click.secho(f"Running test: {file}", fg="yellow", bold=True)
-                res = __dcrun(
+                res = __dcrun(config, 
                     params + ["--log-level=error", "--not-interactive"], returncode=True
                 )
                 if res:
@@ -142,7 +142,7 @@ def run_tests(ctx, config):
                         fg="red",
                         bold=True,
                     )
-                    res = __cmd_interactive(
+                    res = __cmd_interactive(config,
                         *(["run", "--rm"] + params + ["--log-level=debug"])
                     )
                 else:
@@ -268,7 +268,7 @@ def recompute_parent_store(ctx, config):
         from .lib_control_with_docker import shell as lib_shell
 
     click.secho("Recomputing parent store...", fg="blue")
-    lib_shell(
+    lib_shell(config,
         (
             "for model in self.env['ir.model'].search([]):\n"
             "   try:\n"
@@ -295,7 +295,7 @@ def restore_web_icons(ctx, config):
         from .lib_control_with_docker import shell as lib_shell
 
     click.secho("Restoring web icons...", fg="blue")
-    lib_shell(
+    lib_shell(config,
         (
             "for x in self.env['ir.ui.menu'].search([]):\n"
             "   if not x.web_icon: continue\n"
@@ -612,7 +612,9 @@ def update(
                     ("Error at /update_modules.py - " "aborting update process.")
                 ) from ex
 
+        trycount = 0
         while True:
+            trycount += 1
             try:
                 if not no_outdated_modules:
                     outdated_modules = _get_outdated_modules()
@@ -621,11 +623,12 @@ def update(
                             f"Outdated modules: {','.join(outdated_modules)}",
                             fg="yellow",
                         )
-                        time.sleep(0.3)
                         _technically_update(outdated_modules)
                 _technically_update(module)
             except RepeatUpdate:
                 click.secho("Retrying update.")
+                if trycount >= 2:
+                    raise
             else:
                 break
 
@@ -669,18 +672,34 @@ def _try_to_recover_view_error(config, output):
     remove the item from the view.
 
     Field "product_not_show_ax_code" does not exist in model "res.company"
+
+    Field "dummy2" does not exist in model "res.partner"
+
+    View error context:
+    {'file': '/opt/src/odoo/addons/module_respartner_dummyfield2/partnerview.xml',
+    'line': 3,
+    'name': 'res.partner form',
+    'view': ir.ui.view(545,),
+    'view.model': 'res.partner',
+    'view.parent': ir.ui.view(128,),
+    'xmlid': 'view_res_partner_form'}
     """
     lines = output.splitlines()
 
-    for line in lines:
-        import pudb;pudb.set_trace()
-        field = re.findall('Field "([^"]*?)" does not exist in model', line)
-        if field:
+    for i, line in enumerate(lines):
+        match = re.findall('Field "([^"]*?)" does not exist in model "([^"]*?)"', line)
+        if match:
+            field, model = match[0]
+            checklines = '\n'.join(lines[i:i+10])
+            viewid = re.findall("'view': ir.ui.view\((\d*)", checklines)
+            if not viewid:
+                raise Exception("Could not determine affected viewid")
+            viewid = int(viewid[0])
             _execute_sql(
                 config.get_odoo_conn(),
                 (
                     "update ir_ui_view set arch_db = replace(arch_db, "
-                    f"'{field[0]}', 'create_date')"
+                    f"'{field}', 'create_date') where id = {viewid}"
                 ),
             )
             raise RepeatUpdate()
@@ -790,7 +809,7 @@ def _uninstall_marked_modules(config, modules):
 
     for module in modules:
         click.secho(f"Uninstall {module}", fg="red")
-        lib_shell(
+        lib_shell(config,
             (
                 "self.env['ir.module.module'].search(["
                 f"('name', '=', '{module}'),"
@@ -914,7 +933,7 @@ def show_conflicting_modules():
 def _exec_update(config, params, non_interactive=False):
     params = ["odoo_update", "/update_modules.py"] + params
     if not non_interactive:
-        yield __cmd_interactive(
+        yield __cmd_interactive(config, 
             *(
                 [
                     "run",
@@ -925,7 +944,7 @@ def _exec_update(config, params, non_interactive=False):
         )
     else:
         try:
-            returncode, output = __dcrun(list(params), returnproc=True)
+            returncode, output = __dcrun(config, list(params), returnproc=True)
             yield returncode
             yield output
         except subprocess.CalledProcessError as ex:
@@ -1087,7 +1106,7 @@ def robotest(
     workingdir = customs_dir() / (Path(os.getcwd()).relative_to(customs_dir()))
     os.chdir(workingdir)
 
-    __dcrun(params, pass_stdin=data.decode("utf-8"), interactive=True)
+    __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
@@ -1234,7 +1253,7 @@ def unittest(
         params += ["--log-level=info"]
 
     try:
-        __dcrun(params, interactive=interactive)
+        __dcrun(config, params, interactive=interactive)
     except subprocess.CalledProcessError:
         pass
 

@@ -181,18 +181,19 @@ def test_update_with_broken_view(runner, temppath):
             catch_exceptions=True,
         )
         assert res.exit_code
+        import time
+        time.sleep(9999)
         res = runner.invoke(
             update,
             [
                 "module_respartner_dummyfield1",
                 "module_respartner_dummyfield2",
                 "--recover-view-error",
+                "--non-interactive",
             ],
             obj=config,
             catch_exceptions=True,
         )
-        import pudb
-        pudb.set_trace()
 
     except Exception:
         try:

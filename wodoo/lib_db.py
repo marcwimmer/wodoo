@@ -61,7 +61,7 @@ def pgactivity(config):
     conn = DBConnection(
         config.dbname, config.db_host, config.db_port, config.db_user, config.db_pwd
     )
-    __dcrun(
+    __dcrun(config, 
         [
             "pgtools",
             "pg_activity",
@@ -147,7 +147,7 @@ def _psql(
             dbname,
         ]
         if use_docker_container or (config.use_docker and config.run_postgres):
-            __dcrun(
+            __dcrun(config, 
                 ["pgtools", bin] + cmd,
                 interactive=interactive,
                 env={
