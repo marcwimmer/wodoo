@@ -1265,7 +1265,6 @@ def download_file(url):
             file.unlink()
 
 def _get_default_project_name(restrict):
-    from .init_functions import _get_customs_root
     from .exceptions import NoProjectNameException
     def _get_project_name_from_file(path):
         if not path.exists():
@@ -1291,3 +1290,26 @@ def _get_default_project_name(restrict):
             return root.name
     raise NoProjectNameException("No default project name could be determined.")
 
+def _search_path(filename):
+    filename = Path(filename)
+    filename = filename.name
+    paths = os.getenv("PATH", "").split(":")
+
+    # add probable pyenv path also:
+    execparent = Path(sys.executable).parent
+    if execparent.name in ["bin", "sbin"]:
+        paths = [execparent] + paths
+
+    for path in paths:
+        path = Path(path)
+        if (path / filename).exists():
+            return str(path / filename)
+
+
+def _get_customs_root(p):
+    # arg_dir = p
+    if p:
+        while len(p.parts) > 1:
+            if (p / "MANIFEST").exists():
+                return p
+            p = p.parent

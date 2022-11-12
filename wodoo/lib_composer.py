@@ -425,7 +425,7 @@ def _execute_after_compose(config, yml):
             sys.exit(-1)
 
         duration = (arrow.get() - started).total_seconds()
-        if duration > 2:
+        if duration > 2 and config.verbose:
             click.secho(f"Processing took {module} seconds", fg="yellow")
 
     settings.write()

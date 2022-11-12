@@ -9,7 +9,8 @@ import tempfile
 from pathlib import Path
 import subprocess
 from click.testing import CliRunner
-from ..lib_composer import do_reload, config
+from ..lib_composer import do_reload
+from ..lib_composer import config as config_command
 from ..lib_control import build, up, down
 from ..click_config import Config
 from ..lib_db import reset_db
@@ -134,7 +135,7 @@ def _retrybuild(config, runner):
     MAX = 5
     for i in range(MAX):
         try:
-            _eval_res(runner.invoke(build, obj=config, catch_exceptions=True))
+            _eval_res(runner.invoke(build, obj=config, catch_exceptions=False))
         except:
             if i == MAX - 1:
                 raise
@@ -162,13 +163,11 @@ def test_update_with_broken_view(runner, temppath):
 
     _remove_dockercontainers(config.project_name)
     _adapt_requirement_for_m1(path)
-    import pudb;pudb.set_trace()
     _eval_res(runner.invoke(do_reload, ["--demo"], obj=config, catch_exceptions=True))
     _retrybuild(config, runner)
     _eval_res(runner.invoke(up, ["-d"], obj=config, catch_exceptions=True))
-    output = runner.invoke("config", ["--full"], obj=config, catch_exceptions=True)
+    output = runner.invoke(config_command, ["--full"], obj=config, catch_exceptions=False)
     click.secho(output, fg='yellow')
-    import pudb;pudb.set_trace()
     try:
         _eval_res(runner.invoke(reset_db, obj=config, catch_exceptions=True))
         _eval_res(runner.invoke(update, obj=config, catch_exceptions=True))

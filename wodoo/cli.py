@@ -1,5 +1,6 @@
 import os
 import click
+from pathlib import Path
 try:
     from .lib_clickhelpers import AliasedGroup
 except ImportError:
@@ -41,35 +42,18 @@ def cli(
 ):
     config.force = force
     config.verbose = verbose
-    config.restrict = {}
     if chdir:
         os.chdir(chdir)
         config.WORKING_DIR = chdir
 
+    from .tools import _get_default_project_name
+
+    if not project_name:
+        project_name = _get_default_project_name(restrict_setting)
+
     config.set_restrict('settings', restrict_setting)
     config.set_restrict('docker-compose', restrict_docker_compose)
-
-    from .tools import _get_default_project_name
-    from .exceptions import NoProjectNameException
-    from .init_functions import load_dynamic_modules
-
     config.project_name = project_name
-
-    if project_name:
-        config.project_name = project_name
-    else:
-        try:
-            config.project_name = _get_default_project_name(config.restrict["settings"])
-        except NoProjectNameException:
-            config.project_name = ""
-    os.environ["project_name"] = config.project_name
-    os.environ["docker_compose"] = str(config.files.get("docker_compose")) or ""
-
-    load_dynamic_modules(config.dirs["images"])
-
-    if config.verbose:
-        print(config.files["docker_compose"])
-
 
 @cli.command()
 @click.option(
