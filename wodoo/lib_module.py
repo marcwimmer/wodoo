@@ -223,7 +223,8 @@ def _get_outdated_versioned_modules_of_deptree(modules):
             mod = Module.get_by_name(module)
         except KeyError:
             click.secho(
-                f"Warning module not found: {module}", fg='yellow',
+                f"Warning module not found: {module}",
+                fg="yellow",
             )
             continue
         for dep in mods.get_module_flat_dependency_tree(mod):
@@ -304,15 +305,20 @@ def restore_web_icons(ctx, config):
     )
     click.secho("Restored web icons.", fg="green")
 
+
 def _get_available_modules(ctx, param, incomplete):
     from .odoo_config import MANIFEST
-    modules = MANIFEST()['install']
+
+    modules = MANIFEST()["install"]
     if incomplete:
         modules = [x for x in modules if incomplete in x]
     return sorted(modules)
 
+
 @odoo_module.command()
-@click.argument("module", nargs=-1, required=False, shell_complete=_get_available_modules)
+@click.argument(
+    "module", nargs=-1, required=False, shell_complete=_get_available_modules
+)
 @click.option(
     "--since-git-sha",
     "-i",
@@ -401,7 +407,7 @@ def _get_available_modules(ctx, param, incomplete):
     "-O",
     "--no-outdated-modules",
     is_flag=True,
-    help="dont check for outdated modules (for migrations suitable)"
+    help="dont check for outdated modules (for migrations suitable)",
 )
 @pass_config
 @click.pass_context
@@ -444,7 +450,6 @@ def update(
 
 
     """
-
 
     param_module = module
 
@@ -612,7 +617,10 @@ def update(
                 if not no_outdated_modules:
                     outdated_modules = _get_outdated_modules()
                     if outdated_modules:
-                        click.secho(f"Outdated modules: {','.join(outdated_modules)}", fg='yellow')
+                        click.secho(
+                            f"Outdated modules: {','.join(outdated_modules)}",
+                            fg="yellow",
+                        )
                         time.sleep(0.3)
                         _technically_update(outdated_modules)
                 _technically_update(module)

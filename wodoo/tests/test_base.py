@@ -100,6 +100,7 @@ def _install_module(config, runner, path):
 
 
 def _remove_dockercontainers(project_name):
+    return
     assert len(project_name) > 5
     for containerid in subprocess.check_output(
         ["docker", "ps", "-a", "-q", "--filter", f"name={project_name}"],
@@ -166,8 +167,6 @@ def test_update_with_broken_view(runner, temppath):
     _eval_res(runner.invoke(do_reload, ["--demo"], obj=config, catch_exceptions=True))
     _retrybuild(config, runner)
     _eval_res(runner.invoke(up, ["-d"], obj=config, catch_exceptions=True))
-    output = runner.invoke(config_command, ["--full"], obj=config, catch_exceptions=False)
-    click.secho(output, fg='yellow')
     try:
         _eval_res(runner.invoke(reset_db, obj=config, catch_exceptions=True))
         _eval_res(runner.invoke(update, obj=config, catch_exceptions=True))
@@ -175,9 +174,9 @@ def test_update_with_broken_view(runner, temppath):
         _install_module(config, runner, current_dir / "module_respartner_dummyfield2")
 
         # now drop dumm1 field and update both modules
-        Path("odoo/addons/module_respartner_dummyfield1/__init__.py").write_text("")
+        Path("odoo/addons/module_respartner_dummyfield2/__init__.py").write_text("")
         view_file = Path(
-            "odoo/addons/module_respartner_dummyfield1/partnerview.xml"
+            "odoo/addons/module_respartner_dummyfield2/partnerview.xml"
         )
         _replace_in_file(view_file, "dummy1", "create_date")
         _eval_res(
