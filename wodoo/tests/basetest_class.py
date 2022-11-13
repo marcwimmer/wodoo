@@ -74,8 +74,7 @@ class BaseTestClass:
             raise
 
     def _install_module(self, path):
-        import pudb;pudb.set_trace()
-        shutil.copytree(path, self.path / "odoo" / "addons" / self.path.name)
+        shutil.copytree(path, self.path / "odoo" / "addons" / path.name)
         self.run(update, [path.name, "-O"])
 
     def _retrybuild(self):
