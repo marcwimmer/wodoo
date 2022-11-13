@@ -32,6 +32,7 @@ from .tools import _execute_sql
 from .tools import get_services
 from .tools import __try_to_set_owner
 from .tools import measure_time, abort
+from .module_tools import _determine_affected_modules_for_ir_field_and_related
 from pathlib import Path
 
 DTF = "%Y-%m-%d %H:%M:%S"
@@ -42,7 +43,10 @@ class UpdateException(Exception):
 
 
 class RepeatUpdate(Exception):
-    pass
+
+    def __init__(self, affected_modules):
+        super().__init__(str(affected_modules))
+        self.affected_modules = affected_modules
 
 
 @cli.group(cls=AliasedGroup)
@@ -594,8 +598,8 @@ def update(
                     if recover_view_error:
                         try:
                             _try_to_recover_view_error(config, output)
-                        except RepeatUpdate:
-                            raise
+                        except RepeatUpdate as ex:
+                            _technically_update(ex.affected_modules)
                         except Exception as ex:
                             raise UpdateException(module) from ex
                     else:
@@ -673,7 +677,7 @@ def _try_to_recover_view_error(config, output):
 
     Field "product_not_show_ax_code" does not exist in model "res.company"
 
-    Field "dummy2" does not exist in model "res.partner"
+    Field "dummy1" does not exist in model "res.partner"
 
     View error context:
     {'file': '/opt/src/odoo/addons/module_respartner_dummyfield2/partnerview.xml',
@@ -683,6 +687,9 @@ def _try_to_recover_view_error(config, output):
     'view.model': 'res.partner',
     'view.parent': ir.ui.view(128,),
     'xmlid': 'view_res_partner_form'}
+
+    Caution: this view is just the one that updates; the conflicting view is not listed.
+    Just a select statement is created by the other view.
     """
     lines = output.splitlines()
 
@@ -690,19 +697,8 @@ def _try_to_recover_view_error(config, output):
         match = re.findall('Field "([^"]*?)" does not exist in model "([^"]*?)"', line)
         if match:
             field, model = match[0]
-            checklines = '\n'.join(lines[i:i+10])
-            viewid = re.findall("'view': ir.ui.view\((\d*)", checklines)
-            if not viewid:
-                raise Exception("Could not determine affected viewid")
-            viewid = int(viewid[0])
-            _execute_sql(
-                config.get_odoo_conn(),
-                (
-                    "update ir_ui_view set arch_db = replace(arch_db, "
-                    f"'{field}', 'create_date') where id = {viewid}"
-                ),
-            )
-            raise RepeatUpdate()
+            affected_modules = _determine_affected_modules_for_ir_field_and_related(config, field, model)
+            raise RepeatUpdate(affected_modules)
 
 
 def show_dangling():

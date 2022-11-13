@@ -106,12 +106,12 @@ class BaseTestClass:
 
         file.write_text("\n".join(reqs))
 
-    def run(self, cmd, params=None, catch_exceptions=False, eval=True):
+    def run(self, cmd, params=None, catch_exceptions=True):
         params = params or []
         res = self.runner.invoke(
             cmd, params, obj=self.config, catch_exceptions=catch_exceptions
         )
-        if eval:
+        if catch_exceptions:
             if res.exit_code:
                 traceback.print_exception(*res.exc_info)
                 raise Exception("Execution failed")
