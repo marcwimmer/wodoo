@@ -617,6 +617,7 @@ def update(
                 ) from ex
 
         trycount = 0
+        max_try_count = 5
         while True:
             trycount += 1
             try:
@@ -631,7 +632,7 @@ def update(
                 _technically_update(module)
             except RepeatUpdate:
                 click.secho("Retrying update.")
-                if trycount >= 2:
+                if trycount >= max_try_count:
                     raise
             else:
                 break
