@@ -56,16 +56,12 @@ class TestWodoo(BaseTestClass):
         Path("odoo/addons/module_respartner_dummyfield1/__init__.py").write_text("")
         view_file = Path("odoo/addons/module_respartner_dummyfield1/partnerview.xml")
         self._replace_in_file(view_file, "dummy1", "create_date")
-        print("now you can do")
-        time.sleep(9999)
         with pytest.raises(UpdateException):
             self.run(
                 update,
                 ["module_respartner_dummyfield1", "module_respartner_dummyfield2"],
                 catch_exceptions=False,
             )
-        time.sleep(9999)
-        res = self.run(update)
         res = self.run.invoke(
             [
                 "module_respartner_dummyfield1",
