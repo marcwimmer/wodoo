@@ -59,10 +59,11 @@ class TestWodoo(BaseTestClass):
         with pytest.raises(UpdateException):
             self.run(
                 update,
-                ["module_respartner_dummyfield1", "module_respartner_dummyfield2"],
+                ["module_respartner_dummyfield2"],
                 catch_exceptions=False,
             )
-        res = self.run.invoke(
+        self.run(
+            update,
             [
                 "module_respartner_dummyfield1",
                 "module_respartner_dummyfield2",
