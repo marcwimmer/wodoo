@@ -208,7 +208,7 @@ def _turn_into_subvolume(config):
 
 def make_snapshot(ctx, config, name):
     zfs = search_env_path("zfs")
-    __dc(["stop", "-t 1"] + ["postgres"])
+    __dc(config, ["stop", "-t 1"] + ["postgres"])
     _turn_into_subvolume(config)
     snapshots = list(_get_snapshots(config))
     snapshot = list(filter(lambda x: x["name"] == name, snapshots))
@@ -228,7 +228,7 @@ def make_snapshot(ctx, config, name):
     assert " " not in name
     fullpath = _get_zfs_path(config) + "@" + name
     subprocess.check_call(["sudo", zfs, "snapshot", fullpath])
-    __dc(["up", "-d"] + ["postgres"])
+    __dc(config, ["up", "-d"] + ["postgres"])
     return name
 
 
@@ -267,7 +267,7 @@ def restore(config, name):
     except ValueError:
         index = -1
 
-    __dc(["stop", "-t 1"] + ["postgres"])
+    __dc(config, ["stop", "-t 1"] + ["postgres"])
     if index == 0:
         # restore last one is easy in the volumefolder it self; happiest case
         subprocess.check_call(["sudo", zfs, "rollback", snapshot["fullpath"]])
@@ -284,8 +284,8 @@ def restore(config, name):
                 zfs_full_path,
             ]
         )
-    __dc(["rm", "-f"] + ["postgres"])
-    __dc(["up", "-d"] + ["postgres"])
+    __dc(config, ["rm", "-f"] + ["postgres"])
+    __dc(config, ["up", "-d"] + ["postgres"])
 
 
 def remove(config, snapshot):
