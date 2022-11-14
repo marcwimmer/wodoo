@@ -52,7 +52,7 @@ class Config(object):
             yield test.absolute()
 
     def set_restrict(self, key, files):
-        files = self._collect_files(files)
+        files = list(self._collect_files(files))
         self.restrict[key] = files
 
     @property
