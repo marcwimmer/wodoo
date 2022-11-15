@@ -40,7 +40,7 @@ def dev(ctx, config, build, kill):
 def ps(config):
     if config.use_docker:
         from .lib_control_with_docker import ps as lib_ps
-    return lib_ps()
+    return lib_ps(config)
 
 
 @docker.command(name="exec")

@@ -51,6 +51,7 @@ default_files = {
     'native_collected_requirements_from_modules': "${run_native_bin_dir}/customs-requirements.txt",
     'start-dev': '~/.odoo/start-dev',
     'cicd_delegator_registry': '${cicd_delegator}/registry.json',
+    'pgcli_history': '${run}/pgcli_history',
 }
 
 default_commands = {
