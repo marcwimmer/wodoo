@@ -1135,7 +1135,6 @@ def _binary_zip(folder, destpath):
     if not destpath.exists():
         raise Exception(f"file {destpath} not generated")
 
-
 @contextmanager
 def autocleanpaper(filepath=None):
     filepath = Path(filepath or tempfile._get_default_tempdir()) / next(
@@ -1298,3 +1297,20 @@ def _get_customs_root(p):
             if (p / "MANIFEST").exists():
                 return p
             p = p.parent
+
+def _shell_complete_file(ctx, param, incomplete):
+    incomplete = os.path.expanduser(incomplete)
+    if not incomplete:
+        start = Path(os.getcwd())
+    else:
+        start = Path(incomplete).parent
+    parts = list(filter(bool ,incomplete.split("/")))
+    if Path(incomplete).exists() and Path(incomplete).is_dir():
+        start = Path(incomplete)
+        filtered = "*"
+    else:
+        filtered = "*"
+        if parts:
+            filtered = parts[-1] + "*"
+    files = list(start.glob(filtered))
+    return sorted(map(str, files))
