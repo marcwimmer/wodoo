@@ -1,6 +1,6 @@
 import click
 import os
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import execute_script
 import subprocess
@@ -40,7 +40,7 @@ def dev(ctx, config, build, kill):
 def ps(config):
     if config.use_docker:
         from .lib_control_with_docker import ps as lib_ps
-    return lib_ps()
+    return lib_ps(config)
 
 
 @docker.command(name="exec")
@@ -50,7 +50,7 @@ def ps(config):
 def execute(config, machine, args):
     if config.use_docker:
         from .lib_control_with_docker import execute as lib_execute
-    lib_execute(machine, args)
+    lib_execute(config, machine, args)
 
 
 @docker.command(name="kill")
@@ -111,6 +111,7 @@ def recreate(ctx, config, machines):
 def up(ctx, config, machines, daemon):
     from .lib_setup import _status
     from .lib_control_with_docker import up as lib_up
+
     lib_up(ctx, config, machines, daemon, remove_orphans=True)
     execute_script(
         config, config.files["after_up_script"], "Possible after up script here:"
@@ -149,6 +150,7 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
 @click.pass_context
 def stop(ctx, config, machines):
     from .lib_control_with_docker import stop as lib_stop
+
     lib_stop(ctx, config, machines)
 
 
@@ -158,6 +160,7 @@ def stop(ctx, config, machines):
 @click.pass_context
 def rebuild(ctx, config, machines):
     from .lib_control_with_docker import rebuild as lib_rebuild
+
     lib_rebuild(ctx, config, machines)
 
 
@@ -167,6 +170,7 @@ def rebuild(ctx, config, machines):
 @click.pass_context
 def restart(ctx, config, machines):
     from .lib_control_with_docker import restart as lib_restart
+
     lib_restart(ctx, config, machines)
 
 
@@ -176,6 +180,7 @@ def restart(ctx, config, machines):
 @click.pass_context
 def rm(ctx, config, machines):
     from .lib_control_with_docker import rm as lib_rm
+
     lib_rm(ctx, config, machines)
 
 
@@ -185,6 +190,7 @@ def rm(ctx, config, machines):
 @click.pass_context
 def attach(ctx, config, machine):
     from .lib_control_with_docker import attach as lib_attach
+
     lib_attach(ctx, config, machine)
 
 
@@ -200,6 +206,7 @@ def build(ctx, config, machines, pull, no_cache, push, plain):
     if plain:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
     from .lib_control_with_docker import build as lib_build
+
     lib_build(ctx, config, machines, pull, no_cache, push)
 
 
@@ -211,6 +218,7 @@ def build(ctx, config, machines, pull, no_cache, push, plain):
 @click.pass_context
 def debug(ctx, config, machine, ports, command):
     from .lib_control_with_docker import debug as lib_debug
+
     lib_debug(ctx, config, machine, ports, cmd=command)
 
 
@@ -221,6 +229,7 @@ def debug(ctx, config, machine, ports, command):
 @click.pass_context
 def run(ctx, config, machine, args, **kwparams):
     from .lib_control_with_docker import run as lib_run
+
     lib_run(ctx, config, machine, args, **kwparams)
 
 
@@ -231,6 +240,7 @@ def run(ctx, config, machine, args, **kwparams):
 @click.pass_context
 def runbash(ctx, config, machine, args, **kwparams):
     from .lib_control_with_docker import runbash as lib_runbash
+
     lib_runbash(ctx, config, machine, args, **kwparams)
 
 
@@ -241,7 +251,8 @@ def runbash(ctx, config, machine, args, **kwparams):
 @pass_config
 def logall(config, machines, follow, lines):
     from .lib_control_with_docker import logall as lib_logall
-    lib_logall(machines, follow, lines)
+
+    lib_logall(config, machines, follow, lines)
 
 
 @docker.command()
@@ -256,7 +267,8 @@ def logall(config, machines, follow, lines):
 def shell(config, command, queuejobs):
     command = "\n".join(command)
     from .lib_control_with_docker import shell as lib_shell
-    lib_shell(command, queuejobs)
+
+    lib_shell(config, command, queuejobs)
 
 
 # problem with stdin: debug then display missing

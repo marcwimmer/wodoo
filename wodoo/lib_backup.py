@@ -1,4 +1,5 @@
 from codecs import ignore_errors
+import time
 import sys
 import uuid
 from .tools import abort
@@ -26,7 +27,8 @@ from .tools import _remove_postgres_connections
 from .tools import _get_dump_files
 from .tools import _binary_zip
 from .tools import autocleanpaper
-from . import cli, pass_config, Commands
+from .tools import _shell_complete_file
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 
 import inspect
@@ -192,7 +194,7 @@ def backup_db(
         if pigz:
             cmd += ["--pigz"]
 
-        res = __dc(cmd)
+        res = __dc(config, cmd)
         if res:
             raise Exception("Backup failed!")
     return filename
@@ -324,7 +326,9 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
 
 
 @restore.command(name="odoo-db")
-@click.argument("filename", required=False, default="")
+@click.argument(
+    "filename", required=False, default="", shell_complete=_shell_complete_file
+)
 @click.option("--no-dev-scripts", default=False, is_flag=True)
 @click.option("--no-remove-webassets", default=False, is_flag=True)
 @click.option("-j", "--workers", default=5)
@@ -338,7 +342,11 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
     help="Exclude tables from restore like --exclude=mail_message",
 )
 @click.option("-v", "--verbose", is_flag=True)
-@click.option("--ignore-errors", is_flag=True, help="Example if some extensions are missing (replication)")
+@click.option(
+    "--ignore-errors",
+    is_flag=True,
+    help="Example if some extensions are missing (replication)",
+)
 @pass_config
 @click.pass_context
 def restore_db(
@@ -440,8 +448,9 @@ def restore_db(
                 # if postgres docker is used, then make a temporary config to restart docker container
                 # with external directory mapped; after that remove config
                 if config.run_postgres:
-                    __dc(["kill", "postgres"])
+                    __dc(config, ["kill", "postgres"])
                     __dc(
+                        config,
                         [
                             "run",
                             "-d",
@@ -452,7 +461,7 @@ def restore_db(
                             "-v",
                             f"{dumps_path}:/host/dumps2",
                             "postgres",
-                        ]
+                        ],
                     )
                     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
                     effective_host_name = postgres_name
@@ -482,9 +491,7 @@ def restore_db(
                     str(workers),
                 ]
                 if ignore_errors:
-                    cmd += [
-                        "--ignore-errors"
-                    ]
+                    cmd += ["--ignore-errors"]
                 if exclude_tables:
                     cmd += [
                         "--exclude-tables",
@@ -492,7 +499,7 @@ def restore_db(
                     ]
                 if verbose:
                     cmd += ["--verbose"]
-                __dc(cmd)
+                __dc(config, cmd)
             else:
                 _add_cronjob_scripts(config)["postgres"]._restore(
                     DBNAME_RESTORING,
@@ -526,7 +533,7 @@ def restore_db(
                 subprocess.check_output(["docker", "rm", "-f", postgres_name])
 
     if config.run_postgres:
-        __dc(["up", "-d", "postgres"])
+        __dc(config, ["up", "-d", "postgres"])
         Commands.invoke(ctx, "wait_for_container_postgres")
         if config.devmode:
             Commands.invoke(ctx, "pghba_conf_wide_open")
@@ -555,14 +562,19 @@ def _inquirer_dump_file(config, message, filter):
         return filename
 
 
+def _get_filestore_destination(config):
+    files_dir = config.dirs["odoo_data_dir"] / "filestore" / config.dbname
+    files_dir.mkdir(exist_ok=True, parents=True)
+    return files_dir
+
+
 def __do_restore_files(config, filepath):
     # https://askubuntu.com/questions/128492/is-there-a-way-to-tar-extract-without-clobbering
     # remove the postgres volume and reinit
     filepath = Path(filepath)
     if len(filepath.parts) == 1:
         filepath = Path(config.dumps_path) / filepath
-    files_dir = config.dirs["odoo_data_dir"] / "filestore" / config.dbname
-    files_dir.mkdir(exist_ok=True, parents=True)
+    files_dir = _get_filestore_destination(config)
     subprocess.check_call(
         [
             "tar",
@@ -587,6 +599,37 @@ def __apply_dump_permissions(filepath):
         if id:
             change(x[1], id)
 
+
+@restore.command()
+@click.argument("filename", required=True, shell_complete=_shell_complete_file)
+@pass_config
+@click.pass_context
+def odoo_sh(ctx, config, filename):
+    pass
+    with autocleanpaper() as tempfolder:
+        filename = Path(filename).absolute()
+        tempfolder.mkdir(exist_ok=True, parents=True)
+        was_dir = os.getcwd()
+        try:
+            os.chdir(tempfolder)
+            if not filename.exists():
+                raise click.Abort(f"File does not exist: {tempfolder}")
+            subprocess.check_call(["unzip", filename])
+            sqlfile = tempfolder / "dump.sql"
+            filestore = tempfolder / "filestore"
+
+            if filestore.exists():
+                filestore_dest = _get_filestore_destination(config)
+                click.secho(f"Transferring files to {filestore_dest}")
+                subprocess.check_call(
+                    ["rsync", str(filestore) + "/", str(filestore_dest) + "/", "-ar"]
+                )
+            if sqlfile.exists():
+                click.secho(f"Restoring db {sqlfile}")
+                os.chdir(was_dir)
+                Commands.invoke(ctx, "restore_db", filename=sqlfile)
+        finally:
+            os.chdir(was_dir)
 
 Commands.register(backup_db)
 Commands.register(restore_db)

@@ -29,7 +29,7 @@ from .tools import __try_to_set_owner
 from .tools import whoami
 from .tools import abort
 from .tools import _get_version
-from . import cli, pass_config, Commands
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
 from .tools import execute_script
@@ -172,7 +172,6 @@ def do_reload(
     finally:
         if additional_config_file and additional_config_file.exists():
             additional_config_file.unlink()
-
 
 def get_arch():
     return platform.uname().machine  # aarch64
@@ -426,7 +425,7 @@ def _execute_after_compose(config, yml):
             sys.exit(-1)
 
         duration = (arrow.get() - started).total_seconds()
-        if duration > 2:
+        if duration > 2 and config.verbose:
             click.secho(f"Processing took {module} seconds", fg="yellow")
 
     settings.write()

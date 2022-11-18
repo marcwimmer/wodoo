@@ -605,13 +605,13 @@ def update_cache(arg_modified_filename=None):
         for field in fields:
             name = "{model}.{field}".format(**field)
             line = TEMPLATE.format(
-                    type="field",
-                    module=field["module"],
-                    name=name,
-                    filepath=translate_path_relative_to_customs_root(field["filepath"]),
-                    line=field["line"],
+                type="field",
+                module=field["module"],
+                name=name,
+                filepath=translate_path_relative_to_customs_root(field["filepath"]),
+                line=field["line"],
             )
-            f.write(line + '\n')
+            f.write(line + "\n")
         for view in views:
             name = "{res_model} ~{type} {id} [inherit_id={inherit_id}]".format(**view)
             f.write(

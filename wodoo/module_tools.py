@@ -45,7 +45,6 @@ except Exception:
     from xmlrpc import client as xmlrpclib
 import inspect
 import sys
-from .tools import _get_missing_click_config
 
 LANG = os.getenv("ODOO_LANG", "de_DE")  # todo from environment
 host = "http://localhost:8069"
@@ -1354,7 +1353,7 @@ class Module(object):
             if "test" in local_path.parts:
                 continue
             if local_path.suffix in [".xml", ".csv", ".yml"]:
-                if 'demo' in local_path.parts:
+                if "demo" in local_path.parts:
                     mod["demo"].append(str(local_path))
                 elif "static" in local_path.parts:
                     # contains qweb file
@@ -1425,3 +1424,57 @@ class Module(object):
 
 def write_debug_instruction(instruction):
     (customs_dir() / ".debug").write_text(instruction)
+
+
+def _resolve_path_mapping(conn, path, model):
+    """
+    Gets the content of related="..." and returns the final model and field
+    """
+    # last item is field
+    splitted = path.split(".")
+    for i in range(len(splitted) - 1):
+        part = splitted[i]
+        sql = f"select id, model, related, relation from ir_model_fields where name = '{part}' and model='{model}'"
+        fieldrecord = _execute_sql(conn, sql, fetchone=True)
+        if not fieldrecord:
+            raise Exception(f"Could not resolve: {path} on {model}")
+        id, model, related, relation = fieldrecord
+        if related:
+            # hardcore; a field part could point to a related item again
+            model, part = _resolve_path_mapping(conn, related, model)
+        else:
+            model = relation
+
+    return model, splitted[-1]
+
+
+def _determine_affected_modules_for_ir_field_and_related(config, fieldname, modelname):
+    """
+    removes entry from ir.model.fields and also related entries
+    """
+    affected_modules = []
+    # as destructive:
+    assert config.DEVMODE, "Devmode required for this function. May destroy data."
+    conn = config.get_odoo_conn()
+
+    def _get_model_for_field(model, fieldname):
+        name = f"field_{model.replace('.', '_')}__{fieldname}"
+        sql = f"select module from ir_model_data where model='ir.model.fields' and name='{name}'"
+        ir_model_data = _execute_sql(conn, sql, fetchone=True)
+        return ir_model_data[0]
+
+    sql = f"select id, model, related from ir_model_fields where related like '%.{fieldname}'"
+    related_fields = _execute_sql(conn, sql, fetchall=True)
+
+    for related_field in related_fields:
+        id, model, path = related_field
+
+        resolved_model, resolved_fieldname = _resolve_path_mapping(conn, path, model)
+        if resolved_model == modelname and resolved_fieldname == fieldname:
+            affected_modules.append(
+                _get_model_for_field(resolved_model, resolved_fieldname)
+            )
+    affected_modules.append(
+        _get_model_for_field(modelname, fieldname)
+    )
+    return affected_modules

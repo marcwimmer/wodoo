@@ -51,8 +51,8 @@ def get_odoo_addons_paths(
         else:
             res.append(c / x)
 
-
     return res
+
 
 def customs_dir():
     env_customs_dir = os.getenv("CUSTOMS_DIR")

@@ -10,7 +10,7 @@ from datetime import datetime
 import os
 import click
 from .tools import __dc
-from . import cli, pass_config
+from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from .tools import split_hub_url, abort
 
@@ -62,7 +62,7 @@ def regpull(ctx, config, machines):
         machines = list(yaml.load(config.files['docker_compose'].read_text())['services'])
     for machine in machines:
         click.secho(f"Pulling {machine}")
-        __dc(['pull', machine])
+        __dc(config, ['pull', machine])
 
 @docker_registry.command()
 @pass_config

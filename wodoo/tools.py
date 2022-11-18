@@ -5,7 +5,6 @@ import requests
 import stat
 from contextlib import contextmanager
 import re
-import docker
 import inquirer
 
 try:
@@ -253,6 +252,7 @@ def _wait_postgres(config, timeout=600):
             .splitlines()
         )
 
+        import docker
         client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
@@ -307,7 +307,7 @@ def _wait_postgres(config, timeout=600):
 def _is_container_running(machine_name):
     import docker
 
-    container_id = __dc_out(["ps", "-q", machine_name]).strip()
+    container_id = __dc_out(config, ["ps", "-q", machine_name]).strip()
     if container_id:
         container = list(
             filter(
@@ -401,21 +401,21 @@ def _set_default_envs(env):
     return env
 
 
-def __dc(cmd, env={}):
-    c = __get_cmd() + cmd
+def __dc(config, cmd, env={}):
+    c = __get_cmd(config) + cmd
     env = _set_default_envs(env)
     return subprocess.check_call(c, env=_merge_env_dict(env))
 
 
-def __dc_out(cmd, env={}):
-    c = __get_cmd() + cmd
+def __dc_out(config, cmd, env={}):
+    c = __get_cmd(config) + cmd
     env = _set_default_envs(env)
     return subprocess.check_output(c, env=_merge_env_dict(env))
 
 
-def __dcexec(cmd, interactive=True, env=None):
+def __dcexec(config, cmd, interactive=True, env=None):
     env = _set_default_envs(env)
-    c = __get_cmd()
+    c = __get_cmd(config)
     c += ["exec"]
     if not interactive:
         c += ["-T"]
@@ -430,7 +430,7 @@ def __dcexec(cmd, interactive=True, env=None):
 
 
 def __dcrun(
-    cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
+    config, cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
 ):
     env = _set_default_envs(env)
     cmd2 = [os.path.expandvars(x) for x in cmd]
@@ -442,7 +442,7 @@ def __dcrun(
         cmd += ["-e{}={}".format(k, v)]
     cmd += cmd2
     del cmd2
-    cmd = __get_cmd() + cmd
+    cmd = __get_cmd(config) + cmd
     if interactive:
         optional_params = {}
         if pass_stdin:
@@ -505,8 +505,7 @@ def __rm_file_if_exists(path):
         path.unlink()
 
 
-def __rmtree(path):
-    config = _get_missing_click_config()
+def __rmtree(config, path):
     if not path or path == "/":
         raise Exception("Not allowed: {}".format(path))
     if not path.startswith("/"):
@@ -531,15 +530,14 @@ def __safeget(array, index, exception_on_missing, file_options=None):
     return array[index]
 
 
-def __get_cmd():
-    config = _get_missing_click_config()
+def __get_cmd(config):
     cmd = config.commands["dc"]
     cmd = [os.path.expandvars(x) for x in cmd]
     return cmd
 
 
-def __cmd_interactive(*params, return_proc=False):
-    cmd = __get_cmd() + list(params)
+def __cmd_interactive(config, *params, return_proc=False):
+    cmd = __get_cmd(config) + list(params)
     proc = subprocess.Popen(cmd)
     proc.wait()
     if return_proc:
@@ -577,8 +575,7 @@ def __file_get_lines(path):
     return path.read_text().strip().splitlines()
 
 
-def _get_machines():
-    config = _get_missing_click_config()
+def _get_machines(config):
     cmd = config.commands["dc"] + ["ps", "--services"]
     out = subprocess.check_output(cmd, cwd=config.dirs["odoo_home"])
     out = set(filter(lambda x: x, out.splitlines()))
@@ -1044,18 +1041,6 @@ def split_hub_url(config):
         "prefix": prefix,
     }
 
-
-def _get_missing_click_config():
-    from .click_config import Config
-
-    config = Config(quiet=True)
-    for stack in inspect.stack():
-        frame = stack.frame
-        if "ctx" in frame.f_locals and "config" in frame.f_locals:
-            config = frame.f_locals["config"]
-    return config
-
-
 def execute_script(config, script, message):
     if script.exists():
         click.secho(f"Executing reload script: {script}", fg="green")
@@ -1149,7 +1134,6 @@ def _binary_zip(folder, destpath):
     os.system((f"cd '{folder}' && tar c . | pv | pigz > '{destpath}'"))
     if not destpath.exists():
         raise Exception(f"file {destpath} not generated")
-
 
 @contextmanager
 def autocleanpaper(filepath=None):
@@ -1263,3 +1247,70 @@ def download_file(url):
     finally:
         if file.exists():
             file.unlink()
+
+def _get_default_project_name(restrict):
+    from .exceptions import NoProjectNameException
+    def _get_project_name_from_file(path):
+        if not path.exists():
+            return
+        pj = [x for x in path.read_text().split("\n") if "PROJECT_NAME" in x]
+        if pj:
+            return pj[0].split("=")[-1].strip()
+
+    if restrict:
+        paths = restrict
+    else:
+        paths = [Path(os.path.expanduser("~/.odoo/settings"))]
+
+    for path in paths:
+        pj = _get_project_name_from_file(path)
+        if pj:
+            return pj
+
+    customs_root = _get_customs_root(Path(os.getcwd()))
+    if customs_root:
+        root = Path(customs_root)
+        if (root / "MANIFEST").exists():
+            return root.name
+    raise NoProjectNameException("No default project name could be determined.")
+
+def _search_path(filename):
+    filename = Path(filename)
+    filename = filename.name
+    paths = os.getenv("PATH", "").split(":")
+
+    # add probable pyenv path also:
+    execparent = Path(sys.executable).parent
+    if execparent.name in ["bin", "sbin"]:
+        paths = [execparent] + paths
+
+    for path in paths:
+        path = Path(path)
+        if (path / filename).exists():
+            return str(path / filename)
+
+
+def _get_customs_root(p):
+    # arg_dir = p
+    if p:
+        while len(p.parts) > 1:
+            if (p / "MANIFEST").exists():
+                return p
+            p = p.parent
+
+def _shell_complete_file(ctx, param, incomplete):
+    incomplete = os.path.expanduser(incomplete)
+    if not incomplete:
+        start = Path(os.getcwd())
+    else:
+        start = Path(incomplete).parent
+    parts = list(filter(bool ,incomplete.split("/")))
+    if Path(incomplete).exists() and Path(incomplete).is_dir():
+        start = Path(incomplete)
+        filtered = "*"
+    else:
+        filtered = "*"
+        if parts:
+            filtered = parts[-1] + "*"
+    files = list(start.glob(filtered))
+    return sorted(map(str, files))

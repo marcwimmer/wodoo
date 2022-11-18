@@ -63,7 +63,7 @@ def _collect_settings_files(config, quiet=False):
         # optimize
         for filename in config.dirs['images'].glob("**/default.settings"):
             _files.append(config.dirs['images'] / filename)
-    if config.restrict['settings']:
+    if config.restrict.get('settings'):
         _files += config.restrict['settings']
     else:
         for dir in filter(lambda x: x.exists(), _get_settings_files(config)):
