@@ -894,7 +894,7 @@ def show_install_state(config, suppress_error=False, missing_as_error=False):
 
     if not suppress_error:
         if dangling or (missing_as_error and missing):
-            raise Exception(
+            raise click.Abort(
                 (
                     "Dangling modules detected - "
                     " please fix installation problems and retry! \n"

@@ -1251,6 +1251,7 @@ def download_file(url):
 def _get_default_project_name(restrict):
     from .exceptions import NoProjectNameException
     def _get_project_name_from_file(path):
+        path = Path(path)
         if not path.exists():
             return
         pj = [x for x in path.read_text().split("\n") if "PROJECT_NAME" in x]

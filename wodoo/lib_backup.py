@@ -605,7 +605,6 @@ def __apply_dump_permissions(filepath):
 @pass_config
 @click.pass_context
 def odoo_sh(ctx, config, filename):
-    pass
     with autocleanpaper() as tempfolder:
         filename = Path(filename).absolute()
         tempfolder.mkdir(exist_ok=True, parents=True)
