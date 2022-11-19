@@ -38,7 +38,10 @@ systemctl start docker
 
 DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
 
-zfs = search_env_path("zfs")
+try:
+    zfs = search_env_path("zfs")
+except Exception:
+    zfs = None
 
 class NotZFS(Exception):
     def __init__(self, msg, poolname):
