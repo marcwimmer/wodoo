@@ -33,6 +33,7 @@ from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
 from .tools import execute_script
+from .tools import ensure_project_name
 
 
 @cli.group(cls=AliasedGroup)
@@ -188,6 +189,7 @@ def internal_reload(
     mailclient_gui_port,
     additional_config=None,
 ):
+    ensure_project_name(config)
     defaults = {
         "config": config,
         "db": db,

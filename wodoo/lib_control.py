@@ -7,6 +7,7 @@ import subprocess
 import json
 from pathlib import Path
 from .tools import abort
+from .tools import ensure_project_name
 
 
 @cli.group(cls=AliasedGroup)
@@ -19,6 +20,7 @@ def docker(config):
 @pass_config
 @click.pass_context
 def pull(ctx, config):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import pull as lib_pull
     return lib_pull(ctx, config)
@@ -30,6 +32,7 @@ def pull(ctx, config):
 @pass_config
 @click.pass_context
 def dev(ctx, config, build, kill):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import dev as lib_dev
     return lib_dev(ctx, config, build, kill)
@@ -38,6 +41,7 @@ def dev(ctx, config, build, kill):
 @docker.command(name="ps")
 @pass_config
 def ps(config):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import ps as lib_ps
     return lib_ps(config)
@@ -48,6 +52,7 @@ def ps(config):
 @click.argument("args", nargs=-1)
 @pass_config
 def execute(config, machine, args):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import execute as lib_execute
     lib_execute(config, machine, args)
@@ -59,6 +64,7 @@ def execute(config, machine, args):
 @pass_config
 @click.pass_context
 def do_kill(ctx, config, machines, brutal=False):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import do_kill as lib_do_kill
 
@@ -88,6 +94,7 @@ def wait_for_container_postgres(config):
 @docker.command()
 @pass_config
 def wait_for_port(config, host, port):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import wait_for_port as lib_wait_for_port
     lib_wait_for_port(host, port)
@@ -98,6 +105,7 @@ def wait_for_port(config, host, port):
 @pass_config
 @click.pass_context
 def recreate(ctx, config, machines):
+    ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import recreate as lib_recreate
     lib_recreate(ctx, config, machines)
@@ -109,6 +117,7 @@ def recreate(ctx, config, machines):
 @pass_config
 @click.pass_context
 def up(ctx, config, machines, daemon):
+    ensure_project_name(config)
     from .lib_setup import _status
     from .lib_control_with_docker import up as lib_up
 
@@ -128,6 +137,7 @@ def up(ctx, config, machines, daemon):
 @pass_config
 @click.pass_context
 def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
+    ensure_project_name(config)
     from .lib_control_with_docker import down as lib_down
     from .lib_db_snapshots_docker_zfs import NotZFS
 
@@ -149,6 +159,7 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
 @pass_config
 @click.pass_context
 def stop(ctx, config, machines):
+    ensure_project_name(config)
     from .lib_control_with_docker import stop as lib_stop
 
     lib_stop(ctx, config, machines)
@@ -159,6 +170,7 @@ def stop(ctx, config, machines):
 @pass_config
 @click.pass_context
 def rebuild(ctx, config, machines):
+    ensure_project_name(config)
     from .lib_control_with_docker import rebuild as lib_rebuild
 
     lib_rebuild(ctx, config, machines)
@@ -169,6 +181,7 @@ def rebuild(ctx, config, machines):
 @pass_config
 @click.pass_context
 def restart(ctx, config, machines):
+    ensure_project_name(config)
     from .lib_control_with_docker import restart as lib_restart
 
     lib_restart(ctx, config, machines)
@@ -179,6 +192,7 @@ def restart(ctx, config, machines):
 @pass_config
 @click.pass_context
 def rm(ctx, config, machines):
+    ensure_project_name(config)
     from .lib_control_with_docker import rm as lib_rm
 
     lib_rm(ctx, config, machines)
@@ -189,6 +203,7 @@ def rm(ctx, config, machines):
 @pass_config
 @click.pass_context
 def attach(ctx, config, machine):
+    ensure_project_name(config)
     from .lib_control_with_docker import attach as lib_attach
 
     lib_attach(ctx, config, machine)
@@ -203,6 +218,7 @@ def attach(ctx, config, machine):
 @pass_config
 @click.pass_context
 def build(ctx, config, machines, pull, no_cache, push, plain):
+    ensure_project_name(config)
     if plain:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
     from .lib_control_with_docker import build as lib_build
@@ -217,6 +233,7 @@ def build(ctx, config, machines, pull, no_cache, push, plain):
 @pass_config
 @click.pass_context
 def debug(ctx, config, machine, ports, command):
+    ensure_project_name(config)
     from .lib_control_with_docker import debug as lib_debug
 
     lib_debug(ctx, config, machine, ports, cmd=command)
@@ -228,6 +245,7 @@ def debug(ctx, config, machine, ports, command):
 @pass_config
 @click.pass_context
 def run(ctx, config, machine, args, **kwparams):
+    ensure_project_name(config)
     from .lib_control_with_docker import run as lib_run
 
     lib_run(ctx, config, machine, args, **kwparams)
@@ -239,6 +257,7 @@ def run(ctx, config, machine, args, **kwparams):
 @pass_config
 @click.pass_context
 def runbash(ctx, config, machine, args, **kwparams):
+    ensure_project_name(config)
     from .lib_control_with_docker import runbash as lib_runbash
 
     lib_runbash(ctx, config, machine, args, **kwparams)
@@ -250,6 +269,7 @@ def runbash(ctx, config, machine, args, **kwparams):
 @click.option("-f", "--follow", is_flag=True)
 @pass_config
 def logall(config, machines, follow, lines):
+    ensure_project_name(config)
     from .lib_control_with_docker import logall as lib_logall
 
     lib_logall(config, machines, follow, lines)
@@ -265,6 +285,7 @@ def logall(config, machines, follow, lines):
 )
 @pass_config
 def shell(config, command, queuejobs):
+    ensure_project_name(config)
     command = "\n".join(command)
     from .lib_control_with_docker import shell as lib_shell
 

@@ -402,18 +402,21 @@ def _set_default_envs(env):
 
 
 def __dc(config, cmd, env={}):
+    ensure_project_name(config)
     c = __get_cmd(config) + cmd
     env = _set_default_envs(env)
     return subprocess.check_call(c, env=_merge_env_dict(env))
 
 
 def __dc_out(config, cmd, env={}):
+    ensure_project_name(config)
     c = __get_cmd(config) + cmd
     env = _set_default_envs(env)
     return subprocess.check_output(c, env=_merge_env_dict(env))
 
 
 def __dcexec(config, cmd, interactive=True, env=None):
+    ensure_project_name(config)
     env = _set_default_envs(env)
     c = __get_cmd(config)
     c += ["exec"]
@@ -432,6 +435,7 @@ def __dcexec(config, cmd, interactive=True, env=None):
 def __dcrun(
     config, cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
 ):
+    ensure_project_name(config)
     env = _set_default_envs(env)
     cmd2 = [os.path.expandvars(x) for x in cmd]
     cmd = ["run"]
@@ -1315,3 +1319,7 @@ def _shell_complete_file(ctx, param, incomplete):
             filtered = parts[-1] + "*"
     files = list(start.glob(filtered))
     return sorted(map(str, files))
+
+def ensure_project_name(config):
+    if not config.project_name:
+        raise click.Abort("Project name missing.")

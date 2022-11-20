@@ -30,6 +30,7 @@ from .tools import autocleanpaper
 from .tools import _shell_complete_file
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
+from .tools import ensure_project_name
 
 import inspect
 import os
@@ -65,6 +66,7 @@ def backup_all(ctx, config, filename):
     """
     Runs backup-db and backup-files
     """
+    ensure_project_name(config)
     config.force = True
     filename = Path(filename or (config.dbname + ".db_and_files"))
     if len(filename.parts) == 1:

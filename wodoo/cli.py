@@ -49,7 +49,10 @@ def cli(
     from .tools import _get_default_project_name
 
     if not project_name:
-        project_name = _get_default_project_name(restrict_setting)
+        try:
+            project_name = _get_default_project_name(restrict_setting)
+        except Exception:
+            project_name = ""
 
     config.set_restrict('settings', restrict_setting)
     config.set_restrict('docker-compose', restrict_docker_compose)
