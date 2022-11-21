@@ -1140,10 +1140,13 @@ def _binary_zip(folder, destpath):
         raise Exception(f"file {destpath} not generated")
 
 @contextmanager
-def autocleanpaper(filepath=None):
-    filepath = Path(filepath or tempfile._get_default_tempdir()) / next(
-        tempfile._get_candidate_names()
-    )
+def autocleanpaper(filepath=None, strict=False):
+    if strict:
+        assert filepath
+    else:
+        filepath = Path(filepath or tempfile._get_default_tempdir()) / next(
+            tempfile._get_candidate_names()
+        )
 
     try:
         yield filepath
@@ -1323,3 +1326,6 @@ def _shell_complete_file(ctx, param, incomplete):
 def ensure_project_name(config):
     if not config.project_name:
         raise click.Abort("Project name missing.")
+
+def _get_filestore_folder(config):
+    return config.dirs["odoo_data_dir"] / "filestore" / config.dbname
