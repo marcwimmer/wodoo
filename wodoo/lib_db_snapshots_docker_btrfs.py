@@ -141,7 +141,7 @@ def make_snapshot(ctx, config, name):
             str(dest_path),
         ]
     ).decode("utf-8").strip()
-    __dc(["up", "-d"] + ["postgres"])
+    __dc(config, ["up", "-d"] + ["postgres"])
     return name
 
 
