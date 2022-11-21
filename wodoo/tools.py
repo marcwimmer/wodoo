@@ -304,7 +304,7 @@ def _wait_postgres(config, timeout=600):
         click.secho("Postgres now available.", fg="green")
 
 
-def _is_container_running(machine_name):
+def _is_container_running(config, machine_name):
     import docker
 
     container_id = __dc_out(config, ["ps", "-q", machine_name]).strip()
@@ -321,10 +321,10 @@ def _is_container_running(machine_name):
     return False
 
 
-def is_up(*machine_name):
+def is_up(config, *machine_name):
     assert len(machine_name) == 1
     click.echo(
-        "Running" if _is_container_running(machine_name[0]) else "Not Running",
+        "Running" if _is_container_running(config, machine_name[0]) else "Not Running",
         machine_name[0],
     )
 

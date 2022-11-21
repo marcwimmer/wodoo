@@ -143,7 +143,7 @@ def do_kill(ctx, config, machines=[], brutal=False):
         safe_stop = []
         for machine in SAFE_KILL:
             if not machines or machine in machines:
-                if _is_container_running(machine):
+                if _is_container_running(config, machine):
                     safe_stop += [machine]
 
         if safe_stop:
