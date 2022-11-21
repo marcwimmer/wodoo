@@ -314,6 +314,10 @@ def _odoo_sh(ctx, config, filename, params):
                 subprocess.check_call(
                     ["rsync", str(filestore) + "/", str(filestore_dest) + "/", "-ar"]
                 )
+                # change owner to OWNER_UID
+                subprocess.check_call(
+                    ["chown", str(config.owner_uid), filestore_dest, "-R"]
+                )
             if sqlfile.exists():
                 click.secho(f"Restoring db {sqlfile}")
                 os.chdir(was_dir)
