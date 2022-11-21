@@ -26,7 +26,11 @@ class Config(object):
 
         from .tools import _get_customs_root
 
-        self._WORKING_DIR = _get_customs_root(Path(os.getcwd()))
+        try:
+            self._WORKING_DIR = _get_customs_root(Path(os.getcwd()))
+        except:
+            # Case example odoo -p ...  called somewhere
+            self._WORKING_DIR = None
         self._host_run_dir = None
         self._project_name = None
         self.YAML_VERSION = YAML_VERSION
