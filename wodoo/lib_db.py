@@ -152,7 +152,11 @@ def _psql(
         if not histfile.exists:
             histfile.write_text("")
         os.chmod(histfile, 0o0777)
-        os.chown(histfile, 0, 0)
+        try:
+            os.chown(histfile, 0, 0)
+        except:
+            # can be in restricted mode fail
+            pass
 
         if use_docker_container or (config.use_docker and config.run_postgres):
             __dcrun(config, 
