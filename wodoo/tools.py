@@ -910,14 +910,16 @@ def copy_dir_contents(dir, dest_dir, exclude=None):
     assert dir.is_dir()
     assert dest_dir.is_dir()
     exclude = exclude or []
-    for x in dir.glob("*"):
+    files = list(dir.glob("*"))
+    for x in files:
         if exclude:
             if x.name in exclude:
                 continue
+        dest_path = (dest_dir / x.name).absolute()
         if not x.is_dir():
-            shutil.copy(str(x.absolute()), str((dest_dir / x.name).absolute()))
+            shutil.copy(str(x.absolute()), str(dest_path))
         else:
-            shutil.copytree(str(x.absolute()), str((dest_dir / x.name).absolute()))
+            shutil.copytree(str(x.absolute()), str(dest_path))
 
 
 def _get_host_ip():

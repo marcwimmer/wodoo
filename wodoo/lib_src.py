@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 import subprocess
 import inquirer
 import sys
@@ -12,6 +13,8 @@ from .odoo_config import customs_dir
 from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from .tools import split_hub_url
+from .tools import autocleanpaper
+from .tools import copy_dir_contents
 
 
 @cli.group(cls=AliasedGroup)
@@ -121,3 +124,61 @@ def setup_venv(config):
         / "requirements.txt"
     )
     click.secho("pip3 install -r {}".format(requirements1))
+
+
+@src.command()
+@click.argument("branch", required=True)
+@pass_config
+def pack_to_branch(config, branch):
+    from .module_tools import Modules, DBModules, Module
+
+    with autocleanpaper() as folder:
+        with autocleanpaper() as folder2:
+            folder.mkdir(exist_ok=True, parents=True)
+            folder2.mkdir(exist_ok=True, parents=True)
+            copy_dir_contents(customs_dir(), folder)
+            mods = Modules()
+            modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
+            modules = [Module.get_by_name(x) for x in modules]
+            # filter out odoo
+            modules = [
+                x
+                for x in modules
+                if x.path.parts[0] not in ["odoo", "enterprise", "odoo_enterprise"]
+            ]
+            for mod in modules:
+                dest = folder2 / mod.path.name
+                dest.mkdir(parents=True)
+                copy_dir_contents(mod.path, dest)
+
+            comment = subprocess.check_output(["git", "log", "-n1"], encoding="utf8")
+
+            subprocess.check_call(["git", "checkout", "-f", branch], cwd=folder)
+            subprocess.check_call(["git", "clean", "-xdff"], cwd=folder)
+
+            # remove unneeded files
+            for subfolder in folder.glob("*"):
+                if subfolder.name == ".git":
+                    continue
+                if not subfolder.is_dir():
+                    if not str(subfolder).startswith("."):
+                        subfolder.unlink()
+                    continue
+                shutil.rmtree(subfolder)
+            for subfolder in folder2.glob("*"):
+                if not subfolder.is_dir():
+                    continue
+                dest = folder / subfolder.name
+                if dest.exists():
+                    shutil.rmtree(dest)
+                shutil.move(subfolder, dest)
+
+            subprocess.check_call(
+                ["git", "add", "."], cwd=folder
+            )
+            subprocess.check_call(
+                ["git", "commit", "-am", comment.replace("\n", " ")], cwd=folder
+            )
+            subprocess.check_call(
+                ["git", "push", "--set-upstream", "origin", branch], cwd=folder
+            )
