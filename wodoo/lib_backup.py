@@ -76,6 +76,8 @@ def backup_all(ctx, config, filename):
     if len(filename.parts) == 1:
         filename = Path(config.dumps_path) / filename
     with autocleanpaper(Path(config.dumps_path) / str(uuid.uuid4())) as tmppath:
+        tmppath.mkdir(exist_ok=True, parents=True)
+        subprocess.check_output(["chown", str(config.owner_uid), tmppath])
         filepath_db = ctx.invoke(
             backup_db, filename=tmppath / "dump.sql", dumptype="plain"
         )
