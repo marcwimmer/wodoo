@@ -678,7 +678,7 @@ class Modules(object):
             Returns a list of full paths of all manifests
             """
             for path in reversed(get_odoo_addons_paths()):
-                for file in path.glob("*/" + manifest_file_names()):
+                for file in sorted(path.glob("*/" + manifest_file_names())):
                     modname = file.parent.name
                     if modname in modnames:
                         continue
