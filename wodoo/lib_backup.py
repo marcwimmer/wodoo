@@ -305,7 +305,7 @@ def _odoo_sh(ctx, config, filename, params):
         try:
             os.chdir(tempfolder)
             if not filename.exists():
-                raise click.Abort(f"File does not exist: {tempfolder}")
+                abort(f"File does not exist: {tempfolder}")
             subprocess.check_call(["unzip", filename])
             sqlfile = tempfolder / "dump.sql"
             filestore = tempfolder / "filestore"
@@ -323,6 +323,7 @@ def _odoo_sh(ctx, config, filename, params):
             if sqlfile.exists():
                 click.secho(f"Restoring db {sqlfile}")
                 os.chdir(was_dir)
+                params['no_remove_webassets'] = True
                 Commands.invoke(ctx, "restore_db", filename=sqlfile, **params)
         finally:
             os.chdir(was_dir)
@@ -413,6 +414,7 @@ def restore_db(
 
     if dump_type.startswith("dump_all"):
         with autocleanpaper() as tmpdir:
+            params['no_remove_webassets'] = True
             with _add_cronjob_scripts(config)["postgres"].extract_dumps_all(
                 tmpdir, filename_absolute
             ) as (dbfile, files_file):
@@ -426,7 +428,7 @@ def restore_db(
 
     if dump_type.startswith("wodoo_bin"):
         if not config.run_postgres:
-            raise click.Abort("Requires RUN_POSTGRES=1")
+            abort("Requires RUN_POSTGRES=1")
 
         _restore_wodoo_bin(ctx, config, filename_absolute, verify)
         conn = config.get_odoo_conn()

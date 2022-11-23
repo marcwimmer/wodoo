@@ -1327,7 +1327,7 @@ def _shell_complete_file(ctx, param, incomplete):
 
 def ensure_project_name(config):
     if not config.project_name:
-        raise click.Abort("Project name missing.")
+        abort("Project name missing.")
 
 def _get_filestore_folder(config):
     return config.dirs["odoo_data_dir"] / "filestore" / config.dbname
