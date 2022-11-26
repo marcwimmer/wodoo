@@ -154,7 +154,6 @@ def pack_to_branch(config, branch):
             subprocess.check_call(["git", "pull"], cwd=folder)
 
             mods = Modules()
-            breakpoint()
             modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
             modules = [Module.get_by_name(x) for x in modules]
             # filter out odoo
