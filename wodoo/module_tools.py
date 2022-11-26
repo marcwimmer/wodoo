@@ -801,9 +801,7 @@ class Modules(object):
         while True:
             len_modules = len(all_modules)
             for auto_install_module in all_auto_installed_modules:
-                for module2 in self.get_module_flat_dependency_tree(
-                    auto_install_module
-                ):
+                for module2 in auto_install_module.manifest_dict['depends']:
                     if module2 not in all_modules:
                         break
                 else:
