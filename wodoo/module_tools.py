@@ -801,8 +801,12 @@ class Modules(object):
         while True:
             len_modules = len(all_modules)
             for auto_install_module in all_auto_installed_modules:
-                for module2 in auto_install_module.manifest_dict['depends']:
-                    if module2 not in all_modules:
+                for module2 in self.get_module_flat_dependency_tree(
+                    auto_install_module
+                ):
+                # not sufficient: if depending on auto_install module
+                # for module2 in auto_install_module.manifest_dict['depends']:
+                    if module2.name not in all_modules:
                         break
                 else:
                     all_modules.add(auto_install_module.name)
@@ -817,10 +821,9 @@ class Modules(object):
 
         def x(d):
             for k, v in d.items():
-                if isinstance(k, str):
-                    result.add(k)
-                else:
-                    result.add(k.name)
+                module_name = k if isinstance(k, str) else k.name
+                if module_name != module.name:
+                    result.add(module_name)
                 x(v)
 
         x(deptree)
