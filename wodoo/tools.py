@@ -253,6 +253,7 @@ def _wait_postgres(config, timeout=600):
         )
 
         import docker
+
         client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
@@ -433,7 +434,13 @@ def __dcexec(config, cmd, interactive=True, env=None):
 
 
 def __dcrun(
-    config, cmd, interactive=False, env={}, returncode=False, pass_stdin=None, returnproc=False
+    config,
+    cmd,
+    interactive=False,
+    env={},
+    returncode=False,
+    pass_stdin=None,
+    returnproc=False,
 ):
     ensure_project_name(config)
     env = _set_default_envs(env)
@@ -803,7 +810,7 @@ def remove_webassets(conn):
     try:
         for query in queries:
             try:
-                click.secho(query, fg='grey')
+                click.secho(query, fg="grey")
                 cr.execute(query)
                 conn.commit()
             except:
@@ -904,6 +911,16 @@ def sync_folder(dir, dest_dir, excludes=None):
         subprocess.check_call(cmd)
     else:
         raise NotImplementedError()
+
+
+def rsync(src, dest, options="-arP", exclude=None):
+    exclude = exclude or ""
+    exclude_option = []
+    for x in exclude:
+        exclude_option += ["--exclude", x]
+    subprocess.check_call(
+        ["rsync", str(src) + "/", str(dest) + "/", options] + exclude_option
+    )
 
 
 def copy_dir_contents(dir, dest_dir, exclude=None):
@@ -1047,6 +1064,7 @@ def split_hub_url(config):
         "prefix": prefix,
     }
 
+
 def execute_script(config, script, message):
     if script.exists():
         click.secho(f"Executing reload script: {script}", fg="green")
@@ -1140,6 +1158,7 @@ def _binary_zip(folder, destpath):
     os.system((f"cd '{folder}' && tar c . | pv | pigz > '{destpath}'"))
     if not destpath.exists():
         raise Exception(f"file {destpath} not generated")
+
 
 @contextmanager
 def autocleanpaper(filepath=None, strict=False):
@@ -1257,8 +1276,10 @@ def download_file(url):
         if file.exists():
             file.unlink()
 
+
 def _get_default_project_name(restrict):
     from .exceptions import NoProjectNameException
+
     def _get_project_name_from_file(path):
         path = Path(path)
         if not path.exists():
@@ -1284,6 +1305,7 @@ def _get_default_project_name(restrict):
             return root.name
     raise NoProjectNameException("No default project name could be determined.")
 
+
 def _search_path(filename):
     filename = Path(filename)
     filename = filename.name
@@ -1308,13 +1330,14 @@ def _get_customs_root(p):
                 return p
             p = p.parent
 
+
 def _shell_complete_file(ctx, param, incomplete):
     incomplete = os.path.expanduser(incomplete)
     if not incomplete:
         start = Path(os.getcwd())
     else:
         start = Path(incomplete).parent
-    parts = list(filter(bool ,incomplete.split("/")))
+    parts = list(filter(bool, incomplete.split("/")))
     if Path(incomplete).exists() and Path(incomplete).is_dir():
         start = Path(incomplete)
         filtered = "*"
@@ -1325,9 +1348,11 @@ def _shell_complete_file(ctx, param, incomplete):
     files = list(start.glob(filtered))
     return sorted(map(str, files))
 
+
 def ensure_project_name(config):
     if not config.project_name:
         abort("Project name missing.")
+
 
 def _get_filestore_folder(config):
     return config.dirs["odoo_data_dir"] / "filestore" / config.dbname

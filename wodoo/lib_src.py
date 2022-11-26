@@ -14,7 +14,7 @@ from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from .tools import split_hub_url
 from .tools import autocleanpaper
-from .tools import copy_dir_contents
+from .tools import copy_dir_contents, rsync
 
 
 @cli.group(cls=AliasedGroup)
@@ -136,8 +136,25 @@ def pack_to_branch(config, branch):
         with autocleanpaper() as folder2:
             folder.mkdir(exist_ok=True, parents=True)
             folder2.mkdir(exist_ok=True, parents=True)
-            copy_dir_contents(customs_dir(), folder)
+            custdir = customs_dir()
+            exclude = [
+                x.name
+                for x in custdir.glob("*")
+                if x.is_dir() and x.name not in [".git"]
+            ]
+            rsync(
+                custdir,
+                folder,
+                exclude=exclude,
+            )
+            try:
+                subprocess.check_call(["git", "checkout", "-f", branch], cwd=folder)
+            except:
+                subprocess.check_call(["git", "checkout", "-b", branch], cwd=folder)
+            subprocess.check_call(["git", "pull"], cwd=folder)
+
             mods = Modules()
+            breakpoint()
             modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
             modules = [Module.get_by_name(x) for x in modules]
             # filter out odoo
@@ -149,12 +166,16 @@ def pack_to_branch(config, branch):
             for mod in modules:
                 dest = folder2 / mod.path.name
                 dest.mkdir(parents=True)
-                copy_dir_contents(mod.path, dest)
+                rsync(mod.path, dest)
 
             comment = subprocess.check_output(["git", "log", "-n1"], encoding="utf8")
 
-            subprocess.check_call(["git", "checkout", "-f", branch], cwd=folder)
             subprocess.check_call(["git", "clean", "-xdff"], cwd=folder)
+            for _folder in folder.glob("*"):
+                if _folder.name in [".git"]:
+                    continue
+                if _folder.is_dir():
+                    shutil.rmtree(_folder)
 
             # remove unneeded files
             for subfolder in folder.glob("*"):
@@ -173,9 +194,7 @@ def pack_to_branch(config, branch):
                     shutil.rmtree(dest)
                 shutil.move(subfolder, dest)
 
-            subprocess.check_call(
-                ["git", "add", "."], cwd=folder
-            )
+            subprocess.check_call(["git", "add", "."], cwd=folder)
             subprocess.check_call(
                 ["git", "commit", "-am", comment.replace("\n", " ")], cwd=folder
             )
