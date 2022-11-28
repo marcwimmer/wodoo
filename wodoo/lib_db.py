@@ -266,6 +266,7 @@ def cleardb(ctx, config, no_update):
             no_dangling_check=True,
             no_update_module_list=False,
             non_interactive=True,
+            recover_view_error=True,
         )
 
         # update of all modules then required, so that metainformation is
