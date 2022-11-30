@@ -913,7 +913,7 @@ def sync_folder(dir, dest_dir, excludes=None):
         raise NotImplementedError()
 
 
-def rsync(src, dest, options="-arP", exclude=None):
+def rsync(src, dest, options="-ar", exclude=None):
     exclude = exclude or ""
     exclude_option = []
     for x in exclude:
