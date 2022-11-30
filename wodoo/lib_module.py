@@ -43,7 +43,6 @@ class UpdateException(Exception):
 
 
 class RepeatUpdate(Exception):
-
     def __init__(self, affected_modules):
         super().__init__(str(affected_modules))
         self.affected_modules = affected_modules
@@ -136,8 +135,10 @@ def run_tests(ctx, config):
             if config.use_docker:
                 params = ["odoo", "/odoolib/unit_test.py", f"{file}"]
                 click.secho(f"Running test: {file}", fg="yellow", bold=True)
-                res = __dcrun(config, 
-                    params + ["--log-level=error", "--not-interactive"], returncode=True
+                res = __dcrun(
+                    config,
+                    params + ["--log-level=error", "--not-interactive"],
+                    returncode=True,
                 )
                 if res:
                     failed.append(file)
@@ -146,8 +147,8 @@ def run_tests(ctx, config):
                         fg="red",
                         bold=True,
                     )
-                    res = __cmd_interactive(config,
-                        *(["run", "--rm"] + params + ["--log-level=debug"])
+                    res = __cmd_interactive(
+                        config, *(["run", "--rm"] + params + ["--log-level=debug"])
                     )
                 else:
                     success.append(file)
@@ -254,7 +255,9 @@ def _get_outdated_versioned_modules_of_deptree(modules):
             if len(new_version) == 2:
                 # add odoo version in front
                 odoo_version = str(MANIFEST()["version"]).split(".")
-                assert len(odoo_version) == 2, "Version in manifest should be like 16.0"
+                assert (
+                    len(odoo_version) == 2
+                ), "Version in manifest should be like 16.0 not '{odoo_version}'"
                 new_version = tuple(list(map(int, odoo_version)) + list(new_version))
                 del odoo_version
 
@@ -272,7 +275,8 @@ def recompute_parent_store(ctx, config):
         from .lib_control_with_docker import shell as lib_shell
 
     click.secho("Recomputing parent store...", fg="blue")
-    lib_shell(config,
+    lib_shell(
+        config,
         (
             "for model in self.env['ir.model'].search([]):\n"
             "   try:\n"
@@ -281,7 +285,7 @@ def recompute_parent_store(ctx, config):
             "   else:\n"
             "       obj._parent_store_compute()\n"
             "       env.cr.commit()\n"
-        )
+        ),
     )
     click.secho("Recompute parent store done.", fg="green")
 
@@ -299,13 +303,14 @@ def restore_web_icons(ctx, config):
         from .lib_control_with_docker import shell as lib_shell
 
     click.secho("Restoring web icons...", fg="blue")
-    lib_shell(config,
+    lib_shell(
+        config,
         (
             "for x in self.env['ir.ui.menu'].search([]):\n"
             "   if not x.web_icon: continue\n"
             "   x.web_icon_data = x._compute_web_icon_data(x.web_icon)\n"
             "   env.cr.commit()\n"
-        )
+        ),
     )
     click.secho("Restored web icons.", fg="green")
 
@@ -698,7 +703,9 @@ def _try_to_recover_view_error(config, output):
         match = re.findall('Field "([^"]*?)" does not exist in model "([^"]*?)"', line)
         if match:
             field, model = match[0]
-            affected_modules = _determine_affected_modules_for_ir_field_and_related(config, field, model)
+            affected_modules = _determine_affected_modules_for_ir_field_and_related(
+                config, field, model
+            )
             raise RepeatUpdate(affected_modules)
 
 
@@ -806,7 +813,8 @@ def _uninstall_marked_modules(config, modules):
 
     for module in modules:
         click.secho(f"Uninstall {module}", fg="red")
-        lib_shell(config,
+        lib_shell(
+            config,
             (
                 "self.env['ir.module.module'].search(["
                 f"('name', '=', '{module}'),"
@@ -814,7 +822,7 @@ def _uninstall_marked_modules(config, modules):
                 "['to upgrade', 'to install', 'installed']"
                 ")]).module_uninstall()\n"
                 "self.env.cr.commit()"
-            )
+            ),
         )
         del module
 
@@ -930,14 +938,15 @@ def show_conflicting_modules():
 def _exec_update(config, params, non_interactive=False):
     params = ["odoo_update", "/update_modules.py"] + params
     if not non_interactive:
-        yield __cmd_interactive(config, 
+        yield __cmd_interactive(
+            config,
             *(
                 [
                     "run",
                     "--rm",
                 ]
                 + params
-            )
+            ),
         )
     else:
         try:
