@@ -759,8 +759,10 @@ class Modules(object):
         """
         result = {}
 
-        def append_deps(mod, data):
+        def append_deps(mod, data, depth):
             data[mod.name] = {}
+            if depth > 1000:
+                raise Exception("Recursive loop perhaps - to depth")
             for dep in mod.manifest_dict.get("depends", []):
                 if dep == "base":
                     data[mod.name][dep] = {}
@@ -782,10 +784,10 @@ class Modules(object):
                     )
                 else:
                     data[mod.name][dep] = {}
-                    append_deps(dep_mod, data[mod.name][dep])
+                    append_deps(dep_mod, data[mod.name][dep], depth=depth+1)
 
         if module._dep_tree is None:
-            append_deps(module, result)
+            append_deps(module, result, depth=0)
             module._dep_tree = result
         return module._dep_tree
 
