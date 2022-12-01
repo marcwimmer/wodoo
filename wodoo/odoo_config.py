@@ -36,7 +36,10 @@ def get_odoo_addons_paths(
     if additional_addons_paths:
         addons_paths += additional_addons_paths
 
-    MUST = ["odoo/odoo/addons", "odoo/addons"]
+    if current_version() <= 9.0:
+        MUST = ["odoo/openerp/addons", "odoo/addons"]
+    else:
+        MUST = ["odoo/odoo/addons", "odoo/addons"]
     for must in reversed(MUST):
         if must in addons_paths:
             continue
