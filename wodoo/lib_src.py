@@ -136,7 +136,7 @@ def pack_to_branch(config, branch):
         python = set()
         for module in modules:
             d = module.manifest_dict
-            [ python.add(x) for x in d.get("external_dependencies", {}).get("python")]
+            [ python.add(x) for x in d.get("external_dependencies", {}).get("python", [])]
         return python
 
     with autocleanpaper() as folder:
@@ -191,7 +191,7 @@ def pack_to_branch(config, branch):
 
         python = _collect_external_deps(modules)
         if python:
-            (subfolder / 'requirements.txt').write_text('\n'.join(sorted(python)))
+            (folder / 'requirements.txt').write_text('\n'.join(sorted(python)))
 
         subprocess.check_call(["git", "add", "."], cwd=folder)
         subprocess.check_call(
