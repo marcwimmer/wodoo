@@ -132,71 +132,71 @@ def setup_venv(config):
 def pack_to_branch(config, branch):
     from .module_tools import Modules, DBModules, Module
 
+    def _collect_external_deps(modules):
+        python = set()
+        for module in modules:
+            d = module.manifest_dict
+            [ python.add(x) for x in d.get("external_dependencies", {}).get("python")]
+        return python
+
     with autocleanpaper() as folder:
-        with autocleanpaper() as folder2:
-            folder.mkdir(exist_ok=True, parents=True)
-            folder2.mkdir(exist_ok=True, parents=True)
-            custdir = customs_dir()
-            exclude = [
-                x.name
-                for x in custdir.glob("*")
-                if x.is_dir() and x.name not in [".git"]
-            ]
-            rsync(
-                custdir,
-                folder,
-                exclude=exclude,
-            )
-            try:
-                subprocess.check_call(["git", "checkout", "-f", branch], cwd=folder)
-            except:
-                subprocess.check_call(["git", "checkout", "-b", branch], cwd=folder)
-            subprocess.check_call(["git", "pull"], cwd=folder)
+        folder.mkdir(exist_ok=True, parents=True)
+        custdir = customs_dir()
+        exclude = [
+            x.name
+            for x in custdir.glob("*")
+            if x.is_dir() and x.name not in [".git"]
+        ]
+        rsync(
+            custdir,
+            folder,
+            exclude=exclude,
+        )
+        try:
+            subprocess.check_call(["git", "checkout", "-f", branch], cwd=folder)
+        except:
+            subprocess.check_call(["git", "checkout", "-b", branch], cwd=folder)
+        subprocess.check_call(["git", "pull"], cwd=folder)
+        subprocess.check_call(["git", "clean", "-xdff"], cwd=folder)
 
-            mods = Modules()
-            modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
-            modules = [Module.get_by_name(x) for x in modules]
-            # filter out odoo
-            modules = [
-                x
-                for x in modules
-                if x.path.parts[0] not in ["odoo", "enterprise", "odoo_enterprise"]
-            ]
-            for mod in modules:
-                dest = folder2 / mod.path.name
-                dest.mkdir(parents=True)
-                rsync(mod.path, dest)
+        # remove everything in this branch
+        for d in folder.glob("*"):
+            if d.is_dir() and d.name != '.git':
+                shutil.rmtree(d)
 
-            comment = subprocess.check_output(["git", "log", "-n1"], encoding="utf8")
+        mods = Modules()
+        modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
+        modules = [Module.get_by_name(x) for x in modules]
+        # filter out odoo
+        modules = [
+            x
+            for x in modules
+            if x.path.parts[0] not in ["odoo", "enterprise", "odoo_enterprise"]
+        ]
+        for mod in modules:
+            dest = folder / mod.path.name
+            dest.mkdir(parents=True)
+            rsync(mod.path, dest)
 
-            subprocess.check_call(["git", "clean", "-xdff"], cwd=folder)
-            for _folder in folder.glob("*"):
-                if _folder.name in [".git"]:
-                    continue
-                if _folder.is_dir():
-                    shutil.rmtree(_folder)
+        comment = subprocess.check_output(["git", "log", "-n1"], encoding="utf8")
 
-            # remove unneeded files
-            for subfolder in folder.glob("*"):
-                if subfolder.name == ".git":
-                    continue
-                if not subfolder.is_dir():
-                    if not str(subfolder).startswith("."):
-                        subfolder.unlink()
-                    continue
-                shutil.rmtree(subfolder)
-            for subfolder in folder2.glob("*"):
-                if not subfolder.is_dir():
-                    continue
-                dest = folder / subfolder.name
-                if dest.exists():
-                    shutil.rmtree(dest)
-                shutil.move(subfolder, dest)
+        # remove unneeded files
+        for subfolder in folder.glob("*"):
+            if subfolder.name == ".git":
+                continue
+            if not subfolder.is_dir():
+                if not str(subfolder).startswith("."):
+                    subfolder.unlink()
+                continue
 
-            subprocess.check_call(["git", "add", "."], cwd=folder)
-            subprocess.check_call(
-                ["git", "commit", "-am", comment.replace("\n", " ")], cwd=folder
-            )
-            subprocess.check_call(
-                ["git", "push", "--set-upstream", "origin", branch], cwd=folder
-            )
+        python = _collect_external_deps(modules)
+        if python:
+            (subfolder / 'requirements.txt').write_text('\n'.join(sorted(python)))
+
+        subprocess.check_call(["git", "add", "."], cwd=folder)
+        subprocess.check_call(
+            ["git", "commit", "-am", comment.replace("\n", " ")], cwd=folder
+        )
+        subprocess.check_call(
+            ["git", "push", "--set-upstream", "origin", branch], cwd=folder
+        )
