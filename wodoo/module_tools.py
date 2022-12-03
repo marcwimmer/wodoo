@@ -135,7 +135,7 @@ def get_all_langs(config):
 
 
 def get_modules_from_install_file():
-    return MANIFEST()["install"]
+    return MANIFEST().get("install", [])
 
 
 class DBModules(object):

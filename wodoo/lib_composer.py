@@ -21,6 +21,7 @@ import os
 import tempfile
 import copy
 import click
+from . import module_tools
 from . import tools
 from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
@@ -417,6 +418,7 @@ def _execute_after_compose(config, yml):
                 dict(
                     Modules=modules,
                     tools=tools,
+                    module_tools=module_tools,
                 ),
             )
 

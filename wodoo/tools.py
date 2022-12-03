@@ -986,9 +986,11 @@ def _is_dirty(repo, check_submodule, assert_clean=False):
 def __assure_gitignore(gitignore_file, content):
     p = Path(gitignore_file)
     if not p.exists():
-        p.write(content + "\n")
+        p.write_text(content + "\n")
         return
-    exists = [l for l in gitignore_file.read_text().split("\n") if l.strip() == content]
+    exists = [
+        l for l in gitignore_file.read_text().splitlines() if l.strip() == content
+    ]
     if not exists:
         with p.open("a") as f:
             f.write(content)
