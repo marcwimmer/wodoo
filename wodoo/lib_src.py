@@ -1,4 +1,5 @@
 from pathlib import Path
+import yaml
 import shutil
 import subprocess
 import inquirer
@@ -23,16 +24,58 @@ def src(config):
     pass
 
 
-@src.command(help="Create a new odoo")
+def _turn_into_odoosh(path):
+    content = MANIFEST()
+    odoosh_path = Path("../odoo.sh")
+    if not odoosh_path.exists():
+        subprocess.check_call(
+            [
+                "git",
+                "clone",
+                "https://github.com/Odoo-Ninjas/odoo.sh.git",
+                odoosh_path,
+            ]
+        )
+        subprocess.check_call(
+            [
+                "gimera",
+                "apply",
+            ],
+            cwd=odoosh_path.absolute(),
+        )
+    content["include"] = [
+        [str(odoosh_path) + "/odoo.$VERSION", "odoo"],
+        [str(odoosh_path) + "/enterprise.$VERSION", "enterprise"],
+    ]
+    content = yaml.safe_load((path / "gimera.yml").read_text())
+    for subdir in ["odoo", "enterprise"]:
+        if (path / subdir).is_dir() and not (path / subdir).is_symlink():
+            shutil.rmtree(path / subdir)
+        content["repos"] = [x for x in content["repos"] if x["path"] != subdir]
+
+    (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
+    click.secho("Please reload now!", fg='yellow')
+
+
+@src.command(name="init", help="Create a new odoo")
 @click.argument("path", required=True)
+@click.option("--odoosh", is_flag=True)
 @pass_config
-def init(config, path):
+def init(config, path, odoosh):
     from .module_tools import make_customs
 
     path = Path(path)
     if not path.exists():
         path.mkdir(parents=True)
     make_customs(path)
+
+    odoosh and _turn_into_odoosh(Path(os.getcwd()))
+
+
+@src.command(help="Makes odoo and enterprise code available from common code")
+@pass_config
+def make_odoo_sh_compatible(config):
+    _turn_into_odoosh(customs_dir())
 
 
 @src.command()
@@ -136,16 +179,17 @@ def pack_to_branch(config, branch):
         python = set()
         for module in modules:
             d = module.manifest_dict
-            [ python.add(x) for x in d.get("external_dependencies", {}).get("python", [])]
+            [
+                python.add(x)
+                for x in d.get("external_dependencies", {}).get("python", [])
+            ]
         return python
 
     with autocleanpaper() as folder:
         folder.mkdir(exist_ok=True, parents=True)
         custdir = customs_dir()
         exclude = [
-            x.name
-            for x in custdir.glob("*")
-            if x.is_dir() and x.name not in [".git"]
+            x.name for x in custdir.glob("*") if x.is_dir() and x.name not in [".git"]
         ]
         rsync(
             custdir,
@@ -161,7 +205,7 @@ def pack_to_branch(config, branch):
 
         # remove everything in this branch
         for d in folder.glob("*"):
-            if d.is_dir() and d.name != '.git':
+            if d.is_dir() and d.name != ".git":
                 shutil.rmtree(d)
 
         mods = Modules()
@@ -191,7 +235,7 @@ def pack_to_branch(config, branch):
 
         python = _collect_external_deps(modules)
         if python:
-            (folder / 'requirements.txt').write_text('\n'.join(sorted(python)))
+            (folder / "requirements.txt").write_text("\n".join(sorted(python)))
 
         subprocess.check_call(["git", "add", "."], cwd=folder)
         subprocess.check_call(
