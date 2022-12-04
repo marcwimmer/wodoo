@@ -784,7 +784,7 @@ class Modules(object):
                     )
                 else:
                     data[mod.name][dep] = {}
-                    append_deps(dep_mod, data[mod.name][dep], depth=depth+1)
+                    append_deps(dep_mod, data[mod.name][dep], depth=depth + 1)
 
         if module._dep_tree is None:
             append_deps(module, result, depth=0)
@@ -806,8 +806,8 @@ class Modules(object):
                 for module2 in self.get_module_flat_dependency_tree(
                     auto_install_module
                 ):
-                # not sufficient: if depending on auto_install module
-                # for module2 in auto_install_module.manifest_dict['depends']:
+                    # not sufficient: if depending on auto_install module
+                    # for module2 in auto_install_module.manifest_dict['depends']:
                     if module2.name not in all_modules:
                         break
                 else:
@@ -899,10 +899,7 @@ class Modules(object):
 
         return list(result)
 
-    def get_all_external_dependencies(self, additional_modules=None):
-        additional_modules = additional_modules or []
-        modules = self.get_all_used_modules()
-        modules = list(sorted(set(modules) | set(additional_modules)))
+    def get_all_external_dependencies(self, modules):
         pydeps = []
         deb_deps = []
         for module in modules:
@@ -1477,7 +1474,5 @@ def _determine_affected_modules_for_ir_field_and_related(config, fieldname, mode
             affected_modules.append(
                 _get_model_for_field(resolved_model, resolved_fieldname)
             )
-    affected_modules.append(
-        _get_model_for_field(modelname, fieldname)
-    )
+    affected_modules.append(_get_model_for_field(modelname, fieldname))
     return affected_modules

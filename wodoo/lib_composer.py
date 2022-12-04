@@ -396,7 +396,7 @@ def _execute_after_compose(config, yml):
     execute local __oncompose.py scripts
     """
     from .myconfigparser import MyConfigParser
-    from .module_tools import Modules
+    from .module_tools import Modules, Module
 
     settings = MyConfigParser(config.files["settings"])
     modules = Modules()
@@ -419,6 +419,7 @@ def _execute_after_compose(config, yml):
                     Modules=modules,
                     tools=tools,
                     module_tools=module_tools,
+                    Module=Module,
                 ),
             )
 
