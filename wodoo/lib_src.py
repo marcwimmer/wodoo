@@ -44,8 +44,8 @@ def _turn_into_odoosh(path):
             cwd=odoosh_path.absolute(),
         )
     content["include"] = [
-        [str(odoosh_path) + "/odoo.$VERSION", "odoo"],
-        [str(odoosh_path) + "/enterprise.$VERSION", "enterprise"],
+        [str(odoosh_path) + "/odoo/$VERSION", "odoo"],
+        [str(odoosh_path) + "/enterprise/$VERSION", "enterprise"],
     ]
     content = yaml.safe_load((path / "gimera.yml").read_text())
     for subdir in ["odoo", "enterprise"]:
