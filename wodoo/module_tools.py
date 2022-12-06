@@ -13,6 +13,7 @@ from .tools import __try_to_set_owner as try_to_set_owner
 from .tools import measure_time
 from .tools import is_git_clean
 from .tools import whoami
+from .tools import __rmtree as rmtree
 
 try:
     from psycopg2 import IntegrityError
@@ -384,7 +385,7 @@ def get_template_dir():
         subprocess.check_call(["git", "pull"], cwd=path)
     except:
         if path.exists():
-            shutil.rmtree(path)
+            rmtree(None, path)
         subprocess.check_call(["git", "clone", url, path])
     return path
 
@@ -622,6 +623,14 @@ class ModulesCache(object):
     __cache = {}
 
     @classmethod
+    def _cache_dir(clazz):
+        return Path(os.path.expanduser(f"~/.local/cache/wodoo"))
+
+    @classmethod
+    def _clear_cache(clazz):
+        rmtree(None, clazz._cache_dir())
+
+    @classmethod
     def _get_cache_file(clazz):
         _customs_dir = customs_dir()
         if not is_git_clean(_customs_dir, ignore_files=["requirements.txt"]):
@@ -637,7 +646,7 @@ class ModulesCache(object):
         mani_hash = get_hash(MANIFEST_FILE().read_text())
         hash = get_hash(f"{hash_git}{mani_hash}")
 
-        file = Path(os.path.expanduser(f"~/.local/cache/wodoo/modules/{hash}.v3.bin"))
+        file = clazz._cache_dir() / "modules/{hash}.v3.bin"
         file.parent.mkdir(exist_ok=True, parents=True)
         try_to_set_owner(whoami(), file.parent.parent)
         return file

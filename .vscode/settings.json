@@ -2,23 +2,23 @@
     "python.pythonPath": "/usr/bin/python3",
     "restructuredtext.languageServer.disabled": true,
     "workbench.colorCustomizations": {
-        "activityBar.activeBackground": "#cfa9cf",
-        "activityBar.background": "#cfa9cf",
+        "activityBar.activeBackground": "#10dceb",
+        "activityBar.background": "#10dceb",
         "activityBar.foreground": "#15202b",
         "activityBar.inactiveForeground": "#15202b99",
-        "activityBarBadge.background": "#7b7b45",
+        "activityBarBadge.background": "#ef10e0",
         "activityBarBadge.foreground": "#e7e7e7",
-        "commandCenter.border": "#15202b99",
-        "sash.hoverBorder": "#cfa9cf",
-        "statusBar.background": "#bd88bd",
-        "statusBar.foreground": "#15202b",
-        "statusBarItem.hoverBackground": "#ab67ab",
-        "statusBarItem.remoteBackground": "#bd88bd",
-        "statusBarItem.remoteForeground": "#15202b",
-        "titleBar.activeBackground": "#bd88bd",
-        "titleBar.activeForeground": "#15202b",
-        "titleBar.inactiveBackground": "#bd88bd99",
-        "titleBar.inactiveForeground": "#15202b99"
+        "commandCenter.border": "#e7e7e799",
+        "sash.hoverBorder": "#10dceb",
+        "statusBar.background": "#0dafbb",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#10dceb",
+        "statusBarItem.remoteBackground": "#0dafbb",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#0dafbb",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#0dafbb99",
+        "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#bd88bd"
+    "peacock.color": "#0dafbb"
 }

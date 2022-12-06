@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import yaml
 import shutil
 import subprocess
@@ -11,11 +12,15 @@ from .odoo_config import current_version
 from .odoo_config import MANIFEST
 from .tools import _is_dirty
 from .odoo_config import customs_dir
-from .cli import cli, pass_config
+from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import split_hub_url
 from .tools import autocleanpaper
 from .tools import copy_dir_contents, rsync
+from .tools import abort
+from .tools import __assure_gitignore
+
+ADDONS_OCA = "addons_OCA"
 
 
 @cli.group(cls=AliasedGroup)
@@ -24,9 +29,9 @@ def src(config):
     pass
 
 
-def _turn_into_odoosh(path):
+def _turn_into_odoosh(ctx, path):
     content = MANIFEST()
-    odoosh_path = Path("../odoo.sh")
+    odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
     if not odoosh_path.exists():
         subprocess.check_call(
             [
@@ -43,25 +48,33 @@ def _turn_into_odoosh(path):
             ],
             cwd=odoosh_path.absolute(),
         )
-    content["include"] = [
-        [str(odoosh_path) + "/odoo/$VERSION", "odoo"],
-        [str(odoosh_path) + "/enterprise/$VERSION", "enterprise"],
-    ]
+    content["auto_repo"] = 1  # for OCA modules
     content = yaml.safe_load((path / "gimera.yml").read_text())
+    include = []
     for subdir in ["odoo", "enterprise"]:
         if (path / subdir).is_dir() and not (path / subdir).is_symlink():
             shutil.rmtree(path / subdir)
         content["repos"] = [x for x in content["repos"] if x["path"] != subdir]
+        include.append(
+            (str(odoosh_path / subdir / str(current_version())), str(subdir))
+        )
+
+    (path / ".include_wodoo").write_text(json.dumps(include))
+    __assure_gitignore(path / ".gitignore", ".include_wodoo")
 
     (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
-    click.secho("Please reload now!", fg='yellow')
+    click.secho("Please reload now!", fg="yellow")
+    if ctx:
+        ctx.invoke(clear_cache)
+    _identify_duplicate_modules()
 
 
 @src.command(name="init", help="Create a new odoo")
 @click.argument("path", required=True)
 @click.option("--odoosh", is_flag=True)
+@click.pass_context
 @pass_config
-def init(config, path, odoosh):
+def init(config, ctx, path, odoosh):
     from .module_tools import make_customs
 
     path = Path(path)
@@ -69,12 +82,13 @@ def init(config, path, odoosh):
         path.mkdir(parents=True)
     make_customs(path)
 
-    odoosh and _turn_into_odoosh(Path(os.getcwd()))
+    odoosh and _turn_into_odoosh(ctx, Path(os.getcwd()))
 
 
 @src.command(help="Makes odoo and enterprise code available from common code")
+@click.pass_context
 @pass_config
-def make_odoo_sh_compatible(config):
+def make_odoo_sh_compatible(config, ctx):
     _turn_into_odoosh(customs_dir())
 
 
@@ -167,3 +181,94 @@ def setup_venv(config):
         / "requirements.txt"
     )
     click.secho("pip3 install -r {}".format(requirements1))
+
+
+def try_to_get_module_from_oca(modulename):
+    from .odoo_config import current_version, customs_dir
+
+    ocapath = Path(os.environ["ODOOSH_REPO"]) / "OCA"
+    if not ocapath.exists():
+        abort(f"Not found: {ocapath}")
+    version = str(current_version())
+
+    for match in ocapath.rglob(modulename):
+        if not match.is_dir():
+            continue
+        if not (match / "__manifest__.py").exists():
+            continue
+        if match.parent.name != version:
+            continue
+        return match
+    raise KeyError(modulename)
+
+
+@src.command()
+@pass_config
+def fetch_modules(config):
+    _fetch_modules(config)
+
+
+def _fetch_modules(config):
+    """
+    if MANIFEST['auto_repo'] then try to get oca repos from the
+    ninja odoo.sh
+    """
+    manifest = MANIFEST()
+    if not manifest.get("auto_repo", False):
+        return
+
+    from .tools import rsync
+    from .odoo_config import customs_dir
+    from .module_tools import Modules, Module
+    from .lib_src import try_to_get_module_from_oca
+
+    modules = Modules()
+    for module in manifest.get("install", []):
+        try:
+            mod = Module.get_by_name(module)
+        except KeyError:
+            oca_module = try_to_get_module_from_oca(module)
+            destination = customs_dir() / ADDONS_OCA / module
+            if not destination.parent.exists():
+                destination.mkdir(exist_ok=True, parents=True)
+            rsync(oca_module, destination)
+    addons_paths = manifest.get("addons_paths", [])
+    if not [x for x in addons_paths if x == ADDONS_OCA]:
+        addons_paths.append(ADDONS_OCA)
+    manifest["addons_paths"] = addons_paths
+    manifest.rewrite()
+
+    _identify_duplicate_modules()
+
+
+def _identify_duplicate_modules():
+    # remove duplicate modules or at least identify them:
+    from .module_tools import Modules, Module
+
+    modules = Modules()
+    all_modules = modules.get_all_modules_installed_by_manifest()
+    for x in all_modules:
+        for y in customs_dir().rglob(x):
+            if not y.is_dir():
+                continue
+            if not (y / "__manifest__.py").exists():
+                continue
+            module = Module.get_by_name(x)
+            if y.resolve().absolute() != module.path.resolve().absolute():
+                abort(
+                    "Found duplicate module, which is a problem for odoo.sh deployment.\n"
+                    "Not clear which module gets installed: \n"
+                    f"{module.path}\n"
+                    f"{y}"
+                )
+
+
+@src.command
+@pass_config
+def clear_cache(config):
+    from .module_tools import ModulesCache
+
+    ModulesCache._clear_cache()
+
+
+Commands.register(clear_cache)

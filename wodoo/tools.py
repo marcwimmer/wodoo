@@ -517,18 +517,21 @@ def __rm_file_if_exists(path):
 
 
 def __rmtree(config, path):
+    path = str(path)
     if not path or path == "/":
         raise Exception("Not allowed: {}".format(path))
     if not path.startswith("/"):
         raise Exception("Not allowed: {}".format(path))
-    if not any(
-        path.startswith(config.dirs["odoo_home"] + x) for x in ["/tmp", "/run/"]
-    ):
-        if "/tmp" in path:
-            pass
-        else:
-            raise Exception("not allowed")
-    shutil.rmtree(path)
+    if config:
+        if not any(
+            path.startswith(config.dirs["odoo_home"] + x) for x in ["/tmp", "/run/"]
+        ):
+            if "/tmp" in path:
+                pass
+            else:
+                raise Exception("not allowed")
+    if Path(path).exists():
+        shutil.rmtree(path)
 
 
 def __safeget(array, index, exception_on_missing, file_options=None):

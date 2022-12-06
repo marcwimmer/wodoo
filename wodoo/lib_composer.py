@@ -175,6 +175,7 @@ def do_reload(
         if additional_config_file and additional_config_file.exists():
             additional_config_file.unlink()
 
+
 def get_arch():
     return platform.uname().machine  # aarch64
 
@@ -223,6 +224,8 @@ def internal_reload(
             defaults[key] = additional_config[key]
 
         click.secho("Additional config: {defaults}")
+
+    _apply_autorepo(ctx=None, config=config)
 
     # assuming we are in the odoo directory
     _do_compose(**defaults)
@@ -301,7 +304,9 @@ def _download_images(config, images_url):
     #     cwd=config.dirs["images"],
     # )
     current_branch = subprocess.check_output(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"], encoding="utf8", cwd=config.dirs["images"]
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+        encoding="utf8",
+        cwd=config.dirs["images"],
     ).strip()
     if config.ODOO_IMAGES_BRANCH and config.ODOO_IMAGES_BRANCH != current_branch:
         subprocess.check_call(["git", "checkout", config.ODOO_IMAGES_BRANCH])
@@ -924,6 +929,19 @@ def _use_file(config, path):
         if config.verbose:
             click.secho(f"ignoring file: {path}", fg="yellow")
     return res
+
+
+def _apply_autorepo(ctx, config):
+    from .odoo_config import MANIFEST_CLASS, customs_dir
+
+    manifest = MANIFEST_CLASS()
+    if not manifest.get("auto_repo", False):
+        return
+
+    from .lib_src import _turn_into_odoosh, _fetch_modules
+
+    _turn_into_odoosh(ctx, customs_dir())
+    _fetch_modules(config)
 
 
 Commands.register(do_reload, "reload")
