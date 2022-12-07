@@ -654,7 +654,10 @@ def __run_docker_compose_config(config, contents, env):
         d.update(env)
 
         # set current user id and docker group for probable dinds
-        d["DOCKER_GROUP_ID"] = str(grp.getgrnam("docker").gr_gid)
+        try:
+            d["DOCKER_GROUP_ID"] = str(grp.getgrnam("docker").gr_gid)
+        except KeyError:
+            d["DOCKER_GROUP_ID"] = 0
 
         conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         conf = yaml.safe_load(conf)
