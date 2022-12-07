@@ -19,6 +19,7 @@ from .tools import autocleanpaper
 from .tools import copy_dir_contents, rsync
 from .tools import abort
 from .tools import __assure_gitignore
+from .tools import _write_file
 
 ADDONS_OCA = "addons_OCA"
 
@@ -51,6 +52,7 @@ def _turn_into_odoosh(ctx, path):
     content["auto_repo"] = 1  # for OCA modules
     content = yaml.safe_load((path / "gimera.yml").read_text())
     include = []
+    file_changed = False
     for subdir in ["odoo", "enterprise"]:
         if (path / subdir).is_dir() and not (path / subdir).is_symlink():
             shutil.rmtree(path / subdir)
@@ -59,13 +61,13 @@ def _turn_into_odoosh(ctx, path):
             (str(odoosh_path / subdir / str(current_version())), str(subdir))
         )
 
-    (path / ".include_wodoo").write_text(json.dumps(include))
+    if _write_file(path / ".include_wodoo", json.dumps(include)):
+        ctx.invoke(clear_cache)
     __assure_gitignore(path / ".gitignore", ".include_wodoo")
 
     (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
     click.secho("Please reload now!", fg="yellow")
-    if ctx:
-        ctx.invoke(clear_cache)
+    Commands.invoke(ctx, "reload", no_auto_repo=True)
     _identify_duplicate_modules()
 
 
@@ -89,7 +91,7 @@ def init(config, ctx, path, odoosh):
 @click.pass_context
 @pass_config
 def make_odoo_sh_compatible(config, ctx):
-    _turn_into_odoosh(customs_dir())
+    _turn_into_odoosh(ctx, customs_dir())
 
 
 @src.command()

@@ -1361,3 +1361,12 @@ def ensure_project_name(config):
 
 def _get_filestore_folder(config):
     return config.dirs["odoo_data_dir"] / "filestore" / config.dbname
+
+def _write_file(file, content):
+    s = ""
+    if file.exists():
+        s = file.read_text()
+    if s != content:
+        file.write_text(content)
+        return True
+    return False

@@ -100,6 +100,7 @@ def _get_arch():
 @click.option("-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0")
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
 @click.option("-I", "--no-update-images", is_flag=True)
+@click.option("-A", "--no-auto-repo", is_flag=True)
 @pass_config
 @click.pass_context
 def do_reload(
@@ -115,6 +116,7 @@ def do_reload(
     additional_config_raw,
     images_url,
     no_update_images,
+    no_auto_repo,
 ):
     from .myconfigparser import MyConfigParser
 
@@ -161,6 +163,7 @@ def do_reload(
                 demo = True
 
         internal_reload(
+            ctx,
             config,
             db,
             demo,
@@ -169,6 +172,7 @@ def do_reload(
             proxy_port,
             mailclient_gui_port,
             additional_config,
+            apply_auto_repo=not no_auto_repo,
         )
 
     finally:
@@ -181,6 +185,7 @@ def get_arch():
 
 
 def internal_reload(
+    ctx,
     config,
     db,
     demo,
@@ -190,6 +195,7 @@ def internal_reload(
     proxy_port,
     mailclient_gui_port,
     additional_config=None,
+    apply_auto_repo=True,
 ):
     ensure_project_name(config)
     defaults = {
@@ -225,7 +231,8 @@ def internal_reload(
 
         click.secho("Additional config: {defaults}")
 
-    _apply_autorepo(ctx=None, config=config)
+    if apply_auto_repo:
+        _apply_autorepo(ctx=ctx, config=config)
 
     # assuming we are in the odoo directory
     _do_compose(**defaults)
