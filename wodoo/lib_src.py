@@ -205,12 +205,13 @@ def try_to_get_module_from_oca(modulename):
 
 
 @src.command()
+@click.pass_context
 @pass_config
-def fetch_modules(config):
-    _fetch_modules(config)
+def fetch_modules(config, ctx):
+    _fetch_modules(config, ctx)
 
 
-def _fetch_modules(config):
+def _fetch_modules(config, ctx):
     """
     if MANIFEST['auto_repo'] then try to get oca repos from the
     ninja odoo.sh
@@ -240,6 +241,7 @@ def _fetch_modules(config):
     manifest["addons_paths"] = addons_paths
     manifest.rewrite()
 
+    ctx.invoke(clear_cache)
     _identify_duplicate_modules()
 
 

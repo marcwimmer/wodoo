@@ -948,7 +948,7 @@ def _apply_autorepo(ctx, config):
     from .lib_src import _turn_into_odoosh, _fetch_modules
 
     _turn_into_odoosh(ctx, customs_dir())
-    _fetch_modules(config)
+    _fetch_modules(config, ctx)
 
 
 Commands.register(do_reload, "reload")
