@@ -50,7 +50,10 @@ def _turn_into_odoosh(ctx, path):
             cwd=odoosh_path.absolute(),
         )
     content["auto_repo"] = 1  # for OCA modules
-    content = yaml.safe_load((path / "gimera.yml").read_text())
+    if (path / "gimera.yml").exists():
+        content = yaml.safe_load((path / "gimera.yml").read_text())
+    else:
+        content = {'repos': []}
     include = []
     file_changed = False
     for subdir in ["odoo", "enterprise"]:
