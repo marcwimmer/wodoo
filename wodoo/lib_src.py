@@ -55,7 +55,6 @@ def _turn_into_odoosh(ctx, path):
     else:
         content = {'repos': []}
     include = []
-    file_changed = False
     for subdir in ["odoo", "enterprise"]:
         if (path / subdir).is_dir() and not (path / subdir).is_symlink():
             shutil.rmtree(path / subdir)
@@ -244,7 +243,6 @@ def _fetch_modules(config, ctx):
     manifest["addons_paths"] = addons_paths
     manifest.rewrite()
 
-    ctx.invoke(clear_cache)
     _identify_duplicate_modules()
 
 
