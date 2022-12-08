@@ -624,7 +624,7 @@ class ModulesCache(object):
 
     @classmethod
     def _cache_dir(clazz):
-        return Path(os.path.expanduser(f"~/.local/cache/wodoo"))
+        return Path(os.path.expanduser(f"~/.cache/wodoo"))
 
     @classmethod
     def _clear_cache(clazz):
@@ -632,8 +632,11 @@ class ModulesCache(object):
 
     @classmethod
     def _get_cache_file(clazz):
+        import pudb;pudb.set_trace()
         _customs_dir = customs_dir()
-        if not is_git_clean(_customs_dir, ignore_files=["requirements.txt"]):
+        if not is_git_clean(
+            _customs_dir, ignore_files=["requirements.txt", "requirements.txt.all"]
+        ):
             return None
         from gimera import gimera
 
