@@ -632,7 +632,6 @@ class ModulesCache(object):
 
     @classmethod
     def _get_cache_file(clazz):
-        import pudb;pudb.set_trace()
         _customs_dir = customs_dir()
         if not is_git_clean(
             _customs_dir, ignore_files=["requirements.txt", "requirements.txt.all"]
