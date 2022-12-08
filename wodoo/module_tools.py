@@ -646,7 +646,7 @@ class ModulesCache(object):
         mani_hash = get_hash(MANIFEST_FILE().read_text())
         hash = get_hash(f"{hash_git}{mani_hash}")
 
-        file = clazz._cache_dir() / "modules/{hash}.v3.bin"
+        file = clazz._cache_dir() / f"modules/{hash}.v3.bin"
         file.parent.mkdir(exist_ok=True, parents=True)
         try_to_set_owner(whoami(), file.parent.parent)
         return file
