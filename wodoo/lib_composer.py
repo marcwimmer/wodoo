@@ -948,10 +948,9 @@ def _apply_autorepo(ctx, config):
     if not manifest.get("auto_repo", False):
         return
 
-    from .lib_src import _turn_into_odoosh, _fetch_modules
+    from .lib_src import _turn_into_odoosh
 
     _turn_into_odoosh(ctx, customs_dir())
-    _fetch_modules(config, ctx)
 
 
 Commands.register(do_reload, "reload")

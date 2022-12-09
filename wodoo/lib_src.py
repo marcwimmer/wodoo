@@ -1,4 +1,5 @@
 from pathlib import Path
+from click.shell_completion import CompletionItem
 import json
 import yaml
 import shutil
@@ -187,63 +188,73 @@ def setup_venv(config):
     click.secho("pip3 install -r {}".format(requirements1))
 
 
-def try_to_get_module_from_oca(modulename):
-    from .odoo_config import current_version, customs_dir
+class OdooShRepo(object):
+    def __init__(self, version):
+        self.envkey = "ODOOSH_REPO"
+        if self.envkey not in os.environ.keys():
+            abort("Please define ODOOSH_REPO env to point to checked out Ninja-Odoosh.")
+        self.version = str(version)
+        self.root = Path(os.environ["ODOOSH_REPO"])
+        self.ocapath =  self.root/ "OCA"
+        if not self.ocapath.exists():
+            abort(f"Not found: {self.ocapath}")
 
-    ocapath = Path(os.environ["ODOOSH_REPO"]) / "OCA"
-    if not ocapath.exists():
-        abort(f"Not found: {ocapath}")
-    version = str(current_version())
+    def find_module(self, modulename, ttype="OCA", exact_match=True):
+        from .odoo_config import current_version, customs_dir
+        if not exact_match:
+            modulename = f"*{modulename}*"
 
-    for match in ocapath.rglob(modulename):
-        if not match.is_dir():
-            continue
-        if not (match / "__manifest__.py").exists():
-            continue
-        if match.parent.name != version:
-            continue
-        return match
-    raise KeyError(modulename)
+        results = []
+        for match in self.ocapath.rglob(modulename):
+            if not match.is_dir():
+                continue
+            if not (match / "__manifest__.py").exists():
+                continue
+            if match.parent.name != self.version:
+                continue
+            results.append(match)
+            if exact_match:
+                return match
+        if exact_match: 
+            raise KeyError(modulename)
+        return results
 
+def _get_available_oca_modules(ctx, param, incomplete):
+    sh = OdooShRepo(current_version())
+    modules = sh.find_module(incomplete, exact_match=False)
+    matches = [CompletionItem(x) for x in sorted(set([x.name for x in modules]))]
+    return matches
 
 @src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")
+@click.argument('module', nargs=-1, shell_complete=_get_available_oca_modules, required=True)
 @click.pass_context
 @pass_config
-def fetch_modules(config, ctx):
-    _fetch_modules(config, ctx)
-
-
-def _fetch_modules(config, ctx):
+def fetch_modules(config, ctx, module):
     """
     if MANIFEST['auto_repo'] then try to get oca repos from the
     ninja odoo.sh
     """
     manifest = MANIFEST()
-    if not manifest.get("auto_repo", False):
-        return
 
     from .tools import rsync
     from .odoo_config import customs_dir
     from .module_tools import Modules, Module
     from .module_tools import ModulesCache
-    from .lib_src import try_to_get_module_from_oca
-
     modules = Modules()
-    for module in manifest.get("install", []):
-        try:
-            mod = Module.get_by_name(module)
-        except KeyError:
-            oca_module = try_to_get_module_from_oca(module)
-            destination = customs_dir() / ADDONS_OCA / module
-            if not destination.parent.exists():
-                destination.mkdir(exist_ok=True, parents=True)
-            rsync(oca_module, destination)
-    ModulesCache.reset_cache()
-    addons_paths = manifest.get("addons_paths", [])
-    if not [x for x in addons_paths if x == ADDONS_OCA]:
-        addons_paths.append(ADDONS_OCA)
-    manifest["addons_paths"] = addons_paths
-    manifest.rewrite()
+    odoosh = OdooShRepo(current_version())
+
+    for module in module:
+        ModulesCache.reset_cache()
+        oca_module = odoosh.find_module(module)
+        destination = customs_dir() / ADDONS_OCA / module
+        if not destination.parent.exists():
+            destination.mkdir(exist_ok=True, parents=True)
+        rsync(oca_module, destination)
+        addons_paths = manifest.get("addons_paths", [])
+        if not [x for x in addons_paths if x == ADDONS_OCA]:
+            addons_paths.append(ADDONS_OCA)
+        manifest["addons_paths"] = addons_paths
+        manifest.rewrite()
 
     _identify_duplicate_modules()
 
