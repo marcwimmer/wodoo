@@ -623,6 +623,10 @@ class ModulesCache(object):
     __cache = {}
 
     @classmethod
+    def reset_cache(clazz):
+        ModulesCache.__cache.clear()
+
+    @classmethod
     def _cache_dir(clazz):
         return Path(os.path.expanduser(f"~/.cache/wodoo"))
 

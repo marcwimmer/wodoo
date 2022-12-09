@@ -225,6 +225,7 @@ def _fetch_modules(config, ctx):
     from .tools import rsync
     from .odoo_config import customs_dir
     from .module_tools import Modules, Module
+    from .module_tools import ModulesCache
     from .lib_src import try_to_get_module_from_oca
 
     modules = Modules()
@@ -237,6 +238,7 @@ def _fetch_modules(config, ctx):
             if not destination.parent.exists():
                 destination.mkdir(exist_ok=True, parents=True)
             rsync(oca_module, destination)
+    ModulesCache.reset_cache()
     addons_paths = manifest.get("addons_paths", [])
     if not [x for x in addons_paths if x == ADDONS_OCA]:
         addons_paths.append(ADDONS_OCA)
