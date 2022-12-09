@@ -206,7 +206,7 @@ def try_to_get_module_from_oca(modulename):
     raise KeyError(modulename)
 
 
-@src.command()
+@src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")
 @click.pass_context
 @pass_config
 def fetch_modules(config, ctx):
