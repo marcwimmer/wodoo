@@ -222,7 +222,9 @@ class OdooShRepo(object):
 def _get_available_oca_modules(ctx, param, incomplete):
     sh = OdooShRepo(current_version())
     modules = sh.find_module(incomplete, exact_match=False)
-    matches = [CompletionItem(x) for x in sorted(set([x.name for x in modules]))]
+    matches = [str(x) for x in sorted(set([x.name for x in modules]))]
+    if incomplete:
+        matches = matches[:10]
     return matches
 
 @src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")

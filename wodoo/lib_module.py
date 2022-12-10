@@ -318,7 +318,13 @@ def restore_web_icons(ctx, config):
 def _get_available_modules(ctx, param, incomplete):
     from .odoo_config import MANIFEST
 
-    modules = MANIFEST()["install"]
+    try:
+        manifest = MANIFEST()
+        if not manifest:
+            raise Exception("no manifest")
+    except:
+        return []
+    modules = manifest["install"]
     if incomplete:
         modules = [x for x in modules if incomplete in x]
     return sorted(modules)
