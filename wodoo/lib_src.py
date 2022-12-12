@@ -63,6 +63,7 @@ def _turn_into_odoosh(ctx, path):
         include.append(
             (str(odoosh_path / subdir / str(current_version())), str(subdir))
         )
+        __assure_gitignore(path / ".gitignore", str(subdir) + "/")
 
     if _write_file(path / ".include_wodoo", json.dumps(include)):
         ctx.invoke(clear_cache)
