@@ -42,3 +42,20 @@ def xmlids(config, module, model):
         return_columns=True,
     )
     click.secho(tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow")
+
+@talk.command()
+@click.argument("field", nargs=-1)
+@pass_config
+def deactivate_field_in_views(config, field):
+    conn = config.get_odoo_conn()
+    for field in field:
+        click.secho(f"Turning {field} into create_date.", fg='green')
+        _execute_sql(
+            conn,
+            sql=(
+                "UPDATE ir_ui_view set arch_db = "
+                f"replace(arch_db, '{field}', 'create_date')"
+            ),
+            fetchall=False,
+            return_columns=False,
+        )
