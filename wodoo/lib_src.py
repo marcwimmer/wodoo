@@ -32,6 +32,8 @@ def src(config):
 
 
 def _turn_into_odoosh(ctx, path):
+    from .module_tools import ModulesCache
+
     content = MANIFEST()
     odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
     if not odoosh_path.exists():
@@ -54,20 +56,23 @@ def _turn_into_odoosh(ctx, path):
     if (path / "gimera.yml").exists():
         content = yaml.safe_load((path / "gimera.yml").read_text())
     else:
-        content = {'repos': []}
-    include = []
+        content = {"repos": []}
     for subdir in ["odoo", "enterprise"]:
         if (path / subdir).is_dir() and not (path / subdir).is_symlink():
             shutil.rmtree(path / subdir)
-        content["repos"] = [x for x in content["repos"] if x["path"] != subdir]
-        include.append(
-            (str(odoosh_path / subdir / str(current_version())), str(subdir))
-        )
-        __assure_gitignore(path / ".gitignore", str(subdir) + "/")
 
-    if _write_file(path / ".include_wodoo", json.dumps(include)):
-        ctx.invoke(clear_cache)
-    __assure_gitignore(path / ".gitignore", ".include_wodoo")
+        pointto = odoosh_path / subdir / str(current_version())
+        pathsubdir = path / subdir
+
+        if (not pathsubdir.exists() or (pathsubdir).exists() and (
+            pathsubdir
+        ).resolve().absolute() != pointto.resolve().absolute()):
+            if pathsubdir.exists() or pathsubdir.is_symlink():
+                pathsubdir.unlink()
+            ModulesCache.reset_cache()
+            pathsubdir.symlink_to(pointto.resolve().absolute())
+        content["repos"] = [x for x in content["repos"] if x["path"] != subdir]
+        __assure_gitignore(path / ".gitignore", str(subdir) + "/")
 
     (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
     click.secho("Please reload now!", fg="yellow")
@@ -196,12 +201,35 @@ class OdooShRepo(object):
             abort("Please define ODOOSH_REPO env to point to checked out Ninja-Odoosh.")
         self.version = str(version)
         self.root = Path(os.environ["ODOOSH_REPO"])
-        self.ocapath =  self.root/ "OCA"
+        self.ocapath = self.root / "OCA"
         if not self.ocapath.exists():
             abort(f"Not found: {self.ocapath}")
 
+    def find_dependant_modules(self, modulepath):
+        import pudb
+
+        pudb.set_trace()
+        from .module_tools import Module
+
+        module = Module(modulepath)
+        manifest = module.manifest_dict
+        for depends in manifest["depends"]:
+            try:
+                Module.get_by_name(depends)
+            except KeyError:
+                paths = self.find_module(depends)
+                if not paths:
+                    raise Exception(f"Could not find dependency: {depends}")
+
+        eval(manifest.read_text())["depends"]
+        Module.get_by_name
+
     def find_module(self, modulename, ttype="OCA", exact_match=True):
+        import pudb
+
+        pudb.set_trace()
         from .odoo_config import current_version, customs_dir
+
         if not exact_match:
             modulename = f"*{modulename}*"
 
@@ -216,9 +244,10 @@ class OdooShRepo(object):
             results.append(match)
             if exact_match:
                 return match
-        if exact_match: 
+        if exact_match:
             raise KeyError(modulename)
         return results
+
 
 def _get_available_oca_modules(ctx, param, incomplete):
     sh = OdooShRepo(current_version())
@@ -228,8 +257,11 @@ def _get_available_oca_modules(ctx, param, incomplete):
         matches = matches[:10]
     return matches
 
+
 @src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")
-@click.argument('module', nargs=-1, shell_complete=_get_available_oca_modules, required=True)
+@click.argument(
+    "module", nargs=-1, shell_complete=_get_available_oca_modules, required=True
+)
 @click.pass_context
 @pass_config
 def fetch_modules(config, ctx, module):
@@ -243,6 +275,7 @@ def fetch_modules(config, ctx, module):
     from .odoo_config import customs_dir
     from .module_tools import Modules, Module
     from .module_tools import ModulesCache
+
     modules = Modules()
     odoosh = OdooShRepo(current_version())
 
@@ -298,16 +331,17 @@ def clear_cache(config):
 def show_installed_modules(config, fix_not_in_manifest):
     from .module_tools import DBModules, Module
     from .odoo_config import customs_dir
+
     path = customs_dir()
     collected = []
     not_in_manifest = []
     manifest = MANIFEST()
-    setinstall = manifest.get('install', [])
+    setinstall = manifest.get("install", [])
 
     for module in sorted(DBModules.get_all_installed_modules()):
         try:
             mod = Module.get_by_name(module)
-            click.secho(f"{module}: {mod.path}", fg='green')
+            click.secho(f"{module}: {mod.path}", fg="green")
             if not [x for x in setinstall if x == module]:
                 not_in_manifest.append(module)
         except KeyError:
@@ -316,14 +350,14 @@ def show_installed_modules(config, fix_not_in_manifest):
     for module in not_in_manifest:
         if fix_not_in_manifest:
             setinstall += [module]
-            click.secho(f"Added to manifest: {module}", fg='green')
+            click.secho(f"Added to manifest: {module}", fg="green")
         else:
-            click.secho(f"Not in MANIFEST: {module}", fg='yellow')
+            click.secho(f"Not in MANIFEST: {module}", fg="yellow")
     for module in collected:
-        click.secho(f"Not in filesystem: {module}", fg='red')
+        click.secho(f"Not in filesystem: {module}", fg="red")
 
     if fix_not_in_manifest:
-        manifest['install'] = setinstall
+        manifest["install"] = setinstall
         manifest.rewrite()
 
 
