@@ -708,7 +708,7 @@ class Modules(object):
             modules[m.parent.name] = module
 
         for module in modules.values():
-            Modules._get_module_dependency_tree(modules, module)
+            Modules._get_module_dependency_tree(list(modules.values()), module)
 
         # if directory is clear, we may cache
         return modules
@@ -778,11 +778,11 @@ class Modules(object):
             data[mod.name] = {}
             if depth > 1000:
                 raise Exception("Recursive loop perhaps - to depth")
-            for dep in mod.manifest_dict.get("depends", []):
+            for dep in list(mod.manifest_dict.get("depends", [])):
                 if dep == "base":
                     data[mod.name][dep] = {}
                     continue
-                dep_mod = [x for x in modules.values() if x.name == dep]
+                dep_mod = [x for x in modules if x.name == dep]
                 try:
                     dep_mod = dep_mod[0]
                 except IndexError:
@@ -806,9 +806,9 @@ class Modules(object):
             module._dep_tree = result
         return module._dep_tree
 
-    def get_all_modules_installed_by_manifest(self):
+    def get_all_modules_installed_by_manifest(self, additional_modules=None):
         all_modules = set()
-        for module in MANIFEST().get("install", []):
+        for module in MANIFEST().get("install", []) + (additional_modules or []):
             all_modules.add(module)
             module = Module.get_by_name(module)
             for module2 in self.get_module_flat_dependency_tree(module):

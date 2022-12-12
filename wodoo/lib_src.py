@@ -64,9 +64,11 @@ def _turn_into_odoosh(ctx, path):
         pointto = odoosh_path / subdir / str(current_version())
         pathsubdir = path / subdir
 
-        if (not pathsubdir.exists() or (pathsubdir).exists() and (
-            pathsubdir
-        ).resolve().absolute() != pointto.resolve().absolute()):
+        if (
+            not pathsubdir.exists()
+            or (pathsubdir).exists()
+            and (pathsubdir).resolve().absolute() != pointto.resolve().absolute()
+        ):
             if pathsubdir.exists() or pathsubdir.is_symlink():
                 pathsubdir.unlink()
             ModulesCache.reset_cache()
@@ -195,6 +197,21 @@ def setup_venv(config):
 
 
 class OdooShRepo(object):
+    class Module(object):
+        def __init__(self, path):
+            self.path = Path(path)
+            if not self.path.exists():
+                raise Exception(self.path)
+            self.manifest = None
+            for mf in ["__manifest__.py", "__openerp__.py"]:
+                if (self.path / mf).exists():
+                    self.manifest = self.path / mf
+
+        @property
+        def manifest_dict(self):
+            content = eval(self.manifest.read_text())
+            return content
+
     def __init__(self, version):
         self.envkey = "ODOOSH_REPO"
         if self.envkey not in os.environ.keys():
@@ -205,13 +222,32 @@ class OdooShRepo(object):
         if not self.ocapath.exists():
             abort(f"Not found: {self.ocapath}")
 
-    def find_dependant_modules(self, modulepath):
-        import pudb
+    def iterate_all_modules(self, version, path=None):
+        path = path or self.ocapath
+        for path in path.rglob("*"):
+            if not path.is_dir():
+                continue
+            if path.parent.name != str(version):
+                continue
+            module = OdooShRepo.Module(path)
+            if module.manifest:
+                yield module
 
-        pudb.set_trace()
+    def find_auto_installed_modules(self, current_modules):
+        from .module_tools import Modules
+
+        modules = Modules()
+        all_modules = modules.get_all_modules_installed_by_manifest(current_modules)
+        for module in self.iterate_all_modules(current_version()):
+            manifest = module.manifest_dict
+            if manifest.get("auto_install"):
+                if all(x in all_modules for x in manifest["depends"]):
+                    yield module.path
+
+    def find_dependant_modules(self, modulepath):
         from .module_tools import Module
 
-        module = Module(modulepath)
+        module = OdooShRepo.Module(modulepath)
         manifest = module.manifest_dict
         for depends in manifest["depends"]:
             try:
@@ -220,14 +256,9 @@ class OdooShRepo(object):
                 paths = self.find_module(depends)
                 if not paths:
                     raise Exception(f"Could not find dependency: {depends}")
-
-        eval(manifest.read_text())["depends"]
-        Module.get_by_name
+                yield paths
 
     def find_module(self, modulename, ttype="OCA", exact_match=True):
-        import pudb
-
-        pudb.set_trace()
         from .odoo_config import current_version, customs_dir
 
         if not exact_match:
@@ -282,13 +313,26 @@ def fetch_modules(config, ctx, module):
     for module in module:
         ModulesCache.reset_cache()
         oca_module = odoosh.find_module(module)
-        destination = customs_dir() / ADDONS_OCA / module
-        if not destination.parent.exists():
-            destination.mkdir(exist_ok=True, parents=True)
-        rsync(oca_module, destination)
-        addons_paths = manifest.get("addons_paths", [])
-        if not [x for x in addons_paths if x == ADDONS_OCA]:
-            addons_paths.append(ADDONS_OCA)
+        todos = [oca_module.name]
+        for dep in odoosh.find_dependant_modules(oca_module):
+            todos.append(dep.name)
+
+        while True:
+            new = list(odoosh.find_auto_installed_modules(todos))
+            if not new:
+                break
+            todos += new
+
+        for todo in todos:
+            destination = customs_dir() / ADDONS_OCA / todo
+            if not destination.parent.exists():
+                destination.mkdir(exist_ok=True, parents=True)
+            if destination.exists():
+                shutil.rmtree(destination)
+            rsync(oca_module, destination)
+            addons_paths = manifest.get("addons_paths", [])
+            if not [x for x in addons_paths if x == ADDONS_OCA]:
+                addons_paths.append(ADDONS_OCA)
         manifest["addons_paths"] = addons_paths
         manifest.rewrite()
 
