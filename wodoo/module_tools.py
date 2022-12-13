@@ -55,6 +55,8 @@ pwd = "1"
 
 name_cache = {}
 
+remark_about_missing_module_info = set()
+
 
 class NotInAddonsPath(Exception):
     pass
@@ -788,15 +790,16 @@ class Modules(object):
                 except IndexError:
                     # if it is a module, which is probably just auto install
                     # but not in the manifest, then it is not critical
-                    click.secho(
-                        (
-                            f"Module not found at resolving dependencies: {dep}"
-                            f". Not necessarily a problem at auto install modules."
-                            "\n\n\n"
-                        ),
-                        fg="yellow",
-                        bold=True,
-                    )
+                    if dep not in remark_about_missing_module_info:
+                        remark_about_missing_module_info.add(dep)
+                        click.secho(
+                            (
+                                f"Module not found at resolving dependencies: {dep}"
+                                ". Not necessarily a problem at auto install modules."
+                            ),
+                            fg="yellow",
+                            bold=True,
+                        )
                 else:
                     data[mod.name][dep] = {}
                     append_deps(dep_mod, data[mod.name][dep], depth=depth + 1)
