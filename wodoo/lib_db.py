@@ -147,17 +147,6 @@ def _psql(
             dbname,
         ]
 
-        # make file permission open for history file
-        histfile = config.files['pgcli_history']
-        if not histfile.exists:
-            histfile.write_text("")
-        os.chmod(histfile, 0o0777)
-        try:
-            os.chown(histfile, 0, 0)
-        except:
-            # can be in restricted mode fail
-            pass
-
         if use_docker_container or (config.use_docker and config.run_postgres):
             __dcrun(config, 
                 ["pgtools", bin] + cmd,

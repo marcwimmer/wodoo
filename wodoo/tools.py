@@ -682,22 +682,27 @@ def __try_to_set_owner(UID, path):
         .strip()
         .splitlines()
     )
+    res = sorted(list(res))
     if not res:
         return
-    for line in res:
-        if not line:
-            continue
+    for line in filter(bool, res):
         try:
             try:
-                shutil.chown(line, UID)
+                subprocess.check_output(["chown", str(UID), line])
             except:
-                click.secho(traceback.format_stack())
-                abort(f"Could not set owner {UID} " f"on directory {line}")
+                try:
+                    subprocess.check_output(["sudo", "chown", str(UID), line])
+                except:
+                    click.secho(traceback.format_stack())
+                    abort(f"Could not set owner {UID} " f"on directory {line}")
 
             try:
-                shutil.chown(line, UID, primary_group)
+                subprocess.check_output(["chgrp", str(primary_group), line])
             except:
-                pass
+                try:
+                    subprocess.check_output(["sudo", "chgrp", str(primary_group), line])
+                except:
+                    pass
 
         except FileNotFoundError:
             continue
