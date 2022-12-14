@@ -1060,7 +1060,10 @@ def robotest(
     if odoo_modules:
 
         def not_installed(module):
-            return DBModules.get_meta_data(module)["state"] == "uninstalled"
+            data = DBModules.get_meta_data(module)
+            if not data:
+                abort(f"Could not get state for {module}")
+            return data["state"] == "uninstalled"
 
         modules_to_install = list(filter(not_installed, odoo_modules))
         if modules_to_install:
