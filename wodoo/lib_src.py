@@ -329,7 +329,7 @@ def fetch_modules(config, ctx, module):
                 destination.mkdir(exist_ok=True, parents=True)
             if destination.exists():
                 shutil.rmtree(destination)
-            rsync(oca_module, destination)
+            rsync(oca_module, destination, exclude=[".git"])
             addons_paths = manifest.get("addons_paths", [])
             if not [x for x in addons_paths if x == ADDONS_OCA]:
                 addons_paths.append(ADDONS_OCA)
