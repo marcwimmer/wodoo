@@ -301,7 +301,6 @@ def fetch_modules(config, ctx, module):
     ninja odoo.sh
     """
     manifest = MANIFEST()
-    import pudb;pudb.set_trace()
 
     from .tools import rsync
     from .odoo_config import customs_dir
