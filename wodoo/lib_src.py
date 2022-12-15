@@ -301,6 +301,7 @@ def fetch_modules(config, ctx, module):
     ninja odoo.sh
     """
     manifest = MANIFEST()
+    import pudb;pudb.set_trace()
 
     from .tools import rsync
     from .odoo_config import customs_dir
@@ -310,31 +311,38 @@ def fetch_modules(config, ctx, module):
     modules = Modules()
     odoosh = OdooShRepo(current_version())
 
+    def transfer_module(module):
+        destination = customs_dir() / ADDONS_OCA / module
+        if not destination.parent.exists():
+            destination.mkdir(exist_ok=True, parents=True)
+        if destination.exists():
+            shutil.rmtree(destination)
+        oca_module = odoosh.find_module(module)
+        rsync(oca_module, destination, exclude=[".git"])
+        addons_paths = manifest.get("addons_paths", [])
+        if not [x for x in addons_paths if x == ADDONS_OCA]:
+            addons_paths.append(ADDONS_OCA)
+        manifest["addons_paths"] = addons_paths
+        manifest.rewrite()
+
     for module in module:
         ModulesCache.reset_cache()
+
         oca_module = odoosh.find_module(module)
         todos = [oca_module.name]
         for dep in odoosh.find_dependant_modules(oca_module):
             todos.append(dep.name)
 
+        for todo in todos:
+            transfer_module(todo)
+
         while True:
             new = list(odoosh.find_auto_installed_modules(todos))
             if not new:
                 break
+            for todo in new:
+                transfer_module(todo)
             todos += new
-
-        for todo in todos:
-            destination = customs_dir() / ADDONS_OCA / todo
-            if not destination.parent.exists():
-                destination.mkdir(exist_ok=True, parents=True)
-            if destination.exists():
-                shutil.rmtree(destination)
-            rsync(oca_module, destination, exclude=[".git"])
-            addons_paths = manifest.get("addons_paths", [])
-            if not [x for x in addons_paths if x == ADDONS_OCA]:
-                addons_paths.append(ADDONS_OCA)
-        manifest["addons_paths"] = addons_paths
-        manifest.rewrite()
 
     _identify_duplicate_modules()
 

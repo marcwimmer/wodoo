@@ -743,7 +743,7 @@ def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check)
                 problem_missing.add(module)
         if problem_missing:
             for missing in sorted(problem_missing):
-                click.secho("Missing: {missing}", fg="red")
+                click.secho(f"Missing: {missing}", fg="red")
             abort("Missing after installation")
 
 

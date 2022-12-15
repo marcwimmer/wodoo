@@ -668,7 +668,7 @@ def _get_user_primary_group(UID):
     return subprocess.check_output([id, "-gn", str(UID)], encoding="utf8").strip()
 
 
-def __try_to_set_owner(UID, path):
+def __try_to_set_owner(UID, path, abort_if_failed=True):
     primary_group = _get_user_primary_group(UID)
     find_command = f"find '{path}' -not -type l -not -user {UID}"
     res = (
@@ -692,9 +692,9 @@ def __try_to_set_owner(UID, path):
             except:
                 try:
                     subprocess.check_output(["sudo", "chown", str(UID), line])
-                except:
-                    click.secho(traceback.format_stack())
-                    abort(f"Could not set owner {UID} " f"on directory {line}")
+                except Exception as ex:
+                    if abort_if_failed:
+                        abort(f"Could not set owner {UID} " f"on path {line}; \n\n{ex}")
 
             try:
                 subprocess.check_output(["chgrp", str(primary_group), line])

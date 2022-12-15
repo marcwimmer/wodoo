@@ -58,6 +58,13 @@ name_cache = {}
 remark_about_missing_module_info = set()
 
 
+def module_or_string(module):
+    if isinstance(module, str):
+        return module
+    if isinstance(module, Module):
+        return module.name
+
+
 class NotInAddonsPath(Exception):
     pass
 
@@ -784,7 +791,7 @@ class Modules(object):
                 if dep == "base":
                     data[mod.name][dep] = {}
                     continue
-                dep_mod = [x for x in modules if x.name == dep]
+                dep_mod = [x for x in modules if module_or_string(x) == dep]
                 try:
                     dep_mod = dep_mod[0]
                 except IndexError:
@@ -1132,7 +1139,7 @@ class Module(object):
     def _get_by_name(cls, name):
         try:
             res = ModulesCache.get(name)
-        except IndexError:
+        except (IndexError, KeyError):
             pass
         else:
             return res
@@ -1163,7 +1170,7 @@ class Module(object):
         for path in get_odoo_addons_paths():
             if (path / name).resolve().is_dir():
                 return Module(path / name)
-        raise Exception("Module not found or not linked: {}".format(name))
+        raise KeyError(f"Module not found or not linked: {name}")
 
     @property
     def dependent_modules(self):
