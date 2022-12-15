@@ -1486,7 +1486,8 @@ def _determine_affected_modules_for_ir_field_and_related(config, fieldname, mode
         name = f"field_{model.replace('.', '_')}__{fieldname}"
         sql = f"select module from ir_model_data where model='ir.model.fields' and name='{name}'"
         ir_model_data = _execute_sql(conn, sql, fetchone=True)
-        return ir_model_data[0]
+        if ir_model_data:
+            return ir_model_data[0]
 
     sql = f"select id, model, related from ir_model_fields where related like '%.{fieldname}'"
     related_fields = _execute_sql(conn, sql, fetchall=True)
@@ -1499,5 +1500,7 @@ def _determine_affected_modules_for_ir_field_and_related(config, fieldname, mode
             affected_modules.append(
                 _get_model_for_field(resolved_model, resolved_fieldname)
             )
-    affected_modules.append(_get_model_for_field(modelname, fieldname))
+    module_of_field = _get_model_for_field(modelname, fieldname)
+    if module_of_field:
+        affected_modules.append(module_of_field)
     return affected_modules
