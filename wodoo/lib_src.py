@@ -245,6 +245,7 @@ class OdooShRepo(object):
                     yield module.path
 
     def find_dependant_modules(self, modulepath):
+        from .module_tools import NotInAddonsPath
         from .module_tools import Module
 
         module = OdooShRepo.Module(modulepath)
@@ -252,7 +253,7 @@ class OdooShRepo(object):
         for depends in manifest["depends"]:
             try:
                 Module.get_by_name(depends)
-            except KeyError:
+            except (KeyError, NotInAddonsPath):
                 paths = self.find_module(depends)
                 if not paths:
                     raise Exception(f"Could not find dependency: {depends}")

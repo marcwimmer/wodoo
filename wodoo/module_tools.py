@@ -809,7 +809,8 @@ class Modules(object):
                         )
                 else:
                     data[mod.name][dep] = {}
-                    append_deps(dep_mod, data[mod.name][dep], depth=depth + 1)
+                    dep_mod_module = Module.get_by_name(dep_mod)
+                    append_deps(dep_mod_module, data[mod.name][dep], depth=depth + 1)
 
         if module._dep_tree is None:
             append_deps(module, result, depth=0)
