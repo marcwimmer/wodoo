@@ -323,6 +323,7 @@ def fetch_modules(config, ctx, module):
         if not [x for x in addons_paths if x == ADDONS_OCA]:
             addons_paths.append(ADDONS_OCA)
         manifest["addons_paths"] = addons_paths
+        manifest["install"] += [module]
         manifest.rewrite()
 
     for module in module:
