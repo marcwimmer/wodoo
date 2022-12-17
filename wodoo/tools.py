@@ -1367,6 +1367,7 @@ def ensure_project_name(config):
 def _get_filestore_folder(config):
     return config.dirs["odoo_data_dir"] / "filestore" / config.dbname
 
+
 def _write_file(file, content):
     s = ""
     if file.exists():
@@ -1375,3 +1376,59 @@ def _write_file(file, content):
         file.write_text(content)
         return True
     return False
+
+
+def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
+    from .module_tools import DBModules
+    from .odoo_config import MANIFEST
+    from .odoo_config import current_version
+    from .cli import cli, pass_config, Commands
+
+    state = DBModules.get_meta_data(modulename)
+    if state["state"] == "installed":
+        return
+
+    path = Path("addons_wodoo") / modulename
+    if not path.exists():
+        subprocess.check_call(
+            [
+                "gimera",
+                "add",
+                "-u",
+                repo_url,
+                "--path",
+                path,
+                "--branch",
+                str(current_version()),
+                "--type", 
+                "integrated",
+            ]
+        )
+        subprocess.check_call([
+            "gimera", "apply", path,
+        ])
+
+    # if not yet there, then pack into "addons_framework"
+    manifest = MANIFEST()
+    addons_paths = manifest.get("addons_paths", [])
+    install = manifest.get("install", [])
+    if modulename not in install:
+        install += [modulename]
+    manifest["install"] = install
+
+    if str(path) not in addons_paths:
+        addons_paths += [str(path)]
+        manifest["addons_paths"] = addons_paths
+
+    manifest.rewrite()
+
+    Commands.invoke(
+        ctx,
+        'update',
+        module=[modulename],
+        no_restart=False,
+        no_dangling_check=True,
+        no_update_module_list=False,
+        non_interactive=True,
+    )
+
