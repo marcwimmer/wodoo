@@ -329,11 +329,11 @@ def _odoo_sh(ctx, config, filename, params):
             os.chdir(was_dir)
 
 
-def _after_restore(conn, config, no_dev_scripts, no_remove_webassets):
+def _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets):
     from .lib_turnintodev import __turn_into_devdb
 
     if config.devmode and not no_dev_scripts:
-        __turn_into_devdb(config, conn)
+        __turn_into_devdb(ctx, config, conn)
         if not no_remove_webassets:
             remove_webassets(conn)
 
@@ -432,7 +432,7 @@ def restore_db(
 
         _restore_wodoo_bin(ctx, config, filename_absolute, verify)
         conn = config.get_odoo_conn()
-        _after_restore(conn, config, no_dev_scripts, no_remove_webassets)
+        _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets)
 
     else:
         _restore_dump(ctx, config, filename, dumps_path, **params)
@@ -561,7 +561,7 @@ def _restore_dump(
                 Path(config.dumps_path) / filename,
             )
 
-        _after_restore(conn, config, no_dev_scripts, no_remove_webassets)
+        _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets)
         __rename_db_drop_target(
             conn.clone(dbname="postgres"), DBNAME_RESTORING, config.dbname
         )
