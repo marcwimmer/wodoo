@@ -708,7 +708,7 @@ def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
             continue
         else:
             if verbose:
-                click.secho("Setting ownership {UID} on {line}")
+                click.secho(f"Setting ownership {UID} on {line}")
 
 
 def _display_machine_tips(config, machine_name):
