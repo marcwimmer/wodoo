@@ -668,7 +668,7 @@ def _get_user_primary_group(UID):
     return subprocess.check_output([id, "-gn", str(UID)], encoding="utf8").strip()
 
 
-def __try_to_set_owner(UID, path, abort_if_failed=True):
+def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
     primary_group = _get_user_primary_group(UID)
     find_command = f"find '{path}' -not -type l -not -user {UID}"
     res = (
@@ -706,6 +706,9 @@ def __try_to_set_owner(UID, path, abort_if_failed=True):
 
         except FileNotFoundError:
             continue
+        else:
+            if verbose:
+                click.secho("Setting ownership {UID} on {line}")
 
 
 def _display_machine_tips(config, machine_name):

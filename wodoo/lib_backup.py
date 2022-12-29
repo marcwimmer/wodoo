@@ -33,6 +33,7 @@ from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import ensure_project_name
 from .tools import _get_filestore_folder
+from .tools import __try_to_set_owner
 
 import inspect
 import os
@@ -104,8 +105,12 @@ def backup_all(ctx, config, filename):
                 cwd=tmppath,
             )
             shutil.move(tmpfile, filename)
+    __try_to_set_owner(
+        int(config.owner_uid),
+        filename,
+        verbose=True,
+    )
     click.secho(f"Created dump-file {filename}", fg="green")
-
 
 @backup.command(name="odoo-db")
 @pass_config
