@@ -52,29 +52,10 @@ def _turn_into_odoosh(ctx, path):
             ],
             cwd=odoosh_path.absolute(),
         )
-    content["auto_repo"] = 1  # for OCA modules
     if (path / "gimera.yml").exists():
         content = yaml.safe_load((path / "gimera.yml").read_text())
     else:
         content = {"repos": []}
-    # for subdir in ["odoo", "enterprise"]:
-    #     if (path / subdir).is_dir() and not (path / subdir).is_symlink():
-    #         shutil.rmtree(path / subdir)
-
-    #     pointto = odoosh_path / subdir / str(current_version())
-    #     pathsubdir = path / subdir
-
-    #     if (
-    #         not pathsubdir.exists()
-    #         or (pathsubdir).exists()
-    #         and (pathsubdir).resolve().absolute() != pointto.resolve().absolute()
-    #     ):
-    #         if pathsubdir.exists() or pathsubdir.is_symlink():
-    #             pathsubdir.unlink()
-    #         ModulesCache.reset_cache()
-    #         pathsubdir.symlink_to(pointto.resolve().absolute())
-    #     content["repos"] = [x for x in content["repos"] if x["path"] != subdir]
-    #     __assure_gitignore(path / ".gitignore", str(subdir) + "/")
 
     (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
     click.secho("Please reload now!", fg="yellow")
@@ -298,8 +279,7 @@ def _get_available_oca_modules(ctx, param, incomplete):
 @pass_config
 def fetch_modules(config, ctx, module):
     """
-    if MANIFEST['auto_repo'] then try to get oca repos from the
-    ninja odoo.sh
+    Fetches from odoo-ninjas/odoo.sh
     """
     manifest = MANIFEST()
 
