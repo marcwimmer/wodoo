@@ -65,7 +65,7 @@ def _get_path(config):
 
 def _get_zfs_path(config):
     path = os.getenv("ZFS_PATH_VOLUMES") or config.ZFS_PATH_VOLUMES
-    if not config.ZFS_PATH_VOLUMES:
+    if path:
         abort(
             "Please configure the snapshot root folder for docker "
             "snapshots in ZFS_PATH_VOLUMES.\n"
@@ -74,7 +74,7 @@ def _get_zfs_path(config):
             "If poolname is pool1 and mounted on /var/lib/docker you do: \n"
             "zfs create pool1/volumes\n"
         )
-    path = config.ZFS_PATH_VOLUMES + "/" + __get_postgres_volume_name(config)
+    path = path + "/" + __get_postgres_volume_name(config)
     return path
 
 
