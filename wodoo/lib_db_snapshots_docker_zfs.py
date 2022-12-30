@@ -65,7 +65,7 @@ def _get_path(config):
 
 def _get_zfs_path(config):
     path = os.getenv("ZFS_PATH_VOLUMES") or config.ZFS_PATH_VOLUMES
-    if path:
+    if not path:
         abort(
             "Please configure the snapshot root folder for docker "
             "snapshots in ZFS_PATH_VOLUMES.\n"
