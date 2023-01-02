@@ -61,7 +61,11 @@ def _turn_into_odoosh(ctx, path):
     (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
     click.secho("Please reload now!", fg="yellow")
     Commands.invoke(ctx, "reload", no_auto_repo=True)
-    _identify_duplicate_modules()
+
+    from .module_tools import Modules
+    modules = Modules()
+    all_modules = modules.get_all_modules_installed_by_manifest()
+    _identify_duplicate_modules(all_modules)
 
 
 @src.command(name="init", help="Create a new odoo")
