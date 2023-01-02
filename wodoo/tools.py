@@ -1435,3 +1435,25 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
         non_interactive=True,
     )
 
+
+def bashfind(path, name=None, wholename=None, type=None):
+    cmd = [
+        "find",
+    ]
+    if type:
+        cmd += [
+            "-type",
+            type,
+        ]
+    if wholename:
+        cmd += [
+            "-wholename",
+            wholename
+        ]
+    if name:
+        cmd += [
+            "-name",
+            name
+        ]
+    files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
+    return map(lambda x: Path(path) / x, files)
