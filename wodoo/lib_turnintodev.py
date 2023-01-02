@@ -140,8 +140,8 @@ def __turn_into_devdb(ctx, config, conn):
             print("failed un-critical sql:", msg)
 
     remove_webassets(conn)
-    ctx.invoke(
-        update_setting,
+    _update_setting(
+        conn=conn,
         key="web.base.url",
         value=f"http://localhost:{config.proxy_port}",
     )
@@ -189,6 +189,10 @@ def remove_settings(config, settings):
 @pass_config
 def update_setting(config, key, value):
     conn = config.get_odoo_conn()
+    _update_setting(conn, key, value)
+
+
+def _update_setting(conn, key, value):
     _execute_sql(
         conn,
         """
