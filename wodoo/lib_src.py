@@ -58,14 +58,41 @@ def _turn_into_odoosh(ctx, path):
     else:
         content = {"repos": []}
 
-    (path / "gimera.yml").write_text(yaml.dump(content, default_flow_style=False))
-    click.secho("Please reload now!", fg="yellow")
-    Commands.invoke(ctx, "reload", no_auto_repo=True)
+    gimera_yml = path / "gimera.yml"
+    current_content = gimera_yml.read_text() if gimera_yml.exists() else ""
+    new_content = yaml.dump(content, default_flow_style=False)
 
-    from .module_tools import Modules
-    modules = Modules()
-    all_modules = modules.get_all_modules_installed_by_manifest()
-    _identify_duplicate_modules(all_modules)
+    def needs_apply(content_changed):
+        if content_changed:
+            return True
+
+        for repo in content['repos']:
+            path = customs_dir() / repo['path']
+            if not path.exists():
+                return True
+        return False
+
+    content_changed = False
+    if current_content != new_content:
+        gimera_yml.write_text(new_content)
+        content_changed = True
+
+    if needs_apply(content_changed):
+        subprocess.check_call(
+            [
+                "gimera",
+                "apply",
+            ],
+            cwd=customs_dir(),
+        )
+
+        click.secho("Restarting reloading because gimera apply was done", fg="yellow")
+        Commands.invoke(ctx, "reload", no_auto_repo=True)
+
+        from .module_tools import Modules
+        modules = Modules()
+        all_modules = modules.get_all_modules_installed_by_manifest()
+        _identify_duplicate_modules(all_modules)
 
 
 @src.command(name="init", help="Create a new odoo")
