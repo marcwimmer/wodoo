@@ -701,6 +701,7 @@ class Modules(object):
             """
             Returns a list of full paths of all manifests
             """
+            breakpoint()
             for path in reversed(get_odoo_addons_paths()):
                 for file in sorted(path.glob("*/" + manifest_file_names())):
                     modname = file.parent.name
@@ -712,6 +713,8 @@ class Modules(object):
         modules = {}
         all_manifests = get_all_manifests()
         for m in all_manifests:
+            if 'tools' in str(m):
+                breakpoint()
             module = Module(m)
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
@@ -1060,10 +1063,14 @@ class Module(object):
         cwd = Path(os.getcwd())
         if str(path).startswith("/"):
             try:
-                path = path.relative_to(cwd)
-            except ValueError:
                 path = path.relative_to(customs_dir())
-                os.chdir(customs_dir())  # reset later; required that parents works
+                os.chdir(customs_dir())
+            except:
+                try:
+                    path = path.relative_to(cwd)
+                except ValueError:
+                    path = path.relative_to(customs_dir())
+                    os.chdir(customs_dir())  # reset later; required that parents works
         p = path if path.is_dir() else path.parent
 
         for p in [p] + list(p.parents):
@@ -1087,7 +1094,9 @@ class Module(object):
     def manifest_dict(self):
         if not self._manifest_dict:
             try:
-                content = self.manifest_path.read_text()
+                path = customs_dir() / self.manifest_path
+                breakpoint()
+                content = path.read_text()
                 content = "\n".join(
                     filter(
                         lambda x: not x.strip().startswith("#"), content.splitlines()
