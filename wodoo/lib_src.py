@@ -56,7 +56,30 @@ def _turn_into_odoosh(ctx, path):
     if (path / "gimera.yml").exists():
         content = yaml.safe_load((path / "gimera.yml").read_text())
     else:
-        content = {"repos": []}
+        content = {
+            "repos": [
+                {
+                    "branch": str(current_version()),
+                    "url": "https://github.com/odoo/odoo",
+                    "path": "odoo",
+                    "type": "integrated",
+                },
+                {
+                    "branch": str(current_version()),
+                    "url": "git@github.com:odoo/enterprise",
+                    "path": "enterprise",
+                    "type": "integrated",
+                },
+                {
+                    "branch": str(current_version()),
+                    "url": "git@github.com:odoo/design-themes",
+                    "path": "themes",
+                    "type": "integrated",
+                },
+            ]
+        }
+        for repo in content["repos"]:
+            __assure_gitignore(customs_dir() / ".gitignore", repo["path"] + "/")
 
     gimera_yml = path / "gimera.yml"
     current_content = gimera_yml.read_text() if gimera_yml.exists() else ""
@@ -66,8 +89,8 @@ def _turn_into_odoosh(ctx, path):
         if content_changed:
             return True
 
-        for repo in content['repos']:
-            path = customs_dir() / repo['path']
+        for repo in content["repos"]:
+            path = customs_dir() / repo["path"]
             if not path.exists():
                 return True
         return False
@@ -90,6 +113,7 @@ def _turn_into_odoosh(ctx, path):
         Commands.invoke(ctx, "reload", no_auto_repo=True)
 
         from .module_tools import Modules
+
         modules = Modules()
         all_modules = modules.get_all_modules_installed_by_manifest()
         _identify_duplicate_modules(all_modules)
@@ -238,7 +262,7 @@ class OdooShRepo(object):
     def iterate_all_modules(self, version, path=None):
         path = path or self.ocapath
         for path in bashfind(path=self.root, type="d", wholename=f"*/{version}/*"):
-            if '.git' in path.parts:
+            if ".git" in path.parts:
                 continue
             if path.parent.name != str(version):
                 continue
@@ -366,7 +390,7 @@ def _identify_duplicate_modules(check):
     from .module_tools import Modules, Module
 
     for x in sorted(check):
-        for y in bashfind(path=customs_dir(), type='d', name=x):
+        for y in bashfind(path=customs_dir(), type="d", name=x):
             if not (y / "__manifest__.py").exists():
                 continue
             module = Module.get_by_name(x)
