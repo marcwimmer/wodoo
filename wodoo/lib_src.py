@@ -31,11 +31,13 @@ ADDONS_OCA = "addons_OCA"
 def src(config):
     pass
 
+@click.command()
+@click.pass_context
+@pass_config
+def ensure_odoosh_repo(config, ctx):
+    _ensure_odoosh_repo()
 
-def _turn_into_odoosh(ctx, path):
-    from .module_tools import ModulesCache
-
-    content = MANIFEST()
+def _ensure_odoosh_repo():
     odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
     if not odoosh_path.exists():
         subprocess.check_call(
@@ -53,8 +55,12 @@ def _turn_into_odoosh(ctx, path):
             ],
             cwd=odoosh_path.absolute(),
         )
-    if (path / "gimera.yml").exists():
-        content = yaml.safe_load((path / "gimera.yml").read_text())
+    return odoosh_path
+
+def _build_gimera(path):
+    gimera_file = path / 'gimera.yml'
+    if gimera_file.exists():
+        content = yaml.safe_load(gimera_file.read_text())
     else:
         content = {
             "repos": [
@@ -80,27 +86,41 @@ def _turn_into_odoosh(ctx, path):
         }
         for repo in content["repos"]:
             __assure_gitignore(customs_dir() / ".gitignore", repo["path"] + "/")
-
-    gimera_yml = path / "gimera.yml"
-    current_content = gimera_yml.read_text() if gimera_yml.exists() else ""
+    current_content = gimera_file.read_text() if gimera_file.exists() else ""
     new_content = yaml.dump(content, default_flow_style=False)
-
-    def needs_apply(content_changed):
-        if content_changed:
-            return True
-
-        for repo in content["repos"]:
-            path = customs_dir() / repo["path"]
-            if not path.exists():
-                return True
-        return False
 
     content_changed = False
     if current_content != new_content:
-        gimera_yml.write_text(new_content)
+        gimera_file.write_text(new_content)
         content_changed = True
+    return content_changed
 
-    if needs_apply(content_changed):
+
+def _turn_into_odoosh(ctx, path):
+    from .module_tools import ModulesCache
+
+    _ensure_odoosh_repo()
+    content_changed = _build_gimera(path)
+
+    repos = yaml.safe_load((path / 'gimera.yml').read_text())
+    _apply_gimera_if_required(ctx, path, repos, force_do=content_changed) 
+    _find_duplicate_modules()
+
+def _find_duplicate_modules():
+    from .module_tools import Modules
+    modules = Modules()
+    all_modules = modules.get_all_modules_installed_by_manifest()
+    _identify_duplicate_modules(all_modules)
+
+def _apply_gimera_if_required(ctx, path, content, force_do=False):
+    def needs_apply():
+        for repo in content["repos"]:
+            repo_path = path / repo["path"]
+            if not repo_path.exists():
+                return True
+        return False
+
+    if force_do or needs_apply():
         subprocess.check_call(
             [
                 "gimera",
@@ -116,8 +136,22 @@ def _turn_into_odoosh(ctx, path):
 
         modules = Modules()
         all_modules = modules.get_all_modules_installed_by_manifest()
-        _identify_duplicate_modules(all_modules)
 
+@src.command()
+@click.pass_context
+def apply_gimera_if_required(ctx):
+    path = customs_dir()
+    gimera_file = (path / 'gimera.yml')
+    if not gimera_file.exists():
+        _build_gimera(path)
+    repos = yaml.safe_load(gimera_file.read_text())
+    _apply_gimera_if_required(ctx, path, repos)
+
+@src.command()
+@click.pass_context
+@pass_config
+def find_duplicate_modules(config, ctx):
+    _find_duplicate_modules()
 
 @src.command(name="init", help="Create a new odoo")
 @click.argument("path", required=True)
