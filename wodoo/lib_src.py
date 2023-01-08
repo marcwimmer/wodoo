@@ -31,11 +31,13 @@ ADDONS_OCA = "addons_OCA"
 def src(config):
     pass
 
+
 @click.command()
 @click.pass_context
 @pass_config
 def ensure_odoosh_repo(config, ctx):
     _ensure_odoosh_repo()
+
 
 def _ensure_odoosh_repo():
     odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
@@ -57,8 +59,9 @@ def _ensure_odoosh_repo():
         )
     return odoosh_path
 
+
 def _build_gimera(path):
-    gimera_file = path / 'gimera.yml'
+    gimera_file = path / "gimera.yml"
     if gimera_file.exists():
         content = yaml.safe_load(gimera_file.read_text())
     else:
@@ -102,15 +105,18 @@ def _turn_into_odoosh(ctx, path):
     _ensure_odoosh_repo()
     content_changed = _build_gimera(path)
 
-    repos = yaml.safe_load((path / 'gimera.yml').read_text())
-    _apply_gimera_if_required(ctx, path, repos, force_do=content_changed) 
+    repos = yaml.safe_load((path / "gimera.yml").read_text())
+    _apply_gimera_if_required(ctx, path, repos, force_do=content_changed)
     _find_duplicate_modules()
+
 
 def _find_duplicate_modules():
     from .module_tools import Modules
+
     modules = Modules()
     all_modules = modules.get_all_modules_installed_by_manifest()
     _identify_duplicate_modules(all_modules)
+
 
 def _apply_gimera_if_required(ctx, path, content, force_do=False):
     def needs_apply():
@@ -137,21 +143,24 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
         modules = Modules()
         all_modules = modules.get_all_modules_installed_by_manifest()
 
+
 @src.command()
 @click.pass_context
 def apply_gimera_if_required(ctx):
     path = customs_dir()
-    gimera_file = (path / 'gimera.yml')
+    gimera_file = path / "gimera.yml"
     if not gimera_file.exists():
         _build_gimera(path)
     repos = yaml.safe_load(gimera_file.read_text())
     _apply_gimera_if_required(ctx, path, repos)
+
 
 @src.command()
 @click.pass_context
 @pass_config
 def find_duplicate_modules(config, ctx):
     _find_duplicate_modules()
+
 
 @src.command(name="init", help="Create a new odoo")
 @click.argument("path", required=True)
@@ -361,12 +370,14 @@ def _get_available_oca_modules(ctx, param, incomplete):
         matches = matches[:10]
     return matches
 
+
 @src.command()
 @click.pass_context
 @pass_config
 def rewrite_manifest(config, ctx):
     manifest = MANIFEST()
     manifest.rewrite()
+
 
 @src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")
 @click.argument(
@@ -429,12 +440,16 @@ def _identify_duplicate_modules(check):
     # remove duplicate modules or at least identify them:
     from .module_tools import Modules, Module
 
+    src = customs_dir()
+
     for x in sorted(check):
-        for y in bashfind(path=customs_dir(), type="d", name=x):
+        for y in bashfind(path=src, type="d", name=x):
             if not (y / "__manifest__.py").exists():
                 continue
             module = Module.get_by_name(x)
-            if y.resolve().absolute() != module.path.resolve().absolute():
+            if (src / y.resolve().absolute()) != (
+                src / module.path.resolve().absolute()
+            ):
                 abort(
                     "Found duplicate module, which is a problem for odoo.sh deployment.\n"
                     "Not clear which module gets installed: \n"
