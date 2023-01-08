@@ -19,6 +19,7 @@ import time
 import subprocess
 from os.path import expanduser
 from .consts import VERSIONS
+from .tools import abort
 
 try:
     import psycopg2
@@ -130,11 +131,14 @@ class MANIFEST_CLASS(object):
         self._update(data)
 
     def _update(self, d):
-        d["install"] = list(sorted(d["install"]))
+        d["install"] = list(sorted(set(d["install"])))
         s = json.dumps(d, indent=4)
         tfile = Path(tempfile.mktemp(suffix=".MANIFEST"))
         tfile.write_text(s)
         shutil.move(tfile, MANIFEST_FILE())
+
+        if len(set(d['addons_paths'])) != len(d['addons_paths']):
+            abort("Addons Paths contains duplicate entries!")
 
     def rewrite(self):
         self._update(self._get_data())

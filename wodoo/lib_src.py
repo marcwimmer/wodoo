@@ -361,6 +361,12 @@ def _get_available_oca_modules(ctx, param, incomplete):
         matches = matches[:10]
     return matches
 
+@src.command()
+@click.pass_context
+@pass_config
+def rewrite_manifest(config, ctx):
+    manifest = MANIFEST()
+    manifest.rewrite()
 
 @src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")
 @click.argument(
