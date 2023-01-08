@@ -465,9 +465,6 @@ def _identify_duplicate_modules(check):
                 if (src / y.resolve().absolute()) != (
                     src / module.path.resolve().absolute()
                 ):
-                    import pudb
-
-                    pudb.set_trace()
                     abort(
                         "Found duplicate module, which is a problem for odoo.sh deployment.\n"
                         "Not clear which module gets installed: \n"
