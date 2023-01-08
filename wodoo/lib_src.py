@@ -441,23 +441,39 @@ def _identify_duplicate_modules(check):
     from .module_tools import Modules, Module
 
     src = customs_dir()
+    ignore_paths = []
+    for x in ["odoo", "enterprise", "themes"]:
+        ignore_paths.append((src / x).resolve().absolute())
+
+    all_dirs = list(
+        filter(lambda x: ".git" not in x.parts, bashfind(path=src, type="d"), )
+    )
 
     for x in sorted(check):
-        for y in bashfind(path=src, type="d", name=x):
+        dirs = filter(lambda dir: dir.name == x, all_dirs)
+        for y in dirs:
             if not (y / "__manifest__.py").exists():
                 continue
-            module = Module.get_by_name(x)
-            if module.path.parts[0] in ["odoo", "enterprise", "themes"]:
-                continue
-            if (src / y.resolve().absolute()) != (
-                src / module.path.resolve().absolute()
-            ):
-                abort(
-                    "Found duplicate module, which is a problem for odoo.sh deployment.\n"
-                    "Not clear which module gets installed: \n"
-                    f"{module.path}\n"
-                    f"{y}"
-                )
+            for ignore_path in ignore_paths:
+                try:
+                    if y.resolve().absolute().relative_to(ignore_path):
+                        break
+                except ValueError:
+                    continue
+            else:
+                module = Module.get_by_name(x)
+                if (src / y.resolve().absolute()) != (
+                    src / module.path.resolve().absolute()
+                ):
+                    import pudb
+
+                    pudb.set_trace()
+                    abort(
+                        "Found duplicate module, which is a problem for odoo.sh deployment.\n"
+                        "Not clear which module gets installed: \n"
+                        f"{module.path}\n"
+                        f"{y}"
+                    )
 
 
 @src.command
