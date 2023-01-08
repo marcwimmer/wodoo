@@ -446,9 +446,9 @@ def _identify_duplicate_modules(check):
         for y in bashfind(path=src, type="d", name=x):
             if not (y / "__manifest__.py").exists():
                 continue
+            module = Module.get_by_name(x)
             if module.path.parts[0] in ["odoo", "enterprise", "themes"]:
                 continue
-            module = Module.get_by_name(x)
             if (src / y.resolve().absolute()) != (
                 src / module.path.resolve().absolute()
             ):
