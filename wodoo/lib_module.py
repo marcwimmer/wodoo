@@ -81,7 +81,7 @@ def update_module_file(module):
     from .module_tools import Module
 
     for module in module:
-        Module.get_by_name(module).update_module_file()
+        Module.get_by_name(module, nocache=True).update_module_file()
 
 
 @odoo_module.command(name="run-tests")

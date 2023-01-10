@@ -1,4 +1,5 @@
 import arrow
+import pprint
 import json
 import click
 import iscompatible
@@ -1030,6 +1031,15 @@ class Modules(object):
 
 
 class Module(object):
+    assets_template = """
+    <odoo><data>
+    <template id="{id}" inherit_id="{inherit_id}">
+        <xpath expr="." position="inside">
+        </xpath>
+    </template>
+    </data>
+    </odoo>
+    """
     class IsNot(Exception):
         pass
 
@@ -1130,25 +1140,26 @@ class Module(object):
         return get_directory_hash(self.path)
 
     @classmethod
-    def __get_by_name_cached(cls, name):
+    def __get_by_name_cached(cls, name, nocache=False):
         if name not in name_cache:
-            name_cache.setdefault(name, cls._get_by_name(name))
+            name_cache.setdefault(name, cls._get_by_name(name, nocache=nocache))
         return name_cache[name]
 
     @classmethod
-    def get_by_name(cls, name):
+    def get_by_name(cls, name, nocache=False):
         if isinstance(name, Module):
             return name
-        return cls.__get_by_name_cached(name)
+        return cls.__get_by_name_cached(name, nocache=nocache)
 
     @classmethod
-    def _get_by_name(cls, name):
-        try:
-            res = ModulesCache.get(name)
-        except (IndexError, KeyError):
-            pass
-        else:
-            return res
+    def _get_by_name(cls, name, nocache=False):
+        if not nocache:
+            try:
+                res = ModulesCache.get(name)
+            except (IndexError, KeyError):
+                pass
+            else:
+                return res
 
         from .odoo_config import get_odoo_addons_paths
 
@@ -1235,15 +1246,6 @@ class Module(object):
         Put somewhere in the file: assets: <xmlid>, then
         asset is put there.
         """
-        assets_template = """
-    <odoo><data>
-    <template id="{id}" inherit_id="{inherit_id}">
-        <xpath expr="." position="inside">
-        </xpath>
-    </template>
-    </data>
-    </odoo>
-    """
         DEFAULT_ASSETS = "web.assets_backend"
 
         def default_dict():
@@ -1252,11 +1254,7 @@ class Module(object):
                 "js": [],
             }
 
-        files_per_assets = {
-            # 'web.assets_backend': default_dict(),
-            # 'web.report_assets_common': default_dict(),
-            # 'web.assets_frontend': default_dict(),
-        }
+        files_per_assets = {}
         # try to keep assets id
         filepath = self.path / "views/assets.xml"
         current_id = None
@@ -1300,7 +1298,7 @@ class Module(object):
             del local_file_path
             del url
 
-        doc = etree.XML(assets_template)
+        doc = etree.XML(Module.assets_template)
         for asset_inherit_id, _files in files_per_assets.items():
             parent = deepcopy(doc.xpath("//template")[0])
             parent.set("inherit_id", asset_inherit_id)
@@ -1332,16 +1330,23 @@ class Module(object):
 
         if current_version() >= 15.0:
             manifest = self.path / "__manifest__.py"
-            yml = eval(manifest.read_text())
-            yml.setdefault("assets", {})
+            jsoncontent = eval(manifest.read_text())
+            jsoncontent.setdefault("assets", {})
+            existing_files = []
+            for asset_file in jsoncontent.get('assets', []):
+                for file in jsoncontent['assets'][asset_file]:
+                    existing_files.append(file)
             for asset_name, files in files_per_assets.items():
-                yml["assets"].setdefault(asset_name, [])
+                jsoncontent["assets"].setdefault(asset_name, [])
                 for files in files.values():
                     for file in files:
-                        if file not in yml["assets"][asset_name]:
-                            yml["assets"][asset_name].append(file)
+                        file = file.lstrip("/")
+                        if file in existing_files:
+                            continue
+                        if file not in jsoncontent["assets"][asset_name]:
+                            jsoncontent["assets"][asset_name].append(file)
                         del file
-            manifest.write_text(str(yml))
+            manifest.write_text(pprint.pformat(jsoncontent))
         else:
             if not doc.xpath("//link| //script"):
                 if filepath.exists():
