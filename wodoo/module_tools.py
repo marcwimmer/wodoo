@@ -664,7 +664,7 @@ class ModulesCache(object):
 
         file = clazz._cache_dir() / f"modules/{hash}.v3.bin"
         file.parent.mkdir(exist_ok=True, parents=True)
-        try_to_set_owner(whoami(), file.parent.parent)
+        try_to_set_owner(whoami(), file.parent)
         return file
 
     @classmethod
