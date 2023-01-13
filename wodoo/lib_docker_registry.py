@@ -96,6 +96,8 @@ def self_sign_hub_certificate(config):
 current_sha = None
 def _get_service_tagname(config, service_name):
     global current_sha
+    if config.DOCKER_IMAGE_TAG:
+        current_sha = config.DOCKER_IMAGE_TAG
     if not current_sha:
         if (Path(os.getcwd()) / '.git').exists():
             current_sha = subprocess.check_output([
