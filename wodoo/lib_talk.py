@@ -34,7 +34,7 @@ def xmlids(config, module, model):
     rows = _execute_sql(
         conn,
         sql=(
-            "SELECT module, name, model, res_id from ir_model_data "
+            "SELECT module||'.'|| name as xmlid, model, res_id from ir_model_data "
             f"{where} "
             "order by module, name, model "
         ),
