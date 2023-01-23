@@ -442,7 +442,10 @@ def _identify_duplicate_modules(check):
         ignore_paths.append((src / x).resolve().absolute())
 
     all_dirs = list(
-        filter(lambda x: ".git" not in x.parts, bashfind(path=src, type="d"), )
+        filter(
+            lambda x: ".git" not in x.parts,
+            bashfind(path=src, type="d"),
+        )
     )
 
     for x in sorted(check):
@@ -467,14 +470,6 @@ def _identify_duplicate_modules(check):
                         f"{module.path}\n"
                         f"{y}"
                     )
-
-
-@src.command
-@pass_config
-def clear_cache(config):
-    from .module_tools import ModulesCache
-
-    ModulesCache._clear_cache()
 
 
 @src.command
