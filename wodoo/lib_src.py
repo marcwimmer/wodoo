@@ -507,5 +507,3 @@ def show_installed_modules(config, fix_not_in_manifest):
         manifest["install"] = setinstall
         manifest.rewrite()
 
-
-Commands.register(clear_cache)
