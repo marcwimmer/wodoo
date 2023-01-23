@@ -801,7 +801,8 @@ class Modules(object):
                 dep_mod = False
                 try:
                     dep_mod = Module.get_by_name(dep, no_deptree=True)
-                    result.add(dep)
+                    import pudb;pudb.set_trace()
+                    result.add(dep_mod)
                 except NotInAddonsPath:
                     # if it is a module, which is probably just auto install
                     # but not in the manifest, then it is not critical
@@ -822,7 +823,8 @@ class Modules(object):
             return result
 
         if module._dep_tree is None:
-            module._dep_tree = list(sorted(append_deps(module, depth=0)))
+            deps = list(sorted(append_deps(module, depth=0)))
+            module._dep_tree = deps
         return module._dep_tree
 
     def get_all_modules_installed_by_manifest(self, additional_modules=None):
@@ -852,9 +854,8 @@ class Modules(object):
 
     @classmethod
     def get_module_flat_dependency_tree(self, module):
-        deptree = self._get_module_dependency_tree(module)
-        result = list(map(lambda x: Module.get_by_name(x), list(deptree)))
-        return sorted(list(result))
+        deps= self._get_module_dependency_tree(module)
+        return sorted(list(deps))
 
     def get_all_auto_install_modules(self):
         auto_install_modules = []
@@ -1025,6 +1026,7 @@ class Modules(object):
                 result.add(libname)
         return list(result)
 
+get_by_name_cache = {}
 
 class Module(object):
     assets_template = """
@@ -1148,7 +1150,11 @@ class Module(object):
     def get_by_name(cls, name, nocache=False, no_deptree=False):
         if isinstance(name, Module):
             return name
-        return cls.__get_by_name_cached(name, nocache=nocache, no_deptree=no_deptree)
+        if name in get_by_name_cache:
+            return get_by_name_cache[name]
+        mod = cls.__get_by_name_cached(name, nocache=nocache, no_deptree=no_deptree)
+        get_by_name_cache[name] = mod
+        return mod
 
     @classmethod
     def _get_by_name(cls, name, nocache=False, no_deptree=False):
