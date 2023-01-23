@@ -100,7 +100,6 @@ def _build_gimera(path):
 
 
 def _turn_into_odoosh(ctx, path):
-    from .module_tools import ModulesCache
 
     _ensure_odoosh_repo()
     content_changed = _build_gimera(path)
