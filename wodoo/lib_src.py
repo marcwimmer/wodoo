@@ -393,7 +393,6 @@ def fetch_modules(config, ctx, module):
     from .tools import rsync
     from .odoo_config import customs_dir
     from .module_tools import Modules, Module
-    from .module_tools import ModulesCache
 
     modules = Modules()
     odoosh = OdooShRepo(current_version())
@@ -414,8 +413,6 @@ def fetch_modules(config, ctx, module):
         manifest.rewrite()
 
     for module in module:
-        ModulesCache.reset_cache()
-
         oca_module = odoosh.find_module(module)
         todos = [oca_module.name]
         for dep in odoosh.find_dependant_modules(oca_module):
