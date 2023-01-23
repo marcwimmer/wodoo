@@ -55,8 +55,9 @@ username = "admin"
 pwd = "1"
 
 name_cache = {}
-
 remark_about_missing_module_info = set()
+dep_tree_cache = {}
+Modules_Cache = {}
 
 
 def module_or_string(module):
@@ -629,71 +630,23 @@ def update_view_in_db(filepath, lineno):
                         exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
 
 
-class ModulesCache(object):
-    __cache = {}
 
-    @classmethod
-    def reset_cache(clazz):
-        ModulesCache.__cache.clear()
-
-    @classmethod
-    def _cache_dir(clazz):
-        return Path(os.path.expanduser(f"~/.cache/wodoo"))
-
-    @classmethod
-    def _clear_cache(clazz):
-        rmtree(None, clazz._cache_dir())
-
-    @classmethod
-    def _get_cache_file(clazz):
-        _customs_dir = customs_dir()
-        if not is_git_clean(
-            _customs_dir, ignore_files=["requirements.txt", "requirements.txt.all"]
-        ):
-            return None
-        from gimera import gimera
-
-        if not (_customs_dir / ".git").exists():
-            # case production system no git history for example
-            return None
-        if not gimera._check_all_submodules_initialized():
-            return None
-        hash_git = get_git_hash(_customs_dir)
-        mani_hash = get_hash(MANIFEST_FILE().read_text())
-        hash = get_hash(f"{hash_git}{mani_hash}")
-
-        file = clazz._cache_dir() / f"modules/{hash}.v3.bin"
-        file.parent.mkdir(exist_ok=True, parents=True)
-        try_to_set_owner(whoami(), file.parent)
-        return file
-
-    @classmethod
-    def cache(clazz):
-        if not ModulesCache.__cache:
-            file = clazz._get_cache_file()
-            if not file or not file.exists():
-                data = Modules._get_modules()
-            else:
-                data = pickle.loads(file.read_bytes())
-            if file and not file.exists():
-                file.write_bytes(pickle.dumps(data))
-                try_to_set_owner(whoami(), file)
-            ModulesCache.__cache = data
-
-        return ModulesCache.__cache
-
-    @classmethod
-    def get(clazz, name):
-        return ModulesCache.cache()[name]
 
 
 class Modules(object):
     def __init__(self):
-        self.modules = ModulesCache.cache()
+        pass
+
+    @property
+    def modules(self):
+        if 'modules' not in Modules_Cache:
+            modules = self._get_modules()
+            Modules_Cache['modules'] = modules
+        return Modules_Cache['modules']
 
     @classmethod
     @measure_time
-    def _get_modules(self):
+    def _get_modules(self, no_deptree=False):
         modnames = set()
         from .odoo_config import get_odoo_addons_paths
 
@@ -717,8 +670,9 @@ class Modules(object):
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
 
-        for module in modules.values():
-            Modules._get_module_dependency_tree(list(modules.values()), module)
+        if not no_deptree:
+            for module in sorted(set(modules.values())):
+                self.get_module_flat_dependency_tree(module=module)
 
         # if directory is clear, we may cache
         return modules
@@ -767,11 +721,8 @@ class Modules(object):
         modules = list(map(lambda x: Module.get_by_name(x), modules))
         return modules
 
-    def get_module_dependency_tree(self, module):
-        return self._get_module_dependency_tree(self.modules, module)
-
     @classmethod
-    def _get_module_dependency_tree(cls, modules, module):
+    def _get_module_dependency_tree(cls, module):
         """
         Dict of dicts
 
@@ -782,20 +733,20 @@ class Modules(object):
             'product': {},
         }
         """
-        result = {}
-
-        def append_deps(mod, data, depth):
-            data[mod.name] = {}
+        def append_deps(mod, depth):
+            result = set()
             if depth > 1000:
                 raise Exception("Recursive loop perhaps - to depth")
+            if not mod.exists:
+                return set()
             for dep in list(mod.manifest_dict.get("depends", [])):
                 if dep == "base":
-                    data[mod.name][dep] = {}
+                    if module.name != "base":
+                        result.add(Module.get_by_name("base", no_deptree=True))
                     continue
-                dep_mod = [x for x in modules if module_or_string(x) == dep]
                 try:
-                    dep_mod = dep_mod[0]
-                except IndexError:
+                    dep_mod = Module.get_by_name(dep, no_deptree=True)
+                except (NotInAddonsPath, Module.IsNot):
                     # if it is a module, which is probably just auto install
                     # but not in the manifest, then it is not critical
                     if dep not in remark_about_missing_module_info:
@@ -808,14 +759,21 @@ class Modules(object):
                             fg="yellow",
                             bold=True,
                         )
-                else:
-                    data[mod.name][dep] = {}
-                    dep_mod_module = Module.get_by_name(dep_mod)
-                    append_deps(dep_mod_module, data[mod.name][dep], depth=depth + 1)
+                    dep_mod = Module(None, force_name=dep)
+
+                result.add(dep_mod)
+                if dep_mod in dep_tree_cache:
+                    result |= set(dep_tree_cache[dep_mod])
+                    continue
+
+                result |= append_deps(dep_mod, depth + 1)
+
+            dep_tree_cache[mod] = result
+            return result
 
         if module._dep_tree is None:
-            append_deps(module, result, depth=0)
-            module._dep_tree = result
+            deps = list(sorted(append_deps(module, depth=0)))
+            module._dep_tree = deps
         return module._dep_tree
 
     def get_all_modules_installed_by_manifest(self, additional_modules=None):
@@ -843,22 +801,10 @@ class Modules(object):
                 break
         return list(all_modules)
 
-    @measure_time
+    @classmethod
     def get_module_flat_dependency_tree(self, module):
-        deptree = self.get_module_dependency_tree(module)
-        result = set()
-
-        def x(d):
-            for k, v in d.items():
-                module_name = k if isinstance(k, str) else k.name
-                if module_name != module.name:
-                    result.add(module_name)
-                x(v)
-
-        x(deptree)
-        assert all(isinstance(x, str) for x in result)
-        result = list(map(lambda x: Module.get_by_name(x), list(result)))
-        return sorted(list(result))
+        deps= self._get_module_dependency_tree(module)
+        return sorted(list(deps))
 
     def get_all_auto_install_modules(self):
         auto_install_modules = []
@@ -888,6 +834,7 @@ class Modules(object):
                     [
                         x
                         for x in sorted(dependencies)
+                        if x.exists  
                         if x.manifest_dict.get("auto_install") or x in complete_modules
                     ]
                 )
@@ -1040,6 +987,7 @@ class Module(object):
     </data>
     </odoo>
     """
+
     class IsNot(Exception):
         pass
 
@@ -1062,36 +1010,62 @@ class Module(object):
             return self.name > other
         return self.name > other.name
 
-    def __init__(self, path):
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.name == other
+        return self.name == other.name and self.path == other.path
+
+    def __hash__(self):
+        return hash(f"Module_{self.path}_{self.name}")
+
+    def __init__(self, path, force_name=None):
         self.version = float(current_version())
         self._manifest_dict = None
-        path = Path(path)
-        remember_cwd = os.getcwd()
-        cwd = Path(os.getcwd())
-        if str(path).startswith("/"):
-            try:
-                path = path.relative_to(customs_dir())
-                os.chdir(customs_dir())
-            except:
-                try:
-                    path = path.relative_to(cwd)
-                except ValueError:
-                    path = path.relative_to(customs_dir())
-                    os.chdir(customs_dir())  # reset later; required that parents works
-        p = path if path.is_dir() else path.parent
-
-        for p in [p] + list(p.parents):
-            if (p / manifest_file_names()).exists():
-                if ".git" in p.parts:
-                    continue
-                self._manifest_path = p / manifest_file_names()
-                break
-        if not getattr(self, "_manifest_path", ""):
-            raise Module.IsNot((f"no module found for {path}"))
-        self.name = self._manifest_path.parent.name
-        self.path = self._manifest_path.parent
-        os.chdir(remember_cwd)
+        self._manifest_path = None
         self._dep_tree = None
+        if path:
+            self.__init_path(path)
+            self.path = self._manifest_path.parent
+        else:
+            self.path = None
+
+        if force_name:
+            self.name = force_name
+        else:
+            self.name = self._manifest_path.parent.name
+
+    @property
+    def exists(self):
+        return bool(self.path)
+
+    def __init_path(self, path):
+        path = Path(path)
+
+        remember_cwd = os.getcwd()
+        try:
+            cwd = Path(os.getcwd())
+            if str(path).startswith("/"):
+                try:
+                    path = path.relative_to(customs_dir())
+                    os.chdir(customs_dir())
+                except:
+                    try:
+                        path = path.relative_to(cwd)
+                    except ValueError:
+                        path = path.relative_to(customs_dir())
+                        os.chdir(customs_dir())  # reset later; required that parents works
+            p = path if path.is_dir() else path.parent
+
+            for p in [p] + list(p.parents):
+                if (p / manifest_file_names()).exists():
+                    if ".git" in p.parts:
+                        continue
+                    self._manifest_path = p / manifest_file_names()
+                    break
+            if not getattr(self, "_manifest_path", ""):
+                raise Module.IsNot((f"no module found for {path}"))
+        finally:
+            os.chdir(remember_cwd)
 
     @property
     def manifest_path(self):
@@ -1140,28 +1114,25 @@ class Module(object):
         return get_directory_hash(self.path)
 
     @classmethod
-    def __get_by_name_cached(cls, name, nocache=False):
+    def __get_by_name_cached(cls, name, nocache=False, no_deptree=False):
         if name not in name_cache:
-            name_cache.setdefault(name, cls._get_by_name(name, nocache=nocache))
+            name_cache.setdefault(
+                name, cls._get_by_name(name, nocache=nocache, no_deptree=no_deptree)
+            )
         return name_cache[name]
 
     @classmethod
-    def get_by_name(cls, name, nocache=False):
+    def get_by_name(cls, name, nocache=False, no_deptree=False):
         if isinstance(name, Module):
             return name
-        return cls.__get_by_name_cached(name, nocache=nocache)
+        mod = cls.__get_by_name_cached(name, nocache=nocache, no_deptree=no_deptree)
+        return mod
 
     @classmethod
-    def _get_by_name(cls, name, nocache=False):
-        if not nocache:
-            try:
-                res = ModulesCache.get(name)
-            except (IndexError, KeyError):
-                pass
-            else:
-                return res
-
+    def _get_by_name(cls, name, nocache=False, no_deptree=False):
         from .odoo_config import get_odoo_addons_paths
+        if not name:
+            import pudb;pudb.set_trace()
 
         if isinstance(name, Module):
             name = name.name
@@ -1333,8 +1304,8 @@ class Module(object):
             jsoncontent = eval(manifest.read_text())
             jsoncontent.setdefault("assets", {})
             existing_files = []
-            for asset_file in jsoncontent.get('assets', []):
-                for file in jsoncontent['assets'][asset_file]:
+            for asset_file in jsoncontent.get("assets", []):
+                for file in jsoncontent["assets"][asset_file]:
                     existing_files.append(file)
             for asset_name, files in files_per_assets.items():
                 jsoncontent["assets"].setdefault(asset_name, [])
