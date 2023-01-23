@@ -668,11 +668,11 @@ class ModulesCache(object):
         return file
 
     @classmethod
-    def cache(clazz):
+    def cache(clazz, no_deptree=False):
         if not ModulesCache.__cache:
             file = clazz._get_cache_file()
             if not file or not file.exists():
-                data = Modules._get_modules()
+                data = Modules._get_modules(no_deptree=no_deptree)
             else:
                 data = pickle.loads(file.read_bytes())
             if file and not file.exists():
@@ -683,8 +683,11 @@ class ModulesCache(object):
         return ModulesCache.__cache
 
     @classmethod
-    def get(clazz, name):
-        return ModulesCache.cache()[name]
+    def get(clazz, name, no_deptree=False):
+        return ModulesCache.cache(no_deptree=no_deptree)[name]
+
+
+dep_tree_cache = {}
 
 
 class Modules(object):
@@ -693,7 +696,7 @@ class Modules(object):
 
     @classmethod
     @measure_time
-    def _get_modules(self):
+    def _get_modules(self, no_deptree=False):
         modnames = set()
         from .odoo_config import get_odoo_addons_paths
 
@@ -717,8 +720,9 @@ class Modules(object):
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
 
-        for module in modules.values():
-            Modules._get_module_dependency_tree(list(modules.values()), module)
+        if not no_deptree:
+            for module in sorted(set(modules.values())):
+                self.get_module_flat_dependency_tree(module=module)
 
         # if directory is clear, we may cache
         return modules
@@ -767,11 +771,8 @@ class Modules(object):
         modules = list(map(lambda x: Module.get_by_name(x), modules))
         return modules
 
-    def get_module_dependency_tree(self, module):
-        return self._get_module_dependency_tree(self.modules, module)
-
     @classmethod
-    def _get_module_dependency_tree(cls, modules, module):
+    def _get_module_dependency_tree(cls, module):
         """
         Dict of dicts
 
@@ -782,20 +783,26 @@ class Modules(object):
             'product': {},
         }
         """
-        result = {}
-
-        def append_deps(mod, data, depth):
-            data[mod.name] = {}
+        def append_deps(mod, depth):
+            result = set()
+            print(mod)
             if depth > 1000:
                 raise Exception("Recursive loop perhaps - to depth")
             for dep in list(mod.manifest_dict.get("depends", [])):
                 if dep == "base":
-                    data[mod.name][dep] = {}
+                    if module.name != "base":
+                        result.add("base")
                     continue
-                dep_mod = [x for x in modules if module_or_string(x) == dep]
+                result.add(dep)
+                if dep in dep_tree_cache:
+                    result |= set(dep_tree_cache[dep])
+                    continue
+
+                dep_mod = False
                 try:
-                    dep_mod = dep_mod[0]
-                except IndexError:
+                    dep_mod = Module.get_by_name(dep, no_deptree=True)
+                    result.add(dep)
+                except NotInAddonsPath:
                     # if it is a module, which is probably just auto install
                     # but not in the manifest, then it is not critical
                     if dep not in remark_about_missing_module_info:
@@ -809,13 +816,13 @@ class Modules(object):
                             bold=True,
                         )
                 else:
-                    data[mod.name][dep] = {}
-                    dep_mod_module = Module.get_by_name(dep_mod)
-                    append_deps(dep_mod_module, data[mod.name][dep], depth=depth + 1)
+                    result |= append_deps(dep_mod, depth + 1)
+
+            dep_tree_cache[mod.name] = result
+            return result
 
         if module._dep_tree is None:
-            append_deps(module, result, depth=0)
-            module._dep_tree = result
+            module._dep_tree = list(sorted(append_deps(module, depth=0)))
         return module._dep_tree
 
     def get_all_modules_installed_by_manifest(self, additional_modules=None):
@@ -843,21 +850,10 @@ class Modules(object):
                 break
         return list(all_modules)
 
-    @measure_time
+    @classmethod
     def get_module_flat_dependency_tree(self, module):
-        deptree = self.get_module_dependency_tree(module)
-        result = set()
-
-        def x(d):
-            for k, v in d.items():
-                module_name = k if isinstance(k, str) else k.name
-                if module_name != module.name:
-                    result.add(module_name)
-                x(v)
-
-        x(deptree)
-        assert all(isinstance(x, str) for x in result)
-        result = list(map(lambda x: Module.get_by_name(x), list(result)))
+        deptree = self._get_module_dependency_tree(module)
+        result = list(map(lambda x: Module.get_by_name(x), list(deptree)))
         return sorted(list(result))
 
     def get_all_auto_install_modules(self):
@@ -1040,6 +1036,7 @@ class Module(object):
     </data>
     </odoo>
     """
+
     class IsNot(Exception):
         pass
 
@@ -1140,28 +1137,32 @@ class Module(object):
         return get_directory_hash(self.path)
 
     @classmethod
-    def __get_by_name_cached(cls, name, nocache=False):
+    def __get_by_name_cached(cls, name, nocache=False, no_deptree=False):
         if name not in name_cache:
-            name_cache.setdefault(name, cls._get_by_name(name, nocache=nocache))
+            name_cache.setdefault(
+                name, cls._get_by_name(name, nocache=nocache, no_deptree=no_deptree)
+            )
         return name_cache[name]
 
     @classmethod
-    def get_by_name(cls, name, nocache=False):
+    def get_by_name(cls, name, nocache=False, no_deptree=False):
         if isinstance(name, Module):
             return name
-        return cls.__get_by_name_cached(name, nocache=nocache)
+        return cls.__get_by_name_cached(name, nocache=nocache, no_deptree=no_deptree)
 
     @classmethod
-    def _get_by_name(cls, name, nocache=False):
+    def _get_by_name(cls, name, nocache=False, no_deptree=False):
         if not nocache:
             try:
-                res = ModulesCache.get(name)
+                res = ModulesCache.get(name, no_deptree=no_deptree)
             except (IndexError, KeyError):
                 pass
             else:
                 return res
 
         from .odoo_config import get_odoo_addons_paths
+        if not name:
+            import pudb;pudb.set_trace()
 
         if isinstance(name, Module):
             name = name.name
@@ -1333,8 +1334,8 @@ class Module(object):
             jsoncontent = eval(manifest.read_text())
             jsoncontent.setdefault("assets", {})
             existing_files = []
-            for asset_file in jsoncontent.get('assets', []):
-                for file in jsoncontent['assets'][asset_file]:
+            for asset_file in jsoncontent.get("assets", []):
+                for file in jsoncontent["assets"][asset_file]:
                     existing_files.append(file)
             for asset_name, files in files_per_assets.items():
                 jsoncontent["assets"].setdefault(asset_name, [])
