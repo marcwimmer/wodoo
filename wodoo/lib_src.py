@@ -507,3 +507,10 @@ def show_installed_modules(config, fix_not_in_manifest):
         manifest["install"] = setinstall
         manifest.rewrite()
 
+
+@src.command(name="pretty-print-manifest")
+def pretty_print_manifest():
+    from .odoo_config import MANIFEST
+
+    MANIFEST().rewrite()
+

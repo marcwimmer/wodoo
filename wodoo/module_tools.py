@@ -630,19 +630,16 @@ def update_view_in_db(filepath, lineno):
                         exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
 
 
-
-
-
 class Modules(object):
     def __init__(self):
         pass
 
     @property
     def modules(self):
-        if 'modules' not in Modules_Cache:
+        if "modules" not in Modules_Cache:
             modules = self._get_modules()
-            Modules_Cache['modules'] = modules
-        return Modules_Cache['modules']
+            Modules_Cache["modules"] = modules
+        return Modules_Cache["modules"]
 
     @classmethod
     @measure_time
@@ -733,6 +730,7 @@ class Modules(object):
             'product': {},
         }
         """
+
         def append_deps(mod, depth):
             result = set()
             if depth > 1000:
@@ -803,7 +801,7 @@ class Modules(object):
 
     @classmethod
     def get_module_flat_dependency_tree(self, module):
-        deps= self._get_module_dependency_tree(module)
+        deps = self._get_module_dependency_tree(module)
         return sorted(list(deps))
 
     def get_all_auto_install_modules(self):
@@ -834,7 +832,7 @@ class Modules(object):
                     [
                         x
                         for x in sorted(dependencies)
-                        if x.exists  
+                        if x.exists
                         if x.manifest_dict.get("auto_install") or x in complete_modules
                     ]
                 )
@@ -1053,7 +1051,9 @@ class Module(object):
                         path = path.relative_to(cwd)
                     except ValueError:
                         path = path.relative_to(customs_dir())
-                        os.chdir(customs_dir())  # reset later; required that parents works
+                        os.chdir(
+                            customs_dir()
+                        )  # reset later; required that parents works
             p = path if path.is_dir() else path.parent
 
             for p in [p] + list(p.parents):
@@ -1131,8 +1131,11 @@ class Module(object):
     @classmethod
     def _get_by_name(cls, name, nocache=False, no_deptree=False):
         from .odoo_config import get_odoo_addons_paths
+
         if not name:
-            import pudb;pudb.set_trace()
+            import pudb
+
+            pudb.set_trace()
 
         if isinstance(name, Module):
             name = name.name
@@ -1337,10 +1340,36 @@ class Module(object):
             # relative to module path
             yield file
 
+    def update_init_imports(self):
+        def _remove_all_instruction(content):
+            if "__all__ =" not in content:
+                return
+            content = content.replace("import os")
+            content = content.replace("import glob")
+            content = "\n".join(
+                filter(lambda x: "__all__ =" not in x, content.splitlines())
+            )
+
+        for path in self.path.glob("*"):
+            if not path.is_dir():
+                continue
+            if not path.name in ["models", "tests", "controller", "controllers"]:
+                continue
+            init_file = path / "__init__.py"
+            if not init_file.exists():
+                continue
+            content = _remove_all_instruction(init_file.read_text()).splitlines()
+
+            for file in path.glob("*"):
+                if file.suffix == ".py":
+                    content += [f"import {file.stem}"]
+            init_file.write_text('\n'.join(content))
+
     def update_module_file(self):
         # updates __openerp__.py the update-section to point to all xml files in the module;
         # except if there is a directory test; those files are ignored;
         self.update_assets_file()
+        self.update_init_imports()
         mod = self.manifest_dict
 
         all_files = list(self.get_all_files_of_module())
