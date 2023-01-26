@@ -21,3 +21,4 @@ xlsxwriter>=1.1.2
 tqdm>=4.64.0
 pytest
 pyparsing>=3.0.9
+docker
