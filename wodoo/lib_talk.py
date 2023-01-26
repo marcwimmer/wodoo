@@ -154,3 +154,5 @@ def progress(config):
     ):
         click.echo("{}: {}".format(row[0], row[1]))
 
+
+Commands.register(progress)

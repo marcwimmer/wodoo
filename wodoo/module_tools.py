@@ -1343,12 +1343,13 @@ class Module(object):
     def update_init_imports(self):
         def _remove_all_instruction(content):
             if "__all__ =" not in content:
-                return
-            content = content.replace("import os")
-            content = content.replace("import glob")
+                return content
+            content = content.replace("import os", "")
+            content = content.replace("import glob", "")
             content = "\n".join(
                 filter(lambda x: "__all__ =" not in x, content.splitlines())
-            )
+            ).strip() + "\n"
+            return content
 
         for path in self.path.glob("*"):
             if not path.is_dir():
@@ -1361,8 +1362,17 @@ class Module(object):
             content = _remove_all_instruction(init_file.read_text()).splitlines()
 
             for file in path.glob("*"):
-                if file.suffix == ".py":
-                    content += [f"import {file.stem}"]
+                if file.suffix == ".py" and file.stem not in ["__init__"]:
+                    importinstruction = f"from . import {file.stem}"
+                    if importinstruction not in content:
+                        content += [importinstruction]
+
+            # remove if py does not exist anymore:
+            for line in list(content):
+                if line.startswith("from . import "):
+                    if not (path / (line.split(" ")[-1] + ".py")).exists():
+                        content.remove(line)
+
             init_file.write_text('\n'.join(content))
 
     def update_module_file(self):

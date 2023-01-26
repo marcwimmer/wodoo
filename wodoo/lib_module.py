@@ -1474,6 +1474,5 @@ def list_modules(ctx, config):
         print(m)
 
 
-Commands.register(progress)
 Commands.register(update)
 Commands.register(show_install_state)
