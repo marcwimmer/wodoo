@@ -817,7 +817,14 @@ class Modules(object):
 
     @measure_time
     def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
-        module_list = list(map(lambda x: Module.get_by_name(x), module_list))
+        def _transform_modulelist(module_list):
+            for mod in module_list:
+                try:
+                    objmod = Module.get_by_name(mod)
+                    yield objmod
+                except NotInAddonsPath:
+                    pass
+        module_list = list(_transform_modulelist(module_list))
 
         complete_modules = set()
         for mod in module_list:

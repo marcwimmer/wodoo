@@ -1364,6 +1364,7 @@ def list_deps(ctx, config, module, no_cache):
 
     started = arrow.get()
     from .module_tools import Modules, DBModules, Module
+    from .module_tools import NotInAddonsPath
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
 
@@ -1402,7 +1403,11 @@ def list_deps(ctx, config, module, no_cache):
         # get some hashes:
         paths = _get_global_hash_paths(True)
         for mod in data["modules"]:
-            paths.append(Module.get_by_name(mod).path)
+            try:
+                objmod = Module.get_by_name(mod)
+                paths.append(objmod.path)
+            except NotInAddonsPath:
+                pass
         for mod in data["auto_install"]:
             paths.append(Module.get_by_name(mod).path)
 
