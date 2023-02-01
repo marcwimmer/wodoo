@@ -149,7 +149,10 @@ def apply_gimera_if_required(ctx):
     path = customs_dir()
     gimera_file = path / "gimera.yml"
     if not gimera_file.exists():
-        _build_gimera(path)
+        if MANIFEST().get('auto_repo', False):
+            _build_gimera(path)
+        else:
+            return
     repos = yaml.safe_load(gimera_file.read_text())
     _apply_gimera_if_required(ctx, path, repos)
 
