@@ -890,14 +890,14 @@ def __hash_odoo_password(pwd):
     from .odoo_config import current_version
 
     if current_version() in [
+        9.0,
+        10.0,
         11.0,
         12.0,
         13.0,
         14.0,
         15.0,
         16.0,
-        10.0,
-        9.0,
     ]:
         setpw = CryptContext(schemes=["pbkdf2_sha512", "md5_crypt"])
         return setpw.encrypt(pwd)
@@ -1404,13 +1404,17 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
                 path,
                 "--branch",
                 str(current_version()),
-                "--type", 
+                "--type",
                 "integrated",
             ]
         )
-        subprocess.check_call([
-            "gimera", "apply", path,
-        ])
+        subprocess.check_call(
+            [
+                "gimera",
+                "apply",
+                path,
+            ]
+        )
 
     # if not yet there, then pack into "addons_framework"
     manifest = MANIFEST()
@@ -1428,7 +1432,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
 
     Commands.invoke(
         ctx,
-        'update',
+        "update",
         module=[modulename],
         no_restart=False,
         no_dangling_check=True,
@@ -1447,14 +1451,8 @@ def bashfind(path, name=None, wholename=None, type=None):
             type,
         ]
     if wholename:
-        cmd += [
-            "-wholename",
-            wholename
-        ]
+        cmd += ["-wholename", wholename]
     if name:
-        cmd += [
-            "-name",
-            name
-        ]
+        cmd += ["-name", name]
     files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
     return map(lambda x: Path(path) / x, files)
