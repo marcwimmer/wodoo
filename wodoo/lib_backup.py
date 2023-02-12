@@ -82,7 +82,7 @@ def backup_all(ctx, config, filename):
         filepath_db = ctx.invoke(
             backup_db, filename=tmppath / "dump.sql", dumptype="plain"
         )
-        with autocleanpaper(tmppath / filename.name, strict=True) as tmpfile:
+        with autocleanpaper(tmppath / (filename.name + '.zip'), strict=True) as tmpfile:
             folder = _get_filestore_folder(config)
             with autocleanpaper() as fake_filestore:
                 symlink_file = fake_filestore / 'filestore'
