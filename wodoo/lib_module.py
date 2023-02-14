@@ -1384,7 +1384,8 @@ def list_deps(ctx, config, module, no_cache):
 
         data = {"modules": []}
         data["modules"] = sorted(
-            map(lambda x: x.name, modules.get_module_flat_dependency_tree(module))
+            list(map(lambda x: x.name, modules.get_module_flat_dependency_tree(module)))
+            + [module.name]
         )
 
         data["auto_install"] = sorted(
