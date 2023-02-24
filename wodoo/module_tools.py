@@ -1139,11 +1139,6 @@ class Module(object):
     def _get_by_name(cls, name, nocache=False, no_deptree=False):
         from .odoo_config import get_odoo_addons_paths
 
-        if not name:
-            import pudb
-
-            pudb.set_trace()
-
         if isinstance(name, Module):
             name = name.name
         path = None

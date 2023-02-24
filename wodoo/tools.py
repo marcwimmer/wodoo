@@ -1150,14 +1150,17 @@ def get_directory_hash(path):
 
 
 def git_diff_files(path, commit1, commit2):
-    output = subprocess.check_output(
-        [
+    params = [
             "git",
             "diff",
             "--name-only",
-            commit1,
-            commit2,
-        ],
+    ]
+    if commit1:
+        params += [commit1]
+    if commit2:
+        params += [commit2]
+    output = subprocess.check_output(
+        params,
         encoding="utf8",
         cwd=path,
     )
@@ -1222,7 +1225,9 @@ def get_filesystem_of_folder(path):
 
 def get_git_hash(path=None):
     return subprocess.check_output(
-        ["git", "log", "-n", "1", "--format=%H"], cwd=path or os.getcwd()
+        ["git", "log", "-n", "1", "--format=%H"],
+        cwd=path or os.getcwd(),
+        encoding="utf8",
     ).strip()
 
 
@@ -1456,3 +1461,22 @@ def bashfind(path, name=None, wholename=None, type=None):
         cmd += ["-name", name]
     files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
     return map(lambda x: Path(path) / x, files)
+
+
+def _update_setting(conn, key, value):
+    value = str(value)
+    _execute_sql(
+        conn,
+        f"DELETE FROM ir_config_parameter WHERE key = '{key}'; "
+        f"INSERT INTO ir_config_parameter(key, value, create_date, write_date) values('{key}', '{value}', now(), now());",
+    )
+
+
+def _get_setting(conn, key):
+    rec = _execute_sql(
+        conn,
+        f"SELECT value FROM ir_config_parameter WHERE key = '{key}'",
+        fetchone=True,
+    )
+    if rec:
+        return rec[0]

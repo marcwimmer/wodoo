@@ -32,10 +32,14 @@ from .tools import _execute_sql
 from .tools import get_services
 from .tools import __try_to_set_owner
 from .tools import measure_time, abort
+from .tools import _update_setting
+from .tools import _get_setting
+from .tools import get_git_hash
 from .module_tools import _determine_affected_modules_for_ir_field_and_related
 from pathlib import Path
 
 DTF = "%Y-%m-%d %H:%M:%S"
+KEY_SHA_REVISION = "sha.revision"
 
 
 class UpdateException(Exception):
@@ -280,6 +284,37 @@ def _get_available_modules(ctx, param, incomplete):
     return sorted(modules)
 
 
+@odoo_module.command(name="UPDATE")
+@click.option(
+    "--no-dangling-check",
+    default=False,
+    is_flag=True,
+    help="Not checking for dangling modules",
+)
+@click.option("--non-interactive", "-I", is_flag=True, help="Not interactive")
+@click.option(
+    "--recover-view-error",
+    is_flag=True,
+    help="Can happen if per update fields are removed and views still referencing this field.",
+)
+@click.option("--i18n", default=False, is_flag=True, help="Overwrite Translations")
+@pass_config
+@click.pass_context
+def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error, i18n):
+    conn = config.get_odoo_conn()
+    revision = _get_setting(conn, KEY_SHA_REVISION)
+    Commands.invoke(
+        ctx,
+        "update",
+        no_outdated_modules=True,
+        since_git_sha=revision,
+        no_dangling_check=no_dangling_check,
+        non_interactive=non_interactive,
+        recover_view_error=recover_view_error,
+        i18n=i18n,
+    )
+
+
 @odoo_module.command()
 @click.argument(
     "module", nargs=-1, required=False, shell_complete=_get_available_modules
@@ -457,18 +492,7 @@ def update(
         if since_git_sha and module:
             raise Exception("Conflict: since-git-sha and modules")
         if since_git_sha:
-            module = list(_get_changed_modules(since_git_sha))
-
-            # filter modules to defined ones in MANIFEST
-            click.secho(f"Following modules change since last sha: {' '.join(module)}")
-
-            module = list(filter(lambda x: x in MANIFEST()["install"], module))
-            click.secho(
-                (
-                    "Following modules changed since last sha "
-                    f"(filtered to manifest): {' '.join(module)}"
-                )
-            )
+            module = _get_modules_since_git_sha(since_git_sha)
 
             if not module:
                 click.secho("No module update required - exiting.")
@@ -630,6 +654,18 @@ def update(
 
     if check_install_state:
         _do_check_install_state(ctx, config, module, all_modules, no_dangling_check)
+
+    _set_sha(config)
+
+
+def _set_sha(config):
+    conn = config.get_odoo_conn()
+    try:
+        sha = get_git_hash()
+    except:
+        pass
+    else:
+        _update_setting(conn, KEY_SHA_REVISION, sha)
 
 
 def _try_to_recover_view_error(config, output):
@@ -1273,25 +1309,6 @@ def _get_changed_files(git_sha):
     return filepaths2
 
 
-def _get_changed_modules(git_sha):
-    from .module_tools import Module
-
-    filepaths = _get_changed_files(git_sha)
-    modules = []
-    root = Path(os.getcwd())
-    for filepath in filepaths:
-
-        filepath = root / filepath
-
-        try:
-            module = Module(filepath)
-        except Module.IsNot:
-            pass
-        else:
-            modules.append(module.name)
-    return list(sorted(set(modules)))
-
-
 @odoo_module.command(name="list-changed-modules")
 @click.option("-s", "--start")
 @click.pass_context
@@ -1478,6 +1495,43 @@ def list_modules(ctx, config):
     print("---")
     for m in modules:
         print(m)
+
+
+def _get_modules_since_git_sha(sha):
+    from .odoo_config import MANIFEST
+
+    module = list(_get_changed_modules(sha))
+
+    # filter modules to defined ones in MANIFEST
+    click.secho(f"Following modules change since last sha: {' '.join(module)}")
+
+    module = list(filter(lambda x: x in MANIFEST()["install"], module))
+    click.secho(
+        (
+            "Following modules changed since last sha "
+            f"(filtered to manifest): {' '.join(module)}"
+        )
+    )
+    return module
+
+
+def _get_changed_modules(git_sha):
+    from .module_tools import Module
+
+    filepaths = _get_changed_files(git_sha)
+    modules = []
+    root = Path(os.getcwd())
+    for filepath in filepaths:
+
+        filepath = root / filepath
+
+        try:
+            module = Module(filepath)
+        except Module.IsNot:
+            pass
+        else:
+            modules.append(module.name)
+    return list(sorted(set(modules)))
 
 
 Commands.register(update)

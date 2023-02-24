@@ -9,6 +9,7 @@ from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from .tools import __replace_all_envs_in_str
+from .tools import _update_setting
 
 
 @cli.group(cls=AliasedGroup, name="dev-env")
@@ -191,14 +192,3 @@ def update_setting(config, key, value):
     conn = config.get_odoo_conn()
     _update_setting(conn, key, value)
 
-
-def _update_setting(conn, key, value):
-    _execute_sql(
-        conn,
-        """
-        DELETE FROM ir_config_parameter WHERE key = '{key}';
-        INSERT INTO ir_config_parameter(key, value) values('{key}', '{value}');
-    """.format(
-            key=key, value=value
-        ),
-    )
