@@ -1151,9 +1151,9 @@ def get_directory_hash(path):
 
 def git_diff_files(path, commit1, commit2):
     params = [
-            "git",
-            "diff",
-            "--name-only",
+        "git",
+        "diff",
+        "--name-only",
     ]
     if commit1:
         params += [commit1]
