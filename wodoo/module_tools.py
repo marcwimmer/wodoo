@@ -1021,7 +1021,12 @@ class Module(object):
         return self.name == other.name and self.path == other.path
 
     def __hash__(self):
-        return hash(f"Module_{self.path}_{self.name}")
+        try:
+            path = self.path
+            name = self.name
+            return hash(f"Module_{path}_{name}")
+        except RecursionError:
+            raise Exception(f"Recursion at {self.name}")
 
     def __init__(self, path, force_name=None):
         self.version = float(current_version())
