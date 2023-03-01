@@ -159,6 +159,28 @@ odoo pgactivity
 |CRONJOB_DADDY_CLEANUP=0 */1 * * * ${JOB_DADDY_CLEANUP}|Turn on grandfather-principle based backup|
 |RESTART_CONTAINERS=1|Sets "restart unless-stopped" policy|
 
+## Odoo Server Configuration in ~/.odoo/settings/odoo.config and odoo.config.${PROJECT_NAME}
+
+Contents will be appended to [options] section of standard odoo configuration.
+
+Configuration may simple look like:
+
+```
+setting1=value1
+```
+
+or like that:
+
+```
+[options]
+setting1=value1
+
+[queue_job]
+settingqj=valueqj
+```
+
+The [options] is prepended automatically if missed.
+
 
 # Pytests
 
