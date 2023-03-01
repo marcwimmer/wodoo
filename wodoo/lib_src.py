@@ -175,7 +175,7 @@ def init(config, ctx, path, odoosh):
     path = Path(path)
     if not path.exists():
         path.mkdir(parents=True)
-    make_customs(path)
+    make_customs(ctx, path)
 
     odoosh and _turn_into_odoosh(ctx, Path(os.getcwd()))
 
@@ -516,4 +516,3 @@ def pretty_print_manifest():
     from .odoo_config import MANIFEST
 
     MANIFEST().rewrite()
-

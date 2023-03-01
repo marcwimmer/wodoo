@@ -325,7 +325,8 @@ class DBModules(object):
             return state[1] in ["installed", "to upgrade"]
 
 
-def make_customs(path):
+def make_customs(ctx, path):
+    from gimera.gimera import apply as gimera
     from .tools import abort
     import click
 
@@ -379,6 +380,7 @@ def make_customs(path):
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
     subprocess.call(["gimera", "apply", "--update", "--recursive"], cwd=path)
+    ctx.invoke(gimera, recursive=True, update=True)
     try_to_set_owner(whoami(), path)
 
     click.secho("Initialized - please call following now.", fg="green")
@@ -1532,3 +1534,5 @@ def _determine_affected_modules_for_ir_field_and_related(config, fieldname, mode
     if module_of_field:
         affected_modules.append(module_of_field)
     return affected_modules
+
+
