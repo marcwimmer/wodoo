@@ -118,6 +118,7 @@ def _find_duplicate_modules():
 
 
 def _apply_gimera_if_required(ctx, path, content, force_do=False):
+    from gimera.gimera import apply as gimera
     def needs_apply():
         for repo in content["repos"]:
             repo_path = path / repo["path"]
@@ -126,14 +127,7 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
         return False
 
     if force_do or needs_apply():
-        subprocess.check_call(
-            [
-                "gimera",
-                "apply",
-            ],
-            cwd=customs_dir(),
-        )
-
+        ctx.invoke(gimera, recursive=True)], cwd=path)
         click.secho("Restarting reloading because gimera apply was done", fg="yellow")
         Commands.invoke(ctx, "reload", no_auto_repo=True)
 

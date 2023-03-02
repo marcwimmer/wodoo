@@ -379,7 +379,6 @@ def make_customs(ctx, path):
     subprocess.call(["git", "init"], cwd=path)
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
-    subprocess.call(["gimera", "apply", "--update", "--recursive"], cwd=path)
     ctx.invoke(gimera, recursive=True, update=True)
     try_to_set_owner(whoami(), path)
 

@@ -165,6 +165,7 @@ Contents will be appended to [options] section of standard odoo configuration.
 
 Configuration may simple look like:
 
+
 ```
 setting1=value1
 ```
