@@ -127,7 +127,7 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
         return False
 
     if force_do or needs_apply():
-        ctx.invoke(gimera, recursive=True)], cwd=path)
+        ctx.invoke(gimera, recursive=True, cwd=path)
         click.secho("Restarting reloading because gimera apply was done", fg="yellow")
         Commands.invoke(ctx, "reload", no_auto_repo=True)
 
