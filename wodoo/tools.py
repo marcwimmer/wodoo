@@ -1480,3 +1480,12 @@ def _get_setting(conn, key):
     )
     if rec:
         return rec[0]
+
+@contextmanager
+def cwd(path):
+    remember = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(remember)

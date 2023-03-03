@@ -22,6 +22,7 @@ from .tools import abort
 from .tools import __assure_gitignore
 from .tools import _write_file
 from .tools import bashfind
+from .tools import cwd
 
 ADDONS_OCA = "addons_OCA"
 
@@ -127,15 +128,15 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
         return False
 
     if force_do or needs_apply():
-        ctx.invoke(gimera, recursive=True, cwd=path)
-        click.secho("Restarting reloading because gimera apply was done", fg="yellow")
-        Commands.invoke(ctx, "reload", no_auto_repo=True)
+        with cwd(path):
+            ctx.invoke(gimera, recursive=True)
+            click.secho("Restarting reloading because gimera apply was done", fg="yellow")
+            Commands.invoke(ctx, "reload", no_auto_repo=True)
 
-        from .module_tools import Modules
+            from .module_tools import Modules
 
-        modules = Modules()
-        all_modules = modules.get_all_modules_installed_by_manifest()
-
+            modules = Modules()
+            all_modules = modules.get_all_modules_installed_by_manifest()
 
 @src.command()
 @click.pass_context
