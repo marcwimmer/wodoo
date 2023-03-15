@@ -112,11 +112,13 @@ def snapshot_remove(ctx, config, name):
 def snapshot_clear_all(ctx, config):
     config.snapshot_manager.assert_environment(config)
 
-    snapshots = config.snapshot_manager.__get_snapshots(config)
-    if snapshots:
-        for snap in snapshots:
-            config.snapshot_manager.remove(config, snap)
-    config.snapshot_manager.clear_all(config)
+    if hasattr(config.snapshot_manager, 'clear_all'):
+        config.snapshot_manager.clear_all(config)
+    else:
+        snapshots = config.snapshot_manager.__get_snapshots(config)
+        if snapshots:
+            for snap in snapshots:
+                config.snapshot_manager.remove(config, snap)
     ctx.invoke(do_list)
 
 

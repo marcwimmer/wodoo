@@ -389,7 +389,7 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
     "-l",
     "--log",
     default="info",
-    type=click.Choice(["info", "debug", "error"]),
+    type=click.Choice(["test", "info", "debug", "error"]),
     help="display logs with given level",
 )
 @click.option(
