@@ -1368,7 +1368,7 @@ class Module(object):
         for path in self.path.glob("*"):
             if not path.is_dir():
                 continue
-            if not path.name in ["models", "tests", "controller", "controllers"]:
+            if path.name not in ["models", "tests", "controller", "controllers"]:
                 continue
             init_file = path / "__init__.py"
             if not init_file.exists():
@@ -1390,8 +1390,8 @@ class Module(object):
             init_file.write_text("\n".join(content))
 
     def update_module_file(self):
-        # updates __openerp__.py the update-section to point to all xml files in the module;
-        # except if there is a directory test; those files are ignored;
+        # updates __openerp__.py the update-section to point to all xml files
+        # in the module; # except if there is a directory test; those files are ignored;
         self.update_assets_file()
         self.update_init_imports()
         mod = self.manifest_dict
@@ -1429,7 +1429,8 @@ class Module(object):
                 if "css" in mod:
                     mod["css"] = list(set(mod["css"] + [str(local_path)]))
 
-        # keep test empty: use concrete call to test-file instead of testing on every module update
+        # keep test empty: use concrete call to test-file instead of testing
+        # on every module update
         mod["test"] = []
 
         # sort
