@@ -82,16 +82,16 @@ def backup_all(ctx, config, filename):
         filepath_db = ctx.invoke(
             backup_db, filename=tmppath / "dump.sql", dumptype="plain"
         )
-        with autocleanpaper(tmppath / (filename.name + '.zip'), strict=True) as tmpfile:
+        with autocleanpaper(tmppath / (filename.name + ".zip"), strict=True) as tmpfile:
             folder = _get_filestore_folder(config)
             with autocleanpaper() as fake_filestore:
-                symlink_file = fake_filestore / 'filestore'
+                symlink_file = fake_filestore / "filestore"
                 symlink_file.parent.mkdir(exist_ok=True, parents=True)
                 os.symlink(folder, symlink_file)
 
-                with autocleanpaper(folder / 'zipped.zip', strict=True) as folderzip:
+                with autocleanpaper(folder / "zipped.zip", strict=True) as folderzip:
                     subprocess.check_call(
-                        ["zip", "-r", folderzip, 'filestore'],
+                        ["zip", "-r", folderzip, "filestore"],
                         cwd=fake_filestore,
                     )
                     shutil.move(folderzip, tmpfile)
@@ -111,6 +111,7 @@ def backup_all(ctx, config, filename):
         verbose=True,
     )
     click.secho(f"Created dump-file {filename}", fg="green")
+
 
 @backup.command(name="odoo-db")
 @pass_config
@@ -328,7 +329,7 @@ def _odoo_sh(ctx, config, filename, params):
             if sqlfile.exists():
                 click.secho(f"Restoring db {sqlfile}")
                 os.chdir(was_dir)
-                params['no_remove_webassets'] = True
+                params["no_remove_webassets"] = True
                 Commands.invoke(ctx, "restore_db", filename=sqlfile, **params)
         finally:
             os.chdir(was_dir)
@@ -365,6 +366,7 @@ def _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets):
     is_flag=True,
     help="Example if some extensions are missing (replication)",
 )
+@click.option("--dbname")
 @pass_config
 @click.pass_context
 def restore_db(
@@ -378,6 +380,7 @@ def restore_db(
     exclude_tables,
     verbose,
     ignore_errors,
+    dbname,
 ):
     if not filename:
         filename = _inquirer_dump_file(
@@ -419,7 +422,7 @@ def restore_db(
 
     if dump_type.startswith("dump_all"):
         with autocleanpaper() as tmpdir:
-            params['no_remove_webassets'] = True
+            params["no_remove_webassets"] = True
             with _add_cronjob_scripts(config)["postgres"].extract_dumps_all(
                 tmpdir, filename_absolute
             ) as (dbfile, files_file):
@@ -440,7 +443,7 @@ def restore_db(
         _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets)
 
     else:
-        _restore_dump(ctx, config, filename, dumps_path, **params)
+        _restore_dump(ctx, config, filename, dumps_path, dbname=dbname, **params)
 
     if config.run_postgres:
         __dc(config, ["up", "-d", "postgres"])
@@ -461,6 +464,7 @@ def _restore_dump(
     verbose,
     verify,
     ignore_errors,
+    dbname,
 ):
     DBNAME_RESTORING = config.dbname + "_restoring"
     if config.run_postgres:
@@ -568,7 +572,7 @@ def _restore_dump(
 
         _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets)
         __rename_db_drop_target(
-            conn.clone(dbname="postgres"), DBNAME_RESTORING, config.dbname
+            conn.clone(dbname="postgres"), DBNAME_RESTORING, dbname or config.dbname
         )
         _remove_postgres_connections(conn.clone(dbname=dest_db))
 
