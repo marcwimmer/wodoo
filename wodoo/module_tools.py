@@ -825,6 +825,7 @@ class Modules(object):
                     yield objmod
                 except NotInAddonsPath:
                     pass
+
         module_list = list(_transform_modulelist(module_list))
 
         complete_modules = set()
@@ -882,8 +883,10 @@ class Modules(object):
     def get_all_external_dependencies(self, modules):
         pydeps = []
         deb_deps = []
-        for module in modules:
-            module = Module.get_by_name(module)
+        for module_name in modules:
+            module = Module.get_by_name(module_name)
+            if module.path is None:
+                raise Exception(f"Module has no path: {module_name}")
             file = module.path / "external_dependencies.txt"
             new_deps = []
             if file.exists():
@@ -1354,9 +1357,12 @@ class Module(object):
                 return content
             content = content.replace("import os", "")
             content = content.replace("import glob", "")
-            content = "\n".join(
-                filter(lambda x: "__all__ =" not in x, content.splitlines())
-            ).strip() + "\n"
+            content = (
+                "\n".join(
+                    filter(lambda x: "__all__ =" not in x, content.splitlines())
+                ).strip()
+                + "\n"
+            )
             return content
 
         for path in self.path.glob("*"):
@@ -1381,7 +1387,7 @@ class Module(object):
                     if not (path / (line.split(" ")[-1] + ".py")).exists():
                         content.remove(line)
 
-            init_file.write_text('\n'.join(content))
+            init_file.write_text("\n".join(content))
 
     def update_module_file(self):
         # updates __openerp__.py the update-section to point to all xml files in the module;
@@ -1421,7 +1427,7 @@ class Module(object):
                 pass
             elif local_path.suffix in [".css", ".less", ".scss"]:
                 if "css" in mod:
-                    mod["css"].append(str(local_path))
+                    mod["css"] = list(set(mod["css"] + [str(local_path)]))
 
         # keep test empty: use concrete call to test-file instead of testing on every module update
         mod["test"] = []
@@ -1533,5 +1539,3 @@ def _determine_affected_modules_for_ir_field_and_related(config, fieldname, mode
     if module_of_field:
         affected_modules.append(module_of_field)
     return affected_modules
-
-
