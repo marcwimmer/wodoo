@@ -219,6 +219,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
 
     """
     from .module_tools import Modules, DBModules, Module
+    from .module_tools import NotInAddonsPath
     from .odoo_config import MANIFEST
 
     mods = Modules()
@@ -230,7 +231,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
 
         try:
             mod = Module.get_by_name(module)
-        except KeyError:
+        except (KeyError, NotInAddonsPath):
             click.secho(
                 f"Warning module not found: {module}",
                 fg="yellow",
