@@ -382,13 +382,14 @@ def restore_db(
     ignore_errors,
     dbname,
 ):
+    breakpoint()
     if not filename:
         filename = _inquirer_dump_file(
-            config, "Choose filename to restore", config.dbname
+            config, "Choose filename to restore", (dbname or config.dbname)
         )
     if not filename:
         return
-    if not config.dbname:
+    if not (dbname or config.dbname):
         raise Exception("somehow dbname is missing")
 
     dumps_path = config.dumps_path
@@ -407,6 +408,7 @@ def restore_db(
         "exclude_tables": exclude_tables,
         "verbose": verbose,
         "ignore_errors": ignore_errors,
+        "dbname": (dbname or config.dbname),
     }
 
     dump_type = _add_cronjob_scripts(config)["postgres"].__get_dump_type(
@@ -443,7 +445,13 @@ def restore_db(
         _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets)
 
     else:
-        _restore_dump(ctx, config, filename, dumps_path, dbname=dbname, **params)
+        _restore_dump(
+            ctx,
+            config,
+            filename,
+            dumps_path,
+            **params,
+        )
 
     if config.run_postgres:
         __dc(config, ["up", "-d", "postgres"])
@@ -466,7 +474,7 @@ def _restore_dump(
     ignore_errors,
     dbname,
 ):
-    DBNAME_RESTORING = config.dbname + "_restoring"
+    DBNAME_RESTORING = (dbname or config.dbname) + "_restoring"
     if config.run_postgres:
         postgres_name = f"{config.PROJECT_NAME}_run_postgres"
         client = docker.from_env()
