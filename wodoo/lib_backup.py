@@ -382,7 +382,6 @@ def restore_db(
     ignore_errors,
     dbname,
 ):
-    breakpoint()
     if not filename:
         filename = _inquirer_dump_file(
             config, "Choose filename to restore", (dbname or config.dbname)
