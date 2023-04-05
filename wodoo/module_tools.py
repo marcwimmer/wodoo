@@ -1404,7 +1404,7 @@ class Module(object):
 
         mod[DATA_NAME] = []
         mod["demo"] = []
-        if current_version() <= 13.0:
+        if current_version() <= 14.0:
             mod["css"] = []
             mod["qweb"] = []
         is_web = False
