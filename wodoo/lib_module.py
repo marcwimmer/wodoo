@@ -760,7 +760,7 @@ def _do_dangling_check(ctx, config, dangling_modules, non_interactive):
                 ),
             )
     if DBModules.get_dangling_modules() and not dangling_modules:
-        if show_dangling():
+        if show_dangling() and not non_interactive:
             input("Abort old upgrade and continue? (Ctrl+c to break)")
             ctx.invoke(abort_upgrade)
 
