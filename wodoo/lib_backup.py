@@ -22,6 +22,8 @@ from .tools import put_appendix_into_file
 from .tools import _dropdb
 from .tools import remove_webassets
 from .tools import __dc
+from .tools import __dc_out
+from .tools import docker_kill_container
 from .tools import _execute_sql
 from .tools import __rename_db_drop_target
 from .tools import _remove_postgres_connections
@@ -475,15 +477,13 @@ def _restore_dump(
 ):
     DBNAME_RESTORING = (dbname or config.dbname) + "_restoring"
     if config.run_postgres:
-        postgres_name = f"{config.PROJECT_NAME}_run_postgres"
-        client = docker.from_env()
-        for container in client.containers.list(filters={"name": f"{postgres_name}"}):
-            container.kill()
-            container.remove()
+        container_id = __dc_out(config, ["ps", "-q", 'postgres']).strip()
+        if container_id:
+            docker_kill_container(container_id, remove=True)
 
         try:
             Commands.invoke(ctx, "down")
-        except Exception as ex:
+        except Exception:
             pass
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)

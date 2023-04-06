@@ -231,6 +231,24 @@ def _exists_table(conn, table_name):
     return record[0]
 
 
+def docker_list_containers():
+    container_ids = (
+        subprocess.check_output(
+            [
+                "docker",
+                "ps",
+                "-a",
+                "-q",
+                "--no-trunc",
+                "--filter",
+                f"name=^/{config.PROJECT_NAME}_postgres$",
+            ],
+            encoding="utf8",
+        )
+        .strip()
+        .splitlines()
+    )
+
 def _wait_postgres(config, timeout=600):
     started = arrow.get()
     if config.run_postgres:
@@ -252,19 +270,14 @@ def _wait_postgres(config, timeout=600):
             .splitlines()
         )
 
-        import docker
-
-        client = docker.from_env()
         postgres_containers = []
+
         for container_id in container_ids:
             if not container_id:
                 continue
-            container = client.containers.get(container_id)
-            if not container:
-                continue
-            if not container.attrs["State"]["Running"]:
-                continue
-            postgres_containers += [container]
+            state = _docker_id_state(container_id)
+            if state == 'running':
+                postgres_containers += [container_id]
 
         deadline = arrow.get().shift(seconds=timeout)
         last_ex = None
@@ -305,20 +318,32 @@ def _wait_postgres(config, timeout=600):
         click.secho("Postgres now available.", fg="green")
 
 
-def _is_container_running(config, machine_name):
-    import docker
+def _docker_id_state(container_id):
+    status = subprocess.check_output(
+        [
+            'docker',
+            'container',
+            'ls',
+            '--format',
+            '{{.State}}',
+            '--filter',
+            f'id={container_id}'
+        ],
+        encoding='utf8',
+    ).strip()
+    return status
 
+def docker_kill_container(container_id, remove=False):
+    subprocess.check_call(['docker', 'kill', container_id])
+    if remove:
+        subprocess.check_call(['docker', 'rm', container_id])
+
+def _is_container_running(config, machine_name):
     container_id = __dc_out(config, ["ps", "-q", machine_name]).strip()
     if container_id:
-        container = list(
-            filter(
-                lambda container: container.id == container_id,
-                docker.from_env().containers.list(),
-            )
-        )
-        if container:
-            container = container[0]
-            return container.status == "running"
+        status = _docker_id_state(container_id)
+        if status:
+            return status == 'running'
     return False
 
 
@@ -366,7 +391,7 @@ def _remove_postgres_connections(connection, sql_afterwards=""):
 
 def __rename_db_drop_target(conn, from_db, to_db):
     if to_db in ("postgres", "template1"):
-        raise Exception("Invalid: {}".format(to_db))
+        raise Exception(f"Invalid: {to_db}")
     _remove_postgres_connections(conn.clone(dbname=from_db))
     _remove_postgres_connections(conn.clone(dbname=to_db))
     _execute_sql(
@@ -519,9 +544,9 @@ def __rm_file_if_exists(path):
 def __rmtree(config, path):
     path = str(path)
     if not path or path == "/":
-        raise Exception("Not allowed: {}".format(path))
+        raise Exception(f"Not allowed: {path}")
     if not path.startswith("/"):
-        raise Exception("Not allowed: {}".format(path))
+        raise Exception(f"Not allowed: {path}")
     if config:
         if not any(
             path.startswith(config.dirs["odoo_home"] + x) for x in ["/tmp", "/run/"]
@@ -574,7 +599,7 @@ def __empty_dir(dir, user_out=False):
                 if user_out:
                     click.secho(f"Removing {x.absolute()}")
                 x.unlink()
-    except:
+    except Exception:
         click.secho(f"Could not delete: {dir}", fg="red")
         raise
 
@@ -655,7 +680,7 @@ def __splitcomma(param):
         return [x.strip() for x in param.split(",") if x.strip()]
     elif isinstance(param, (tuple, list)):
         return list(param)
-    raise Exception("not impl")
+    raise NotImplementedError("not impl")
 
 
 def __make_file_executable(filepath):
@@ -689,7 +714,7 @@ def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
         try:
             try:
                 subprocess.check_output(["chown", str(UID), line])
-            except:
+            except Exception:
                 try:
                     subprocess.check_output(["sudo", "chown", str(UID), line])
                 except Exception as ex:
@@ -698,7 +723,7 @@ def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
 
             try:
                 subprocess.check_output(["chgrp", str(primary_group), line])
-            except:
+            except Exception:
                 try:
                     subprocess.check_output(["sudo", "chgrp", str(primary_group), line])
                 except:
@@ -1219,6 +1244,8 @@ def get_filesystem_of_folder(path):
     lines = (
         subprocess.check_output([df, "-T", path], encoding="utf8").strip().splitlines()
     )
+    if not lines:
+        return None
     fstype = list(filter(bool, lines[1].replace("\t", " ").split(" ")))[1]
     return fstype
 

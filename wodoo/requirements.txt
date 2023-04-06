@@ -9,7 +9,7 @@ passlib>=1.7.1
 tabulate>=0.8.3
 psycopg2==2.9.3
 requests>=2.20.1
-lxml>=4.4.1
+lxml>=4.9.2
 GitPython>=3.1.11
 docker-compose==1.29.2
 iscompatible

@@ -663,8 +663,6 @@ def __run_docker_compose_config(config, contents, env):
         conf = yaml.safe_load(conf)
         return conf
 
-    except Exception:
-        raise
     finally:
         if temp_path.exists():
             shutil.rmtree(temp_path)
