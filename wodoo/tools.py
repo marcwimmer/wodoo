@@ -231,23 +231,21 @@ def _exists_table(conn, table_name):
     return record[0]
 
 
-def docker_list_containers():
-    container_ids = (
-        subprocess.check_output(
-            [
-                "docker",
-                "ps",
-                "-a",
-                "-q",
-                "--no-trunc",
-                "--filter",
-                f"name=^/{config.PROJECT_NAME}_postgres$",
-            ],
-            encoding="utf8",
-        )
-        .strip()
-        .splitlines()
-    )
+def docker_list_containers(project_name, service_name, status_filter=None):
+    cmd = [
+        "docker",
+        "ps",
+        "-a",
+        "-q",
+        "--no-trunc",
+        "--filter",
+        f"name=^/{project_name}_{service_name}$",
+    ]
+    if status_filter:
+        cmd += ["--filter", f"status={status_filter}"]
+    container_ids = subprocess.check_output(cmd, encoding="utf8").strip().splitlines()
+    return container_ids
+
 
 def _wait_postgres(config, timeout=600):
     started = arrow.get()
@@ -276,7 +274,7 @@ def _wait_postgres(config, timeout=600):
             if not container_id:
                 continue
             state = _docker_id_state(container_id)
-            if state == 'running':
+            if state == "running":
                 postgres_containers += [container_id]
 
         deadline = arrow.get().shift(seconds=timeout)
@@ -321,29 +319,31 @@ def _wait_postgres(config, timeout=600):
 def _docker_id_state(container_id):
     status = subprocess.check_output(
         [
-            'docker',
-            'container',
-            'ls',
-            '--format',
-            '{{.State}}',
-            '--filter',
-            f'id={container_id}'
+            "docker",
+            "container",
+            "ls",
+            "--format",
+            "{{.State}}",
+            "--filter",
+            f"id={container_id}",
         ],
-        encoding='utf8',
+        encoding="utf8",
     ).strip()
     return status
 
+
 def docker_kill_container(container_id, remove=False):
-    subprocess.check_call(['docker', 'kill', container_id])
+    subprocess.check_call(["docker", "kill", container_id])
     if remove:
-        subprocess.check_call(['docker', 'rm', container_id])
+        subprocess.check_call(["docker", "rm", container_id])
+
 
 def _is_container_running(config, machine_name):
     container_id = __dc_out(config, ["ps", "-q", machine_name]).strip()
     if container_id:
         status = _docker_id_state(container_id)
         if status:
-            return status == 'running'
+            return status == "running"
     return False
 
 
@@ -1507,6 +1507,7 @@ def _get_setting(conn, key):
     )
     if rec:
         return rec[0]
+
 
 @contextmanager
 def cwd(path):

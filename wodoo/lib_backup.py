@@ -36,6 +36,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import ensure_project_name
 from .tools import _get_filestore_folder
 from .tools import __try_to_set_owner
+from .tools import docker_list_containers
 
 import inspect
 import os
@@ -476,13 +477,15 @@ def _restore_dump(
     dbname,
 ):
     DBNAME_RESTORING = (dbname or config.dbname) + "_restoring"
-    if config.run_postgres:
-        container_id = __dc_out(config, ["ps", "-q", 'postgres']).strip()
-        if container_id:
+    if config.run_postgres and config.use_docker:
+        for container_id in docker_list_containers(
+            config.project_name, "postgres", "running"
+        ):
             docker_kill_container(container_id, remove=True)
+            del container_id
 
         try:
-            Commands.invoke(ctx, "down")
+            Commands.invoke(ctx, "down", volumes=True)
         except Exception:
             pass
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
@@ -511,11 +514,10 @@ def _restore_dump(
         click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
     try:
         if config.use_docker:
-
             # if postgres docker is used, then make a temporary config to restart docker container
             # with external directory mapped; after that remove config
             if config.run_postgres:
-                __dc(config, ["kill", "postgres"])
+                postgres_name = f"postgres_{uuid.uuid4()}"
                 __dc(
                     config,
                     [
@@ -584,7 +586,7 @@ def _restore_dump(
         _remove_postgres_connections(conn.clone(dbname=dest_db))
 
     finally:
-        if config.run_postgres:
+        if config.run_postgres and config.run_docker:
             # stop the run started postgres container; softly
             subprocess.check_output(["docker", "stop", postgres_name])
             try:
