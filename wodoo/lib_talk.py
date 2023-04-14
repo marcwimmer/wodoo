@@ -152,6 +152,8 @@ def progress(config):
         "select state, count(*) from ir_module_module group by state;",
         fetchall=True,
     ):
+        click.echo(f"{row[0]}: {row[1]}")
+
 @talk.command()
 @click.argument("name", required=False, default="%")
 @pass_config
