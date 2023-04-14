@@ -101,6 +101,7 @@ def _get_arch():
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
 @click.option("-I", "--no-update-images", is_flag=True)
 @click.option("-A", "--no-auto-repo", is_flag=True)
+@click.option("--docker-compose", help="additional docker-compose files, separated by colon :")
 @pass_config
 @click.pass_context
 def do_reload(
@@ -117,6 +118,7 @@ def do_reload(
     images_url,
     no_update_images,
     no_auto_repo,
+    docker_compose,
 ):
     from .myconfigparser import MyConfigParser
 
@@ -162,6 +164,9 @@ def do_reload(
             if "ODOO_DEMO=1\n" in additional_config:
                 demo = True
 
+        if docker_compose:
+            docker_compose = docker_compose.split(":")
+
         internal_reload(
             ctx,
             config,
@@ -173,6 +178,7 @@ def do_reload(
             mailclient_gui_port,
             additional_config,
             apply_auto_repo=not no_auto_repo,
+            additional_docker_configuration_files=docker,
         )
 
     finally:
@@ -196,8 +202,10 @@ def internal_reload(
     mailclient_gui_port,
     additional_config=None,
     apply_auto_repo=True,
+    additional_docker_configuration_files=None,
 ):
     ensure_project_name(config)
+    additional_docker_configuration_files = additional_docker_configuration_files or []
     defaults = {
         "config": config,
         "db": db,
@@ -235,7 +243,10 @@ def internal_reload(
         _apply_autorepo(ctx=ctx, config=config)
 
     # assuming we are in the odoo directory
-    _do_compose(**defaults)
+    _do_compose(
+        **defaults,
+        additional_docker_configuration_files=additional_docker_configuration_files,
+    )
 
     _execute_after_reload(config)
 
@@ -254,7 +265,13 @@ def _set_defaults(config, defaults):
     defaults["project_name"] = config.project_name
 
 
-def _do_compose(config, db="", demo=False, **forced_values):
+def _do_compose(
+    config,
+    db="",
+    demo=False,
+    additional_docker_configuration_files=None,
+    **forced_values,
+):
     """
     builds docker compose, proxy settings, setups odoo instances
     """
@@ -282,7 +299,9 @@ def _do_compose(config, db="", demo=False, **forced_values):
     _prepare_filesystem(config)
     _execute_after_settings(config)
 
-    _prepare_yml_files_from_template_files(config)
+    _prepare_yml_files_from_template_files(
+        config, additional_docker_configuration_files
+    )
 
     click.echo("Built the docker-compose file.")
 
@@ -321,7 +340,6 @@ def _download_images(config, images_url):
     if subprocess.check_output(
         ["git", "remote"], encoding="utf8", cwd=config.dirs["images"]
     ).strip():
-
         trycount = 0
         for i in range(10):
             trycount += 1
@@ -469,7 +487,9 @@ def _execute_after_settings(config):
         settings.write()
 
 
-def _prepare_yml_files_from_template_files(config):
+def _prepare_yml_files_from_template_files(
+    config, additional_docker_configuration_files=None
+):
     # replace params in configuration file
     # replace variables in docker-compose;
     from . import odoo_config
@@ -513,6 +533,14 @@ def _prepare_yml_files_from_template_files(config):
                 [
                     _files.append(x) for x in d.glob("docker-compose*.yml")
                 ]  # not recursive
+
+    if additional_docker_configuration_files:
+        for file in additional_docker_configuration_files:
+            file = Path(os.path.expanduser(file))
+            if not file.exists():
+                raise Exception(f"File {file} does not exist")
+            file = file.absolute()
+            _files += [file]
 
     _files2 = []
     for x in _files:
@@ -711,7 +739,6 @@ def dict_merge(dct, merge_dct):
         ):
             dict_merge(dct[k], merge_dct[k])
         else:
-
             # merging lists of tuples and lists
             if k in dct:
                 _make_dict_if_possible(dct, k)
