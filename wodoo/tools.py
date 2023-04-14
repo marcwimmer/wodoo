@@ -317,6 +317,7 @@ def _wait_postgres(config, timeout=600):
                 time.sleep(1)
         click.secho("Postgres now available.", fg="green")
 
+
 def _docker_id_state(container_id):
     status = subprocess.check_output(
         [
