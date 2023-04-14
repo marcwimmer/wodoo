@@ -178,7 +178,7 @@ def do_reload(
             mailclient_gui_port,
             additional_config,
             apply_auto_repo=not no_auto_repo,
-            additional_docker_configuration_files=docker,
+            additional_docker_configuration_files=docker_compose,
         )
 
     finally:
