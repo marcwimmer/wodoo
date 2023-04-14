@@ -84,7 +84,6 @@ def exe(*params):
 
 
 def delete_qweb(config, modules):
-
     with get_conn_autoclose(config) as cr:
         if modules != "all":
             cr.execute("select name from ir_module_module where name = %s", (modules,))
@@ -1482,6 +1481,15 @@ class Module(object):
             pp = pprint.PrettyPrinter(indent=4, stream=file)
             pp.pprint(data)
 
+    def calc_complexity(self):
+        """
+        Calculates the complexity of the module
+        """
+        res = {'loc': 0}
+        for file in self.get_all_files_of_module():
+            if file.suffix in ['.py', '.csv', '.xml']:
+                res['loc'] += file.read_text().splitlines()
+        return res
 
 def write_debug_instruction(instruction):
     (customs_dir() / ".debug").write_text(instruction)

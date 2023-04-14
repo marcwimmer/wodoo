@@ -18,8 +18,9 @@ from .cli import cli, pass_config, Commands
 
 @cli.group(cls=AliasedGroup)
 @pass_config
-def talk(config): 
+def talk(config):
     pass
+
 
 @talk.command()
 @click.option("-M", "--module")
@@ -44,13 +45,14 @@ def xmlids(config, module, model):
     )
     click.secho(tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow")
 
+
 @talk.command()
 @click.argument("field", nargs=-1)
 @pass_config
 def deactivate_field_in_views(config, field):
     conn = config.get_odoo_conn()
     for field in field:
-        click.secho(f"Turning {field} into create_date.", fg='green')
+        click.secho(f"Turning {field} into create_date.", fg="green")
         _execute_sql(
             conn,
             sql=(
@@ -60,6 +62,7 @@ def deactivate_field_in_views(config, field):
             fetchall=False,
             return_columns=False,
         )
+
 
 @talk.command()
 @click.argument("name", required=True)
@@ -154,6 +157,38 @@ def progress(config):
     ):
         click.echo(f"{row[0]}: {row[1]}")
 
+
+@talk.command()
+@pass_config
+def modules_overview(config):
+    from .module_tools import Modules, Module
+
+    modules = Modules()
+
+    mods = modules.get_all_modules_installed_by_manifest()
+    res = []
+    for mod in mods:
+        mod = Module.get_by_name(mod)
+        complexity = mod.calc_complexity()
+        manifest = mod.manifest_dict
+        data = {
+            "name": mod.name,
+            "loc": complexity["loc"],
+            "description": manifest.get("description", ""),
+        }
+    print([x for x in mods])
+
+
+def _get_xml_id(conn, model, res_id):
+    xmlid = _execute_sql(
+        conn,
+        sql=f"SELECT module||'.'||name FROM ir_model_data WHERE model = '{model}' AND res_id = {res_id}",
+        params=(model, res_id),
+        fetchone=True,
+    )
+    return xmlid and xmlid[0] or ""
+
+
 @talk.command()
 @click.argument("name", required=False, default="%")
 @pass_config
@@ -164,8 +199,7 @@ def menus(config, name):
         rows = _execute_sql(
             conn,
             sql=(
-                "SELECT id, name, parent_id FROM ir_ui_menu "
-                f"WHERE id = {parent_id}"
+                "SELECT id, name, parent_id FROM ir_ui_menu " f"WHERE id = {parent_id}"
             ),
             fetchall=True,
             return_columns=False,
@@ -187,16 +221,15 @@ def menus(config, name):
     for row in rows[1]:
         xml_id = _get_xml_id(conn, "ir.ui.menu", row[0])
         row = list(row)
+        path = "/".join(map(lambda x: x[1], reversed(list(get_parents(row[0])))))
         row.insert(0, xml_id)
-        path = ' / '.join(map(lambda x: x[1], reversed(list(get_parents(row[1])))))
         row.insert(0, path)
         row = row[:2]
         tablerows.append(row)
-    tablerows = sorted(tablerows, key=lambda x: x[0])
-    cols = list(rows[0])
-    cols.insert(0, 'xmlid')
-    cols.insert(0, 'path')
-    cols = cols[:2]
+    cols = list(rows[0])[:2]
+    cols.insert(0, "xmlid")
+    cols.insert(0, "path")
+    print(tablerows)
     click.secho(tabulate(tablerows, cols, tablefmt="fancy_grid"), fg="yellow")
 
 
