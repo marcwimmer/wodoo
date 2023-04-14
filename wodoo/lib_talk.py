@@ -194,6 +194,19 @@ def _get_xml_id(conn, model, res_id):
 @pass_config
 def menus(config, name):
     conn = config.get_odoo_conn()
+    ids = map(
+        lambda x: x[0],
+        _execute_sql(
+            conn,
+            sql=(
+                f"SELECT id FROM ir_ui_menu WHERE name ILIKE '%{name}%' "
+                f" UNION "
+                f"SELECT res_id FROM ir_model_data WHERE model = 'ir.ui.menu' AND name ILIKE '%{name}%'"
+            ),
+            fetchall=True,
+            return_columns=False,
+        ),
+    )
 
     def get_parents(parent_id):
         rows = _execute_sql(
@@ -209,11 +222,10 @@ def menus(config, name):
             if row[2]:
                 yield from get_parents(row[2])
 
+    ids = ",".join(map(str, ids))
     rows = _execute_sql(
         conn,
-        sql=(
-            f"SELECT id, name, parent_id FROM ir_ui_menu WHERE name ILIKE '%{name}%' ORDER BY name"
-        ),
+        sql=(f"SELECT id, name, parent_id FROM ir_ui_menu WHERE id in (0, {ids})"),
         fetchall=True,
         return_columns=True,
     )
@@ -229,8 +241,47 @@ def menus(config, name):
     cols = list(rows[0])[:2]
     cols.insert(0, "xmlid")
     cols.insert(0, "path")
-    print(tablerows)
     click.secho(tabulate(tablerows, cols, tablefmt="fancy_grid"), fg="yellow")
+
+
+@talk.command()
+@click.argument("name", required=False, default="%")
+@pass_config
+def groups(config, name):
+    conn = config.get_odoo_conn()
+    ids = map(
+        lambda x: x[0],
+        _execute_sql(
+            conn,
+            sql=(
+                f"SELECT id FROM res_groups WHERE name ILIKE '%{name}%' "
+                f" UNION "
+                f"SELECT res_id FROM ir_model_data WHERE model = 'res.groups' AND name ILIKE '%{name}%'"
+            ),
+            fetchall=True,
+            return_columns=False,
+        ),
+    )
+
+    ids = ",".join(map(str, ids))
+    rows = _execute_sql(
+        conn,
+        sql=(f"SELECT id, name FROM res_groups WHERE id in (0, {ids}) ORDER BY name"),
+        fetchall=True,
+        return_columns=True,
+    )
+    tablerows = []
+    for row in rows[1]:
+        xml_id = _get_xml_id(conn, "res.groups", row[0])
+        row = list(row)
+        row.insert(0, xml_id)
+        row.pop(1)
+        tablerows.append(row)
+    cols = ["XML-ID", "Name"]
+    click.secho(
+        tabulate(sorted(tablerows, key=lambda x: x[0]), cols, tablefmt="fancy_grid"),
+        fg="yellow",
+    )
 
 
 Commands.register(progress)
