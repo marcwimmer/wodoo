@@ -781,7 +781,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
 
 def _fix_contents(contents):
     for content in contents:
-        services = content.get("services", [])
+        services = content.get("services", []) or []
         for service in services:
             service = services[service]
             # turn {"env_file": {"FILE1": null} --> ["FILE1"]
@@ -806,7 +806,7 @@ def _explode_referenced_machines(contents):
     needs_explosion = {}
 
     for content in contents:
-        for service in content.get("services", []):
+        for service in (content.get("services", []) or []):
             labels = content["services"][service].get("labels")
             if labels:
                 if labels.get("compose.merge"):
@@ -815,7 +815,7 @@ def _explode_referenced_machines(contents):
 
     for content in contents:
         for explode, to_explode in needs_explosion.items():
-            if explode in content.get("services", []):
+            if explode in (content.get("services", []) or []):
                 for to_explode in to_explode:
                     if to_explode in content["services"]:
                         src = deepcopy(content["services"][explode])
