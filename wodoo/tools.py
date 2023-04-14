@@ -268,8 +268,10 @@ def _wait_postgres(config, timeout=600):
             .splitlines()
         )
 
-        postgres_containers = []
+        import docker
 
+        client = docker.from_env()
+        postgres_containers = []
         for container_id in container_ids:
             if not container_id:
                 continue
@@ -314,7 +316,6 @@ def _wait_postgres(config, timeout=600):
                     last_ex = ex
                 time.sleep(1)
         click.secho("Postgres now available.", fg="green")
-
 
 def _docker_id_state(container_id):
     status = subprocess.check_output(
@@ -391,7 +392,7 @@ def _remove_postgres_connections(connection, sql_afterwards=""):
 
 def __rename_db_drop_target(conn, from_db, to_db):
     if to_db in ("postgres", "template1"):
-        raise Exception(f"Invalid: {to_db}")
+        raise Exception("Invalid: {}".format(to_db))
     _remove_postgres_connections(conn.clone(dbname=from_db))
     _remove_postgres_connections(conn.clone(dbname=to_db))
     _execute_sql(
@@ -544,9 +545,9 @@ def __rm_file_if_exists(path):
 def __rmtree(config, path):
     path = str(path)
     if not path or path == "/":
-        raise Exception(f"Not allowed: {path}")
+        raise Exception("Not allowed: {}".format(path))
     if not path.startswith("/"):
-        raise Exception(f"Not allowed: {path}")
+        raise Exception("Not allowed: {}".format(path))
     if config:
         if not any(
             path.startswith(config.dirs["odoo_home"] + x) for x in ["/tmp", "/run/"]
@@ -599,7 +600,7 @@ def __empty_dir(dir, user_out=False):
                 if user_out:
                     click.secho(f"Removing {x.absolute()}")
                 x.unlink()
-    except Exception:
+    except:
         click.secho(f"Could not delete: {dir}", fg="red")
         raise
 
@@ -680,7 +681,7 @@ def __splitcomma(param):
         return [x.strip() for x in param.split(",") if x.strip()]
     elif isinstance(param, (tuple, list)):
         return list(param)
-    raise NotImplementedError("not impl")
+    raise Exception("not impl")
 
 
 def __make_file_executable(filepath):
@@ -714,7 +715,7 @@ def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
         try:
             try:
                 subprocess.check_output(["chown", str(UID), line])
-            except Exception:
+            except:
                 try:
                     subprocess.check_output(["sudo", "chown", str(UID), line])
                 except Exception as ex:
@@ -723,7 +724,7 @@ def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
 
             try:
                 subprocess.check_output(["chgrp", str(primary_group), line])
-            except Exception:
+            except:
                 try:
                     subprocess.check_output(["sudo", "chgrp", str(primary_group), line])
                 except:
@@ -1244,8 +1245,6 @@ def get_filesystem_of_folder(path):
     lines = (
         subprocess.check_output([df, "-T", path], encoding="utf8").strip().splitlines()
     )
-    if not lines:
-        return None
     fstype = list(filter(bool, lines[1].replace("\t", " ").split(" ")))[1]
     return fstype
 
