@@ -152,7 +152,50 @@ def progress(config):
         "select state, count(*) from ir_module_module group by state;",
         fetchall=True,
     ):
-        click.echo("{}: {}".format(row[0], row[1]))
+@talk.command()
+@click.argument("name", required=False, default="%")
+@pass_config
+def menus(config, name):
+    conn = config.get_odoo_conn()
+
+    def get_parents(parent_id):
+        rows = _execute_sql(
+            conn,
+            sql=(
+                "SELECT id, name, parent_id FROM ir_ui_menu "
+                f"WHERE id = {parent_id}"
+            ),
+            fetchall=True,
+            return_columns=False,
+        )
+        for row in rows:
+            yield row
+            if row[2]:
+                yield from get_parents(row[2])
+
+    rows = _execute_sql(
+        conn,
+        sql=(
+            f"SELECT id, name, parent_id FROM ir_ui_menu WHERE name ILIKE '%{name}%' ORDER BY name"
+        ),
+        fetchall=True,
+        return_columns=True,
+    )
+    tablerows = []
+    for row in rows[1]:
+        xml_id = _get_xml_id(conn, "ir.ui.menu", row[0])
+        row = list(row)
+        row.insert(0, xml_id)
+        path = ' / '.join(map(lambda x: x[1], reversed(list(get_parents(row[1])))))
+        row.insert(0, path)
+        row = row[:2]
+        tablerows.append(row)
+    tablerows = sorted(tablerows, key=lambda x: x[0])
+    cols = list(rows[0])
+    cols.insert(0, 'xmlid')
+    cols.insert(0, 'path')
+    cols = cols[:2]
+    click.secho(tabulate(tablerows, cols, tablefmt="fancy_grid"), fg="yellow")
 
 
 Commands.register(progress)
