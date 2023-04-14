@@ -101,7 +101,9 @@ def _get_arch():
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
 @click.option("-I", "--no-update-images", is_flag=True)
 @click.option("-A", "--no-auto-repo", is_flag=True)
-@click.option("--docker-compose", help="additional docker-compose files, separated by colon :")
+@click.option(
+    "--docker-compose", help="additional docker-compose files, separated by colon :"
+)
 @pass_config
 @click.pass_context
 def do_reload(
@@ -593,7 +595,7 @@ def __get_sorted_contents(paths):
 
 
 def __set_environment_in_services(content):
-    for service in content.get("services", []):
+    for service in (content.get("services", []) or []):
         service = content["services"][service]
         service.setdefault("env_file", [])
         if isinstance(service["env_file"], str):
