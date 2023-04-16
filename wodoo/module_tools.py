@@ -1488,7 +1488,8 @@ class Module(object):
         res = {'loc': 0}
         for file in self.get_all_files_of_module():
             if file.suffix in ['.py', '.csv', '.xml']:
-                res['loc'] += file.read_text().splitlines()
+                file = self.path / file
+                res['loc'] += len(file.read_text().splitlines())
         return res
 
 def write_debug_instruction(instruction):

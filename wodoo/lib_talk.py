@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import subprocess
 import inquirer
 import sys
@@ -175,8 +176,10 @@ def modules_overview(config):
             "name": mod.name,
             "loc": complexity["loc"],
             "description": manifest.get("description", ""),
+            "author": manifest.get("author", ""),
         }
-    print([x for x in mods])
+        res.append(data)
+    print(json.dumps(res, indent=4))
 
 
 def _get_xml_id(conn, model, res_id):
