@@ -179,6 +179,7 @@ def modules_overview(config):
             "author": manifest.get("author", ""),
         }
         res.append(data)
+    print("===")
     print(json.dumps(res, indent=4))
 
 
