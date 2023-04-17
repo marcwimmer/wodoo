@@ -170,10 +170,14 @@ def modules_overview(config):
     res = []
     for mod in mods:
         mod = Module.get_by_name(mod)
+        manifest = mod.manifest_dict
         complexity = mod.calc_complexity()
         manifest = mod.manifest_dict
         data = {
             "name": mod.name,
+            "path": str(mod.path),
+            "license": manifest.get('license') or "",
+            "version": manifest.get('version'),
             "loc": complexity["loc"],
             "description": manifest.get("description", ""),
             "author": manifest.get("author", ""),
