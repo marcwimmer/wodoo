@@ -180,7 +180,7 @@ def modules_overview(config):
         for readme in ["README.md", "README.rst", "README.txt"]:
             readmefile = mod.path / readme
             if readmefile.exists():
-                combined_description.append(readmefile.read_text()))
+                combined_description.append(readmefile.read_text())
         description = '\n'.join(filter(bool, combined_description))
         data = {
             "name": mod.name,
