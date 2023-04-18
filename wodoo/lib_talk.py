@@ -173,14 +173,22 @@ def modules_overview(config):
         manifest = mod.manifest_dict
         complexity = mod.calc_complexity()
         manifest = mod.manifest_dict
+
+        description = manifest.get("description", "")
+        for readme in ["README.md", "README.rst", "README.txt"]:
+            readmefile = mod.path / readme
+            if readmefile.exists():
+                description = "\n".join(
+                    filter(bool, [description, readmefile.read_text()])
+                )
         data = {
             "name": mod.name,
             "path": str(mod.path),
-            "license": manifest.get('license') or "",
-            "version": manifest.get('version'),
-            "loc": complexity["loc"],
-            "description": manifest.get("description", ""),
+            "license": manifest.get("license") or "",
+            "version": manifest.get("version"),
+            "lines of code": complexity["loc"],
             "author": manifest.get("author", ""),
+            "description": description,
         }
         res.append(data)
     print("===")
