@@ -174,13 +174,14 @@ def modules_overview(config):
         complexity = mod.calc_complexity()
         manifest = mod.manifest_dict
 
-        description = manifest.get("description", "")
+        combined_description = []
+        for field in ['summary', 'description']:
+            combined_description.append(manifest.get(field, ""))
         for readme in ["README.md", "README.rst", "README.txt"]:
             readmefile = mod.path / readme
             if readmefile.exists():
-                description = "\n".join(
-                    filter(bool, [description, readmefile.read_text()])
-                )
+                combined_description.append(readmefile.read_text()))
+        description = '\n'.join(filter(bool, combined_description))
         data = {
             "name": mod.name,
             "path": str(mod.path),
