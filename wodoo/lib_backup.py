@@ -587,7 +587,7 @@ def _restore_dump(
         _remove_postgres_connections(conn.clone(dbname=dest_db))
 
     finally:
-        if config.run_postgres and config.run_docker:
+        if config.run_postgres and config.user_docker:
             # stop the run started postgres container; softly
             subprocess.check_output(["docker", "stop", postgres_name])
             try:
