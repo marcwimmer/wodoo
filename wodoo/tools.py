@@ -65,14 +65,22 @@ class DBConnection(object):
     def get_psyco_connection(self, db=None):
         import psycopg2
 
-        conn = psycopg2.connect(
-            dbname=db or self.dbname,
-            user=self.user,
-            password=self.pwd,
-            host=self.host,
-            port=self.port or None,
-            connect_timeout=int(os.getenv("PSYCOPG_TIMEOUT", "3")),
-        )
+        while True:
+            try:
+                conn = psycopg2.connect(
+                    dbname=db or self.dbname,
+                    user=self.user,
+                    password=self.pwd,
+                    host=self.host,
+                    port=self.port or None,
+                    connect_timeout=int(os.getenv("PSYCOPG_TIMEOUT", "3")),
+                )
+                break
+            except psycopg2.OperationalError as ex:
+                if "database system is starting up" in str(ex):
+                    time.sleep(2)
+                else:
+                    raise
         return conn
 
     @contextmanager

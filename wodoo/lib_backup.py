@@ -517,6 +517,7 @@ def _restore_dump(
             # if postgres docker is used, then make a temporary config to restart docker container
             # with external directory mapped; after that remove config
             if config.run_postgres:
+                __dc(config, ["kill", "postgres"])
                 postgres_name = f"postgres_{uuid.uuid4()}"
                 __dc(
                     config,
