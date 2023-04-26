@@ -37,7 +37,7 @@ def src(config):
 @click.pass_context
 @pass_config
 def ensure_odoosh_repo(config, ctx):
-    _ensure_odoosh_repo()
+    _ensure_odoosh_repo(ctx)
 
 
 def _ensure_odoosh_repo(ctx):
@@ -98,7 +98,7 @@ def _build_gimera(path):
 
 def _turn_into_odoosh(ctx, path):
 
-    _ensure_odoosh_repo()
+    _ensure_odoosh_repo(ctx)
     content_changed = _build_gimera(path)
 
     repos = yaml.safe_load((path / "gimera.yml").read_text())
