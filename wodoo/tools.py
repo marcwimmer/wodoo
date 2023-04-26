@@ -1427,6 +1427,8 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     from .odoo_config import MANIFEST
     from .odoo_config import current_version
     from .cli import cli, pass_config, Commands
+    from gimera.gimera import add as gimera_add
+    from gimera.gimera import apply as gimera_apply
 
     state = DBModules.get_meta_data(modulename)
     if state["state"] == "installed":
@@ -1434,27 +1436,14 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
 
     path = Path("addons_wodoo") / modulename
     if not path.exists():
-        subprocess.check_call(
-            [
-                "gimera",
-                "add",
-                "-u",
-                repo_url,
-                "--path",
-                path,
-                "--branch",
-                str(current_version()),
-                "--type",
-                "integrated",
-            ]
+        ctx.invoke(
+            gimera_add,
+            url=repo_url,
+            path=str(path),
+            branch=str(current_version()),
+            type="integrated",
         )
-        subprocess.check_call(
-            [
-                "gimera",
-                "apply",
-                path,
-            ]
-        )
+        ctx.invoke(gimera_apply, repos=str(path))
 
     # if not yet there, then pack into "addons_framework"
     manifest = MANIFEST()

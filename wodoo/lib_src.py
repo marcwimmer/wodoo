@@ -40,7 +40,8 @@ def ensure_odoosh_repo(config, ctx):
     _ensure_odoosh_repo()
 
 
-def _ensure_odoosh_repo():
+def _ensure_odoosh_repo(ctx):
+    from gimera.gimera import apply as gimera_apply
     odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
     if not odoosh_path.exists():
         subprocess.check_call(
@@ -51,13 +52,8 @@ def _ensure_odoosh_repo():
                 odoosh_path,
             ]
         )
-        subprocess.check_call(
-            [
-                "gimera",
-                "apply",
-            ],
-            cwd=odoosh_path.absolute(),
-        )
+        with cwd(odoosh_path.absolute()):
+            ctx.invoke(gimera_apply)
     return odoosh_path
 
 
