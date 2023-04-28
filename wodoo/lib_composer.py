@@ -751,7 +751,7 @@ def dict_merge(dct, merge_dct):
 
 def _prepare_docker_compose_files(config, dest_file, paths):
     from .myconfigparser import MyConfigParser
-    from .tools import abort
+    from .tools import abort, atomic_write
     import yaml
 
     if not dest_file:
@@ -776,7 +776,8 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     content = __run_docker_compose_config(config, contents, env)
     content = post_process_complete_yaml_config(config, content)
     content = _execute_after_compose(config, content)
-    dest_file.write_text(yaml.dump(content, default_flow_style=False))
+    with atomic_write(dest_file) as file:
+        file.write_text(yaml.dump(content, default_flow_style=False))
 
 
 def _fix_contents(contents):

@@ -1,4 +1,5 @@
 import platform
+import uuid
 from subprocess import PIPE, STDOUT
 import hashlib
 import requests
@@ -1514,3 +1515,11 @@ def cwd(path):
         yield
     finally:
         os.chdir(remember)
+
+@contextmanager
+def atomic_write(file):
+    tempfile = file.parent / f"{file.name}.{uuid.uuid4()}"
+    yield tempfile
+    if file.exists():
+        file.unlink()
+    tempfile.rename(file)
