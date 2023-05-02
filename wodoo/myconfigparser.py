@@ -2,6 +2,7 @@
 import uuid
 import sys
 from pathlib import Path
+from .tools import atomic_write
 
 
 def _get_ignore_case_item(d, k):
@@ -101,15 +102,8 @@ class MyConfigParser:
                 if key not in handled_keys:
                     yield format_line(key, self.configOptions[key])
 
-        try:
-            tempfile = self.fileName.parent / f"{self.fileName.name}.{uuid.uuid4()}"
-            tempfile.write_text("\n".join(_update_lines()) + "\n")
-            if self.fileName.exists():
-                self.fileName.unlink()
-            tempfile.rename(self.fileName)
-        finally:
-            if tempfile.exists():
-                tempfile.unlink()
+        with atomic_write(self.fileName) as file:
+            file.write_text("\n".join(_update_lines()) + "\n")
 
     def __getitem__(self, key):
         try:
