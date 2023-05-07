@@ -1419,7 +1419,8 @@ class Module(object):
                     is_web = True
                     if local_path.suffix == ".xml":
                         if "qweb" in mod:
-                            mod["qweb"].append(str(local_path))
+                            if str(local_path) not in mod["qweb"]:
+                                mod["qweb"].append(str(local_path))
                 else:
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == ".js":
@@ -1485,12 +1486,13 @@ class Module(object):
         """
         Calculates the complexity of the module
         """
-        res = {'loc': 0}
+        res = {"loc": 0}
         for file in self.get_all_files_of_module():
-            if file.suffix in ['.py', '.csv', '.xml']:
+            if file.suffix in [".py", ".csv", ".xml"]:
                 file = self.path / file
-                res['loc'] += len(file.read_text().splitlines())
+                res["loc"] += len(file.read_text().splitlines())
         return res
+
 
 def write_debug_instruction(instruction):
     (customs_dir() / ".debug").write_text(instruction)
