@@ -262,7 +262,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
                 odoo_version = str(MANIFEST()["version"]).split(".")
                 assert (
                     len(odoo_version) == 2
-                ), f"Version in manifest should be like 16.0 not '{odoo_version}' as it is in {dep.name}"
+                ), f"Version in manifest should be like 16.0 not '{odoo_version}' as it is in {MANIFEST().path}"
                 new_version = tuple(list(map(int, odoo_version)) + list(new_version))
                 del odoo_version
 
