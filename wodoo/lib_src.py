@@ -42,6 +42,7 @@ def ensure_odoosh_repo(config, ctx):
 
 def _ensure_odoosh_repo(ctx):
     from gimera.gimera import apply as gimera_apply
+
     odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
     if not odoosh_path.exists():
         subprocess.check_call(
@@ -97,7 +98,6 @@ def _build_gimera(path):
 
 
 def _turn_into_odoosh(ctx, path):
-
     _ensure_odoosh_repo(ctx)
     content_changed = _build_gimera(path)
 
@@ -116,6 +116,7 @@ def _find_duplicate_modules():
 
 def _apply_gimera_if_required(ctx, path, content, force_do=False):
     from gimera.gimera import apply as gimera
+
     def needs_apply():
         for repo in content["repos"]:
             repo_path = path / repo["path"]
@@ -126,7 +127,9 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
     if force_do or needs_apply():
         with cwd(path):
             ctx.invoke(gimera, recursive=True)
-            click.secho("Restarting reloading because gimera apply was done", fg="yellow")
+            click.secho(
+                "Restarting reloading because gimera apply was done", fg="yellow"
+            )
             Commands.invoke(ctx, "reload", no_auto_repo=True)
 
             from .module_tools import Modules
@@ -134,13 +137,14 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
             modules = Modules()
             all_modules = modules.get_all_modules_installed_by_manifest()
 
+
 @src.command()
 @click.pass_context
 def apply_gimera_if_required(ctx):
     path = customs_dir()
     gimera_file = path / "gimera.yml"
     if not gimera_file.exists():
-        if MANIFEST().get('auto_repo', False):
+        if MANIFEST().get("auto_repo", False):
             _build_gimera(path)
         else:
             return
@@ -507,3 +511,23 @@ def pretty_print_manifest():
     from .odoo_config import MANIFEST
 
     MANIFEST().rewrite()
+
+
+@src.command()
+@pass_config
+@click.argument("module")
+def security(config, module, model):
+    from .module_tools import Modules, Module
+
+    modules = Modules()
+    module = modules.get_by_name(module)
+
+    def ensure_secfile():
+        header = "model_id:id,group_id:id,id,name,perm_read,perm_write,perm_create,perm_unlink"
+        filepath = module.path / "security" / "ir.model.access.csv"
+        filepath.parent.mkdir(exist_ok=True)
+        if not filepath.read_text():
+            filepath.write_text(header + "\n")
+
+    # give rights to choose
+    # TODO ...
