@@ -1403,9 +1403,9 @@ class Module(object):
 
         mod[DATA_NAME] = []
         mod["demo"] = []
+        mod["qweb"] = []
         if current_version() <= 14.0:
             mod["css"] = []
-            mod["qweb"] = []
         is_web = False
 
         for local_path in all_files:
@@ -1420,7 +1420,10 @@ class Module(object):
                     if local_path.suffix == ".xml":
                         if "qweb" in mod:
                             if str(local_path) not in mod["qweb"]:
-                                mod["qweb"].append(str(local_path))
+                                if current_version() <= 14.0:
+                                    mod["qweb"].append(str(local_path))
+                                else:
+                                    mod['qweb'].append(self.name + "/" + str(local_path))
                 else:
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == ".js":
@@ -1439,6 +1442,15 @@ class Module(object):
             mod["css"].sort()
         if "depends" in mod:
             mod["depends"].sort()
+
+        if current_version() > 14.0:
+            if "qweb" in mod:
+                mod.setdefault("assets", {})
+                mod["assets"].setdefault("web.assets_qweb", [])
+                mod["assets"]["web.assets_qweb"] += mod.pop("qweb")
+                mod["assets"]["web.assets_qweb"] = list(
+                    sorted(set(mod["assets"]["web.assets_qweb"]))
+                )
 
         # now sort again by inspecting file content - if __openerp__.sequence NUMBER is found, then
         # set this index; reason: some times there are wizards that reference forms and vice versa
