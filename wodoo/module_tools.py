@@ -672,7 +672,6 @@ class Modules(object):
             module = Module(m)
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
-        sys.exit(0)
 
         if not no_deptree:
             for module in sorted(set(modules.values())):
@@ -808,6 +807,7 @@ class Modules(object):
 
     @classmethod
     def get_module_flat_dependency_tree(self, module):
+        print(module)
         deps = self._get_module_dependency_tree(module)
         return sorted(list(deps))
 

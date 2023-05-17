@@ -190,3 +190,10 @@ Best executed with:
 ```bash
 time sudo -E pytest
 ```
+
+# Performance Check
+
+```python
+pipx runpip wodoo install line_profiler
+~/.local/pipx/venvs/wodoo/bin/python3 -mkernprof -l -v odoo reload
+```
