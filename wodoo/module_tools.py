@@ -807,7 +807,6 @@ class Modules(object):
 
     @classmethod
     def get_module_flat_dependency_tree(self, module):
-        print(module)
         deps = self._get_module_dependency_tree(module)
         return sorted(list(deps))
 
