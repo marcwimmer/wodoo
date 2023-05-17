@@ -642,7 +642,7 @@ class Modules(object):
         return Modules_Cache["modules"]
 
     @classmethod
-    @measure_time
+    # @profile
     def _get_modules(self, no_deptree=False):
         modnames = set()
         from .odoo_config import get_odoo_addons_paths
@@ -668,7 +668,7 @@ class Modules(object):
 
         modules = {}
         all_manifests = get_all_manifests()
-        for m in all_manifests:
+        for m in list(all_manifests):
             module = Module(m)
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
@@ -704,6 +704,7 @@ class Modules(object):
             else:
                 modules.append(module.name)
 
+    # @profile
     def get_customs_modules(self, mode=None):
         """
         Called by odoo update
@@ -821,7 +822,7 @@ class Modules(object):
                 auto_install_modules.append(module)
         return list(sorted(set(auto_install_modules)))
 
-    @measure_time
+    # @profile
     def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
         def _transform_modulelist(module_list):
             for mod in module_list:
@@ -865,6 +866,7 @@ class Modules(object):
                 break
         return list(sorted(set(modules)))
 
+    # @profile
     def get_all_used_modules(self):
         """
         Returns all modules that are directly or indirectly
@@ -899,7 +901,7 @@ class Modules(object):
                     content = json.loads(file.read_text())
                 except Exception as e:
                     click.secho(
-                        "Error parsing json in\n{}:\n{}".format(file, e), fg="red"
+                        "Error parsing json in\n{file}:\n{e}", fg="red"
                     )
                     click.secho(file.read_text(), fg="red")
                     sys.exit(1)
