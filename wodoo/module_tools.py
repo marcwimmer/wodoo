@@ -653,7 +653,13 @@ class Modules(object):
             Returns a list of full paths of all manifests
             """
             for path in reversed(get_odoo_addons_paths()):
-                for file in sorted(path.glob("*/" + manifest_file_names())):
+                mans = subprocess.check_output(
+                    ["find", ".", "-maxdepth", "2", "-name", manifest_file_names()],
+                    cwd=path,
+                    encoding="utf8",
+                ).splitlines()
+                for file in sorted(mans):
+                    file = path / file
                     modname = file.parent.name
                     if modname in modnames:
                         continue
@@ -1423,7 +1429,9 @@ class Module(object):
                                 if current_version() <= 14.0:
                                     mod["qweb"].append(str(local_path))
                                 else:
-                                    mod['qweb'].append(self.name + "/" + str(local_path))
+                                    mod["qweb"].append(
+                                        self.name + "/" + str(local_path)
+                                    )
                 else:
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == ".js":
