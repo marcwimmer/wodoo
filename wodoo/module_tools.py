@@ -672,6 +672,7 @@ class Modules(object):
             module = Module(m)
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
+        sys.exit(0)
 
         if not no_deptree:
             for module in sorted(set(modules.values())):
@@ -1043,7 +1044,7 @@ class Module(object):
         self._manifest_path = None
         self._dep_tree = None
         if path:
-            self.__init_path(path)
+            self.__init_path(path, manifest_file_names())
             self.path = self._manifest_path.parent
         else:
             self.path = None
@@ -1057,31 +1058,32 @@ class Module(object):
     def exists(self):
         return bool(self.path)
 
-    def __init_path(self, path):
+    def __init_path(self, path, manifest_filename):
         path = Path(path)
+        _customs_dir = customs_dir()
 
         remember_cwd = os.getcwd()
         try:
-            cwd = Path(os.getcwd())
+            cwd = Path(remember_cwd)
             if str(path).startswith("/"):
                 try:
-                    path = path.relative_to(customs_dir())
-                    os.chdir(customs_dir())
-                except:
+                    path = path.relative_to(_customs_dir)
+                    os.chdir(_customs_dir)
+                except Exception:
                     try:
                         path = path.relative_to(cwd)
                     except ValueError:
-                        path = path.relative_to(customs_dir())
+                        path = path.relative_to(_customs_dir)
                         os.chdir(
-                            customs_dir()
+                            _customs_dir
                         )  # reset later; required that parents works
             p = path if path.is_dir() else path.parent
 
             for p in [p] + list(p.parents):
-                if (p / manifest_file_names()).exists():
+                if (p / manifest_filename).exists():
                     if ".git" in p.parts:
                         continue
-                    self._manifest_path = p / manifest_file_names()
+                    self._manifest_path = p / manifest_filename
                     break
             if not getattr(self, "_manifest_path", ""):
                 raise Module.IsNot((f"no module found for {path}"))
