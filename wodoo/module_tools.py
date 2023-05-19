@@ -642,7 +642,7 @@ class Modules(object):
         return Modules_Cache["modules"]
 
     @classmethod
-    @measure_time
+    # @profile
     def _get_modules(self, no_deptree=False):
         modnames = set()
         from .odoo_config import get_odoo_addons_paths
@@ -653,7 +653,13 @@ class Modules(object):
             Returns a list of full paths of all manifests
             """
             for path in reversed(get_odoo_addons_paths()):
-                for file in sorted(path.glob("*/" + manifest_file_names())):
+                mans = subprocess.check_output(
+                    ["find", ".", "-maxdepth", "2", "-name", manifest_file_names()],
+                    cwd=path,
+                    encoding="utf8",
+                ).splitlines()
+                for file in sorted(mans):
+                    file = path / file
                     modname = file.parent.name
                     if modname in modnames:
                         continue
@@ -662,7 +668,7 @@ class Modules(object):
 
         modules = {}
         all_manifests = get_all_manifests()
-        for m in all_manifests:
+        for m in list(all_manifests):
             module = Module(m)
             module.manifest_dict.get("just read manifest")
             modules[m.parent.name] = module
@@ -698,6 +704,7 @@ class Modules(object):
             else:
                 modules.append(module.name)
 
+    # @profile
     def get_customs_modules(self, mode=None):
         """
         Called by odoo update
@@ -815,7 +822,7 @@ class Modules(object):
                 auto_install_modules.append(module)
         return list(sorted(set(auto_install_modules)))
 
-    @measure_time
+    # @profile
     def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
         def _transform_modulelist(module_list):
             for mod in module_list:
@@ -859,6 +866,7 @@ class Modules(object):
                 break
         return list(sorted(set(modules)))
 
+    # @profile
     def get_all_used_modules(self):
         """
         Returns all modules that are directly or indirectly
@@ -893,7 +901,7 @@ class Modules(object):
                     content = json.loads(file.read_text())
                 except Exception as e:
                     click.secho(
-                        "Error parsing json in\n{}:\n{}".format(file, e), fg="red"
+                        "Error parsing json in\n{file}:\n{e}", fg="red"
                     )
                     click.secho(file.read_text(), fg="red")
                     sys.exit(1)
@@ -1037,7 +1045,7 @@ class Module(object):
         self._manifest_path = None
         self._dep_tree = None
         if path:
-            self.__init_path(path)
+            self.__init_path(path, manifest_file_names())
             self.path = self._manifest_path.parent
         else:
             self.path = None
@@ -1051,31 +1059,32 @@ class Module(object):
     def exists(self):
         return bool(self.path)
 
-    def __init_path(self, path):
+    def __init_path(self, path, manifest_filename):
         path = Path(path)
+        _customs_dir = customs_dir()
 
         remember_cwd = os.getcwd()
         try:
-            cwd = Path(os.getcwd())
+            cwd = Path(remember_cwd)
             if str(path).startswith("/"):
                 try:
-                    path = path.relative_to(customs_dir())
-                    os.chdir(customs_dir())
-                except:
+                    path = path.relative_to(_customs_dir)
+                    os.chdir(_customs_dir)
+                except Exception:
                     try:
                         path = path.relative_to(cwd)
                     except ValueError:
-                        path = path.relative_to(customs_dir())
+                        path = path.relative_to(_customs_dir)
                         os.chdir(
-                            customs_dir()
+                            _customs_dir
                         )  # reset later; required that parents works
             p = path if path.is_dir() else path.parent
 
             for p in [p] + list(p.parents):
-                if (p / manifest_file_names()).exists():
+                if (p / manifest_filename).exists():
                     if ".git" in p.parts:
                         continue
-                    self._manifest_path = p / manifest_file_names()
+                    self._manifest_path = p / manifest_filename
                     break
             if not getattr(self, "_manifest_path", ""):
                 raise Module.IsNot((f"no module found for {path}"))
@@ -1403,9 +1412,9 @@ class Module(object):
 
         mod[DATA_NAME] = []
         mod["demo"] = []
+        mod["qweb"] = []
         if current_version() <= 14.0:
             mod["css"] = []
-            mod["qweb"] = []
         is_web = False
 
         for local_path in all_files:
@@ -1420,7 +1429,12 @@ class Module(object):
                     if local_path.suffix == ".xml":
                         if "qweb" in mod:
                             if str(local_path) not in mod["qweb"]:
-                                mod["qweb"].append(str(local_path))
+                                if current_version() <= 14.0:
+                                    mod["qweb"].append(str(local_path))
+                                else:
+                                    mod["qweb"].append(
+                                        self.name + "/" + str(local_path)
+                                    )
                 else:
                     mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == ".js":
@@ -1439,6 +1453,15 @@ class Module(object):
             mod["css"].sort()
         if "depends" in mod:
             mod["depends"].sort()
+
+        if current_version() > 14.0:
+            if "qweb" in mod:
+                mod.setdefault("assets", {})
+                mod["assets"].setdefault("web.assets_qweb", [])
+                mod["assets"]["web.assets_qweb"] += mod.pop("qweb")
+                mod["assets"]["web.assets_qweb"] = list(
+                    sorted(set(mod["assets"]["web.assets_qweb"]))
+                )
 
         # now sort again by inspecting file content - if __openerp__.sequence NUMBER is found, then
         # set this index; reason: some times there are wizards that reference forms and vice versa

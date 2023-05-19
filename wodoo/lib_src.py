@@ -472,12 +472,13 @@ def _identify_duplicate_modules(check):
 
 @src.command
 @click.option("-f", "--fix-not-in-manifest", is_flag=True)
+@click.option("--only-customs", is_flag=True)
 @pass_config
-def show_installed_modules(config, fix_not_in_manifest):
+def show_installed_modules(config, fix_not_in_manifest, only_customs):
     from .module_tools import DBModules, Module
+    from .module_tools import NotInAddonsPath
     from .odoo_config import customs_dir
 
-    path = customs_dir()
     collected = []
     not_in_manifest = []
     manifest = MANIFEST()
@@ -486,6 +487,18 @@ def show_installed_modules(config, fix_not_in_manifest):
     for module in sorted(DBModules.get_all_installed_modules()):
         try:
             mod = Module.get_by_name(module)
+        except (Module.IsNot, NotInAddonsPath):
+            click.secho(f"Ignoring {module} - not found in source", fg="yellow")
+            continue
+        if only_customs:
+            try:
+                parts = mod.path.parts
+            except Module.IsNot:
+                click.secho(f"Ignoring {module} - not found in source", fg="yellow")
+                continue
+            if any(x in parts for x in ['odoo', 'enterprise', 'themes']):
+                continue
+        try:
             click.secho(f"{module}: {mod.path}", fg="green")
             if not [x for x in setinstall if x == module]:
                 not_in_manifest.append(module)

@@ -137,7 +137,7 @@ class MANIFEST_CLASS(object):
         tfile.write_text(s)
         shutil.move(tfile, MANIFEST_FILE())
 
-        if len(set(d['addons_paths'])) != len(d['addons_paths']):
+        if len(set(d["addons_paths"])) != len(d["addons_paths"]):
             abort("Addons Paths contains duplicate entries!")
 
     def rewrite(self):
@@ -148,8 +148,13 @@ def MANIFEST():
     return MANIFEST_CLASS()
 
 
+cache_version = {}
+
+
 def current_version():
-    return float(MANIFEST()["version"])
+    if cache_version.get("value") is None:
+        cache_version["value"] = float(MANIFEST()["version"])
+    return cache_version["value"]
 
 
 def get_postgres_connection_params(inside_container=None):

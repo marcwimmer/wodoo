@@ -1,4 +1,5 @@
 import traceback
+from .tools import bash_find
 import arrow
 import threading
 from tabulate import tabulate
@@ -513,7 +514,8 @@ def _prepare_yml_files_from_template_files(
         if dir.is_file():
             _files += [dir]
         else:
-            [_files.append(x) for x in dir.glob("**/docker-compose*.yml")]
+            for file in bash_find(dir, "docker-compose*.yml"):
+                _files.append(file)
 
     if config.restrict and config.restrict.get("docker-compose"):
         _files += config.restrict["docker-compose"]

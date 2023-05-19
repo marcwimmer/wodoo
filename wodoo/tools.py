@@ -1,4 +1,3 @@
-import platform
 import uuid
 from subprocess import PIPE, STDOUT
 import hashlib
@@ -7,6 +6,8 @@ import stat
 from contextlib import contextmanager
 import re
 import inquirer
+import cProfile
+import functools
 
 try:
     import arrow
@@ -1517,6 +1518,7 @@ def cwd(path):
     finally:
         os.chdir(remember)
 
+
 @contextmanager
 def atomic_write(file):
     tempfile = file.parent / f"{file.name}.{uuid.uuid4()}"
@@ -1524,3 +1526,20 @@ def atomic_write(file):
     if file.exists():
         file.unlink()
     tempfile.rename(file)
+
+
+def bash_find(path, name=None, wholename=None, type=None):
+    cmd = [
+        "find",
+    ]
+    if type:
+        cmd += [
+            "-type",
+            type,
+        ]
+    if wholename:
+        cmd += ["-wholename", wholename]
+    if name:
+        cmd += ["-name", name]
+    files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
+    return list(map(lambda x: Path(path) / x, files))
