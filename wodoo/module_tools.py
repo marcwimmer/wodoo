@@ -1108,9 +1108,9 @@ class Module(object):
                 )
                 self._manifest_dict = eval(content)  # TODO safe
 
-            except (SyntaxError, Exception):
-                click.secho((f"error at file: {self.manifest_path}"), fg="red")
-                raise
+            except (SyntaxError, Exception) as e:
+                click.secho((f"error at file: {self.manifest_path}:\n{str(e)}"), fg="red")
+                sys.exit(-1)
         return self._manifest_dict
 
     def __make_path_relative(self, path):
