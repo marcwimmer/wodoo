@@ -1496,6 +1496,23 @@ def list_modules(ctx, config):
     for m in modules:
         print(m)
 
+@odoo_module.command()
+@pass_config
+@click.pass_context
+def list_outdated_modules(ctx, config):
+    modules = _get_default_modules_to_update()
+    def _get_outdated_modules(module):
+        return list(
+            map(
+                lambda x: x.name,
+                set(_get_outdated_versioned_modules_of_deptree(module)),
+            )
+        )
+    print("---")
+    for mod2 in _get_outdated_modules(modules):
+        print(mod2)
+
+
 
 def _get_modules_since_git_sha(sha):
     from .odoo_config import MANIFEST
@@ -1531,6 +1548,8 @@ def _get_changed_modules(git_sha):
         else:
             modules.append(module.name)
     return list(sorted(set(modules)))
+
+
 
 
 Commands.register(update)
