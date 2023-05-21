@@ -470,54 +470,6 @@ def _identify_duplicate_modules(check):
                     )
 
 
-@src.command
-@click.option("-f", "--fix-not-in-manifest", is_flag=True)
-@click.option("--only-customs", is_flag=True)
-@pass_config
-def show_installed_modules(config, fix_not_in_manifest, only_customs):
-    from .module_tools import DBModules, Module
-    from .module_tools import NotInAddonsPath
-    from .odoo_config import customs_dir
-
-    collected = []
-    not_in_manifest = []
-    manifest = MANIFEST()
-    setinstall = manifest.get("install", [])
-
-    for module in sorted(DBModules.get_all_installed_modules()):
-        try:
-            mod = Module.get_by_name(module)
-        except (Module.IsNot, NotInAddonsPath):
-            click.secho(f"Ignoring {module} - not found in source", fg="yellow")
-            continue
-        if only_customs:
-            try:
-                parts = mod.path.parts
-            except Module.IsNot:
-                click.secho(f"Ignoring {module} - not found in source", fg="yellow")
-                continue
-            if any(x in parts for x in ['odoo', 'enterprise', 'themes']):
-                continue
-        try:
-            click.secho(f"{module}: {mod.path}", fg="green")
-            if not [x for x in setinstall if x == module]:
-                not_in_manifest.append(module)
-        except KeyError:
-            collected.append(module)
-
-    for module in not_in_manifest:
-        if fix_not_in_manifest:
-            setinstall += [module]
-            click.secho(f"Added to manifest: {module}", fg="green")
-        else:
-            click.secho(f"Not in MANIFEST: {module}", fg="yellow")
-    for module in collected:
-        click.secho(f"Not in filesystem: {module}", fg="red")
-
-    if fix_not_in_manifest:
-        manifest["install"] = setinstall
-        manifest.rewrite()
-
 
 @src.command(name="pretty-print-manifest")
 def pretty_print_manifest():
