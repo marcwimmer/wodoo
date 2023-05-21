@@ -888,37 +888,33 @@ class Modules(object):
         return list(result)
 
     def get_all_external_dependencies(self, modules):
-        pydeps = []
-        deb_deps = []
+        global_data = {'pip': []}
         for module_name in modules:
             module = Module.get_by_name(module_name)
             if module.path is None:
                 raise Exception(f"Module has no path: {module_name}")
             file = module.path / "external_dependencies.txt"
             new_deps = []
+
+            def extract_deps(data):
+                global_data['pip'].extend(data.get("pip", data.get('python', [])))
+                for k, v in data.items():
+                    if k not in ["pip", "python"]:
+                        global_data.setdefault(k, []).extend(v)
+
             if file.exists():
                 try:
                     content = json.loads(file.read_text())
                 except Exception as e:
-                    click.secho(
-                        "Error parsing json in\n{file}:\n{e}", fg="red"
-                    )
+                    click.secho("Error parsing json in\n{file}:\n{e}", fg="red")
                     click.secho(file.read_text(), fg="red")
                     sys.exit(1)
-                new_deps = content.get("pip", [])
-                pydeps += new_deps
-                deb_deps += content.get("deb", [])
+                extract_deps(content)
             else:
-                new_deps = module.manifest_dict.get("external_dependencies", {}).get(
-                    "python", []
-                )
-                pydeps += new_deps
+                extract_deps(module.manifest_dict.get("external_dependencies", {}))
 
-            # if new_deps:
-            #    click.secho(f"Adding python dependencies {','.join(new_deps)} from {module.name}", fg='yellow')
-
-        pydeps = self.resolve_pydeps(pydeps)
-        return {"pip": pydeps, "deb": deb_deps}
+        global_data['pip'] = self.resolve_pydeps(set(global_data['pip']))
+        return global_data
 
     def resolve_pydeps(self, pydeps):
         pydeps = list(set(pydeps))
@@ -1109,7 +1105,9 @@ class Module(object):
                 self._manifest_dict = eval(content)  # TODO safe
 
             except (SyntaxError, Exception) as e:
-                click.secho((f"error at file: {self.manifest_path}:\n{str(e)}"), fg="red")
+                click.secho(
+                    (f"error at file: {self.manifest_path}:\n{str(e)}"), fg="red"
+                )
                 sys.exit(-1)
         return self._manifest_dict
 
