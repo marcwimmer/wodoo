@@ -1427,7 +1427,7 @@ class Module(object):
                     if local_path.suffix == ".xml":
                         if "qweb" in mod:
                             if str(local_path) not in mod["qweb"]:
-                                if current_version() < 14.0:
+                                if current_version() <= 14.0:
                                     mod["qweb"].append(str(local_path))
                                 else:
                                     mod["qweb"].append(
