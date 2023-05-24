@@ -9,7 +9,6 @@ import json
 import base64
 import subprocess
 import inquirer
-from git import Repo
 import traceback
 from datetime import datetime
 import shutil
@@ -19,6 +18,7 @@ import click
 
 from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
 from .tools import is_git_clean
+from gimera.repo import Repo
 from .tools import get_hash
 from .tools import get_directory_hash
 from .tools import sync_folder
@@ -1283,29 +1283,43 @@ def _get_changed_files(git_sha):
     filepaths2 = []
     cwd = Path(os.getcwd())
     for filepath in filepaths:
+        filepath = repo.path / filepath
         os.chdir(cwd)
-        submodule = [x for x in repo.submodules if x.path == filepath]
+
+        def get_submodule(filepath):
+            for submodule in repo.get_submodules():
+                try:
+                    filepath.relative_to(submodule.path)
+                    return submodule
+                except ValueError:
+                    continue
+
+        submodule = get_submodule(filepath)
+
         if submodule:
-            current_commit = str(repo.active_branch.commit)
+            current_commit = str(repo.hex)
+            relpath = filepath.relative_to(repo.path)
             old_commit = (
-                subprocess.check_output(["git", "rev-parse", f"{git_sha}:./{filepath}"])
-                .decode("utf-8")
+                subprocess.check_output(
+                    [
+                        "git",
+                        "rev-parse",
+                        f"{git_sha}:./{relpath}",
+                    ], encoding='utf8'
+                )
                 .strip()
             )
             new_commit = (
                 subprocess.check_output(
-                    ["git", "rev-parse", f"{current_commit}:./{filepath}"]
+                    ["git", "rev-parse", f"{current_commit}:./{relpath}"], encoding='utf8',
                 )
-                .decode("utf-8")
                 .strip()
             )
             # now diff the submodule
-            submodule_path = cwd / filepath
-            submodule_relative_path = filepath
-            for filepath2 in git_diff_files(submodule_path, old_commit, new_commit):
-                filepaths2.append(submodule_relative_path + "/" + filepath2)
+            for filepath2 in git_diff_files(filepath, old_commit, new_commit):
+                filepaths2.append(str(relpath / filepath2))
         else:
-            filepaths2.append(filepath)
+            filepaths2.append(str(filepath.relative_to(repo.path)))
 
     return filepaths2
 

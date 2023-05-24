@@ -9,6 +9,7 @@ import pickle
 import os
 import shutil
 import uuid
+from gimera.repo import Repo
 from .tools import get_hash, get_git_hash
 from .tools import __try_to_set_owner as try_to_set_owner
 from .tools import measure_time
@@ -335,7 +336,6 @@ def make_customs(ctx, path):
         abort("Path is not empty: {}".format(path))
 
     import inquirer
-    from git import Repo
     from .tools import copy_dir_contents
 
     dir = get_template_dir()
@@ -359,16 +359,16 @@ def make_customs(ctx, path):
 
     manifest_file = path / "MANIFEST"
     manifest = eval(manifest_file.read_text())
+    raise Exception("Rewrite to use gimera")
 
     click.echo("Checking for odoo repo at env variable 'ODOO_REPO'")
     if os.getenv("ODOO_REPO", ""):
         odoo_path = path / "odoo"
         repo_path = Path(os.environ["ODOO_REPO"])
         repo = Repo(repo_path)
-        repo.git.checkout(str(version))
+        repo.X("git", "checkout", str(version))
         odoo_path.mkdir()
-        sha = repo.head.object.hexsha
-        sha = repo.git.rev_parse(sha)
+        sha = repo.hex
         click.echo("Copying odoo with sha to local directory [{}]".format(sha))
         copy_dir_contents(repo_path, odoo_path, exclude=[".git"])
         manifest["odoo_commit"] = sha

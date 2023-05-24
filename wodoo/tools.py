@@ -996,42 +996,6 @@ def _get_host_ip():
         return conn[2]
 
 
-def _is_dirty(repo, check_submodule, assert_clean=False):
-    from git import Repo
-    from git import InvalidGitRepositoryError
-    from git import NoSuchPathError
-
-    def raise_error():
-        if assert_clean:
-            click.secho(
-                ("Dirty directory - please cleanup: {repo.working_dir}"),
-                bold=True,
-                fg="red",
-            )
-            sys.exit(42)
-
-    if repo.is_dirty() or repo.untracked_files:
-        raise_error()
-        return True
-    if check_submodule:
-        try:
-            repo.submodules
-        except AttributeError:
-            pass
-        else:
-            for submodule in repo.submodules:
-                try:
-                    sub_repo = Repo(submodule.path)
-                except InvalidGitRepositoryError:
-                    click.secho(f"Invalid Repo: {submodule}", bold=True, fg="red")
-                except NoSuchPathError:
-                    click.secho(f"Invalid Repo: {submodule}", bold=True, fg="red")
-                else:
-                    if _is_dirty(sub_repo, True, assert_clean=assert_clean):
-                        raise_error()
-                        return True
-    return False
-
 
 def __assure_gitignore(gitignore_file, content):
     p = Path(gitignore_file)
