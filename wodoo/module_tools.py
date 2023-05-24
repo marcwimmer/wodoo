@@ -1319,7 +1319,7 @@ class Module(object):
         for to_remove in doc.xpath("//template[1] | //template[xpath[not(*)]]"):
             to_remove.getparent().remove(to_remove)
 
-        if current_version() >= 14.0:
+        if current_version() > 14.0:
             manifest = self.path / "__manifest__.py"
             jsoncontent = eval(manifest.read_text())
             jsoncontent.setdefault("assets", {})
@@ -1411,7 +1411,7 @@ class Module(object):
         mod[DATA_NAME] = []
         mod["demo"] = []
         mod["qweb"] = []
-        if current_version() <= 14.0:
+        if current_version() < 14.0:
             mod["css"] = []
         is_web = False
 
@@ -1452,7 +1452,7 @@ class Module(object):
         if "depends" in mod:
             mod["depends"].sort()
 
-        if current_version() >= 14.0:
+        if current_version() > 14.0:
             if "qweb" in mod:
                 mod.setdefault("assets", {})
                 mod["assets"].setdefault("web.assets_qweb", [])
