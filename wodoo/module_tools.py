@@ -205,6 +205,7 @@ class DBModules(object):
 
     @classmethod
     def get_outdated_installed_modules(clazz, mods):
+        import pudb;pudb.set_trace()
         odoo_version = current_version()
         for mod in clazz.get_all_installed_modules():
             if mod not in mods.modules:

@@ -267,7 +267,13 @@ def _get_outdated_versioned_modules_of_deptree(modules):
                 del odoo_version
 
             if new_version > version:
-                yield dep
+                # seen: if version in manifest is 14.0.1.0 and installed in
+                # 13.0 odoo then version becomes inside odoo: 13.0.14.0.10
+                # so try to match including current version:
+                odoo_version = list(map(int, str(MANIFEST()['version']).split(".")))
+                new_version = tuple(odoo_version + list(new_version))
+                if new_version != version:
+                    yield dep
 
 
 def _get_available_modules(ctx, param, incomplete):
