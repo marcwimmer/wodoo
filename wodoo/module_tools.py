@@ -889,7 +889,7 @@ class Modules(object):
         return list(result)
 
     def get_all_external_dependencies(self, modules):
-        global_data = {'pip': []}
+        global_data = {"pip": []}
         for module_name in modules:
             module = Module.get_by_name(module_name)
             if module.path is None:
@@ -898,7 +898,7 @@ class Modules(object):
             new_deps = []
 
             def extract_deps(data):
-                global_data['pip'].extend(data.get("pip", data.get('python', [])))
+                global_data["pip"].extend(data.get("pip", data.get("python", [])))
                 for k, v in data.items():
                     if k not in ["pip", "python"]:
                         global_data.setdefault(k, []).extend(v)
@@ -914,7 +914,7 @@ class Modules(object):
             else:
                 extract_deps(module.manifest_dict.get("external_dependencies", {}))
 
-        global_data['pip'] = self.resolve_pydeps(set(global_data['pip']))
+        global_data["pip"] = self.resolve_pydeps(set(global_data["pip"]))
         return global_data
 
     def resolve_pydeps(self, pydeps):
@@ -1435,7 +1435,8 @@ class Module(object):
                                         self.name + "/" + str(local_path)
                                     )
                 else:
-                    mod[DATA_NAME].append(str(local_path))
+                    if local_path.name not in ["gimera.yml"]:
+                        mod[DATA_NAME].append(str(local_path))
             elif local_path.suffix == ".js":
                 pass
             elif local_path.suffix in [".css", ".less", ".scss"]:
@@ -1491,6 +1492,10 @@ class Module(object):
 
         sorted_by_index = sorted(sorted_by_index, key=lambda x: x[0])
         mod[DATA_NAME] = [x[1] for x in sorted_by_index]
+
+        # remove assets.xml for newer versions
+        if current_version() > 14.0:
+            mod[DATA_NAME] = list(filter(lambda x: not x.endswith("/assets.xml"), mod[DATA_NAME]))
 
         if is_web:
             mod["web"] = True
