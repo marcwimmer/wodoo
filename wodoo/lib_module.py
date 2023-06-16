@@ -327,13 +327,6 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
     "module", nargs=-1, required=False, shell_complete=_get_available_modules
 )
 @click.option(
-    "--since-git-sha",
-    "-i",
-    default=None,
-    is_flag=False,
-    help="Extracts modules changed since this git sha and updates them",
-)
-@click.option(
     "--installed-modules",
     "-i",
     default=False,
@@ -415,6 +408,13 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
     "--no-outdated-modules",
     is_flag=True,
     help="dont check for outdated modules (for migrations suitable)",
+)
+@click.option(
+    "--since-git-sha",
+    "-G",
+    default=None,
+    is_flag=False,
+    help="Extracts modules changed since this git sha and updates them",
 )
 @pass_config
 @click.pass_context
