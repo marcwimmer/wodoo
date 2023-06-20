@@ -595,7 +595,7 @@ def update(
                         except Exception as ex:
                             raise UpdateException(module) from ex
                         else:
-                            raise Exception("Error at update")
+                            raise Exception(f"Error at update - please check logs")
                     else:
                         raise UpdateException(module)
 
