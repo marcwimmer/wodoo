@@ -594,6 +594,8 @@ def update(
                             _technically_update(ex.affected_modules)
                         except Exception as ex:
                             raise UpdateException(module) from ex
+                        else:
+                            raise Exception("Error at update")
                     else:
                         raise UpdateException(module)
 
