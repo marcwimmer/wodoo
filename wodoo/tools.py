@@ -1486,10 +1486,19 @@ def cwd(path):
 @contextmanager
 def atomic_write(file):
     tempfile = file.parent / f"{file.name}.{uuid.uuid4()}"
-    yield tempfile
-    if file.exists():
-        file.unlink()
-    tempfile.rename(file)
+    try:
+        yield tempfile
+
+        if file.exists():
+            file.unlink()
+        tempfile.rename(file)
+
+    except Exception:
+        if tempfile.exists():
+            try:
+                tempfile.unlink()
+            except Exception:
+                pass
 
 
 def bash_find(path, name=None, wholename=None, type=None):
