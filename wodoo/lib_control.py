@@ -71,6 +71,28 @@ def do_kill(ctx, config, machines, brutal=False):
         lib_do_kill(ctx, config, machines, brutal=False)
 
 
+@click.command()
+@pass_config
+@click.pass_context
+def remove_volumes(ctx, config):
+    """
+    Experience: docker-compose down -v lets leftovers since june/2023
+    At restore everything must be cleaned up.
+    """
+    ensure_project_name(config)
+    if config.devmode:
+        if not config.force:
+            abort("Please provide force option on non live systems")
+    if not config.use_docker:
+        return
+    Commands.invoke(ctx, "down", volumes=True)
+    subprocess.check_call(["sync"])
+    volumes = _get_project_volumes(config)
+    for vol in volumes:
+        click.secho(f"Removing: {vol}")
+        subprocess.check_call(["docker", "volume", "rm", vol])
+
+
 @docker.command()
 @pass_config
 @click.pass_context
@@ -307,6 +329,17 @@ def shell(config, command, queuejobs):
 #     lib_shell(command, queuejobs)
 
 
+def _get_project_volumes(config):
+    ensure_project_name(config)
+    volumes = subprocess.check_output(
+        ["docker", "volume", "ls"], encoding="utf8"
+    ).splitlines()[1:]
+    volumes = [x.split(" ")[-1] for x in volumes]
+    volumes = [x for x in volumes if "_" in x]  # named volumes
+    volumes = [x for x in volumes if config.project_name + "_" in x]
+    return volumes
+
+
 @docker.command()
 @click.option("-f", "--filter")
 @pass_config
@@ -315,14 +348,7 @@ def show_volumes(config, filter):
     from tabulate import tabulate
     from .lib_control_with_docker import _get_volume_size
 
-    volumes = (
-        subprocess.check_output(["docker", "volume", "ls"])
-        .decode("utf-8")
-        .split("\n")[1:]
-    )
-    volumes = [x.split(" ")[-1] for x in volumes]
-    volumes = [[x] for x in volumes if "_" in x]  # named volumes
-    volumes = [x for x in volumes if config.project_name in x[0]]
+    volumes = _get_project_volumes(config)
     if filter:
         volumes = [x for x in volumes if filter in x]
     for volume in volumes:
@@ -457,3 +483,4 @@ Commands.register(restart)
 Commands.register(shell, "odoo-shell")
 Commands.register(down)
 Commands.register(stop)
+Commands.register(remove_volumes, "remove-volumes")

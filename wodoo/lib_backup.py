@@ -484,10 +484,7 @@ def _restore_dump(
             docker_kill_container(container_id, remove=True)
             del container_id
 
-        try:
-            Commands.invoke(ctx, "down", volumes=True)
-        except Exception:
-            pass
+        Commands.invoke(ctx, "remove-volumes")
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     conn = config.get_odoo_conn()
