@@ -85,7 +85,6 @@ def remove_volumes(ctx, config):
             abort("Please provide force option on non live systems")
     if not config.use_docker:
         return
-    Commands.invoke(ctx, "down", volumes=True)
     subprocess.check_call(["sync"])
     volumes = _get_project_volumes(config)
     for vol in volumes:
