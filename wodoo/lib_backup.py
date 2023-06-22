@@ -1,4 +1,6 @@
 from codecs import ignore_errors
+from .tools import try_ignore_exceptions
+import psycopg2
 import arrow
 import time
 import sys
@@ -491,20 +493,31 @@ def _restore_dump(
     dest_db = conn.dbname
 
     conn = conn.clone(dbname=DBNAME_RESTORING)
-    with config.forced() as config:
-        _dropdb(config, conn)
 
-    _execute_sql(
-        conn.clone(dbname="postgres"),
-        (
-            f"create database {DBNAME_RESTORING} "
-            # "ENCODING 'unicode' "
-            # "LC_COLLATE 'C' "
-            # "TEMPLATE template0 "
-            ";"
-        ),
-        notransaction=True,
+    def dropdb(config):
+        with config.forced() as config:
+            _dropdb(config, conn)
+        try_ignore_exceptions(
+            lambda: dropdb(config), (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
+        )
+
+    def create_db():
+        _execute_sql(
+            conn.clone(dbname="postgres"),
+            (
+                f"create database {DBNAME_RESTORING} "
+                # "ENCODING 'unicode' "
+                # "LC_COLLATE 'C' "
+                # "TEMPLATE template0 "
+                ";"
+            ),
+            notransaction=True,
+        )
+
+    try_ignore_exceptions(
+        create_db, (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
     )
+
     effective_host_name = config.DB_HOST
 
     if config.devmode and not no_dev_scripts:

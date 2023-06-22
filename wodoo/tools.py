@@ -1,4 +1,5 @@
 import uuid
+import time
 from subprocess import PIPE, STDOUT
 import hashlib
 import requests
@@ -306,19 +307,19 @@ def _wait_postgres(config, timeout=600):
                 raise Exception(f"Timeout waiting postgres reached: {timeout}seconds")
             try:
                 _execute_sql(
-                    conn,
-                    sql="""
-                SELECT table_schema,table_name
-                FROM information_schema.tables
-                ORDER BY table_schema,table_name
-                LIMIT 1;
-                """,
+                    conn.clone(dbname="postgres"),
+                    sql=(
+                        " SELECT table_schema,table_name "
+                        " FROM information_schema.tables "
+                        " ORDER BY table_schema,table_name "
+                        " LIMIT 1; "
+                    ),
                 )
                 break
 
             except Exception as ex:
                 seconds = (arrow.get() - started).total_seconds()
-                if seconds > 5:
+                if seconds > 10:
                     if str(ex) != str(last_ex):
                         click.secho(
                             f"Waiting again for postgres. Last error is: {str(ex)}"
@@ -996,7 +997,6 @@ def _get_host_ip():
         return conn[2]
 
 
-
 def __assure_gitignore(gitignore_file, content):
     p = Path(gitignore_file)
     if not p.exists():
@@ -1177,6 +1177,22 @@ def _binary_zip(folder, destpath):
     os.system((f"cd '{folder}' && tar c . | pv | pigz > '{destpath}'"))
     if not destpath.exists():
         raise Exception(f"file {destpath} not generated")
+
+
+def try_ignore_exceptions(execute, exceptions, timeout=10):
+    started = arrow.get()
+    while True:
+        try:
+            execute()
+        except exceptions:
+            if (arrow.get() - started).total_seconds() > timeout:
+                raise
+            else:
+                time.sleep(0.5)
+        except Exception:
+            raise
+        else:
+            break
 
 
 @contextmanager
