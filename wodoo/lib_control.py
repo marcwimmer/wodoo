@@ -71,16 +71,17 @@ def do_kill(ctx, config, machines, brutal=False):
         lib_do_kill(ctx, config, machines, brutal=False)
 
 
-@click.command()
+@docker.command()
+@click.option("-d", "--dry-run", is_flag=True)
 @pass_config
 @click.pass_context
-def remove_volumes(ctx, config):
+def remove_volumes(ctx, config, dry_run):
     """
     Experience: docker-compose down -v lets leftovers since june/2023
     At restore everything must be cleaned up.
     """
     ensure_project_name(config)
-    if config.devmode:
+    if not config.devmode:
         if not config.force:
             abort("Please provide force option on non live systems")
     if not config.use_docker:
@@ -88,8 +89,11 @@ def remove_volumes(ctx, config):
     subprocess.check_call(["sync"])
     volumes = _get_project_volumes(config)
     for vol in volumes:
-        click.secho(f"Removing: {vol}")
-        subprocess.check_call(["docker", "volume", "rm", vol])
+        click.secho(f"Removing: {vol}", fg='red')
+        if not dry_run:
+            subprocess.check_call(["docker", "volume", "rm", vol])
+        if dry_run:
+            click.secho("Dry Run - didnt do it.")
 
 
 @docker.command()
@@ -330,13 +334,22 @@ def shell(config, command, queuejobs):
 
 def _get_project_volumes(config):
     ensure_project_name(config)
-    volumes = subprocess.check_output(
+    import yaml
+    compose = yaml.safe_load(config.files["docker_compose"].read_text())
+    full_volume_names = []
+    for volume in compose["volumes"]:
+        full_volume_names.append(f"{config.project_name}_{volume}")
+    system_volumes = subprocess.check_output(
         ["docker", "volume", "ls"], encoding="utf8"
     ).splitlines()[1:]
-    volumes = [x.split(" ")[-1] for x in volumes]
-    volumes = [x for x in volumes if "_" in x]  # named volumes
-    volumes = [x for x in volumes if config.project_name + "_" in x]
-    return volumes
+    system_volumes = [x.split(" ")[-1] for x in system_volumes]
+    system_volumes = [x for x in system_volumes if "_" in x]  # named volumes
+    system_volumes = [
+        x for x in system_volumes if x.startswith(config.project_name + "_")
+    ]
+
+    full_volume_names = list(filter(lambda x: x in system_volumes, full_volume_names))
+    return full_volume_names
 
 
 @docker.command()
@@ -350,15 +363,12 @@ def show_volumes(config, filter):
     volumes = _get_project_volumes(config)
     if filter:
         volumes = [x for x in volumes if filter in x]
+    recs = []
     for volume in volumes:
-        size = _get_volume_size(volume[0])
-        volume.append(size)
-    click.echo(tabulate(volumes, ["Volume", "Size"]))
+        size = _get_volume_size(volume)
+        recs.append((volume, size))
+    click.echo(tabulate(recs, ["Volume", "Size"]))
 
-    click.secho("\ndocker-compose file:", bold=True)
-    compose = yaml.safe_load(config.files["docker_compose"].read_text())
-    for volume in compose["volumes"]:
-        click.secho(f"docker-compose volume: {volume}")
 
 
 @docker.command()
