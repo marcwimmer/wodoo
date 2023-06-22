@@ -202,7 +202,7 @@ def down(ctx, config, machines=[], volumes=False, remove_orphans=True):
     __dc(config, ["down"] + options + machines)
 
     if volumes:
-        Commands.invoke(ctx, "remove_volumes")
+        Commands.invoke(ctx, "remove-volumes")
 
 
 def stop(ctx, config, machines=[]):
