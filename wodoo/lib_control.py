@@ -91,7 +91,7 @@ def remove_volumes(ctx, config, dry_run):
     for vol in volumes:
         click.secho(f"Removing: {vol}", fg='red')
         if not dry_run:
-            subprocess.check_call(["docker", "volume", "rm", vol])
+            subprocess.check_call(["docker", "volume", "rm", "-f", vol])
         if dry_run:
             click.secho("Dry Run - didnt do it.")
 
