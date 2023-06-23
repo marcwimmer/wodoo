@@ -562,7 +562,7 @@ def __rmtree(config, path):
         raise Exception("Not allowed: {}".format(path))
     if config:
         if not any(
-            path.startswith(config.dirs["odoo_home"] + x) for x in ["/tmp", "/run/"]
+            path.startswith(str(config.dirs["odoo_home"]) + x) for x in ["/tmp", "/run/"]
         ):
             if "/tmp" in path:
                 pass

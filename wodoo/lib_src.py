@@ -22,6 +22,8 @@ from .tools import __assure_gitignore
 from .tools import _write_file
 from .tools import bashfind
 from .tools import cwd
+from .tools import __rmtree
+from .tools import _get_customs_root
 
 ADDONS_OCA = "addons_OCA"
 
@@ -495,3 +497,27 @@ def security(config, module, model):
 
     # give rights to choose
     # TODO ...
+
+@src.command()
+@click.option("-d", "--dry-run", is_flag=True)
+@click.pass_context
+@pass_config
+def delete_modules_not_in_manifest(config, ctx, dry_run):
+    from .module_tools import Modules, Module
+    from .odoo_config import customs_dir
+    modules = Modules()
+    all_modules = modules.modules
+    installed_modules = list(sorted(modules.get_all_used_modules()))
+    root = customs_dir()
+
+    for mod in all_modules:
+        if mod not in installed_modules:
+            mod = Module.get_by_name(mod)
+            if not any(str(mod.path).startswith(X) for X in [
+                'odoo',
+                'odoo/odoo',
+                'enterprise',
+                'themes',
+            ]):
+                click.secho(f"Deleting: {mod.path}", fg='red')
+                shutil.rmtree(root / mod.path)
