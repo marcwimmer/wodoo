@@ -102,7 +102,7 @@ def remove_volumes(ctx, config, dry_run):
                 output = rc.stderr
                 for group in re.findall(r"(\[[^\]]*])", output):
                     container_id = group[1:-1]
-                    subprocess.check_call(["docker", "kill", container_id])
+                    subprocess.run(["docker", "kill", container_id])
                     subprocess.check_call(["docker", "rm", "-fv", container_id])
                     output = subprocess.check_output(
                         ["docker", "volume", "rm", "-f", vol], encoding="utf8"
