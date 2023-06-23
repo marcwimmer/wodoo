@@ -1,4 +1,7 @@
 import click
+from subprocess import Popen, PIPE
+
+import re
 import os
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
@@ -89,9 +92,22 @@ def remove_volumes(ctx, config, dry_run):
     subprocess.check_call(["sync"])
     volumes = _get_project_volumes(config)
     for vol in volumes:
-        click.secho(f"Removing: {vol}", fg='red')
+        click.secho(f"Removing: {vol}", fg="red")
         if not dry_run:
-            subprocess.check_call(["docker", "volume", "rm", "-f", vol])
+            rc = subprocess.run(
+                ["docker", "volume", "rm", "-f", vol], encoding="utf8",
+                capture_output=True,
+            )
+            if rc.returncode:
+                output = rc.stderr
+                for group in re.findall(r"(\[[^\]]*])", output):
+                    container_id = group[1:-1]
+                    subprocess.check_call(["docker", "kill", container_id])
+                    subprocess.check_call(["docker", "rm", "-fv", container_id])
+                    output = subprocess.check_output(
+                        ["docker", "volume", "rm", "-f", vol], encoding="utf8"
+                    )
+
         if dry_run:
             click.secho("Dry Run - didnt do it.")
 
@@ -335,6 +351,7 @@ def shell(config, command, queuejobs):
 def _get_project_volumes(config):
     ensure_project_name(config)
     import yaml
+
     compose = yaml.safe_load(config.files["docker_compose"].read_text())
     full_volume_names = []
     for volume in compose["volumes"]:
@@ -368,7 +385,6 @@ def show_volumes(config, filter):
         size = _get_volume_size(volume)
         recs.append((volume, size))
     click.echo(tabulate(recs, ["Volume", "Size"]))
-
 
 
 @docker.command()
