@@ -62,7 +62,7 @@ odoo up -d
 services:
   odoo_appendix:
     build:
-        context: $CUSTOMS_DIR/appendix_docker/odoo
+        context: $CUSTOMS_DIR/docker/appendix_odoo
         dockerfile: $CUSTOMS_DIR/docker/appendix_odoo/Dockerfile
 ```
 * add Docker file:
