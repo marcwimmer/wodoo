@@ -60,7 +60,7 @@ odoo up -d
 
 # manage-order 1
 services:
-  odoo_appendix:
+  appendix_odoo:
     build:
         context: $CUSTOMS_DIR/docker/appendix_odoo
         dockerfile: $CUSTOMS_DIR/docker/appendix_odoo/Dockerfile
@@ -84,7 +84,7 @@ RUN tar cfz /odoo_install_appendix.tar.gz /tmp/pack
 
 # add docker/appendix_odoo/Dockerfile.appendix
 ```bash
-COPY --from=${PROJECT_NAME}_odoo_appendix /odoo_install_appendix.tar.gz /tmp/install_appendix.tar.gz
+COPY --from=${PROJECT_NAME}_appendix_odoo /odoo_install_appendix.tar.gz /tmp/install_appendix.tar.gz
 RUN \
 mkdir /tmp/install_package && \
 cd /tmp/install_package && \
