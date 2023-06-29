@@ -969,8 +969,10 @@ def rsync(src, dest, options="-ar", exclude=None):
     exclude_option = []
     for x in exclude:
         exclude_option += ["--exclude", x]
+    if not isinstance(options, list):
+        options = [options]
     subprocess.check_call(
-        ["rsync", str(src) + "/", str(dest) + "/", options] + exclude_option
+        ["rsync", str(src) + "/", str(dest) + "/"] + options + exclude_option
     )
 
 
