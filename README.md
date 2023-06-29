@@ -48,6 +48,47 @@ odoo up -d
 # now open browser on http://localhost
 ```
 
+## How to extend odoo docker image
+
+* make folder ```docker/odoo``` in your source repo
+* add file:
+
+```
+# docker/odoo/docker-compose.run_odoo_version.14.0.yml
+services:
+  odoo_appendix:
+    build:
+        context: $CUSTOMS_DIR/docker/odoo
+        dockerfile: $CUSTOMS_DIR/docker/odoo/Dockerfile
+```
+* add Docker file:
+
+```
+# docker/odoo/Dockerfile
+FROM ubuntu:22.04
+RUN apt update && \
+apt install -y tar && \
+mkdir /tmp/pack
+
+ADD ibm-iaccess-1.1.0.27-1.0.amd64.deb /tmp/pack
+ADD install.sh /tmp/pack/install.sh
+ADD odbc.ini /tmp/pack/odbc.ini
+
+RUN chmod a+x /tmp/pack/install.sh
+RUN tar cfz /odoo_install_appendix.tar.gz /tmp/pack
+```
+
+# add Dockerfile.appendix
+```
+COPY --from=${PROJECT_NAME}_odoo_appendix /odoo_install_appendix.tar.gz /tmp/install_appendix.tar.gz
+RUN \
+mkdir /tmp/install_package && \
+cd /tmp/install_package && \
+tar xfz /tmp/install_appendix.tar.gz && \
+ls -lhtra && \
+./install.sh
+```
+
 ## Store settings in ./odoo of source code
 
 

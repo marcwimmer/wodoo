@@ -1500,7 +1500,6 @@ def cwd(path):
     finally:
         os.chdir(remember)
 
-
 @contextmanager
 def atomic_write(file):
     tempfile = file.parent / f"{file.name}.{uuid.uuid4()}"

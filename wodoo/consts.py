@@ -27,6 +27,7 @@ default_dirs = {
 }
 
 default_files = {
+    'odoo_docker_file': '${run}/Dockerfile.odoo',
     'after_reload_script': "/usr/local/bin/after-odoo-reload.sh",
     'after_up_script': "/usr/local/bin/after-odoo-up.sh",
     'odoo_config_file_additions': "~/.odoo/odoo.config",
