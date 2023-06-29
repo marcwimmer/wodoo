@@ -939,7 +939,8 @@ def _use_file(config, path):
         except ValueError:
             pass
         else:
-            return True
+            if ".run_" not in path.name:
+                return True
 
         # requires general run:
         if getattr(config, "run_{}".format(path.parent.name)) or "run_" in path.name:
