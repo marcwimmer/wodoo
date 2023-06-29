@@ -930,7 +930,9 @@ def _use_file(config, path):
             run_key = "RUN_{}".format(path.parent.name).upper()
             return getattr(config, run_key)
 
-        if "run_odoo_version.{}.yml".format(config.odoo_version) in path.name:
+        if f"run_odoo_version.{config.odoo_version}.yml" in path.name:
+            return True
+        if '.run_' in path.name:
             return True
 
         # requires general run:
