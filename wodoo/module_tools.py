@@ -761,8 +761,8 @@ class Modules(object):
                                 f"Module not found at resolving dependencies: {dep}"
                                 ". Not necessarily a problem at auto install modules."
                             ),
-                            fg="yellow",
-                            bold=True,
+                            fg="blue",
+                            bold=False,
                         )
                     dep_mod = Module(None, force_name=dep)
 

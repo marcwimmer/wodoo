@@ -31,6 +31,7 @@ from .tools import __try_to_set_owner
 from .tools import whoami
 from .tools import abort
 from .tools import _get_version
+from .tools import rsync
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
@@ -305,6 +306,7 @@ def _do_compose(
     _prepare_yml_files_from_template_files(
         config, additional_docker_configuration_files
     )
+    _merge_odoo_dockerfile(config)
 
     click.echo("Built the docker-compose file.")
 
@@ -553,6 +555,7 @@ def _prepare_yml_files_from_template_files(
         _files2.append(x)
     _files = _files2
     del _files2
+
     _prepare_docker_compose_files(config, config.files["docker_compose"], _files)
 
 
@@ -981,6 +984,42 @@ def _apply_autorepo(ctx, config):
     from .lib_src import _turn_into_odoosh
 
     _turn_into_odoosh(ctx, customs_dir())
+
+
+def _merge_odoo_dockerfile(config):
+    """
+    If customs contains dockerfile, then append their execution
+    in the main dockerfile
+    """
+    import yaml
+    content = config.files['docker_compose'].read_text()
+    content = yaml.safe_load(content)
+    for service in content['services']:
+        servicename = service
+        service = content['services'][service]
+        dockerfile = service.get('build', {})
+        if isinstance(dockerfile, str):
+            continue
+        dockerfile = dockerfile.get('dockerfile')
+        if not dockerfile:
+            continue
+        if 'odoo/images/odoo' in dockerfile:
+            shutil.copy(dockerfile, config.files['odoo_docker_file'])
+            dockerfile1 = dockerfile
+            service['build']['dockerfile'] = str(config.files['odoo_docker_file'])
+        del dockerfile
+    content = yaml.dump(content, default_flow_style=False)
+    config.files['docker_compose'].write_text(content)
+
+    # copy dockerfile to new location
+    click.secho(f"Copying {dockerfile1} to {config.files['odoo_docker_file']}")
+    config.files['odoo_docker_file'].write_text(Path(dockerfile1).read_text())
+    for file in bash_find(config.WORKING_DIR, "Dockerfile.appendix"):
+        appendix = file.read_text()
+        file = config.files['odoo_docker_file']
+        content = file.read_text() + "\n" + appendix
+        content = content.replace("${PROJECT_NAME}", config.project_name)
+        file.write_text(content)
 
 
 Commands.register(do_reload, "reload")
