@@ -584,7 +584,6 @@ def __get_sorted_contents(paths):
         # now probably not needed anymore
         content = path.read_text()
 
-        # dont matter if written manage-order: or manage-order
         if "manage-order" not in content:
             order = "99999999"
         else:

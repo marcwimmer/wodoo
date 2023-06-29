@@ -50,21 +50,25 @@ odoo up -d
 
 ## How to extend odoo docker image
 
-* make folder ```docker/odoo``` in your source repo
+* make folder ```docker/appendix_odoo``` in your source repo
+* start with a letter before "o" - docker-compose names services in alphabetical order and the appendix container must exist *before* odoo is built
 * add file:
 
-```
-# docker/odoo/docker-compose.run_odoo_version.14.0.yml
+```yaml
+# docker/appendix_odoo/docker-compose.yml
+
+
+# manage-order 1
 services:
   odoo_appendix:
     build:
-        context: $CUSTOMS_DIR/docker/odoo
-        dockerfile: $CUSTOMS_DIR/docker/odoo/Dockerfile
+        context: $CUSTOMS_DIR/appendix_docker/odoo
+        dockerfile: $CUSTOMS_DIR/docker/appendix_odoo/Dockerfile
 ```
 * add Docker file:
 
-```
-# docker/odoo/Dockerfile
+```docker
+# docker/appendix_odoo/Dockerfile
 FROM ubuntu:22.04
 RUN apt update && \
 apt install -y tar && \
@@ -78,8 +82,8 @@ RUN chmod a+x /tmp/pack/install.sh
 RUN tar cfz /odoo_install_appendix.tar.gz /tmp/pack
 ```
 
-# add Dockerfile.appendix
-```
+# add docker/appendix_odoo/Dockerfile.appendix
+```bash
 COPY --from=${PROJECT_NAME}_odoo_appendix /odoo_install_appendix.tar.gz /tmp/install_appendix.tar.gz
 RUN \
 mkdir /tmp/install_package && \
