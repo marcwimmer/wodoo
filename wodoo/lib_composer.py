@@ -932,7 +932,13 @@ def _use_file(config, path):
 
         if f"run_odoo_version.{config.odoo_version}.yml" in path.name:
             return True
-        if '.run_' in path.name:
+
+        customs_dir = config.customs_dir
+        try:
+            path.relative_to(customs_dir)
+        except ValueError:
+            pass
+        else:
             return True
 
         # requires general run:
