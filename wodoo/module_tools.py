@@ -15,6 +15,7 @@ from .tools import __try_to_set_owner as try_to_set_owner
 from .tools import measure_time
 from .tools import is_git_clean
 from .tools import whoami
+from .tools import abort
 from .tools import __rmtree as rmtree
 
 try:
@@ -1095,6 +1096,8 @@ class Module(object):
     def manifest_dict(self):
         if not self._manifest_dict:
             try:
+                if not self.manifest_path:
+                    abort(f"Could not find manifest path for {self.name}")
                 path = customs_dir() / self.manifest_path
                 content = path.read_text()
                 content = "\n".join(
@@ -1105,10 +1108,9 @@ class Module(object):
                 self._manifest_dict = eval(content)  # TODO safe
 
             except (SyntaxError, Exception) as e:
-                click.secho(
+                abort(
                     (f"error at file: {self.manifest_path}:\n{str(e)}"), fg="red"
                 )
-                sys.exit(-1)
         return self._manifest_dict
 
     def __make_path_relative(self, path):
