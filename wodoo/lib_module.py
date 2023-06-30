@@ -496,7 +496,6 @@ def update(
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
 
     def _perform_install(module):
-        import pudb;pudb.set_trace()
         if since_git_sha and module:
             raise Exception("Conflict: since-git-sha and modules")
         if since_git_sha:
