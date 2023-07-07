@@ -174,13 +174,13 @@ def modules_overview(config):
         manifest = mod.manifest_dict
 
         combined_description = []
-        for field in ['summary', 'description']:
+        for field in ["summary", "description"]:
             combined_description.append(manifest.get(field, ""))
         for readme in ["README.md", "README.rst", "README.txt"]:
             readmefile = mod.path / readme
             if readmefile.exists():
                 combined_description.append(readmefile.read_text())
-        description = '\n'.join(filter(bool, combined_description))
+        description = "\n".join(filter(bool, combined_description))
         data = {
             "name": mod.name,
             "path": str(mod.path),
@@ -296,6 +296,29 @@ def groups(config, name):
     cols = ["XML-ID", "Name"]
     click.secho(
         tabulate(sorted(tablerows, key=lambda x: x[0]), cols, tablefmt="fancy_grid"),
+        fg="yellow",
+    )
+
+
+@talk.command()
+@click.argument("login", required=False, default="%")
+@pass_config
+def users(config, login):
+    conn = config.get_odoo_conn()
+    rows = _execute_sql(
+        conn,
+        sql=(
+            f"SELECT login, name FROM res_users INNER JOIN "
+            f"res_partner p on p.id = res_users.partner_id "
+            f"WHERE p.name ILIKE '%{login}%' or login ILIKE '%{login}%'"
+        ),
+        fetchall=True,
+        return_columns=False,
+    )
+
+    cols = ["login", "name"]
+    click.secho(
+        tabulate(rows, cols, tablefmt="fancy_grid"),
         fg="yellow",
     )
 
