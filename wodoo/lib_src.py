@@ -87,7 +87,7 @@ def _build_gimera(path):
             ]
         }
         for repo in content["repos"]:
-            __assure_gitignore(customs_dir() / ".gitignore", repo["path"] + "/")
+            __assure_gitignore(customs_dir() / ".gitignore", "./" + repo["path"] + "/")
     current_content = gimera_file.read_text() if gimera_file.exists() else ""
     new_content = yaml.dump(content, default_flow_style=False)
 
