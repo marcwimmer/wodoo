@@ -924,7 +924,10 @@ class Modules(object):
 
         # keep highest version and or leaveout loosers
         def _map(x):
-            arr = iscompatible.parse_requirements(x)
+            if x:
+                arr = iscompatible.parse_requirements(x)
+            else:
+                arr = []
             for arr in arr:
                 if arr:
                     arr = list(arr)

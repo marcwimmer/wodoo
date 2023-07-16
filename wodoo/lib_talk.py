@@ -23,16 +23,23 @@ def talk(config):
 
 
 @talk.command()
+@click.argument("name", required=False)
 @click.option("-M", "--module")
 @click.option("-m", "--model")
 @pass_config
-def xmlids(config, module, model):
+def xmlids(config, name, module, model):
     conn = config.get_odoo_conn()
     where = " where 1 = 1"
     if model:
         where += f" AND model = '{model}'"
     if module:
         where += f" AND module = '{model}'"
+    if name:
+        where += (
+            f" and (model ilike '%{name}%' or "
+            f"name ilike '%{name}%' or "
+            f"module ilike '%{name}%')"
+        )
     rows = _execute_sql(
         conn,
         sql=(
