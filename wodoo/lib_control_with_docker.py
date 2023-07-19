@@ -343,7 +343,6 @@ def shell(config, command="", queuejobs=False):
         "run",
         "--rm",
         "odoo",
-        "python3",
         "/odoolib/shell.py",
     ]
     if queuejobs:
