@@ -1509,9 +1509,11 @@ class Module(object):
         self.write_manifest(mod)
 
     def write_manifest(self, data):
-        with self.manifest_path.open("w") as file:
-            pp = pprint.PrettyPrinter(indent=4, stream=file)
-            pp.pprint(data)
+        from black import format_str, FileMode
+        data = str(data)
+        data = format_str(data, mode=FileMode())
+        self.manifest_path.write_text(data)
+        print(data)
 
     def calc_complexity(self):
         """
