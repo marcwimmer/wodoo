@@ -17,6 +17,7 @@ from .tools import is_git_clean
 from .tools import whoami
 from .tools import abort
 from .tools import __rmtree as rmtree
+from .tools import pretty_xml
 
 try:
     from psycopg2 import IntegrityError
@@ -1111,9 +1112,7 @@ class Module(object):
                 self._manifest_dict = eval(content)  # TODO safe
 
             except (SyntaxError, Exception) as e:
-                abort(
-                    (f"error at file: {self.manifest_path}:\n{str(e)}"), fg="red"
-                )
+                abort((f"error at file: {self.manifest_path}:\n{str(e)}"), fg="red")
         return self._manifest_dict
 
     def __make_path_relative(self, path):
@@ -1255,7 +1254,7 @@ class Module(object):
         filepath = self.path / "views/assets.xml"
         current_id = None
         if filepath.exists():
-            with filepath.open("r") as f:
+            with filepath.open("rb") as f:
                 xml = f.read()
                 doc = etree.XML(xml)
                 for t in doc.xpath("//template/@inherit_id"):
@@ -1342,15 +1341,14 @@ class Module(object):
                         if file not in jsoncontent["assets"][asset_name]:
                             jsoncontent["assets"][asset_name].append(file)
                         del file
-            manifest.write_text(pprint.pformat(jsoncontent))
+            self.write_manifest(jsoncontent)
         else:
             if not doc.xpath("//link| //script"):
                 if filepath.exists():
                     filepath.unlink()
             else:
                 filepath.parent.mkdir(exist_ok=True)
-                with filepath.open("wb") as f:
-                    f.write(etree.tostring(doc, pretty_print=True))
+                filepath.write_bytes(pretty_xml(etree.tostring(doc, pretty_print=True)))
 
     def get_all_files_of_module(self):
         for file in self.path.glob("**/*"):
@@ -1499,7 +1497,9 @@ class Module(object):
 
         # remove assets.xml for newer versions
         if current_version() > 14.0:
-            mod[DATA_NAME] = list(filter(lambda x: not x.endswith("/assets.xml"), mod[DATA_NAME]))
+            mod[DATA_NAME] = list(
+                filter(lambda x: not x.endswith("/assets.xml"), mod[DATA_NAME])
+            )
 
         if is_web:
             mod["web"] = True
@@ -1510,10 +1510,10 @@ class Module(object):
 
     def write_manifest(self, data):
         from black import format_str, FileMode
+
         data = str(data)
         data = format_str(data, mode=FileMode())
         self.manifest_path.write_text(data)
-        print(data)
 
     def calc_complexity(self):
         """

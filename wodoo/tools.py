@@ -562,7 +562,8 @@ def __rmtree(config, path):
         raise Exception("Not allowed: {}".format(path))
     if config:
         if not any(
-            path.startswith(str(config.dirs["odoo_home"]) + x) for x in ["/tmp", "/run/"]
+            path.startswith(str(config.dirs["odoo_home"]) + x)
+            for x in ["/tmp", "/run/"]
         ):
             if "/tmp" in path:
                 pass
@@ -1500,6 +1501,7 @@ def cwd(path):
     finally:
         os.chdir(remember)
 
+
 @contextmanager
 def atomic_write(file):
     tempfile = file.parent / f"{file.name}.{uuid.uuid4()}"
@@ -1533,3 +1535,15 @@ def bash_find(path, name=None, wholename=None, type=None):
         cmd += ["-name", name]
     files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
     return list(map(lambda x: Path(path) / x, files))
+
+
+def pretty_xml(xmlstring):
+    with autocleanpaper() as tempfile:
+        tempfile.write_bytes(xmlstring)
+        formatted = subprocess.check_output(
+            ["xmllint", "--format", tempfile],
+            env={
+                "XMLLINT_INDENT": "    ",
+            },
+        )
+        return formatted
