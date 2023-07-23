@@ -3,6 +3,7 @@ import sys
 import click
 import subprocess
 from pathlib import Path
+
 try:
     from .lib_clickhelpers import AliasedGroup
 except ImportError:
@@ -12,6 +13,7 @@ from .click_global_commands import GlobalCommands
 
 Commands = GlobalCommands()
 pass_config = click.make_pass_decorator(Config, ensure=True)
+
 
 @click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
@@ -56,9 +58,10 @@ def cli(
         except Exception:
             project_name = ""
 
-    config.set_restrict('settings', restrict_setting)
-    config.set_restrict('docker-compose', restrict_docker_compose)
+    config.set_restrict("settings", restrict_setting)
+    config.set_restrict("docker-compose", restrict_docker_compose)
     config.project_name = project_name
+
 
 @cli.command()
 @click.option(
