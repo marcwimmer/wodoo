@@ -599,7 +599,7 @@ def __get_sorted_contents(paths):
 
 
 def __set_environment_in_services(content):
-    for service in (content.get("services", []) or []):
+    for service in content.get("services", []) or []:
         service = content["services"][service]
         service.setdefault("env_file", [])
         if isinstance(service["env_file"], str):
@@ -811,7 +811,7 @@ def _explode_referenced_machines(contents):
     needs_explosion = {}
 
     for content in contents:
-        for service in (content.get("services", []) or []):
+        for service in content.get("services", []) or []:
             labels = content["services"][service].get("labels")
             if labels:
                 if labels.get("compose.merge"):
@@ -1000,34 +1000,39 @@ def _merge_odoo_dockerfile(config):
     in the main dockerfile
     """
     import yaml
-    content = config.files['docker_compose'].read_text()
+
+    content = config.files["docker_compose"].read_text()
     content = yaml.safe_load(content)
-    for service in content['services']:
-        servicename = service
-        service = content['services'][service]
-        dockerfile = service.get('build', {})
+    dockerfile1 = None
+    for service in content["services"]:
+        service = content["services"][service]
+        dockerfile = service.get("build", {})
         if isinstance(dockerfile, str):
             continue
-        dockerfile = dockerfile.get('dockerfile')
+        dockerfile = dockerfile.get("dockerfile")
         if not dockerfile:
             continue
-        if 'odoo/images/odoo' in dockerfile:
-            shutil.copy(dockerfile, config.files['odoo_docker_file'])
+        if "odoo/images/odoo" in dockerfile:
+            shutil.copy(dockerfile, config.files["odoo_docker_file"])
             dockerfile1 = dockerfile
-            service['build']['dockerfile'] = str(config.files['odoo_docker_file'])
+            service["build"]["dockerfile"] = str(config.files["odoo_docker_file"])
         del dockerfile
     content = yaml.dump(content, default_flow_style=False)
-    config.files['docker_compose'].write_text(content)
+    config.files["docker_compose"].write_text(content)
 
     # copy dockerfile to new location
-    click.secho(f"Copying {dockerfile1} to {config.files['odoo_docker_file']}")
-    config.files['odoo_docker_file'].write_text(Path(dockerfile1).read_text())
-    for file in bash_find(config.WORKING_DIR, "Dockerfile.appendix"):
-        appendix = file.read_text()
-        file = config.files['odoo_docker_file']
-        content = file.read_text() + "\n" + appendix
-        content = content.replace("${PROJECT_NAME}", config.project_name)
-        file.write_text(content)
+    if dockerfile1:
+        click.secho(f"Copying {dockerfile1} to {config.files['odoo_docker_file']}")
+        config.files["odoo_docker_file"].write_text(Path(dockerfile1).read_text())
+        for file in bash_find(config.WORKING_DIR, "Dockerfile.appendix"):
+            appendix = file.read_text()
+            file = config.files["odoo_docker_file"]
+            content = file.read_text() + "\n" + appendix
+            content = content.replace("${PROJECT_NAME}", config.project_name)
+            file.write_text(content)
+    else:
+        # seems to use images from registry; no build section
+        pass
 
 
 Commands.register(do_reload, "reload")

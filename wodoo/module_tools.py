@@ -596,37 +596,39 @@ def update_view_in_db(filepath, lineno):
                     )
                     view_type, view_name = cr.fetchone()
 
-                    if view_type == "qweb":
-                        cr.execute(
-                            "select id from ir_ui_view where type ='qweb' and name = %s",
-                            (view_name,),
-                        )
-                        view_ids = set(cr.fetchall())
-
-                    cr.execute(
-                        "update ir_ui_view set {}=%s where id in %s".format(
-                            arch_column
-                        ),
-                        [arch, tuple(view_ids)],
-                    )
-                    cr.connection.commit()
-                    if arch_fs_column:
-                        try:
-                            rel_path = (
-                                module.name
-                                + "/"
-                                + str(filepath.relative_to(module.path))
-                            )
+                    version = current_version()
+                    if version <= 15.0:
+                        if view_type == "qweb":
                             cr.execute(
-                                "update ir_ui_view set arch_fs=%s where id in %s",
-                                [
-                                    rel_path,
-                                    tuple(view_ids),
-                                ],
+                                "select id from ir_ui_view where type ='qweb' and name = %s",
+                                (view_name,),
                             )
-                            cr.connection.commit()
-                        except Exception:
-                            cr.connection.rollback()
+                            view_ids = set(cr.fetchall())
+
+                        cr.execute(
+                            "update ir_ui_view set {}=%s where id in %s".format(
+                                arch_column
+                            ),
+                            [arch, tuple(view_ids)],
+                        )
+                        cr.connection.commit()
+                        if arch_fs_column:
+                            try:
+                                rel_path = (
+                                    module.name
+                                    + "/"
+                                    + str(filepath.relative_to(module.path))
+                                )
+                                cr.execute(
+                                    "update ir_ui_view set arch_fs=%s where id in %s",
+                                    [
+                                        rel_path,
+                                        tuple(view_ids),
+                                    ],
+                                )
+                                cr.connection.commit()
+                            except Exception:
+                                cr.connection.rollback()
 
                     if res:
                         exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
