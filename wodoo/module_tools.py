@@ -928,7 +928,12 @@ class Modules(object):
         # keep highest version and or leaveout loosers
         def _map(x):
             if x:
-                arr = iscompatible.parse_requirements(x)
+                try:
+                    arr = iscompatible.parse_requirements(x)
+                except:
+                    import pudb
+
+                    pudb.set_trace()
             else:
                 arr = []
             for arr in arr:
@@ -940,11 +945,15 @@ class Modules(object):
         parsed_requirements = []
         for inst in pydeps:
             libname = _extract_python_libname(inst)
-            for parsed in [
-                _map(x) for x in pydeps if _extract_python_libname(x) == libname
-            ]:
-                for x in parsed:
-                    parsed_requirements.append((libname, x))
+            if "@" in inst:
+                # concrete url like "pymssql@git+https://github.com/marcwimmer/pymssql"
+                parsed_requirements.append(inst)
+            else:
+                for parsed in [
+                    _map(x) for x in pydeps if _extract_python_libname(x) == libname
+                ]:
+                    for x in parsed:
+                        parsed_requirements.append((libname, x))
         """
         parsed_requirements ilike
         [
@@ -954,7 +963,11 @@ class Modules(object):
         """
 
         allowed = ["==", ">="]
-        unallowed = [x for x in parsed_requirements if x[1][0] not in allowed]
+        unallowed = [
+            x
+            for x in parsed_requirements
+            if not isinstance(x, str) and x[1][0] not in allowed
+        ]
         if unallowed:
             raise Exception(f"Unhandled: {unallowed} - only {allowed} allowed")
 

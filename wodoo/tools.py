@@ -1051,6 +1051,9 @@ def measure_time(method):
 
 
 def _extract_python_libname(x):
+    if "@" in x:
+        # return vcs refs
+        return x
     regex = re.compile(r"[\w\-\_]*")
     x = x.replace("-", "_")
     match = re.findall(regex, x)[0]
