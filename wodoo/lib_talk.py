@@ -330,4 +330,36 @@ def users(config, login):
     )
 
 
+@talk.command()
+@click.argument("model", required=False, default="%")
+@click.argument("field", required=False, default="%")
+@pass_config
+def fields(config, model, field):
+    conn = config.get_odoo_conn()
+    sql = (
+        "SELECT f.name, f.ttype "
+        "FROM ir_model_fields f INNER JOIN "
+        "ir_model m ON "
+        "f.model_id = m.id "
+        "WHERE 1=1 "
+    )
+    if model:
+        sql += f" AND m.model ilike '%{model}%' "
+    if field:
+        sql += f" AND f.name ilike '%{field}%' "
+
+    rows = _execute_sql(
+        conn,
+        sql=sql,
+        fetchall=True,
+        return_columns=False,
+    )
+
+    cols = ["name", "ttype"]
+    click.secho(
+        tabulate(rows, cols, tablefmt="fancy_grid"),
+        fg="yellow",
+    )
+
+
 Commands.register(progress)
