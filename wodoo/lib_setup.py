@@ -39,7 +39,7 @@ def next_port(ctx, config):
     content = ""
     if settings.exists():
         content = settings.read_text() if settings.exists() else ""
-        if "PROXY_PORT=" in content and not "PROXY_PORT=80" in content:
+        if "PROXY_PORT=" in content and "PROXY_PORT=80" not in content:
             click.secho(f"Already configured: {content}")
             return
 
