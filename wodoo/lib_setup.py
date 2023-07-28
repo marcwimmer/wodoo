@@ -36,6 +36,7 @@ def set_next_port(ctx, config):
         return
     # perhaps not reloaded:
     settings = config.files["project_settings"]
+    content = ""
     if settings.exists():
         content = settings.read_text() if settings.exists() else ""
         if "PROXY_PORT=" in content and not "PROXY_PORT=80" in content:
