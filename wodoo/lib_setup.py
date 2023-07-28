@@ -31,18 +31,28 @@ def show_effective_settings(ctx, config):
 @click.pass_context
 def set_next_port(ctx, config):
     PORTS = set()
-    if config.PROXY_PORT != 80:
+    if config.PROXY_PORT and str(config.PROXY_PORT) != "80":
         click.secho(f"Port is already configured: {config.PROXY_PORT}")
         return
-    parentfolder = config.dirs['user_conf_dir']
+    # perhaps not reloaded:
+    settings = config.files["project_settings"]
+    if settings.exists():
+        content = settings.read_text() if settings.exists() else ""
+        if "PROXY_PORT=" in content and not "PROXY_PORT=80" in content:
+            click.secho(f"Already configured: {content}")
+            return
+
+    parentfolder = config.dirs["user_conf_dir"]
     for file in parentfolder.glob("settings.*"):
-        lines = [x for x in file.read_text().splitlines() if x.startswith("PROXY_PORT=")]
+        lines = [
+            x for x in file.read_text().splitlines() if x.startswith("PROXY_PORT=")
+        ]
         for line in lines:
-            for port in re.findall(r'\d+', line):
+            for port in re.findall(r"\d+", line):
                 PORTS.add(int(port))
-    settings = config.files['project_settings']
     port = max(PORTS) + 1
-    settings.write_text(settings.read_text() + f"\nPROXY_PORT={port}\n")
+    settings.write_text(content + f"\nPROXY_PORT={port}\n")
+    click.secho(f"Configured proxy port: {port}. Please reload and restart machines.")
 
 
 @setup.command(name="remove-web-assets")
