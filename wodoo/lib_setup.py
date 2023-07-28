@@ -29,7 +29,7 @@ def show_effective_settings(ctx, config):
 @setup.command()
 @pass_config
 @click.pass_context
-def set_next_port(ctx, config):
+def next_port(ctx, config):
     PORTS = set()
     if config.PROXY_PORT and str(config.PROXY_PORT) != "80":
         click.secho(f"Port is already configured: {config.PROXY_PORT}")
