@@ -1,6 +1,8 @@
 import click
 import sys
 import subprocess
+from pathlib import Path
+import re
 from .tools import _askcontinue
 from .tools import remove_webassets
 from .cli import cli, pass_config, Commands
@@ -22,6 +24,25 @@ def show_effective_settings(ctx, config):
     config = MyConfigParser(config.files["settings"])
     for k in sorted(config.keys()):
         click.echo("{}={}".format(k, config[k]))
+
+
+@setup.command()
+@pass_config
+@click.pass_context
+def set_next_port(ctx, config):
+    PORTS = set()
+    if config.PROXY_PORT != 80:
+        click.secho(f"Port is already configured: {config.PROXY_PORT}")
+        return
+    parentfolder = config.dirs['user_conf_dir']
+    for file in parentfolder.glob("settings.*"):
+        lines = [x for x in file.read_text().splitlines() if x.startswith("PROXY_PORT=")]
+        for line in lines:
+            for port in re.findall(r'\d+', line):
+                PORTS.add(int(port))
+    settings = config.files['project_settings']
+    port = max(PORTS) + 1
+    settings.write_text(settings.read_text() + f"\nPROXY_PORT={port}\n")
 
 
 @setup.command(name="remove-web-assets")
