@@ -693,7 +693,16 @@ def __run_docker_compose_config(config, contents, env):
         except KeyError:
             d["DOCKER_GROUP_ID"] = "0"
 
-        conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
+        (temp_path / 'cmd').write_text(" ".join(map(str, cmdline)))
+        try:
+            conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
+        except:
+            for file in temp_path.glob("*"):
+                click.secho(f"{file}:\n", fg='yellow')
+                click.secho(file.read_text())
+            # get the output
+            conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
+            sys.exit(-1)
         conf = yaml.safe_load(conf)
         return conf
 
