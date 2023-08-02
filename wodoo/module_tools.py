@@ -148,8 +148,11 @@ def get_all_langs(config):
     return langs
 
 
-def get_modules_from_install_file():
-    return MANIFEST().get("install", [])
+def get_modules_from_install_file(include_uninstall):
+    res = MANIFEST().get("install", [])
+    if include_uninstall:
+        res += MANIFEST().get("uninstall", [])
+    return res
 
 
 class DBModules(object):
@@ -709,7 +712,7 @@ class Modules(object):
                 modules.append(module.name)
 
     # @profile
-    def get_customs_modules(self, mode=None):
+    def get_customs_modules(self, mode=None, include_uninstall=False):
         """
         Called by odoo update
 
@@ -721,7 +724,7 @@ class Modules(object):
         """
         assert mode in [None, "to_update", "to_install"]
 
-        modules = get_modules_from_install_file()
+        modules = get_modules_from_install_file(include_uninstall=include_uninstall)
 
         if mode == "to_install":
             modules = [x for x in modules if not DBModules.is_module_installed(x)]
@@ -871,13 +874,13 @@ class Modules(object):
         return list(sorted(set(modules)))
 
     # @profile
-    def get_all_used_modules(self):
+    def get_all_used_modules(self, include_uninstall=False):
         """
         Returns all modules that are directly or indirectly
         (auto install, depends) installed.
         """
         result = set()
-        modules = self.get_customs_modules()
+        modules = self.get_customs_modules(include_uninstall=True)
         auto_install_modules = (
             self.get_filtered_auto_install_modules_based_on_module_list(modules)
         )
@@ -898,7 +901,6 @@ class Modules(object):
             if module.path is None:
                 raise Exception(f"Module has no path: {module_name}")
             file = module.path / "external_dependencies.txt"
-            new_deps = []
 
             def extract_deps(data):
                 global_data["pip"].extend(data.get("pip", data.get("python", [])))
