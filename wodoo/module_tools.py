@@ -148,7 +148,7 @@ def get_all_langs(config):
     return langs
 
 
-def get_modules_from_install_file(include_uninstall):
+def get_modules_from_install_file(include_uninstall=False):
     res = MANIFEST().get("install", [])
     if include_uninstall:
         res += MANIFEST().get("uninstall", [])
