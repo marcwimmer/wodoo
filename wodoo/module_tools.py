@@ -151,7 +151,16 @@ def get_all_langs(config):
 def get_modules_from_install_file(include_uninstall=False):
     res = MANIFEST().get("install", [])
     if include_uninstall:
-        res += MANIFEST().get("uninstall", [])
+        for mod in MANIFEST().get('uninstall', []):
+            try:
+                Module.get_by_name(mod)
+            except NotInAddonsPath as ex:
+                click.secho(
+                    f"WARNING: module {mod} cannot be uninstalled - "
+                    "not found in source", fg='yellow')
+                pass
+            else:
+                res += [mod]
     return res
 
 
