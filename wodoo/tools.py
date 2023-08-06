@@ -1144,6 +1144,9 @@ def get_hash(text):
 
 
 def remove_pycs(path):
+    path = path.absolute()
+    if not path.is_dir():
+        return
     for cachedir in bashfind(path, name="__pycache__", type="d"):
         shutil.rmtree(cachedir)
     for file in bashfind(path, name="*.pyc", type="f"):
