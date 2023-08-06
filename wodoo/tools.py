@@ -1480,6 +1480,8 @@ def bashfind(path, name=None, wholename=None, type=None):
         cmd += ["-wholename", wholename]
     if name:
         cmd += ["-name", name]
+    if not Path(path).exists():
+        return []
     files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
     return list(map(lambda x: Path(path) / x, files))
 
