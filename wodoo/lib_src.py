@@ -120,10 +120,12 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
 
     with cwd(path):
         for repo in content["repos"]:
-            repo_path = path / repo['path']
-            if repo['type'] == 'submodule' or force_do or not repo_path.exists():
-                ctx.invoke(gimera, repos=[repo['path']], recursive=True, no_auto_commit=True)
-                changed =True
+            repo_path = path / repo["path"]
+            if repo["type"] == "submodule" or force_do or not repo_path.exists():
+                ctx.invoke(
+                    gimera, repos=[repo["path"]], recursive=True, no_auto_commit=True
+                )
+                changed = True
         else:
             changed = False
 
@@ -471,7 +473,6 @@ def _identify_duplicate_modules(check):
                     )
 
 
-
 @src.command(name="pretty-print-manifest")
 def pretty_print_manifest():
     from .odoo_config import MANIFEST
@@ -498,6 +499,7 @@ def security(config, module, model):
     # give rights to choose
     # TODO ...
 
+
 @src.command()
 @click.option("-d", "--dry-run", is_flag=True)
 @click.pass_context
@@ -505,6 +507,7 @@ def security(config, module, model):
 def delete_modules_not_in_manifest(config, ctx, dry_run):
     from .module_tools import Modules, Module
     from .odoo_config import customs_dir
+
     modules = Modules()
     all_modules = modules.modules
     installed_modules = list(sorted(modules.get_all_used_modules()))
@@ -513,11 +516,14 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
     for mod in all_modules:
         if mod not in installed_modules:
             mod = Module.get_by_name(mod)
-            if not any(str(mod.path).startswith(X) for X in [
-                'odoo',
-                'odoo/odoo',
-                'enterprise',
-                'themes',
-            ]):
-                click.secho(f"Deleting: {mod.path}", fg='red')
+            if not any(
+                str(mod.path).startswith(X)
+                for X in [
+                    "odoo",
+                    "odoo/odoo",
+                    "enterprise",
+                    "themes",
+                ]
+            ):
+                click.secho(f"Deleting: {mod.path}", fg="red")
                 shutil.rmtree(root / mod.path)
