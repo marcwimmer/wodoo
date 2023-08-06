@@ -51,9 +51,12 @@ def breakpoint(config, no_raise_exception):
                 probs.append({'file': pythonfile.relative_to(config.WORKING_DIR)})
     print("---")
     for prob in probs:
-        print(prob['file'])
+        click.secho(f"Breakpoint found in: {prob['file']}", fg='red')
     if probs:
         if not no_raise_exception:
             abort("Breakpoints found")
+
+def odoolint(config):
+    pass
 
 # Commands.register(progress)
