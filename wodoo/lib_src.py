@@ -121,13 +121,14 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
     def needs_apply():
         for repo in content["repos"]:
             repo_path = path / repo["path"]
-            if not repo_path.exists():
-                return True
+            if repo['type'] == 'submodule':
+                if not repo_path.exists():
+                    return True
         return False
 
     if force_do or needs_apply():
         with cwd(path):
-            ctx.invoke(gimera, recursive=True)
+            ctx.invoke(gimera, recursive=True, no_auto_commit=True)
             click.secho(
                 "Restarting reloading because gimera apply was done", fg="yellow"
             )
