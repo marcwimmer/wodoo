@@ -37,6 +37,7 @@ from . import lib_src  # NOQA
 from . import lib_docker_registry  # NOQA
 from . import lib_turnintodev  # NOQA
 from . import lib_talk  # NOQA
+from . import lib_linting  # NOQA
 from . import daddy_cleanup  # NOQA
 
 # import container specific commands

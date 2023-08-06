@@ -1,19 +1,14 @@
-from pathlib import Path
 import json
-import subprocess
-import inquirer
-import sys
 from datetime import datetime
-import os
+from pathlib import Path
+
 import click
-from .odoo_config import current_version
-from .odoo_config import MANIFEST
-from .odoo_config import customs_dir
-from .cli import cli, pass_config
-from .lib_clickhelpers import AliasedGroup
-from .tools import _execute_sql
 from tabulate import tabulate
-from .cli import cli, pass_config, Commands
+
+from .cli import Commands, cli, pass_config
+from .lib_clickhelpers import AliasedGroup
+from .odoo_config import MANIFEST, current_version, customs_dir
+from .tools import _execute_sql
 
 
 @cli.group(cls=AliasedGroup)
@@ -168,7 +163,7 @@ def progress(config):
 @talk.command()
 @pass_config
 def modules_overview(config):
-    from .module_tools import Modules, Module
+    from .module_tools import Module, Modules
 
     modules = Modules()
 
