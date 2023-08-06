@@ -116,7 +116,6 @@ def _find_duplicate_modules():
 
 
 def _apply_gimera_if_required(ctx, path, content, force_do=False):
-    import pudb;pudb.set_trace()
     from gimera.gimera import apply as gimera
 
     with cwd(path):
