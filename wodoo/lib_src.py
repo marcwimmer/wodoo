@@ -116,18 +116,18 @@ def _find_duplicate_modules():
 
 
 def _apply_gimera_if_required(ctx, path, content, force_do=False):
+    import pudb;pudb.set_trace()
     from gimera.gimera import apply as gimera
 
-    def needs_apply():
+    with cwd(path):
         for repo in content["repos"]:
-            repo_path = path / repo["path"]
-            if repo['type'] == 'submodule':
-                return True
-        return False
+            if repo['type'] == 'submodule' or force_do:
+                ctx.invoke(gimera, repos=[repo['path']], recursive=True, no_auto_commit=True)
+                changed =True
+        else:
+            changed = False
 
-    if force_do or needs_apply():
-        with cwd(path):
-            ctx.invoke(gimera, recursive=True, no_auto_commit=True)
+        if changed:
             click.secho(
                 "Restarting reloading because gimera apply was done", fg="yellow"
             )
