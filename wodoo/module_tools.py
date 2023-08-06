@@ -154,7 +154,7 @@ def get_modules_from_install_file(include_uninstall=False):
         for mod in MANIFEST().get('uninstall', []):
             try:
                 Module.get_by_name(mod)
-            except (NotInAddonsPath, Module.IsNot) as ex:
+            except (NotInAddonsPath, Module.IsNot):
                 click.secho(
                     f"WARNING: module {mod} cannot be uninstalled - "
                     "not found in source", fg='yellow')

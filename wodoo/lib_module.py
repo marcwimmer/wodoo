@@ -1370,21 +1370,6 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
         return global_hash_paths
     return [p.relative_to(customs_dir_path) for p in global_hash_paths]
 
-
-def _clean_customs(ctx, config):
-    from .odoo_config import customs_dir
-
-    path = customs_dir()
-    if not config.force:
-        abort(
-            "Needs force option, because I call git clean -xdff and "
-            "all your work is lost. (Stashing before)"
-        )
-    if not is_git_clean(path):
-        subprocess.check_call(["git", "stash", "--include-untracked"], cwd=path)
-    subprocess.check_call(["git", "clean", "-xdff"], cwd=path)
-
-
 hash_cache = {}
 
 
@@ -1407,8 +1392,6 @@ def list_deps(ctx, config, module, no_cache):
     from .module_tools import NotInAddonsPath
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
-
-    _clean_customs(ctx, config)
 
     click.secho("Loading Modules...", fg="yellow")
     modules = Modules()

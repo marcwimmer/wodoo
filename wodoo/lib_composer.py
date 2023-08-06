@@ -1,5 +1,5 @@
 import traceback
-from .tools import bash_find
+from .tools import bashfind
 import arrow
 import threading
 from tabulate import tabulate
@@ -516,7 +516,7 @@ def _prepare_yml_files_from_template_files(
         if dir.is_file():
             _files += [dir]
         else:
-            for file in bash_find(dir, "docker-compose*.yml"):
+            for file in bashfind(dir, "docker-compose*.yml"):
                 _files.append(file)
 
     if config.restrict and config.restrict.get("docker-compose"):
@@ -1033,7 +1033,7 @@ def _merge_odoo_dockerfile(config):
     if dockerfile1:
         click.secho(f"Copying {dockerfile1} to {config.files['odoo_docker_file']}")
         config.files["odoo_docker_file"].write_text(Path(dockerfile1).read_text())
-        for file in bash_find(config.WORKING_DIR, "Dockerfile.appendix"):
+        for file in bashfind(config.WORKING_DIR, "Dockerfile.appendix"):
             appendix = file.read_text()
             file = config.files["odoo_docker_file"]
             content = file.read_text() + "\n" + appendix

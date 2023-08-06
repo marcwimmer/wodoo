@@ -1143,9 +1143,20 @@ def get_hash(text):
     return hashlib.sha1(text).hexdigest()
 
 
+def remove_pycs(path):
+    import pudb
+
+    pudb.set_trace()
+    for cachedir in bashfind(path, name="__pycache__", type="d"):
+        shutil.rmtree(cachedir)
+    for file in bashfind(path, name="*.pyc", type="f"):
+        file.unlink()
+
+
 def get_directory_hash(path):
     click.secho(f"Calculating hash for {path}", fg="yellow")
     # "-N required because absolute path is used"
+    remove_pycs(path)
     hex = (
         subprocess.check_output(
             ["dtreetrawl", "-N", "--hash", "-R", path], encoding="utf8"
@@ -1473,7 +1484,7 @@ def bashfind(path, name=None, wholename=None, type=None):
     if name:
         cmd += ["-name", name]
     files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
-    return map(lambda x: Path(path) / x, files)
+    return list(map(lambda x: Path(path) / x, files))
 
 
 def _update_setting(conn, key, value):
@@ -1521,23 +1532,6 @@ def atomic_write(file):
                 tempfile.unlink()
             except Exception:
                 pass
-
-
-def bash_find(path, name=None, wholename=None, type=None):
-    cmd = [
-        "find",
-    ]
-    if type:
-        cmd += [
-            "-type",
-            type,
-        ]
-    if wholename:
-        cmd += ["-wholename", wholename]
-    if name:
-        cmd += ["-name", name]
-    files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
-    return list(map(lambda x: Path(path) / x, files))
 
 
 def pretty_xml(xmlstring):
