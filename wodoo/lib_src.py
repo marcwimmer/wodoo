@@ -122,8 +122,7 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
         for repo in content["repos"]:
             repo_path = path / repo["path"]
             if repo['type'] == 'submodule':
-                if not repo_path.exists():
-                    return True
+                return True
         return False
 
     if force_do or needs_apply():
