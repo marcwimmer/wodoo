@@ -125,6 +125,7 @@ def do_reload(
     docker_compose,
 ):
     from .myconfigparser import MyConfigParser
+    from .module_tools import NotInAddonsPath
 
     if headless and proxy_port:
         click.secho(("Proxy Port and headless together not compatible."), fg="red")
@@ -171,19 +172,22 @@ def do_reload(
         if docker_compose:
             docker_compose = docker_compose.split(":")
 
-        internal_reload(
-            ctx,
-            config,
-            db,
-            demo,
-            devmode,
-            headless,
-            proxy_port,
-            mailclient_gui_port,
-            additional_config,
-            apply_auto_repo=not no_auto_repo,
-            additional_docker_configuration_files=docker_compose,
-        )
+        try:
+            internal_reload(
+                ctx,
+                config,
+                db,
+                demo,
+                devmode,
+                headless,
+                proxy_port,
+                mailclient_gui_port,
+                additional_config,
+                apply_auto_repo=not no_auto_repo,
+                additional_docker_configuration_files=docker_compose,
+            )
+        except NotInAddonsPath as ex:
+            abort(str(ex))
 
     finally:
         if additional_config_file and additional_config_file.exists():

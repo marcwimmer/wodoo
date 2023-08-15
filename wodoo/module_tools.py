@@ -18,6 +18,7 @@ from .tools import whoami
 from .tools import abort
 from .tools import __rmtree as rmtree
 from .tools import pretty_xml
+from .tools import bashfind
 
 try:
     from psycopg2 import IntegrityError
@@ -1193,6 +1194,13 @@ class Module(object):
                 path = dir
             del dir
         if not path:
+            possible_matches = bashfind('.', name=name, type='d')
+            if possible_matches:
+                click.secho("Found the missing module here:", fg='yellow', bold=True)
+                for dir in possible_matches:
+                    click.secho(dir, fg='yellow')
+                click.secho("Please add it to the manifest addons-paths")
+
             raise NotInAddonsPath(f"Could not get path for {name}")
         if path.exists():
             path = path.resolve()
