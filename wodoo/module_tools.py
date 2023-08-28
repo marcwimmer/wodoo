@@ -940,12 +940,7 @@ class Modules(object):
         # keep highest version and or leaveout loosers
         def _map(x):
             if x:
-                try:
-                    arr = iscompatible.parse_requirements(x)
-                except:
-                    import pudb
-
-                    pudb.set_trace()
+                arr = iscompatible.parse_requirements(x)
             else:
                 arr = []
             for arr in arr:
