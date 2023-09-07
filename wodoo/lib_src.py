@@ -242,7 +242,7 @@ def show_addons_paths():
 @pass_config
 def make_modules(config):
     modules = ",".join(MANIFEST()["install"])
-    (config.dirs["customs"] / "modules.txt").write_text(modules)
+    (customs_dir() / "modules.txt").write_text(modules)
     click.secho(f"Updated /modules.txt with: \n\n", fg="yellow")
     click.secho(modules)
 
