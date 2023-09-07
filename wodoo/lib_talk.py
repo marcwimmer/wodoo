@@ -259,6 +259,7 @@ def menus(config, name):
     cols = list(rows[0])[:2]
     cols.insert(0, "xmlid")
     cols.insert(0, "path")
+    tablerows = list(sorted(tablerows, key=lambda x: x[0]))
     click.secho(tabulate(tablerows, cols, tablefmt="fancy_grid"), fg="yellow")
 
 
