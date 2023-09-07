@@ -1210,7 +1210,10 @@ class Module(object):
         # could be an odoo module then
         for path in get_odoo_addons_paths():
             if (path / name).resolve().is_dir():
-                return Module(path / name)
+                try:
+                    return Module(path / name)
+                except Module.IsNot:
+                    pass
         raise KeyError(f"Module not found or not linked: {name}")
 
     @property
