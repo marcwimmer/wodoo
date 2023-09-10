@@ -768,7 +768,7 @@ class Modules(object):
                     continue
                 try:
                     dep_mod = Module.get_by_name(dep, no_deptree=True)
-                except (NotInAddonsPath, Module.IsNot):
+                except (NotInAddonsPath, Module.IsNot, KeyError):
                     # if it is a module, which is probably just auto install
                     # but not in the manifest, then it is not critical
                     if dep not in remark_about_missing_module_info:
