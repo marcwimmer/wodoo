@@ -1491,11 +1491,21 @@ def bashfind(path, name=None, wholename=None, type=None):
 
 def _update_setting(conn, key, value):
     value = str(value)
-    _execute_sql(
+    row = _execute_sql(
         conn,
-        f"DELETE FROM ir_config_parameter WHERE key = '{key}'; "
-        f"INSERT INTO ir_config_parameter(key, value, create_date, write_date) values('{key}', '{value}', now(), now());",
+        f"SELECT value FROM ir_config_parameter WHERE key = '{key}'",
+        fetchone=True,
     )
+    if not row:
+        _execute_sql(
+            conn,
+            f"INSERT INTO ir_config_parameter(key, value, create_date, write_date) values('{key}', '{value}', now(), now());",
+        )
+    else:
+        _execute_sql(
+            conn,
+            f"UPDATE ir_config_parameter SET value = '{value}' where key = '{key}'",
+        )
 
 
 def _get_setting(conn, key):
