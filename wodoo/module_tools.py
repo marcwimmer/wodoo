@@ -1356,6 +1356,8 @@ class Module(object):
             to_remove.getparent().remove(to_remove)
 
         if current_version() > 14.0:
+            if filepath.exists():
+                filepath.unlink()
             manifest = self.path / "__manifest__.py"
             jsoncontent = eval(manifest.read_text())
             jsoncontent.setdefault("assets", {})
