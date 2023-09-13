@@ -857,6 +857,9 @@ def remove_webassets(conn):
         f"delete from ir_attachment where name ilike 'web_icon_data' {ignore_url_str}",
         f"delete from ir_attachment where name ilike 'web_editor.summernote.%' {ignore_url_str}",
         f"delete from ir_attachment where name ilike 'web.assets_backend_prod_only.js'",
+        # following is like odoo 16:
+        f"delete from ir_attachment where name ilike '%.assets_%.css' and res_model = 'ir.ui.view'",
+        f"delete from ir_attachment where name ilike '%.assets_%.js' and res_model = 'ir.ui.view'",
     ]
     try:
         for query in queries:
