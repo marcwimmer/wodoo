@@ -675,19 +675,24 @@ def __run_docker_compose_config(config, contents, env):
         files = []
         for i, content in enumerate(contents):
             file_path = temp_path / f"docker-compose-{str(i).zfill(5)}.yml"
-            file_path.write_text(yaml.dump(content, default_flow_style=False))
+            file_content = yaml.dump(content, default_flow_style=False)
+            file_path.write_text(file_content)
             files.append(file_path)
             del file_path
 
-        cmdline = [
-            str(config.files["docker_compose_bin"]),
-        ]
-        for file_path in files:
-            cmdline += [
-                "-f",
-                file_path,
+        def buildcmd(files):
+            cmdline = [
+                str(config.files["docker_compose_bin"]),
             ]
-        cmdline += ["config"]
+            for file_path in files:
+                cmdline += [
+                    "-f",
+                    file_path,
+                ]
+            cmdline += ["config"]
+            return cmdline
+
+        cmdline = buildcmd(files)
         d = deepcopy(os.environ)
         d.update(env)
 
@@ -701,10 +706,18 @@ def __run_docker_compose_config(config, contents, env):
         try:
             conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         except:
-            for file in temp_path.glob("*"):
-                click.secho(f"{file}:\n", fg='yellow')
-                click.secho(file.read_text())
-            # get the output
+            # find culprit
+            for i in range(len(files)):
+                file = files[i]
+                cmdline2 = buildcmd(files[:i])
+                try:
+                    click.secho(f"Testing {file}...", fg='green')
+                    conf = subprocess.check_output(cmdline2, cwd=temp_path, env=d)
+                except:
+                    click.secho(f"{file}:\n", fg='yellow')
+                    click.secho(file.read_text())
+                    break
+
             conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
             sys.exit(-1)
         conf = yaml.safe_load(conf)
