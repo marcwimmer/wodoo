@@ -450,10 +450,18 @@ def update(
 
     To update all (custom) modules set "all" here
 
+    Sample call migration 13.0 -> 14.0:
+    OPTS="--no-dangling-check --config-file=config_migration --server-wide-modules=web,openupgrade_framework --additional-addons-paths=openupgrade"
+    odoo update $OPTS base
 
-    Sample call migration 14.0:
-    odoo update --no-dangling-check --config-file=config_migration --server-wide-modules=web,openupgrade_framework --additional-addons-paths=openupgrade base
-
+    # Real world sample:
+    odoo update $OPTS base
+    odoo update $OPTS mail
+    odoo psql --sql "delete from ir_ui_view where id in (1,2,3,4);"
+    odoo update $OPTS web
+    odoo update $OPTS sale_product_configurator
+    odoo update $OPTS hr
+    odoo update $OPTS stock
 
 
     """
