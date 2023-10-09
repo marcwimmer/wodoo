@@ -1473,7 +1473,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     )
 
 
-def bashfind(path, name=None, wholename=None, type=None):
+def bashfind(path, name=None, wholename=None, type=None, maxdepth=None):
     import platform
 
     cmd = [
@@ -1484,10 +1484,9 @@ def bashfind(path, name=None, wholename=None, type=None):
         cmd.append(path)
         workdir = None
     if type:
-        cmd += [
-            "-type",
-            type,
-        ]
+        cmd += ["-type", type]
+    if maxdepth:
+        cmd += ["-maxdepth", maxdepth]
     if wholename:
         cmd += ["-wholename", wholename]
     if name:

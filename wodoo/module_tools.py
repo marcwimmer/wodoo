@@ -670,13 +670,8 @@ class Modules(object):
             Returns a list of full paths of all manifests
             """
             for path in reversed(get_odoo_addons_paths()):
-                mans = subprocess.check_output(
-                    ["find", ".", "-maxdepth", "2", "-name", manifest_file_names()],
-                    cwd=path,
-                    encoding="utf8",
-                ).splitlines()
+                mans = bashfind(path, name=manifest_file_names(), maxdepth=2)
                 for file in sorted(mans):
-                    file = path / file
                     modname = file.parent.name
                     if modname in modnames:
                         continue
