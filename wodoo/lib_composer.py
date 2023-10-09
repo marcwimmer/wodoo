@@ -80,11 +80,15 @@ def config(ctx, config, service_name, full=True):
 
 
 def _get_arch():
-    arch = subprocess.check_output(["uname", "-m"], encoding="UTF-8").strip()
-    return {
+    mapping = {
         "x86_64": "amd64",
         "aarch64": "arm64",
-    }[arch]
+    }
+    arch = subprocess.check_output(["uname", "-m"], encoding="UTF-8").strip()
+    if arch in mapping:
+        return mapping[arch]
+    else:
+        return arch
 
 
 @composer.command(
