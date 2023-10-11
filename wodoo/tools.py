@@ -1474,15 +1474,9 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
 
 
 def bashfind(path, name=None, wholename=None, type=None, maxdepth=None):
-    import platform
-
     cmd = [
-        "find",
+        "find", path
     ]
-    workdir = path
-    if platform.system() == "Darwin":
-        cmd.append(path)
-        workdir = None
     if type:
         cmd += ["-type", type]
     if maxdepth:
@@ -1493,7 +1487,7 @@ def bashfind(path, name=None, wholename=None, type=None, maxdepth=None):
         cmd += ["-name", name]
     if not Path(path).exists():
         return []
-    files = subprocess.check_output(cmd, cwd=workdir, encoding="utf8").splitlines()
+    files = subprocess.check_output(cmd, encoding="utf8").splitlines()
     return list(map(lambda x: Path(path) / x, files))
 
 
