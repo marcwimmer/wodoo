@@ -203,6 +203,7 @@ odoo pgactivity
 |NAMED_ODOO_POSTGRES_VOLUME| Use a specific external volume; not dropped with down -v command|
 |CRONJOB_DADDY_CLEANUP=0 */1 * * * ${JOB_DADDY_CLEANUP}|Turn on grandfather-principle based backup|
 |RESTART_CONTAINERS=1|Sets "restart unless-stopped" policy|
+|ODOO_WORKERS_WEB|Amount of web workers in odoo (default currently 28)|
 
 ## Odoo Server Configuration in ~/.odoo/settings/odoo.config and odoo.config.${PROJECT_NAME}
 
