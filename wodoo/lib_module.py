@@ -663,7 +663,7 @@ def update(
     )
 
     if uninstall or all_modules:
-        _uninstall_marked_modules(config, MANIFEST().get("uninstall", []))
+        _uninstall_marked_modules(ctx, config, MANIFEST().get("uninstall", []))
 
     # check danglings
     if not no_dangling_check and all_modules:
@@ -796,10 +796,10 @@ def _parse_modules(modules):
 @click.pass_context
 def uninstall(ctx, config, modules):
     modules = _parse_modules(modules)
-    _uninstall_marked_modules(config, modules)
+    _uninstall_marked_modules(ctx, config, modules)
 
 
-def _uninstall_marked_modules(config, modules):
+def _uninstall_marked_modules(ctx, config, modules):
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
@@ -820,6 +820,7 @@ def _uninstall_marked_modules(config, modules):
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
 
+    uninstalled = False
     for module in modules:
         click.secho(f"Uninstall {module}", fg="red")
         lib_shell(
@@ -834,6 +835,10 @@ def _uninstall_marked_modules(config, modules):
             ),
         )
         del module
+        uninstalled = True
+
+    if uninstalled:
+        Commands.invoke(ctx, "restart", machines=["odoo"])
 
     modules = [x for x in modules if DBModules.is_module_installed(x)]
     if modules:
