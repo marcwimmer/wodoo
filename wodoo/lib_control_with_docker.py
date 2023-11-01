@@ -199,6 +199,9 @@ def down(ctx, config, machines=[], volumes=False, remove_orphans=True):
         options += ["--volumes"]
     if remove_orphans:
         options += ["--remove-orphans"]
+    if config.devmode:
+        __dc(config, ["kill"] + machines)
+
     __dc(config, ["down"] + options + machines)
 
     if volumes:
