@@ -465,6 +465,7 @@ def update(
 
 
     """
+    started = arrow.get()
 
     param_module = module
 
@@ -673,6 +674,9 @@ def update(
         _do_check_install_state(ctx, config, module, all_modules, no_dangling_check)
 
     _set_sha(config)
+
+    duration = (arrow.get() - started).total_seconds()
+    click.secho(f"Update done at {arrow.get().strftime("%Y-%m-%d %H:%M:%S")} - duration {duration}s", fg='yellow')
 
 
 def _set_sha(config):
