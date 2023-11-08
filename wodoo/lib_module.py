@@ -676,7 +676,8 @@ def update(
     _set_sha(config)
 
     duration = (arrow.get() - started).total_seconds()
-    click.secho(f"Update done at {arrow.get().strftime("%Y-%m-%d %H:%M:%S")} - duration {duration}s", fg='yellow')
+    date = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
+    click.secho(f"Update done at {date} - duration {duration}s", fg='yellow')
 
 
 def _set_sha(config):
