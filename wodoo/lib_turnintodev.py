@@ -146,6 +146,11 @@ def __turn_into_devdb(ctx, config, conn):
         key="web.base.url",
         value=f"http://localhost:{config.proxy_port}",
     )
+    _update_setting(
+        conn=conn,
+        key="report.url",
+        value=f"http://localhost:8069",
+    )
 
 
 @turn_into_dev.command()
