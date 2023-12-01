@@ -19,6 +19,7 @@ from .tools import abort
 from .tools import __rmtree as rmtree
 from .tools import pretty_xml
 from .tools import bashfind
+from .tools import __assure_gitignore
 
 try:
     from psycopg2 import IntegrityError
@@ -152,13 +153,15 @@ def get_all_langs(config):
 def get_modules_from_install_file(include_uninstall=False):
     res = MANIFEST().get("install", [])
     if include_uninstall:
-        for mod in MANIFEST().get('uninstall', []):
+        for mod in MANIFEST().get("uninstall", []):
             try:
                 Module.get_by_name(mod)
             except (NotInAddonsPath, Module.IsNot, KeyError):
                 click.secho(
                     f"WARNING: module {mod} cannot be uninstalled - "
-                    "not found in source", fg='yellow')
+                    "not found in source",
+                    fg="yellow",
+                )
                 pass
             else:
                 res += [mod]
@@ -340,7 +343,7 @@ class DBModules(object):
             return state[1] in ["installed", "to upgrade"]
 
 
-def make_customs(ctx, path):
+def make_customs(config, ctx, path, version, odoosh):
     from gimera.gimera import apply as gimera
     from .tools import abort
     import click
@@ -348,7 +351,8 @@ def make_customs(ctx, path):
     if not path.exists():
         abort("Path does not exist: {}".format(path))
     elif list(path.glob("*")):
-        abort("Path is not empty: {}".format(path))
+        if not config.force:
+            abort("Path is not empty: {}".format(path))
 
     import inquirer
     from .tools import copy_dir_contents
@@ -365,40 +369,30 @@ def make_customs(ctx, path):
     versions = sorted(
         [x.name for x in src_dir.glob("*")], key=lambda x: _floatify(x), reverse=True
     )
-    version = inquirer.prompt([inquirer.List("version", "", choices=versions)])[
-        "version"
-    ]
-    del versions
+    if not version:
+        version = inquirer.prompt([inquirer.List("version", "", choices=versions)])[
+            "version"
+        ]
+        del versions
 
     copy_dir_contents(src_dir / version, path)
 
     manifest_file = path / "MANIFEST"
     manifest = eval(manifest_file.read_text())
-    import pudb;pudb.set_trace()
-    raise Exception("Rewrite to use gimera")
 
-    click.echo("Checking for odoo repo at env variable 'ODOO_REPO'")
-    if os.getenv("ODOO_REPO", ""):
-        odoo_path = path / "odoo"
-        repo_path = Path(os.environ["ODOO_REPO"])
-        repo = Repo(repo_path)
-        repo.X("git", "checkout", str(version))
-        odoo_path.mkdir()
-        sha = repo.hex
-        click.echo("Copying odoo with sha to local directory [{}]".format(sha))
-        copy_dir_contents(repo_path, odoo_path, exclude=[".git"])
-        manifest["odoo_commit"] = sha
-
-    manifest_file.write_text(json.dumps(manifest, indent=4))
-
-    subprocess.call(["git", "init"], cwd=path)
+    if not (path / ".git").exists():
+        subprocess.call(["git", "init"], cwd=path)
+    for repo in ["odoo", "enterprise", "themes"]:
+        __assure_gitignore(path / ".gitignore", "/" + repo + "/")
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
     ctx.invoke(gimera, recursive=True, update=True)
     try_to_set_owner(whoami(), path)
+    subprocess.call(["odoo reload"], shell=True, cwd=path)
 
     click.secho("Initialized - please call following now.", fg="green")
-    click.secho("odoo db reset", fg="green")
+    click.secho("odoo next   (to get a free next port)", fg="green")
+    click.secho("odoo -f db reset", fg="green")
     sys.exit(0)
 
 
@@ -1190,11 +1184,11 @@ class Module(object):
                 path = dir
             del dir
         if not path:
-            possible_matches = bashfind('.', name=name, type='d')
+            possible_matches = bashfind(".", name=name, type="d")
             if possible_matches:
-                click.secho("Found the missing module here:", fg='yellow', bold=True)
+                click.secho("Found the missing module here:", fg="yellow", bold=True)
                 for dir in possible_matches:
-                    click.secho(dir, fg='yellow')
+                    click.secho(dir, fg="yellow")
                 click.secho("Please add it to the manifest addons-paths")
 
             raise NotInAddonsPath(f"Could not get path for {name}")

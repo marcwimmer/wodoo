@@ -34,82 +34,6 @@ def src(config):
     pass
 
 
-@click.command()
-@click.pass_context
-@pass_config
-def ensure_odoosh_repo(config, ctx):
-    _ensure_odoosh_repo(ctx)
-
-
-def _ensure_odoosh_repo(ctx):
-    from gimera.gimera import apply as gimera_apply
-
-    if not os.getenv("ODOOSH_REPO"):
-        return None
-
-    odoosh_path = Path(os.environ["ODOOSH_REPO"] or "../odoo.sh").resolve().absolute()
-    if not odoosh_path.exists():
-        subprocess.check_call(
-            [
-                "git",
-                "clone",
-                "https://github.com/Odoo-Ninjas/odoo.sh.git",
-                odoosh_path,
-            ]
-        )
-        with cwd(odoosh_path.absolute()):
-            ctx.invoke(gimera_apply)
-    return odoosh_path
-
-
-def _build_gimera(path):
-    gimera_file = path / "gimera.yml"
-    if gimera_file.exists():
-        content = yaml.safe_load(gimera_file.read_text())
-    else:
-        content = {
-            "repos": [
-                {
-                    "branch": str(current_version()),
-                    "url": "https://github.com/odoo/odoo",
-                    "path": "odoo",
-                    "type": "integrated",
-                },
-                {
-                    "branch": str(current_version()),
-                    "url": "git@github.com:odoo/enterprise",
-                    "path": "enterprise",
-                    "type": "integrated",
-                },
-                {
-                    "branch": str(current_version()),
-                    "url": "git@github.com:odoo/design-themes",
-                    "path": "themes",
-                    "type": "integrated",
-                },
-            ]
-        }
-        for repo in content["repos"]:
-            __assure_gitignore(customs_dir() / ".gitignore", "/" + repo["path"] + "/")
-    current_content = gimera_file.read_text() if gimera_file.exists() else ""
-    new_content = yaml.dump(content, default_flow_style=False)
-
-    content_changed = False
-    if current_content != new_content:
-        gimera_file.write_text(new_content)
-        content_changed = True
-    return content_changed
-
-
-def _turn_into_odoosh(ctx, path):
-    _ensure_odoosh_repo(ctx)
-    content_changed = _build_gimera(path)
-
-    repos = yaml.safe_load((path / "gimera.yml").read_text())
-    _apply_gimera_if_required(ctx, path, repos, force_do=content_changed)
-    _find_duplicate_modules()
-
-
 def _find_duplicate_modules():
     from .module_tools import Modules
 
@@ -136,7 +60,7 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
             click.secho(
                 "Restarting reloading because gimera apply was done", fg="yellow"
             )
-            Commands.invoke(ctx, "reload", no_auto_repo=True)
+            Commands.invoke(ctx, "reload", no_apply_gimera=True)
 
             from .module_tools import Modules
 
@@ -149,11 +73,6 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
 def apply_gimera_if_required(ctx):
     path = customs_dir()
     gimera_file = path / "gimera.yml"
-    if not gimera_file.exists():
-        if MANIFEST().get("auto_repo", False):
-            _build_gimera(path)
-        else:
-            return
     repos = yaml.safe_load(gimera_file.read_text())
     _apply_gimera_if_required(ctx, path, repos)
 
@@ -167,25 +86,17 @@ def find_duplicate_modules(config, ctx):
 
 @src.command(name="init", help="Create a new odoo")
 @click.argument("path", required=True)
+@click.argument("version", required=False)
 @click.option("--odoosh", is_flag=True)
 @click.pass_context
 @pass_config
-def init(config, ctx, path, odoosh):
+def init(config, ctx, path, odoosh, version):
     from .module_tools import make_customs
 
     path = Path(path)
     if not path.exists():
         path.mkdir(parents=True)
-    make_customs(ctx, path)
-
-    odoosh and _turn_into_odoosh(ctx, Path(os.getcwd()))
-
-
-@src.command(help="Makes odoo and enterprise code available from common code")
-@click.pass_context
-@pass_config
-def make_odoo_sh_compatible(config, ctx):
-    _turn_into_odoosh(ctx, customs_dir())
+    make_customs(config, ctx, path, version, odoosh)
 
 
 @src.command()

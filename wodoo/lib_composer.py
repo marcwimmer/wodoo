@@ -102,7 +102,7 @@ def _get_arch():
 @click.option("-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0")
 @click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
 @click.option("-I", "--no-update-images", is_flag=True)
-@click.option("-A", "--no-auto-repo", is_flag=True)
+@click.option("--no-gimera-apply", is_flag=True)
 @click.option(
     "--docker-compose", help="additional docker-compose files, separated by colon :"
 )
@@ -121,8 +121,8 @@ def do_reload(
     additional_config_raw,
     images_url,
     no_update_images,
-    no_auto_repo,
     docker_compose,
+    no_gimera_apply,
 ):
     from .myconfigparser import MyConfigParser
     from .module_tools import NotInAddonsPath
@@ -183,8 +183,8 @@ def do_reload(
                 proxy_port,
                 mailclient_gui_port,
                 additional_config,
-                apply_auto_repo=not no_auto_repo,
                 additional_docker_configuration_files=docker_compose,
+                no_gimera_apply=no_gimera_apply,
             )
         except NotInAddonsPath as ex:
             abort(str(ex))
@@ -209,8 +209,8 @@ def internal_reload(
     proxy_port,
     mailclient_gui_port,
     additional_config=None,
-    apply_auto_repo=True,
     additional_docker_configuration_files=None,
+    no_gimera_apply=False,
 ):
     ensure_project_name(config)
     additional_docker_configuration_files = additional_docker_configuration_files or []
@@ -247,13 +247,11 @@ def internal_reload(
 
         click.secho("Additional config: {defaults}")
 
-    if apply_auto_repo:
-        _apply_autorepo(ctx=ctx, config=config)
-
     # assuming we are in the odoo directory
     _do_compose(
         **defaults,
         additional_docker_configuration_files=additional_docker_configuration_files,
+        no_gimera_apply=no_gimera_apply,
     )
 
     _execute_after_reload(config)
@@ -278,6 +276,7 @@ def _do_compose(
     db="",
     demo=False,
     additional_docker_configuration_files=None,
+    no_gimera_apply=False,
     **forced_values,
 ):
     """
@@ -1006,18 +1005,6 @@ def _use_file(config, path):
         if config.verbose:
             click.secho(f"ignoring file: {path}", fg="yellow")
     return res
-
-
-def _apply_autorepo(ctx, config):
-    from .odoo_config import MANIFEST_CLASS, customs_dir
-
-    manifest = MANIFEST_CLASS()
-    if not manifest.get("auto_repo", False):
-        return
-
-    from .lib_src import _turn_into_odoosh
-
-    _turn_into_odoosh(ctx, customs_dir())
 
 
 def _merge_odoo_dockerfile(config):
