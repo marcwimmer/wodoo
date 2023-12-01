@@ -374,6 +374,7 @@ def make_customs(ctx, path):
 
     manifest_file = path / "MANIFEST"
     manifest = eval(manifest_file.read_text())
+    import pudb;pudb.set_trace()
     raise Exception("Rewrite to use gimera")
 
     click.echo("Checking for odoo repo at env variable 'ODOO_REPO'")
