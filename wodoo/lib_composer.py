@@ -247,6 +247,11 @@ def internal_reload(
 
         click.secho("Additional config: {defaults}")
 
+    ODOO_VERSION = str(MANIFEST()['version']).split(".")[0]
+    KEY_ODOO_VERSION = f'RUN_ODOO_VERSION_{ODOO_VERSION}'
+    os.environ[KEY_ODOO_VERSION] = ODOO_VERSION
+    defaults[KEY_ODOO_VERSION] = ODOO_VERSION
+
     # assuming we are in the odoo directory
     _do_compose(
         **defaults,
@@ -941,7 +946,7 @@ def _use_file(config, path):
         if "NO-AUTO-COMPOSE" in path.read_text():
             return False
         if "images" in path.parts:
-            if not getattr(config, "run_{}".format(path.parent.name)):
+            if not getattr(config, f"run_{path.parent.name}") and not any(".run_" in x for x in path.parts):
                 return False
             if not any(".run_" in x for x in path.parts):
                 # allower postgres/docker-compose.yml
@@ -954,9 +959,6 @@ def _use_file(config, path):
             run_key = "RUN_{}".format(path.parent.name).upper()
             return getattr(config, run_key)
 
-        if f"run_odoo_version.{config.odoo_version}.yml" in path.name:
-            return True
-
         customs_dir = config.customs_dir
         try:
             path.relative_to(customs_dir)
@@ -967,7 +969,7 @@ def _use_file(config, path):
                 return True
 
         # requires general run:
-        if getattr(config, "run_{}".format(path.parent.name)) or "run_" in path.name:
+        if getattr(config, f"run_{path.parent.name}") or "run_" in path.name:
             run = list(
                 filter(
                     lambda x: x.startswith("run_"),
