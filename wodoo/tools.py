@@ -1427,38 +1427,45 @@ def _write_file(file, content):
 
 def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     from .module_tools import DBModules
+    from .module_tools import Modules, Module
     from .odoo_config import MANIFEST
     from .odoo_config import current_version
+    from .module_tools import NotInAddonsPath
     from .cli import cli, pass_config, Commands
     from gimera.gimera import add as gimera_add
     from gimera.gimera import apply as gimera_apply
 
     state = DBModules.get_meta_data(modulename)
-    if state["state"] == "installed":
+    if state and state["state"] == "installed":
         return
+    import pudb;pudb.set_trace()
 
-    path = Path("addons_wodoo") / modulename
-    if not path.exists():
-        ctx.invoke(
-            gimera_add,
-            url=repo_url,
-            path=str(path),
-            branch=str(current_version()),
-            type="integrated",
-        )
-        ctx.invoke(gimera_apply, repos=str(path))
-
-    # if not yet there, then pack into "addons_framework"
     manifest = MANIFEST()
-    addons_paths = manifest.get("addons_paths", [])
+    try:
+        Module.get_by_name(modulename)
+    except (KeyError, NotInAddonsPath):
+        path = Path("addons_wodoo") / modulename
+        if not path.exists():
+            ctx.invoke(
+                gimera_add,
+                url=repo_url,
+                path=str(path),
+                branch=str(current_version()),
+                type="integrated",
+            )
+            ctx.invoke(gimera_apply, repos=[str(path)])
+
+            # if not yet there, then pack into "addons_framework"
+            addons_paths = manifest.get("addons_paths", [])
+
+            if str(path) not in addons_paths:
+                addons_paths += [str(path)]
+                manifest["addons_paths"] = addons_paths
+
     install = manifest.get("install", [])
     if modulename not in install:
         install += [modulename]
     manifest["install"] = install
-
-    if str(path) not in addons_paths:
-        addons_paths += [str(path)]
-        manifest["addons_paths"] = addons_paths
 
     manifest.rewrite()
 
