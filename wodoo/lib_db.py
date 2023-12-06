@@ -247,30 +247,6 @@ def cleardb(ctx, config, no_update):
         ctx, config, "cleardb", "https://github.com/marcwimmer/odoo-cleardb.git"
     )
 
-    if not no_update:
-        Commands.invoke(
-            ctx,
-            "update",
-            module=["cleardb"],
-            no_restart=False,
-            no_dangling_check=True,
-            no_update_module_list=False,
-            non_interactive=True,
-            recover_view_error=True,
-        )
-
-        # update of all modules then required, so that metainformation is
-        # written to ir.model (the _cleardb flag on model)
-        Commands.invoke(
-            ctx,
-            "update",
-            module=[],
-            no_restart=False,
-            no_dangling_check=True,
-            no_update_module_list=False,
-            non_interactive=True,
-        )
-
     Commands.invoke(
         ctx,
         "odoo-shell",
