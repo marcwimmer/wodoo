@@ -235,10 +235,10 @@ def anonymize(ctx, config):
 
 
 @db.command()
-@click.option("--no-update", is_flag=True)
+@click.option("-V", "--no-vacuum-full", is_flag=True)
 @pass_config
 @click.pass_context
-def cleardb(ctx, config, no_update):
+def cleardb(ctx, config, no_vacuum_full):
     if not (config.devmode or config.force):
         click.secho("Either DEVMODE or force required", fg="red")
         sys.exit(-1)
@@ -246,12 +246,13 @@ def cleardb(ctx, config, no_update):
     _make_sure_module_is_installed(
         ctx, config, "cleardb", "https://github.com/marcwimmer/odoo-cleardb.git"
     )
+    str_no_vauum_full = '1' if no_vacuum_full else '0'
 
     Commands.invoke(
         ctx,
         "odoo-shell",
         command=[
-            'env["frameworktools.cleardb"]._run()',
+            f'env["frameworktools.cleardb"]._run(no_vacuum_full={str_no_vauum_full})',
             "env.cr.commit()",
         ],
     )
