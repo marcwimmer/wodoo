@@ -28,6 +28,7 @@ except Exception:
 from .tools import _extract_python_libname
 from .tools import _exists_table
 from .tools import _execute_sql
+from .tools import table_exists
 from .tools import measure_time
 from .odoo_config import get_conn_autoclose, manifest_file_names
 from .odoo_config import current_version
@@ -185,7 +186,8 @@ class DBModules(object):
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
         with get_conn_autoclose() as cr:
-            _execute_sql(cr, SQL)
+            if table_exists(cr, 'ir_module_module'):
+                _execute_sql(cr, SQL)
 
     @classmethod
     def show_install_state(clazz, raise_error):

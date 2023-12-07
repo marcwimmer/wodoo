@@ -29,6 +29,7 @@ from .tools import __concurrent_safe_write_file
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
+from .tools import table_exists
 from .tools import get_services
 from .tools import __try_to_set_owner
 from .tools import measure_time, abort
@@ -62,11 +63,9 @@ def odoo_module(config):
 @pass_config
 def abort_upgrade(config):
     click.echo("Aborting upgrade...")
-    SQL = """
-        UPDATE ir_module_module SET state = 'installed' WHERE state = 'to upgrade';
-        UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
-    """
-    _execute_sql(config.get_odoo_conn(), SQL)
+    from .module_tools import Modules, DBModules
+
+    DBModules.abort_upgrade()
 
 
 def _get_default_modules_to_update():
@@ -270,7 +269,7 @@ def _get_outdated_versioned_modules_of_deptree(modules):
                 # seen: if version in manifest is 14.0.1.0 and installed in
                 # 13.0 odoo then version becomes inside odoo: 13.0.14.0.10
                 # so try to match including current version:
-                odoo_version = list(map(int, str(MANIFEST()['version']).split(".")))
+                odoo_version = list(map(int, str(MANIFEST()["version"]).split(".")))
                 new_version = tuple(odoo_version + list(new_version))
                 if new_version != version:
                     yield dep
@@ -677,7 +676,7 @@ def update(
 
     duration = (arrow.get() - started).total_seconds()
     date = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
-    click.secho(f"Update done at {date} - duration {duration}s", fg='yellow')
+    click.secho(f"Update done at {date} - duration {duration}s", fg="yellow")
 
 
 def _set_sha(config):
@@ -1325,22 +1324,18 @@ def _get_changed_files(git_sha):
         if submodule:
             current_commit = str(repo.hex)
             relpath = filepath.relative_to(repo.path)
-            old_commit = (
-                subprocess.check_output(
-                    [
-                        "git",
-                        "rev-parse",
-                        f"{git_sha}:./{relpath}",
-                    ], encoding='utf8'
-                )
-                .strip()
-            )
-            new_commit = (
-                subprocess.check_output(
-                    ["git", "rev-parse", f"{current_commit}:./{relpath}"], encoding='utf8',
-                )
-                .strip()
-            )
+            old_commit = subprocess.check_output(
+                [
+                    "git",
+                    "rev-parse",
+                    f"{git_sha}:./{relpath}",
+                ],
+                encoding="utf8",
+            ).strip()
+            new_commit = subprocess.check_output(
+                ["git", "rev-parse", f"{current_commit}:./{relpath}"],
+                encoding="utf8",
+            ).strip()
             # now diff the submodule
             for filepath2 in git_diff_files(filepath, old_commit, new_commit):
                 filepaths2.append(str(relpath / filepath2))
@@ -1387,6 +1382,7 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
     if not relative_to_customs_dir:
         return global_hash_paths
     return [p.relative_to(customs_dir_path) for p in global_hash_paths]
+
 
 hash_cache = {}
 

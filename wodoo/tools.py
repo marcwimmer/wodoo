@@ -167,6 +167,17 @@ def __get_odoo_commit():
     return commit
 
 
+def table_exists(conn, table):
+    exist = _execute_sql(
+        conn,
+        f"select count(*) from information_schema.tables where table_schema='public' and table_name='{table}'",
+        fetchone=True,
+    )
+    if not exist or not exist[0]:
+        return False
+    return True
+
+
 def _execute_sql(
     connection,
     sql,
@@ -1438,7 +1449,9 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     state = DBModules.get_meta_data(modulename)
     if state and state["state"] == "installed":
         return
-    import pudb;pudb.set_trace()
+    import pudb
+
+    pudb.set_trace()
 
     manifest = MANIFEST()
     try:
