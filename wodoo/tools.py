@@ -1493,22 +1493,21 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     )
 
 
-def bashfind(path, name=None, wholename=None, type=None):
+def bashfind(path, name=None, wholename=None, type=None, maxdepth=None):
     cmd = [
-        "find",
+        "find", path
     ]
     if type:
-        cmd += [
-            "-type",
-            type,
-        ]
+        cmd += ["-type", type]
+    if maxdepth:
+        cmd += ["-maxdepth", maxdepth]
     if wholename:
         cmd += ["-wholename", wholename]
     if name:
         cmd += ["-name", name]
     if not Path(path).exists():
         return []
-    files = subprocess.check_output(cmd, cwd=path, encoding="utf8").splitlines()
+    files = subprocess.check_output(cmd, encoding="utf8").splitlines()
     return list(map(lambda x: Path(path) / x, files))
 
 
