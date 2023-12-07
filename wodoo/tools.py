@@ -1500,7 +1500,7 @@ def bashfind(path, name=None, wholename=None, type=None, maxdepth=None):
     if type:
         cmd += ["-type", type]
     if maxdepth:
-        cmd += ["-maxdepth", maxdepth]
+        cmd += ["-maxdepth", str(maxdepth)]
     if wholename:
         cmd += ["-wholename", wholename]
     if name:
