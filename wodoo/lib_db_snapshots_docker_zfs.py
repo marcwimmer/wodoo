@@ -5,6 +5,15 @@ zfs create zfs_pool1/docker/volumes
 
 set /etc/odoo/settings ZFS_PATH_VOLUMES=zfs_pool1/docker/volumes  then
 
+
+zfs list -o name,usedbychildren     # 
+docker/vlsa039t563j1yi1k4hum45or                                                0B
+docker/volumes                                                                100K
+docker/volumes/t1                                                               0B
+docker/w0lqy0goq0ylqmt0pipsrjoxt                                                0B
+docker/w0v9nokwbqazajfri0u3k5cor                                                0B
+better: zfs get -H -o value usedbychildren docker/volumes  mit -1 oder nicht
+
 """
 import os
 import inquirer
@@ -39,6 +48,7 @@ systemctl start docker
 
 DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
 
+
 try:
     zfs = search_env_path("zfs")
 except Exception:
@@ -64,18 +74,23 @@ def _get_path(config):
 
 
 def _get_zfs_path(config):
-    path = os.getenv("ZFS_PATH_VOLUMES") or config.ZFS_PATH_VOLUMES
-    if not path:
-        abort(
-            "Please configure the snapshot root folder for docker "
-            "snapshots in ZFS_PATH_VOLUMES.\n"
-            "Example: pool1/docker/volumes\n"
-            "You must make sure that a filesystem exists for docker/volumes."
-            "If poolname is pool1 and mounted on /var/lib/docker you do: \n"
-            "zfs create pool1/volumes\n"
-        )
-    path = path + "/" + __get_postgres_volume_name(config)
-    return path
+    """
+    takes the postgresname and translates:
+    pg1 --> /var/lib/docker/volumes/pg1
+
+    Doesnt matter if pg1 is already a snapshot or not 
+
+    """
+    datasets = _get_all_mountpoints()
+    viceversa = {v: k for k, v in datasets.items()}
+    postgresname = __get_postgres_volume_name(config)
+    firstmatch = [x for x in datasets.values() if x.endswith("/" + postgresname)]
+    secondmatch = [x for x in datasets.values() if x.endswith("/volumes")]
+    if firstmatch:
+        return viceversa[firstmatch[0]]
+    if secondmatch:
+        return viceversa[secondmatch[0]] + "/" + postgresname
+    raise Exception(f"Not found: {postgresname}")
 
 
 def _get_next_snapshotpath(config):
@@ -93,6 +108,7 @@ def _get_possible_snapshot_paths(config):
     """
     :param path: root path
     """
+    # TODO
     all_zfs_folders = _get_all_zfs()
     zfs_path = _get_zfs_path(config)
     for folder in all_zfs_folders:
@@ -151,23 +167,15 @@ _cache = {}
 
 
 def _get_all_zfs():
-    if "folders" not in _cache:
-        output = subprocess.check_output(
-            ["sudo", zfs, "list", "-oname"], encoding="utf8"
-        ).splitlines()
-        folders = map(lambda x: x.strip(), output)
-        folders = list(map(lambda x: x.strip(), folders))
-        _cache["folders"] = folders
-    return _cache["folders"]
+    datasets = _get_all_mountpoints()
+    return datasets.keys()
 
 
 def __is_zfs_fs(path_zfs):
     path_zfs = str(path_zfs)
     assert " " not in path_zfs
-    folders = _get_all_zfs()
-    folders = [x for x in folders if x == path_zfs]
-    return folders
-
+    datasets = _get_all_zfs()
+    return str(path_zfs) in datasets
 
 def assert_environment(config):
     pass
@@ -236,6 +244,12 @@ def make_snapshot(ctx, config, name):
     __dc(config, ["up", "-d"] + ["postgres"])
     return name
 
+def remount(config):
+    zfs_full_path = _get_zfs_path(config)
+    zfs = search_env_path("zfs")
+    subprocess.check_call(
+        ["sudo", zfs, "mount", zfs_full_path],
+    )
 
 def _try_umount(config):
     zfs_full_path = _get_zfs_path(config)
@@ -305,6 +319,7 @@ def remove(config, snapshot):
     if snapshot["fullpath"] in map(itemgetter("fullpath"), snapshots):
         _try_umount(config)
         subprocess.check_call(["sudo", zfs, "destroy", "-R", snapshot["fullpath"]])
+        remount(config)
 
 
 def remove_volume(config):
@@ -325,6 +340,7 @@ def _get_pool_mountpoint(poolname):
     return Path(mountpoint)
 
 def translate_poolPath_to_fullPath(path):
+    # TODO
     path = Path(path)
     pool = path.parts[0]
     poolpath = _get_pool_mountpoint(pool)
@@ -338,3 +354,20 @@ def clear_all(config):
     diskpath = translate_poolPath_to_fullPath(zfs_full_path)
     if __is_zfs_fs(diskpath):
         subprocess.check_call(["sudo", zfs, "destroy", "-r", zfs_full_path])
+
+
+
+# ----------------------------------
+def _get_all_mountpoints():
+    if 'datasets' not in _cache:
+
+        zfs = search_env_path("zfs")
+
+        lines = subprocess.check_output(["sudo", zfs, "list", "-o", "name,mountpoint"], encoding="utf8").splitlines()
+        lines = list(filter(lambda x: not x.strip().endswith("legacy"), lines[1:]))
+        datasets = {}
+        for line in lines:
+            dataset, path = line.split()
+            datasets[dataset] = path.strip()
+        _cache['datasets'] = datasets
+    return _cache['datasets']
