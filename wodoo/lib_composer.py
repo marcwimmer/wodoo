@@ -717,7 +717,7 @@ def __run_docker_compose_config(config, contents, env):
             # find culprit
             for i in range(len(files)):
                 file = files[i]
-                cmdline2 = buildcmd(files[:i])
+                cmdline2 = buildcmd(files[:i + 1])
                 try:
                     click.secho(f"Testing {file}...", fg='green')
                     conf = subprocess.check_output(cmdline2, cwd=temp_path, env=d)
