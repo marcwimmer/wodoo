@@ -94,8 +94,10 @@ def init(config, ctx, path, odoosh, version):
     from .module_tools import make_customs
 
     path = Path(path)
+    path = path.absolute()
     if not path.exists():
         path.mkdir(parents=True)
+    os.chdir(path)
     make_customs(config, ctx, path, version, odoosh)
 
 
