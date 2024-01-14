@@ -6,17 +6,17 @@ import shutil
 import tempfile
 import click
 from .tools import __dc
-from .tools import search_env_path
+from .tools import search_env_path, __get_postgres_volume_name
 from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from pathlib import Path
+from .tools import get_volume_fullpath, get_docker_volumes
 
-DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
-SNAPSHOT_DIR = Path("/var/lib/docker/subvolumes")
+SNAPSHOT_DIR = get_docker_volumes() / 'subvolumes'
 
 
-def __get_postgres_volume_name(config):
-    return f"{config.project_name}_odoo_postgres_volume"
+def _get_path(config):
+    return get_volume_fullpath(__get_postgres_volume_name(config))
 
 
 def _get_cmd_butter_volume():
@@ -118,10 +118,9 @@ def _turn_into_subvolume(path):
 
 
 def make_snapshot(ctx, config, name):
-    volume_name = __get_postgres_volume_name(config)
     __dc(config, ["stop", "-t 1"] + ["postgres"])
     path = _get_subvolume_dir(config)
-    _turn_into_subvolume(DOCKER_VOLUMES / __get_postgres_volume_name(config))
+    _turn_into_subvolume(_get_path(config))
 
     # check if name already exists, and if so abort
     dest_path = path / name
@@ -137,7 +136,7 @@ def make_snapshot(ctx, config, name):
         + [
             "snapshot",
             "-r",  # readonly
-            f"{DOCKER_VOLUMES}/{volume_name}",
+            _get_path,
             str(dest_path),
         ]
     ).decode("utf-8").strip()
@@ -158,7 +157,7 @@ def restore(config, name):
         sys.exit(-1)
 
     __dc(config, ["stop", "-t 1"] + ["postgres"])
-    volume_path = DOCKER_VOLUMES / __get_postgres_volume_name(config)
+    volume_path = _get_path(config)
     if volume_path.exists():
         subprocess.check_call(
             _get_cmd_butter_volume()
@@ -198,7 +197,7 @@ def purge_inactive(config):
         if not vol.is_dir():
             continue
         try:
-            next(DOCKER_VOLUMES.glob(vol.name))
+            next(get_docker_volumes().glob(vol.name))
         except StopIteration:
             for snapshot in vol.glob("*"):
                 click.secho(f"Deleting snapshot {snapshot}", fg="red")

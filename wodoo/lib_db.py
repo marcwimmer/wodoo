@@ -106,7 +106,6 @@ def pgcli(config, dbname, params, host, port, user, password):
         conn = config.get_odoo_conn(inside_container=True).clone(dbname=dbname)
     return _pgcli(config, conn, params, use_docker_container=True)
 
-
 @db.command()
 @click.argument("dbname", required=False)
 @click.argument("params", nargs=-1)
@@ -246,7 +245,7 @@ def cleardb(ctx, config, no_vacuum_full):
     _make_sure_module_is_installed(
         ctx, config, "cleardb", "https://github.com/marcwimmer/odoo-cleardb.git"
     )
-    str_no_vauum_full = '1' if no_vacuum_full else '0'
+    str_no_vauum_full = "1" if no_vacuum_full else "0"
 
     Commands.invoke(
         ctx,

@@ -1,26 +1,9 @@
 import subprocess
-import yaml
-import arrow
-import json
-import pipes
-import re
-import traceback
-import sys
-import shutil
-import hashlib
-import os
-import tempfile
 import click
-import inquirer
 from datetime import datetime
 from .tools import measure_time
 from .tools import exec_file_in_path
-from .tools import remove_webassets
-from .tools import _askcontinue
-from .tools import get_volume_names
 from .cli import cli, pass_config, Commands
-from .lib_clickhelpers import AliasedGroup
-from .tools import __hash_odoo_password
 from .tools import _remove_postgres_connections, _execute_sql
 
 def __get_snapshots(config):

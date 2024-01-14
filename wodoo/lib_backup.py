@@ -39,6 +39,8 @@ from .tools import ensure_project_name
 from .tools import _get_filestore_folder
 from .tools import __try_to_set_owner
 from .tools import docker_list_containers
+from .tools import __get_postgres_volume_name
+from .tools import get_volume_fullpath
 
 import inspect
 import os
@@ -64,6 +66,20 @@ def backup(config):
 @pass_config
 def restore(config):
     pass
+
+
+from .tools import get_directory_size
+
+
+@backup.command()
+@pass_config
+@click.pass_context
+def used_space_files(ctx, config):
+    filestore_folder = _get_filestore_folder(config)
+
+    size = int(get_directory_size(filestore_folder))
+    print("----")
+    print(size)
 
 
 @backup.command(name="all")
@@ -272,7 +288,7 @@ def _restore_wodoo_bin(ctx, config, filepath, verify):
                 "docker",
                 "volume",
                 "inspect",
-                f"{config.PROJECT_NAME}_odoo_postgres_volume",
+                __get_postgres_volume_name(config),
             ],
             encoding="utf-8",
         )
@@ -498,7 +514,9 @@ def _restore_dump(
         with config.forced() as config:
             _dropdb(config, conn)
         try_ignore_exceptions(
-            lambda: dropdb(config), (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
+            lambda: dropdb(config),
+            (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError),
+            timeout=30,
         )
 
     def create_db():
@@ -687,7 +705,7 @@ def _backup_wodoobin(ctx, config, filename):
                 "docker",
                 "volume",
                 "inspect",
-                f"{config.PROJECT_NAME}_odoo_postgres_volume",
+                __get_postgres_volume_name(config),
             ]
         )
     )[0]["Mountpoint"]

@@ -895,13 +895,6 @@ def get_dockercompose():
     return compose
 
 
-def get_volume_names():
-    from . import project_name
-
-    vols = get_dockercompose()["volumes"].keys()
-    return [f"{project_name}_{x}" for x in vols]
-
-
 def __running_as_root_or_sudo():
     output = subprocess.check_output(["/usr/bin/id", "-u"]).strip().decode("utf-8")
     return output == "0"
@@ -1494,9 +1487,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
 
 
 def bashfind(path, name=None, wholename=None, type=None, maxdepth=None):
-    cmd = [
-        "find", path
-    ]
+    cmd = ["find", path]
     if type:
         cmd += ["-type", type]
     if maxdepth:
@@ -1578,3 +1569,24 @@ def pretty_xml(xmlstring):
             },
         )
         return formatted
+
+
+def __get_postgres_volume_name(config):
+    if config.NAMED_ODOO_POSTGRES_VOLUME:
+        return config.NAMED_ODOO_POSTGRES_VOLUME
+    return f"{config.project_name}_odoo_postgres_volume"
+
+
+def get_volume_fullpath(name):
+    return get_docker_volumes() / name
+
+
+def get_docker_volumes():
+    DOCKER_VOLUMES = Path("/var/lib/docker/volumes")
+    return DOCKER_VOLUMES
+
+
+def get_directory_size(path):
+    size = subprocess.check_output(["du", "-s", path], encoding="utf8")
+    size = size.splitlines()[-1].split()[0]
+    return int(size)
