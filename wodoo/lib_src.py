@@ -452,7 +452,7 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
 @src.command()
 @click.pass_context
 @pass_config
-def views_grab(config, ctx):
+def grab_views(config, ctx):
     root = customs_dir() / "src" / "views"
 
     sql = f"select id, name, arch_db, model from ir_ui_view"
@@ -471,6 +471,7 @@ def views_grab(config, ctx):
         while not q.empty():
             count, view = q.get()
             try:
+
                 def prog(c):
                     p = round(count / len(rows) * 100, 1)
                     click.secho(f"...threading progress {p}%", fg="yellow")
@@ -499,12 +500,12 @@ def views_grab(config, ctx):
                 if not stats["views"] % 800:
                     prog(stats["views"])
             except Exception as ex:
-                click.secho(ex, fg='red')
+                click.secho(ex, fg="red")
 
     threads = []
     for count, view in enumerate(rows):
         q.put((count, view))
-    
+
     for i in range(10):
         t = threading.Thread(target=check_view)
         t.daemon = True
@@ -522,7 +523,7 @@ def views_grab(config, ctx):
 @src.command()
 @click.pass_context
 @pass_config
-def views_compare(config, ctx):
+def compare_views(config, ctx):
     root = customs_dir() / "src"
 
     q = Queue()
@@ -596,6 +597,59 @@ def views_compare(config, ctx):
 
     for _ in range(10):
         t = threading.Thread(target=check_file)
+        t.start()
+        threads.append(t)
+    [t.join() for t in threads]
+
+
+@src.command()
+@click.pass_context
+@pass_config
+def grab_models(config, ctx):
+    root = customs_dir() / "src" / "models"
+
+    sql = f"select id, model from ir_model"
+    conn = config.get_odoo_conn()
+    rows = _execute_sql(conn, sql, fetchall=True)
+    q = Queue()
+
+    for i, (id, model) in enumerate(rows):
+        q.put(model)
+
+    def do():
+        while not q.empty():
+            model = q.get()
+            try:
+                data = {
+                    "model": model,
+                    "fields": [],
+                }
+                fields = _execute_sql(
+                    conn,
+                    f"select name, ttype, compute, relation, translate, readonly from ir_model_fields where model = '{model}'",
+                    fetchall=True,
+                )
+                for field in fields:
+                    data["fields"].append(
+                        {
+                            "name": field[0],
+                            "type": field[1],
+                            "compute": field[2],
+                            "relation": field[3],
+                            "translate": field[4],
+                            "readonly": field[5],
+                        }
+                    )
+                path = root / (model + ".json")
+                path.parent.mkdir(exist_ok=True, parents=True)
+                path.write_text(json.dumps(data, indent=4))
+
+            except Exception as ex:
+                click.secho("{e}", fg="red")
+
+    threads = []
+    for _ in range(10):
+        t = threading.Thread(target=do)
         t.start()
         threads.append(t)
     [t.join() for t in threads]
