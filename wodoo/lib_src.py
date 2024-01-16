@@ -578,8 +578,7 @@ def views_compare(config, ctx):
                 pass
 
     for file in (customs_dir() / "src" / "views").glob("*.xml"):
-        args = (file,)
-        q.put((file, 1))
+        q.put(file)
 
     folder = customs_dir() / "src" / "views" / "by_name"
     if folder.exists():
