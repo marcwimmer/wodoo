@@ -517,30 +517,31 @@ def views_compare(config, ctx):
 
     conn = config.get_odoo_conn()
 
-    def compare_view(file_content, res_id):
+    def compare_view(file_content, res_id, info):
         view = _execute_sql(
-            conn, "select arch_db from ir_ui_view where id={res_id}", fetchone=True
+            conn, f"select arch_db from ir_ui_view where id={res_id}", fetchone=True
         )
         if not view:
-            click.secho(f"VIEW vanished: {row[1]}", fg="red")
+            click.secho(f"VIEW vanished with id: {res_id} ({info})", fg="red")
         else:
             view = view[0]
             if current_version() < 16:
                 view = {"en_US": view}
             for _lang, _arch in view.items():
                 if _lang == lang:
-                    if pretty_xml(arch) != pretty_xml(_arch):
+                    if pretty_xml(arch) != pretty_xml(_arch.encode('utf8')):
                         click.secho(f"VIEW vanished: {row[1]}", fg="red")
 
     conn = config.get_odoo_conn()
 
     for file in (customs_dir() / "src" / "views").glob("*.xml"):
         content = file.read_bytes()
-        import pudb
-
-        pudb.set_trace()
-        xmlid, lang = file.stem.split(".xmlid.")[1]
-        module, name = xmlid.split(".")
+        try:
+            module, name, lang = file.stem.split(".xmlid.")[1].split(".", 4)
+        except:
+            click.secho(f"Invalid File Format: {file.relative_to(root)}", fg='red')
+            continue
+        xmlid = ".".join([module, name])
 
         sql = (
             f"select res_id "
@@ -554,7 +555,7 @@ def views_compare(config, ctx):
             click.secho(f"XMLID vanished: {xmlid}", fg="red")
         else:
             arch = file.read_bytes()
-            compare_view(content, row[0])
+            compare_view(content, row[0], xmlid)
         del xmlid, module, name
 
     folder = customs_dir() / "src" / "views" / "by_name"
@@ -563,4 +564,4 @@ def views_compare(config, ctx):
             content = file.read_bytes()
             res_id = int(file.stem.split(".")[-1])
             lang = file.stem.split(".")[-2]
-            compare_view(content, res_id)
+            compare_view(content, res_id, "")
