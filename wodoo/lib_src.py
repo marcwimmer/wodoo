@@ -462,8 +462,9 @@ def views_grab(config, ctx):
             click.secho(f"Exported {count} views of {len(rows)}", fg=c)
         arch = view[2]
         xmlid = _get_xml_id(config, 'ir.ui.view', view[0])
-        model = view[3]
+        model = view[3] or 'no-model'
         name = view[1]
+        id = view[0]
         if current_version() < 16:
             arch = {'en_US': arch}
 
@@ -471,7 +472,7 @@ def views_grab(config, ctx):
             if xmlid:
                 filepath = root / 'views' / f"{model}.xmlid.{xmlid}.xml"
             else:
-                filepath = root / 'views' / 'by_name' / f'{model}.{name}.{key}xml'
+                filepath = root / 'views' / 'by_name' / f'{model}.{name}.{key}.{id}.xml'
             filepath.parent.mkdir(exist_ok=True, parents=True)
         
             path = filepath.parent / (filepath.stem + f"{key}.xml")
