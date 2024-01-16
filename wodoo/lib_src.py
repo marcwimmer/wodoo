@@ -488,7 +488,7 @@ def grab_views(config, ctx):
                     if xmlid:
                         filepath = root / f"{model}.xmlid.{xmlid}.xml"
                     else:
-                        filepath = root / "by_name" / f"{model}.{name}.{key}.{id}.xml"
+                        filepath = root / "by_name" / f"{model}.byname.{name}.{key}.{id}.xml"
                     filepath.parent.mkdir(exist_ok=True, parents=True)
 
                     path = filepath.parent / (filepath.stem + f".{key}.xml")
@@ -521,16 +521,18 @@ def grab_views(config, ctx):
 
 
 @src.command()
+@click.option("-t", "--threads", default=10)
+@click.argument("match")
 @click.pass_context
 @pass_config
-def compare_views(config, ctx):
+def compare_views(config, ctx, threads, match):
     root = customs_dir() / "src"
 
     q = Queue()
 
     conn = config.get_odoo_conn()
 
-    def compare_view(file_content, res_id, lang, info):
+    def compare_view(file_content, res_id, lang, info, the_model):
         view = _execute_sql(
             conn, f"select arch_db from ir_ui_view where id={res_id}", fetchone=True
         )
@@ -542,21 +544,46 @@ def compare_views(config, ctx):
                 view = {"en_US": view}
             for _lang, _arch in view.items():
                 if _lang == lang:
-                    if pretty_xml(file_content) != pretty_xml(_arch.encode("utf8")):
-                        click.secho(f"VIEW vanished: {res_id}", fg="red")
+
+                    def strippi(xml):
+                        xml = xml.splitlines()
+                        if "<?" in xml[0]:
+                            xml = "\n".join(xml[1:])
+                        else:
+                            xml = "\n".join(xml)
+                        for c in [" \t\n"]:
+                            xml = xml.replace(c, "")
+                        return xml
+
+                    if strippi(file_content) != strippi(_arch):
+                        click.secho(
+                            f"Model: {the_model} -----------------------------------------------------------",
+                            fg="yellow",
+                        )
+                        click.secho(f"VIEW {res_id} {info}", fg="green")
+                        Path("/tmp/1").write_bytes(
+                            pretty_xml(file_content.encode("utf8"))
+                        )
+                        Path("/tmp/2").write_bytes(pretty_xml(_arch.encode("utf8")))
+                        subprocess.run(
+                            ["/bin/diff", "--color", "-w", "/tmp/1", "/tmp/2"]
+                        )
 
     conn = config.get_odoo_conn()
 
-    threads = []
+    athreads = []
 
     def check_file():
         while not q.empty():
             file = q.get()
+            if match and match not in file.stem:
+                continue
             try:
-                content = file.read_bytes()
+                content = file.read_text()
                 if ".xmlid." in file.stem:
                     try:
                         module, name, lang = file.stem.split(".xmlid.")[1].split(".", 4)
+                        model = file.stem.split(".xmlid.")[0]
                     except:
                         click.secho(
                             f"Invalid File Format: {file.relative_to(root)}", fg="red"
@@ -575,14 +602,15 @@ def compare_views(config, ctx):
                     if not row:
                         click.secho(f"XMLID vanished: {xmlid}", fg="red")
                     else:
-                        arch = file.read_bytes()
-                        compare_view(content, row[0], lang, xmlid)
+                        arch = file.read_text()
+                        compare_view(content, row[0], lang, xmlid, model)
                     del xmlid, module, name
                 else:
-                    content = file.read_bytes()
+                    content = file.read_text()
+                    model = file.stem.split(".byname.")[0]
                     res_id = int(file.stem.split(".")[-2])
                     lang = file.stem.split(".")[-3]
-                    compare_view(content, res_id, lang, "")
+                    compare_view(content, res_id, lang, "", model)
                     del res_id
             except Exception as ex:
                 click.secho(ex, fg="red")
@@ -595,11 +623,11 @@ def compare_views(config, ctx):
         for file in folder.glob("*"):
             q.put(file)
 
-    for _ in range(10):
+    for _ in range(threads):
         t = threading.Thread(target=check_file)
         t.start()
-        threads.append(t)
-    [t.join() for t in threads]
+        athreads.append(t)
+    [t.join() for t in athreads]
 
 
 @src.command()
