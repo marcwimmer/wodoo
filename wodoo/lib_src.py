@@ -1,4 +1,5 @@
 from pathlib import Path
+from queue import Queue
 import threading
 from click.shell_completion import CompletionItem
 import json
@@ -515,9 +516,11 @@ def views_grab(config, ctx):
 def views_compare(config, ctx):
     root = customs_dir() / "src"
 
+    q = Queue()
+
     conn = config.get_odoo_conn()
 
-    def compare_view(file_content, res_id, info):
+    def compare_view(file_content, res_id, lang, info):
         view = _execute_sql(
             conn, f"select arch_db from ir_ui_view where id={res_id}", fetchone=True
         )
@@ -529,39 +532,62 @@ def views_compare(config, ctx):
                 view = {"en_US": view}
             for _lang, _arch in view.items():
                 if _lang == lang:
-                    if pretty_xml(arch) != pretty_xml(_arch.encode('utf8')):
-                        click.secho(f"VIEW vanished: {row[1]}", fg="red")
+                    if pretty_xml(file_content) != pretty_xml(_arch.encode("utf8")):
+                        click.secho(f"VIEW vanished: {res_id}", fg="red")
 
     conn = config.get_odoo_conn()
 
-    for file in (customs_dir() / "src" / "views").glob("*.xml"):
-        content = file.read_bytes()
-        try:
-            module, name, lang = file.stem.split(".xmlid.")[1].split(".", 4)
-        except:
-            click.secho(f"Invalid File Format: {file.relative_to(root)}", fg='red')
-            continue
-        xmlid = ".".join([module, name])
+    threads = []
 
-        sql = (
-            f"select res_id "
-            f"from ir_model_data "
-            f"where model = 'ir.ui.view' "
-            f"and module='{module}' "
-            f"and name = '{name}'"
-        )
-        row = _execute_sql(conn, sql, fetchone=True)
-        if not row:
-            click.secho(f"XMLID vanished: {xmlid}", fg="red")
-        else:
-            arch = file.read_bytes()
-            compare_view(content, row[0], xmlid)
-        del xmlid, module, name
+    def check_file():
+        while not q.empty():
+            file = q.get()
+            try:
+                content = file.read_bytes()
+                if ".xmlid." in file.stem:
+                    try:
+                        module, name, lang = file.stem.split(".xmlid.")[1].split(".", 4)
+                    except:
+                        click.secho(
+                            f"Invalid File Format: {file.relative_to(root)}", fg="red"
+                        )
+                        return
+                    xmlid = ".".join([module, name])
+
+                    sql = (
+                        f"select res_id "
+                        f"from ir_model_data "
+                        f"where model = 'ir.ui.view' "
+                        f"and module='{module}' "
+                        f"and name = '{name}'"
+                    )
+                    row = _execute_sql(conn, sql, fetchone=True)
+                    if not row:
+                        click.secho(f"XMLID vanished: {xmlid}", fg="red")
+                    else:
+                        arch = file.read_bytes()
+                        compare_view(content, row[0], lang, xmlid)
+                else:
+                    content = file.read_bytes()
+                    res_id = int(file.stem.split(".")[-1])
+                    lang = file.stem.split(".")[-2]
+                    compare_view(content, res_id, lang, xmlid)
+                del xmlid, module, name
+            except Exception as ex:
+                click.secho(ex, fg="red")
+                pass
+
+    for file in (customs_dir() / "src" / "views").glob("*.xml"):
+        args = (file,)
+        q.put((file, 1))
 
     folder = customs_dir() / "src" / "views" / "by_name"
     if folder.exists():
         for file in folder.glob("*"):
-            content = file.read_bytes()
-            res_id = int(file.stem.split(".")[-1])
-            lang = file.stem.split(".")[-2]
-            compare_view(content, res_id, "")
+            q.put(file)
+
+    for i in range(10):
+        t = threading.Thread(target=check_file)
+        t.start()
+        threads.append(t)
+    [t.join() for t in threads]
