@@ -465,39 +465,48 @@ def views_grab(config, ctx):
 
     threads = []
     stats = {"views": 0}
+    q = Queue()
 
-    def check_view(count, view):
-        def prog(c):
-            p = round(count / len(rows) * 100, 1)
-            click.secho(f"...threading progress {p}%", fg="yellow")
+    def check_view():
+        while not q.empty():
+            count, view = q.get()
+            try:
+                def prog(c):
+                    p = round(count / len(rows) * 100, 1)
+                    click.secho(f"...threading progress {p}%", fg="yellow")
 
-        arch = view[2]
-        xmlid = _get_xml_id(config, "ir.ui.view", view[0])
-        model = view[3] or "no-model"
-        name = view[1]
-        id = view[0]
-        if current_version() < 16:
-            arch = {"en_US": arch}
+                arch = view[2]
+                xmlid = _get_xml_id(config, "ir.ui.view", view[0])
+                model = view[3] or "no-model"
+                name = view[1]
+                id = view[0]
+                if current_version() < 16:
+                    arch = {"en_US": arch}
 
-        for key in arch:
-            if xmlid:
-                filepath = root / f"{model}.xmlid.{xmlid}.xml"
-            else:
-                filepath = root / "by_name" / f"{model}.{name}.{key}.{id}.xml"
-            filepath.parent.mkdir(exist_ok=True, parents=True)
+                for key in arch:
+                    if xmlid:
+                        filepath = root / f"{model}.xmlid.{xmlid}.xml"
+                    else:
+                        filepath = root / "by_name" / f"{model}.{name}.{key}.{id}.xml"
+                    filepath.parent.mkdir(exist_ok=True, parents=True)
 
-            path = filepath.parent / (filepath.stem + f".{key}.xml")
-            xml = arch[key].encode("utf8")
-            path.write_bytes(pretty_xml(xml))
-            if path in all_files:
-                all_files.remove(path)
-        stats["views"] += 1
-        if not stats["views"] % 800:
-            prog(stats["views"])
+                    path = filepath.parent / (filepath.stem + f".{key}.xml")
+                    xml = arch[key].encode("utf8")
+                    path.write_bytes(pretty_xml(xml))
+                    if path in all_files:
+                        all_files.remove(path)
+                stats["views"] += 1
+                if not stats["views"] % 800:
+                    prog(stats["views"])
+            except Exception as ex:
+                click.secho(ex, fg='red')
 
     threads = []
     for count, view in enumerate(rows):
-        t = threading.Thread(target=check_view, args=(count, view))
+        q.put((count, view))
+    
+    for i in range(10):
+        t = threading.Thread(target=check_view)
         t.daemon = True
         t.start()
         threads.append(t)
@@ -567,15 +576,15 @@ def views_compare(config, ctx):
                     else:
                         arch = file.read_bytes()
                         compare_view(content, row[0], lang, xmlid)
+                    del xmlid, module, name
                 else:
                     content = file.read_bytes()
-                    res_id = int(file.stem.split(".")[-1])
-                    lang = file.stem.split(".")[-2]
-                    compare_view(content, res_id, lang, xmlid)
-                del xmlid, module, name
+                    res_id = int(file.stem.split(".")[-2])
+                    lang = file.stem.split(".")[-3]
+                    compare_view(content, res_id, lang, "")
+                    del res_id
             except Exception as ex:
                 click.secho(ex, fg="red")
-                pass
 
     for file in (customs_dir() / "src" / "views").glob("*.xml"):
         q.put(file)
@@ -585,7 +594,7 @@ def views_compare(config, ctx):
         for file in folder.glob("*"):
             q.put(file)
 
-    for i in range(10):
+    for _ in range(10):
         t = threading.Thread(target=check_file)
         t.start()
         threads.append(t)
