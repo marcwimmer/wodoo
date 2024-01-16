@@ -1,4 +1,5 @@
 from pathlib import Path
+import threading
 from click.shell_completion import CompletionItem
 import json
 import yaml
@@ -450,35 +451,116 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
 @src.command()
 @click.pass_context
 @pass_config
-def views_grab(config, ctx): 
-    root = customs_dir() / 'src'
+def views_grab(config, ctx):
+    root = customs_dir() / "src" / "views"
 
     sql = f"select id, name, arch_db, model from ir_ui_view"
     conn = config.get_odoo_conn()
     rows = _execute_sql(conn, sql, fetchall=True)
 
-    for count, view in enumerate(rows):
+    all_files = []
+    if root.exists():
+        all_files = [x for x in list(root.glob("**/*")) if not x.is_dir()]
+
+    threads = []
+    stats = {"views": 0}
+
+    def check_view(count, view):
         def prog(c):
-            click.secho(f"Exported {count} views of {len(rows)}", fg=c)
+            p = round(count / len(rows) * 100, 1)
+            click.secho(f"...threading progress {p}%", fg="yellow")
+
         arch = view[2]
-        xmlid = _get_xml_id(config, 'ir.ui.view', view[0])
-        model = view[3] or 'no-model'
+        xmlid = _get_xml_id(config, "ir.ui.view", view[0])
+        model = view[3] or "no-model"
         name = view[1]
         id = view[0]
         if current_version() < 16:
-            arch = {'en_US': arch}
+            arch = {"en_US": arch}
 
         for key in arch:
             if xmlid:
-                filepath = root / 'views' / f"{model}.xmlid.{xmlid}.xml"
+                filepath = root / f"{model}.xmlid.{xmlid}.xml"
             else:
-                filepath = root / 'views' / 'by_name' / f'{model}.{name}.{key}.{id}.xml'
+                filepath = root / "by_name" / f"{model}.{name}.{key}.{id}.xml"
             filepath.parent.mkdir(exist_ok=True, parents=True)
-        
-            path = filepath.parent / (filepath.stem + f"{key}.xml")
-            xml = arch[key].encode('utf8')
-            path.write_bytes(pretty_xml(xml))
 
-        if not count % 100:
-            prog('yellow')
-    prog('green')
+            path = filepath.parent / (filepath.stem + f".{key}.xml")
+            xml = arch[key].encode("utf8")
+            path.write_bytes(pretty_xml(xml))
+            if path in all_files:
+                all_files.remove(path)
+        stats["views"] += 1
+        if not stats["views"] % 800:
+            prog(stats["views"])
+
+    threads = []
+    for count, view in enumerate(rows):
+        t = threading.Thread(target=check_view, args=(count, view))
+        t.daemon = True
+        t.start()
+        threads.append(t)
+    [x.join() for x in threads]
+
+    click.secho(f"Exported: {stats['views']} views.", fg="green")
+    if all_files:
+        for file in all_files:
+            file.unlink()
+            click.secho(f"View does not exist anymore: {file.relative_to(root)}")
+
+
+@src.command()
+@click.pass_context
+@pass_config
+def views_compare(config, ctx):
+    root = customs_dir() / "src"
+
+    conn = config.get_odoo_conn()
+
+    def compare_view(file_content, res_id):
+        view = _execute_sql(
+            conn, "select arch_db from ir_ui_view where id={res_id}", fetchone=True
+        )
+        if not view:
+            click.secho(f"VIEW vanished: {row[1]}", fg="red")
+        else:
+            view = view[0]
+            if current_version() < 16:
+                view = {"en_US": view}
+            for _lang, _arch in view.items():
+                if _lang == lang:
+                    if pretty_xml(arch) != pretty_xml(_arch):
+                        click.secho(f"VIEW vanished: {row[1]}", fg="red")
+
+    conn = config.get_odoo_conn()
+
+    for file in (customs_dir() / "src" / "views").glob("*.xml"):
+        content = file.read_bytes()
+        import pudb
+
+        pudb.set_trace()
+        xmlid, lang = file.stem.split(".xmlid.")[1]
+        module, name = xmlid.split(".")
+
+        sql = (
+            f"select res_id "
+            f"from ir_model_data "
+            f"where model = 'ir.ui.view' "
+            f"and module='{module}' "
+            f"and name = '{name}'"
+        )
+        row = _execute_sql(conn, sql, fetchone=True)
+        if not row:
+            click.secho(f"XMLID vanished: {xmlid}", fg="red")
+        else:
+            arch = file.read_bytes()
+            compare_view(content, row[0])
+        del xmlid, module, name
+
+    folder = customs_dir() / "src" / "views" / "by_name"
+    if folder.exists():
+        for file in folder.glob("*"):
+            content = file.read_bytes()
+            res_id = int(file.stem.split(".")[-1])
+            lang = file.stem.split(".")[-2]
+            compare_view(content, res_id)
