@@ -4,8 +4,6 @@ import json
 import yaml
 import shutil
 import subprocess
-import inquirer
-import sys
 from datetime import datetime
 import os
 import click
@@ -24,6 +22,10 @@ from .tools import bashfind
 from .tools import cwd
 from .tools import __rmtree
 from .tools import _get_customs_root
+from .tools import _get_xml_id
+from .tools import pretty_xml
+from .tools import _execute_sql
+
 
 ADDONS_OCA = "addons_OCA"
 
@@ -443,3 +445,39 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
             ):
                 click.secho(f"Deleting: {mod.path}", fg="red")
                 shutil.rmtree(root / mod.path)
+
+
+@src.command()
+@click.pass_context
+@pass_config
+def views_grab(config, ctx): 
+    root = customs_dir() / 'src'
+
+    sql = f"select id, name, arch_db, model from ir_ui_view"
+    conn = config.get_odoo_conn()
+    rows = _execute_sql(conn, sql, fetchall=True)
+
+    for count, view in enumerate(rows):
+        def prog(c):
+            click.secho(f"Exported {count} views of {len(rows)}", fg=c)
+        arch = view[2]
+        xmlid = _get_xml_id(config, 'ir.ui.view', view[0])
+        model = view[3]
+        name = view[1]
+        if current_version() < 16:
+            arch = {'en_US': arch}
+
+        for key in arch:
+            if xmlid:
+                filepath = root / 'views' / f"{model}.xmlid.{xmlid}.xml"
+            else:
+                filepath = root / 'views' / 'by_name' / f'{model}.{name}.{key}xml'
+            filepath.parent.mkdir(exist_ok=True, parents=True)
+        
+            path = filepath.parent / (filepath.stem + f"{key}.xml")
+            xml = arch[key].encode('utf8')
+            path.write_bytes(pretty_xml(xml))
+
+        if not count % 100:
+            prog('yellow')
+    prog('green')

@@ -1590,3 +1590,14 @@ def get_directory_size(path):
     size = subprocess.check_output(["du", "-s", path], encoding="utf8")
     size = size.splitlines()[-1].split()[0]
     return int(size)
+
+def _get_xml_id(config, model, id):
+    conn = config.get_odoo_conn()
+    rows = _execute_sql(
+        conn,
+        f"select module, name from ir_model_data where res_id={id} and model='{model}'",
+        fetchall=True,
+    )
+    if rows:
+        return f"{rows[0][0]}.{rows[0][1]}"
+
