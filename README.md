@@ -205,6 +205,7 @@ odoo pgactivity
 |RESTART_CONTAINERS=1|Sets "restart unless-stopped" policy|
 |ODOO_WORKERS_WEB|Amount of web workers in odoo (default currently 28)|
 |WEB_BASE_URL|url - is set at startup|
+|ODOO_MAX_CRON_THREADS|Amount of cronworkers|
 
 ## Odoo Server Configuration in ~/.odoo/settings/odoo.config and odoo.config.${PROJECT_NAME}
 
