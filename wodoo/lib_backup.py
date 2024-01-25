@@ -34,6 +34,7 @@ from .tools import _get_dump_files
 from .tools import _binary_zip
 from .tools import autocleanpaper
 from .tools import _shell_complete_file
+from .tools import print_prod_env
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import ensure_project_name
@@ -412,6 +413,8 @@ def restore_db(
         return
     if not (dbname or config.dbname):
         raise Exception("somehow dbname is missing")
+
+    print_prod_env(config)
 
     dumps_path = config.dumps_path
     BACKUPDIR = Path(dumps_path)

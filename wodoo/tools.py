@@ -1591,6 +1591,7 @@ def get_directory_size(path):
     size = size.splitlines()[-1].split()[0]
     return int(size)
 
+
 def _get_xml_id(config, model, id):
     conn = config.get_odoo_conn()
     rows = _execute_sql(
@@ -1601,3 +1602,11 @@ def _get_xml_id(config, model, id):
     if rows:
         return f"{rows[0][0]}.{rows[0][1]}"
 
+
+def print_prod_env(config):
+    if config.devmode:
+        return
+    click.secho("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", fg="magenta")
+    click.secho("        PRODUCTION ENVIRONMENT      ", fg="magenta")
+    click.secho("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", fg="magenta")
+    time.sleep(2)

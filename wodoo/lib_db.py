@@ -16,6 +16,7 @@ from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from .tools import _make_sure_module_is_installed
+from .tools import print_prod_env
 
 
 @cli.group(cls=AliasedGroup)
@@ -93,6 +94,8 @@ def pgactivity(config):
 @pass_config
 def pgcli(config, dbname, params, host, port, user, password):
     from .tools import DBConnection
+
+    print_prod_env(config)
 
     dbname = dbname or config.dbname
 
