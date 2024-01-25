@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from queue import Queue
 import threading
@@ -522,7 +523,7 @@ def grab_views(config, ctx):
 
 @src.command()
 @click.option("-t", "--threads", default=10)
-@click.argument("match")
+@click.argument("match", required=False)
 @click.pass_context
 @pass_config
 def compare_views(config, ctx, threads, match):
@@ -531,6 +532,9 @@ def compare_views(config, ctx, threads, match):
     q = Queue()
 
     conn = config.get_odoo_conn()
+
+    click.secho('name="%(project_task_action_from_partner)d muss ersetzt werden', fg='red')
+    time.sleep(5)
 
     def compare_view(file_content, res_id, lang, info, the_model):
         view = _execute_sql(
