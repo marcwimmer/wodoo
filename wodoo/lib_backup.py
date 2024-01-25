@@ -1,4 +1,5 @@
 from codecs import ignore_errors
+import socket
 from .tools import try_ignore_exceptions
 import psycopg2
 import arrow
@@ -419,6 +420,14 @@ def restore_db(
 
     if not config.force:
         __restore_check(filename_absolute, config)
+
+    if config.force and not config.devmode:
+        hostname = socket.gethostname()
+        value = click.prompt(
+            "Please type the hostname of the machine again [{hostname}]:"
+        )
+        if value != hostname:
+            abort(f"You typed {value} but {hostname} was expected.")
 
     params = {
         "no_dev_scripts": no_dev_scripts,
