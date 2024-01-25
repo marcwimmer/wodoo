@@ -1615,7 +1615,7 @@ def print_prod_env(config):
 def force_input_hostname():
     hostname = socket.gethostname()
     value = click.prompt(
-        f"Please type the hostname of the machine again [{hostname}]:"
+        f"Please type the hostname of the machine again [{hostname}]"
     )
     if value != hostname:
         abort(f"You typed {value} but {hostname} was expected.")
