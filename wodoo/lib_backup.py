@@ -1,5 +1,4 @@
 from codecs import ignore_errors
-import socket
 from .tools import try_ignore_exceptions
 import psycopg2
 import arrow
@@ -43,6 +42,7 @@ from .tools import __try_to_set_owner
 from .tools import docker_list_containers
 from .tools import __get_postgres_volume_name
 from .tools import get_volume_fullpath
+from .tools import force_input_hostname
 
 import inspect
 import os
@@ -425,12 +425,7 @@ def restore_db(
         __restore_check(filename_absolute, config)
 
     if config.force and not config.devmode:
-        hostname = socket.gethostname()
-        value = click.prompt(
-            "Please type the hostname of the machine again [{hostname}]:"
-        )
-        if value != hostname:
-            abort(f"You typed {value} but {hostname} was expected.")
+        force_input_hostname()
 
     params = {
         "no_dev_scripts": no_dev_scripts,

@@ -6,11 +6,13 @@ import os
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import execute_script
+from .tools import force_input_hostname
 import subprocess
 import json
 from pathlib import Path
 from .tools import abort
 from .tools import ensure_project_name
+from .tools import print_prod_env
 
 
 @cli.group(cls=AliasedGroup)
@@ -95,7 +97,8 @@ def remove_volumes(ctx, config, dry_run):
         click.secho(f"Removing: {vol}", fg="red")
         if not dry_run:
             rc = subprocess.run(
-                ["docker", "volume", "rm", "-f", vol], encoding="utf8",
+                ["docker", "volume", "rm", "-f", vol],
+                encoding="utf8",
                 capture_output=True,
             )
             if rc.returncode:
@@ -181,6 +184,11 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
     ensure_project_name(config)
     from .lib_control_with_docker import down as lib_down
     from .lib_db_snapshots_docker_zfs import NotZFS
+
+    print_prod_env(config)
+
+    if not config.devmode and volumes:
+        force_input_hostname()
 
     if postgres_volume or volumes:
         if postgres_volume:
@@ -326,6 +334,8 @@ def logall(config, machines, follow, lines):
 )
 @pass_config
 def shell(config, command, queuejobs):
+    print_prod_env(config)
+
     ensure_project_name(config)
     command = "\n".join(command)
     from .lib_control_with_docker import shell as lib_shell

@@ -1,3 +1,4 @@
+import socket
 import uuid
 import time
 from subprocess import PIPE, STDOUT
@@ -1610,3 +1611,11 @@ def print_prod_env(config):
     click.secho("        PRODUCTION ENVIRONMENT      ", fg="magenta")
     click.secho("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", fg="magenta")
     time.sleep(2)
+
+def force_input_hostname():
+    hostname = socket.gethostname()
+    value = click.prompt(
+        f"Please type the hostname of the machine again [{hostname}]:"
+    )
+    if value != hostname:
+        abort(f"You typed {value} but {hostname} was expected.")
