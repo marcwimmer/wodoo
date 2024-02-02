@@ -311,7 +311,7 @@ def users(config, login):
     rows = _execute_sql(
         conn,
         sql=(
-            f"SELECT login, name FROM res_users INNER JOIN "
+            f"SELECT res_users.id as user_id, login, name FROM res_users INNER JOIN "
             f"res_partner p on p.id = res_users.partner_id "
             f"WHERE p.name ILIKE '%{login}%' or login ILIKE '%{login}%'"
         ),

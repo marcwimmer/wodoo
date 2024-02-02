@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 import os
 import re
@@ -640,6 +641,8 @@ def update_cache(arg_modified_filename=None):
             f.write("\n")
     finally:
         f.close()
+
+    subprocess.run(f"sort -o {plainfile} -u {plainfile}", shell=True)
 
     return plainfile
 
