@@ -179,10 +179,10 @@ def _pgcli(config, conn, params, use_docker_container=None):
 @db.command(name="reset-odoo-db")
 @click.argument("dbname", required=False)
 @click.option("--do-not-install-base", is_flag=True)
-@click.option("-C", "--collateC", is_flag=True, help="Use Collate C like odoo suggests")
 @pass_config
 @click.pass_context
-def reset_db(ctx, config, dbname, do_not_install_base, collatec):
+def reset_db(ctx, config, dbname, do_not_install_base):
+    collatec = True
     dbname = dbname or config.dbname
     if not dbname:
         raise Exception("dbname required")
