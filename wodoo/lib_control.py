@@ -33,14 +33,13 @@ def pull(ctx, config):
 
 @docker.command()
 @click.option("-b", "--build", is_flag=True)
-@click.option("-k", "--kill", is_flag=True)
 @pass_config
 @click.pass_context
-def dev(ctx, config, build, kill):
+def dev(ctx, config, build):
     ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import dev as lib_dev
-    return lib_dev(ctx, config, build, kill)
+    return lib_dev(ctx, config, build, kill=True)
 
 
 @docker.command(name="ps")
