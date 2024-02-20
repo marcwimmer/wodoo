@@ -946,6 +946,7 @@ def __hash_odoo_password(pwd):
         14.0,
         15.0,
         16.0,
+        17.0,
     ]:
         setpw = CryptContext(schemes=["pbkdf2_sha512", "md5_crypt"])
         return setpw.encrypt(pwd)
@@ -959,6 +960,7 @@ def abort(msg, nr=1):
 
 
 def sync_folder(dir, dest_dir, excludes=None):
+    import platform
     dir = Path(dir)
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(exist_ok=True, parents=True)

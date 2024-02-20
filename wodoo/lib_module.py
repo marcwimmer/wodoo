@@ -1621,5 +1621,30 @@ def list_installed_modules(config, fix_not_in_manifest, only_customs):
         manifest.rewrite()
 
 
+@odoo_module.command()
+@click.argument("module", required=True, shell_complete=_get_available_modules)
+@click.pass_context
+@pass_config
+def zip(config, ctx, module):
+    from .module_tools import Modules, Module
+    from .odoo_config import customs_dir
+
+    try:
+        mod = Module.get_by_name(module)
+    except:
+        module_path = Path(os.getcwd()) / module
+
+    if not module_path.exists():
+        abort(f"{module_path} not found.")
+
+    zipfile = Path(os.getcwd()) / f"{module}.zip"
+    if zipfile.exists():
+        zipfile.unlink()
+    subprocess.check_call(
+        ["/usr/bin/zip", "-r", zipfile.name, "."], cwd=module_path
+    )
+
+
+
 Commands.register(update)
 Commands.register(show_install_state)
