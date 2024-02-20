@@ -946,9 +946,18 @@ def __hash_odoo_password(pwd):
         14.0,
         15.0,
         16.0,
-        17.0,
     ]:
         setpw = CryptContext(schemes=["pbkdf2_sha512", "md5_crypt"])
+        return setpw.encrypt(pwd)
+    elif current_version() in [
+        17.0,
+    ]:
+        MIN_ROUNDS = 600_000
+        setpw = CryptContext(
+            schemes=["pbkdf2_sha512", "plaintext"],
+            deprecated=["auto"],
+            pbkdf2_sha512__rounds=max(MIN_ROUNDS, 0),
+        )
         return setpw.encrypt(pwd)
     else:
         raise NotImplementedError()
@@ -961,6 +970,7 @@ def abort(msg, nr=1):
 
 def sync_folder(dir, dest_dir, excludes=None):
     import platform
+
     dir = Path(dir)
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(exist_ok=True, parents=True)
@@ -1614,10 +1624,9 @@ def print_prod_env(config):
     click.secho("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", fg="magenta")
     time.sleep(2)
 
+
 def force_input_hostname():
     hostname = socket.gethostname()
-    value = click.prompt(
-        f"Please type the hostname of the machine again [{hostname}]"
-    )
+    value = click.prompt(f"Please type the hostname of the machine again [{hostname}]")
     if value != hostname:
         abort(f"You typed {value} but {hostname} was expected.")
