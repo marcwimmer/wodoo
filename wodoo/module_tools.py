@@ -353,8 +353,10 @@ def make_customs(config, ctx, path, version, odoosh):
     if not path.exists():
         abort("Path does not exist: {}".format(path))
     elif list(path.glob("*")):
-        if not config.force:
-            abort("Path is not empty: {}".format(path))
+        files = [x for x in path.glob("*") if x.name != '.git']
+        if files:
+            if not config.force:
+                abort("Path is not empty: {}".format(path))
 
     import inquirer
     from .tools import copy_dir_contents

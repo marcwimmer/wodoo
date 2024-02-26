@@ -2,6 +2,6 @@ version: '${DOCKER_COMPOSE_VERSION}'
 services:
     ${NAME}:
         ports:
-            - "33284:{machine_main_port}"
-            - "33285:8069"
-            - "33286:8072"
+            - "__PORT__:{machine_main_port}"
+            #- "33285:8069"
+            #- "33286:8072"

@@ -293,6 +293,7 @@ def debug(ctx, config, machine, ports, cmd=None):
         dest = config.files["debugging_composer"]
         dest = dest.parent / dest.name.replace(".yml", ".{}.yml".format(i))
         shutil.copy(filepath, dest)
+        __replace_in_file(dest, "__PORT__", ports)
         __replace_in_file(dest, "${NAME}", machine)
         __replace_in_file(dest, "${DOCKER_COMPOSE_VERSION}", config.YAML_VERSION)
 
