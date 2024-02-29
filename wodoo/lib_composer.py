@@ -1076,13 +1076,18 @@ def _complete_setting_name(ctx, param, incomplete):
 
     params = []
     for line in lines:
-        name, doc = line.replace("\t", " ").split(" ", 1)
+        try:
+            name, doc = line.replace("\t", " ").split(" ", 1)
+        except ValueError:
+            name = line
+            doc = ""
         name = name.strip()
         doc = doc.strip()
         name = name.split("=")[0]
         params.append({'name': name, 'doc': doc})
 
-    res = [x['name'] for x in params]
+
+    res = set([x['name'] for x in params])
     if incomplete:
         res = list(filter(lambda x: incomplete in x, res))
     return sorted(map(str, res))
@@ -1090,10 +1095,13 @@ def _complete_setting_name(ctx, param, incomplete):
 @composer.command()
 @pass_config
 @click.pass_context
-@click.argument("name", required=True, shell_complete=_complete_setting_name)
+@click.argument("name", required=False, shell_complete=_complete_setting_name)
 @click.argument("value", required=False, default="")
 def setting(ctx, config, name, value):
     from .myconfigparser import MyConfigParser
+    if not name:
+        ctx.invoke(show_effective_settings)
+        return
     configparser = MyConfigParser(config.files["settings"])
     if '=' in name:
         name, value = name.split("=", 1)
