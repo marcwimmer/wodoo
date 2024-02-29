@@ -1076,6 +1076,8 @@ def _complete_setting_name(ctx, param, incomplete):
 
     params = []
     for line in lines:
+        if not line.strip():
+            continue
         try:
             name, doc = line.replace("\t", " ").split(" ", 1)
         except ValueError:
@@ -1087,10 +1089,10 @@ def _complete_setting_name(ctx, param, incomplete):
         params.append({'name': name, 'doc': doc})
 
 
-    res = set([x['name'] for x in params])
+    res = set([x['name'].strip() for x in params])
     if incomplete:
-        res = list(filter(lambda x: incomplete in x, res))
-    return sorted(map(str, res))
+        res = list(filter(lambda x: x.lower().startswith(incomplete.lower()), res))
+    return sorted(res)
 
 @composer.command()
 @pass_config
@@ -1107,8 +1109,8 @@ def setting(ctx, config, name, value):
         name, value = name.split("=", 1)
     if not value:
         for k in sorted(configparser.keys()):
-            if  k.lower() == name.lower():
-                click.secho(f"{k}={config[k]}")
+            if  name.lower() in k.lower():
+                click.secho(f"{k}={configparser[k]}")
     else:
         configparser = MyConfigParser(config.files['project_settings'])
         configparser[name] = value
