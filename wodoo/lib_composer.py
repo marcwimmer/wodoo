@@ -38,6 +38,11 @@ from .odoo_config import MANIFEST
 from .tools import execute_script
 from .tools import ensure_project_name
 
+import inspect
+import os
+from pathlib import Path
+current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -251,8 +256,8 @@ def internal_reload(
 
         click.secho("Additional config: {defaults}")
 
-    ODOO_VERSION = str(MANIFEST()['version']).split(".")[0]
-    KEY_ODOO_VERSION = f'RUN_ODOO_VERSION_{ODOO_VERSION}'
+    ODOO_VERSION = str(MANIFEST()["version"]).split(".")[0]
+    KEY_ODOO_VERSION = f"RUN_ODOO_VERSION_{ODOO_VERSION}"
     os.environ[KEY_ODOO_VERSION] = ODOO_VERSION
     defaults[KEY_ODOO_VERSION] = ODOO_VERSION
 
@@ -710,19 +715,19 @@ def __run_docker_compose_config(config, contents, env):
         except KeyError:
             d["DOCKER_GROUP_ID"] = "0"
 
-        (temp_path / 'cmd').write_text(" ".join(map(str, cmdline)))
+        (temp_path / "cmd").write_text(" ".join(map(str, cmdline)))
         try:
             conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         except:
             # find culprit
             for i in range(len(files)):
                 file = files[i]
-                cmdline2 = buildcmd(files[:i + 1])
+                cmdline2 = buildcmd(files[: i + 1])
                 try:
-                    click.secho(f"Testing {file}...", fg='green')
+                    click.secho(f"Testing {file}...", fg="green")
                     conf = subprocess.check_output(cmdline2, cwd=temp_path, env=d)
                 except:
-                    click.secho(f"{file}:\n", fg='yellow')
+                    click.secho(f"{file}:\n", fg="yellow")
                     click.secho(file.read_text())
                     break
 
@@ -950,7 +955,9 @@ def _use_file(config, path):
         if "NO-AUTO-COMPOSE" in path.read_text():
             return False
         if "images" in path.parts:
-            if not getattr(config, f"run_{path.parent.name}") and not any(".run_" in x for x in path.parts):
+            if not getattr(config, f"run_{path.parent.name}") and not any(
+                ".run_" in x for x in path.parts
+            ):
                 return False
             if not any(".run_" in x for x in path.parts):
                 # allower postgres/docker-compose.yml
@@ -1049,9 +1056,66 @@ def _merge_odoo_dockerfile(config):
             content = file.read_text() + "\n" + appendix
             content = content.replace("${PROJECT_NAME}", config.project_name)
             file.write_text(content)
+
+        # include source code
+        if not config.SRC_EXTRA:
+            import pudb;pudb.set_trace()
+            append_odoo_src(config, config.files["odoo_docker_file"])
+
     else:
         # seems to use images from registry; no build section
         pass
 
+
+def append_odoo_src(config, path):
+    content = "ADD {src} /opt/src"
+    path.write_text(path.read_text() + "\n" + content)
+
+def _complete_setting_name(ctx, param, incomplete):
+    lines = (current_dir / 'settings.txt').read_text().splitlines()
+
+    params = []
+    for line in lines:
+        name, doc = line.replace("\t", " ").split(" ", 1)
+        name = name.strip()
+        doc = doc.strip()
+        name = name.split("=")[0]
+        params.append({'name': name, 'doc': doc})
+
+    res = [x['name'] for x in params]
+    if incomplete:
+        res = list(filter(lambda x: incomplete in x, res))
+    return sorted(map(str, res))
+
+@composer.command()
+@pass_config
+@click.pass_context
+@click.argument("name", required=True, shell_complete=_complete_setting_name)
+@click.argument("value", required=False, default="")
+def setting(ctx, config, name, value):
+    from .myconfigparser import MyConfigParser
+    configparser = MyConfigParser(config.files["settings"])
+    if '=' in name:
+        name, value = name.split("=", 1)
+    if not value:
+        for k in sorted(configparser.keys()):
+            if  k.lower() == name.lower():
+                click.secho(f"{k}={config[k]}")
+    else:
+        configparser = MyConfigParser(config.files['project_settings'])
+        configparser[name] = value
+        configparser.write()
+        click.secho(f"{name}={value}", fg='green')
+        ctx.invoke(do_reload)
+
+@composer.command()
+@pass_config
+@click.pass_context
+def show_effective_settings(ctx, config):
+    from .myconfigparser import MyConfigParser
+
+    config = MyConfigParser(config.files["settings"])
+    for k in sorted(config.keys()):
+        click.echo(f"{k}={config[k]}")
 
 Commands.register(do_reload, "reload")

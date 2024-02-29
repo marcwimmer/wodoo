@@ -263,15 +263,16 @@ def attach(ctx, config, machine):
 @click.option("--pull", is_flag=True)
 @click.option("--push", is_flag=True)
 @click.option("-p", "--plain", is_flag=True)
+@click.option("-s", "--include-source", is_flag=True)
 @pass_config
 @click.pass_context
-def build(ctx, config, machines, pull, no_cache, push, plain):
+def build(ctx, config, machines, pull, no_cache, push, plain, include_source):
     ensure_project_name(config)
     if plain:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
     from .lib_control_with_docker import build as lib_build
 
-    lib_build(ctx, config, machines, pull, no_cache, push)
+    lib_build(ctx, config, machines, pull, no_cache, push, include_source)
 
 
 @docker.command()
@@ -505,6 +506,8 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
         ]
         + command
     )
+
+
 
 
 Commands.register(run)

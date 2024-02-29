@@ -1,0 +1,20 @@
+PROJECT_NAME				Pasted into container names, postgres volumes and so on; please keep it as short as possible, as there are limits example docker containername 53 characters at time of writing
+DBNAME						Uses projectname or a configured one
+HUB_URL						user:password@host:port/paths.. to configure
+REGISTRY=1					Rewrites all build and images urls to HUB_URL. Should be used on production systems to force pull only from registry and block any local buildings.
+POSTGRES_VERSION=13			Choose from 11, 12, 13, 14, 16
+ODOO_ENABLE_DB_MANAGER		Enables the odoo db manager
+DEVMODE=1					At restore runs safety scripts to disable cronjobs and mailserver and resets passwords
+RUN_PROXY=1					If the built-in nodejs proxy is enabled
+RUN_PROXY_PUBLISHED=0/1		If the proxy is reachable from outside the docker network example from 127.0.0.1:8069
+PROXY_PORT					The port on which you can access with plain http the odoo
+ODOO_IMAGES_BRANCH			The branch used for ~/.odoo/images
+ODOO_INSTALL_LIBPOSTAL=1	If set, then the libpostal lib is installed
+ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER=1	Runs queuejobs and cronjob in the odoo container where also the web application resides
+ODOO_QUEUEJOBS_CHANNELS=root:40,magento2:1		Configures queues for queuejob module
+NAMED_ODOO_POSTGRES_VOLUME	Use a specific external volume; not dropped with down -v command
+CRONJOB_DADDY_CLEANUP=0 */1 * * * ${JOB_DADDY_CLEANUP}	Turn on grandfather-principle based backup
+RESTART_CONTAINERS=1	Sets "restart unless-stopped" policy
+ODOO_WORKERS_WEB	Amount of web workers in odoo (default currently 28)
+WEB_BASE_URL	url - is set at startup
+ODOO_MAX_CRON_THREADS	Amount of cronworkers

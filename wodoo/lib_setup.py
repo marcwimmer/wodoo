@@ -15,16 +15,6 @@ def setup(config):
     pass
 
 
-@setup.command()
-@pass_config
-@click.pass_context
-def show_effective_settings(ctx, config):
-    from . import MyConfigParser
-
-    config = MyConfigParser(config.files["settings"])
-    for k in sorted(config.keys()):
-        click.echo("{}={}".format(k, config[k]))
-
 
 @setup.command()
 @pass_config

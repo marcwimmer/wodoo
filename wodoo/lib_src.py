@@ -489,7 +489,9 @@ def grab_views(config, ctx):
                     if xmlid:
                         filepath = root / f"{model}.xmlid.{xmlid}.xml"
                     else:
-                        filepath = root / "by_name" / f"{model}.byname.{name}.{key}.{id}.xml"
+                        filepath = (
+                            root / "by_name" / f"{model}.byname.{name}.{key}.{id}.xml"
+                        )
                     filepath.parent.mkdir(exist_ok=True, parents=True)
 
                     path = filepath.parent / (filepath.stem + f".{key}.xml")
@@ -533,7 +535,9 @@ def compare_views(config, ctx, threads, match):
 
     conn = config.get_odoo_conn()
 
-    click.secho('name="%(project_task_action_from_partner)d muss ersetzt werden', fg='red')
+    click.secho(
+        'name="%(project_task_action_from_partner)d muss ersetzt werden', fg="red"
+    )
     time.sleep(5)
 
     def compare_view(file_content, res_id, lang, info, the_model):

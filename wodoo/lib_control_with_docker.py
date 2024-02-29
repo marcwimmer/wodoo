@@ -244,7 +244,7 @@ def pull(ctx, config):
     __dc(config, ["pull"])
 
 
-def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
+def build(ctx, config, machines=[], pull=False, no_cache=False, push=False, include_source=False):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
     """
@@ -258,6 +258,9 @@ def build(ctx, config, machines=[], pull=False, no_cache=False, push=False):
 
     if config.verbose:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
+
+    if include_source:
+        raise NotImplementedError("Please implement include source.")
 
     __dc(
         config,
@@ -293,7 +296,7 @@ def debug(ctx, config, machine, ports, cmd=None):
         dest = config.files["debugging_composer"]
         dest = dest.parent / dest.name.replace(".yml", ".{}.yml".format(i))
         shutil.copy(filepath, dest)
-        __replace_in_file(dest, "__PORT__", ports)
+        __replace_in_file(dest, "__PORT__", ports or "33284")
         __replace_in_file(dest, "${NAME}", machine)
         __replace_in_file(dest, "${DOCKER_COMPOSE_VERSION}", config.YAML_VERSION)
 
