@@ -1129,4 +1129,31 @@ def show_effective_settings(ctx, config):
     for k in sorted(config.keys()):
         click.echo(f"{k}={config[k]}")
 
+@composer.command()
+@click.argument("name", required=False)
+@click.argument("amount", required=False, type=int)
+@pass_config
+@click.pass_context
+def queuejob_channels(ctx, config, name, amount):
+    if name and amount is None:
+        abort(f"Please define the amount of workers in {name}")
+
+    from .myconfigparser import MyConfigParser
+    file = config.files["queuejob_channels_file"]
+    if file.exists():
+        content = file.read_text()
+    else:
+        config = MyConfigParser(config.files["settings"])
+        content = config.get('ODOO_QUEUEJOBS_CHANNELS', "root:1")
+
+    channels = content.split(",")
+
+    if name:
+        channels = list(filter(lambda x: x.strip().split(":")[0] != name, channels))
+        channels.append(f"{name}:{amount}")
+        file.write_text(",".join(channels))
+        click.secho("Now restart the queuejob container", fg='yellow')
+    for channel in channels:
+        click.secho(f"{channel}", fg='green')
+
 Commands.register(do_reload, "reload")
