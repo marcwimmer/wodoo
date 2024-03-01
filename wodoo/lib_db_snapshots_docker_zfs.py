@@ -15,6 +15,7 @@ docker/w0v9nokwbqazajfri0u3k5cor                                                
 better: zfs get -H -o value usedbychildren docker/volumes  mit -1 oder nicht
 
 """
+
 import inquirer
 from .tools import abort
 from operator import itemgetter
@@ -87,7 +88,7 @@ def _get_zfs_path(config):
         return viceversa[firstmatch[0]]
     if secondmatch:
         return viceversa[secondmatch[0]] + "/" + postgresname
-    raise Exception(f"Not found: {postgresname}")
+    raise Exception(f"Not found: {postgresname} in {','.join(datasets.keys())}")
 
 
 def _get_next_snapshotpath(config):
