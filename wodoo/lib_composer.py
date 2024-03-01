@@ -230,6 +230,7 @@ def internal_reload(
         "LOCAL_SETTINGS": "1" if local else "0",
         "CUSTOMS_DIR": config.WORKING_DIR,
         "WODOO_VERSION": _get_version(),
+        "QUEUEJOB_CHANNELS_FILE": config.files['queuejob_channels_file'],
     }
     if devmode:
         defaults["DEVMODE"] = 1
@@ -505,7 +506,7 @@ def _execute_after_settings(config):
         )
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        module.after_settings(settings)
+        module.after_settings(settings, config=config)
         settings.write()
 
 

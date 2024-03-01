@@ -27,6 +27,7 @@ default_dirs = {
 }
 
 default_files = {
+    'queuejob_channels_file': 'queue-job-channels.txt',
     'odoo_docker_file': '${run}/Dockerfile.odoo',
     'after_reload_script': "/usr/local/bin/after-odoo-reload.sh",
     'after_up_script': "/usr/local/bin/after-odoo-up.sh",
