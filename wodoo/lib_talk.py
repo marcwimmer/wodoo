@@ -319,7 +319,7 @@ def users(config, login):
         return_columns=False,
     )
 
-    cols = ["login", "name"]
+    cols = ["login", "name", "user_id"]
     click.secho(
         tabulate(rows, cols, tablefmt="fancy_grid"),
         fg="yellow",
