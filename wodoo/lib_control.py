@@ -264,15 +264,16 @@ def attach(ctx, config, machine):
 @click.option("--push", is_flag=True)
 @click.option("-p", "--plain", is_flag=True)
 @click.option("-s", "--include-source", is_flag=True)
+@click.option("-rm", "--remove", is_flag=True)
 @pass_config
 @click.pass_context
-def build(ctx, config, machines, pull, no_cache, push, plain, include_source):
+def build(ctx, config, machines, pull, no_cache, push, plain, include_source, remove):
     ensure_project_name(config)
     if plain:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
     from .lib_control_with_docker import build as lib_build
 
-    lib_build(ctx, config, machines, pull, no_cache, push, include_source)
+    lib_build(ctx, config, machines, pull, no_cache, push, include_source, remove)
 
 
 @docker.command()
@@ -285,6 +286,7 @@ def build(ctx, config, machines, pull, no_cache, push, plain, include_source):
 def debug(ctx, config, machine, ports, command, port):
     ensure_project_name(config)
     from .lib_control_with_docker import debug as lib_debug
+
     if port:
         ports = int(port)
 
@@ -386,7 +388,6 @@ def _get_project_volumes(config):
 @click.option("-f", "--filter")
 @pass_config
 def show_volumes(config, filter):
-    import yaml
     from tabulate import tabulate
     from .lib_control_with_docker import _get_volume_size
 
@@ -508,6 +509,37 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
     )
 
 
+@docker.command()
+@pass_config
+@click.pass_context
+def docker_sizes(context, config):
+    from .tools import __dc_out
+    from tabulate import tabulate
+
+    output = __dc_out(config, ["config"]).decode("utf-8")
+    # docker-compose config | grep "image:" | awk '{print $2}'
+    # docker images --format "{{.Repository}}:{{.Tag}} Size: {{.Size}}"
+    import yaml
+
+    image_names = list(
+        map(
+            lambda x: f"{config.project_name}_{x}",
+            yaml.safe_load(output)["services"].keys(),
+        )
+    )
+    out = subprocess.check_output(
+        ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}\tSize: {{.Size}}"]
+    ).decode('utf8').splitlines()
+    sizes = {}
+    for line in out:
+        name, size = line.split(":", 1)
+        size = size.split("\t")[-1]
+        sizes[name] = size
+    recs = []
+    for name in sorted(image_names, key=lambda x: x[0]):
+        recs.append((name, sizes.get(name, "")))
+
+    click.echo(tabulate(recs, ["Image Name", "Size"]))
 
 
 Commands.register(run)
