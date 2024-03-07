@@ -123,6 +123,7 @@ def run_tests(ctx, config):
     from .odoo_config import customs_dir
 
     success, failed = [], []
+    import pudb;pudb.set_trace()
     for module in tests:
         module = Module.get_by_name(module)
         testfiles = list(module.get_all_files_of_module())
@@ -133,8 +134,7 @@ def run_tests(ctx, config):
 
         # identify test files and run them, otherwise tests of dependent modules are run
         for file in sorted(testfiles):
-            mfpath = module.manifest_path.parent
-            file = mfpath.relative_to(customs_dir()) / file
+            file = module.path / file
             if config.use_docker:
                 params = ["odoo", "/odoolib/unit_test.py", f"{file}"]
                 click.secho(f"Running test: {file}", fg="yellow", bold=True)
