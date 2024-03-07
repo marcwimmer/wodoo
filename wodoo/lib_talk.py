@@ -18,7 +18,7 @@ def talk(config):
 
 
 @talk.command()
-@click.argument("name", required=False)
+@click.argument("name", required=False, nargs=-1)
 @click.option("-M", "--module")
 @click.option("-m", "--model")
 @pass_config
@@ -29,11 +29,11 @@ def xmlids(config, name, module, model):
         where += f" AND model = '{model}'"
     if module:
         where += f" AND module = '{model}'"
-    if name:
+    for name in name:
         where += (
-            f" and (model ilike '%{name}%' or "
+            f" and ( (model ilike '%{name}%' or "
             f"name ilike '%{name}%' or "
-            f"module ilike '%{name}%')"
+            f"module ilike '%{name}%'))"
         )
     rows = _execute_sql(
         conn,
