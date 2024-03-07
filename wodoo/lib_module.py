@@ -123,7 +123,6 @@ def run_tests(ctx, config):
     from .odoo_config import customs_dir
 
     success, failed = [], []
-    import pudb;pudb.set_trace()
     for module in tests:
         module = Module.get_by_name(module)
         testfiles = list(module.get_all_files_of_module())
@@ -1223,18 +1222,13 @@ def unittest(
         return
 
     for todoitem in todo:
-        click.secho(str(todoitem), fg="green", bold=True)
-
-    def filepath_to_container(filepath):
-        return Path("/opt/src/") / filepath
-
-    container_files = list(map(filepath_to_container, todo))
+        click.secho(str(todoitem), fg="blue", bold=True)
 
     interactive = True  # means pudb trace turned on
     params = [
         "odoo",
         "/odoolib/unit_test.py",
-        f'{",".join(map(str, container_files))}',
+        f'{",".join(map(str, todo))}',
     ]
     if wait_for_remote:
         remote_debug = True
