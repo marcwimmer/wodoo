@@ -55,7 +55,11 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False, no_fetch=None)
             repo_path = path / repo["path"]
             if repo["type"] == "submodule" or force_do or not repo_path.exists():
                 ctx.invoke(
-                    gimera, repos=[repo["path"]], recursive=True, no_auto_commit=True, no_fetch=no_fetch,
+                    gimera,
+                    repos=[repo["path"]],
+                    recursive=True,
+                    no_auto_commit=True,
+                    no_fetch=no_fetch,
                 )
                 changed = True
         else:
