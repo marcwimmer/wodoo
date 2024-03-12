@@ -47,7 +47,7 @@ def _find_duplicate_modules():
     _identify_duplicate_modules(all_modules)
 
 
-def _apply_gimera_if_required(ctx, path, content, force_do=False):
+def _apply_gimera_if_required(ctx, path, content, force_do=False, no_fetch=None):
     from gimera.gimera import apply as gimera
 
     with cwd(path):
@@ -55,7 +55,7 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
             repo_path = path / repo["path"]
             if repo["type"] == "submodule" or force_do or not repo_path.exists():
                 ctx.invoke(
-                    gimera, repos=[repo["path"]], recursive=True, no_auto_commit=True
+                    gimera, repos=[repo["path"]], recursive=True, no_auto_commit=True, no_fetch=no_fetch,
                 )
                 changed = True
         else:
@@ -75,11 +75,12 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False):
 
 @src.command()
 @click.pass_context
-def apply_gimera_if_required(ctx):
+@click.option("--no-fetch", is_flag=True)
+def apply_gimera_if_required(ctx, no_fetch):
     path = customs_dir()
     gimera_file = path / "gimera.yml"
     repos = yaml.safe_load(gimera_file.read_text())
-    _apply_gimera_if_required(ctx, path, repos)
+    _apply_gimera_if_required(ctx, path, repos, no_fetch)
 
 
 @src.command()
