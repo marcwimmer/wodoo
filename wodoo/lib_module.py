@@ -1625,6 +1625,7 @@ def zip(config, ctx, module):
 
     try:
         mod = Module.get_by_name(module)
+        module_path = Path(os.getcwd()) / mod.path
     except:
         module_path = Path(os.getcwd()) / module
 
@@ -1637,6 +1638,8 @@ def zip(config, ctx, module):
     subprocess.check_call(
         ["/usr/bin/zip", "-r", zipfile.name, "."], cwd=module_path
     )
+    shutil.move(Path(module_path / zipfile.name), zipfile)
+    click.secho(f"Created zipfile: {zipfile}", fg='green')
 
 
 
