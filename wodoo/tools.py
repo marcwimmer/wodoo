@@ -1455,9 +1455,6 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     state = DBModules.get_meta_data(modulename)
     if state and state["state"] == "installed":
         return
-    import pudb
-
-    pudb.set_trace()
 
     manifest = MANIFEST()
     try:
