@@ -80,7 +80,7 @@ def apply_gimera_if_required(ctx, no_fetch):
     path = customs_dir()
     gimera_file = path / "gimera.yml"
     repos = yaml.safe_load(gimera_file.read_text())
-    _apply_gimera_if_required(ctx, path, repos, no_fetch)
+    _apply_gimera_if_required(ctx, path, repos, not no_fetch)
 
 
 @src.command()
