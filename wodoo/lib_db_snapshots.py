@@ -68,7 +68,7 @@ def snapshot_make(ctx, config, name):
 
     config.snapshot_manager.assert_environment(config)
     if not name:
-        name = arrow.get().strftime("%Y%m%d")
+        name = arrow.get().strftime("%Y%m%d_%H%M%S")
         click.secho(f"Using {name} as snapshot name")
 
     # remove existing snaps
