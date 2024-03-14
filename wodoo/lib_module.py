@@ -1069,6 +1069,7 @@ def robotest(
             )
 
     pwd = config.DEFAULT_DEV_PASSWORD
+    # deprecated
     if pwd == "True" or pwd is True:
         pwd = "1"
 

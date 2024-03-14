@@ -58,7 +58,7 @@ LANG = os.getenv("ODOO_LANG", "de_DE")  # todo from environment
 host = "http://localhost:8069"
 
 username = "admin"
-pwd = "1"
+pwd = "admin"
 
 name_cache = {}
 remark_about_missing_module_info = set()
