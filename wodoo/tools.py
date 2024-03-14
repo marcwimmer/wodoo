@@ -1628,7 +1628,8 @@ def force_input_hostname():
     if value != hostname:
         abort(f"You typed {value} but {hostname} was expected.")
 
-def start_postgres_if_local(config):
+def start_postgres_if_local(ctx, config):
+    from .cli import cli, pass_config, Commands
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)

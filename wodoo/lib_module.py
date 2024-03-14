@@ -92,7 +92,7 @@ def update_module_file(module):
 @pass_config
 @click.pass_context
 def run_tests(ctx, config):
-    start_postgres_if_local(config)
+    start_postgres_if_local(ctx, config)
     started = datetime.now()
     if not config.devmode and not config.force:
         click.secho(
@@ -500,7 +500,7 @@ def update(
     if test_tags and default_test_tags:
         abort("Conflict: parameter test-tags and default-test-tags")
 
-    start_postgres_if_local(config)
+    start_postgres_if_local(ctx, config)
 
     def _perform_install(module):
         if since_git_sha and module:
