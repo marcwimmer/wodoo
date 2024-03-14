@@ -1627,3 +1627,8 @@ def force_input_hostname():
     value = click.prompt(f"Please type the hostname of the machine again [{hostname}]")
     if value != hostname:
         abort(f"You typed {value} but {hostname} was expected.")
+
+def start_postgres_if_local(config):
+    if config.run_postgres:
+        Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
+        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)

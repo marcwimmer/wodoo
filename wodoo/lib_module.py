@@ -36,6 +36,7 @@ from .tools import measure_time, abort
 from .tools import _update_setting
 from .tools import _get_setting
 from .tools import get_git_hash
+from .tools import start_postgres_if_local
 from .module_tools import _determine_affected_modules_for_ir_field_and_related
 from pathlib import Path
 
@@ -91,6 +92,7 @@ def update_module_file(module):
 @pass_config
 @click.pass_context
 def run_tests(ctx, config):
+    start_postgres_if_local(config)
     started = datetime.now()
     if not config.devmode and not config.force:
         click.secho(
@@ -498,9 +500,7 @@ def update(
     if test_tags and default_test_tags:
         abort("Conflict: parameter test-tags and default-test-tags")
 
-    if config.run_postgres:
-        Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
-        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+    start_postgres_if_local(config)
 
     def _perform_install(module):
         if since_git_sha and module:
@@ -1636,12 +1636,9 @@ def zip(config, ctx, module):
     zipfile = Path(os.getcwd()) / f"{module}.zip"
     if zipfile.exists():
         zipfile.unlink()
-    subprocess.check_call(
-        ["/usr/bin/zip", "-r", zipfile.name, "."], cwd=module_path
-    )
+    subprocess.check_call(["/usr/bin/zip", "-r", zipfile.name, "."], cwd=module_path)
     shutil.move(Path(module_path / zipfile.name), zipfile)
-    click.secho(f"Created zipfile: {zipfile}", fg='green')
-
+    click.secho(f"Created zipfile: {zipfile}", fg="green")
 
 
 Commands.register(update)

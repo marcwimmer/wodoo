@@ -107,6 +107,7 @@ def _turn_into_subvolume(path):
                         str(filename) + "/",
                         str(path) + "/",
                         "-ar",
+                        "--info=progress2",
                     ]
                 )
             finally:
