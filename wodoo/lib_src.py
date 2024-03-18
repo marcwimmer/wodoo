@@ -59,7 +59,6 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False, no_fetch=None)
                     repos=[repo["path"]],
                     recursive=True,
                     no_auto_commit=True,
-                    no_fetch=no_fetch,
                 )
                 changed = True
         else:
