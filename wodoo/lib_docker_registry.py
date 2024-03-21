@@ -60,7 +60,9 @@ def regpush(ctx, config):
 @pass_config
 @click.pass_context
 def regpull(ctx, config, machines):
-    ctx.invoke(login)
+    hub = split_hub_url(config)
+    if hub['username']:
+        ctx.invoke(login)
 
     if not machines:
         machines = list(yaml.load(config.files['docker_compose'].read_text())['services'])
