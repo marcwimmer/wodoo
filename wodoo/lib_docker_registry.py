@@ -85,6 +85,11 @@ def regpush(ctx, config):
 @pass_config
 @click.pass_context
 def regpull(ctx, config, machines):
+    if not config.REGISTRY:
+        abort(
+            "Please set REGISTRY=1 in configuration and reload. "
+            "Then regpull is available"
+        )
     hub = split_hub_url(config)
     if hub["username"]:
         ctx.invoke(login)
