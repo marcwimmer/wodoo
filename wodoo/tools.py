@@ -1636,3 +1636,9 @@ def start_postgres_if_local(ctx, config):
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+
+def update_setting(config, name, value):
+    from .myconfigparser import MyConfigParser
+    configparser = MyConfigParser(config.files['project_settings'])
+    configparser[name] = value
+    configparser.write()
