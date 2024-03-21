@@ -1095,9 +1095,12 @@ def split_hub_url(config):
             fg="yellow",
         )
         return None
-    username, password = url.split(":", 1)
-    password = password.split("@")[0]
-    url = url.split("@")[1]
+    if '@' in url:
+        username, password = url.split(":", 1)
+        password = password.split("@")[0]
+        url = url.split("@")[1]
+    else:
+        username, password = "", ""
     url, prefix = url.split("/", 1)
     return {
         "url": url,

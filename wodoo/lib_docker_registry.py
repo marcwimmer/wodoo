@@ -27,6 +27,8 @@ def login(config):
         abort("No HUB Configured - cannt login.")
 
     def _login():
+        if not hub['username']:
+            abort("No username configured in hub url - no login possible.")
         click.secho(f"Using {hub['username']}", fg='yellow')
         res = subprocess.check_output([
             'docker', 'login',
@@ -45,7 +47,9 @@ def login(config):
 @pass_config
 @click.pass_context
 def regpush(ctx, config):
-    ctx.invoke(login)
+    hub = split_hub_url(config)
+    if hub['username']:
+        ctx.invoke(login)
     tags = list(_apply_tags(config))
     for tag in tags:
         subprocess.check_call([
