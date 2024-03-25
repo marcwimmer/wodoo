@@ -1,3 +1,5 @@
+import platform
+
 import socket
 import uuid
 import time
@@ -1180,15 +1182,23 @@ def get_directory_hash(path):
     click.secho(f"Calculating hash for {path}", fg="yellow")
     # "-N required because absolute path is used"
     remove_pycs(path)
-    hex = (
-        subprocess.check_output(
-            ["dtreetrawl", "-N", "--hash", "-R", path], encoding="utf8"
+    try:
+        hex = (
+            subprocess.check_output(
+                ["dtreetrawl", "-N", "--hash", "-R", path], encoding="utf8"
+            )
+            .strip()
+            .split(" ")[0]
+            .strip()
         )
-        .strip()
-        .split(" ")[0]
-        .strip()
-    )
+    except Exception as ex:
+        if onM1():
+            return ""
+        raise
     return hex
+
+def onM1():
+    return platform.machine() == 'aarch64'
 
 
 def git_diff_files(path, commit1, commit2):
