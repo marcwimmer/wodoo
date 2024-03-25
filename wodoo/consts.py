@@ -37,6 +37,7 @@ default_files = {
     'project_docker_compose.home': "~/.odoo/docker-compose.yml",
     'project_docker_compose.home.project': "~/.odoo/docker-compose.${project_name}.yml",
     'project_docker_compose.local': "${working_dir}/.odoo/docker-compose.${project_name}.yml",
+    'docker_bin': _search_path('docker'),
     'docker_compose': '${run}/docker-compose.yml',
     'docker_compose_bin': _search_path('docker-compose'),
     'debugging_template_withports': 'config/template_withports.yml',
@@ -60,6 +61,7 @@ default_files = {
 
 default_commands = {
     'dc': ['${docker_compose_bin}', "-p", "${project_name}", "-f",  "${docker_compose}"],
+    'dc2': ['${docker_bin}', 'compose', "-p", "${project_name}", "-f",  "${docker_compose}"],
 }
 
 FILE_DIRHASHES = '.dirhashes'

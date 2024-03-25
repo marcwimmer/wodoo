@@ -1073,6 +1073,17 @@ class Module(object):
             self.name = self._manifest_path.parent.name
 
     @property
+    def descendants(self):
+        res = []
+        mods = Modules()
+        modules = mods.get_all_modules_installed_by_manifest()
+        all_modules = [self.get_by_name(x) for x in modules]
+        for check in all_modules:
+            if self.name in [x.name for x in mods.get_module_flat_dependency_tree(check)]:
+                res.append(check)
+        return res
+
+    @property
     def is_customs(self):
         return self.path.parts[0] not in ["odoo", "enterprise", "themes"]
 

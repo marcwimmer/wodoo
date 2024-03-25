@@ -596,9 +596,17 @@ def __safeget(array, index, exception_on_missing, file_options=None):
         raise Exception(exception_on_missing + file_options)
     return array[index]
 
+def get_docker_version():
+    docker = search_env_path("docker")
+    version = subprocess.check_output([docker, "--version"], encoding="utf8").strip()
+    version = list(map(int, version.split(" ")[2].replace(",", "").split(".")))
+    return version
 
 def __get_cmd(config):
-    cmd = config.commands["dc"]
+    if get_docker_version()[0] >= 26:
+        cmd = config.commands['dc2']
+    else:
+        cmd = config.commands["dc"]
     cmd = [os.path.expandvars(x) for x in cmd]
     return cmd
 

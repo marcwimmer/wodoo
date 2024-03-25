@@ -807,6 +807,7 @@ def _uninstall_marked_modules(ctx, config, modules):
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
     from .module_tools import Modules, DBModules, Module
+    from .module_tools import NotInAddonsPath
 
     assert not isinstance(modules, str)
 
@@ -822,9 +823,20 @@ def _uninstall_marked_modules(ctx, config, modules):
 
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
+    manifest_modules = Modules().get_all_modules_installed_by_manifest()
 
     uninstalled = False
     for module in modules:
+        try:
+            objmod = Module.get_by_name(module)
+            for desc in objmod.descendants:
+                if desc in manifest_modules:
+                    abort(
+                        f"{objmod.name} has {desc.name} as descendant which is still in the install section"
+                    )
+        except NotInAddonsPath:
+            pass
+
         click.secho(f"Uninstall {module}", fg="red")
         lib_shell(
             config,
@@ -1386,8 +1398,9 @@ def _get_directory_hash(path):
     if path not in hash_cache:
         hash_cache[path] = get_directory_hash(path)
     return hash_cache[path]
-@odoo_module.command()
 
+
+@odoo_module.command()
 @click.argument("module", required=True, shell_complete=_get_available_modules)
 @click.option("-f", "--following", is_flag=True)
 @click.option("-c", "--customs", is_flag=True)
@@ -1399,16 +1412,11 @@ def list_descendants(ctx, config, module, customs, following):
     from .odoo_config import customs_dir
     from .consts import FILE_DIRHASHES
 
-    mods = Modules()
     mod = Module.get_by_name(module)
-    modules = mods.get_all_modules_installed_by_manifest()
-    all_modules = [mod.get_by_name(x) for x in modules]
-    res = []
-    for check in all_modules:
-        if mod.name in [x.name for x in mods.get_module_flat_dependency_tree(check)]:
-            res.append(check)
+    res = mod.descendants
     for mod in res:
-        click.secho(f"descedant: {mod}", fg='green')
+        click.secho(f"descedant: {mod}", fg="green")
+
 
 @odoo_module.command()
 @click.argument("module", required=True, shell_complete=_get_available_modules)
@@ -1515,7 +1523,7 @@ def _filter_customs(modules):
         mod = Module.get_by_name(module_name)
         return mod.is_customs
 
-    for key in ['modules', 'auto_install']:
+    for key in ["modules", "auto_install"]:
         modules[key] = list(filter(_filter, modules[key]))
     return modules
 
