@@ -1386,15 +1386,37 @@ def _get_directory_hash(path):
     if path not in hash_cache:
         hash_cache[path] = get_directory_hash(path)
     return hash_cache[path]
+@odoo_module.command()
 
+@click.argument("module", required=True, shell_complete=_get_available_modules)
+@click.option("-f", "--following", is_flag=True)
+@click.option("-c", "--customs", is_flag=True)
+@pass_config
+@click.pass_context
+def list_descendants(ctx, config, module, customs, following):
+    from .module_tools import Modules, DBModules, Module
+    from .module_tools import NotInAddonsPath
+    from .odoo_config import customs_dir
+    from .consts import FILE_DIRHASHES
+
+    mods = Modules()
+    mod = Module.get_by_name(module)
+    modules = mods.get_all_modules_installed_by_manifest()
+    all_modules = [mod.get_by_name(x) for x in modules]
+    res = []
+    for check in all_modules:
+        if mod.name in [x.name for x in mods.get_module_flat_dependency_tree(check)]:
+            res.append(check)
+    for mod in res:
+        click.secho(f"descedant: {mod}", fg='green')
 
 @odoo_module.command()
-@click.argument("module", required=True)
+@click.argument("module", required=True, shell_complete=_get_available_modules)
 @click.option("-N", "--no-cache", is_flag=True)
 @click.option("-c", "--customs", is_flag=True)
 @pass_config
 @click.pass_context
-def list_deps(ctx, config, module, no_cache, customs):
+def list_deps(ctx, config, module, no_cache, customs, following):
     import arrow
 
     started = arrow.get()
