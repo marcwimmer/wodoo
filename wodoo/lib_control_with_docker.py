@@ -147,11 +147,11 @@ def do_kill(ctx, config, machines=[], brutal=False):
                     safe_stop += [machine]
 
         if safe_stop:
-            __dc(config, ["stop", "-t 20"] + safe_stop)  # persist data
+            __dc(config, ["stop", "-t", "20"] + safe_stop)  # persist data
     if config.devmode:
         __dc(config, ["kill"] + list(machines))
     else:
-        __dc(config, ["stop", "-t 2"] + list(machines))
+        __dc(config, ["stop", "-t", "2"] + list(machines))
 
 
 def force_kill(ctx, config, machine):
