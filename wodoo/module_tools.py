@@ -186,7 +186,7 @@ class DBModules(object):
             UPDATE ir_module_module SET state = 'uninstalled' WHERE state = 'to install';
         """
         with get_conn_autoclose() as cr:
-            if table_exists(cr, 'ir_module_module'):
+            if table_exists(cr, "ir_module_module"):
                 _execute_sql(cr, SQL)
 
     @classmethod
@@ -353,7 +353,7 @@ def make_customs(config, ctx, path, version, odoosh):
     if not path.exists():
         abort("Path does not exist: {}".format(path))
     elif list(path.glob("*")):
-        files = [x for x in path.glob("*") if x.name != '.git']
+        files = [x for x in path.glob("*") if x.name != ".git"]
         if files:
             if not config.force:
                 abort("Path is not empty: {}".format(path))
@@ -1071,6 +1071,10 @@ class Module(object):
             self.name = force_name
         else:
             self.name = self._manifest_path.parent.name
+
+    @property
+    def is_customs(self):
+        return self.path.parts[0] not in ["odoo", "enterprise", "themes"]
 
     @property
     def exists(self):

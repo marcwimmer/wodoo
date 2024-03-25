@@ -1391,9 +1391,10 @@ def _get_directory_hash(path):
 @odoo_module.command()
 @click.argument("module", required=True)
 @click.option("-N", "--no-cache", is_flag=True)
+@click.option("-c", "--customs", is_flag=True)
 @pass_config
 @click.pass_context
-def list_deps(ctx, config, module, no_cache):
+def list_deps(ctx, config, module, no_cache, customs):
     import arrow
 
     started = arrow.get()
@@ -1479,7 +1480,22 @@ def list_deps(ctx, config, module, no_cache):
             result[module.name] = data
 
     click.secho("---")
+    if customs:
+        result = _filter_customs(result)
     click.secho(json.dumps(result, indent=4))
+
+
+def _filter_customs(modules):
+    modules2 = {}
+    from .module_tools import DBModules, Module
+
+    def _filter(module_name):
+        mod = Module.get_by_name(module_name)
+        return mod.is_customs
+
+    for key in ['modules', 'auto_install']:
+        modules[key] = list(filter(_filter, modules[key]))
+    return modules
 
 
 @odoo_module.command()
@@ -1593,7 +1609,7 @@ def list_installed_modules(config, fix_not_in_manifest, only_customs):
             except Module.IsNot:
                 click.secho(f"Ignoring {module} - not found in source", fg="yellow")
                 continue
-            if any(x in parts for x in ["odoo", "enterprise", "themes"]):
+            if not mod.is_customs:
                 continue
         try:
             click.secho(f"{module}: {mod.path}", fg="green")
