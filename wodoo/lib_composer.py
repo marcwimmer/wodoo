@@ -33,6 +33,7 @@ from .tools import whoami
 from .tools import abort
 from .tools import _get_version
 from .tools import rsync
+from .tools import get_docker_version
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
@@ -42,7 +43,10 @@ from .tools import ensure_project_name
 import inspect
 import os
 from pathlib import Path
-current_dir = Path(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+
+current_dir = Path(
+    os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+)
 
 
 @cli.group(cls=AliasedGroup)
@@ -231,7 +235,7 @@ def internal_reload(
         "LOCAL_SETTINGS": "1" if local else "0",
         "CUSTOMS_DIR": config.WORKING_DIR,
         "WODOO_VERSION": _get_version(),
-        "QUEUEJOB_CHANNELS_FILE": config.files['queuejob_channels_file'],
+        "QUEUEJOB_CHANNELS_FILE": config.files["queuejob_channels_file"],
     }
     if devmode:
         defaults["DEVMODE"] = 1
@@ -643,7 +647,7 @@ def post_process_complete_yaml_config(config, yml):
     complete configuration.
     """
 
-    yml["version"] = config.YAML_VERSION
+    _set_yaml_version(yml, config)
 
     # remove restart policies, if not restart allowed:
     if not config.restart_containers:
@@ -871,6 +875,13 @@ def _explode_referenced_machines(contents):
                     content["services"][to_explode] = src
 
 
+def _set_yaml_version(content, config):
+    if get_docker_version()[0] < 26:
+        content["version"] = config.YAML_VERSION
+    else:
+        content.pop("version", None)
+
+
 def _apply_variables(config, contents, env):
     import yaml
 
@@ -889,7 +900,7 @@ def _apply_variables(config, contents, env):
         for networkname, network in content.get("networks", {}).items():
             default_network["networks"][networkname] = network
 
-        content["version"] = config.YAML_VERSION
+        _set_yaml_version(content, config)
 
         # set settings environment and the override settings after that
         __set_environment_in_services(content)
@@ -1061,7 +1072,9 @@ def _merge_odoo_dockerfile(config):
 
         # include source code
         if not config.SRC_EXTRA:
-            import pudb;pudb.set_trace()
+            import pudb
+
+            pudb.set_trace()
             append_odoo_src(config, config.files["odoo_docker_file"])
 
     else:
@@ -1073,8 +1086,9 @@ def append_odoo_src(config, path):
     content = "ADD {src} /opt/src"
     path.write_text(path.read_text() + "\n" + content)
 
+
 def _complete_setting_name(ctx, param, incomplete):
-    lines = (current_dir / 'settings.txt').read_text().splitlines()
+    lines = (current_dir / "settings.txt").read_text().splitlines()
 
     params = []
     for line in lines:
@@ -1088,13 +1102,13 @@ def _complete_setting_name(ctx, param, incomplete):
         name = name.strip()
         doc = doc.strip()
         name = name.split("=")[0]
-        params.append({'name': name, 'doc': doc})
+        params.append({"name": name, "doc": doc})
 
-
-    res = set([x['name'].strip() for x in params])
+    res = set([x["name"].strip() for x in params])
     if incomplete:
         res = list(filter(lambda x: x.lower().startswith(incomplete.lower()), res))
     return sorted(res)
+
 
 @composer.command()
 @pass_config
@@ -1103,20 +1117,22 @@ def _complete_setting_name(ctx, param, incomplete):
 @click.argument("value", required=False, default="")
 def setting(ctx, config, name, value):
     from .myconfigparser import MyConfigParser
+
     if not name:
         ctx.invoke(show_effective_settings)
         return
     configparser = MyConfigParser(config.files["settings"])
-    if '=' in name:
+    if "=" in name:
         name, value = name.split("=", 1)
     if not value:
         for k in sorted(configparser.keys()):
-            if  name.lower() in k.lower():
+            if name.lower() in k.lower():
                 click.secho(f"{k}={configparser[k]}")
     else:
         update_setting(config, name, value)
-        click.secho(f"{name}={value}", fg='green')
+        click.secho(f"{name}={value}", fg="green")
         ctx.invoke(do_reload)
+
 
 @composer.command()
 @pass_config
@@ -1128,6 +1144,7 @@ def show_effective_settings(ctx, config):
     for k in sorted(config.keys()):
         click.echo(f"{k}={config[k]}")
 
+
 @composer.command()
 @click.argument("name", required=False)
 @click.argument("amount", required=False, type=int)
@@ -1138,12 +1155,13 @@ def queuejob_channels(ctx, config, name, amount):
         abort(f"Please define the amount of workers in {name}")
 
     from .myconfigparser import MyConfigParser
+
     file = config.files["queuejob_channels_file"]
     if file.exists():
         content = file.read_text()
     else:
         config = MyConfigParser(config.files["settings"])
-        content = config.get('ODOO_QUEUEJOBS_CHANNELS', "root:1")
+        content = config.get("ODOO_QUEUEJOBS_CHANNELS", "root:1")
 
     channels = content.split(",")
 
@@ -1151,8 +1169,9 @@ def queuejob_channels(ctx, config, name, amount):
         channels = list(filter(lambda x: x.strip().split(":")[0] != name, channels))
         channels.append(f"{name}:{amount}")
         file.write_text(",".join(channels))
-        click.secho("Now restart the queuejob container", fg='yellow')
+        click.secho("Now restart the queuejob container", fg="yellow")
     for channel in channels:
-        click.secho(f"{channel}", fg='green')
+        click.secho(f"{channel}", fg="green")
+
 
 Commands.register(do_reload, "reload")

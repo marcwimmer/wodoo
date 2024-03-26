@@ -630,7 +630,10 @@ def _restore_dump(
             except subprocess.CalledProcessError:
                 # ignore - stopped before
                 pass
-            subprocess.check_output(["docker", "rm", "-f", postgres_name])
+            try:
+                subprocess.check_output(["docker", "rm", "-f", postgres_name])
+            except:
+                pass
 
 
 def _add_cronjob_scripts(config):
