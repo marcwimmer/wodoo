@@ -33,6 +33,8 @@ from pathlib import Path
 from .tools import abort
 from .tools import get_volume_fullpath
 
+MAX_I = 500
+
 HOWTO_PREPARE = """
 
 Preperation docker - be careful - make backups
@@ -65,6 +67,21 @@ def unify(text):
     while "  " in text:
         text = text.replace("  ", " ")
     return text
+
+
+def _is_zfs_path(path):
+    """
+    path e.g. tankdocker/volumes/postgres1
+    """
+    try:
+        subprocess.check_output(
+            ["sudo", zfs, "list", str(path)],
+            encoding="utf8",
+            stderr=subprocess.DEVNULL,  # ignore output of 'no datasets available'
+        ).strip().splitlines()[1:]
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 def _get_path(config):
@@ -107,13 +124,16 @@ def _get_possible_snapshot_paths(config):
     :param path: root path
     """
     # TODO
-    all_zfs_folders = _get_all_zfs()
-    zfs_path = _get_zfs_path(config)
-    for folder in all_zfs_folders:
-        if folder == zfs_path:
-            yield folder
-        if folder.startswith(zfs_path + "."):
-            yield folder
+    # all_zfs_folders = _get_all_zfs()
+    base_path = _get_zfs_path(config)
+    for i in range(-1, MAX_I):
+        if i == -1:
+            if _is_zfs_path(base_path):
+                yield from _call_list_snapshots(base_path)
+        else:
+            path = f"{base_path}.{i}"
+            if _is_zfs_path(path):
+                yield from _call_list_snapshots(path)
 
 
 def __get_snapshots(config):
@@ -124,18 +144,24 @@ def __get_snapshots(config):
         abort(f"Path {path} is not a zfs.")
 
 
+def _call_list_snapshots(path):
+    res = (
+        subprocess.check_output(
+            ["sudo", zfs, "list", "-t", "snapshot", str(path)],
+            encoding="utf8",
+            stderr=subprocess.DEVNULL,  # ignore output of 'no datasets available'
+        )
+        .strip()
+        .splitlines()[1:]
+    )
+    res = list(map(lambda x: x.split()[0], res))
+    return res
+
+
 def _get_snapshots(config):
     def _get_snaps():
         for path in _get_possible_snapshot_paths(config):
-            for line in (
-                subprocess.check_output(
-                    ["sudo", zfs, "list", "-t", "snapshot", str(path)],
-                    encoding="utf8",
-                    stderr=subprocess.DEVNULL,  # ignore output of 'no datasets available'
-                )
-                .strip()
-                .splitlines()[1:]
-            ):
+            for line in _call_list_snapshots(path):
                 snapshotname = unify(line.split(" "))[0]
                 creation = unify(
                     subprocess.check_output(
@@ -168,6 +194,7 @@ def _get_all_zfs():
 def __is_zfs_fs(path_zfs):
     path_zfs = str(path_zfs)
     assert " " not in path_zfs
+    return _is_zfs_path(path_zfs)
     datasets = _get_all_zfs()
     return str(path_zfs) in datasets
 
@@ -217,7 +244,7 @@ def _turn_into_subvolume(config):
 
 def make_snapshot(ctx, config, name):
     zfs = search_env_path("zfs")
-    __dc(config, ["stop", "-t 1"] + ["postgres"])
+    __dc(config, ["stop", "-t", "1"] + ["postgres"])
     _turn_into_subvolume(config)
     snapshots = list(_get_snapshots(config))
     snapshot = list(filter(lambda x: x["name"] == name, snapshots))
@@ -284,25 +311,37 @@ def restore(config, name):
     except ValueError:
         index = -1
 
-    __dc(config, ["stop", "-t 1"] + ["postgres"])
+    __dc(config, ["stop", "-t", "1"] + ["postgres"])
     if index == 0:
         # restore last one is easy in the volumefolder it self; happiest case
         subprocess.check_call(["sudo", zfs, "rollback", snapshot["fullpath"]])
     else:
         full_next_path = _get_next_snapshotpath(config)
         _try_umount(config)
-        subprocess.check_call(["sudo", zfs, "rename", zfs_full_path, full_next_path])
+        if _is_zfs_path(zfs_full_path):
+            subprocess.check_call(
+                ["sudo", zfs, "rename", zfs_full_path, full_next_path]
+            )
+        snap_name = snapshot["fullpath"].split("@")[-1]
+        snapshot_path = _get_zfs_path_for_snap_name(config, snap_name)
         subprocess.check_call(
             [
                 "sudo",
                 zfs,
                 "clone",
-                snapshot["fullpath"],
+                snapshot_path,
                 zfs_full_path,
             ]
         )
     __dc(config, ["rm", "-f"] + ["postgres"])
     __dc(config, ["up", "-d"] + ["postgres"])
+
+
+def _get_zfs_path_for_snap_name(config, snap_name):
+    for path in _get_possible_snapshot_paths(config):
+        if path.split("@")[-1] == snap_name:
+            return path
+    abort(f"Could not find snapshot with name {snap_name}")
 
 
 def remove(config, snapshot):

@@ -119,7 +119,7 @@ def _turn_into_subvolume(path):
 
 
 def make_snapshot(ctx, config, name):
-    __dc(config, ["stop", "-t 1"] + ["postgres"])
+    __dc(config, ["stop", "-t", "1"] + ["postgres"])
     path = _get_subvolume_dir(config)
     _turn_into_subvolume(_get_path(config))
 
@@ -157,7 +157,7 @@ def restore(config, name):
         click.secho(f"Path {name} does not exist.", fg="red")
         sys.exit(-1)
 
-    __dc(config, ["stop", "-t 1"] + ["postgres"])
+    __dc(config, ["stop", "-t", "1"] + ["postgres"])
     volume_path = _get_path(config)
     if volume_path.exists():
         subprocess.check_call(
