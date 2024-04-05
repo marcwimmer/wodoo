@@ -1,4 +1,6 @@
 import json
+import arrow
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -356,6 +358,58 @@ def fields(config, model, field):
         tabulate(rows, cols, tablefmt="fancy_grid"),
         fg="yellow",
     )
+
+
+@talk.command()
+@click.option("-i", "--interval", default=5, type=int)
+@pass_config
+def queuejobs(config, interval):
+    conn = config.get_odoo_conn()
+    last_data, last_time = None, None
+    averages = {}
+    while True:
+        rows = _execute_sql(
+            conn,
+            sql=(
+                "SELECT count(*) as count, state "
+                "FROM queue_job "
+                "GROUP BY state "
+                "ORDER BY 2 ASC "
+            ),
+            fetchall=True,
+            return_columns=True,
+        )
+        data = {x[1]: x[0] for x in rows[1]}
+
+        click.secho(tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow")
+        if last_data:
+            click.secho("Changes: ")
+            now = arrow.get()
+            avg_rows = []
+            for state, v in data.items():
+                diff = data.get(state, 0) - last_data.get(state, 0)
+                diff_per_second = abs(
+                    diff / round((now - last_time).total_seconds(), 1)
+                )
+                averages.setdefault(state, [])
+                averages[state].append(diff_per_second)
+                avg_diff_per_second = round(
+                    sum(averages[state]) / len(averages[state]), 1
+                )
+                avg_rows.append((state, diff, avg_diff_per_second))
+            click.secho(
+                tabulate(
+                    avg_rows,
+                    ["state", "items", "items per second"],
+                    tablefmt="fancy_grid",
+                ),
+                fg="blue",
+            )
+            # click.secho(f"{state}: {diff} with {avg_diff_per_second}/s")
+
+        time.sleep(interval)
+        last_data = data
+        last_time = arrow.get()
 
 
 Commands.register(progress)

@@ -693,3 +693,20 @@ def grab_models(config, ctx):
         t.start()
         threads.append(t)
     [t.join() for t in threads]
+
+@src.command()
+@click.argument(
+    "module", nargs=-1, shell_complete=_get_available_oca_modules, required=False
+)
+@click.pass_context
+@pass_config
+def convert_odoo17_attrs(config, ctx, module):
+    from .module_tools import Modules, DBModules, Module
+    from .lib_src_replace_attrs import odoo17attrs
+    modules = Modules()
+    all_modules = modules.get_all_modules_installed_by_manifest()
+    for m in all_modules:
+        if (module and m.name in [module]) or not module:
+            m = Module.get_by_name(m)
+            if m.is_customs or not module:
+                odoo17attrs(customs_dir() / m.path)

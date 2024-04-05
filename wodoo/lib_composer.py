@@ -120,6 +120,9 @@ def _get_arch():
 @click.option(
     "--docker-compose", help="additional docker-compose files, separated by colon :"
 )
+@click.option(
+    "-s", "--include-src", help="include source"
+)
 @pass_config
 @click.pass_context
 def do_reload(
@@ -137,6 +140,7 @@ def do_reload(
     no_update_images,
     docker_compose,
     no_gimera_apply,
+    include_src,
 ):
     from .myconfigparser import MyConfigParser
     from .module_tools import NotInAddonsPath
@@ -199,6 +203,7 @@ def do_reload(
                 additional_config,
                 additional_docker_configuration_files=docker_compose,
                 no_gimera_apply=no_gimera_apply,
+                include_src=include_src,
             )
         except NotInAddonsPath as ex:
             abort(str(ex))
@@ -225,6 +230,7 @@ def internal_reload(
     additional_config=None,
     additional_docker_configuration_files=None,
     no_gimera_apply=False,
+    include_src=False,
 ):
     ensure_project_name(config)
     additional_docker_configuration_files = additional_docker_configuration_files or []
@@ -272,6 +278,7 @@ def internal_reload(
         **defaults,
         additional_docker_configuration_files=additional_docker_configuration_files,
         no_gimera_apply=no_gimera_apply,
+        include_src=include_src,
     )
 
     _execute_after_reload(config)
@@ -297,6 +304,7 @@ def _do_compose(
     demo=False,
     additional_docker_configuration_files=None,
     no_gimera_apply=False,
+    include_src=False,
     **forced_values,
 ):
     """
@@ -329,7 +337,7 @@ def _do_compose(
     _prepare_yml_files_from_template_files(
         config, additional_docker_configuration_files
     )
-    _merge_odoo_dockerfile(config)
+    _merge_odoo_dockerfile(config, include_src=include_src)
 
     click.echo("Built the docker-compose file.")
 
@@ -1033,7 +1041,7 @@ def _use_file(config, path):
     return res
 
 
-def _merge_odoo_dockerfile(config):
+def _merge_odoo_dockerfile(config, include_src):
     """
     If customs contains dockerfile, then append their execution
     in the main dockerfile
@@ -1070,12 +1078,16 @@ def _merge_odoo_dockerfile(config):
             content = content.replace("${PROJECT_NAME}", config.project_name)
             file.write_text(content)
 
-        # include source code
-        if not config.SRC_EXTRA:
-            import pudb
+        # append common docker config
+        odoo_docker_file = config.files["odoo_docker_file"]
+        common = config.dirs['images'] / 'odoo' / 'config' / 'common.docker'
+        odoo_docker_file.write_text(
+            odoo_docker_file.read_text() + "\n" + common.read_text()
+        )
 
-            pudb.set_trace()
-            append_odoo_src(config, config.files["odoo_docker_file"])
+        # include source code
+        if include_src:
+            append_odoo_src(config, odoo_docker_file)
 
     else:
         # seems to use images from registry; no build section
@@ -1122,6 +1134,7 @@ def setting(ctx, config, name, value):
         ctx.invoke(show_effective_settings)
         return
     configparser = MyConfigParser(config.files["settings"])
+    name = name.replace(":", "=")
     if "=" in name:
         name, value = name.split("=", 1)
     if not value:
