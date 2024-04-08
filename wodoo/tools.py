@@ -599,6 +599,9 @@ def __safeget(array, index, exception_on_missing, file_options=None):
 def get_docker_version():
     docker = search_env_path("docker")
     version = subprocess.check_output([docker, "--version"], encoding="utf8").strip()
+    # support for stripping debian specific version suffixes
+    version = re.sub("\+dfsg[0-9]*,", "", version)
+    # continue with normal version parsing
     version = list(map(int, version.split(" ")[2].replace(",", "").split(".")))
     return version
 
