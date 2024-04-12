@@ -701,7 +701,6 @@ def grab_models(config, ctx):
 @click.pass_context
 @pass_config
 def convert_odoo17_attrs(config, ctx, module):
-    import pudb;pudb.set_trace()
     from .module_tools import Modules, DBModules, Module
     from .lib_src_replace_attrs import odoo17attrs
     modules = Modules()
