@@ -288,9 +288,10 @@ def odoo17attrs(root_dir):
             click.secho(file, fg="green")
         if not ok_files:
             click.secho("No OK files", fg="green")
-        click.secho("\nFailed on files", fg="red")
-        for file in nok_files:
-            click.secho(file[0], fg="red")
-            click.secho(f"Reason: {file[1]}", fg="red")
+        if nok_files:
+            click.secho("\nFailed on files", fg="red")
+            for file in nok_files:
+                click.secho(file[0], fg="red")
+                click.secho(f"Reason: {file[1]}", fg="red")
         if not nok_files:
             click.secho("Everything converted!", fg="green")
