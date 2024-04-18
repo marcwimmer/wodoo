@@ -388,9 +388,11 @@ def queuejobs(config, interval):
             avg_rows = []
             for state, v in data.items():
                 diff = data.get(state, 0) - last_data.get(state, 0)
-                diff_per_second = abs(
-                    diff / round((now - last_time).total_seconds(), 1)
-                )
+                seconds = round((now - last_time).total_seconds())
+                if seconds:
+                    diff_per_second = abs(diff / seconds, 1)
+                else:
+                    diff_per_second = 0
                 averages.setdefault(state, [])
                 averages[state].append(diff_per_second)
                 avg_diff_per_second = round(
