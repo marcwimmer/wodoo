@@ -31,7 +31,7 @@ from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from pathlib import Path
 from .tools import abort
-from .tools import get_volume_fullpath
+from .tools import get_volume_fullpath, verbose
 
 MAX_I = 500
 
@@ -297,42 +297,48 @@ def restore(config, name):
     assert "@" not in name
     assert "/" not in name
 
-    snapshots = list(_get_snapshots(config))
-    snapshot = list(filter(lambda x: x["name"] == name, snapshots))
-    if not snapshot:
-        abort(f"Snapshot {name} does not exist.")
-    snapshot = snapshot[0]
     zfs_full_path = _get_zfs_path(config)
-    snapshots_of_volume = [
-        x for x in snapshots if x["fullpath"].split("@")[0].startswith(zfs_full_path)
-    ]
-    try:
-        index = list(map(lambda x: x["name"], snapshots_of_volume)).index(name)
-    except ValueError:
-        index = -1
 
     __dc(config, ["stop", "-t", "1"] + ["postgres"])
-    if index == 0:
-        # restore last one is easy in the volumefolder it self; happiest case
-        subprocess.check_call(["sudo", zfs, "rollback", snapshot["fullpath"]])
+    dst = translate_poolPath_to_fullPath(zfs_full_path)
+    for path in [dst]:
+        if not path.exists():
+            abort(f"{path} missing!")
+
+    snapshot_full_path = translate_poolPath_to_fullPath(zfs_full_path + "@" + name)
+
+    temp_mount_path = Path("/mnt") / str(snapshot_full_path).split("/")[-1]
+    if temp_mount_path.exists():
+        try:
+            verbose(f"Unmounting {temp_mount_path}")
+            subprocess.run(["sudo", "umount", temp_mount_path])
+        except Exception:
+            pass
     else:
-        full_next_path = _get_next_snapshotpath(config)
-        _try_umount(config)
-        if _is_zfs_path(zfs_full_path):
-            subprocess.check_call(
-                ["sudo", zfs, "rename", zfs_full_path, full_next_path]
-            )
-        snap_name = snapshot["fullpath"].split("@")[-1]
-        snapshot_path = _get_zfs_path_for_snap_name(config, snap_name)
-        subprocess.check_call(
+        temp_mount_path.mkdir(exist_ok=True, parents=True)
+        # subprocess.run(["sudo", "chattr", "+i", temp_mount_path])
+    verbose(f"Mounting {temp_mount_path}")
+    subprocess.run(
+        ["sudo", "mount", "-t", "zfs", snapshot_full_path, temp_mount_path],
+    )
+    try:
+        click.secho(f"Copying data from {temp_mount_path} to {dst}", fg="blue")
+        subprocess.run(
             [
                 "sudo",
-                zfs,
-                "clone",
-                snapshot_path,
-                zfs_full_path,
-            ]
+                "rsync",
+                str(temp_mount_path) + "/",
+                str(dst) + "/",
+                "-ar",
+                "--info=progress2",
+                # "--delete-after",
+            ],
         )
+    finally:
+        verbose(f"Unmounting {temp_mount_path}...")
+        # subprocess.run(["sudo", "chattr", "-i", temp_mount_path])
+        subprocess.run(["sudo", "umount", temp_mount_path])
+        subprocess.run(["sudo", "rm", "-Rf", temp_mount_path])
     __dc(config, ["rm", "-f"] + ["postgres"])
     __dc(config, ["up", "-d"] + ["postgres"])
 
@@ -379,21 +385,21 @@ def remove_volume(config):
     clear_all(config)
 
 
-def _get_pool_mountpoint(poolname):
-    mountpoint = subprocess.check_output(
-        ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", poolname],
-        encoding="utf8",
-    ).strip()
+def translate_poolPath_to_fullPath(zfs_path):
+    zfs_path = Path(zfs_path)
+    removed = []
+    while len(zfs_path.parts) > 1:
+        mountpoint = subprocess.check_output(
+            ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", zfs_path],
+            encoding="utf8",
+        ).strip()
+        if mountpoint != "-":
+            break
+        removed.insert(0, zfs_path.parts[-1])
+        zfs_path = Path("/".join(zfs_path.parts[:-1]))
+    mountpoint = Path(mountpoint) / "/".join(removed)
+
     return Path(mountpoint)
-
-
-def translate_poolPath_to_fullPath(path):
-    # TODO
-    path = Path(path)
-    pool = path.parts[0]
-    poolpath = _get_pool_mountpoint(pool)
-    path = poolpath / path.relative_to(pool)
-    return path
 
 
 def clear_all(config):
