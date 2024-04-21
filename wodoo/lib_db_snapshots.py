@@ -108,7 +108,7 @@ def snapshot_remove(ctx, config, name):
 def snapshot_clear_all(ctx, config):
     config.snapshot_manager.assert_environment(config)
 
-    if hasattr(config.snapshot_manager, 'clear_all'):
+    if hasattr(config.snapshot_manager, "clear_all"):
         config.snapshot_manager.clear_all(config)
     else:
         snapshots = config.snapshot_manager.__get_snapshots(config)
