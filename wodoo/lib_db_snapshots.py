@@ -82,7 +82,8 @@ def snapshot_make(ctx, config, name):
 @click.pass_context
 def snapshot_restore(ctx, config, name):
     config.snapshot_manager.assert_environment(config)
-    name = __choose_snapshot(config, take=name)
+    if not name:
+        name = __choose_snapshot(config, take=name)
     if not name:
         return
     config.snapshot_manager.restore(config, name)
@@ -107,7 +108,7 @@ def snapshot_remove(ctx, config, name):
 def snapshot_clear_all(ctx, config):
     config.snapshot_manager.assert_environment(config)
 
-    if hasattr(config.snapshot_manager, 'clear_all'):
+    if hasattr(config.snapshot_manager, "clear_all"):
         config.snapshot_manager.clear_all(config)
     else:
         snapshots = config.snapshot_manager.__get_snapshots(config)

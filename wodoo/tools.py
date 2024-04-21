@@ -728,6 +728,10 @@ def _get_user_primary_group(UID):
     id = search_env_path("id")
     return subprocess.check_output([id, "-gn", str(UID)], encoding="utf8").strip()
 
+def verbose(txt):
+    if os.getenv("WODOO_VERBOSE") == "1":
+        click.secho(txt, fg='gray')
+
 
 def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
     primary_group = _get_user_primary_group(UID)
