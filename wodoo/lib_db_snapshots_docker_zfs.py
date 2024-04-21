@@ -323,7 +323,6 @@ def restore(config, name):
     assert "@" not in name
     assert "/" not in name
 
-    import pudb;pudb.set_trace()
     snapshots = list(_get_snapshots(config))
     snapshot = list(filter(lambda x: x["name"] == name, snapshots))
     if not snapshot:
