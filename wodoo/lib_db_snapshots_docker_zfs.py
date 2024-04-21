@@ -17,6 +17,8 @@ better: zfs get -H -o value usedbychildren docker/volumes  mit -1 oder nicht
 """
 
 import inquirer
+import os
+import json
 from .tools import abort
 from operator import itemgetter
 import subprocess
@@ -48,6 +50,9 @@ rm -Rf /var/lib/docker.old
 systemctl start docker
 
 """
+
+CACHE_FILE_BASE = os.path.expanduser("~/.wodoo/zfs")
+
 
 try:
     zfs = search_env_path("zfs")
@@ -88,6 +93,25 @@ def _get_path(config):
     return get_volume_fullpath(__get_postgres_volume_name(config))
 
 
+def _cache_path(config):
+    assert config.project_name
+    return Path(CACHE_FILE_BASE) / config.project_name
+
+
+def _load_cache(config):
+    path = _cache_path(config)
+    if not path.exists():
+        return
+    for k, v in json.loads(path.read_text()).items():
+        _cache[k] = v
+
+
+def _save_cache(config):
+    path = _cache_path(config)
+    path.parent.mkdir(exist_ok=True, parents=True)
+    path.write_text(json.dumps(_cache))
+
+
 def _get_zfs_path(config):
     """
     takes the postgresname and translates:
@@ -96,11 +120,13 @@ def _get_zfs_path(config):
     Doesnt matter if pg1 is already a snapshot or not
 
     """
+    _load_cache(config)
     datasets = _get_all_mountpoints()
     viceversa = {v: k for k, v in datasets.items()}
     postgresname = __get_postgres_volume_name(config)
     firstmatch = [x for x in datasets.values() if x.endswith("/" + postgresname)]
     secondmatch = [x for x in datasets.values() if x.endswith("/volumes")]
+    _save_cache(config)
     if firstmatch:
         return viceversa[firstmatch[0]]
     if secondmatch:
