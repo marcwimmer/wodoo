@@ -323,6 +323,7 @@ def restore(config, name):
     assert "@" not in name
     assert "/" not in name
 
+    import pudb;pudb.set_trace()
     snapshots = list(_get_snapshots(config))
     snapshot = list(filter(lambda x: x["name"] == name, snapshots))
     if not snapshot:
@@ -405,21 +406,21 @@ def remove_volume(config):
     clear_all(config)
 
 
-def _get_pool_mountpoint(poolname):
-    mountpoint = subprocess.check_output(
-        ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", poolname],
-        encoding="utf8",
-    ).strip()
+def translate_poolPath_to_fullPath(zfs_path):
+    zfs_path = Path(zfs_path)
+    removed = []
+    while len(zfs_path.parts) > 1:
+        mountpoint = subprocess.check_output(
+            ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", zfs_path],
+            encoding="utf8",
+        ).strip()
+        if mountpoint != "-":
+            break
+        removed.insert(0, zfs_path.parts[-1])
+        zfs_path = Path("/".join(zfs_path.parts[:-1]))
+    mountpoint = Path(mountpoint) / "/".join(removed)
+
     return Path(mountpoint)
-
-
-def translate_poolPath_to_fullPath(path):
-    # TODO
-    path = Path(path)
-    pool = path.parts[0]
-    poolpath = _get_pool_mountpoint(pool)
-    path = poolpath / path.relative_to(pool)
-    return path
 
 
 def clear_all(config):
