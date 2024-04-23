@@ -58,6 +58,8 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False, no_fetch=None)
                     gimera,
                     repos=[repo["path"]],
                     recursive=True,
+                    no_patches=True,
+                    non_interactive=True,
                     no_auto_commit=True,
                 )
                 changed = True
@@ -694,6 +696,7 @@ def grab_models(config, ctx):
         threads.append(t)
     [t.join() for t in threads]
 
+
 @src.command()
 @click.argument(
     "module", nargs=-1, shell_complete=_get_available_oca_modules, required=False
@@ -703,6 +706,7 @@ def grab_models(config, ctx):
 def convert_odoo17_attrs(config, ctx, module):
     from .module_tools import Modules, DBModules, Module
     from .lib_src_replace_attrs import odoo17attrs
+
     modules = Modules()
     all_modules = modules.get_all_modules_installed_by_manifest()
     for m in all_modules:
