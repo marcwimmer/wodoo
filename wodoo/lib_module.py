@@ -655,6 +655,11 @@ def update(
     if not uninstall:
         _perform_install(module)
 
+    manifest = MANIFEST()
+    if config.devmode and manifest.get("uninstall_devmode", []):
+        for mod in manifest['uninstall_devmode']:
+            _uninstall_marked_modules(ctx, config, manifest['uninstall_devmode'])
+
     all_modules = (
         not param_module
         or len(param_module) == 1
@@ -662,7 +667,7 @@ def update(
     )
 
     if uninstall or all_modules:
-        _uninstall_marked_modules(ctx, config, MANIFEST().get("uninstall", []))
+        _uninstall_marked_modules(ctx, config, manifest.get("uninstall", []))
 
     # check danglings
     if not no_dangling_check and all_modules:
