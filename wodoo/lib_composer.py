@@ -120,9 +120,7 @@ def _get_arch():
 @click.option(
     "--docker-compose", help="additional docker-compose files, separated by colon :"
 )
-@click.option(
-    "-s", "--include-src", help="include source"
-)
+@click.option("-s", "--include-src", help="include source")
 @pass_config
 @click.pass_context
 def do_reload(
@@ -980,7 +978,9 @@ def _use_file(config, path):
                 ".run_" in x for x in path.parts
             ):
                 return False
-            if not any(".run_" in x for x in path.parts):
+            if not any(".run_" in x for x in path.parts) and not any(
+                ".!run_" in x for x in path.parts
+            ):
                 # allower postgres/docker-compose.yml
                 return True
 
@@ -1001,7 +1001,7 @@ def _use_file(config, path):
                 return True
 
         # requires general run:
-        if getattr(config, f"run_{path.parent.name}") or "run_" in path.name:
+        if getattr(config, f"run_{path.parent.name}") or "run_" in path.name or "!run_" in path.name :
             run = list(
                 filter(
                     lambda x: x.startswith("run_"),
@@ -1020,9 +1020,9 @@ def _use_file(config, path):
             )
             for run in run:
                 if not getattr(config, run):
-                    return True
+                    return False
                 if getattr(config, run.lower().replace("run_", "")):
-                    return True
+                    return False
             return False
 
         if path.absolute() == config.files["docker_compose"].absolute():
@@ -1080,7 +1080,7 @@ def _merge_odoo_dockerfile(config, include_src):
 
         # append common docker config
         odoo_docker_file = config.files["odoo_docker_file"]
-        common = config.dirs['images'] / 'odoo' / 'config' / 'common.docker'
+        common = config.dirs["images"] / "odoo" / "config" / "common.docker"
         odoo_docker_file.write_text(
             odoo_docker_file.read_text() + "\n" + common.read_text()
         )
