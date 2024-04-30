@@ -1014,7 +1014,7 @@ def _use_file(config, path):
                 if getattr(config, run.lower().replace("run_", "")):
                     # make run_devmode possible; in config is only devmode set
                     return True
-            run = filter
+            run = filter(
                 lambda x: x.startswith("!run_"),
                 [y for x in path.parts for y in x.split(".")],
             )
