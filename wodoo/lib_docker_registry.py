@@ -213,7 +213,13 @@ def _apply_tags(config):
         tag = _get_service_tagname(config, service)
         if config.verbose:
             click.secho((f"Applying {tag} on {expected_image_name}"), fg="yellow")
-        subprocess.check_call(["docker", "tag", expected_image_name, tag])
+        try:
+            subprocess.check_call(["docker", "tag", expected_image_name, tag])
+        except:
+            click.secho(
+                f"Could not tag: {expected_image_name}. Perhaps not a prob for external images.",
+                fg="yellow",
+            )
         click.secho((f"Applied tag {tag} on {expected_image_name}"), fg="green")
         yield tag
 
