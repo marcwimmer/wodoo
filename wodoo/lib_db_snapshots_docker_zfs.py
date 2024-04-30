@@ -409,17 +409,21 @@ def translate_poolPath_to_fullPath(zfs_path):
     zfs_path = Path(zfs_path)
     removed = []
     while len(zfs_path.parts) > 1:
-        mountpoint = subprocess.check_output(
-            ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", zfs_path],
-            encoding="utf8",
-        ).strip()
+        mountpoint = None
+        try:
+            mountpoint = subprocess.check_output(
+                ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", zfs_path],
+                encoding="utf8",
+            ).strip()
+        except:
+            mountoint = None
         if mountpoint != "-":
             break
         removed.insert(0, zfs_path.parts[-1])
         zfs_path = Path("/".join(zfs_path.parts[:-1]))
-    mountpoint = Path(mountpoint) / "/".join(removed)
+    mountpoint = Path(mountpoint) / "/".join(removed) if mountpoint else None
 
-    return Path(mountpoint)
+    return Path(mountpoint) if mountpoint else None
 
 
 def clear_all(config):
@@ -427,7 +431,7 @@ def clear_all(config):
     zfs_full_path = _get_zfs_path(config)
     _try_umount(config)
     diskpath = translate_poolPath_to_fullPath(zfs_full_path)
-    if __is_zfs_fs(diskpath):
+    if diskpath and __is_zfs_fs(diskpath):
         subprocess.check_call(["sudo", zfs, "destroy", "-r", zfs_full_path])
 
 
