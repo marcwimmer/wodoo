@@ -29,6 +29,11 @@ jobs:
         git config --global user.name 'github-action@github.com'
         git fetch
 
+    - name: do some testing
+      run: |
+        apt install python-pipx
+
+
     - name: increment version
       run: |
         python3 << EOF
