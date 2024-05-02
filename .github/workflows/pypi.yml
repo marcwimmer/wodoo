@@ -3,7 +3,7 @@ name: Test and Upload Pypi
 on:
   push:
     branches:
-      - main
+      - test_testing
 
 permissions:
   contents: write
@@ -29,9 +29,9 @@ jobs:
         git config --global user.name 'github-action@github.com'
         git fetch
 
-    - name: do some testing
-      run: |
-        sudo apt install python-pipx
+    # - name: do some testing
+    #   run: |
+    #     sudo apt install python-pipx
 
 
     - name: increment version
