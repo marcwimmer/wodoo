@@ -206,11 +206,14 @@ def _apply_tags(config):
     assert config.project_name
 
     for service, item in compose["services"].items():
-        if item.get("build"):
+        tag = _get_service_tagname(config, service)
+        item['labels']['registry_applied'] = '1'
+        if item.get("image"):
+            continue
+        elif item.get("build"):
             expected_image_name = f"{config.project_name}_{service}"
         else:
-            expected_image_name = item["image"]
-        tag = _get_service_tagname(config, service)
+            raise NotImplementedError("Only build or image is supported")
         if config.verbose:
             click.secho((f"Applying {tag} on {expected_image_name}"), fg="yellow")
         subprocess.check_call(["docker", "tag", expected_image_name, tag])
