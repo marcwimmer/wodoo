@@ -14,6 +14,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      ODOO_TEST: "16.0"
 
     steps:
     - uses: actions/checkout@v4
@@ -35,7 +37,8 @@ jobs:
          python3-pip python3-venv python3-virtualenv
         pip install pipx
         pipx install -e --force .
-        git clone https://github.com/Odoo-Ninjas/zyncdemo.git /tmp/zync
+        cd /tmp
+        odoo init odoo1 "$ODOO_TEST"
         cd /tmp/zync
         odoo reload
 
