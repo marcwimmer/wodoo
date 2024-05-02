@@ -8,7 +8,7 @@ passlib>=1.7.1
 tabulate>=0.8.3
 psycopg2-binary==2.9.3
 requests>=2.20.1
-lxml>=4.9.2
+lxml
 docker-compose==1.29.2
 iscompatible
 buttervolume>=3.7
