@@ -41,7 +41,10 @@ jobs:
         odoo init odoo1 "$ODOO_TEST"
         cd /tmp/zync
         odoo reload
-
+        odoo build
+        odoo -f db reset
+        odoo update crm
+        odoo down
 
     # - name: increment version
     #   run: |
