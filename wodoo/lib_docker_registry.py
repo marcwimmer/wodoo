@@ -98,9 +98,8 @@ def regpull(ctx, config, machines):
         machines = list(
             yaml.load(config.files["docker_compose"].read_text())["services"]
         )
-    for machine in machines:
-        click.secho(f"Pulling {machine}")
-        __dc(config, ["pull", machine])
+    click.secho(f"Pulling {','.join(machines)}")
+    __dc(config, ["pull"] + machines)
 
 
 @docker_registry.command()

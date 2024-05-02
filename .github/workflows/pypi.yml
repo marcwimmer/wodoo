@@ -31,7 +31,7 @@ jobs:
 
     - name: do some testing
       run: |
-        apt install python-pipx
+        sudo apt install python-pipx
 
 
     - name: increment version
