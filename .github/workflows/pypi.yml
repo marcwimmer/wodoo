@@ -32,6 +32,10 @@ jobs:
     - name: do some testing
       run: |
         sudo apt update && sudo apt install -y python3-pipx
+        pipx install -e --force .
+        git clone git@github.com:Odoo-Ninjas/zyncdemo.git /tmp/zync
+        cd /tmp/zync
+        odoo reload
 
 
     # - name: increment version
