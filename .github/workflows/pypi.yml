@@ -40,8 +40,9 @@ jobs:
         pipx install -e --force .
         cd /tmp
         odoo init odoo1 "$ODOO_TEST"
-        cd /tmp/zync
+        cd /tmp/odoo1
         odoo reload
+        rm -Rf ~/.cache/gimera
         odoo build
         odoo -f db reset
         odoo update crm
