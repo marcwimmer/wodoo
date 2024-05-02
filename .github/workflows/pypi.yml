@@ -48,7 +48,8 @@ jobs:
     #     odoo update crm
     #     odoo down
 
-    - name: increment version #   run: | #     python3 << EOF #     import re
+    - name: increment version
+      run: | #     python3 << EOF #     import re
         from pathlib import Path
         file = Path('setup.cfg')
         lines = file.read_text()
