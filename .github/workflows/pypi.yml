@@ -31,65 +31,62 @@ jobs:
         git config --global user.name 'github-action@github.com'
         git fetch
 
-    - name: do some testing
+    # - name: do some testing
+    #   run: |
+    #     sudo apt update && sudo apt install -y python3-dev \
+    #       python3-pip python3-venv python3-virtualenv
+    #     pip install pip -U
+    #     pip install pipx
+    #     pipx install -e --force .
+    #     cd /tmp
+    #     odoo init odoo1 "$ODOO_TEST"
+    #     cd /tmp/odoo1
+    #     odoo reload
+    #     rm -Rf ~/.cache/gimera
+    #     odoo build
+    #     odoo -f db reset
+    #     odoo update crm
+    #     odoo down
+
+    - name: increment version #   run: | #     python3 << EOF #     import re
+        from pathlib import Path
+        file = Path('setup.cfg')
+        lines = file.read_text()
+        find = re.findall(r'version = (.*)', lines)
+        old_version_string = find[-1]
+        old_version = f'version = {old_version_string}'
+        version = list(map(int, find[-1].split('.')))
+        version[-1] += 1
+        version_string = '.'.join(map(str, version))
+        new_version = 'version = ' + version_string
+        lines = lines.replace(old_version, new_version)
+        file.write_text(lines)
+        Path("wodoo/version.txt").write_text(version_string)
+        EOF
+
+    - name: commit and tag new version
       run: |
-        sudo apt update && sudo apt install -y python3-dev \
-         python3-pip python3-venv python3-virtualenv
-        pip install pip -U
-        pip install pipx
-        pipx install -e --force .
-        cd /tmp
-        odoo init odoo1 "$ODOO_TEST"
-        cd /tmp/odoo1
-        odoo reload
-        rm -Rf ~/.cache/gimera
-        odoo build
-        odoo -f db reset
-        odoo update crm
-        odoo down
+        set -x
+        git fetch --tags
 
-    # - name: increment version
-    #   run: |
-    #     python3 << EOF
-    #     import re
-    #     from pathlib import Path
-    #     file = Path('setup.cfg')
-    #     lines = file.read_text()
-    #     find = re.findall(r'version = (.*)', lines)
-    #     old_version_string = find[-1]
-    #     old_version = f'version = {old_version_string}'
-    #     version = list(map(int, find[-1].split('.')))
-    #     version[-1] += 1
-    #     version_string = '.'.join(map(str, version))
-    #     new_version = 'version = ' + version_string
-    #     lines = lines.replace(old_version, new_version)
-    #     file.write_text(lines)
-    #     Path("wodoo/version.txt").write_text(version_string)
-    #     EOF
+        COMMIT_MSG='autocommit by github action'
+        if [ $(git log -n1 | grep -q "$COMMIT_MSG") ]; then
+          echo "No new commit"
+          echo "DO_PYPI=0" >> "$GITHUB_ENV"
+        else
+          git add .
+          git commit -am "$COMMIT_MSG"
+          VERSION=$(cat wodoo/version.txt)
+          git tag ${VERSION}
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git push origin --tags
+          git push
+          python3 setup.py sdist
+          echo "DO_PYPI=1" >> "$GITHUB_ENV"
+        fi
 
-    # - name: commit and tag new version
-    #   run: |
-    #     set -x
-    #     git fetch --tags
-
-    #     COMMIT_MSG='autocommit by github action'
-    #     if [ $(git log -n1 | grep -q "$COMMIT_MSG") ]; then
-    #       echo "No new commit"
-    #       echo "DO_PYPI=0" >> "$GITHUB_ENV"
-    #     else
-    #       git add .
-    #       git commit -am "$COMMIT_MSG"
-    #       VERSION=$(cat wodoo/version.txt)
-    #       git tag ${VERSION}
-    #       git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-    #       git push origin --tags
-    #       git push
-    #       python3 setup.py sdist
-    #       echo "DO_PYPI=1" >> "$GITHUB_ENV"
-    #     fi
-
-    # - name: Publish to PyPi
-    #   uses: pypa/gh-action-pypi-publish@release/v1
-    #   with:
-    #     password: ${{ secrets.PYPI_API_TOKEN }}
-    #   if: env.DO_PYPI == '1'
+    - name: Publish to PyPi
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+      if: env.DO_PYPI == '1'
