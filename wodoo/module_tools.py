@@ -1079,7 +1079,9 @@ class Module(object):
         modules = mods.get_all_modules_installed_by_manifest()
         all_modules = [self.get_by_name(x) for x in modules]
         for check in all_modules:
-            if self.name in [x.name for x in mods.get_module_flat_dependency_tree(check)]:
+            if self.name in [
+                x.name for x in mods.get_module_flat_dependency_tree(check)
+            ]:
                 res.append(check)
         return res
 
@@ -1502,11 +1504,13 @@ class Module(object):
         if current_version() > 14.0:
             if "qweb" in mod:
                 mod.setdefault("assets", {})
-                mod["assets"].setdefault("web.assets_qweb", [])
-                mod["assets"]["web.assets_qweb"] += mod.pop("qweb")
-                mod["assets"]["web.assets_qweb"] = list(
-                    sorted(set(mod["assets"]["web.assets_qweb"]))
-                )
+                if current_version() == 15.0:
+                    key = "web.assets_qweb"
+                else:
+                    key = "web.assets_backend"
+                mod["assets"].setdefault(key, [])
+                mod["assets"][key] += mod.pop("qweb")
+                mod["assets"][key] = list(sorted(set(mod["assets"][key])))
 
         # now sort again by inspecting file content - if __openerp__.sequence NUMBER is found, then
         # set this index; reason: some times there are wizards that reference forms and vice versa
