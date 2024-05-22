@@ -38,7 +38,7 @@ jobs:
         pip install pip -U
         pip install pipx
         pipx install -e --force .
-        pipx runpip wodoo install requests==2.32.2 
+        pipx runpip wodoo install requests==2.31.0 
         cd /tmp
         odoo init odoo1 "$ODOO_TEST"
         cd /tmp/odoo1
