@@ -42,6 +42,7 @@ jobs:
         cd /tmp
         odoo init odoo1 "$ODOO_TEST"
         cd /tmp/odoo1
+        docker ps
         odoo reload
         rm -Rf ~/.cache/gimera
         odoo build
