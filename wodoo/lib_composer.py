@@ -1001,7 +1001,11 @@ def _use_file(config, path):
                 return True
 
         # requires general run:
-        if getattr(config, f"run_{path.parent.name}") or "run_" in path.name or "!run_" in path.name :
+        if (
+            getattr(config, f"run_{path.parent.name}")
+            or "run_" in path.name
+            or "!run_" in path.name
+        ):
             run = list(
                 filter(
                     lambda x: x.startswith("run_"),
@@ -1127,7 +1131,8 @@ def _complete_setting_name(ctx, param, incomplete):
 @click.pass_context
 @click.argument("name", required=False, shell_complete=_complete_setting_name)
 @click.argument("value", required=False, default="")
-def setting(ctx, config, name, value):
+@click.option("-R", "--no-reload", is_flag=True)
+def setting(ctx, config, name, value, no_reload):
     from .myconfigparser import MyConfigParser
 
     if not name:
@@ -1144,7 +1149,8 @@ def setting(ctx, config, name, value):
     else:
         update_setting(config, name, value)
         click.secho(f"{name}={value}", fg="green")
-        ctx.invoke(do_reload)
+        if not no_reload:
+            ctx.invoke(do_reload)
 
 
 @composer.command()
