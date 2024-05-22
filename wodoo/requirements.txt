@@ -7,7 +7,7 @@ humanize>=0.5.1
 passlib>=1.7.1
 tabulate>=0.8.3
 psycopg2-binary==2.9.3
-requests>=2.20.1
+requests<2.32.0
 lxml
 docker-compose==1.29.2
 iscompatible
