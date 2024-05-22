@@ -75,7 +75,7 @@ class Config(object):
     @WORKING_DIR.setter
     def WORKING_DIR(self, value):
         self._WORKING_DIR = value
-        os.environ["CUSTOMS_DIR"] = self._WORKING_DIR
+        os.environ["CUSTOMS_DIR"] = str(self._WORKING_DIR)
 
     @property
     def project_name(self):

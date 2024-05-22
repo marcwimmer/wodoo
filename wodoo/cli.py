@@ -47,6 +47,7 @@ def cli(
     config.force = force
     config.verbose = verbose
     if chdir:
+        chdir = Path(chdir).absolute()
         os.chdir(chdir)
         config.WORKING_DIR = chdir
 
