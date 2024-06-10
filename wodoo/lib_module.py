@@ -656,9 +656,7 @@ def update(
         _perform_install(module)
 
     manifest = MANIFEST()
-    if config.devmode and manifest.get("uninstall_devmode", []):
-        for mod in manifest['uninstall_devmode']:
-            _uninstall_marked_modules(ctx, config, manifest['uninstall_devmode'])
+    _uninstall_devmode_modules(ctx, config, manifest)
 
     all_modules = (
         not param_module
@@ -681,6 +679,12 @@ def update(
     duration = (arrow.get() - started).total_seconds()
     date = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
     click.secho(f"Update done at {date} - duration {duration}s", fg="yellow")
+
+
+def _uninstall_devmode_modules(ctx, config, manifest):
+    if config.devmode and manifest.get("devmode_uninstall", []):
+        for mod in manifest["devmode_uninstall"]:
+            _uninstall_marked_modules(ctx, config, manifest["devmode_uninstall"])
 
 
 def _set_sha(config):
