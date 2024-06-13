@@ -374,11 +374,14 @@ def queuejobs(config, interval):
                 "SELECT count(*) as count, state "
                 "FROM queue_job "
                 "GROUP BY state "
-                "ORDER BY 2 ASC "
+                "UNION "
+                "SELECT count(*), 'total' FROM queue_job"
             ),
             fetchall=True,
             return_columns=True,
         )
+        rows = list(rows)
+        rows[1] = sorted(rows[1], key=lambda x: x[1] == 'total' and 'zzzzzzzz' or x[1])
         data = {x[1]: x[0] for x in rows[1]}
 
         click.secho(tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow")
@@ -390,7 +393,7 @@ def queuejobs(config, interval):
                 diff = data.get(state, 0) - last_data.get(state, 0)
                 seconds = round((now - last_time).total_seconds())
                 if seconds:
-                    diff_per_second = abs(diff / seconds, 1)
+                    diff_per_second = round(abs(diff / seconds), 1)
                 else:
                     diff_per_second = 0
                 averages.setdefault(state, [])
@@ -398,7 +401,6 @@ def queuejobs(config, interval):
                 avg_diff_per_second = round(
                     sum(averages[state]) / len(averages[state]), 1
                 )
-                avg_rows.append((state, diff, avg_diff_per_second))
             click.secho(
                 tabulate(
                     avg_rows,
