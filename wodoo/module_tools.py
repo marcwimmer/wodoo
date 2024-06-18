@@ -174,10 +174,18 @@ class DBModules(object):
         pass
 
     @classmethod
-    def check_if_all_modules_from_install_are_installed(clazz):
+    def check_if_all_modules_from_install_are_installed(clazz, check_func):
+        res = set()
         for module in get_modules_from_install_file():
             if not clazz.is_module_installed(module):
-                yield module
+                res.add(module)
+
+        import pudb;pudb.set_trace()
+        if check_func:
+            check_func(res)
+
+
+        return list(res)
 
     @classmethod
     def abort_upgrade(clazz):

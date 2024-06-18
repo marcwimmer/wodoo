@@ -46,18 +46,22 @@ KEY_SHA_REVISION = "sha.revision"
 
 def get_all_modules_installed_by_manifest(config):
     from .module_tools import Modules, DBModules, Module
+
     manifest_modules = Modules().get_all_modules_installed_by_manifest()
     remove_some_modules(config, manifest_modules)
     return manifest_modules
 
+
 def remove_some_modules(config, modules):
     from .odoo_config import MANIFEST
+
     devmode_uninstall = MANIFEST().get("devmode_uninstall", [])
     if config.devmode:
         for mod in devmode_uninstall:
             if mod in modules:
                 modules.remove(mod)
             del mod
+
 
 class UpdateException(Exception):
     pass
@@ -759,6 +763,9 @@ def show_dangling():
     return bool(dangling)
 
 
+from functools import partial
+
+
 def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check):
     from .module_tools import Modules, DBModules, Module
 
@@ -769,7 +776,9 @@ def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check)
             missing_as_error=True,
         )
     else:
-        missing = list(DBModules.check_if_all_modules_from_install_are_installed())
+        missing = DBModules.check_if_all_modules_from_install_are_installed(
+            partial(remove_some_modules, (config,))
+        )
         problem_missing = set()
         for module in module:
             if module in missing:
@@ -851,7 +860,6 @@ def _uninstall_marked_modules(ctx, config, modules):
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
     manifest_modules = get_all_modules_installed_by_manifest(config)
-
 
     uninstalled = False
     for module in modules:
@@ -939,7 +947,9 @@ def show_install_state(config, suppress_error=False, missing_as_error=False):
         click.echo("{}: {}".format(row[0], row[1]))
 
     # get modules, that are not installed:
-    missing = list(DBModules.check_if_all_modules_from_install_are_installed())
+    missing = DBModules.check_if_all_modules_from_install_are_installed(
+            partial(remove_some_modules, (config,))
+        )
     for missing_item in missing:
         click.secho((f"Module {missing_item} not installed!"), fg="red")
 
