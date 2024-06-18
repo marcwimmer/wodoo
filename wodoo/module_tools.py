@@ -1409,6 +1409,8 @@ class Module(object):
                 continue
             if ".git" in file.parts:
                 continue
+            if file.parts[0].startswith("."):
+                continue
             # relative to module path
             yield file
 
