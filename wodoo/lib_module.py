@@ -39,6 +39,7 @@ from .tools import get_git_hash
 from .tools import start_postgres_if_local
 from .module_tools import _determine_affected_modules_for_ir_field_and_related
 from pathlib import Path
+from functools import partial
 
 DTF = "%Y-%m-%d %H:%M:%S"
 KEY_SHA_REVISION = "sha.revision"
@@ -763,7 +764,6 @@ def show_dangling():
     return bool(dangling)
 
 
-from functools import partial
 
 
 def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check):
@@ -777,7 +777,7 @@ def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check)
         )
     else:
         missing = DBModules.check_if_all_modules_from_install_are_installed(
-            partial(remove_some_modules, (config,))
+            partial(remove_some_modules, config)
         )
         problem_missing = set()
         for module in module:
@@ -948,7 +948,7 @@ def show_install_state(config, suppress_error=False, missing_as_error=False):
 
     # get modules, that are not installed:
     missing = DBModules.check_if_all_modules_from_install_are_installed(
-            partial(remove_some_modules, (config,))
+            partial(remove_some_modules, config)
         )
     for missing_item in missing:
         click.secho((f"Module {missing_item} not installed!"), fg="red")

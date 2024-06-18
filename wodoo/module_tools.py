@@ -180,7 +180,6 @@ class DBModules(object):
             if not clazz.is_module_installed(module):
                 res.add(module)
 
-        import pudb;pudb.set_trace()
         if check_func:
             check_func(res)
 
