@@ -69,13 +69,21 @@ def abort_upgrade(config):
     DBModules.abort_upgrade()
 
 
-def _get_default_modules_to_update():
+def _get_default_modules_to_update(config):
     from .module_tools import Modules, DBModules
+    from .odoo_config import MANIFEST
+    devmode_uninstall = MANIFEST().get("devmode_uninstall", [])
 
     mods = Modules()
     module = mods.get_customs_modules("to_update")
     module += DBModules.get_uninstalled_modules_where_others_depend_on()
     module += DBModules.get_outdated_installed_modules(mods)
+    if config.devmode:
+        for mod in devmode_uninstall:
+            if mod in module:
+                module.remove(mod)
+            del mod
+
     return module
 
 
@@ -515,7 +523,7 @@ def update(
             module = _parse_modules(module)
 
         if not module and not since_git_sha:
-            module = _get_default_modules_to_update()
+            module = _get_default_modules_to_update(config)
 
         def _get_outdated_modules():
             return list(
@@ -888,7 +896,7 @@ def update_i18n(ctx, config, module, no_restart):
     )  # '1,2 3' --> ['1', '2', '3']
 
     if not module:
-        module = _get_default_modules_to_update()
+        module = _get_default_modules_to_update(config)
 
     try:
         params = [",".join(module)]
@@ -1308,7 +1316,7 @@ def unittest(
 @pass_config
 @click.pass_context
 def generate_update_command(ctx, config):
-    modules = _get_default_modules_to_update()
+    modules = _get_default_modules_to_update(config)
     click.secho(f"-u {','.join(modules)}")
 
 
@@ -1570,7 +1578,7 @@ def list_modules(ctx, config):
 @pass_config
 @click.pass_context
 def list_outdated_modules(ctx, config):
-    modules = _get_default_modules_to_update()
+    modules = _get_default_modules_to_update(config)
 
     def _get_outdated_modules(module):
         return list(
