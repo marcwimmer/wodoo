@@ -44,6 +44,21 @@ DTF = "%Y-%m-%d %H:%M:%S"
 KEY_SHA_REVISION = "sha.revision"
 
 
+def get_all_modules_installed_by_manifest(config):
+    from .module_tools import Modules, DBModules, Module
+    manifest_modules = Modules().get_all_modules_installed_by_manifest()
+    remove_some_modules(config, manifest_modules)
+    return manifest_modules
+
+def remove_some_modules(config, modules):
+    from .odoo_config import MANIFEST
+    devmode_uninstall = MANIFEST().get("devmode_uninstall", [])
+    if config.devmode:
+        for mod in devmode_uninstall:
+            if mod in modules:
+                modules.remove(mod)
+            del mod
+
 class UpdateException(Exception):
     pass
 
@@ -72,17 +87,12 @@ def abort_upgrade(config):
 def _get_default_modules_to_update(config):
     from .module_tools import Modules, DBModules
     from .odoo_config import MANIFEST
-    devmode_uninstall = MANIFEST().get("devmode_uninstall", [])
 
     mods = Modules()
     module = mods.get_customs_modules("to_update")
     module += DBModules.get_uninstalled_modules_where_others_depend_on()
     module += DBModules.get_outdated_installed_modules(mods)
-    if config.devmode:
-        for mod in devmode_uninstall:
-            if mod in module:
-                module.remove(mod)
-            del mod
+    remove_some_modules(config, module)
 
     return module
 
@@ -840,7 +850,8 @@ def _uninstall_marked_modules(ctx, config, modules):
 
     if config.use_docker:
         from .lib_control_with_docker import shell as lib_shell
-    manifest_modules = Modules().get_all_modules_installed_by_manifest()
+    manifest_modules = get_all_modules_installed_by_manifest(config)
+
 
     uninstalled = False
     for module in modules:
@@ -1176,10 +1187,7 @@ def _get_unittests_from_modules(module_names):
 
 
 def _get_all_unittest_files(config):
-    from .odoo_config import MANIFEST
-    from .module_tools import Modules
-
-    modules = Modules().get_all_modules_installed_by_manifest()
+    modules = get_all_modules_installed_by_manifest(config)
     return _get_unittests_from_modules(modules)
 
 
@@ -1565,10 +1573,7 @@ def migrate():
 @pass_config
 @click.pass_context
 def list_modules(ctx, config):
-    from .module_tools import Modules, DBModules
-
-    mods = Modules()
-    modules = list(sorted(mods.get_all_modules_installed_by_manifest()))
+    modules = list(sorted(get_all_modules_installed_by_manifest(config)))
     print("---")
     for m in modules:
         print(m)
