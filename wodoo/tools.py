@@ -956,6 +956,7 @@ def __remove_tree(dir, retry=3, interval=2):
 
 
 def __hash_odoo_password(pwd):
+    import pudb;pudb.set_trace()
     from .odoo_config import current_version
 
     if current_version() in [

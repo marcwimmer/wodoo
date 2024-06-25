@@ -1,3 +1,6 @@
+# 0.5.31
+  * setting password equal to user login name
+
 # 0.4.87  - 01.03.2024
 	* better updating the queuejob channels
 

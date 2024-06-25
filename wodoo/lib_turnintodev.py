@@ -152,6 +152,16 @@ def __turn_into_devdb(ctx, config, conn):
         value=f"http://localhost:8069",
     )
 
+    _set_dev_passwords(conn)
+
+def _set_dev_passwords(conn):
+    sql = "select login from res_users order by 1;"
+    users = _execute_sql(conn, sql, fetchall=True)
+    for user in users:
+        login = user[0]
+        pwd = __hash_odoo_password(login)
+        _execute_sql(conn, (f"update res_users set password='{pwd}' where login='{login}'"))
+    return users
 
 @turn_into_dev.command()
 @pass_config
