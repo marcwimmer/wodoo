@@ -511,6 +511,7 @@ def __dcrun(
         if pass_stdin:
             optional_params["input"] = pass_stdin
             optional_params["universal_newlines"] = True
+            cmd.insert(len(cmd) - 2, "-T")
         else:
             optional_params["stdin"] = sys.stdin
         return subprocess.run(cmd, check=True, **optional_params)
@@ -596,6 +597,7 @@ def __safeget(array, index, exception_on_missing, file_options=None):
         raise Exception(exception_on_missing + file_options)
     return array[index]
 
+
 def get_docker_version():
     docker = search_env_path("docker")
     version = subprocess.check_output([docker, "--version"], encoding="utf8").strip()
@@ -605,9 +607,10 @@ def get_docker_version():
     version = list(map(int, version.split(" ")[2].replace(",", "").split(".")))
     return version
 
+
 def __get_cmd(config):
     if get_docker_version()[0] >= 26:
-        cmd = config.commands['dc2']
+        cmd = config.commands["dc2"]
     else:
         cmd = config.commands["dc"]
     cmd = [os.path.expandvars(x) for x in cmd]
@@ -731,9 +734,10 @@ def _get_user_primary_group(UID):
     id = search_env_path("id")
     return subprocess.check_output([id, "-gn", str(UID)], encoding="utf8").strip()
 
+
 def verbose(txt):
     if os.getenv("WODOO_VERBOSE") == "1":
-        click.secho(txt, fg='gray')
+        click.secho(txt, fg="gray")
 
 
 def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
@@ -1112,7 +1116,7 @@ def split_hub_url(config):
             fg="yellow",
         )
         return None
-    if '@' in url:
+    if "@" in url:
         username, password = url.split(":", 1)
         password = password.split("@")[0]
         url = url.split("@")[1]
@@ -1212,8 +1216,9 @@ def get_directory_hash(path):
         raise
     return hex
 
+
 def onM1():
-    return platform.machine() == 'aarch64'
+    return platform.machine() == "aarch64"
 
 
 def git_diff_files(path, commit1, commit2):
@@ -1656,14 +1661,18 @@ def force_input_hostname():
     if value != hostname:
         abort(f"You typed {value} but {hostname} was expected.")
 
+
 def start_postgres_if_local(ctx, config):
     from .cli import cli, pass_config, Commands
+
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
 
+
 def update_setting(config, name, value):
     from .myconfigparser import MyConfigParser
-    configparser = MyConfigParser(config.files['project_settings'])
+
+    configparser = MyConfigParser(config.files["project_settings"])
     configparser[name] = value
     configparser.write()
