@@ -527,21 +527,34 @@ def _restore_dump(
         )
 
     def create_db():
-        _execute_sql(
-            conn.clone(dbname="postgres"),
-            (
-                f"create database {DBNAME_RESTORING} "
-                # "ENCODING 'unicode' "
-                # "LC_COLLATE 'C' "
-                # "TEMPLATE template0 "
-                ";"
-            ),
-            notransaction=True,
-        )
+        while True:
+            try:
+                _execute_sql(
+                    conn.clone(dbname="postgres"),
+                    (
+                        f"create database {DBNAME_RESTORING} "
+                        "ENCODING 'unicode' "
+                        "LC_COLLATE 'C' "
+                        "TEMPLATE template0 "
+                        ";"
+                    ),
+                    notransaction=True,
+                )
+                break
+            except psycopg2.errors.DuplicateDatabase:
+                _execute_sql(
+                    conn.clone(dbname="postgres"),
+                    (
+                        f"drop database {DBNAME_RESTORING} "
+                        ";"
+                    ),
+                    notransaction=True,
+                )
 
-    try_ignore_exceptions(
-        create_db, (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
-    )
+    # seems not to be needed
+    # try_ignore_exceptions(
+    #     create_db, (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
+    # )
 
     effective_host_name = config.DB_HOST
 
