@@ -552,9 +552,11 @@ def _restore_dump(
                 )
 
     # seems not to be needed
-    # try_ignore_exceptions(
-    #     create_db, (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
-    # )
+    version = _get_postgres_version(conn.clone(dbname='template1'))
+    if float(version) < 16:
+        try_ignore_exceptions(
+            create_db, (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
+        )
 
     effective_host_name = config.DB_HOST
 
