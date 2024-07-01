@@ -895,13 +895,17 @@ def remove_webassets(conn):
         f"delete from ir_attachment where name ilike '%.assets_%.js' and res_model = 'ir.ui.view'",
     ]
     try:
-        for query in queries:
-            try:
-                click.secho(query, fg="grey")
-                cr.execute(query)
-                conn.commit()
-            except:
-                continue
+        with click.progressbar(
+            queries, label="Executing queries", length=len(queries)
+        ) as bar:
+            for query in queries:
+                try:
+                    bar.update(1, query)
+                    cr.execute(query)
+                    conn.commit()
+                except Exception as ex:
+                    click.secho(str(ex), fg="red")
+                    continue
     finally:
         cr.close()
         conn.close()

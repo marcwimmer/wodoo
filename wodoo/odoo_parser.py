@@ -1,4 +1,5 @@
 import subprocess
+import click
 from pathlib import Path
 import os
 import re
@@ -7,6 +8,7 @@ import tempfile
 from .odoo_config import customs_dir
 from .odoo_config import plaintextfile
 from .odoo_config import translate_path_relative_to_customs_root
+from contextlib import contextmanager
 
 modified_filename = ""
 cache_models = {}
@@ -61,7 +63,7 @@ def get_qweb_template(name):
     return None, None
 
 
-def walk_files(on_match, pattern):
+def walk_files(on_match, pattern, name):
     from .module_tools import Module, Modules
 
     if modified_filename:
@@ -74,9 +76,13 @@ def walk_files(on_match, pattern):
     else:
         modules = Modules().modules.values()
 
+    files = []
     for mod in modules:
         for file in mod.path.glob("**/" + pattern):
+            files.append((mod, file))
 
+    with click.progressbar(files, label=f"Iterating files for {name}") as bar:
+        for mod, file in bar:
             rel_file = file.relative_to(mod.path)
             if rel_file.parts[0] in [
                 "migrations",
@@ -131,7 +137,7 @@ def _get_methods():
                         }
                     )
 
-    walk_files(on_match, "*.py")
+    walk_files(on_match, "*.py", "methods")
 
     return result
 
@@ -182,7 +188,7 @@ def _get_fields():
                     }
                 )
 
-    walk_files(on_match, "*.py")
+    walk_files(on_match, "*.py", "fields")
 
     return result
 
@@ -240,7 +246,7 @@ def _get_qweb_templates():
 
                 result.append(r)
 
-    walk_files(on_match, "*.xml")
+    walk_files(on_match, "*.xml", "qweb-templates")
     sorted(result, key=lambda x: x["name"])
 
     return result
@@ -382,7 +388,7 @@ def _get_xml_ids():
                     inherit_id = r.get("inherit_id")
                 append_result(model, id, r.sourceline, "qweb", inherit_id=inherit_id)
 
-    walk_files(on_match, "*.xml")
+    walk_files(on_match, "*.xml", "xml-ids")
     result.sort(key=lambda x: x["id"])
 
     return result
@@ -464,7 +470,7 @@ def _get_models():
                     append_model(_name, linenum_class, _inherit, linenum_class)
                     linenum = linenum1 - 1
 
-    walk_files(on_match, "*.py")
+    walk_files(on_match, "*.py", "models")
 
     cache_models.setdefault("models", {})
     for m in cache_models["models"]:
@@ -554,6 +560,9 @@ def update_cache(arg_modified_filename=None):
         else:
             return
 
+    def _writing(what):
+        return f"Writing {what}..."
+
     try:
         TEMPLATE = (
             "{type}\t[{module}]\t{name}\t"
@@ -562,83 +571,97 @@ def update_cache(arg_modified_filename=None):
             + SEP_LINENO
             + "{line}"
         )
-        for model in models:
-            f.write(
-                TEMPLATE.format(
-                    type="model",
-                    module=model["module"],
-                    name=model["model"],
-                    filepath=translate_path_relative_to_customs_root(model["filepath"]),
-                    line=model["line"],
+        with click.progressbar(models, label=_writing("Models")) as bar:
+            for model in bar:
+                f.write(
+                    TEMPLATE.format(
+                        type="model",
+                        module=model["module"],
+                        name=model["model"],
+                        filepath=translate_path_relative_to_customs_root(
+                            model["filepath"]
+                        ),
+                        line=model["line"],
+                    )
                 )
-            )
-            f.write("\n")
-        for xmlid in xml_ids:
-            if "." in xmlid["id"]:
-                name = xmlid["id"]
-            else:
-                name = f"{xmlid['module']}.{xmlid['id']}"
-            name += " model:" + xmlid["model"]
-            f.write(
-                TEMPLATE.format(
-                    type="xmlid",
-                    module=xmlid["module"],
+                f.write("\n")
+        with click.progressbar(xml_ids, label=_writing("XML-IDS")) as bar:
+            for xmlid in bar:
+                if "." in xmlid["id"]:
+                    name = xmlid["id"]
+                else:
+                    name = f"{xmlid['module']}.{xmlid['id']}"
+                name += " model:" + xmlid["model"]
+                f.write(
+                    TEMPLATE.format(
+                        type="xmlid",
+                        module=xmlid["module"],
+                        name=name,
+                        filepath=translate_path_relative_to_customs_root(
+                            xmlid["filepath"]
+                        ),
+                        line=xmlid["line"],
+                    )
+                )
+                f.write("\n")
+        with click.progressbar(methods, label=_writing("Methods")) as bar:
+            for method in bar:
+                name = "{model}.{method}".format(**method)
+                f.write(
+                    TEMPLATE.format(
+                        type="def",
+                        module=method["module"],
+                        name=name,
+                        filepath=translate_path_relative_to_customs_root(
+                            method["filepath"]
+                        ),
+                        line=method["line"],
+                    )
+                )
+                f.write("\n")
+        with click.progressbar(fields, label=_writing("Fields")) as bar:
+            for field in bar:
+                name = "{model}.{field}".format(**field)
+                line = TEMPLATE.format(
+                    type="field",
+                    module=field["module"],
                     name=name,
-                    filepath=translate_path_relative_to_customs_root(xmlid["filepath"]),
-                    line=xmlid["line"],
+                    filepath=translate_path_relative_to_customs_root(field["filepath"]),
+                    line=field["line"],
                 )
-            )
-            f.write("\n")
-        for method in methods:
-            name = "{model}.{method}".format(**method)
-            f.write(
-                TEMPLATE.format(
-                    type="def",
-                    module=method["module"],
-                    name=name,
-                    filepath=translate_path_relative_to_customs_root(
-                        method["filepath"]
-                    ),
-                    line=method["line"],
+                f.write(line + "\n")
+        with click.progressbar(views, label=_writing("Views")) as bar:
+            for view in bar:
+                name = "{res_model} ~{type} {id} [inherit_id={inherit_id}]".format(
+                    **view
                 )
-            )
-            f.write("\n")
-        for field in fields:
-            name = "{model}.{field}".format(**field)
-            line = TEMPLATE.format(
-                type="field",
-                module=field["module"],
-                name=name,
-                filepath=translate_path_relative_to_customs_root(field["filepath"]),
-                line=field["line"],
-            )
-            f.write(line + "\n")
-        for view in views:
-            name = "{res_model} ~{type} {id} [inherit_id={inherit_id}]".format(**view)
-            f.write(
-                TEMPLATE.format(
-                    type="view",
-                    module=view["module"],
-                    name=name,
-                    filepath=translate_path_relative_to_customs_root(view["filepath"]),
-                    line=view["line"],
+                f.write(
+                    TEMPLATE.format(
+                        type="view",
+                        module=view["module"],
+                        name=name,
+                        filepath=translate_path_relative_to_customs_root(
+                            view["filepath"]
+                        ),
+                        line=view["line"],
+                    )
                 )
-            )
-            f.write("\n")
-        for qwebtemplate in qwebtemplates:
-            name = "~{type} {id} [inherit_id={inherit_id}]".format(**qwebtemplate)
-            f.write(
-                TEMPLATE.format(
-                    type="qweb",
-                    module=qwebtemplate["module"],
-                    name=name,
-                    filepath=translate_path_relative_to_customs_root(
-                        qwebtemplate["filepath"]
-                    ),
-                    line=qwebtemplate["line"],
+                f.write("\n")
+        with click.progressbar(qwebtemplates, label=_writing("QWeb-Templates")) as bar:
+            for qwebtemplate in bar:
+                name = "~{type} {id} [inherit_id={inherit_id}]".format(**qwebtemplate)
+                f.write(
+                    TEMPLATE.format(
+                        type="qweb",
+                        module=qwebtemplate["module"],
+                        name=name,
+                        filepath=translate_path_relative_to_customs_root(
+                            qwebtemplate["filepath"]
+                        ),
+                        line=qwebtemplate["line"],
+                    )
                 )
-            )
-            f.write("\n")
+                f.write("\n")
     finally:
         f.close()
 
