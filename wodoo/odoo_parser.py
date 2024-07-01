@@ -665,7 +665,8 @@ def update_cache(arg_modified_filename=None):
     finally:
         f.close()
 
-    subprocess.run(f"sort -o {plainfile} -u {plainfile}", shell=True)
+    subprocess.run(f"sort -o '{plainfile}' -u '{plainfile}'", shell=True)
+    subprocess.run(f"awk -i inplace '!seen[$0]++' '{plainfile}'", shell=True)
 
     return plainfile
 
