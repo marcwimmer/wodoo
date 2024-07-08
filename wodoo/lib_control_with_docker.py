@@ -338,7 +338,7 @@ def run(ctx, config, machine, args, **kwparams):
 def runbash(ctx, config, machine, args, **kwparams):
     _display_machine_tips(config, machine)
     bash = _get_bash_for_machine(machine)
-    cmd = ["run", "--rm", machine]
+    cmd = ["run", "--rm", "--entrypoint", "", machine]
     if args:
         cmd += args
     else:
