@@ -21,5 +21,6 @@
         "titleBar.inactiveForeground": "#15202b99"
     },
     "peacock.color": "#0dafbb",
-    "peacock.remoteColor": "#31b4bf"
+    "peacock.remoteColor": "#31b4bf",
+    "window.title": "${rootName}@${remoteName}${separator}[Branch: main]"
 }
