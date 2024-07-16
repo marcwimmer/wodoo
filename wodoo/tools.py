@@ -1684,11 +1684,13 @@ def update_setting(config, name, value):
 def update_docker_service(config, service_name, service_content):
     import yaml
 
-    content = __read_file(config.files["docker_compose"])
+    filepath = config.files["project_docker_compose.home.project"]
+    click.secho(f"Writing to {filepath}", fg='yellow')
+    content = __read_file(filepath)
     compose = yaml.safe_load(content)
     compose['services'][service_name] = service_content
-    content = yaml.dump(content, default_flow_style=False)
-    __write_file(config.files["docker_compose"], content)
+    content = yaml.dump(compose, default_flow_style=False)
+    __write_file(filepath, content)
 
 def _parse_yaml(content):
     import yaml
