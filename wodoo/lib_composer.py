@@ -1167,26 +1167,29 @@ def _complete_services(ctx, param, incomplete):
         )
     return services
 
+
 @composer.command()
 @pass_config
 @click.pass_context
 @click.argument("name", required=True, shell_complete=_complete_services)
 @click.argument("value", required=False, default="")
+@click.option("--file", required=False, default="")
 @click.option("-R", "--no-reload", is_flag=True)
-def docker_service(ctx, config, name, value, no_reload):
+def docker_service(ctx, config, name, value, no_reload, file):
     from .myconfigparser import MyConfigParser
     import yaml
 
-    if not value:
+    if not value and not file:
         content = _parse_yaml(__read_file(config.files["docker_compose"]))
         service = content.get("services", {}).get(name)
         click.secho(json.dumps(content, indent=4), fg="green")
         return
-    else:
-        value = _parse_yaml(value)
-        update_docker_service(config, name, value)
-        if not no_reload:
-            ctx.invoke(do_reload)
+    if file:
+        value = __read_file(file)
+    value = _parse_yaml(value)
+    update_docker_service(config, name, value)
+    if not no_reload:
+        ctx.invoke(do_reload)
 
 
 @composer.command()
