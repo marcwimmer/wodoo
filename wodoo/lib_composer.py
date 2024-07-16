@@ -1,5 +1,6 @@
 import traceback
 from .tools import bashfind
+import json
 import arrow
 import threading
 from tabulate import tabulate
@@ -33,12 +34,15 @@ from .tools import whoami
 from .tools import abort
 from .tools import _get_version
 from .tools import rsync
+from .tools import __read_file
 from .tools import get_docker_version
+from .tools import _parse_yaml
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST
 from .tools import execute_script
 from .tools import ensure_project_name
+from .tools import update_docker_service
 
 import inspect
 import os
@@ -1149,6 +1153,38 @@ def setting(ctx, config, name, value, no_reload):
     else:
         update_setting(config, name, value)
         click.secho(f"{name}={value}", fg="green")
+        if not no_reload:
+            ctx.invoke(do_reload)
+
+
+def _complete_services(ctx, param, incomplete):
+    content = _parse_yaml(__read_file(config.files["docker_compose"]))
+    services = content.get("services", {}).keys()
+
+    if incomplete:
+        services = list(
+            filter(lambda x: x.lower().startswith(incomplete.lower()), services)
+        )
+    return services
+
+@composer.command()
+@pass_config
+@click.pass_context
+@click.argument("name", required=True, shell_complete=_complete_services)
+@click.argument("value", required=False, default="")
+@click.option("-R", "--no-reload", is_flag=True)
+def docker_service(ctx, config, name, value, no_reload):
+    from .myconfigparser import MyConfigParser
+    import yaml
+
+    if not value:
+        content = _parse_yaml(__read_file(config.files["docker_compose"]))
+        service = content.get("services", {}).get(name)
+        click.secho(json.dumps(content, indent=4), fg="green")
+        return
+    else:
+        value = _parse_yaml(value)
+        update_docker_service(config, name, value)
         if not no_reload:
             ctx.invoke(do_reload)
 
