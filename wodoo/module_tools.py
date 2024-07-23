@@ -183,7 +183,6 @@ class DBModules(object):
         if check_func:
             check_func(res)
 
-
         return list(res)
 
     @classmethod
@@ -905,7 +904,7 @@ class Modules(object):
 
         return list(result)
 
-    def get_all_external_dependencies(self, modules):
+    def get_all_external_dependencies(self, modules, python_version=None):
         global_data = {"pip": []}
         for module_name in modules:
             module = Module.get_by_name(module_name)
@@ -930,18 +929,53 @@ class Modules(object):
             else:
                 extract_deps(module.manifest_dict.get("external_dependencies", {}))
 
-        global_data["pip"] = self.resolve_pydeps(set(global_data["pip"]))
+        global_data["pip"] = self.resolve_pydeps(
+            set(global_data["pip"]), python_version
+        )
         return global_data
 
-    def resolve_pydeps(self, pydeps):
+    def resolve_pydeps(self, pydeps, python_version=None):
         pydeps = list(set(pydeps))
         libnames = [_extract_python_libname(x) for x in pydeps]
         result = set()
 
+        if python_version:
+            assert isinstance(python_version, tuple)
+            str_python_version = ".".join(map(str, python_version))
+
+        class LeaveOut(Exception):
+            pass
+
         # keep highest version and or leaveout loosers
         def _map(x):
             if x:
-                arr = iscompatible.parse_requirements(x)
+                try:
+                    x = x.split("#")[0]
+                    base = x.split(";")[0].strip()
+                    if base.endswith(".*"):
+                        # xlwt==1.3.*
+                        base = base[:-2]
+                    for extra in x.split(";")[1:]:
+                        if not python_version and "python_version" in x:
+                            abort("Please provide python version")
+                        res = eval(
+                            extra,
+                            {
+                                "python_version": str_python_version,
+                                "sys_platform": sys.platform,
+                            },
+                        )
+                        if not res:
+                            raise LeaveOut()
+
+                    arr = iscompatible.parse_requirements(base)
+                except LeaveOut:
+                    arr = []
+                except Exception as ex:
+                    import pudb
+
+                    pudb.set_trace()
+                    raise
             else:
                 arr = []
             for arr in arr:
