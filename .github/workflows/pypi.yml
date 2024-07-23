@@ -13,9 +13,11 @@ permissions:
 jobs:
   build:
 
-    runs-on: ubuntu-22.04
+    runs-on: self-hosted
     env:
       ODOO_TEST: "16.0"
+      ODOO_PYTHON_VERSION: "3.9.13"
+      ODOOCMD: "/home/githubrunner_wodoo/.local/bin/odoo"
 
     steps:
     - uses: actions/checkout@v4
@@ -31,24 +33,38 @@ jobs:
         git config --global user.name 'github-action@github.com'
         git fetch
 
-    - name: do some testing
+    - name: install pipx
       run: |
         sudo apt update && sudo apt install -y python3-dev \
           python3-pip python3-venv python3-virtualenv
         pip install pip -U
         pip install pipx
+
+    - name: setup gimera
+      run: |
+        set -ex
+        pipx install gimera
+        pipx upgrade gimera
+
+    - name: install woodo
+      run: |
         pipx install -e --force .
-        pipx runpip wodoo install requests==2.31.0 
-        cd /tmp
-        odoo init odoo1 "$ODOO_TEST"
-        cd /tmp/odoo1
+        #WHY?
+        pipx runpip wodoo install requests==2.31.0  || true
+
+    - name: do some testing
+      run: |
+        TEMPODOODIR="./$(basename $(mktemp))/odoo"
+        mkdir -p "$TEMPODOODIR"
+        cd "$TEMPODOODIR"
+        $ODOOCMD init . "$ODOO_TEST"
         docker ps
-        odoo reload
-        rm -Rf ~/.cache/gimera
-        odoo build
-        odoo -f db reset
-        odoo update crm
-        odoo down
+        $ODOOCMD reload
+        $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION
+        $ODOOCMD build
+        $ODOOCMD -f db reset
+        $ODOOCMD update crm
+        $ODOOCMD down
 
     - name: increment version
       run: |

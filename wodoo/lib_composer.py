@@ -356,17 +356,6 @@ def _download_images(config, images_url):
                 config.dirs["images"],
             ]
         )
-    # subprocess.check_call(
-    #     [
-    #         "git",
-    #         "config",
-    #         "--global",
-    #         "--add",
-    #         "safe.directory",
-    #         str(config.dirs["images"]),
-    #     ],
-    #     cwd=config.dirs["images"],
-    # )
     current_branch = subprocess.check_output(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         encoding="utf8",
@@ -375,7 +364,9 @@ def _download_images(config, images_url):
     effective_branch = config.ODOO_IMAGES_BRANCH or consts.IMAGES_REPO_BRANCH
 
     if effective_branch and effective_branch != current_branch:
-        subprocess.check_call(["git", "checkout", effective_branch])
+        subprocess.check_call(
+            ["git", "checkout", effective_branch], cwd=config.dirs["images"]
+        )
 
     if subprocess.check_output(
         ["git", "remote"], encoding="utf8", cwd=config.dirs["images"]

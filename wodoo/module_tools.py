@@ -904,7 +904,7 @@ class Modules(object):
 
         return list(result)
 
-    def get_all_external_dependencies(self, modules, python_version=None):
+    def get_all_external_dependencies(self, modules, python_version):
         global_data = {"pip": []}
         for module_name in modules:
             module = Module.get_by_name(module_name)
@@ -934,68 +934,69 @@ class Modules(object):
         )
         return global_data
 
-    def resolve_pydeps(self, pydeps, python_version=None):
-        pydeps = list(set(pydeps))
-        libnames = [_extract_python_libname(x) for x in pydeps]
-        result = set()
-
-        if python_version:
-            assert isinstance(python_version, tuple)
-            str_python_version = ".".join(map(str, python_version))
-
-        class LeaveOut(Exception):
-            pass
+    def _filter_requirements(self, pydeps, python_version):
+        assert isinstance(python_version, tuple)
+        str_python_version = ".".join(map(str, python_version))
 
         # keep highest version and or leaveout loosers
-        def _map(x):
-            if x:
-                try:
-                    x = x.split("#")[0]
-                    base = x.split(";")[0].strip()
-                    if base.endswith(".*"):
-                        # xlwt==1.3.*
-                        base = base[:-2]
-                    for extra in x.split(";")[1:]:
-                        if not python_version and "python_version" in x:
-                            abort("Please provide python version")
-                        res = eval(
-                            extra,
-                            {
-                                "python_version": str_python_version,
-                                "sys_platform": sys.platform,
-                            },
-                        )
-                        if not res:
-                            raise LeaveOut()
-
-                    arr = iscompatible.parse_requirements(base)
-                except LeaveOut:
-                    arr = []
-                except Exception as ex:
-                    import pudb
-
-                    pudb.set_trace()
-                    raise
-            else:
-                arr = []
-            for arr in arr:
-                if arr:
-                    arr = list(arr)
-                    arr[1] = iscompatible.string_to_tuple(arr[1])
-                yield tuple(arr)
-
-        parsed_requirements = []
-        for inst in pydeps:
-            libname = _extract_python_libname(inst)
-            if "@" in inst:
+        def _filter(x):
+            if not x:
+                return
+            if "@" in x:
                 # concrete url like "pymssql@git+https://github.com/marcwimmer/pymssql"
-                parsed_requirements.append(inst)
-            else:
-                for parsed in [
-                    _map(x) for x in pydeps if _extract_python_libname(x) == libname
-                ]:
-                    for x in parsed:
-                        parsed_requirements.append((libname, x))
+                return x
+            x = x.split("#")[0].strip()
+            if not x:
+                return
+            for extra in x.split(";")[1:]:
+                if not python_version and "python_version" in x:
+                    abort("Please provide python version")
+                res = eval(
+                    extra,
+                    {
+                        "python_version": str_python_version,
+                        "sys_platform": sys.platform,
+                    },
+                )
+                if not res:
+                    return
+            return STRIP(x)
+
+        def STRIP(dep):
+            res = dep.split("#")[0].split(";")[0].strip()
+            if res.endswith(".*"):
+                # xlwt==1.3.*
+                res = res[:-2]
+            return res
+
+        def _make_tuples(dep):
+            libname = _extract_python_libname(dep)
+            if not libname:
+                return []
+            if 'greenlet' in dep[0]:
+                import pudb;pudb.set_trace()
+            try:
+                reqs = iscompatible.parse_requirements(dep)
+            except Exception as ex:
+                import pudb;pudb.set_trace()
+                raise
+            reqs = list(reqs)
+            if reqs:
+                for i in range(len(reqs)):
+                    try:
+                        reqs[i] = list(reqs[i])
+                        reqs[i][1] = iscompatible.string_to_tuple(reqs[i][1])
+                    except:
+                        import pudb;pudb.set_trace()
+                        raise
+            return libname, tuple(reqs)
+
+        reqs = {}
+        for dep in list(filter(_filter, pydeps)):
+            dep = STRIP(dep)
+            print(dep)
+            libname, version = _make_tuples(dep)
+            reqs.setdefault(libname, []).append(version)
         """
         parsed_requirements ilike
         [
@@ -1003,19 +1004,30 @@ class Modules(object):
         ('>=', '1.2.0')
         ]
         """
+        return reqs
 
+    def _pydeps_filter_best_fit(self, pydeps):
+        result = set()
         allowed = ["==", ">="]
         unallowed = [
             x
-            for x in parsed_requirements
+            for x in pydeps
             if not isinstance(x, str) and x[1][0] not in allowed
         ]
         if unallowed:
             raise Exception(f"Unhandled: {unallowed} - only {allowed} allowed")
 
-        for libname in libnames:
+        for libname in pydeps.keys():
             # mixed == and >=
-            reqs = list(set([x[1] for x in parsed_requirements if x[0] == libname]))
+            reqs = pydeps.get(libname, [])
+
+            #handle case: reqs = [()]
+            unspecific_ones = [x for x in reqs if not x]
+            if len(unspecific_ones) == len(reqs):
+                result.add(libname)
+                continue
+            reqs = [x for x in reqs if x]
+
             ge = sorted([x for x in reqs if x[0] == ">="], key=lambda x: x[1])
             gt = sorted(
                 [x for x in reqs if x[0] == ">"], key=lambda x: x[1]
@@ -1047,7 +1059,19 @@ class Modules(object):
             elif ge:
                 result.add(f"{libname}{ge[-1][0]}{'.'.join(map(str, ge[-1][1]))}")
             else:
-                result.add(libname)
+                if len(reqs) == 1:
+                    result.add(f"{libname}{reqs[0][-1][0]}{'.'.join(map(str, reqs[0][-1][1]))}")
+                else:
+                    result.add(libname)
+        return list(sorted(result))
+
+
+    def resolve_pydeps(self, pydeps, python_version):
+        pydeps = list(set(pydeps))
+
+        parsed_requirements = self._filter_requirements(pydeps, python_version)
+        result = self._pydeps_filter_best_fit(parsed_requirements)
+
         return list(result)
 
 
