@@ -1,3 +1,7 @@
+# 0.5.39
+  * specific odoo images branch to be compatible from wodoo to wodoo images
+  * more precise dependency resolving 
+
 # 0.5.31
   * setting password equal to user login name
 
