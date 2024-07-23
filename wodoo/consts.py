@@ -1,9 +1,10 @@
 from pathlib import Path
 from .tools import _search_path
 
-VERSIONS = [7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0]
+VERSIONS = [7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0]
 YAML_VERSION = '3.7'
 DEFAULT_IMAGES_REPO = "https://github.com/marcwimmer/wodoo-images"
+IMAGES_REPO_BRANCH = "2024-06"
 
 default_dirs = {
     'admin': 'admin',

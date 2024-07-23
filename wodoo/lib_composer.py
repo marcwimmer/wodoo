@@ -372,14 +372,16 @@ def _download_images(config, images_url):
         encoding="utf8",
         cwd=config.dirs["images"],
     ).strip()
-    if config.ODOO_IMAGES_BRANCH and config.ODOO_IMAGES_BRANCH != current_branch:
-        subprocess.check_call(["git", "checkout", config.ODOO_IMAGES_BRANCH])
+    effective_branch = config.ODOO_IMAGES_BRANCH or consts.IMAGES_REPO_BRANCH
+
+    if effective_branch and effective_branch != current_branch:
+        subprocess.check_call(["git", "checkout", effective_branch])
 
     if subprocess.check_output(
         ["git", "remote"], encoding="utf8", cwd=config.dirs["images"]
     ).strip():
         trycount = 0
-        for i in range(10):
+        for _ in range(10):
             trycount += 1
             try:
                 subprocess.check_call(["git", "pull"], cwd=config.dirs["images"])
