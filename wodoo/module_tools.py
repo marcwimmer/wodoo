@@ -973,12 +973,9 @@ class Modules(object):
             libname = _extract_python_libname(dep)
             if not libname:
                 return []
-            if 'greenlet' in dep[0]:
-                import pudb;pudb.set_trace()
             try:
                 reqs = iscompatible.parse_requirements(dep)
             except Exception as ex:
-                import pudb;pudb.set_trace()
                 raise
             reqs = list(reqs)
             if reqs:
@@ -987,7 +984,6 @@ class Modules(object):
                         reqs[i] = list(reqs[i])
                         reqs[i][1] = iscompatible.string_to_tuple(reqs[i][1])
                     except:
-                        import pudb;pudb.set_trace()
                         raise
             return libname, tuple(reqs)
 
