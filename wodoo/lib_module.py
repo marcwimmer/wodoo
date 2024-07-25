@@ -1459,7 +1459,7 @@ def list_descendants(ctx, config, module, customs, following):
 @click.option("-c", "--customs", is_flag=True)
 @pass_config
 @click.pass_context
-def list_deps(ctx, config, module, no_cache, customs, following):
+def list_deps(ctx, config, module, no_cache, customs):
     import arrow
 
     started = arrow.get()
