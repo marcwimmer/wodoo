@@ -1208,11 +1208,11 @@ def queuejob_channels(ctx, config, name, amount):
     from .myconfigparser import MyConfigParser
 
     file = config.files["queuejob_channels_file"]
-    if file.exists():
-        content = file.read_text()
-    else:
+    if not file.exists():
         config = MyConfigParser(config.files["settings"])
         content = config.get("ODOO_QUEUEJOBS_CHANNELS", "root:1")
+        file.write_text(content)
+    content = file.read_text()
 
     channels = content.split(",")
 
