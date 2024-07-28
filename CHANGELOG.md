@@ -1,3 +1,6 @@
+# 0.5.45
+  * added detached mode at run and profiles
+
 # 0.5.39
   * specific odoo images branch to be compatible from wodoo to wodoo images
   * more precise dependency resolving 
