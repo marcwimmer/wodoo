@@ -493,6 +493,8 @@ def __dcrun(
     returncode=False,
     pass_stdin=None,
     returnproc=False,
+    detached=False,
+    name=None,
 ):
     ensure_project_name(config)
     env = _set_default_envs(env)
@@ -500,6 +502,10 @@ def __dcrun(
     cmd = ["run"]
     if not interactive:
         cmd += ["-T"]
+    if detached:
+        cmd += ["-d"]
+    if name:
+        cmd += ["--name", name]
     cmd += ["--rm"]
     for k, v in env.items():
         cmd += ["-e{}={}".format(k, v)]

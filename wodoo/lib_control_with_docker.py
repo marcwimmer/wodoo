@@ -173,7 +173,7 @@ def recreate(ctx, config, machines=[]):
     __dc(config, ["up", "--no-start", "--force-recreate"] + machines)
 
 
-def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
+def up(ctx, config, machines=[], daemon=False, remove_orphans=True, profile="auto"):
     machines = list(machines)
 
     options = [
@@ -184,10 +184,13 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True):
         options += ["-d"]
     if remove_orphans:
         options += ["--remove-orphans"]
+    dc_options = []
+    if profile:
+        dc_options += ["--profile", profile]
 
     if not machines and config.run_postgres and daemon and config.USE_DOCKER:
         _start_postgres_before(config)
-    __dc(config, ["up"] + options + machines)
+    __dc(config, dc_options + ["up"] + options + machines)
 
 
 def down(ctx, config, machines=[], volumes=False, remove_orphans=True):

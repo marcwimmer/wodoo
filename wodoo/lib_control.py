@@ -296,13 +296,15 @@ def debug(ctx, config, machine, ports, command, port):
 @cli.command()
 @click.argument("machine", required=True)
 @click.argument("args", nargs=-1)
+@click.option("-d", "--detached", is_flag=True)
+@click.option("-n", "--name")
 @pass_config
 @click.pass_context
-def run(ctx, config, machine, args, **kwparams):
+def run(ctx, config, machine, detached, name, args, **kwparams):
     ensure_project_name(config)
     from .lib_control_with_docker import run as lib_run
 
-    lib_run(ctx, config, machine, args, **kwparams)
+    lib_run(ctx, config, machine, args, detached=detached, name=name, **kwparams)
 
 
 @cli.command()
