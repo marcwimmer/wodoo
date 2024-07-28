@@ -23,7 +23,7 @@ default_dirs = {
     'odoo_tools': '$odoo_home',
     'odoo_data_dir': "~/.odoo/files",
     'user_conf_dir': "~/.odoo",
-    'cicd_delegator': '~/.odoo/cicd_delegator',
+    'delegator': '~/.odoo/delegator',
     'images': '~/.odoo/images',
 }
 
@@ -56,7 +56,7 @@ default_files = {
     'native_bin_restore_dump': "${run_native_bin_dir}/restore-db",
     'native_collected_requirements_from_modules': "${run_native_bin_dir}/customs-requirements.txt",
     'start-dev': '~/.odoo/start-dev',
-    'cicd_delegator_registry': '${cicd_delegator}/registry.json',
+    'delegator_registry': '${delegator}/registry.json',
     'pgcli_history': '${run}/pgcli_history',
 }
 
