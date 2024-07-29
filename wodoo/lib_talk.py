@@ -381,7 +381,7 @@ def queuejobs(config, interval):
             return_columns=True,
         )
         rows = list(rows)
-        rows[1] = sorted(rows[1], key=lambda x: x[1] == 'total' and 'zzzzzzzz' or x[1])
+        rows[1] = sorted(rows[1], key=lambda x: x[1] == "total" and "zzzzzzzz" or x[1])
         data = {x[1]: x[0] for x in rows[1]}
 
         click.secho(tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow")
@@ -414,6 +414,50 @@ def queuejobs(config, interval):
         time.sleep(interval)
         last_data = data
         last_time = arrow.get()
+
+
+@talk.command()
+@click.option("-M", "--module")
+@click.argument("model", required=True)
+@click.argument("name", required=False)
+@pass_config
+def views(config, name, module, model):
+    conn = config.get_odoo_conn()
+
+    def _get_xmlid(id):
+        where = f"model = 'ir.ui.view' and res_id={id}"
+        sql = (
+            "SELECT module||'.'|| name as xmlid, model, res_id from ir_model_data "
+            f"where {where} "
+        )
+        rows = _execute_sql(
+            conn,
+            sql=sql,
+            fetchall=True,
+            return_columns=False,
+        )
+        if rows:
+            return rows[0][0]
+        return None
+
+    where = f"model = '{model}'"
+    where += "AND inherit_id is null"
+    rows = _execute_sql(
+        conn,
+        sql=f"select id, name from ir_ui_view where {where}",
+        fetchall=True,
+        return_columns=True,
+    )
+    
+    rows = list(rows)
+    rows2 = []
+    for row in rows[1]:
+        row = list(row)
+        row.append(_get_xmlid(row[0]))
+        rows2.append(row)
+    rows[0] = list(rows[0])
+    rows[0].append('xmlid')
+    click.secho(tabulate(rows2, rows[0], tablefmt="fancy_grid"), fg="yellow")
 
 
 Commands.register(progress)
