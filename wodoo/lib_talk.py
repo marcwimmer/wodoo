@@ -11,6 +11,7 @@ from .cli import Commands, cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import MANIFEST, current_version, customs_dir
 from .tools import _execute_sql
+from .tools import _get_setting
 
 
 @cli.group(cls=AliasedGroup)
@@ -67,6 +68,13 @@ def deactivate_field_in_views(config, field):
             return_columns=False,
         )
 
+@talk.command()
+@click.argument("name", required=True)
+@pass_config
+@click.pass_context
+def get_config_parameter(ctx, config, name):
+    conn = config.get_odoo_conn()
+    click.secho(_get_setting(conn, name))
 
 @talk.command()
 @click.argument("name", required=True)
