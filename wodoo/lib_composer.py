@@ -365,6 +365,9 @@ def _download_images(config, images_url):
 
     if effective_branch and effective_branch != current_branch:
         subprocess.check_call(
+            ["git", "fetch"], cwd=config.dirs["images"]
+        )
+        subprocess.check_call(
             ["git", "checkout", effective_branch], cwd=config.dirs["images"]
         )
 
