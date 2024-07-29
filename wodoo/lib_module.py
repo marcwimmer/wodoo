@@ -867,9 +867,10 @@ def _uninstall_marked_modules(ctx, config, modules):
             objmod = Module.get_by_name(module)
             for desc in objmod.descendants:
                 if desc in manifest_modules:
-                    abort(
-                        f"{objmod.name} has {desc.name} as descendant which is still in the install section"
-                    )
+                    if not Module.get_by_name(desc).manifest_dict.get('auto_install'):
+                        abort(
+                            f"{objmod.name} has {desc.name} as descendant which is still in the install section"
+                        )
         except NotInAddonsPath:
             pass
 
