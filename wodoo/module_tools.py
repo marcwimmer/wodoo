@@ -1,3 +1,9 @@
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
+from packaging.requirements import Requirement
+from packaging import markers
+
+
 import arrow
 import pprint
 import json
@@ -936,13 +942,11 @@ class Modules(object):
 
     def _filter_requirements(self, pydeps, python_version):
         assert isinstance(python_version, tuple)
-        # for string compare make 3.9 to 3.09
-        str_python_version = ".".join(
-            map(
-                lambda x: str(x) if len(str(x)) == 2 else "0" + str(x),
-                python_version[1:],
-            )
-        )
+        str_python_version = '.'.join(map(str, python_version[:2]))
+        environment = {
+            "python_version": str_python_version,
+            "sys_platform": sys.platform
+        }
 
         # keep highest version and or leaveout loosers
         def _filter(x):
@@ -955,15 +959,8 @@ class Modules(object):
             if not x:
                 return
             for extra in x.split(";")[1:]:
-                if not python_version and "python_version" in x:
-                    abort("Please provide python version")
-                res = eval(
-                    extra,
-                    {
-                        "python_version": str_python_version,
-                        "sys_platform": sys.platform,
-                    },
-                )
+                expr = markers.Marker(extra)
+                res = expr.evaluate(environment)
                 if not res:
                     return
             return STRIP(x)
