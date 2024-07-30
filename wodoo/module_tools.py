@@ -936,7 +936,13 @@ class Modules(object):
 
     def _filter_requirements(self, pydeps, python_version):
         assert isinstance(python_version, tuple)
-        str_python_version = ".".join(map(str, python_version))
+        # for string compare make 3.9 to 3.09
+        str_python_version = ".".join(
+            map(
+                lambda x: str(x) if len(str(x)) == 2 else "0" + str(x),
+                python_version[1:],
+            )
+        )
 
         # keep highest version and or leaveout loosers
         def _filter(x):
@@ -1006,9 +1012,7 @@ class Modules(object):
         result = set()
         allowed = ["==", ">="]
         unallowed = [
-            x
-            for x in pydeps
-            if not isinstance(x, str) and x[1][0] not in allowed
+            x for x in pydeps if not isinstance(x, str) and x[1][0] not in allowed
         ]
         if unallowed:
             raise Exception(f"Unhandled: {unallowed} - only {allowed} allowed")
@@ -1017,7 +1021,7 @@ class Modules(object):
             # mixed == and >=
             reqs = pydeps.get(libname, [])
 
-            #handle case: reqs = [()]
+            # handle case: reqs = [()]
             unspecific_ones = [x for x in reqs if not x]
             if len(unspecific_ones) == len(reqs):
                 result.add(libname)
@@ -1056,11 +1060,12 @@ class Modules(object):
                 result.add(f"{libname}{ge[-1][0]}{'.'.join(map(str, ge[-1][1]))}")
             else:
                 if len(reqs) == 1:
-                    result.add(f"{libname}{reqs[0][-1][0]}{'.'.join(map(str, reqs[0][-1][1]))}")
+                    result.add(
+                        f"{libname}{reqs[0][-1][0]}{'.'.join(map(str, reqs[0][-1][1]))}"
+                    )
                 else:
                     result.add(libname)
         return list(sorted(result))
-
 
     def resolve_pydeps(self, pydeps, python_version):
         pydeps = list(set(pydeps))
