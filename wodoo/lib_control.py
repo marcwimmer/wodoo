@@ -268,10 +268,17 @@ def attach(ctx, config, machine):
 @pass_config
 @click.pass_context
 def build(ctx, config, machines, pull, no_cache, push, plain, include_source, remove):
+    import yaml
     ensure_project_name(config)
     if plain:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
     from .lib_control_with_docker import build as lib_build
+    if not machines:
+        compose = yaml.safe_load(config.files["docker_compose"].read_text())
+        machines = []
+        for service in compose['services']:
+            if not compose['services'][service].get('build', {}).get('imgage'):
+                machines.append(service)
 
     lib_build(ctx, config, machines, pull, no_cache, push, include_source, remove)
 
