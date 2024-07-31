@@ -24,3 +24,4 @@ docker==5.0.3
 black>=23.7.0
 pylint-odoo==8.0.19
 beautifulsoup4==4.12.3
+packaging
