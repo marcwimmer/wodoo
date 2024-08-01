@@ -454,16 +454,16 @@ def _set_default_envs(env):
     return env
 
 
-def __dc(config, cmd, env={}):
+def __dc(config, cmd, env={}, profile="auto"):
     ensure_project_name(config)
-    c = __get_cmd(config) + cmd
+    c = __get_cmd(config, profile=profile) + cmd
     env = _set_default_envs(env)
     return subprocess.check_call(c, env=_merge_env_dict(env))
 
 
-def __dc_out(config, cmd, env={}):
+def __dc_out(config, cmd, env={}, profile="auto"):
     ensure_project_name(config)
-    c = __get_cmd(config) + cmd
+    c = __get_cmd(config, profile=profile) + cmd
     env = _set_default_envs(env)
     return subprocess.check_output(c, env=_merge_env_dict(env))
 
@@ -614,11 +614,13 @@ def get_docker_version():
     return version
 
 
-def __get_cmd(config):
+def __get_cmd(config, profile="auto"):
     if get_docker_version()[0] >= 26:
         cmd = config.commands["dc2"]
     else:
         cmd = config.commands["dc"]
+    if profile:
+        cmd += ["--profile", profile]
     cmd = [os.path.expandvars(x) for x in cmd]
     return cmd
 
