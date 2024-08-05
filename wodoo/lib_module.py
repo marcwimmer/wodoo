@@ -764,8 +764,6 @@ def show_dangling():
     return bool(dangling)
 
 
-
-
 def _do_check_install_state(ctx, config, module, all_modules, no_dangling_check):
     from .module_tools import Modules, DBModules, Module
 
@@ -867,7 +865,7 @@ def _uninstall_marked_modules(ctx, config, modules):
             objmod = Module.get_by_name(module)
             for desc in objmod.descendants:
                 if desc in manifest_modules:
-                    if not Module.get_by_name(desc).manifest_dict.get('auto_install'):
+                    if not Module.get_by_name(desc).manifest_dict.get("auto_install"):
                         abort(
                             f"{objmod.name} has {desc.name} as descendant which is still in the install section"
                         )
@@ -949,8 +947,8 @@ def show_install_state(config, suppress_error=False, missing_as_error=False):
 
     # get modules, that are not installed:
     missing = DBModules.check_if_all_modules_from_install_are_installed(
-            partial(remove_some_modules, config)
-        )
+        partial(remove_some_modules, config)
+    )
     for missing_item in missing:
         click.secho((f"Module {missing_item} not installed!"), fg="red")
 
@@ -1002,181 +1000,6 @@ def _exec_update(config, params, non_interactive=False):
             yield output
         except subprocess.CalledProcessError as ex:
             yield ex.returncode
-
-
-def _get_available_robottests(ctx, param, incomplete):
-    from .robo_helpers import _get_all_robottest_files
-    from .odoo_config import customs_dir
-
-    path = customs_dir() or Path(os.getcwd())
-    path = path / (Path(os.getcwd()).relative_to(path))
-    testfiles = list(map(str, _get_all_robottest_files(path))) or []
-    if incomplete:
-        if "/" in incomplete:
-            testfiles = list(filter(lambda x: str(x).startswith(incomplete), testfiles))
-        else:
-            testfiles = list(filter(lambda x: incomplete in x, testfiles))
-    return sorted(testfiles)
-
-
-@odoo_module.command()
-@click.argument("file", required=False, shell_complete=_get_available_robottests)
-@click.option("-u", "--user", default="admin")
-@click.option("-a", "--all", is_flag=True)
-@click.option("-n", "--test_name", is_flag=False)
-@click.option(
-    "-p", "--param", multiple=True, help="e.g. --param key1=value1 --param key2=value2"
-)
-@click.option("--parallel", default=1, help="Parallel runs of robots.")
-@click.option(
-    "--keep-token-dir",
-    is_flag=True,
-    help="If set, then the intermediate run directory is kept. Helps to separate test runs of same robot file safely.",
-)
-@click.option(
-    "-t",
-    "--tags",
-    is_flag=False,
-    help=(
-        "Tags can be comined with AND OR or just comma separated; "
-        "may include wilcards and some regex expressions"
-    ),
-)
-@click.option(
-    "-j",
-    "--output-json",
-    is_flag=True,
-    help=("If set, then a json is printed to console, with detailed informations"),
-)
-@click.option(
-    "--results-file", help="concrete filename where the results.json is stored"
-)
-@pass_config
-@click.pass_context
-def robotest(
-    ctx,
-    config,
-    file,
-    user,
-    all,
-    tags,
-    test_name,
-    param,
-    parallel,
-    output_json,
-    keep_token_dir,
-    results_file,
-):
-    PARAM = param
-    del param
-    started = arrow.utcnow()
-
-    from pathlib import Path
-    from .odoo_config import customs_dir
-    from .module_tools import DBModules
-
-    if not config.devmode and not config.force:
-        click.secho(
-            ("Devmode required to run unit tests. Database will be destroyed."),
-            fg="red",
-        )
-        sys.exit(-1)
-
-    from .robo_helpers import _select_robot_filename
-
-    filenames = _select_robot_filename(file, run_all=all)
-    del file
-
-    if not filenames:
-        return
-
-    click.secho("\n".join(map(str, filenames)), fg="green", bold=True)
-
-    from .robo_helpers import get_odoo_modules
-
-    os.chdir(customs_dir())
-    odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
-    odoo_modules = list(odoo_modules | set(["web_selenium", "robot_utils"]))
-
-    if odoo_modules:
-
-        def not_installed(module):
-            data = DBModules.get_meta_data(module)
-            if not data:
-                abort(f"Could not get state for {module}")
-            return data["state"] == "uninstalled"
-
-        modules_to_install = list(filter(not_installed, odoo_modules))
-        if modules_to_install:
-            click.secho(
-                (
-                    "Installing required modules for robot tests: "
-                    f"{','.join(modules_to_install)}"
-                ),
-                fg="yellow",
-            )
-            Commands.invoke(
-                ctx, "update", module=modules_to_install, no_dangling_check=True
-            )
-
-    pwd = config.DEFAULT_DEV_PASSWORD
-    # deprecated
-    if pwd == "True" or pwd is True:
-        pwd = "1"
-
-    def params():
-        params = {
-            "url": "http://proxy",
-            "user": user,
-            "dbname": config.DBNAME,
-            "password": pwd,
-            "selenium_timeout": 20,  # selenium timeout,
-            "parallel": parallel,
-        }
-        if test_name:
-            params["test_name"] = test_name
-        if tags:
-            params["tags"] = tags
-
-        for param in PARAM:
-            k, v = param.split("=")
-            params[k] = v
-            del param
-
-        return params
-
-    token = arrow.get().strftime("%Y-%m-%d_%H%M%S_") + str(uuid.uuid4())
-    data = json.dumps(
-        {
-            "test_files": list(map(str, filenames)),
-            "token": token,
-            "results_file": results_file or "",
-            "params": params(),
-        }
-    )
-    data = base64.b64encode(data.encode("utf-8"))
-
-    params = [
-        "robot",
-    ]
-
-    workingdir = customs_dir() / (Path(os.getcwd()).relative_to(customs_dir()))
-    os.chdir(workingdir)
-
-    __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
-
-    output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
-    from .robo_helpers import _eval_robot_output
-
-    _eval_robot_output(
-        config,
-        output_path,
-        started,
-        output_json,
-        token,
-        rm_tokendir=not keep_token_dir,
-        results_file=results_file,
-    )
 
 
 def _get_unittests_from_module(module_name):
