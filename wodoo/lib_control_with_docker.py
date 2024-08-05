@@ -125,7 +125,7 @@ def execute(config, machine, args):
     __dcexec(config, args)
 
 
-def do_kill(ctx, config, machines=[], brutal=False):
+def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
     """
     kills running machine
     safely shutdowns postgres and redis
@@ -147,15 +147,15 @@ def do_kill(ctx, config, machines=[], brutal=False):
                     safe_stop += [machine]
 
         if safe_stop:
-            __dc(config, ["stop", "-t", "20"] + safe_stop)  # persist data
+            __dc(config, ["stop", "-t", "20"] + safe_stop, profile=profile)  # persist data
     if config.devmode:
-        __dc(config, ["kill"] + list(machines))
+        __dc(config, ["kill"] + list(machines), profile=profile)
     else:
-        __dc(config, ["stop", "-t", "2"] + list(machines))
+        __dc(config, ["stop", "-t", "2"] + list(machines), profile=profile)
 
 
-def force_kill(ctx, config, machine):
-    do_kill(ctx, config, machine=machine, brutal=True)
+def force_kill(ctx, config, machine, profile="auto"):
+    do_kill(ctx, config, machine=machine, brutal=True, profile=profile)
 
 
 def wait_for_container_postgres(config):
