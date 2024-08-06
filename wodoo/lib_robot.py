@@ -295,3 +295,26 @@ def run(
         rm_tokendir=not keep_token_dir,
         results_file=results_file,
     )
+
+
+@robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
+@pass_config
+@click.pass_context
+def run_all(
+    ctx,
+    config,
+):
+    from .odoo_config import MANIFEST, customs_dir
+
+    patterns = MANIFEST().get("robotests", [])
+    files = []
+    for pattern in patterns:
+        for file in Path(customs_dir()).glob(pattern):
+            files.append(file)
+
+    for file in files:
+        click.secho(f"Running robotest {file}")
+        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+        Commands.invoke(ctx, "reset-db")
+        Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
+        ctx.invoke(run, file=str(file))
