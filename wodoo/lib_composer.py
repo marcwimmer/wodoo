@@ -242,7 +242,6 @@ def internal_reload(
         "demo": demo,
         "LOCAL_SETTINGS": "1" if local else "0",
         "CUSTOMS_DIR": config.WORKING_DIR,
-        "WODOO_VERSION": _get_version(),
         "QUEUEJOB_CHANNELS_FILE": config.files["queuejob_channels_file"],
     }
     if devmode:
@@ -298,7 +297,7 @@ def _set_defaults(config, defaults):
     defaults["HOST_RUN_DIR"] = config.HOST_RUN_DIR
     defaults["NETWORK_NAME"] = config.project_name
     defaults["project_name"] = config.project_name
-
+    defaults["WODOO_VERSION"] = _get_version()
 
 def _do_compose(
     config,
