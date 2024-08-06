@@ -18,6 +18,7 @@ jobs:
       ODOO_TEST: "16.0"
       ODOO_PYTHON_VERSION: "3.9.13"
       ODOOCMD: "/home/githubrunner_wodoo/.local/bin/odoo"
+      LAST_STABLE_VERSION: "0.5.45"
 
     steps:
     - uses: actions/checkout@v4
@@ -62,7 +63,7 @@ jobs:
         $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION
         $ODOOCMD setting RUN_ODOO_CRONJOBS=0
         $ODOOCMD setting RUN_CRONJOBS=0
-        $ODOOCMD setting WODOO_VERSION=0.5.48
+        $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
         $ODOOCMD build
         $ODOOCMD -f db reset
         $ODOOCMD update crm
