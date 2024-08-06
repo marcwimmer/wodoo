@@ -305,6 +305,8 @@ def run_all(
     config,
 ):
     from .odoo_config import MANIFEST, customs_dir
+    if not config.DEVMODE:
+        abort("Devmode required to run robotests")
 
     patterns = MANIFEST().get("robotests", [])
     customsdir = customs_dir()
