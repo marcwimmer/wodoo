@@ -307,6 +307,7 @@ def run_all(
     from .odoo_config import MANIFEST, customs_dir
 
     patterns = MANIFEST().get("robotests", [])
+    customsdir = customs_dir()
     files = []
     for pattern in patterns:
         for file in Path(customs_dir()).glob(pattern):
@@ -318,4 +319,4 @@ def run_all(
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
         Commands.invoke(ctx, "reset-db")
         Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
-        ctx.invoke(run, file=str(file))
+        ctx.invoke(run, file=str(file.relative_to(customsdir)))
