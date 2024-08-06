@@ -314,6 +314,7 @@ def run_all(
 
     for file in files:
         click.secho(f"Running robotest {file}")
+        Commands.invoke(ctx, "up", daemon=True)
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
         Commands.invoke(ctx, "reset-db")
         Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
