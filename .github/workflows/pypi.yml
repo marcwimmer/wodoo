@@ -62,6 +62,7 @@ jobs:
         $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION
         $ODOOCMD setting RUN_ODOO_CRONJOBS=0
         $ODOOCMD setting RUN_CRONJOBS=0
+        $ODOOCMD setting WODOO_VERSION=0.5.48
         $ODOOCMD build
         $ODOOCMD -f db reset
         $ODOOCMD update crm
