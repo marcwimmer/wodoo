@@ -439,6 +439,11 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
     is_flag=False,
     help="Extracts modules changed since this git sha and updates them",
 )
+@click.option(
+    "--stdout",
+    is_flag=False,
+    help="directs stdout to given file",
+)
 @pass_config
 @click.pass_context
 def update(
@@ -466,6 +471,7 @@ def update(
     log=False,
     recover_view_error=False,
     no_outdated_modules=False,
+    stdout=False,
 ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -610,11 +616,18 @@ def update(
                 if log:
                     params += [f"--log={log}"]
                 params += ["--config-file=" + config_file]
-                rc = list(_exec_update(config, params, non_interactive=non_interactive))
+                rc = list(
+                    _exec_update(
+                        config, params, non_interactive=non_interactive if not stdout else True
+                    )
+                )
                 if len(rc) == 1:
                     rc = rc[0]
                 else:
                     rc, output = rc
+
+                if stdout:
+                    Path(stdout).write_text(output)
 
                 if rc:
                     if recover_view_error:
@@ -980,7 +993,7 @@ def show_conflicting_modules():
     get_odoo_addons_paths()
 
 
-def _exec_update(config, params, non_interactive=False):
+def _exec_update(config, params, non_interactive=False, stdout=False):
     params = ["odoo_update", "/update_modules.py"] + params
     if not non_interactive:
         yield __cmd_interactive(
