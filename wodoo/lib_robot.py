@@ -298,11 +298,18 @@ def run(
 
 
 @robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
+@click.option(
+    "--timeout",
+    required=False,
+    default=20,
+    help="Default timeout for wait until element is visible.",
+)
 @pass_config
 @click.pass_context
 def run_all(
     ctx,
     config,
+    timeout,
 ):
     from .odoo_config import MANIFEST, customs_dir
     if not config.DEVMODE:
@@ -321,4 +328,4 @@ def run_all(
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
         Commands.invoke(ctx, "reset-db")
         Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
-        ctx.invoke(run, file=str(file.relative_to(customsdir)))
+        ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout)
