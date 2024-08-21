@@ -1,3 +1,4 @@
+build
 .watchmanconfig
 data.backup
 config/docker-compose.odoo.yml
