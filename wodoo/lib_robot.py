@@ -312,15 +312,15 @@ def run_all(
     timeout,
 ):
     from .odoo_config import MANIFEST, customs_dir
+    from .robo_helpers import _get_all_robottest_files
+    from .odoo_config import customs_dir
+
     if not config.DEVMODE:
         abort("Devmode required to run robotests")
-
-    patterns = MANIFEST().get("robotests", [])
     customsdir = customs_dir()
-    files = []
-    for pattern in patterns:
-        for file in Path(customs_dir()).glob(pattern):
-            files.append(file)
+
+    files = _get_all_robottest_files()
+    files = [customsdir / file for file in files]
 
     for file in files:
         click.secho(f"Running robotest {file}")
