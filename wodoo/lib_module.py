@@ -185,7 +185,11 @@ def run_tests(ctx, config):
 
     # in force-mode shut down
     if config.force:
-        Commands.invoke(ctx, "down", volumes=True)
+        for _ in in range(3):
+            try:
+                Commands.invoke(ctx, "down", volumes=True)
+            except:
+                time.sleep(3)
 
     if failed:
         click.secho("Tests failed: ", fg="red")
