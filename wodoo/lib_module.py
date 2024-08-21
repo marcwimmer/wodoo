@@ -185,7 +185,7 @@ def run_tests(ctx, config):
 
     # in force-mode shut down
     if config.force:
-        for _ in in range(3):
+        for _ in range(3):
             try:
                 Commands.invoke(ctx, "down", volumes=True)
             except:
