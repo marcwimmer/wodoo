@@ -192,6 +192,8 @@ def run(
     from pathlib import Path
     from .odoo_config import customs_dir
     from .module_tools import DBModules
+    from .odoo_config import MANIFEST
+    manifest = MANIFEST()
 
     if not config.devmode and not config.force:
         click.secho(
@@ -214,7 +216,11 @@ def run(
 
     os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
-    odoo_modules = list(odoo_modules | set(["web_selenium", "robot_utils"]))
+    version = float(manifest['version'])
+    modules = ["robot_utils"]
+    if version < 16.0:
+        modules.append('web_selenium')
+    odoo_modules = list(odoo_modules | set(modules))
 
     if odoo_modules:
 
