@@ -17,6 +17,7 @@ import tempfile
 import click
 
 from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
+from .odoo_config import current_version
 from .tools import is_git_clean
 from gimera.repo import Repo
 from .tools import get_hash
@@ -216,9 +217,8 @@ def run(
 
     os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
-    version = float(manifest['version'])
     modules = ["robot_utils"]
-    if version < 16.0:
+    if current_version() < 16.0:
         modules.append('web_selenium')
     odoo_modules = list(odoo_modules | set(modules))
 
