@@ -139,11 +139,13 @@ def run_tests(ctx, config):
         click.secho("No test files found!")
         return
 
-    if config.force:
-        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
-        Commands.invoke(ctx, "reset-db")
-        Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
+    def reset_db():
+        if config.force:
+            Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+            Commands.invoke(ctx, "reset-db")
+            Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
 
+    reset_db()
     from .module_tools import Module
     from .odoo_config import customs_dir
 
@@ -160,23 +162,43 @@ def run_tests(ctx, config):
         for file in sorted(testfiles):
             file = module.path / file
             if config.use_docker:
-                params = ["odoo", "/odoolib/unit_test.py", f"{file}"]
-                click.secho(f"Running test: {file}", fg="yellow", bold=True)
-                res = __dcrun(
-                    config,
-                    params + ["--log-level=error", "--not-interactive"],
-                    returncode=True,
-                )
+
+                def run_test(file):
+                    params = ["odoo", "/odoolib/unit_test.py", file]
+                    click.secho(f"Running test: {file}", fg="yellow", bold=True)
+                    res = __dcrun(
+                        config,
+                        params + ["--log-level=error", "--not-interactive"],
+                        returncode=True,
+                    )
+                    return res
+
+                res = run_test(file)
                 if res:
-                    failed.append(file)
-                    click.secho(
-                        f"Failed, running again with debug on: {file}",
-                        fg="red",
-                        bold=True,
-                    )
-                    res = __cmd_interactive(
-                        config, *(["run", "--rm"] + params + ["--log-level=debug"])
-                    )
+                    reset_db()
+                    res = run_test(file)
+                    if res:
+                        failed.append(file)
+                        click.secho(
+                            f"Failed, running again with debug on: {file}",
+                            fg="red",
+                            bold=True,
+                        )
+                        res = __cmd_interactive(
+                            config,
+                            *(
+                                [
+                                    "run",
+                                    "--rm",
+                                    "odoo",
+                                    "/odoolib/unit_test.py",
+                                    file,
+                                    "--log-level=debug",
+                                ]
+                            ),
+                        )
+                    else:
+                        success.append(file)
                 else:
                     success.append(file)
 
@@ -622,7 +644,9 @@ def update(
                 params += ["--config-file=" + config_file]
                 rc = list(
                     _exec_update(
-                        config, params, non_interactive=non_interactive if not stdout else True
+                        config,
+                        params,
+                        non_interactive=non_interactive if not stdout else True,
                     )
                 )
                 if len(rc) == 1:
