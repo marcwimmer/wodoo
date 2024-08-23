@@ -20,6 +20,10 @@ jobs:
       ODOOCMD: "/home/githubrunner_wodoo/.local/bin/odoo"
       LAST_STABLE_VERSION: "0.5.53"
 
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python 3.10
