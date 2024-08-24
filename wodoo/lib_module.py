@@ -159,8 +159,15 @@ def run_tests(ctx, config):
         testfiles = [x for x in testfiles if x.name.startswith("test_")]
 
         # identify test files and run them, otherwise tests of dependent modules are run
+        ran_tests = []
         for file in sorted(testfiles):
             file = module.path / file
+            ran_tests.append(file)
+
+            print(f"So far tests being run:")
+            for i, txtfile in enumerate(ran_tests, 1):
+                print(f"{i}: {txtfile}")
+
             if config.use_docker:
 
                 def run_test(file):
@@ -175,6 +182,7 @@ def run_tests(ctx, config):
 
                 res = run_test(file)
                 if res:
+                    print(f"Test {file} failed on first attempt. Resetting db and trying once more.")
                     reset_db()
                     res = run_test(file)
                     if res:
