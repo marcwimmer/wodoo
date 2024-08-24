@@ -54,6 +54,9 @@ jobs:
     - name: install woodo
       run: |
         pipx install -e --force .
+        echo "##################"
+        echo $PATH
+        echo "##################"
         #WHY?
         pipx runpip wodoo install requests==2.31.0  || true
 
