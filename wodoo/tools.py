@@ -1421,7 +1421,7 @@ def _get_default_project_name(restrict):
     if customs_root:
         root = Path(customs_root)
         if (root / "MANIFEST").exists():
-            return root.name
+            return root.name.replace(".", "_")
     raise NoProjectNameException("No default project name could be determined.")
 
 
