@@ -714,3 +714,91 @@ def convert_odoo17_attrs(config, ctx, module):
             m = Module.get_by_name(m)
             if m.is_customs or not module:
                 odoo17attrs(customs_dir() / m.path)
+
+
+@src.command()
+@click.argument("sha", required=True)
+@click.pass_context
+@pass_config
+def analyze(config, ctx, sha):
+    from .module_tools import Modules, DBModules, Module
+    from .lib_src_replace_attrs import odoo17attrs
+
+    result = {
+        "manifests_changed": set(),
+        "updated_modules": set(),
+        "changed_xml_files": set(),
+    }
+
+    pychanges = subprocess.check_output(
+        ["git", "log", "-p", f"{sha}..HEAD", "--", "*.py"],
+        encoding="utf8",
+        stderr=subprocess.DEVNULL,
+    )
+    filesoutput = subprocess.check_output(
+        ["git", "log", "--name-only", "--pretty=format:", f"{sha}..HEAD"],
+        encoding="utf8",
+    ).splitlines()
+    files = list(
+        set(
+            filter(
+                bool,
+                map(lambda x: x.strip(), filesoutput),
+            )
+        )
+    )
+
+    def _get_module_name(x):
+        x = x.split("/")[-2].strip()
+        if x == "...":
+            x = ""
+        try:
+            m = Module.get_by_name(x)
+        except Exception:
+            return ""
+        else:
+            return str(m.name)
+
+    result["changed_xml_files"] |= set(
+        filter(
+            bool,
+            [_get_module_name(x) for x in files if ".xml" in x],
+        )
+    )
+    result["manifests_changed"] |= set(
+        filter(
+            bool,
+            [_get_module_name(x) for x in files if "__manifest__.py" in x],
+        )
+    )
+
+    for module, line in splitdiff(pychanges):
+        result["updated_modules"].add(str(module.name))
+
+    result["updated_modules"] = list(sorted(result["updated_modules"]))
+    result["changed_xml_files"] = list(sorted(result["changed_xml_files"]))
+    result["manifests_changed"] = list(sorted(result["manifests_changed"]))
+    print("----------------")
+    print(json.dumps(result))
+
+
+def splitdiff(diffoutput):
+    module = None
+    from .module_tools import Module
+
+    remember = set()
+    for line in diffoutput.splitlines():
+        if line.startswith("diff --git"):
+            filepath = line.split("b/")[0].split("a/")[1].strip()
+            for part in Path(filepath).parts[:-1]:
+                if part in remember:
+                    continue
+                try:
+                    module = Module.get_by_name(part)
+                except Exception:
+                    remember.add(part)
+                else:
+                    break
+
+        if module:
+            yield module, line
