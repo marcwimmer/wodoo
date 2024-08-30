@@ -23,9 +23,12 @@ def turn_into_dev(config):
 @click.pass_context
 @pass_config
 def set_password_all_users(config, ctx, password):
+    from .odoo_config import current_version
     pwd = __hash_odoo_password(password)
     conn = config.get_odoo_conn().clone()
     _execute_sql(conn, (f"update res_users set password='{pwd}'"))
+    if current_version() in [11.0]:
+        _execute_sql(conn, (f"update res_users set password_crypt='{pwd}'"))
 
 
 @turn_into_dev.command()
