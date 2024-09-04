@@ -66,8 +66,8 @@ def odoorpc(config):
     import odoorpc
 
     odoo = odoorpc.ODOO('localhost', port=PROXY_PORT)
-    username = "admin"
-    pwd = config.DEFAULT_DEV_PASSWORD or "admin"
+    username = os.getenv("ODOO_USER", "admin")
+    pwd = os.getenv("ODOO_PASSWORD", config.DEFAULT_DEV_PASSWORD or "admin")
     odoo.login(config.DBNAME, username, pwd)
     odoo.config['auto_context'] = False  # often context probided by self
     return odoo
