@@ -463,21 +463,25 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
 @click.pass_context
 @pass_config
 def restore_view(config, ctx, path):
+    odoo = odoorpc(config)
+    langs = [x.code for x in odoo.env['res.lang'].browse(odoo.env["res.lang"].search([]))]
     path = Path(path)
     content = path.read_text()
     xmlid = Path(path.name.split(".xmlid.")[1]).stem
-    lang = xmlid.split(".")[-1]
-    xmlid = ".".join(xmlid.split(".")[:-1])
+    lang = xmlid.split(".lang.")[-1].split(".")[0]
+    assert lang in langs
+    xmlid = xmlid.split(".lang.")[0]
     module, name = xmlid.split(".")[0], ".".join(xmlid.split(".")[1:])
-    odoo = odoorpc(config)
-    data = odoo.env['ir.model.data'].browse(odoo.env["ir.model.data"].search(
-        [("module", "=", module), ("name", "=", name), ("model", "=", "ir.ui.view")]
-    ))
+    data = odoo.env["ir.model.data"].browse(
+        odoo.env["ir.model.data"].search(
+            [("module", "=", module), ("name", "=", name), ("model", "=", "ir.ui.view")]
+        )
+    )
     view_id = data[0].res_id
     odoo.env["ir.ui.view"].browse(view_id).write(
-        {"arch_db": content}, context={"lang": lang}
+        {"arch_db": content}, context={"lang": lang, 'mickey': 'mouse'}
     )
-    click.secho(f"View [{view_id}] {module}.{name} updated successfully")
+    click.secho(f"View [{view_id}] {module}.{name} updated successfully for language {lang}", fg="green")
 
 
 @src.command()
@@ -485,6 +489,7 @@ def restore_view(config, ctx, path):
 @pass_config
 def grab_views(config, ctx):
     root = customs_dir() / "src" / "views"
+    odoo = odoorpc(config)
 
     sql = f"select id, name, arch_db, model from ir_ui_view"
     conn = config.get_odoo_conn()
@@ -497,35 +502,37 @@ def grab_views(config, ctx):
     threads = []
     stats = {"views": 0}
     q = Queue()
+    langs = [x.code for x in odoo.env['res.lang'].browse(odoo.env["res.lang"].search([]))]
 
     def check_view():
         while not q.empty():
             count, view = q.get()
             try:
+                for lang in langs:
 
-                def prog(c):
-                    p = round(count / len(rows) * 100, 1)
-                    click.secho(f"...threading progress {p}%", fg="yellow")
+                    def prog(c):
+                        p = round(count / len(rows) * 100, 1)
+                        click.secho(f"...threading progress {p}%", fg="yellow")
 
-                arch = view[2]
-                xmlid = _get_xml_id(config, "ir.ui.view", view[0])
-                model = view[3] or "no-model"
-                name = view[1]
-                id = view[0]
-                if current_version() < 16:
-                    arch = {"en_US": arch}
+                    xml = odoo.env['ir.ui.view'].read([view[0]], ["arch_db"], context={"lang": lang})[0]['arch_db']
+                    xmlid = _get_xml_id(config, "ir.ui.view", view[0])
+                    model = view[3] or "no-model"
+                    name = view[1]
+                    id = view[0]
 
-                for key in arch:
                     if xmlid:
-                        filepath = root / f"{model}.xmlid.{xmlid}.xml"
+                        filepath = root / f"{model}.xmlid.{xmlid}.lang.{lang}.xml"
                     else:
                         filepath = (
-                            root / "by_name" / f"{model}.byname.{name}.{key}.{id}.xml"
+                            root
+                            / "by_name"
+                            / f"{model}.byname.{name}.{id}.lang.{lang}.xml"
                         )
                     filepath.parent.mkdir(exist_ok=True, parents=True)
 
-                    path = filepath.parent / (filepath.stem + f".{key}.xml")
-                    xml = arch[key].encode("utf8")
+                    path = filepath.parent / (filepath.stem + ".xml")
+
+                    xml = xml.encode("utf8")
                     path.write_bytes(pretty_xml(xml))
                     if path in all_files:
                         all_files.remove(path)
@@ -539,7 +546,7 @@ def grab_views(config, ctx):
     for count, view in enumerate(rows):
         q.put((count, view))
 
-    for i in range(10):
+    for i in range(15):
         t = threading.Thread(target=check_view)
         t.daemon = True
         t.start()
