@@ -1,5 +1,5 @@
 import platform
-
+import inspect
 import socket
 import uuid
 import time
@@ -46,6 +46,49 @@ import inspect
 from copy import deepcopy
 from passlib.context import CryptContext
 
+try:
+    import xmlrpclib
+except Exception:
+    import xmlrpc
+    from xmlrpc import client as xmlrpclib
+
+def get_calling_function_variables():
+    # Get the current stack frame
+    current_frame = inspect.currentframe()
+    # Get the frame of the caller (one level up in the stack)
+    caller_frame = current_frame.f_back.f_back
+    # Get the local variables of the caller
+    caller_locals = caller_frame.f_locals
+    return caller_locals
+
+def odoorpc(config):
+    PROXY_PORT = config.PROXY_PORT
+    import odoorpc
+
+    odoo = odoorpc.ODOO('localhost', port=PROXY_PORT)
+    username = "admin"
+    pwd = config.DEFAULT_DEV_PASSWORD or "admin"
+    odoo.login(config.DBNAME, username, pwd)
+    odoo.config['auto_context'] = False  # often context probided by self
+    return odoo
+
+def exe(*params, **kwparams):
+    vars = get_calling_function_variables()
+    config = vars['config']
+    PROXY_PORT = config.PROXY_PORT or 8069
+    host = f"http://localhost:{PROXY_PORT}"
+    username = "admin"
+    pwd = config.DEFAULT_DEV_PASSWORD or "admin"
+    from .odoo_config import get_settings
+    config = get_settings()
+
+    def login(username, password):
+        socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/common" % (host))
+        return socket_obj.login(config["DBNAME"], username, password)
+
+    uid = login(username, pwd)
+    socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/object" % (host))
+    return socket_obj.execute(config["DBNAME"], uid, pwd, *params, **kwparams)
 
 class DBConnection(object):
     def __init__(self, dbname, host, port, user, pwd):

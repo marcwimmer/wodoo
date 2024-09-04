@@ -52,19 +52,11 @@ import pprint
 from lxml import etree
 import subprocess
 
-try:
-    import xmlrpclib
-except Exception:
-    import xmlrpc
-    from xmlrpc import client as xmlrpclib
 import inspect
 import sys
 
 LANG = os.getenv("ODOO_LANG", "de_DE")  # todo from environment
-host = "http://localhost:8069"
 
-username = "admin"
-pwd = "admin"
 
 name_cache = {}
 remark_about_missing_module_info = set()
@@ -83,16 +75,7 @@ class NotInAddonsPath(Exception):
     pass
 
 
-def exe(*params):
-    config = get_settings()
-
-    def login(username, password):
-        socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/common" % (host))
-        return socket_obj.login(config["DBNAME"], username, password)
-
-    uid = login(username, pwd)
-    socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/object" % (host))
-    return socket_obj.execute(config["DBNAME"], uid, pwd, *params)
+from .tools import exe
 
 
 def delete_qweb(config, modules):

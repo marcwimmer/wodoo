@@ -28,6 +28,8 @@ from .tools import _get_customs_root
 from .tools import _get_xml_id
 from .tools import pretty_xml
 from .tools import _execute_sql
+from .tools import exe
+from .tools import odoorpc
 
 
 ADDONS_OCA = "addons_OCA"
@@ -454,6 +456,28 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
             ):
                 click.secho(f"Deleting: {mod.path}", fg="red")
                 shutil.rmtree(root / mod.path)
+
+
+@src.command()
+@click.argument("path", required=True)
+@click.pass_context
+@pass_config
+def restore_view(config, ctx, path):
+    path = Path(path)
+    content = path.read_text()
+    xmlid = Path(path.name.split(".xmlid.")[1]).stem
+    lang = xmlid.split(".")[-1]
+    xmlid = ".".join(xmlid.split(".")[:-1])
+    module, name = xmlid.split(".")[0], ".".join(xmlid.split(".")[1:])
+    odoo = odoorpc(config)
+    data = odoo.env['ir.model.data'].browse(odoo.env["ir.model.data"].search(
+        [("module", "=", module), ("name", "=", name), ("model", "=", "ir.ui.view")]
+    ))
+    view_id = data[0].res_id
+    odoo.env["ir.ui.view"].browse(view_id).write(
+        {"arch_db": content}, context={"lang": lang}
+    )
+    click.secho(f"View [{view_id}] {module}.{name} updated successfully")
 
 
 @src.command()
