@@ -52,6 +52,7 @@ except Exception:
     import xmlrpc
     from xmlrpc import client as xmlrpclib
 
+
 def get_calling_function_variables():
     # Get the current stack frame
     current_frame = inspect.currentframe()
@@ -61,25 +62,33 @@ def get_calling_function_variables():
     caller_locals = caller_frame.f_locals
     return caller_locals
 
+
 def odoorpc(config):
     PROXY_PORT = config.PROXY_PORT
     import odoorpc
 
-    odoo = odoorpc.ODOO('localhost', port=PROXY_PORT)
+    if "ODOO_USER" not in os.environ:
+        click.secho(
+            "Tip: set ODOO_USER and ODOO_PASSWORD in your environment", fg="yellow"
+        )
+
+    odoo = odoorpc.ODOO("localhost", port=PROXY_PORT)
     username = os.getenv("ODOO_USER", "admin")
     pwd = os.getenv("ODOO_PASSWORD", config.DEFAULT_DEV_PASSWORD or "admin")
     odoo.login(config.DBNAME, username, pwd)
-    odoo.config['auto_context'] = False  # often context probided by self
+    odoo.config["auto_context"] = False  # often context probided by self
     return odoo
+
 
 def exe(*params, **kwparams):
     vars = get_calling_function_variables()
-    config = vars['config']
+    config = vars["config"]
     PROXY_PORT = config.PROXY_PORT or 8069
     host = f"http://localhost:{PROXY_PORT}"
     username = "admin"
     pwd = config.DEFAULT_DEV_PASSWORD or "admin"
     from .odoo_config import get_settings
+
     config = get_settings()
 
     def login(username, password):
@@ -89,6 +98,7 @@ def exe(*params, **kwparams):
     uid = login(username, pwd)
     socket_obj = xmlrpclib.ServerProxy("%s/xmlrpc/object" % (host))
     return socket_obj.execute(config["DBNAME"], uid, pwd, *params, **kwparams)
+
 
 class DBConnection(object):
     def __init__(self, dbname, host, port, user, pwd):
@@ -1732,16 +1742,18 @@ def update_setting(config, name, value):
     configparser[name] = value
     configparser.write()
 
+
 def update_docker_service(config, service_name, service_content):
     import yaml
 
     filepath = config.files["project_docker_compose.home.project"]
-    click.secho(f"Writing to {filepath}", fg='yellow')
+    click.secho(f"Writing to {filepath}", fg="yellow")
     content = __read_file(filepath)
     compose = yaml.safe_load(content)
-    compose['services'][service_name] = service_content
+    compose["services"][service_name] = service_content
     content = yaml.dump(compose, default_flow_style=False)
     __write_file(filepath, content)
+
 
 def _parse_yaml(content):
     import yaml
