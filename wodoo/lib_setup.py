@@ -71,6 +71,7 @@ def status(config):
 
 def _status(config):
     color = "yellow"
+    EXTERNAL_DOMAIN = config.EXTERNAL_DOMAIN
     click.secho("projectname: ", nl=False)
     click.secho(config.project_name, fg=color, bold=True)
     click.secho("version: ", nl=False)
@@ -79,7 +80,7 @@ def _status(config):
     click.secho(config.dbname, fg=color, bold=True)
     if config.PROXY_PORT:
         click.secho("url: ", nl=False)
-        click.secho(f"http://localhost:{config.PROXY_PORT}", fg=color, bold=True)
+        click.secho(f"{EXTERNAL_DOMAIN}:{config.PROXY_PORT}", fg=color, bold=True)
 
     for key in [
         "DEFAULT_DEV_PASSWORD",
