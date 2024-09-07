@@ -342,6 +342,20 @@ ORDER BY total_bytes DESC;
         )
     )
 
+@db.command(help="Export as excel")
+@click.argument("sql", required=True)
+@pass_config
+def json(config, sql):
+    import json as j
+    conn = config.get_odoo_conn()
+    columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
+    data2 = []
+    for row in rows:
+        record = dict(zip(columns, row))
+        data2.append(record)
+    data = j.dumps(data2, indent=4)
+    print("------------------------\n")
+    print(data)
 
 @db.command(help="Export as excel")
 @click.argument("sql", required=True)
