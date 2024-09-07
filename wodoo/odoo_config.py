@@ -116,7 +116,11 @@ class MANIFEST_CLASS(object):
             self["version"] = float(d["version"])
 
     def _get_data(self):
-        return OrderedDict(eval(self.path.read_text() or "{}"))
+        content = self.path.read_text() or "{}"
+        try:
+            return OrderedDict(eval(content))
+        except:
+            abort(f"Could not parse {content}")
 
     def __getitem__(self, key):
         data = self._get_data()
