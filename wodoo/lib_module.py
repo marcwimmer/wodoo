@@ -19,6 +19,8 @@ import click
 from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
 from .tools import is_git_clean
 from gimera.repo import Repo
+from .tools import _make_sure_module_is_installed
+from .tools import autocleanpaper
 from .tools import get_hash
 from .tools import get_directory_hash
 from .tools import sync_folder
@@ -182,7 +184,9 @@ def run_tests(ctx, config):
 
                 res = run_test(file)
                 if res:
-                    print(f"Test {file} failed on first attempt. Resetting db and trying once more.")
+                    print(
+                        f"Test {file} failed on first attempt. Resetting db and trying once more."
+                    )
                     reset_db()
                     res = run_test(file)
                     if res:
@@ -1590,6 +1594,16 @@ def zip(config, ctx, module):
     subprocess.check_call(["/usr/bin/zip", "-r", zipfile.name, "."], cwd=module_path)
     shutil.move(Path(module_path / zipfile.name), zipfile)
     click.secho(f"Created zipfile: {zipfile}", fg="green")
+
+
+@odoo_module.command()
+@click.argument("module", required=True)
+@click.argument("repourl", required=True)
+@click.pass_context
+@pass_config
+def download_module(config, ctx, module, repourl):
+    _make_sure_module_is_installed(ctx, config, module, repourl)
+    click.secho(f"Successfully downloaded and installed {module}", fg="green")
 
 
 Commands.register(update)
