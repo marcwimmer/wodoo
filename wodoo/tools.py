@@ -1550,15 +1550,13 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
     from gimera.gimera import add as gimera_add
     from gimera.gimera import apply as gimera_apply
 
-    state = DBModules.get_meta_data(modulename)
-    if state and state["state"] == "installed":
-        return
+    dest_path = Path("addons_wodoo") / modulename
 
     manifest = MANIFEST()
     try:
         Module.get_by_name(modulename)
     except (KeyError, NotInAddonsPath):
-        path = Path("addons_wodoo") / modulename
+        path = dest_path
         if not path.exists():
             ctx.invoke(
                 gimera_add,
@@ -1575,6 +1573,9 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
             if str(path) not in addons_paths:
                 addons_paths += [str(path)]
                 manifest["addons_paths"] = addons_paths
+    state = DBModules.get_meta_data(modulename)
+    if state and state["state"] == "installed":
+        return
 
     install = manifest.get("install", [])
     if modulename not in install:

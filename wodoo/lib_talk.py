@@ -68,6 +68,7 @@ def deactivate_field_in_views(config, field):
             return_columns=False,
         )
 
+
 @talk.command()
 @click.argument("name", required=True)
 @pass_config
@@ -75,6 +76,7 @@ def deactivate_field_in_views(config, field):
 def get_config_parameter(ctx, config, name):
     conn = config.get_odoo_conn()
     click.secho(_get_setting(conn, name))
+
 
 @talk.command()
 @click.argument("name", required=True)
@@ -456,7 +458,7 @@ def views(config, name, module, model):
         fetchall=True,
         return_columns=True,
     )
-    
+
     rows = list(rows)
     rows2 = []
     for row in rows[1]:
@@ -464,8 +466,22 @@ def views(config, name, module, model):
         row.append(_get_xmlid(row[0]))
         rows2.append(row)
     rows[0] = list(rows[0])
-    rows[0].append('xmlid')
+    rows[0].append("xmlid")
     click.secho(tabulate(rows2, rows[0], tablefmt="fancy_grid"), fg="yellow")
+
+
+@talk.command()
+@pass_config
+@click.pass_context
+def set_remote_keys(ctx, config):
+    Commands.invoke(
+        ctx,
+        "odoo-shell",
+        command=[
+            'env["res.users"].set_remote_keys();',
+            "env.cr.commit()",
+        ],
+    )
 
 
 Commands.register(progress)
