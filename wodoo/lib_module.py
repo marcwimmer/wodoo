@@ -1606,5 +1606,19 @@ def download_module(config, ctx, module, repourl):
     click.secho(f"Successfully downloaded and installed {module}", fg="green")
 
 
+@odoo_module.command()
+@click.pass_context
+@pass_config
+def scan_addons_paths(config, ctx):
+    from .odoo_config import customs_dir
+
+    res = set()
+    root = customs_dir()
+    for path in root.rglob("__manifest__.py"):
+        res.add(path.parent.parent.relative_to(root))
+    for item in sorted(res):
+        click.secho(str(item))
+
+
 Commands.register(update)
 Commands.register(show_install_state)
