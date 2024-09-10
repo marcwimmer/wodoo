@@ -8,7 +8,7 @@ import arrow
 import pprint
 import json
 import click
-import iscompatible
+from . import iscompatible
 from pathlib import Path
 from copy import deepcopy
 import pickle

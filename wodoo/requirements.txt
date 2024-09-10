@@ -10,7 +10,6 @@ psycopg2-binary==2.9.9
 requests<2.32.0
 lxml
 docker-compose==1.29.2
-iscompatible
 buttervolume>=3.7
 pudb==2022.1.3
 gimera>=0.6.69
