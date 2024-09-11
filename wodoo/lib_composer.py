@@ -160,6 +160,7 @@ def do_reload(
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
 
+
     additional_config_file = None
     try:
         if additional_config:
@@ -273,6 +274,8 @@ def internal_reload(
     KEY_ODOO_VERSION = f"RUN_ODOO_VERSION_{ODOO_VERSION}"
     os.environ[KEY_ODOO_VERSION] = ODOO_VERSION
     defaults[KEY_ODOO_VERSION] = ODOO_VERSION
+
+    before_reload(config)
 
     # assuming we are in the odoo directory
     _do_compose(
@@ -1226,5 +1229,12 @@ def queuejob_channels(ctx, config, name, amount):
     for channel in channels:
         click.secho(f"{channel}", fg="green")
 
+
+def before_reload(config):
+    customs_dir = Path('.')
+    file = customs_dir / 'devscripts' / "before_reload.py"
+    if not file.exists():
+        return
+    subprocess.check_call(["python3", file])
 
 Commands.register(do_reload, "reload")
