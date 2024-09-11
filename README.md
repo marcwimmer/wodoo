@@ -217,6 +217,11 @@ The used odoo instance must be placed in /odoo.
 
 ```
 
+# Before Reload Actions
+
+If you develop a strange external repository you can define a pre action scripts,
+that is executed before the reload and you can adapt some things.
+
 # Pytests
 
 Best executed with:
