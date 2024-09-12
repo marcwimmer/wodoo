@@ -1574,15 +1574,21 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
                 addons_paths += [str(path)]
                 manifest["addons_paths"] = addons_paths
     state = DBModules.get_meta_data(modulename)
-    if state and state["state"] == "installed":
-        return
 
     install = manifest.get("install", [])
     if modulename not in install:
         install += [modulename]
     manifest["install"] = install
 
+    addons_path = str(dest_path.parent)
+    addons_paths = manifest['addons_paths']
+    if addons_path not in addons_paths:
+        addons_paths.append(addons_path)
+    manifest['addons_paths'] = addons_paths
+
     manifest.rewrite()
+    if state and state["state"] == "installed":
+        return
 
     Commands.invoke(
         ctx,
