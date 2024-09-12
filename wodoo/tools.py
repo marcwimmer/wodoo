@@ -1580,7 +1580,8 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
         install += [modulename]
     manifest["install"] = install
 
-    addons_path = str(dest_path.parent)
+    import pudb;pudb.set_trace()
+    addons_path = str(dest_path)
     addons_paths = manifest['addons_paths']
     if addons_path not in addons_paths:
         addons_paths.append(addons_path)
