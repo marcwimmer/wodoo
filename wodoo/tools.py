@@ -1565,7 +1565,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
                 branch=str(current_version()),
                 type="integrated",
             )
-            ctx.invoke(gimera_apply, repos=[str(path)], no_auto_commit=True)
+            ctx.invoke(gimera_apply, repos=[str(path)], no_auto_commit=True, non_interactive=True, no_patches=True)
 
             # if not yet there, then pack into "addons_framework"
             addons_paths = manifest.get("addons_paths", [])
@@ -1575,7 +1575,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
                 manifest["addons_paths"] = addons_paths
     if update:
         ctx.invoke(
-            gimera_apply, repos=[str(dest_path)], update=True, no_auto_commit=True
+            gimera_apply, repos=[str(dest_path)], update=True, no_auto_commit=True, non_interactive=True, no_patches=True
         )
     install = manifest.get("install", [])
     if modulename not in install:
