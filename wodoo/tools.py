@@ -1573,7 +1573,6 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
             if str(path) not in addons_paths:
                 addons_paths += [str(path)]
                 manifest["addons_paths"] = addons_paths
-    state = DBModules.get_meta_data(modulename)
     if update:
         ctx.invoke(gimera_apply, repos=[str(dest_path)], update=True)
     install = manifest.get("install", [])
@@ -1588,6 +1587,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
     manifest['addons_paths'] = addons_paths
 
     manifest.rewrite()
+    state = DBModules.get_meta_data(modulename)
     if state and state["state"] == "installed":
         return
 
