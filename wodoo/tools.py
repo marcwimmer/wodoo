@@ -1565,7 +1565,7 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
                 branch=str(current_version()),
                 type="integrated",
             )
-            ctx.invoke(gimera_apply, repos=[str(path)])
+            ctx.invoke(gimera_apply, repos=[str(path)], no_auto_commit=True)
 
             # if not yet there, then pack into "addons_framework"
             addons_paths = manifest.get("addons_paths", [])
@@ -1574,17 +1574,19 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
                 addons_paths += [str(path)]
                 manifest["addons_paths"] = addons_paths
     if update:
-        ctx.invoke(gimera_apply, repos=[str(dest_path)], update=True)
+        ctx.invoke(
+            gimera_apply, repos=[str(dest_path)], update=True, no_auto_commit=True
+        )
     install = manifest.get("install", [])
     if modulename not in install:
         install += [modulename]
     manifest["install"] = install
 
     addons_path = str(dest_path)
-    addons_paths = manifest['addons_paths']
+    addons_paths = manifest["addons_paths"]
     if addons_path not in addons_paths:
         addons_paths.append(addons_path)
-    manifest['addons_paths'] = addons_paths
+    manifest["addons_paths"] = addons_paths
 
     manifest.rewrite()
     state = DBModules.get_meta_data(modulename)
