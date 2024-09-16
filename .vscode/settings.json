@@ -22,5 +22,5 @@
     },
     "peacock.color": "#0dafbb",
     "peacock.remoteColor": "#31b4bf",
-    "window.title": "${rootName}@${remoteName}${separator}[Branch: before_reloadscript]"
+    "window.title": "${rootName}@${remoteName}${separator}[Branch: main]"
 }
