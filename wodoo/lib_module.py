@@ -1599,10 +1599,11 @@ def zip(config, ctx, module):
 @odoo_module.command()
 @click.argument("module", required=True)
 @click.argument("repourl", required=True)
+@click.option("--update", is_flag=True)
 @click.pass_context
 @pass_config
-def download_module(config, ctx, module, repourl):
-    _make_sure_module_is_installed(ctx, config, module, repourl)
+def download_module(config, ctx, module, repourl, update):
+    _make_sure_module_is_installed(ctx, config, module, repourl, update)
     click.secho(f"Successfully downloaded and installed {module}", fg="green")
 
 

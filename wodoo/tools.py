@@ -1540,7 +1540,7 @@ def _write_file(file, content):
     return False
 
 
-def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
+def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=False):
     from .module_tools import DBModules
     from .module_tools import Modules, Module
     from .odoo_config import MANIFEST
@@ -1574,7 +1574,8 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url):
                 addons_paths += [str(path)]
                 manifest["addons_paths"] = addons_paths
     state = DBModules.get_meta_data(modulename)
-
+    if update:
+        ctx.invoke(gimera_apply, repos=[str(dest_path)], update=True)
     install = manifest.get("install", [])
     if modulename not in install:
         install += [modulename]
