@@ -1078,11 +1078,17 @@ def _merge_odoo_dockerfile(config, include_src):
         click.secho(f"Copying {dockerfile1} to {config.files['odoo_docker_file']}")
         config.files["odoo_docker_file"].write_text(Path(dockerfile1).read_text())
         for file in bashfind(config.WORKING_DIR, "Dockerfile.appendix"):
+            dir = file.parent / f"Dockerfile.appendix.dir"
             appendix = file.read_text()
             file = config.files["odoo_docker_file"]
             content = file.read_text() + "\n" + appendix
             content = content.replace("${PROJECT_NAME}", config.project_name)
             file.write_text(content)
+            # probably a dir?
+            import pudb;pudb.set_trace()
+            if dir.exists():
+                shutil.copytree(dir, config.dirs['images'] / 'odoo' / "Dockerfile.appendix.dir")
+        
 
         # append common docker config
         odoo_docker_file = config.files["odoo_docker_file"]
