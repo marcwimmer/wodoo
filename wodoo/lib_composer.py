@@ -1087,6 +1087,9 @@ def _merge_odoo_dockerfile(config, include_src):
             # probably a dir?
             if dir.exists():
                 dest = config.dirs['images'] / 'odoo' / "Dockerfile.appendix.dir"
+                if dest.exists() and dest.is_file():
+                    dest.unlink()
+                dest.mkdir(parents=True, exist_ok=True)
                 for part in dir.iterdir():
                     if part.is_file():
                         shutil.copy(part, dest)
