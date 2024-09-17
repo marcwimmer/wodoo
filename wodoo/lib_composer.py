@@ -1085,9 +1085,13 @@ def _merge_odoo_dockerfile(config, include_src):
             content = content.replace("${PROJECT_NAME}", config.project_name)
             file.write_text(content)
             # probably a dir?
-            import pudb;pudb.set_trace()
             if dir.exists():
-                shutil.copytree(dir, config.dirs['images'] / 'odoo' / "Dockerfile.appendix.dir")
+                dest = config.dirs['images'] / 'odoo' / "Dockerfile.appendix.dir"
+                for part in dir.iterdir():
+                    if part.is_file():
+                        shutil.copy(part, dest)
+                    else:
+                        shutil.copytree(part, dest / part.name)
         
 
         # append common docker config
