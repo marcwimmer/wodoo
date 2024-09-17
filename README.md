@@ -215,7 +215,15 @@ The used odoo instance must be placed in /odoo.
     ]
 }
 
+
+
 ```
+
+# Append to odoo docker file
+
+* make files like "Dockerfile.appendix" anywhere in your repo
+* to add files, put a directory "Dockerfile.appendix.dir" in the same level; you can
+  access files of it with COPY Dockerfile.appendix.dir/*
 
 # Before Reload Actions
 
