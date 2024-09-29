@@ -220,17 +220,17 @@ def rebuild(ctx, config, machines=[]):
     build(ctx, config, machines=machines, no_cache=True)
 
 
-def restart(ctx, config, machines=[]):
+def restart(ctx, config, machines=[], profile="auto"):
     machines = list(machines)
 
-    do_kill(ctx, config, machines=machines)
-    up(ctx, config, machines=machines, daemon=True)
+    do_kill(ctx, config, machines=machines, profile=profile)
+    up(ctx, config, machines=machines, daemon=True, profile=profile)
 
 
-def rm(ctx, config, machines=[]):
+def rm(ctx, config, machines=[], profile="auto"):
     __needs_docker(config)
     machines = list(machines)
-    __dc(config, ["rm", "-f"] + machines)
+    __dc(config, ["rm", "-f"] + machines, profile=profile)
 
 
 def attach(ctx, config, machine):

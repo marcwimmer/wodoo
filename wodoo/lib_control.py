@@ -228,24 +228,26 @@ def rebuild(ctx, config, machines):
 
 @docker.command()
 @click.argument("machines", nargs=-1)
+@click.option("-p", "--profile", default="auto")
 @pass_config
 @click.pass_context
-def restart(ctx, config, machines):
+def restart(ctx, config, machines, profile):
     ensure_project_name(config)
     from .lib_control_with_docker import restart as lib_restart
 
-    lib_restart(ctx, config, machines)
+    lib_restart(ctx, config, machines, profile=profile)
 
 
 @docker.command()
 @click.argument("machines", nargs=-1)
+@click.option("-p", "--profile", default="auto")
 @pass_config
 @click.pass_context
-def rm(ctx, config, machines):
+def rm(ctx, config, machines, profile):
     ensure_project_name(config)
     from .lib_control_with_docker import rm as lib_rm
 
-    lib_rm(ctx, config, machines)
+    lib_rm(ctx, config, machines, profile=profile)
 
 
 @docker.command()
