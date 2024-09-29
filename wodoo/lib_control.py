@@ -33,18 +33,19 @@ def pull(ctx, config):
 
 @docker.command()
 @click.option("-b", "--build", is_flag=True)
+@click.option("-K", "--no-kill", is_flag=True)
 @pass_config
 @click.pass_context
-def dev(ctx, config, build):
+def dev(ctx, config, build, no_kill):
     ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import dev as lib_dev
-    return lib_dev(ctx, config, build, kill=True)
+    return lib_dev(ctx, config, build, kill=not no_kill)
 
 
 @docker.command(name="ps")
 @pass_config
-def ps(config):
+def ps(config, profile):
     ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import ps as lib_ps
@@ -65,14 +66,15 @@ def execute(config, machine, args):
 @docker.command(name="kill")
 @click.argument("machines", nargs=-1)
 @click.option("-b", "--brutal", is_flag=True, help="dont wait")
+@click.option("-p", "--profile")
 @pass_config
 @click.pass_context
-def do_kill(ctx, config, machines, brutal=False):
+def do_kill(ctx, config, machines, brutal, profile):
     ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import do_kill as lib_do_kill
 
-        lib_do_kill(ctx, config, machines, brutal=False)
+        lib_do_kill(ctx, config, machines, brutal=False, profile=profile)
 
 
 @docker.command()
