@@ -45,7 +45,7 @@ def dev(ctx, config, build, no_kill):
 
 @docker.command(name="ps")
 @pass_config
-def ps(config, profile):
+def ps(config):
     ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import ps as lib_ps
