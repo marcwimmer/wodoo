@@ -223,6 +223,7 @@ def rebuild(ctx, config, machines=[]):
 def restart(ctx, config, machines=[], profile="auto"):
     machines = list(machines)
 
+    # this is faster than docker restart: tested with normal project 6.75 seconds vs. 4.8 seconds
     do_kill(ctx, config, machines=machines, profile=profile)
     up(ctx, config, machines=machines, daemon=True, profile=profile)
 
