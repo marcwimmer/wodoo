@@ -192,19 +192,15 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
     _wait_postgres(config)
 
     if no_overwrite:
-        for i in range(10):
-            try:
-                with get_conn_autoclose() as cr:
-                    if _is_db_initialized(cr):
-                        click.secho(
-                            "Database already initialized. Skipping.", fg="yellow"
-                        )
-                        return
-                    break
-            except:
-                # Error connecting to db server; hopefully at reset the server connection is
-                # stable and it was not a hick up
-                time.sleep(2)
+        try:
+            with get_conn_autoclose() as cr:
+                if _is_db_initialized(cr):
+                    click.secho(
+                        "Database already initialized. Skipping.", fg="yellow"
+                    )
+                    return
+        except:
+            abort("Could not talk to postgres server - cannot decide if db is initialized or not. Aborting")
 
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
