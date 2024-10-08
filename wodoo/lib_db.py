@@ -199,7 +199,7 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
                         "Database already initialized. Skipping.", fg="yellow"
                     )
                     return
-        except:
+        except Exception:
             abort("Could not talk to postgres server - cannot decide if db is initialized or not. Aborting")
 
     conn = config.get_odoo_conn().clone(dbname=dbname)

@@ -185,6 +185,9 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
     ensure_project_name(config)
     from .lib_control_with_docker import down as lib_down
     from .lib_db_snapshots_docker_zfs import NotZFS
+    if not config.devmode:
+        if not config.force:
+            abort("Please provide force option on non live systems")
 
     print_prod_env(config)
 
