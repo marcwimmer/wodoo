@@ -8,6 +8,7 @@ import arrow
 import pprint
 import json
 import click
+from . tools import _is_db_initialized
 from . import iscompatible
 from pathlib import Path
 from copy import deepcopy
@@ -327,7 +328,7 @@ class DBModules(object):
         if not module:
             raise Exception("no module given")
         with get_conn_autoclose() as cr:
-            if not _exists_table(cr, "ir_module_module"):
+            if _is_db_initialized(cr):
                 if raise_exception_not_initialized:
                     raise UserWarning("Database not initialized")
                 return False

@@ -1769,3 +1769,6 @@ def _parse_yaml(content):
     import yaml
 
     return yaml.safe_load(content)
+
+def _is_db_initialized(cr):
+    return _exists_table(cr, "ir_module_module")

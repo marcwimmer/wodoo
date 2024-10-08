@@ -1,22 +1,21 @@
+import time
 import subprocess
 from pathlib import Path
 import sys
-import re
-import traceback
 import os
 import arrow
 import click
+from .tools import _is_db_initialized
 from .tools import abort
-from .tools import __replace_all_envs_in_str
 from .tools import _wait_postgres
 from .tools import _dropdb
 from .tools import __dcrun, _remove_postgres_connections, _execute_sql
 from .tools import exec_file_in_path
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-from .tools import __hash_odoo_password
 from .tools import _make_sure_module_is_installed
 from .tools import print_prod_env
+from .odoo_config import get_conn_autoclose
 
 
 @cli.group(cls=AliasedGroup)
@@ -109,6 +108,7 @@ def pgcli(config, dbname, params, host, port, user, password):
         conn = config.get_odoo_conn(inside_container=True).clone(dbname=dbname)
     return _pgcli(config, conn, params, use_docker_container=True)
 
+
 @db.command()
 @click.argument("dbname", required=False)
 @click.argument("params", nargs=-1)
@@ -179,9 +179,10 @@ def _pgcli(config, conn, params, use_docker_container=None):
 @db.command(name="reset-odoo-db")
 @click.argument("dbname", required=False)
 @click.option("--do-not-install-base", is_flag=True)
+@click.option("-W", "--no-overwrite", is_flag=True)
 @pass_config
 @click.pass_context
-def reset_db(ctx, config, dbname, do_not_install_base):
+def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
     collatec = True
     dbname = dbname or config.dbname
     if not dbname:
@@ -189,6 +190,22 @@ def reset_db(ctx, config, dbname, do_not_install_base):
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
     _wait_postgres(config)
+
+    if no_overwrite:
+        for i in range(10):
+            try:
+                with get_conn_autoclose() as cr:
+                    if _is_db_initialized(cr):
+                        click.secho(
+                            "Database already initialized. Skipping.", fg="yellow"
+                        )
+                        return
+                    break
+            except:
+                # Error connecting to db server; hopefully at reset the server connection is
+                # stable and it was not a hick up
+                time.sleep(2)
+
     conn = config.get_odoo_conn().clone(dbname=dbname)
     _dropdb(config, conn)
     conn = config.get_odoo_conn().clone(dbname="postgres")
@@ -342,11 +359,13 @@ ORDER BY total_bytes DESC;
         )
     )
 
+
 @db.command(help="Export as excel")
 @click.argument("sql", required=True)
 @pass_config
 def json(config, sql):
     import json as j
+
     conn = config.get_odoo_conn()
     columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
     data2 = []
@@ -356,6 +375,7 @@ def json(config, sql):
     data = j.dumps(data2, indent=4)
     print("------------------------\n")
     print(data)
+
 
 @db.command(help="Export as excel")
 @click.argument("sql", required=True)
