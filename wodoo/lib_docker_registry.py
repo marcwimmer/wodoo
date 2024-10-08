@@ -77,6 +77,7 @@ def regpush(ctx, config):
         ctx.invoke(login)
     tags = list(_apply_tags(config))
     for tag in tags:
+        click.secho(f"Pushing tag {tag}")
         subprocess.check_call(["docker", "push", tag])
 
 
@@ -210,7 +211,8 @@ def _apply_tags(config):
         if item.get("image"):
             continue
         elif item.get("build"):
-            expected_image_name = f"{config.project_name}_{service}"
+            # Docker changed from _ to - - if doesnt work use latest docker please
+            expected_image_name = f"{config.project_name}-{service}"
         else:
             raise NotImplementedError("Only build or image is supported")
         if config.verbose:
