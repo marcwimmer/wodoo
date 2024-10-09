@@ -222,8 +222,45 @@ def _select_robot_filename(file, run_all):
         sys.exit(-1)
 
     if file:
+        # test if argument wants to use wildcart matching
+        if "*" in file:
+            wildcart_matches = []
+            for path in Path('.').glob(file):
+                wildcart_matches.append(str(path))
+
+            if len(wildcart_matches) == 0:
+                click.secho(f"No matching files for wildcart {file}", fg="red")
+                sys.exit(-1)
+
+            # only return files that have a match in testfiles
+            # as glob finds all files matching wildcart, not only valid robot test files
+            testset = []
+            for test in testfiles:
+                if str(test) in wildcart_matches:
+                    testset.append(test)
+
+            if len(testset) == 0:
+                click.secho(f"No matching tests for wildcart {file}", fg="red")
+                sys.exit(-1)
+
+            return testset
+
         match = [x for x in map(str, testfiles) if file in x]
         if len(match) > 1:
+            # test if passed file argument is a directory
+            # if so, return all robot test files located inside that folder
+            if os.path.isdir(file):
+                testset = []
+                for test in match:
+                    if test.startswith(file):
+                        testset.append(Path(test))
+
+                if len(testset) == 0:
+                    click.secho(f"No matching tests in folder {file}", fg="red")
+                    sys.exit(-1)
+
+                return testset
+
             if "/" in file:
                 match = [x for x in match if x == file]
             if len(match) > 1:
