@@ -328,7 +328,7 @@ class DBModules(object):
         if not module:
             raise Exception("no module given")
         with get_conn_autoclose() as cr:
-            if not _is_db_initialized(cr) or not _exists_table(cr, "ir_module_module"):
+            if not _is_db_initialized(cr):
                 if raise_exception_not_initialized:
                     raise UserWarning("Database not initialized")
                 return False
