@@ -77,7 +77,8 @@ jobs:
         $ODOOCMD kill || true
         $ODOOCMD -f db reset
         $ODOOCMD update crm
-        $ODOOCMD -f down
+        $ODOOCMD kill || true
+        $ODOOCMD -f down || true
 
     - name: increment version
       run: |
