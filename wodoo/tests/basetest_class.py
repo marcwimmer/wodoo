@@ -13,7 +13,6 @@ from ..lib_composer import do_reload
 from ..lib_composer import config as config_command
 from ..lib_control import build, up, down
 from ..click_config import Config
-from ..lib_db import reset_db
 from ..lib_module import update, uninstall
 from ..lib_backup import backup_db, restore_db
 from contextlib import contextmanager
@@ -53,6 +52,13 @@ class BaseTestClass:
         shutil.copy(self.script_dir / "gimera.yml", self.path)
         shutil.copy(self.script_dir / "MANIFEST", self.path)
         subprocess.check_call(["git", "init", "."], cwd=self.path)
+        subprocess.check_call(
+            ["git", "config", "init.defaultBranch", "main"], cwd=self.path
+        )
+        subprocess.check_call(["git", "add", "."], cwd=self.path)
+        subprocess.check_call(
+            ["git", "commit", "-m", "empty", "--allow-empty"], cwd=self.path
+        )
         subprocess.check_call(["gimera", "apply"], cwd=self.path)
 
         self.config = Config(force=True, project_name=self.project_name)
@@ -69,7 +75,7 @@ class BaseTestClass:
         except Exception:
             try:
                 self.run(down, ["-v"])
-            except:
+            except Exception:
                 pass
             raise
 

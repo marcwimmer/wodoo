@@ -15,6 +15,7 @@ import shutil
 import os
 import tempfile
 import click
+import glob
 
 from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
 from .odoo_config import current_version
