@@ -60,21 +60,21 @@ jobs:
         #WHY?
         pipx runpip wodoo install requests==2.31.0  || true
 
-    # - name: do some testing
-    #   run: |
-    #     TEMPODOODIR="./$(basename $(mktemp))/odoo"
-    #     mkdir -p "$TEMPODOODIR"
-    #     cd "$TEMPODOODIR"
-    #     $ODOOCMD init . "$ODOO_TEST"
-    #     docker ps
-    #     $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION
-    #     $ODOOCMD setting RUN_ODOO_CRONJOBS=0
-    #     $ODOOCMD setting RUN_CRONJOBS=0
-    #     $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
-    #     $ODOOCMD build
-    #     $ODOOCMD -f db reset
-    #     $ODOOCMD update crm
-    #     $ODOOCMD down
+    - name: do some testing
+      run: |
+        TEMPODOODIR="./$(basename $(mktemp))/odoo"
+        mkdir -p "$TEMPODOODIR"
+        cd "$TEMPODOODIR"
+        $ODOOCMD init . "$ODOO_TEST"
+        docker ps
+        $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION
+        $ODOOCMD setting RUN_ODOO_CRONJOBS=0
+        $ODOOCMD setting RUN_CRONJOBS=0
+        $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
+        $ODOOCMD build
+        $ODOOCMD -f db reset
+        $ODOOCMD update crm
+        $ODOOCMD down
 
     - name: increment version
       run: |
