@@ -18,7 +18,7 @@ jobs:
       ODOO_TEST: "16.0"
       ODOO_PYTHON_VERSION: "3.9.13"
       ODOOCMD: "/home/githubrunner_wodoo/.local/bin/odoo"
-      LAST_STABLE_VERSION: "0.5.53"
+      LAST_STABLE_VERSION: "0.5.91"
 
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -67,11 +67,11 @@ jobs:
         cd "$TEMPODOODIR"
         $ODOOCMD init . "$ODOO_TEST"
         docker ps
-        $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION
-        $ODOOCMD setting RUN_ODOO_CRONJOBS=0
-        $ODOOCMD setting RUN_CRONJOBS=0
+        $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION -R
+        $ODOOCMD setting RUN_ODOO_CRONJOBS=0 -R
+        $ODOOCMD setting RUN_CRONJOBS=0 -R
         $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
-        $ODOOCMD build
+        $ODOOCMD build 
         $ODOOCMD -f db reset
         $ODOOCMD update crm
         $ODOOCMD down
