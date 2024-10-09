@@ -1,3 +1,4 @@
+import grp
 import os
 from pwd import getpwnam  
 import sys
@@ -46,6 +47,7 @@ def _export_settings(config, forced_values):
     settings = MyConfigParser(config.files['settings'])
     if 'OWNER_UID' not in settings.keys():
         settings['OWNER_UID'] = whoami(id=True)
+    settings['DOCKER_GID'] = grp.getgrnam('docker').gr_gid
 
     # forced values:
     for k, v in forced_values.items():
