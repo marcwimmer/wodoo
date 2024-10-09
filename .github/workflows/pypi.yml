@@ -73,6 +73,7 @@ jobs:
         $ODOOCMD setting DEVMODE=1 -R
         $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
         $ODOOCMD build 
+        $ODOOCMD kill || true
         $ODOOCMD -f db reset
         $ODOOCMD update crm
         $ODOOCMD down

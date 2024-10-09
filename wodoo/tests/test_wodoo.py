@@ -31,7 +31,10 @@ class TestWodoo(BaseTestClass):
     def teardown_method(self, method):
 
         if self.path.exists():
-            shutil.rmtree(self.path)
+            try:
+                shutil.rmtree(self.path)
+            except Exception:
+                pass
 
     # def test_smoke(self):
     #     pass

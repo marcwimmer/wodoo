@@ -89,7 +89,7 @@ def remove_volumes(ctx, config, dry_run):
     ensure_project_name(config)
     if not config.devmode:
         if not config.force:
-            abort("Please provide force option on non live systems")
+            abort("Please provide force option on non dev systems")
     if not config.use_docker:
         return
     subprocess.check_call(["sync"])
