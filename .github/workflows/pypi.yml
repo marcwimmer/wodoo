@@ -62,6 +62,7 @@ jobs:
 
     - name: do some testing
       run: |
+        set -x
         TEMPODOODIR="./$(basename $(mktemp))/odoo"
         mkdir -p "$TEMPODOODIR"
         cd "$TEMPODOODIR"
