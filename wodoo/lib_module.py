@@ -438,7 +438,6 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
     help="Specify config file to use, for example config_update",
 )
 @click.option("--server-wide-modules")
-@click.option("--additional-addons-paths")
 @click.option(
     "--uninstall", is_flag=True, help="Executes just uninstallation of modules."
 )
@@ -504,7 +503,6 @@ def update(
     default_test_tags=False,
     config_file=False,
     server_wide_modules=False,
-    additional_addons_paths=False,
     uninstall=False,
     log=False,
     recover_view_error=False,
@@ -649,8 +647,6 @@ def update(
                     params += ["--test-tags=" + _effective_test_tags()]
                 if server_wide_modules:
                     params += ["--server-wide-modules", server_wide_modules]
-                if additional_addons_paths:
-                    params += ["--additional-addons-paths", additional_addons_paths]
                 if log:
                     params += [f"--log={log}"]
                 params += ["--config-file=" + config_file]
@@ -1018,19 +1014,25 @@ def show_install_state(config, suppress_error=False, missing_as_error=False):
 
 
 @odoo_module.command(name="show-addons-paths")
-def show_addons_paths():
+@pass_config
+def show_addons_paths(config):
     from .odoo_config import get_odoo_addons_paths
 
-    paths = get_odoo_addons_paths()
+    paths = get_odoo_addons_paths(
+        additional_addons_paths=config.ADDITIONAL_ADDONS_PATHS.split(",")
+    )
     for path in paths:
         click.echo(path)
 
 
 @odoo_module.command(name="show-conflicting-modules")
-def show_conflicting_modules():
+@pass_config
+def show_conflicting_modules(config):
     from .odoo_config import get_odoo_addons_paths
 
-    get_odoo_addons_paths()
+    get_odoo_addons_paths(
+        additional_addons_paths=config.ADDITIONAL_ADDONS_PATHS.split(",")
+    )
 
 
 def _exec_update(config, params, non_interactive=False, stdout=False):

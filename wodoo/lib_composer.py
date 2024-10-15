@@ -1,4 +1,5 @@
 import traceback
+import threading
 from .tools import bashfind
 import json
 import arrow
@@ -235,6 +236,7 @@ def internal_reload(
     no_gimera_apply=False,
     include_src=False,
 ):
+    threading.currentThread().config = config
     ensure_project_name(config)
     additional_docker_configuration_files = additional_docker_configuration_files or []
     defaults = {

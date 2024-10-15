@@ -3,12 +3,12 @@ from packaging.version import Version
 from packaging.requirements import Requirement
 from packaging import markers
 
-
+import threading
 import arrow
 import pprint
 import json
 import click
-from . tools import _is_db_initialized
+from .tools import _is_db_initialized
 from . import iscompatible
 from pathlib import Path
 from copy import deepcopy
@@ -642,6 +642,17 @@ def update_view_in_db(filepath, lineno):
                         exe("ir.ui.view", "write", view_ids, {"arch_db": arch})
 
 
+def _get_addons_paths():
+    from .odoo_config import get_odoo_addons_paths
+    config = getattr(threading.currentThread(), "config", None)
+    if not config:
+        paths = os.getenv("ADDITIONAL_ADDONS_PATHS", "")
+    else:
+        paths = config.ADDITIONAL_ADDONS_PATHS or ""
+    paths = list(filter(bool, map(lambda x: x.strip(), paths.split(","))))
+    return get_odoo_addons_paths(additional_addons_paths=paths)
+
+
 class Modules(object):
     def __init__(self):
         pass
@@ -657,14 +668,13 @@ class Modules(object):
     # @profile
     def _get_modules(self, no_deptree=False):
         modnames = set()
-        from .odoo_config import get_odoo_addons_paths
 
         @measure_time
         def get_all_manifests():
             """
             Returns a list of full paths of all manifests
             """
-            for path in reversed(get_odoo_addons_paths()):
+            for path in reversed(_get_addons_paths()):
                 mans = bashfind(path, name=manifest_file_names(), maxdepth=2)
                 for file in sorted(mans):
                     modname = file.parent.name
@@ -926,10 +936,10 @@ class Modules(object):
 
     def _filter_requirements(self, pydeps, python_version):
         assert isinstance(python_version, tuple)
-        str_python_version = '.'.join(map(str, python_version[:2]))
+        str_python_version = ".".join(map(str, python_version[:2]))
         environment = {
             "python_version": str_python_version,
-            "sys_platform": sys.platform
+            "sys_platform": sys.platform,
         }
 
         # keep highest version and or leaveout loosers
@@ -1236,12 +1246,11 @@ class Module(object):
 
     @classmethod
     def _get_by_name(cls, name, nocache=False, no_deptree=False):
-        from .odoo_config import get_odoo_addons_paths
 
         if isinstance(name, Module):
             name = name.name
         path = None
-        for addon_path in get_odoo_addons_paths():
+        for addon_path in _get_addons_paths():
             dir = addon_path / name
             if dir.exists():
                 path = dir
@@ -1266,7 +1275,7 @@ class Module(object):
                 pass
 
         # could be an odoo module then
-        for path in get_odoo_addons_paths():
+        for path in _get_addons_paths():
             if (path / name).resolve().is_dir():
                 try:
                     return Module(path / name)

@@ -155,15 +155,6 @@ def goto_inherited(filepath, lineno):
         print(f"FILEPATH:{filepath}:{lineno}")
 
 
-@src.command(name="show-addons-paths")
-def show_addons_paths():
-    from .odoo_config import get_odoo_addons_paths
-
-    paths = get_odoo_addons_paths(relative=True)
-    for path in paths:
-        click.echo(path)
-
-
 @src.command(name="make-modules", help="Puts all modules in /modules.txt")
 @pass_config
 def make_modules(config):
