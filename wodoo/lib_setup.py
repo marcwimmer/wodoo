@@ -77,7 +77,7 @@ def _status(config):
     click.secho("version: ", nl=False)
     click.secho(config.odoo_version, fg=color, bold=True)
     click.secho("db: ", nl=False)
-    click.secho(config.dbname, fg=color, bold=True)
+    click.secho(f"{config.dbname}@{config.db_host} (user: {config.db_user})", fg=color, bold=True)
     if config.PROXY_PORT:
         click.secho("url: ", nl=False)
         click.secho(f"{EXTERNAL_DOMAIN}:{config.PROXY_PORT}", fg=color, bold=True)
