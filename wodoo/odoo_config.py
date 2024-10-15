@@ -30,7 +30,6 @@ except Exception:
 def get_odoo_addons_paths(
     relative=False, no_extra_addons_paths=False, additional_addons_paths=False
 ):
-    import pudb;pudb.set_trace()
     m = MANIFEST()
     c = customs_dir()
     res = []
