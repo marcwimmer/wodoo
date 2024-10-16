@@ -1035,9 +1035,7 @@ def __hash_odoo_password(pwd):
     ]:
         setpw = CryptContext(schemes=["pbkdf2_sha512", "md5_crypt"])
         return setpw.encrypt(pwd)
-    elif current_version() in [
-        [17.0, 18.0],
-    ]:
+    elif current_version() in [17.0, 18.0]:
         MIN_ROUNDS = 600_000
         setpw = CryptContext(
             schemes=["pbkdf2_sha512", "plaintext"],
