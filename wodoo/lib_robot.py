@@ -250,6 +250,7 @@ def run(
         pwd = "1"
 
     def params():
+        ODOO_VERSION = str(MANIFEST()["version"])
         params = {
             "url": "http://proxy",
             "user": user,
@@ -257,6 +258,7 @@ def run(
             "password": pwd,
             "selenium_timeout": timeout,  # selenium timeout,
             "parallel": parallel,
+            "odoo_version": str(ODOO_VERSION)
         }
         if test_name:
             params["test_name"] = test_name
