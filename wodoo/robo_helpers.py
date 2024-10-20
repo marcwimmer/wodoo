@@ -199,7 +199,7 @@ def _eval_robot_output(
 
     click.secho(f"Outputs are generated in {find_results_path}", fg="yellow")
     click.secho(
-        ("Watch the logs online at: " f"http://host:{config.PROXY_PORT}/robot-output")
+        ("Watch the logs online at: " f"{config.EXTERNAL_DOMAIN or 'http://localhost'}:{config.PROXY_PORT}/robot-output")
     )
 
     for line in test_results:
