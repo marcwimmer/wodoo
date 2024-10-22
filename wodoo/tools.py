@@ -673,7 +673,8 @@ def __get_cmd(config, profile="auto"):
     else:
         cmd = config.commands["dc"]
     if profile:
-        cmd += ["--profile", profile]
+        if "--profile" not in cmd:
+            cmd += ["--profile", profile]
     cmd = [os.path.expandvars(x) for x in cmd]
     return cmd
 
