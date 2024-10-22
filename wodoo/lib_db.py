@@ -15,7 +15,9 @@ from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _make_sure_module_is_installed
 from .tools import print_prod_env
+from .tools import _exists_db
 from .odoo_config import get_conn_autoclose
+from .tools import __dc
 
 
 @cli.group(cls=AliasedGroup)
@@ -195,15 +197,33 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
         try:
             with get_conn_autoclose() as cr:
                 if _is_db_initialized(cr):
-                    click.secho(
-                        "Database already initialized. Skipping.", fg="yellow"
-                    )
+                    click.secho("Database already initialized. Skipping.", fg="yellow")
                     return
         except Exception:
-            abort("Could not talk to postgres server - cannot decide if db is initialized or not. Aborting")
+            abort(
+                "Could not talk to postgres server - cannot decide if db is initialized or not. Aborting"
+            )
 
     conn = config.get_odoo_conn().clone(dbname=dbname)
-    _dropdb(config, conn)
+    for i in range(3):
+        try:
+            _dropdb(config, conn)
+        except Exception as ex:
+            click.secho(f"Error at dropping db: {ex}", fg="red")
+            if config.run_postgres:
+                click.secho(
+                    f"Restarting postgres to remove any connections.", fg="yellow"
+                )
+                __dc(config, ["kill", "postgres"])
+                __dc(config, ["up", "-d", "postgres"])
+                _wait_postgres(config)
+        if not _exists_db(conn):
+            break
+        click.secho(
+            f"Database {conn.dbname} was not dropped at first attempt. Retrying."
+        )
+        time.sleep(3)
+
     conn = config.get_odoo_conn().clone(dbname="postgres")
     cmd2 = ""
     if collatec:
