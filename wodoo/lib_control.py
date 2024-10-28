@@ -1,3 +1,4 @@
+import time
 import click
 from subprocess import Popen, PIPE
 
@@ -108,9 +109,17 @@ def remove_volumes(ctx, config, dry_run):
                     container_id = group[1:-1]
                     subprocess.run(["docker", "kill", container_id])
                     subprocess.check_call(["docker", "rm", "-fv", container_id])
-                    output = subprocess.check_output(
-                        ["docker", "volume", "rm", "-f", vol], encoding="utf8"
-                    )
+                    counter = 0
+                    while counter < 5:
+                        try:
+                            output = subprocess.check_output(
+                                ["docker", "volume", "rm", "-f", vol], encoding="utf8"
+                            )
+                            break
+                        except:
+                            click.secho(f"Removing the volume {vol} failed - waiting and retrying.", fg="red")
+                            time.sleep(2)
+                            counter += 1
 
         if dry_run:
             click.secho("Dry Run - didnt do it.")

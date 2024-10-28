@@ -24,7 +24,8 @@ def assert_environment(config):
     exec_file_in_path('dropdb')
 
 def restore(config, snap):
-    _remove_postgres_connections(config.get_odoo_conn())
+    conn = config.get_odoo_conn()
+    _remove_postgres_connections(conn, conn.dbname)
     subprocess.call([
         exec_file_in_path('dropdb'),
         config.dbname,

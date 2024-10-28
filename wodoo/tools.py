@@ -284,8 +284,8 @@ def _execute_sql(
         return _call_cr(connection)
 
 
-def _exists_db(conn):
-    sql = f"select count(*) from pg_database where datname='{conn.dbname}'"
+def _exists_db(conn, dbname):
+    sql = f"select count(*) from pg_database where datname='{dbname}'"
     conn = conn.clone()
     conn.dbname = "postgres"
     record = _execute_sql(conn, sql, fetchone=True)
@@ -448,10 +448,10 @@ def _makedirs(path):
     path.mkdir(exist_ok=True, parents=True)
 
 
-def _remove_postgres_connections(connection, sql_afterwards=""):
+def _remove_postgres_connections(connection, dbname, sql_afterwards=""):
     click.echo(f"Removing all current connections from {connection.dbname}")
     if os.getenv("POSTGRES_DONT_DROP_ACTIVITIES", "") != "1":
-        if _exists_db(connection):
+        if _exists_db(connection, dbname):
             SQL = """
                 SELECT pg_terminate_backend(pg_stat_activity.pid)
                 FROM pg_stat_activity
@@ -472,8 +472,8 @@ def _remove_postgres_connections(connection, sql_afterwards=""):
 def __rename_db_drop_target(conn, from_db, to_db):
     if to_db in ("postgres", "template1"):
         raise Exception("Invalid: {}".format(to_db))
-    _remove_postgres_connections(conn.clone(dbname=from_db))
-    _remove_postgres_connections(conn.clone(dbname=to_db))
+    _remove_postgres_connections(conn, from_db)
+    _remove_postgres_connections(conn, to_db)
     _execute_sql(
         conn.clone(dbname="postgres"),
         (f"drop database if exists {to_db}"),
@@ -484,7 +484,7 @@ def __rename_db_drop_target(conn, from_db, to_db):
         (f"alter database {from_db} rename to {to_db};"),
         notransaction=True,
     )
-    _remove_postgres_connections(conn.clone(dbname=to_db))
+    _remove_postgres_connections(conn, to_db)
 
 
 def _merge_env_dict(env):
@@ -899,8 +899,8 @@ def _get_dump_files(backupdir, fnfilter=None):
     return rows
 
 
-def _dropdb(config, conn):
-    if _exists_db(conn):
+def _dropdb(config, conn, dbname):
+    if _exists_db(conn, dbname):
         # TODO ask for name
         if not config.force:
             questions = [
@@ -914,14 +914,14 @@ def _dropdb(config, conn):
                 )
             ]
             answer = inquirer.prompt(questions)
-            if answer["name"] != conn.dbname:
-                abort((f"Dropping aborted - you did not answer: {conn.dbname}"))
+            if answer["name"] != dbname:
+                abort((f"Dropping aborted - you did not answer: {dbname}"))
     else:
-        click.echo("Database does not exist yet: {}".format(conn.dbname))
+        click.echo(f"Database does not exist yet: {dbname}")
     click.echo("Stopping all services and creating new database")
-    _remove_postgres_connections(conn, "drop database {};".format(conn.dbname))
+    _remove_postgres_connections(conn, dbname, f"drop database {dbname};")
 
-    click.echo("Database dropped {}".format(conn.dbname))
+    click.echo(f"Database dropped {dbname}")
 
 
 def remove_webassets(conn):

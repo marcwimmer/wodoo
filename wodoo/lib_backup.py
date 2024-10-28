@@ -634,7 +634,7 @@ def _restore_dump(
         __rename_db_drop_target(
             conn.clone(dbname="postgres"), DBNAME_RESTORING, dbname or config.dbname
         )
-        _remove_postgres_connections(conn.clone(dbname=dest_db))
+        _remove_postgres_connections(conn, dest_db)
 
     finally:
         if config.run_postgres and config.use_docker:

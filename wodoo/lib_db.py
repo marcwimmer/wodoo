@@ -178,6 +178,27 @@ def _pgcli(config, conn, params, use_docker_container=None):
     _psql(config, conn, params, bin="pgcli", use_docker_container=use_docker_container)
 
 
+def aggressive_drop_db(config, conn, dbname):
+    for i in range(3):
+        try:
+            _dropdb(config, conn, dbname)
+        except Exception as ex:
+            click.secho(f"Error at dropping db at attempt {i + 1}: {ex}", fg="red")
+            if config.run_postgres:
+                click.secho(
+                    f"Restarting postgres to remove any connections.", fg="yellow"
+                )
+                __dc(config, ["kill", "postgres"])
+                __dc(config, ["up", "-d", "postgres"])
+                _wait_postgres(config)
+        if not _exists_db(conn, dbname):
+            break
+        click.secho(
+            f"Database {dbname} was not dropped at first attempt. Retrying."
+        )
+        time.sleep(3)
+
+
 @db.command(name="reset-odoo-db")
 @click.argument("dbname", required=False)
 @click.option("--do-not-install-base", is_flag=True)
@@ -185,6 +206,7 @@ def _pgcli(config, conn, params, use_docker_container=None):
 @pass_config
 @click.pass_context
 def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
+    import psycopg2
     collatec = True
     dbname = dbname or config.dbname
     if not dbname:
@@ -204,32 +226,19 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
                 "Could not talk to postgres server - cannot decide if db is initialized or not. Aborting"
             )
 
-    conn = config.get_odoo_conn().clone(dbname=dbname)
-    for i in range(3):
-        try:
-            _dropdb(config, conn)
-        except Exception as ex:
-            click.secho(f"Error at dropping db: {ex}", fg="red")
-            if config.run_postgres:
-                click.secho(
-                    f"Restarting postgres to remove any connections.", fg="yellow"
-                )
-                __dc(config, ["kill", "postgres"])
-                __dc(config, ["up", "-d", "postgres"])
-                _wait_postgres(config)
-        if not _exists_db(conn):
-            break
-        click.secho(
-            f"Database {conn.dbname} was not dropped at first attempt. Retrying."
-        )
-        time.sleep(3)
-
     conn = config.get_odoo_conn().clone(dbname="postgres")
+    aggressive_drop_db(config, conn, dbname)
+
     cmd2 = ""
     if collatec:
         cmd2 = "LC_CTYPE 'C' LC_COLLATE 'C' ENCODING 'utf8' TEMPLATE template0"
     cmd = f"create database {dbname} {cmd2} "
-    _execute_sql(conn, cmd, notransaction=True)
+    while True:
+        try:
+            _execute_sql(conn, cmd, notransaction=True)
+            break
+        except psycopg2.errors.DuplicateDatabase:
+            aggressive_drop_db(config, conn, dbname)
 
     # since odoo version 12 "-i base -d <name>" is required
     if not do_not_install_base:
