@@ -913,7 +913,8 @@ class Modules(object):
             file = module.path / "external_dependencies.txt"
 
             def extract_deps(data):
-                global_data["pip"].extend(data.get("pip", data.get("python", [])))
+                to_add = data.get("python", [])
+                global_data["pip"].extend(data.get("pip", to_add))
                 for k, v in data.items():
                     if k not in ["pip", "python"]:
                         global_data.setdefault(k, []).extend(v)
