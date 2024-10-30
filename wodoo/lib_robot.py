@@ -219,7 +219,7 @@ def run(
     os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
     modules = ["robot_utils"]
-    if current_version() < 16.0:
+    if current_version() < 15.0:
         modules.append('web_selenium')
     odoo_modules = list(odoo_modules | set(modules))
 
