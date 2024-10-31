@@ -121,7 +121,13 @@ def _get_required_odoo_modules_from_robot_file(filecontent):
         if "odoo-require:" in line:
             line = line.split(":", 1)[1].strip().split(",")
             line = [x.strip() for x in line]
-            yield from line
+            for module in line:
+                yield 'install', module
+        if "odoo-uninstall:" in line:
+            line = line.split(":", 1)[1].strip().split(",")
+            line = [x.strip() for x in line]
+            for module in line:
+                yield 'uninstall', module
 
 
 def get_odoo_modules(verbose, test_files, root_dir):

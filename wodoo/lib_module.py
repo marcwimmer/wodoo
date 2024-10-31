@@ -16,25 +16,19 @@ import os
 import tempfile
 import click
 
-from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
-from .tools import is_git_clean
 from gimera.repo import Repo
 from .tools import _make_sure_module_is_installed
-from .tools import autocleanpaper
 from .tools import get_hash
 from .tools import get_directory_hash
 from .tools import sync_folder
 from .tools import __dcrun
 from .tools import __cmd_interactive
 from .tools import __get_installed_modules
-from .tools import __concurrent_safe_write_file
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import _execute_sql
-from .tools import table_exists
 from .tools import get_services
-from .tools import __try_to_set_owner
-from .tools import measure_time, abort
+from .tools import abort
 from .tools import _update_setting
 from .tools import _get_setting
 from .tools import get_git_hash
@@ -1625,3 +1619,4 @@ def scan_addons_paths(config, ctx):
 
 Commands.register(update)
 Commands.register(show_install_state)
+Commands.register(uninstall)

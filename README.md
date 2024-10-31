@@ -219,6 +219,18 @@ The used odoo instance must be placed in /odoo.
 
 ```
 
+# RobotFramework Commands
+
+## Install modules
+
+Put #odoo-require: crm,sale_stock  in a line in your test
+
+## Uninstall modules
+
+Put #odoo-uninstall: partner_autocomplete  in a line in your test
+
+The partner autocomplete nerves for example.
+
 # Append to odoo docker file
 
 * make files like "Dockerfile.appendix" anywhere in your repo

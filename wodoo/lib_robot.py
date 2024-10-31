@@ -17,7 +17,6 @@ import tempfile
 import click
 import glob
 
-from wodoo.robo_helpers import _get_required_odoo_modules_from_robot_file
 from .odoo_config import current_version
 from .tools import is_git_clean
 from gimera.repo import Repo
@@ -220,28 +219,58 @@ def run(
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
     modules = ["robot_utils"]
     if current_version() < 15.0:
-        modules.append('web_selenium')
-    odoo_modules = list(odoo_modules | set(modules))
+        modules.append(('install', 'web_selenium'))
 
-    if odoo_modules:
+
+    install_odoo_modules, uninstall_odoo_modules = set(), set()
+    for mode, mod in odoo_modules:
+        if mode == 'install':
+            install_odoo_modules.add(mod)
+        elif mode == 'uninstall':
+            uninstall_odoo_modules.add(mod)
+        else:
+            raise NotImplementedError(mode)
+    del odoo_modules
+
+    if install_odoo_modules:
 
         def not_installed(module):
             data = DBModules.get_meta_data(module)
             if not data:
                 abort(f"Could not get state for {module}")
-            return data["state"] == "uninstalled"
+            return data["state"] != "installed"
 
-        modules_to_install = list(filter(not_installed, odoo_modules))
-        if modules_to_install:
+        install_modules_to_install = list(filter(not_installed, install_odoo_modules))
+        if install_modules_to_install:
             click.secho(
                 (
                     "Installing required modules for robot tests: "
-                    f"{','.join(modules_to_install)}"
+                    f"{','.join(install_modules_to_install)}"
                 ),
                 fg="yellow",
             )
             Commands.invoke(
-                ctx, "update", module=modules_to_install, no_dangling_check=True
+                ctx, "update", module=install_modules_to_install, no_dangling_check=True
+            )
+    if uninstall_odoo_modules:
+
+        def installed(module):
+            data = DBModules.get_meta_data(module)
+            if not data:
+                abort(f"Could not get state for {module}")
+            return data["state"] == "installed"
+
+        modules_to_uninstall = list(filter(installed, uninstall_odoo_modules))
+        if modules_to_uninstall:
+            click.secho(
+                (
+                    "Uninstalling required modules for robot tests: "
+                    f"{','.join(modules_to_uninstall)}"
+                ),
+                fg="yellow",
+            )
+            Commands.invoke(
+                ctx, "uninstall", modules=modules_to_uninstall,
             )
 
     pwd = config.DEFAULT_DEV_PASSWORD
