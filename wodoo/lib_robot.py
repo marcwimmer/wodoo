@@ -293,7 +293,8 @@ def run(
             tags, PARAM, filenames, results_file, started, output_json, keep_token_dir)
         if not res:
             count_faileds += 1
-    click.secho(f"Final stat: {count_faileds} failed of {repeat}", color='green' if not count_faileds else 'red')
+        click.secho(f"Intermediate stat: {count_faileds} failed - {i+1 - count_faileds} succeeded - to go: {repeat -i - 1}", fg='yellow')
+    click.secho(f"Final stat: {count_faileds} failed of {repeat}", fg='green' if not count_faileds else 'red')
     success_quote = (repeat - count_faileds) / repeat * 100
     if success_quote < min_success_required:
         sys.exit(-1)

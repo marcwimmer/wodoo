@@ -218,6 +218,7 @@ def _eval_robot_output(
 
     if failds:
         return False
+    return True
 
 
 def _select_robot_filename(file, run_all):
