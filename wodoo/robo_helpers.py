@@ -217,7 +217,7 @@ def _eval_robot_output(
     results_json.write_text(json.dumps(test_results, indent=4))
 
     if failds:
-        sys.exit(-1)
+        return False
 
 
 def _select_robot_filename(file, run_all):

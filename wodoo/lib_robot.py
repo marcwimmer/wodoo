@@ -169,6 +169,12 @@ Test Synchronous Pipeline No Errors
     default=20,
     help="Default timeout for wait until element is visible.",
 )
+@click.option(
+    "-r", "--repeat", default=1, type=int,
+)
+@click.option(
+    "--min-success-required", default=100, type=int, help="Minimum percent success quote - provide with repeat parameter."
+)
 @pass_config
 @click.pass_context
 def run(
@@ -185,6 +191,8 @@ def run(
     keep_token_dir,
     results_file,
     timeout,
+    repeat,
+    min_success_required,
 ):
     PARAM = param
     del param
@@ -217,10 +225,9 @@ def run(
 
     os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
-    modules = ["robot_utils"]
+    modules = [('install', "robot_utils")]
     if current_version() < 15.0:
         modules.append(('install', 'web_selenium'))
-
 
     install_odoo_modules, uninstall_odoo_modules = set(), set()
     for mode, mod in odoo_modules:
@@ -232,46 +239,70 @@ def run(
             raise NotImplementedError(mode)
     del odoo_modules
 
-    if install_odoo_modules:
+    count_faileds = 0
+    for i in range(int(repeat)):
+        if not config.force and repeat > 1:
+            abort("CAUTION: Repeat is set, but not force mode, so database is not recreated.")
 
-        def not_installed(module):
-            data = DBModules.get_meta_data(module)
-            if not data:
-                abort(f"Could not get state for {module}")
-            return data["state"] != "installed"
+        if config.force:
+            _prepare_fresh_robotest(ctx)
 
-        install_modules_to_install = list(filter(not_installed, install_odoo_modules))
-        if install_modules_to_install:
-            click.secho(
-                (
-                    "Installing required modules for robot tests: "
-                    f"{','.join(install_modules_to_install)}"
-                ),
-                fg="yellow",
-            )
-            Commands.invoke(
-                ctx, "update", module=install_modules_to_install, no_dangling_check=True
-            )
-    if uninstall_odoo_modules:
+        if install_odoo_modules:
 
-        def installed(module):
-            data = DBModules.get_meta_data(module)
-            if not data:
-                abort(f"Could not get state for {module}")
-            return data["state"] == "installed"
+            def not_installed(module):
+                data = DBModules.get_meta_data(module)
+                if not data:
+                    abort(f"Could not get state for {module}")
+                return data["state"] != "installed"
 
-        modules_to_uninstall = list(filter(installed, uninstall_odoo_modules))
-        if modules_to_uninstall:
-            click.secho(
-                (
-                    "Uninstalling required modules for robot tests: "
-                    f"{','.join(modules_to_uninstall)}"
-                ),
-                fg="yellow",
-            )
-            Commands.invoke(
-                ctx, "uninstall", modules=modules_to_uninstall,
-            )
+            install_modules_to_install = list(filter(not_installed, install_odoo_modules))
+            if install_modules_to_install:
+                click.secho(
+                    (
+                        "Installing required modules for robot tests: "
+                        f"{','.join(install_modules_to_install)}"
+                    ),
+                    fg="yellow",
+                )
+                Commands.invoke(
+                    ctx, "update", module=install_modules_to_install, no_dangling_check=True
+                )
+        if uninstall_odoo_modules:
+
+            def installed(module):
+                data = DBModules.get_meta_data(module)
+                if not data:
+                    abort(f"Could not get state for {module}")
+                return data["state"] == "installed"
+
+            modules_to_uninstall = list(filter(installed, uninstall_odoo_modules))
+            if modules_to_uninstall:
+                click.secho(
+                    (
+                        "Uninstalling required modules for robot tests: "
+                        f"{','.join(modules_to_uninstall)}"
+                    ),
+                    fg="yellow",
+                )
+                Commands.invoke(
+                    ctx, "uninstall", modules=modules_to_uninstall,
+                )
+
+        res = _run_test(
+            ctx, config, user, test_name, parallel, timeout, 
+            tags, PARAM, filenames, results_file, started, output_json, keep_token_dir)
+        if not res:
+            count_faileds += 1
+    click.secho(f"Final stat: {count_faileds} failed of {repeat}", color='green' if not count_faileds else 'red')
+    success_quote = (repeat - count_faileds) / repeat * 100
+    if success_quote < min_success_required:
+        sys.exit(-1)
+
+def _run_test(
+        ctx, config, user, test_name, parallel, timeout, tags, PARAM, 
+        filenames, results_file, started, output_json, keep_token_dir):
+    from .odoo_config import MANIFEST
+    manifest = MANIFEST()
 
     pwd = config.DEFAULT_DEV_PASSWORD
     # deprecated
@@ -316,6 +347,7 @@ def run(
         "robot",
     ]
 
+    from .odoo_config import customs_dir
     workingdir = customs_dir() / (Path(os.getcwd()).relative_to(customs_dir()))
     os.chdir(workingdir)
 
@@ -324,7 +356,7 @@ def run(
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
 
-    _eval_robot_output(
+    res = _eval_robot_output(
         config,
         output_path,
         started,
@@ -333,6 +365,13 @@ def run(
         rm_tokendir=not keep_token_dir,
         results_file=results_file,
     )
+    return res
+
+def _prepare_fresh_robotest(ctx):
+    Commands.invoke(ctx, "up", machines=['postgres'], daemon=True)
+    Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+    Commands.invoke(ctx, "reset-db")
+    Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
 
 
 @robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
@@ -362,8 +401,5 @@ def run_all(
 
     for file in files:
         click.secho(f"Running robotest {file}")
-        Commands.invoke(ctx, "up", daemon=True)
-        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
-        Commands.invoke(ctx, "reset-db")
-        Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
+        _prepare_fresh_robotest(ctx)
         ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout)
