@@ -92,15 +92,9 @@ def _collect_settings_files(config, quiet=False):
     for file in _files:
         if not Path(file).exists():
             continue
-        # click.secho(f"Using setting file: {file}", fg='blue')
-        root = Path(sys.argv[0]).parent
-        # if Path(file).relative_to(
-        try:
-            Path(file).relative_to(root)
-        except ValueError:
-            if not quiet:
-                click.secho(f">>>>>>>>>>>>>>>>>>> {file} <<<<<<<<<<<<<<<<<", fg='cyan')
-                click.secho(file.read_text())
+        if not quiet:
+            click.secho(f">>>>>>>>>>>>>>>>>>> {file} <<<<<<<<<<<<<<<<<", fg='cyan')
+            click.secho(file.read_text())
 
     return _files
 
