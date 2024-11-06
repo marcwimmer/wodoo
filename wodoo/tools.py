@@ -450,23 +450,22 @@ def _makedirs(path):
 
 def _remove_postgres_connections(connection, dbname, sql_afterwards=""):
     click.echo(f"Removing all current connections from {connection.dbname}")
-    if os.getenv("POSTGRES_DONT_DROP_ACTIVITIES", "") != "1":
-        if _exists_db(connection, dbname):
-            SQL = """
-                SELECT pg_terminate_backend(pg_stat_activity.pid)
-                FROM pg_stat_activity
-                WHERE pg_stat_activity.datname = '{}'
-                AND pid <> pg_backend_pid();
-            """.format(
-                connection.dbname, sql_afterwards
+    if os.getenv("POSTGRES_DONT_DROP_ACTIVITIES", "") == "1":
+        click.secho("It was asked to remove database sessions but POSTGRES_DONT_DROP_ACTIVITIES is set to 1 - so i wont do it")
+    if _exists_db(connection, dbname):
+        SQL = f"""
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE pg_stat_activity.datname = '{dbname}'
+            AND pid <> pg_backend_pid();
+            """
+        _execute_sql(connection.clone(dbname="postgres"), SQL, notransaction=True)
+        if sql_afterwards:
+            _execute_sql(
+                connection.clone(dbname="postgres"),
+                sql_afterwards,
+                notransaction=True,
             )
-            _execute_sql(connection.clone(dbname="postgres"), SQL, notransaction=True)
-            if sql_afterwards:
-                _execute_sql(
-                    connection.clone(dbname="postgres"),
-                    sql_afterwards,
-                    notransaction=True,
-                )
 
 
 def __rename_db_drop_target(conn, from_db, to_db):
