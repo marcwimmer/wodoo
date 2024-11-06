@@ -1,3 +1,4 @@
+import random
 from multiprocessing.dummy import Process
 import time
 import re
@@ -193,6 +194,7 @@ def run(
     timeout,
     repeat,
     min_success_required,
+    no_sysexit=False,
 ):
     PARAM = param
     del param
@@ -297,7 +299,11 @@ def run(
     click.secho(f"Final stat: {count_faileds} failed of {repeat}", fg='green' if not count_faileds else 'red')
     success_quote = (repeat - count_faileds) / repeat * 100
     if success_quote < min_success_required:
-        sys.exit(-1)
+        if not no_sysexit:
+            sys.exit(-1)
+        else:
+            return False
+    return True
 
 def _run_test(
         ctx, config, user, test_name, parallel, timeout, tags, PARAM, 
@@ -369,9 +375,9 @@ def _run_test(
     return res
 
 def _prepare_fresh_robotest(ctx):
-    Commands.invoke(ctx, "up", machines=['postgres'], daemon=True)
-    Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+    Commands.invoke(ctx, "kill", machines=['postgres'])
     Commands.invoke(ctx, "reset-db")
+    Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
 
 
@@ -382,12 +388,19 @@ def _prepare_fresh_robotest(ctx):
     default=20,
     help="Default timeout for wait until element is visible.",
 )
+@click.option(
+    "--retry",
+    required=False,
+    default=3,
+    help="If test fails - retry.",
+)
 @pass_config
 @click.pass_context
 def run_all(
     ctx,
     config,
     timeout,
+    retry,
 ):
     from .odoo_config import MANIFEST, customs_dir
     from .robo_helpers import _get_all_robottest_files
@@ -402,5 +415,13 @@ def run_all(
 
     for file in files:
         click.secho(f"Running robotest {file}")
-        _prepare_fresh_robotest(ctx)
-        ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout)
+
+        for i in range(retry):
+            try:
+                res = ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout)
+                if res:
+                    break
+            except Exception as ex:
+                retry += 1
+                click.secho(f"Retry at _prepare_fresh_robotest because of {ex}", fg='yellow')
+                time.sleep(random.randint(20, 60))
