@@ -171,10 +171,16 @@ Test Synchronous Pipeline No Errors
     help="Default timeout for wait until element is visible.",
 )
 @click.option(
-    "-r", "--repeat", default=1, type=int,
+    "-r",
+    "--repeat",
+    default=1,
+    type=int,
 )
 @click.option(
-    "--min-success-required", default=100, type=int, help="Minimum percent success quote - provide with repeat parameter."
+    "--min-success-required",
+    default=100,
+    type=int,
+    help="Minimum percent success quote - provide with repeat parameter.",
 )
 @pass_config
 @click.pass_context
@@ -204,6 +210,7 @@ def run(
     from .odoo_config import customs_dir
     from .module_tools import DBModules
     from .odoo_config import MANIFEST
+
     manifest = MANIFEST()
 
     if not config.devmode and not config.force:
@@ -227,15 +234,15 @@ def run(
 
     os.chdir(customs_dir())
     odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
-    modules = [('install', "robot_utils")]
+    modules = [("install", "robot_utils")]
     if current_version() < 15.0:
-        modules.append(('install', 'web_selenium'))
+        modules.append(("install", "web_selenium"))
 
     install_odoo_modules, uninstall_odoo_modules = set(), set()
     for mode, mod in odoo_modules:
-        if mode == 'install':
+        if mode == "install":
             install_odoo_modules.add(mod)
-        elif mode == 'uninstall':
+        elif mode == "uninstall":
             uninstall_odoo_modules.add(mod)
         else:
             raise NotImplementedError(mode)
@@ -244,7 +251,9 @@ def run(
     count_faileds = 0
     for i in range(int(repeat)):
         if not config.force and repeat > 1:
-            abort("CAUTION: Repeat is set, but not force mode, so database is not recreated.")
+            abort(
+                "CAUTION: Repeat is set, but not force mode, so database is not recreated."
+            )
 
         if config.force:
             _prepare_fresh_robotest(ctx)
@@ -257,7 +266,9 @@ def run(
                     abort(f"Could not get state for {module}")
                 return data["state"] != "installed"
 
-            install_modules_to_install = list(filter(not_installed, install_odoo_modules))
+            install_modules_to_install = list(
+                filter(not_installed, install_odoo_modules)
+            )
             if install_modules_to_install:
                 click.secho(
                     (
@@ -267,7 +278,10 @@ def run(
                     fg="yellow",
                 )
                 Commands.invoke(
-                    ctx, "update", module=install_modules_to_install, no_dangling_check=True
+                    ctx,
+                    "update",
+                    module=install_modules_to_install,
+                    no_dangling_check=True,
                 )
         if uninstall_odoo_modules:
 
@@ -287,16 +301,36 @@ def run(
                     fg="yellow",
                 )
                 Commands.invoke(
-                    ctx, "uninstall", modules=modules_to_uninstall,
+                    ctx,
+                    "uninstall",
+                    modules=modules_to_uninstall,
                 )
 
         res = _run_test(
-            ctx, config, user, test_name, parallel, timeout, 
-            tags, PARAM, filenames, results_file, started, output_json, keep_token_dir)
+            ctx,
+            config,
+            user,
+            test_name,
+            parallel,
+            timeout,
+            tags,
+            PARAM,
+            filenames,
+            results_file,
+            started,
+            output_json,
+            keep_token_dir,
+        )
         if not res:
             count_faileds += 1
-        click.secho(f"Intermediate stat: {count_faileds} failed - {i+1 - count_faileds} succeeded - to go: {repeat -i - 1}", fg='yellow')
-    click.secho(f"Final stat: {count_faileds} failed of {repeat}", fg='green' if not count_faileds else 'red')
+        click.secho(
+            f"Intermediate stat: {count_faileds} failed - {i+1 - count_faileds} succeeded - to go: {repeat -i - 1}",
+            fg="yellow",
+        )
+    click.secho(
+        f"Final stat: {count_faileds} failed of {repeat}",
+        fg="green" if not count_faileds else "red",
+    )
     success_quote = (repeat - count_faileds) / repeat * 100
     if success_quote < min_success_required:
         if not no_sysexit:
@@ -305,10 +339,24 @@ def run(
             return False
     return True
 
+
 def _run_test(
-        ctx, config, user, test_name, parallel, timeout, tags, PARAM, 
-        filenames, results_file, started, output_json, keep_token_dir):
+    ctx,
+    config,
+    user,
+    test_name,
+    parallel,
+    timeout,
+    tags,
+    PARAM,
+    filenames,
+    results_file,
+    started,
+    output_json,
+    keep_token_dir,
+):
     from .odoo_config import MANIFEST
+
     manifest = MANIFEST()
 
     pwd = config.DEFAULT_DEV_PASSWORD
@@ -325,7 +373,7 @@ def _run_test(
             "password": pwd,
             "selenium_timeout": timeout,  # selenium timeout,
             "parallel": parallel,
-            "odoo_version": str(ODOO_VERSION)
+            "odoo_version": str(ODOO_VERSION),
         }
         if test_name:
             params["test_name"] = test_name
@@ -355,6 +403,7 @@ def _run_test(
     ]
 
     from .odoo_config import customs_dir
+
     workingdir = customs_dir() / (Path(os.getcwd()).relative_to(customs_dir()))
     os.chdir(workingdir)
 
@@ -374,8 +423,9 @@ def _run_test(
     )
     return res
 
+
 def _prepare_fresh_robotest(ctx):
-    Commands.invoke(ctx, "kill", machines=['postgres'])
+    Commands.invoke(ctx, "kill", machines=["postgres"])
     Commands.invoke(ctx, "reset-db")
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
@@ -419,10 +469,17 @@ def run_all(
         for i in range(retry):
             click.secho(f"Try #{i + 1} of {retry}")
             try:
-                res = ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout, no_sysexit=True)
+                res = ctx.invoke(
+                    run,
+                    file=str(file.relative_to(customsdir)),
+                    timeout=timeout,
+                    no_sysexit=True,
+                )
                 if res:
                     break
             except Exception as ex:
                 retry += 1
-                click.secho(f"Retry at _prepare_fresh_robotest because of {ex}", fg='yellow')
+                click.secho(
+                    f"Retry at _prepare_fresh_robotest because of {ex}", fg="yellow"
+                )
                 time.sleep(random.randint(20, 60))
