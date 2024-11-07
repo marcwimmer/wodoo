@@ -419,7 +419,7 @@ def run_all(
         for i in range(retry):
             click.secho(f"Try #{i + 1} of {retry}")
             try:
-                res = ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout)
+                res = ctx.invoke(run, file=str(file.relative_to(customsdir)), timeout=timeout, no_sysexit=True)
                 if res:
                     break
             except Exception as ex:
