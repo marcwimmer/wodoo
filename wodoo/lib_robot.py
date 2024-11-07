@@ -283,6 +283,7 @@ def run(
                     module=install_modules_to_install,
                     no_dangling_check=True,
                 )
+                click.secho(f"Installed modules {','.join(install_modules_to_install)}")
         if uninstall_odoo_modules:
 
             def installed(module):
@@ -425,10 +426,12 @@ def _run_test(
 
 
 def _prepare_fresh_robotest(ctx):
+    click.secho("Preparing fresh robo test.", fg='yellow')
     Commands.invoke(ctx, "kill", machines=["postgres"])
     Commands.invoke(ctx, "reset-db")
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
+    click.secho("Preparation of tests are done.", fg='yellow')
 
 
 @robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
