@@ -147,7 +147,9 @@ def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
                     safe_stop += [machine]
 
         if safe_stop:
-            __dc(config, ["stop", "-t", "20"] + safe_stop, profile=profile)  # persist data
+            __dc(
+                config, ["stop", "-t", "20"] + safe_stop, profile=profile
+            )  # persist data
     if config.devmode:
         __dc(config, ["kill"] + list(machines), profile=profile)
     else:

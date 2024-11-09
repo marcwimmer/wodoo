@@ -366,7 +366,7 @@ def _run_test(
         pwd = "1"
 
     def params():
-        ODOO_VERSION = str(MANIFEST()["version"])
+        ODOO_VERSION = str(manifest["version"])
         params = {
             "url": "http://proxy",
             "user": user,
