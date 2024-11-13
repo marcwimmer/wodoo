@@ -10,6 +10,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
 from .tools import __replace_all_envs_in_str
 from .tools import _update_setting
+from .tools import abort
 
 
 @cli.group(cls=AliasedGroup, name="dev-env")
@@ -19,11 +20,17 @@ def turn_into_dev(config):
 
 
 @turn_into_dev.command()
-@click.argument("password")
+@click.argument("password", required=False)
+@click.option("-d", "--default", help="Set the default password", is_flag=True)
 @click.pass_context
 @pass_config
-def set_password_all_users(config, ctx, password):
+def set_password_all_users(config, ctx, password, default):
     from .odoo_config import current_version
+    if default:
+        password = config.DEFAULT_DEV_PASSWORD
+    else:
+        if not password:
+            abort("Passwort required!")
     pwd = __hash_odoo_password(password)
     conn = config.get_odoo_conn().clone()
     _execute_sql(conn, (f"update res_users set password='{pwd}'"))
@@ -72,9 +79,6 @@ def __turn_into_devdb(ctx, config, conn):
 
     myconfig = MyConfigParser(config.files["settings"])
     env = dict(map(lambda k: (k, myconfig.get(k)), myconfig.keys()))
-
-    # encrypt password
-    env["DEFAULT_DEV_PASSWORD"] = __hash_odoo_password(env["DEFAULT_DEV_PASSWORD"])
 
     sql_file = (
         config.dirs["images"]
@@ -155,17 +159,6 @@ def __turn_into_devdb(ctx, config, conn):
         value=f"http://localhost:8069",
     )
 
-    _set_dev_passwords(conn)
-
-def _set_dev_passwords(conn):
-    sql = "select login from res_users order by 1;"
-    users = _execute_sql(conn, sql, fetchall=True)
-    for user in users:
-        login = user[0]
-        pwd = __hash_odoo_password(login)
-        _execute_sql(conn, (f"update res_users set password='{pwd}' where login='{login}'"))
-    return users
-
 @turn_into_dev.command()
 @pass_config
 def prolong(config):
@@ -210,3 +203,5 @@ def update_setting(config, key, value):
     conn = config.get_odoo_conn()
     _update_setting(conn, key, value)
 
+
+Commands.register(set_password_all_users, "set-password-all-users")

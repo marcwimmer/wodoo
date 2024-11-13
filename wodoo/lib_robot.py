@@ -360,10 +360,12 @@ def _run_test(
 
     manifest = MANIFEST()
 
-    pwd = config.DEFAULT_DEV_PASSWORD
-    # deprecated
-    if pwd == "True" or pwd is True:
-        pwd = "1"
+    pwd = "robot"
+    Commands.invoke("set-password-all-users", pwd)
+    click.secho(
+        f"Password for all users will be set to {pwd}, so that login can happen.",
+        fg="yellow",
+    )
 
     def params():
         ODOO_VERSION = str(manifest["version"])
@@ -426,12 +428,12 @@ def _run_test(
 
 
 def _prepare_fresh_robotest(ctx):
-    click.secho("Preparing fresh robo test.", fg='yellow')
+    click.secho("Preparing fresh robo test.", fg="yellow")
     Commands.invoke(ctx, "kill", machines=["postgres"])
     Commands.invoke(ctx, "reset-db")
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
-    click.secho("Preparation of tests are done.", fg='yellow')
+    click.secho("Preparation of tests are done.", fg="yellow")
 
 
 @robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")

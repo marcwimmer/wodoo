@@ -60,6 +60,16 @@ def get_calling_function_variables():
     caller_frame = current_frame.f_back.f_back
     # Get the local variables of the caller
     caller_locals = caller_frame.f_locals
+
+    for k, v in current_frame.f_back.f_back.f_back.f_locals.items():
+        if k not in caller_locals:
+            caller_locals[k] = v
+    for k, v in current_frame.f_back.f_back.f_back.f_back.f_locals.items():
+        if k not in caller_locals:
+            caller_locals[k] = v
+    for k, v in current_frame.f_back.f_back.f_back.f_back.f_back.f_locals.items():
+        if k not in caller_locals:
+            caller_locals[k] = v
     return caller_locals
 
 
@@ -82,11 +92,15 @@ def odoorpc(config):
 
 def exe(*params, **kwparams):
     vars = get_calling_function_variables()
-    config = vars["config"]
-    PROXY_PORT = config.PROXY_PORT or 8069
+    try:
+        config = vars["config"]
+        PROXY_PORT = config.PROXY_PORT or 8069
+        pwd = config.DEFAULT_DEV_PASSWORD or "admin"
+    except KeyError:
+        PROXY_PORT = 8069
+        pwd = "admin"
     host = f"http://localhost:{PROXY_PORT}"
     username = "admin"
-    pwd = config.DEFAULT_DEV_PASSWORD or "admin"
     from .odoo_config import get_settings
 
     config = get_settings()
