@@ -425,45 +425,49 @@ def queuejobs(config, interval):
         last_data = data
         last_time = arrow.get()
 
+def _get_xmlid(conn, id, model):
+    where = f"model = 'ir.ui.view' and res_id={id}"
+    sql = (
+        "SELECT module||'.'|| name as xmlid, model, res_id from ir_model_data "
+        f"where {where} "
+    )
+    rows = _execute_sql(
+        conn,
+        sql=sql,
+        fetchall=True,
+        return_columns=False,
+    )
+    if rows:
+        return rows[0][0]
+    return None
+
 
 @talk.command()
 @click.option("-M", "--module")
 @click.argument("model", required=True)
 @click.argument("name", required=False)
+@click.option("-t", "--type")
 @pass_config
-def views(config, name, module, model):
+def views(config, name, module, model, type):
     conn = config.get_odoo_conn()
-
-    def _get_xmlid(id):
-        where = f"model = 'ir.ui.view' and res_id={id}"
-        sql = (
-            "SELECT module||'.'|| name as xmlid, model, res_id from ir_model_data "
-            f"where {where} "
-        )
-        rows = _execute_sql(
-            conn,
-            sql=sql,
-            fetchall=True,
-            return_columns=False,
-        )
-        if rows:
-            return rows[0][0]
-        return None
 
     where = f"model = '{model}'"
     where += "AND inherit_id is null"
     rows = _execute_sql(
         conn,
-        sql=f"select id, name from ir_ui_view where {where}",
+        sql=f"select id, name, type from ir_ui_view where {where}",
         fetchall=True,
         return_columns=True,
     )
 
     rows = list(rows)
+    if type:
+        rows[1]  = list(filter(lambda x: x[2] == type, rows[1]))
+
     rows2 = []
     for row in rows[1]:
         row = list(row)
-        row.append(_get_xmlid(row[0]))
+        row.append(_get_xmlid(conn, row[0], 'ir.ui.view'))
         rows2.append(row)
     rows[0] = list(rows[0])
     rows[0].append("xmlid")
