@@ -1,4 +1,5 @@
 import time
+from tabulate import tabulate
 from pathlib import Path
 from queue import Queue
 import threading
@@ -30,6 +31,7 @@ from .tools import pretty_xml
 from .tools import _execute_sql
 from .tools import exe
 from .tools import odoorpc
+from .tools import _output_clipboard_csv
 
 
 ADDONS_OCA = "addons_OCA"
@@ -736,6 +738,62 @@ def convert_odoo17_attrs(config, ctx, module):
             m = Module.get_by_name(m)
             if m.is_customs or not module:
                 odoo17attrs(customs_dir() / m.path)
+
+
+@src.command()
+@click.pass_context
+@click.option("-c", "--customs", is_flag=True, help="Only customized modules.")
+@pass_config
+def srcstats(config, ctx, customs):
+    from .module_tools import Modules, DBModules, Module
+    from .lib_src_replace_attrs import odoo17attrs
+
+    res = []
+
+    all_modules = _modules_overview(config)
+
+    for m in sorted(all_modules, key=lambda x: x['name']):
+        if customs and not m['is_customs']:
+            continue
+        m.pop('description')
+        res.append(m)
+
+    
+    _output_clipboard_csv(res)
+
+def _modules_overview(config):
+    from .module_tools import Module, Modules
+
+    modules = Modules()
+
+    mods = modules.get_all_modules_installed_by_manifest()
+    res = []
+    for mod in mods:
+        mod = Module.get_by_name(mod)
+        manifest = mod.manifest_dict
+        complexity = mod.calc_complexity()
+        manifest = mod.manifest_dict
+
+        combined_description = []
+        for field in ["summary", "description"]:
+            combined_description.append(manifest.get(field, ""))
+        for readme in ["README.md", "README.rst", "README.txt"]:
+            readmefile = mod.path / readme
+            if readmefile.exists():
+                combined_description.append(readmefile.read_text())
+        description = "\n".join(filter(bool, combined_description))
+        data = {
+            "name": mod.name,
+            "path": str(mod.path),
+            "license": manifest.get("license") or "",
+            "version": manifest.get("version"),
+            "lines of code": complexity["loc"],
+            "author": manifest.get("author", ""),
+            "is_customs": mod.is_customs,
+            "description": description,
+        }
+        res.append(data)
+    return res
 
 
 @src.command()

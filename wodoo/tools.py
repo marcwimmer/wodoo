@@ -1,4 +1,5 @@
 import platform
+import csv
 import inspect
 import socket
 import uuid
@@ -1784,3 +1785,10 @@ def _parse_yaml(content):
 
 def _is_db_initialized(cr):
     return _exists_table(cr, "ir_module_module")
+
+
+def _output_clipboard_csv(rows):
+    fieldnames = rows[0].keys()
+    writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)

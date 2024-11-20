@@ -175,36 +175,8 @@ def progress(config):
 @talk.command()
 @pass_config
 def modules_overview(config):
-    from .module_tools import Module, Modules
-
-    modules = Modules()
-
-    mods = modules.get_all_modules_installed_by_manifest()
-    res = []
-    for mod in mods:
-        mod = Module.get_by_name(mod)
-        manifest = mod.manifest_dict
-        complexity = mod.calc_complexity()
-        manifest = mod.manifest_dict
-
-        combined_description = []
-        for field in ["summary", "description"]:
-            combined_description.append(manifest.get(field, ""))
-        for readme in ["README.md", "README.rst", "README.txt"]:
-            readmefile = mod.path / readme
-            if readmefile.exists():
-                combined_description.append(readmefile.read_text())
-        description = "\n".join(filter(bool, combined_description))
-        data = {
-            "name": mod.name,
-            "path": str(mod.path),
-            "license": manifest.get("license") or "",
-            "version": manifest.get("version"),
-            "lines of code": complexity["loc"],
-            "author": manifest.get("author", ""),
-            "description": description,
-        }
-        res.append(data)
+    from .lib_src import _modules_overview
+    res = _modules_overview(config)
     print("===")
     print(json.dumps(res, indent=4))
 
