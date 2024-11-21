@@ -17,7 +17,7 @@ jobs:
     env:
       ODOO_TEST: "16.0"
       ODOO_PYTHON_VERSION: "3.9.13"
-      ODOOCMD: "/home/githubrunner_wodoo/.local/bin/odoo"
+      ODOOCMD: "/home/githubrunner/.local/bin/odoo"
       LAST_STABLE_VERSION: "0.5.91"
 
     concurrency:
