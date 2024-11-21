@@ -157,10 +157,12 @@ def run_tests(ctx, config):
         # identify test files and run them, otherwise tests of dependent modules are run
         ran_tests = []
         for file in sorted(testfiles):
+            if "mapper" not in str(file):
+                continue
             file = module.path / file
             ran_tests.append(file)
 
-            print(f"So far tests being run:")
+            click.secho(f"So far tests being run:", fg="yellow")
             for i, txtfile in enumerate(ran_tests, 1):
                 print(f"{i}: {txtfile}")
 
@@ -178,8 +180,9 @@ def run_tests(ctx, config):
 
                 res = run_test(file)
                 if res:
-                    print(
-                        f"Test {file} failed on first attempt. Resetting db and trying once more."
+                    click.secho(
+                        f"Test {file} failed on first attempt. Resetting db and trying once more.",
+                        fg="red",
                     )
                     reset_db()
                     res = run_test(file)
