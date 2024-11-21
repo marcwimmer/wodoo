@@ -19,6 +19,7 @@ jobs:
       ODOO_PYTHON_VERSION: "3.11.10"
       ODOOCMD: "/home/githubrunner/.local/bin/odoo"
       LAST_STABLE_VERSION: "0.5.91"
+      PROXY_PORT: 3333
 
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -73,6 +74,7 @@ jobs:
         $ODOOCMD setting RUN_CRONJOBS=0 -R
         $ODOOCMD setting DEVMODE=1 -R
         $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
+        $ODOOCMD setting PROXY_PORT=${PROXY_PORT}
         $ODOOCMD build 
         $ODOOCMD kill || true
         $ODOOCMD -f db reset
