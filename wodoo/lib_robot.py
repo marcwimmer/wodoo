@@ -361,11 +361,12 @@ def _run_test(
     manifest = MANIFEST()
 
     pwd = "robot"
-    Commands.invoke(ctx, "set-password-all-users", password=pwd)
     click.secho(
         f"Password for all users will be set to {pwd}, so that login can happen.",
         fg="yellow",
     )
+    Commands.invoke(ctx, "set-password-all-users", password=pwd)
+    click.secho("Passwords set")
 
     def params():
         ODOO_VERSION = str(manifest["version"])
@@ -408,8 +409,10 @@ def _run_test(
     from .odoo_config import customs_dir
 
     workingdir = customs_dir() / (Path(os.getcwd()).relative_to(customs_dir()))
+    click.secho(f"Changing working dir: {workingdir}")
     os.chdir(workingdir)
 
+    click.secho(f"Starting test: {params}")
     __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
