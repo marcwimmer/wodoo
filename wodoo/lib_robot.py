@@ -361,7 +361,7 @@ def _run_test(
     manifest = MANIFEST()
 
     pwd = "robot"
-    Commands.invoke("set-password-all-users", pwd)
+    Commands.invoke(ctx, "set-password-all-users", password=pwd)
     click.secho(
         f"Password for all users will be set to {pwd}, so that login can happen.",
         fg="yellow",
