@@ -157,8 +157,6 @@ def run_tests(ctx, config):
         # identify test files and run them, otherwise tests of dependent modules are run
         ran_tests = []
         for file in sorted(testfiles):
-            if "mapper" not in str(file):
-                continue
             file = module.path / file
             ran_tests.append(file)
 
