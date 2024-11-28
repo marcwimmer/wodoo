@@ -289,6 +289,9 @@ def internal_reload(
 
     _execute_after_reload(config)
 
+    if float(ODOO_VERSION) >= 17.0:
+        if any(config.ODOO_PYTHON_VERSION.startswith(x) for x in ['3.9.', '3.8.', '3.7.']):
+            abort("Invalid python version - needs at least 3.10")
 
 def _execute_after_reload(config):
     execute_script(
