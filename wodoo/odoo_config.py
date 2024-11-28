@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from collections import Counter
 import shutil
 import tempfile
 from datetime import datetime
@@ -142,7 +143,8 @@ class MANIFEST_CLASS(object):
         shutil.move(tfile, MANIFEST_FILE())
 
         if len(set(d["addons_paths"])) != len(d["addons_paths"]):
-            abort("Addons Paths contains duplicate entries!")
+            duplicates = [item for item, count in Counter(d["addons_paths"]).items() if count > 1]
+            abort(f"Addons Paths contains duplicate entries: {duplicates}")
 
     def rewrite(self):
         self._update(self._get_data())

@@ -913,6 +913,8 @@ class Modules(object):
             file = module.path / "external_dependencies.txt"
 
             def extract_deps(data):
+                if not data:
+                    return
                 to_add = data.get("python", [])
                 global_data["pip"].extend(data.get("pip", to_add))
                 for k, v in data.items():
