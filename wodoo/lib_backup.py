@@ -389,6 +389,7 @@ def _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets):
     is_flag=True,
     help="Example if some extensions are missing (replication)",
 )
+@click.option("-d", "--dbname", help="Restore as dbname")
 @click.option("-f", "--dbfilter", help="Filter db names")
 @pass_config
 @click.pass_context
@@ -404,6 +405,7 @@ def restore_db(
     verbose,
     ignore_errors,
     dbfilter,
+    dbname,
 ):
     if not filename:
         filename = _inquirer_dump_file(
