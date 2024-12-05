@@ -389,7 +389,7 @@ def _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets):
     is_flag=True,
     help="Example if some extensions are missing (replication)",
 )
-@click.option("--dbname")
+@click.option("-f", "--dbfilter", help="Filter db names")
 @pass_config
 @click.pass_context
 def restore_db(
@@ -403,11 +403,11 @@ def restore_db(
     exclude_tables,
     verbose,
     ignore_errors,
-    dbname,
+    dbfilter,
 ):
     if not filename:
         filename = _inquirer_dump_file(
-            config, "Choose filename to restore", (dbname or config.dbname)
+            config, "Choose filename to restore", (dbfilter or config.dbname)
         )
     if not filename:
         return
@@ -665,9 +665,11 @@ def _add_cronjob_scripts(config):
     }
 
 
-def _inquirer_dump_file(config, message, filter):
+def _inquirer_dump_file(config, message, _filter):
     BACKUPDIR = Path(config.dumps_path)
     __files = _get_dump_files(BACKUPDIR)
+    if _filter:
+        __files = list(filter(lambda x: _filter.lower() in x[1].lower(), __files))
     filename = inquirer.prompt([inquirer.List("filename", message, choices=__files)])
     if filename:
         filename = filename["filename"][1]
