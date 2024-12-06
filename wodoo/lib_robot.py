@@ -1,47 +1,21 @@
 import random
 from multiprocessing.dummy import Process
 import time
-import re
 import sys
 import uuid
 import arrow
-import threading
 import json
 import base64
-import subprocess
-import inquirer
-import traceback
 from datetime import datetime
-import shutil
 import os
-import tempfile
 import click
-import glob
 
 from .odoo_config import current_version
-from .tools import is_git_clean
-from gimera.repo import Repo
-from .tools import get_hash
-from .tools import get_directory_hash
-from .tools import sync_folder
 from .tools import __dcrun
-from .tools import __cmd_interactive
-from .tools import __get_installed_modules
-from .tools import __concurrent_safe_write_file
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-from .tools import _execute_sql
-from .tools import table_exists
-from .tools import get_services
-from .tools import __try_to_set_owner
-from .tools import measure_time, abort
-from .tools import _update_setting
-from .tools import _get_setting
-from .tools import get_git_hash
-from .tools import start_postgres_if_local
-from .module_tools import _determine_affected_modules_for_ir_field_and_related
+from .tools import __empty_dir
 from pathlib import Path
-from functools import partial
 
 
 @cli.group(cls=AliasedGroup)
@@ -413,6 +387,7 @@ def _run_test(
     os.chdir(workingdir)
 
     click.secho(f"Starting test: {params}")
+    click.secho(f"Len of data is: {len(data)}")
     __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
@@ -437,7 +412,6 @@ def _prepare_fresh_robotest(ctx):
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
     click.secho("Preparation of tests are done.", fg="yellow")
-
 
 @robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
 @click.option(
@@ -491,3 +465,14 @@ def run_all(
                     f"Retry at _prepare_fresh_robotest because of {ex}", fg="yellow"
                 )
                 time.sleep(random.randint(20, 60))
+
+
+@robot.command()
+@pass_config
+@click.pass_context
+def cleanup(ctx, config):
+    output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
+    if not output_path.exists():
+        return
+    __empty_dir(output_path, user_out=False)
+    click.secho(f"Cleaned {output_path}")
