@@ -408,9 +408,7 @@ def restore_db(
     dbname,
 ):
     if not filename:
-        filename = _inquirer_dump_file(
-            config, "Choose filename to restore", (dbfilter or config.dbname)
-        )
+        filename = _inquirer_dump_file(config, "Choose filename to restore", dbfilter)
     if not filename:
         return
     if not (dbname or config.dbname):
