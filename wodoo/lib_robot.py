@@ -15,8 +15,10 @@ from .tools import __dcrun
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __empty_dir
+from .tools import abort
 from pathlib import Path
 
+ROBOT_UTILS_GIT = "marcwimmer/odoo-robot_utils"
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -49,15 +51,15 @@ def setup(ctx, config):
 
     content = yaml.safe_load(open(customs_dir() / "gimera.yml", "r"))
     for branch in content["repos"]:
-        if "marcwimmer/odoo-robot_util" in branch["url"]:
+        if ROBOT_UTILS_GIT in branch["url"]:
             break
     else:
         content["repos"].append(
             {
-                "branch": "${VERSION}",
+                "branch": "main",
                 "path": "addons_robot",
                 "type": "integrated",
-                "url": "git@github.com:marcwimmer/odoo-robot_utils",
+                "url": f"git@github.com:{ROBOT_UTILS_GIT}",
             }
         )
         yaml.dump(content, open(customs_dir() / "gimera.yml", "w"))
@@ -74,9 +76,10 @@ def setup(ctx, config):
     from gimera.gimera import apply as gimera
 
     ctx.invoke(gimera, recursive=True, update=True, missing=True)
-    click.secho(
-        "Create now your first robo test with 'odoo robot new smoketest", fg="green"
-    )
+    if os.getenv("SILENT_ROBOT_SETUP") != "1":
+        click.secho(
+            "Create now your first robo test with 'odoo robot new smoketest", fg="green"
+        )
 
 
 @robot.command(name="new")
@@ -84,26 +87,50 @@ def setup(ctx, config):
 @pass_config
 @click.pass_context
 def do_new(ctx, config, name):
-    from .odoo_config import MANIFEST, customs_dir
+    from .odoo_config import customs_dir
+
+    os.environ['SILENT_ROBOT_SETUP'] = '1'
+    ctx.invoke(setup)
 
     testdir = customs_dir() / "tests"
     testdir.mkdir(exist_ok=True)
 
-    content = """*** Settings ***
-Documentation    Tests button click at instance which starts pipelines. 
-Resource         ../addons_robot/robot_utils/keywords/odoo_ee.robot
-Test Setup       Setup Test
+    content = f"""# odoo-require: robot_utils
+# odoo-uninstall: partner_autocomplete
+
+*** Settings ***
+Documentation    {name}
+Resource         ../../addons_robot/robot_utils/keywords/odoo.robot
+Resource         ../../addons_robot/robot_utils/keywords/tools.robot
+Resource         ../../addons_robot/robot_utils/keywords/wodoo.robot
+Test Setup       Setup Smoketest
+
 
 *** Test Cases ***
-Test Synchronous Pipeline No Errors
-	Log To Console  Testing it
+Buy Something and change amount
+    # Search for the admin
+    Odoo Load Data    ../data/products.xml 
+    MainMenu          purchase.menu_purchase_root
+    Odoo Button       Create
+    WriteInField      partner_id                                A-Vendor DE
+    Wait To Click     //a[contains(text(), 'Add a product')]
+    WriteInField      product_id                                Product Stock Simple    parent=order_line
+    WriteInField      product_qty                               50                      parent=order_line
+    FormSave
+    Screenshot
+    Odoo Button       name=button_confirm
 
+*** Keywords ***
+Setup Smoketest
+    Login
 
-    """
+"""
     testfile = testdir / f"{name}.robot"
+    if testfile.exists():
+        abort(f"{testfile} already exists.")
     testfile.write_text(content)
-    click.secho("Created file: ", fg="green")
-    click.secho(testfile)
+    reltestfile = testfile.relative_to(customs_dir())
+    click.secho(f"\n\nRun the test with: robot run {reltestfile}", fg='green')
 
 
 @robot.command()
