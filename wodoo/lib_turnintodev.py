@@ -8,6 +8,7 @@ from .tools import _execute_sql
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __hash_odoo_password
+from .tools import __verify_password
 from .tools import __replace_all_envs_in_str
 from .tools import _update_setting
 from .tools import abort
@@ -26,6 +27,7 @@ def turn_into_dev(config):
 @pass_config
 def set_password_all_users(config, ctx, password, default):
     from .odoo_config import current_version
+
     if default:
         password = config.DEFAULT_DEV_PASSWORD
     else:
@@ -33,9 +35,18 @@ def set_password_all_users(config, ctx, password, default):
             abort("Passwort required!")
     pwd = __hash_odoo_password(password)
     conn = config.get_odoo_conn().clone()
-    _execute_sql(conn, (f"update res_users set password='{pwd}'"))
+    sql = "select login, password from res_users"
+    for user in _execute_sql(conn, sql, fetchall=True):
+        if not __verify_password(password, user[1]):
+            sql = f"update res_users set password='{pwd}' where login='{user[0]}'"
+            _execute_sql(conn, sql)
     if current_version() in [11.0]:
-        _execute_sql(conn, (f"update res_users set password_crypt='{pwd}'"))
+        _execute_sql(
+            conn,
+            (
+                f"update res_users set password_crypt='{pwd}' where password_crypt <> '{pwd}'"
+            ),
+        )
 
 
 @turn_into_dev.command()
@@ -158,6 +169,7 @@ def __turn_into_devdb(ctx, config, conn):
         key="report.url",
         value=f"http://localhost:8069",
     )
+
 
 @turn_into_dev.command()
 @pass_config

@@ -1,4 +1,5 @@
 import platform
+import passlib
 import csv
 import inspect
 import socket
@@ -1034,8 +1035,7 @@ def __remove_tree(dir, retry=3, interval=2):
     if E:
         raise E
 
-
-def __hash_odoo_password(pwd):
+def _get_crypt_context():
     from .odoo_config import current_version
 
     if current_version() in [
@@ -1048,18 +1048,26 @@ def __hash_odoo_password(pwd):
         15.0,
         16.0,
     ]:
-        setpw = CryptContext(schemes=["pbkdf2_sha512", "md5_crypt"])
-        return setpw.encrypt(pwd)
+        return CryptContext(schemes=["pbkdf2_sha512", "md5_crypt"])
     elif current_version() in [17.0, 18.0]:
         MIN_ROUNDS = 600_000
-        setpw = CryptContext(
+        return CryptContext(
             schemes=["pbkdf2_sha512", "plaintext"],
             deprecated=["auto"],
             pbkdf2_sha512__rounds=max(MIN_ROUNDS, 0),
         )
-        return setpw.encrypt(pwd)
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(current_version())
+
+def __hash_odoo_password(pwd):
+    return _get_crypt_context().encrypt(pwd)
+
+def __verify_password(pwd, hash):
+    try:
+        valid, replacement = _get_crypt_context().verify_and_update(pwd, hash)
+    except passlib.exc.UnknownHashError:
+        return False
+    return valid
 
 
 def abort(msg, nr=1):
