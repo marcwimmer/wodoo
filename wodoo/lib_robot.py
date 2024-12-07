@@ -100,9 +100,9 @@ def do_new(ctx, config, name):
 
 *** Settings ***
 Documentation    {name}
-Resource         ../../addons_robot/robot_utils/keywords/odoo.robot
-Resource         ../../addons_robot/robot_utils/keywords/tools.robot
-Resource         ../../addons_robot/robot_utils/keywords/wodoo.robot
+Resource         ../addons_robot/robot_utils/keywords/odoo.robot
+Resource         ../addons_robot/robot_utils/keywords/tools.robot
+Resource         ../addons_robot/robot_utils/keywords/wodoo.robot
 Test Setup       Setup Smoketest
 
 
