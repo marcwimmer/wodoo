@@ -113,7 +113,7 @@ Buy Something and change amount
     MainMenu          purchase.menu_purchase_root
     Odoo Button       Create
     WriteInField      partner_id                                A-Vendor DE
-    Wait To Click     //a[contains(text(), 'Add a product')]
+    Odoo Button       text=Add a product
     WriteInField      product_id                                Product Stock Simple    parent=order_line
     WriteInField      product_qty                               50                      parent=order_line
     FormSave

@@ -41,12 +41,8 @@ def set_password_all_users(config, ctx, password, default):
             sql = f"update res_users set password='{pwd}' where login='{user[0]}'"
             _execute_sql(conn, sql)
     if current_version() in [11.0]:
-        _execute_sql(
-            conn,
-            (
-                f"update res_users set password_crypt='{pwd}' where password_crypt <> '{pwd}'"
-            ),
-        )
+        sql = f"update res_users set password_crypt=password"
+        _execute_sql(conn, sql)
 
 
 @turn_into_dev.command()
