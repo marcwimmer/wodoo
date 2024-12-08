@@ -178,6 +178,11 @@ Setup Smoketest
     type=int,
 )
 @click.option(
+    "-R",
+    "--repeat-no-init",
+    is_flag=True,
+)
+@click.option(
     "--min-success-required",
     default=100,
     type=int,
@@ -200,6 +205,7 @@ def run(
     results_file,
     timeout,
     repeat,
+    repeat_no_init,
     min_success_required,
     no_sysexit=False,
 ):
@@ -252,9 +258,10 @@ def run(
     count_faileds = 0
     for i in range(int(repeat)):
         if not config.force and repeat > 1:
-            abort(
-                "CAUTION: Repeat is set, but not force mode, so database is not recreated."
-            )
+            if not repeat_no_init:
+                abort(
+                    "CAUTION: Repeat is set, but not force mode, so database is not recreated."
+                )
 
         if config.force:
             _prepare_fresh_robotest(ctx)
