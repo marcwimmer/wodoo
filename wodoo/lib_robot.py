@@ -95,7 +95,7 @@ def do_new(ctx, config, name):
     testdir = customs_dir() / "tests"
     testdir.mkdir(exist_ok=True)
 
-    content = f"""# odoo-require: robot_utils
+    content = f"""# odoo-require: robot_utils,purchase
 # odoo-uninstall: partner_autocomplete
 
 *** Settings ***
@@ -109,13 +109,13 @@ Test Setup       Setup Smoketest
 *** Test Cases ***
 Buy Something and change amount
     # Search for the admin
-    Odoo Load Data    ../data/products.xml 
+    # Odoo Load Data    ../data/products.xml 
     MainMenu          purchase.menu_purchase_root
     Odoo Button       Create
-    WriteInField      partner_id                                A-Vendor DE
+    WriteInField      partner_id                     A-Vendor DE
     Odoo Button       text=Add a product
-    WriteInField      product_id                                Product Stock Simple    parent=order_line
-    WriteInField      product_qty                               50                      parent=order_line
+    WriteInField      product_id                     Storage Box    parent=order_line
+    WriteInField      product_qty                    50             parent=order_line
     FormSave
     Screenshot
     Odoo Button       name=button_confirm
@@ -361,7 +361,7 @@ def _run_test(
 
     manifest = MANIFEST()
 
-    pwd = "robot"
+    pwd = "admin"
     click.secho(
         f"Password for all users will be set to {pwd}, so that login can happen.",
         fg="yellow",
