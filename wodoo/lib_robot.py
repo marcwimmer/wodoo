@@ -1,3 +1,4 @@
+import subprocess
 import random
 from multiprocessing.dummy import Process
 import time
@@ -421,8 +422,13 @@ def _run_test(
     os.chdir(workingdir)
 
     click.secho(f"Starting test: {params}")
-    click.secho(f"Len of data is: {len(data)}")
-    __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
+    if os.getenv("IS_COBOT_CONTAINER") == "1":
+        proc = subprocess.run(
+            ['/opt/robot/robotest.py'],
+            input=data.decode("utf-8")
+        )
+    else:
+        __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
