@@ -189,6 +189,7 @@ Setup Smoketest
     type=int,
     help="Minimum percent success quote - provide with repeat parameter.",
 )
+@click.option("-d", "--debug", help="Use Visual Code to debug debugpy - connect the created profile.")
 @pass_config
 @click.pass_context
 def run(
@@ -209,6 +210,7 @@ def run(
     repeat_no_init,
     min_success_required,
     no_sysexit=False,
+    debug=False,
 ):
     PARAM = param
     del param
@@ -364,10 +366,15 @@ def _run_test(
     started,
     output_json,
     keep_token_dir,
+    debug=False,
+    browser=None
 ):
     from .odoo_config import MANIFEST
+    headless = os.getenv("IS_COBOT_CONTAINER") != "1"
 
     manifest = MANIFEST()
+    if not browser:
+        browser = 'firefox'
 
     pwd = "admin"
     click.secho(
@@ -387,6 +394,8 @@ def _run_test(
             "selenium_timeout": timeout,  # selenium timeout,
             "parallel": parallel,
             "odoo_version": str(ODOO_VERSION),
+            "headless": headless,
+            "browser": browser,
         }
         if test_name:
             params["test_name"] = test_name
@@ -406,10 +415,11 @@ def _run_test(
             "test_files": list(map(str, filenames)),
             "token": token,
             "results_file": results_file or "",
+            "debug": debug,
             "params": params(),
         }
     )
-    data = base64.b64encode(data.encode("utf-8"))
+    data = base64.b64encode(data.encode("utf-8")).decode('utf8')
 
     params = [
         "robot",
@@ -423,12 +433,13 @@ def _run_test(
 
     click.secho(f"Starting test: {params}")
     if os.getenv("IS_COBOT_CONTAINER") == "1":
-        proc = subprocess.run(
-            ['/opt/robot/robotest.py'],
-            input=data.decode("utf-8")
+        Path("/tmp/archive").write_text(data)
+        subprocess.run(
+            ['/usr/bin/python3', '/opt/robot/robotest.py'], env=os.environ,
         )
     else:
-        __dcrun(config, params, pass_stdin=data.decode("utf-8"), interactive=True)
+        __dcrun(config, params, pass_stdin=data, interactive=True)
+    del data
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
@@ -482,6 +493,9 @@ def run_all(
         abort("Devmode required to run robotests")
     customsdir = customs_dir()
 
+    if debug:
+        _setup_visual_code_robot(ctx, config)
+
     files = _get_all_robottest_files()
     files = [customsdir / file for file in files]
 
@@ -516,3 +530,37 @@ def cleanup(ctx, config):
         return
     __empty_dir(output_path, user_out=False)
     click.secho(f"Cleaned {output_path}")
+
+def _setup_visual_code_robot(ctx, config):
+    from .odoo_config import customs_dir
+    path = customs_dir() / ".vscode" / 'launch.json'
+    if not path.exists():
+        config = {
+            "version": "0.2.0",
+            "configurations": [],
+        }
+    else:
+        config = json.loads(path.read_text())
+    name = "Robot Framework Debugger (local attach)"
+
+    target_conf = {
+            "name": name,
+            "type": "robotframework-lsp",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/home/parallels/projects/hpn"
+                }
+            ]
+    }
+    conf2 = []
+    for conf in config.get('configurations', []):
+        if name == conf['name']:
+            continue
+        conf2.append(conf)
+    config['configurations'].append(target_conf)
