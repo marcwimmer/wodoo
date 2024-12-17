@@ -547,9 +547,10 @@ def _setup_visual_code_robot(ctx, config):
         config = json.loads(path.read_text())
     name = "Robot Framework Debugger (local attach)"
 
+    # "type": "robotframework-lsp",
     target_conf = {
             "name": name,
-            "type": "robotframework-lsp",
+            "type": "python",
             "request": "attach",
             "connect": {
                 "host": "localhost",
