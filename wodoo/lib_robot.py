@@ -189,7 +189,7 @@ Setup Smoketest
     type=int,
     help="Minimum percent success quote - provide with repeat parameter.",
 )
-@click.option("-d", "--debug", help="Use Visual Code to debug debugpy - connect the created profile.")
+@click.option("-d", "--debug", is_flag=True,help="Use Visual Code to debug debugpy - connect the created profile.")
 @pass_config
 @click.pass_context
 def run(
@@ -332,6 +332,7 @@ def run(
             started,
             output_json,
             keep_token_dir,
+            debug=debug,
         )
         if not res:
             count_faileds += 1
@@ -375,6 +376,9 @@ def _run_test(
     manifest = MANIFEST()
     if not browser:
         browser = 'firefox'
+
+    if debug:
+        _setup_visual_code_robot(ctx, config)
 
     pwd = "admin"
     click.secho(
@@ -564,3 +568,4 @@ def _setup_visual_code_robot(ctx, config):
             continue
         conf2.append(conf)
     config['configurations'].append(target_conf)
+    path.write_text(json.dumps(config, indent=4))
