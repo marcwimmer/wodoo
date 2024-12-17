@@ -567,5 +567,6 @@ def _setup_visual_code_robot(ctx, config):
         if name == conf['name']:
             continue
         conf2.append(conf)
-    config['configurations'].append(target_conf)
+    conf2.insert(0, target_conf)
+    config['configurations'] = conf2
     path.write_text(json.dumps(config, indent=4))
