@@ -13,6 +13,7 @@ import click
 
 from .odoo_config import current_version
 from .tools import __dcrun
+from .tools import __dc  # NOQA
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __empty_dir
@@ -20,6 +21,7 @@ from .tools import abort
 from pathlib import Path
 
 ROBOT_UTILS_GIT = "marcwimmer/odoo-robot_utils"
+
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -90,7 +92,7 @@ def setup(ctx, config):
 def do_new(ctx, config, name):
     from .odoo_config import customs_dir
 
-    os.environ['SILENT_ROBOT_SETUP'] = '1'
+    os.environ["SILENT_ROBOT_SETUP"] = "1"
     ctx.invoke(setup)
 
     testdir = customs_dir() / "tests"
@@ -131,7 +133,7 @@ Setup Smoketest
         abort(f"{testfile} already exists.")
     testfile.write_text(content)
     reltestfile = testfile.relative_to(customs_dir())
-    click.secho(f"\n\nRun the test with: robot run {reltestfile}", fg='green')
+    click.secho(f"\n\nRun the test with: robot run {reltestfile}", fg="green")
 
 
 @robot.command()
@@ -189,7 +191,12 @@ Setup Smoketest
     type=int,
     help="Minimum percent success quote - provide with repeat parameter.",
 )
-@click.option("-d", "--debug", is_flag=True,help="Use Visual Code to debug debugpy - connect the created profile.")
+@click.option(
+    "-d",
+    "--debug",
+    is_flag=True,
+    help="Use Visual Code to debug debugpy - connect the created profile.",
+)
 @pass_config
 @click.pass_context
 def run(
@@ -368,14 +375,15 @@ def _run_test(
     output_json,
     keep_token_dir,
     debug=False,
-    browser=None
+    browser=None,
 ):
     from .odoo_config import MANIFEST
+
     headless = os.getenv("IS_COBOT_CONTAINER") != "1"
 
     manifest = MANIFEST()
     if not browser:
-        browser = 'firefox'
+        browser = "firefox"
 
     if debug:
         _setup_visual_code_robot(ctx, config)
@@ -423,7 +431,7 @@ def _run_test(
             "params": params(),
         }
     )
-    data = base64.b64encode(data.encode("utf-8")).decode('utf8')
+    data = base64.b64encode(data.encode("utf-8")).decode("utf8")
 
     params = [
         "robot",
@@ -439,7 +447,8 @@ def _run_test(
     if os.getenv("IS_COBOT_CONTAINER") == "1":
         Path("/tmp/archive").write_text(data)
         subprocess.run(
-            ['/usr/bin/python3', '/opt/robot/robotest.py'], env=os.environ,
+            ["/usr/bin/python3", "/opt/robot/robotest.py"],
+            env=os.environ,
         )
     else:
         __dcrun(config, params, pass_stdin=data, interactive=True)
@@ -467,6 +476,7 @@ def _prepare_fresh_robotest(ctx):
     Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
     Commands.invoke(ctx, "update", "", tests=False, no_dangling_check=True)
     click.secho("Preparation of tests are done.", fg="yellow")
+
 
 @robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
 @click.option(
@@ -535,9 +545,11 @@ def cleanup(ctx, config):
     __empty_dir(output_path, user_out=False)
     click.secho(f"Cleaned {output_path}")
 
+
 def _setup_visual_code_robot(ctx, config):
     from .odoo_config import customs_dir
-    path = customs_dir() / ".vscode" / 'launch.json'
+
+    path = customs_dir() / ".vscode" / "launch.json"
     if not path.exists():
         config = {
             "version": "0.2.0",
@@ -549,25 +561,32 @@ def _setup_visual_code_robot(ctx, config):
 
     # "type": "robotframework-lsp",
     target_conf = {
-            "name": name,
-            "type": "python",
-            "request": "attach",
-            "connect": {
-                "host": "localhost",
-                "port": 5678
-            },
-            "pathMappings": [
-                {
-                    "localRoot": "${workspaceFolder}",
-                    "remoteRoot": "/home/parallels/projects/hpn"
-                }
-            ]
+        "name": name,
+        "type": "python",
+        "request": "attach",
+        "connect": {"host": "localhost", "port": 5678},
+        "pathMappings": [
+            {
+                "localRoot": "${workspaceFolder}",
+                "remoteRoot": "/home/parallels/projects/hpn",
+            }
+        ],
     }
     conf2 = []
-    for conf in config.get('configurations', []):
-        if name == conf['name']:
+    for conf in config.get("configurations", []):
+        if name == conf["name"]:
             continue
         conf2.append(conf)
     conf2.insert(0, target_conf)
-    config['configurations'] = conf2
+    config["configurations"] = conf2
     path.write_text(json.dumps(config, indent=4))
+
+
+@robot.command(help="Access cobot on http://<host>/cobot")
+@pass_config
+@click.pass_context
+def start_cobot(ctx, config):
+    __dc(config, ["up", "-d", "novnc_cobot", "cobot", "proxy"])
+
+    click.secho(f"Access cobot at: ")
+    click.secho(f"\n{config.EXTERNAL_DOMAIN}:{config.PROXY_PORT}/cobot\n\n", fg="green", bold=True)
