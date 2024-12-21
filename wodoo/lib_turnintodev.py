@@ -44,6 +44,9 @@ def set_password_all_users(config, ctx, password, default):
         sql = f"update res_users set password_crypt=password"
         _execute_sql(conn, sql)
 
+    # update a possible robot file also
+    Commands.invoke(ctx, 'robot:make-var-file', userpassword=password)
+
 
 @turn_into_dev.command()
 @click.argument("password")

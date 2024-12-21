@@ -590,3 +590,30 @@ def start_cobot(ctx, config):
 
     click.secho(f"Access cobot at: ")
     click.secho(f"\n{config.EXTERNAL_DOMAIN}:{config.PROXY_PORT}/cobot\n\n", fg="green", bold=True)
+
+
+@robot.command(help="Creates .robot-vars")
+@click.option("-P", "--userpassword", required=False)
+@pass_config
+@click.pass_context
+def make_variable_file(ctx, config, userpassword=None):
+    host = os.getenv("ROBO_ODOO_HOST") or config.EXTERNAL_DOMAIN 
+    url = f"http://{host}:{config.PROXY_PORT}"
+    from .odoo_config import customs_dir
+    path = customs_dir() / ".robot-vars"
+    if not path.exists():
+        path.write_text("{}")
+    data = json.loads(path.read_text())
+    data.setdefault("TOKEN", f'manualrun-{customs_dir().name}')
+    if userpassword:
+        data['ODOO_PASSWORD'] = userpassword
+    data['ODOO_URL'] = url
+    data['ODOO_USER'] = 'admin'
+    data['ODOO_DB'] = config.DBNAME
+    data['ODOO_VERSION'] = str(current_version())
+    data['TEST_RUN_INDEX'] = 0
+    data["TEST_DIR"] = str(customs_dir() / 'robot-output')
+    Path(data["TEST_DIR"]).mkdir(exist_ok=True)
+    path.write_text(json.dumps(data, indent=4))
+
+Commands.register(make_variable_file, 'robot:make-var-file')

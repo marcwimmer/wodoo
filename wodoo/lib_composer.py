@@ -289,6 +289,9 @@ def internal_reload(
 
     _execute_after_reload(config)
 
+    # update a possible robot file also
+    Commands.invoke(ctx, 'robot:make-var-file')
+
     if float(ODOO_VERSION) >= 17.0:
         if any(config.ODOO_PYTHON_VERSION.startswith(x) for x in ['3.9.', '3.8.', '3.7.']):
             abort("Invalid python version - needs at least 3.10")
