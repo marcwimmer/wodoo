@@ -98,36 +98,12 @@ def do_new(ctx, config, name):
     testdir = customs_dir() / "tests"
     testdir.mkdir(exist_ok=True)
 
-    content = f"""# odoo-require: robot_utils,purchase
-# odoo-uninstall: partner_autocomplete
-
-*** Settings ***
-Documentation    {name}
-Resource         ../addons_robot/robot_utils/keywords/odoo.robot
-Resource         ../addons_robot/robot_utils/keywords/tools.robot
-Resource         ../addons_robot/robot_utils/keywords/wodoo.robot
-Test Setup       Setup Smoketest
-
-
-*** Test Cases ***
-Buy Something and change amount
-    # Search for the admin
-    # Odoo Load Data    ../data/products.xml 
-    MainMenu          purchase.menu_purchase_root
-    Odoo Button       Create
-    WriteInField      partner_id                     A-Vendor DE
-    Odoo Button       text=Add a product
-    WriteInField      product_id                     Storage Box    parent=order_line
-    WriteInField      product_qty                    50             parent=order_line
-    FormSave
-    Screenshot
-    Odoo Button       name=button_confirm
-
-*** Keywords ***
-Setup Smoketest
-    Login
-
-"""
+    content_file = (
+        customs_dir() / "addons_robot" / "robot_utils" / "tests" / "test_template.robot"
+    )
+    if not content_file.exists():
+        raise Exception(f"File not found: {content_file}")
+    content = content_file.read_text()
     testfile = testdir / f"{name}.robot"
     if testfile.exists():
         abort(f"{testfile} already exists.")
@@ -589,7 +565,11 @@ def start_cobot(ctx, config):
     __dc(config, ["up", "-d", "novnc_cobot", "cobot", "proxy"])
 
     click.secho(f"Access cobot at: ")
-    click.secho(f"\n{config.EXTERNAL_DOMAIN}:{config.PROXY_PORT}/cobot\n\n", fg="green", bold=True)
+    click.secho(
+        f"\n{config.EXTERNAL_DOMAIN}:{config.PROXY_PORT}/cobot\n\n",
+        fg="green",
+        bold=True,
+    )
 
 
 @robot.command(help="Creates .robot-vars")
@@ -597,23 +577,25 @@ def start_cobot(ctx, config):
 @pass_config
 @click.pass_context
 def make_variable_file(ctx, config, userpassword=None):
-    host = os.getenv("ROBO_ODOO_HOST") or config.EXTERNAL_DOMAIN 
+    host = os.getenv("ROBO_ODOO_HOST") or config.EXTERNAL_DOMAIN
     url = f"http://{host}:{config.PROXY_PORT}"
     from .odoo_config import customs_dir
+
     path = customs_dir() / ".robot-vars"
     if not path.exists():
         path.write_text("{}")
     data = json.loads(path.read_text())
-    data.setdefault("TOKEN", f'manualrun-{customs_dir().name}')
+    data.setdefault("TOKEN", f"manualrun-{customs_dir().name}")
     if userpassword:
-        data['ODOO_PASSWORD'] = userpassword
-    data['ODOO_URL'] = url
-    data['ODOO_USER'] = 'admin'
-    data['ODOO_DB'] = config.DBNAME
-    data['ODOO_VERSION'] = str(current_version())
-    data['TEST_RUN_INDEX'] = 0
-    data["TEST_DIR"] = str(customs_dir() / 'robot-output')
+        data["ODOO_PASSWORD"] = userpassword
+    data["ODOO_PORT"] = int(config.PROXY_PORT)
+    data["ODOO_USER"] = "admin"
+    data["ODOO_DB"] = config.DBNAME
+    data["ODOO_VERSION"] = str(current_version())
+    data["TEST_RUN_INDEX"] = 0
+    data["TEST_DIR"] = str(customs_dir() / "robot-output")
     Path(data["TEST_DIR"]).mkdir(exist_ok=True)
     path.write_text(json.dumps(data, indent=4))
 
-Commands.register(make_variable_file, 'robot:make-var-file')
+
+Commands.register(make_variable_file, "robot:make-var-file")
