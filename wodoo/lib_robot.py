@@ -18,6 +18,7 @@ from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
 from .tools import __empty_dir
 from .tools import abort
+from .tools import __assure_gitignore
 from pathlib import Path
 
 ROBOT_UTILS_GIT = "marcwimmer/odoo-robot_utils"
@@ -51,6 +52,7 @@ def setup(ctx, config):
     from .module_tools import Module
     from .odoo_config import MANIFEST, customs_dir
     import yaml
+
 
     content = yaml.safe_load(open(customs_dir() / "gimera.yml", "r"))
     for branch in content["repos"]:
@@ -596,6 +598,8 @@ def make_variable_file(ctx, config, userpassword=None):
     data["TEST_DIR"] = str(customs_dir() / "robot-output")
     Path(data["TEST_DIR"]).mkdir(exist_ok=True)
     path.write_text(json.dumps(data, indent=4))
+
+    __assure_gitignore(customs_dir() / ".gitignore", ".robot-vars")
 
 
 Commands.register(make_variable_file, "robot:make-var-file")

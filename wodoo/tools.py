@@ -676,7 +676,7 @@ def get_docker_version():
     docker = search_env_path("docker")
     version = subprocess.check_output([docker, "--version"], encoding="utf8").strip()
     # support for stripping debian specific version suffixes
-    version = re.sub("\+dfsg[0-9]*,", "", version)
+    version = re.sub(r"\+dfsg[0-9]*,", "", version)
     # continue with normal version parsing
     version = list(map(int, version.split(" ")[2].replace(",", "").split(".")))
     return version
@@ -1132,8 +1132,10 @@ def __assure_gitignore(gitignore_file, content):
     if not p.exists():
         p.write_text(content + "\n")
         return
+    content = content.strip()
+    filecontent = gitignore_file.read_text().strip() + "\n"
     exists = [
-        l for l in gitignore_file.read_text().splitlines() if l.strip() == content
+        l for l in filecontent.splitlines() if l.strip() == content
     ]
     if not exists:
         with p.open("a") as f:
