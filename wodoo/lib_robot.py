@@ -587,7 +587,7 @@ def make_variable_file(ctx, config, userpassword=None):
     if not path.exists():
         path.write_text("{}")
     data = json.loads(path.read_text())
-    data.setdefault("TOKEN", f"manualrun-{customs_dir().name}")
+    data.setdefault("TOKEN", 1)
     if userpassword:
         data["ODOO_PASSWORD"] = userpassword
     data["ODOO_PORT"] = int(config.PROXY_PORT)
