@@ -13,6 +13,18 @@ from .odoo_config import MANIFEST, current_version, customs_dir
 from .tools import _execute_sql
 from .tools import _get_setting
 
+def _stringify_translated_dict(v):
+    if isinstance(v, dict):
+        res = []
+        for k, d in v.items():
+            if k != 'en_US':
+                continue
+            res.append(d)
+            # res.append(f"{k}: {d}")
+        return ', '.join(res)
+    else:
+        return v
+
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -201,9 +213,9 @@ def menus(config, name):
         _execute_sql(
             conn,
             sql=(
-                f"SELECT id FROM ir_ui_menu WHERE name ILIKE '%{name}%' "
+                f"SELECT id FROM ir_ui_menu WHERE name::text ILIKE '%{name}%' "
                 f" UNION "
-                f"SELECT res_id FROM ir_model_data WHERE model = 'ir.ui.menu' AND name ILIKE '%{name}%'"
+                f"SELECT res_id FROM ir_model_data WHERE model = 'ir.ui.menu' AND name::text ILIKE '%{name}%'"
             ),
             fetchall=True,
             return_columns=False,
@@ -235,7 +247,7 @@ def menus(config, name):
     for row in rows[1]:
         xml_id = _get_xml_id(conn, "ir.ui.menu", row[0])
         row = list(row)
-        path = "/".join(map(lambda x: x[1], reversed(list(get_parents(row[0])))))
+        path = "/".join(map(lambda x: _stringify_translated_dict(x[1]), reversed(list(get_parents(row[0])))))
         row.insert(0, xml_id)
         row.insert(0, path)
         row = row[:2]
