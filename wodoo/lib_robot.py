@@ -590,6 +590,7 @@ def make_variable_file(ctx, config, userpassword=None):
     data.setdefault("TOKEN", 1)
     if userpassword:
         data["ROBO_ODOO_PASSWORD"] = userpassword
+    data.setdefault("ROBO_ODOO_PASSWORD", "admin")
     data["ROBO_ODOO_PORT"] = int(config.PROXY_PORT)
     data["ROBO_ODOO_USER"] = "admin"
     data["ROBO_ODOO_DB"] = config.DBNAME
