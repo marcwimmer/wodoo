@@ -589,11 +589,11 @@ def make_variable_file(ctx, config, userpassword=None):
     data = json.loads(path.read_text())
     data.setdefault("TOKEN", 1)
     if userpassword:
-        data["ODOO_PASSWORD"] = userpassword
-    data["ODOO_PORT"] = int(config.PROXY_PORT)
-    data["ODOO_USER"] = "admin"
-    data["ODOO_DB"] = config.DBNAME
-    data["ODOO_VERSION"] = str(current_version())
+        data["ROBO_ODOO_PASSWORD"] = userpassword
+    data["ROBO_ODOO_PORT"] = int(config.PROXY_PORT)
+    data["ROBO_ODOO_USER"] = "admin"
+    data["ROBO_ODOO_DB"] = config.DBNAME
+    data["ROBO_ODOO_VERSION"] = current_version()
     data["TEST_RUN_INDEX"] = 0
     data["TEST_DIR"] = str(customs_dir() / "robot-output")
     Path(data["TEST_DIR"]).mkdir(exist_ok=True)
