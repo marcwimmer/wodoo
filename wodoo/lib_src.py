@@ -484,7 +484,7 @@ def grab_views(config, ctx):
     root = customs_dir() / "src" / "views"
     odoo = odoorpc(config)
 
-    sql = f"select id, name, arch_db, model from ir_ui_view"
+    sql = f"select id, name, arch_db, model, priority from ir_ui_view"
     conn = config.get_odoo_conn()
     rows = _execute_sql(conn, sql, fetchall=True)
 
@@ -507,14 +507,17 @@ def grab_views(config, ctx):
                         p = round(count / len(rows) * 100, 1)
                         click.secho(f"...threading progress {p}%", fg="yellow")
 
-                    xml = odoo.env['ir.ui.view'].read([view[0]], ["arch_db"], context={"lang": lang})[0]['arch_db']
+                    viewdb = odoo.env['ir.ui.view'].read([view[0]], ["arch_db", "priority", "active"], context={"lang": lang})[0]
+                    xml = viewdb['arch_db']
+                    prio = viewdb['priority']
+                    active = 'on' if viewdb['active'] else 'off'
                     xmlid = _get_xml_id(config, "ir.ui.view", view[0])
                     model = view[3] or "no-model"
                     name = view[1]
                     id = view[0]
 
                     if xmlid:
-                        filepath = root / f"{model}.xmlid.{xmlid}.lang.{lang}.xml"
+                        filepath = root / f"{model}.xmlid.{xmlid}.lang.{lang}.{prio}.{active}.xml"
                     else:
                         filepath = (
                             root
