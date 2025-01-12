@@ -776,7 +776,7 @@ def _file2env(filepath, out_dict=None):
 
 
 def _get_bash_for_machine(machine):
-    return "bash"
+    return "sh"
 
 
 def __get_installed_modules(config):
