@@ -175,8 +175,9 @@ def recreate(ctx, config, machines=[]):
     __dc(config, ["up", "--no-start", "--force-recreate"] + machines)
 
 
-def up(ctx, config, machines=[], daemon=False, remove_orphans=True, profile="auto"):
+def up(ctx, config, machines=[], daemon=False, remove_orphans=True, profile="all"):
     machines = list(machines)
+    from .consts import resolve_profiles
 
     options = [
         # '--remove-orphans', # lost data with that; postgres volume suddenly new after rm?
@@ -187,12 +188,11 @@ def up(ctx, config, machines=[], daemon=False, remove_orphans=True, profile="aut
     if remove_orphans:
         options += ["--remove-orphans"]
     dc_options = []
-    if profile:
-        dc_options += ["--profile", profile]
-
     if not machines and config.run_postgres and daemon and config.USE_DOCKER:
         _start_postgres_before(config)
-    __dc(config, dc_options + ["up"] + options + machines)
+    for profile in resolve_profiles(profile):
+        dc_options2 = dc_options + ["--profile", profile]
+        __dc(config, dc_options2 + ["up"] + options + machines)
 
 
 def down(ctx, config, machines=[], volumes=False, remove_orphans=True):
