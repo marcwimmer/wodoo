@@ -363,8 +363,8 @@ def _run_test(
     if not browser:
         browser = "firefox"
 
-    if debug:
-        _setup_visual_code_robot(ctx, config)
+    # if debug:
+    #     _setup_visual_code_robot(ctx, config)
 
     pwd = "admin"
     click.secho(
