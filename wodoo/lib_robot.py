@@ -485,8 +485,8 @@ def run_all(
         abort("Devmode required to run robotests")
     customsdir = customs_dir()
 
-    if debug:
-        _setup_visual_code_robot(ctx, config)
+    # if debug:
+    #     _setup_visual_code_robot(ctx, config)
 
     files = _get_all_robottest_files()
     files = [customsdir / file for file in files]
