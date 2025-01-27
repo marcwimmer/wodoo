@@ -361,7 +361,7 @@ def _run_test(
 
     manifest = MANIFEST()
     if not browser:
-        browser = "firefox"
+        browser = "chrome"
 
     # if debug:
     #     _setup_visual_code_robot(ctx, config)
@@ -434,6 +434,7 @@ def _run_test(
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
+    Commands.invoke(ctx, "restart", machines=["seleniumdriver"])
 
     res = _eval_robot_output(
         config,
