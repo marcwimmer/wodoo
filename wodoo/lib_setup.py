@@ -72,6 +72,8 @@ def status(config):
 def _status(config):
     color = "yellow"
     EXTERNAL_DOMAIN = config.EXTERNAL_DOMAIN
+    if not EXTERNAL_DOMAIN:
+        click.secho("No external domain configured, please set: EXTERNAL_DOMAIN", fg="red")
     click.secho("projectname: ", nl=False)
     click.secho(config.project_name, fg=color, bold=True)
     click.secho("version: ", nl=False)
