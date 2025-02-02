@@ -361,10 +361,10 @@ def _run_test(
 
     manifest = MANIFEST()
     if not browser:
-        browser = "firefox"
+        browser = "chrome"
 
-    if debug:
-        _setup_visual_code_robot(ctx, config)
+    # if debug:
+    #     _setup_visual_code_robot(ctx, config)
 
     pwd = "admin"
     click.secho(
@@ -381,7 +381,7 @@ def _run_test(
             "user": user,
             "dbname": config.DBNAME,
             "password": pwd,
-            "selenium_timeout": timeout,  # selenium timeout,
+            "SELENIUM_TIMEOUT": timeout,  # selenium timeout,
             "parallel": parallel,
             "odoo_version": str(ODOO_VERSION),
             "headless": headless,
@@ -434,6 +434,7 @@ def _run_test(
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
+    Commands.invoke(ctx, "restart", machines=["seleniumdriver"])
 
     res = _eval_robot_output(
         config,
@@ -485,8 +486,8 @@ def run_all(
         abort("Devmode required to run robotests")
     customsdir = customs_dir()
 
-    if debug:
-        _setup_visual_code_robot(ctx, config)
+    # if debug:
+    #     _setup_visual_code_robot(ctx, config)
 
     files = _get_all_robottest_files()
     files = [customsdir / file for file in files]
