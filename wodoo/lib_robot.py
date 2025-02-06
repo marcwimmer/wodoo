@@ -80,11 +80,28 @@ def setup(ctx, config):
 
     from gimera.gimera import apply as gimera
 
+    _setup_robot_env(config, ctx) 
+
     ctx.invoke(gimera, recursive=True, update=True, missing=True)
     if os.getenv("SILENT_ROBOT_SETUP") != "1":
         click.secho(
             "Create now your first robo test with 'odoo robot new smoketest", fg="green"
         )
+
+def _setup_robot_env(config, ctx):
+    # e.g. for robotcode extension used in vscdoe
+    path = Path(os.path.expanduser("~/.robotenv"))
+    reqfile = config.dirs['images'] / 'robot' /  "requirements.txt"
+
+    if not path.exists():
+        click.secho("Setting up virtual environment for robotframework", fg="yellow")
+        subprocess.run(["python3", "-m", "venv", path], check=True)
+
+    click.secho("Installing requirements for robotframework", fg="yellow")
+    click.secho(reqfile.read_text(), fg='yellow')
+    subprocess.run([str(path / "bin" / "pip"), "install", "-r", reqfile], check=True)
+
+    
 
 
 @robot.command(name="new")
