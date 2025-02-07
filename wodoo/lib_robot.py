@@ -605,7 +605,7 @@ def make_variable_file(ctx, config, userpassword=None):
     if not path.exists():
         path.write_text("{}")
     data = json.loads(path.read_text())
-    data.setdefault("TOKEN", 1)
+    data.setdefault("TOKEN", 100)
     if userpassword:
         data["ROBO_ODOO_PASSWORD"] = userpassword
     data.setdefault("ROBO_ODOO_PASSWORD", "admin")
