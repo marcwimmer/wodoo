@@ -1,9 +1,7 @@
 """
-To work the volumes folder must be a child of a zfs filesystem:
+To be able to do snapshots: the volumes folder must be a child of a zfs filesystem:
 zfs create zfs_pool1/docker
 zfs create zfs_pool1/docker/volumes
-
-set /etc/odoo/settings ZFS_PATH_VOLUMES=zfs_pool1/docker/volumes  then
 
 
 zfs list -o name,usedbychildren     # 
@@ -17,6 +15,7 @@ better: zfs get -H -o value usedbychildren docker/volumes  mit -1 oder nicht
 """
 
 import inquirer
+import time
 import os
 import json
 from .tools import abort
@@ -96,6 +95,50 @@ def _get_path(config):
 CACHE_ZFS_PATH = None
 
 
+def check_correct_zfs_setup(config):
+    # get mountpoint of zfs pool or zfs
+    PATH = docker_volume_path()
+    if not __is_zfs_fs(PATH):
+        return
+    zfspool_or_zfsvolume = _get_zfs_pool_or_zfs_parent(PATH)
+    zfspool_mountpath = (
+        subprocess.check_output(
+            ["zfs", "get", "-H", "-o", "value", "mountpoint", zfspool_or_zfsvolume],
+            encoding="utf8",
+        )
+        .splitlines()[-1]
+        .strip()
+    )
+    relative_path_to_mountpath = Path(PATH).relative_to(zfspool_mountpath)
+
+    if relative_path_to_mountpath.parts:
+        abort(
+            "\nZFS Misconfiguration detected\n------------------------------------\n"
+            "There mustn't be any relative path "
+            f'between the zfs pool or parent zfs "{zfspool_or_zfsvolume}" \nand the mountpoint '
+            f"{PATH}/somevolume. \n"
+            f"To solve this, create a zfs mounted at {PATH} e.g. with \n"
+            "zfs create pool1/docker_volumes \n"
+            "zfs set compression=on pool1/docker_volumes \n"
+            f"zfs set mountpoint={PATH} pool1/docker_volumes \n"
+            "\n\n"
+            "And restart docker."
+        )
+
+
+def _get_zfs_pool_or_zfs_parent(path):
+    try:
+        findmnt = subprocess.check_output(
+            ["findmnt", "--target", path, "--output", "SOURCE"], encoding="utf8"
+        ).splitlines()
+    except subprocess.CalledProcessError:
+        abort(f"No zfs pool found for {path}")
+    if not findmnt:
+        abort(f"No zfs pool found for {path}")
+    zfspool = findmnt[1].strip()
+    return zfspool
+
+
 def _get_zfs_path(config):
     """
     takes the postgresname and translates:
@@ -108,14 +151,7 @@ def _get_zfs_path(config):
     if CACHE_ZFS_PATH is None:
         PATH = docker_volume_path()
         postgresname = __get_postgres_volume_name(config)
-        try:
-            findmnt = subprocess.check_output(
-                ["findmnt", "--target", PATH, "--output", "SOURCE"], encoding="utf8"
-            ).splitlines()
-        except subprocess.CalledProcessError:
-            abort(f"No zfs pool found for {PATH}")
-        if not findmnt:
-            abort(f"No zfs pool found for {PATH}")
+        zfspool = _get_zfs_pool_or_zfs_parent(PATH)
 
         fstype = subprocess.check_output(
             ["findmnt", "--target", PATH, "--output", "FSTYPE"], encoding="utf8"
@@ -123,10 +159,11 @@ def _get_zfs_path(config):
         if fstype[1].strip() != "zfs":
             abort(f"No zfs pool found for {PATH}")
 
+        check_correct_zfs_setup(config)
+
         # TARGET                  SOURCE        FSTYPE OPTIONS
         # /var/lib/docker/volumes dockervolumes zfs    rw,relatime,xattr,noacl,casesensitive
-        zfsfolder = findmnt[1].strip()
-        CACHE_ZFS_PATH = str(Path(zfsfolder) / postgresname)
+        CACHE_ZFS_PATH = str(Path(zfspool) / postgresname)
     return CACHE_ZFS_PATH
 
 
@@ -209,7 +246,7 @@ def assert_environment(config):
 
 def _turn_into_subvolume(config):
     """
-    Makes a zfs pool out of a path.
+    Makes a zfs volume out of a path.
     """
     if config.NAMED_ODOO_POSTGRES_VOLUME:
         abort("Not compatible with NAMED_ODOO_POSTGRES_VOLUME by now.")
@@ -322,16 +359,17 @@ def restore(config, name):
         subprocess.check_call(["sudo", zfs, "rename", zfs_full_path, full_next_path])
     snap_name = snapshot["fullpath"].split("@")[-1]
     snapshot_path = _get_zfs_path_for_snap_name(config, snap_name)
-    subprocess.check_call(
-        [
-            "sudo",
-            zfs,
-            "clone",
-            snapshot_path,
-            zfs_full_path,
-        ]
-    )
     __dc(config, ["rm", "-f"] + ["postgres"])
+    cmd = [
+        "sudo",
+        zfs,
+        "clone",
+        snapshot_path,
+        zfs_full_path,
+    ]
+    subprocess.check_call(cmd)
+    click.secho(f"Restore command:")
+    click.secho(" ".join(map(str, cmd)), fg="yellow")
     __dc(config, ["up", "-d"] + ["postgres"])
 
 
@@ -375,12 +413,16 @@ def remove_volume(config):
 
         fullpath = translate_poolPath_to_fullPath(Path(path).parent) / Path(path).name
         if fullpath.exists() or "@" in str(fullpath):
-            subprocess.check_call(
-                ["sudo", zfs, "destroy", "-R", path],
-                encoding="utf8",
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-            )
+            try:
+                subprocess.check_call(
+                    ["sudo", zfs, "destroy", "-R", path],
+                    encoding="utf8",
+                    stderr=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                )
+            except:
+                click.secho(f"Failed to destroy zfs dataset at {path}.", fg="red")
+                time.sleep(1)
             click.secho(f"Removed: {path}", fg="yellow")
         else:
             click.secho(f"{path} did not exist and so wasn't removed.")
