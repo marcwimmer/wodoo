@@ -253,6 +253,7 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
             no_update_module_list=True,
             non_interactive=True,
             no_outdated_modules=True,
+            no_scripts=True,
         )
 
 

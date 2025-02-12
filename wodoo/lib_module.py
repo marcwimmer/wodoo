@@ -16,6 +16,7 @@ import os
 import tempfile
 import click
 
+from copy import deepcopy
 from gimera.repo import Repo
 from .tools import _make_sure_module_is_installed
 from .tools import get_hash
@@ -377,6 +378,23 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
         i18n=i18n,
     )
 
+@odoo_module.command()
+@click.argument(
+    "module", nargs=-1, required=False, shell_complete=_get_available_modules
+)
+@pass_config
+@click.pass_context
+def make_sure_module_is_installed(ctx, config, module):
+    from .module_tools import Modules, DBModules, Module
+    if not module:
+        abort("Please provide some modules.")
+    installed_modules = DBModules.get_all_installed_modules()
+    for mod in module:
+        if mod not in installed_modules:
+            ctx.invoke(update, module=[mod])
+        else:
+            click.secho(f"Module '{mod}' already installed.", fg="green")
+
 
 @odoo_module.command()
 @click.argument(
@@ -476,6 +494,10 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
     is_flag=False,
     help="directs stdout to given file",
 )
+@click.option(
+    "--no-scripts",
+    is_flag=True,
+)
 @pass_config
 @click.pass_context
 def update(
@@ -503,6 +525,7 @@ def update(
     recover_view_error=False,
     no_outdated_modules=False,
     stdout=False,
+    no_scripts=False,
 ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -561,6 +584,11 @@ def update(
         abort("Conflict: parameter test-tags and default-test-tags")
 
     start_postgres_if_local(ctx, config)
+    manifest = MANIFEST()
+    if manifest.get("before-odoo-update", []) and not no_scripts:
+        if os.getenv('NO_BEFORE_ODOO_COMMAND') != "1":
+            click.secho("Running before-odoo-update", fg="yellow")
+            _exec_commands(ctx, config, manifest.get("before-odoo-update", []))
 
     def _perform_install(module):
         if since_git_sha and module:
@@ -722,7 +750,6 @@ def update(
     if not uninstall:
         _perform_install(module)
 
-    manifest = MANIFEST()
     _uninstall_devmode_modules(ctx, config, manifest)
 
     all_modules = (
@@ -746,6 +773,13 @@ def update(
     duration = (arrow.get() - started).total_seconds()
     date = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
     click.secho(f"Update done at {date} - duration {duration}s", fg="yellow")
+
+def _exec_commands(ctx, config, commands):
+    for command in commands:
+        cmd = [sys.executable, sys.argv[0]] + command
+        env = deepcopy(os.environ)
+        env['NO_BEFORE_ODOO_COMMAND'] = "1"
+        subprocess.run(cmd, check=True, env=env)
 
 
 def _uninstall_devmode_modules(ctx, config, manifest):

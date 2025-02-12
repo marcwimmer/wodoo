@@ -208,6 +208,9 @@ The used odoo instance must be placed in /odoo.
         "helpdesk_security",
         "visitreports"
     ],
+    "before-odoo-update": [
+      ["update", "make-sure", "stock_delivery"]
+    ],
     "addons_paths": [
         "odoo/odoo/addons",
         "odoo/addons",
