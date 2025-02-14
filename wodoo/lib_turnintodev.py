@@ -47,6 +47,16 @@ def set_password_all_users(config, ctx, password, default):
     # update a possible robot file also
     Commands.invoke(ctx, 'robot:make-var-file', userpassword=password)
 
+@turn_into_dev.command()
+@click.argument("username", required=True)
+@click.argument("password", required=True)
+@click.pass_context
+@pass_config
+def user_password(config, ctx, username, password):
+    pwd = __hash_odoo_password(password)
+    conn = config.get_odoo_conn().clone()
+    _execute_sql(conn, (f"update res_users set password='{pwd}' where login='{username}'"))
+    click.secho(f"Password set to {pwd} for user {username}", fg="green")
 
 @turn_into_dev.command()
 @click.argument("password")
