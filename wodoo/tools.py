@@ -1802,3 +1802,18 @@ def _output_clipboard_csv(rows):
     writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
     writer.writeheader()
     writer.writerows(rows)
+
+def _get_available_robottests(ctx, param, incomplete):
+    from .robo_helpers import _get_all_robottest_files
+    from .odoo_config import customs_dir
+
+    path = customs_dir() or Path(os.getcwd())
+    path = path / (Path(os.getcwd()).relative_to(path))
+    testfiles = list(map(str, _get_all_robottest_files(path))) or []
+    if incomplete:
+        if "/" in incomplete:
+            testfiles = list(filter(lambda x: str(x).startswith(incomplete), testfiles))
+        else:
+            testfiles = list(filter(lambda x: incomplete in x, testfiles))
+    return sorted(testfiles)
+

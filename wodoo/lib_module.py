@@ -378,6 +378,7 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
         i18n=i18n,
     )
 
+
 @odoo_module.command()
 @click.argument(
     "module", nargs=-1, required=False, shell_complete=_get_available_modules
@@ -386,6 +387,7 @@ def update2(ctx, config, no_dangling_check, non_interactive, recover_view_error,
 @click.pass_context
 def make_sure_module_is_installed(ctx, config, module):
     from .module_tools import Modules, DBModules, Module
+
     if not module:
         abort("Please provide some modules.")
     installed_modules = DBModules.get_all_installed_modules()
@@ -586,7 +588,7 @@ def update(
     start_postgres_if_local(ctx, config)
     manifest = MANIFEST()
     if manifest.get("before-odoo-update", []) and not no_scripts:
-        if os.getenv('NO_BEFORE_ODOO_COMMAND') != "1":
+        if os.getenv("NO_BEFORE_ODOO_COMMAND") != "1":
             click.secho("Running before-odoo-update", fg="yellow")
             _exec_commands(ctx, config, manifest.get("before-odoo-update", []))
 
@@ -774,11 +776,12 @@ def update(
     date = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
     click.secho(f"Update done at {date} - duration {duration}s", fg="yellow")
 
+
 def _exec_commands(ctx, config, commands):
     for command in commands:
         cmd = [sys.executable, sys.argv[0]] + command
         env = deepcopy(os.environ)
-        env['NO_BEFORE_ODOO_COMMAND'] = "1"
+        env["NO_BEFORE_ODOO_COMMAND"] = "1"
         subprocess.run(cmd, check=True, env=env)
 
 
@@ -1650,6 +1653,9 @@ def scan_addons_paths(config, ctx):
         res.add(path.parent.parent.relative_to(root))
     for item in sorted(res):
         click.secho(str(item))
+
+
+
 
 
 Commands.register(update)

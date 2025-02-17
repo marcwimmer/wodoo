@@ -19,6 +19,7 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import __empty_dir
 from .tools import abort
 from .tools import __assure_gitignore
+from .tools import _get_available_robottests
 from pathlib import Path
 
 ROBOT_UTILS_GIT = "marcwimmer/odoo-robot_utils"
@@ -28,21 +29,6 @@ ROBOT_UTILS_GIT = "marcwimmer/odoo-robot_utils"
 @pass_config
 def robot(config):
     pass
-
-
-def _get_available_robottests(ctx, param, incomplete):
-    from .robo_helpers import _get_all_robottest_files
-    from .odoo_config import customs_dir
-
-    path = customs_dir() or Path(os.getcwd())
-    path = path / (Path(os.getcwd()).relative_to(path))
-    testfiles = list(map(str, _get_all_robottest_files(path))) or []
-    if incomplete:
-        if "/" in incomplete:
-            testfiles = list(filter(lambda x: str(x).startswith(incomplete), testfiles))
-        else:
-            testfiles = list(filter(lambda x: incomplete in x, testfiles))
-    return sorted(testfiles)
 
 
 @robot.command()
@@ -93,9 +79,10 @@ def _setup_robot_env(config, ctx):
     path = Path(os.path.expanduser("~/.robotenv"))
     reqfile = config.dirs['images'] / 'robot' /  "requirements.txt"
 
-    if not path.exists():
-        click.secho("Setting up virtual environment for robotframework", fg="yellow")
-        subprocess.run(["python3", "-m", "venv", path], check=True)
+    if path.exists():
+        return
+    click.secho("Setting up virtual environment for robotframework", fg="yellow")
+    subprocess.run(["python3", "-m", "venv", path], check=True)
 
     click.secho("Installing requirements for robotframework", fg="yellow")
     click.secho(reqfile.read_text(), fg='yellow')
@@ -622,3 +609,4 @@ def make_variable_file(ctx, config, userpassword=None):
 
 
 Commands.register(make_variable_file, "robot:make-var-file")
+Commands.register(run, "robot:run")
