@@ -100,10 +100,18 @@ def run(config, ctx):
         abort("Please use the force mode!")
     robotest_file = data['robotest_file']
 
-    Commands.invoke(ctx, "kill", machines=["postgres"])
-    Commands.invoke(ctx, "reset-db")
-    Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
-    Commands.invoke(ctx, "update", data['next'], tests=False, no_dangling_check=True)
+    def _reset():
+        Commands.invoke(ctx, "kill", machines=["postgres"])
+        Commands.invoke(ctx, "reset-db")
+        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+        Commands.invoke(ctx, "update", data['next'], tests=False, no_dangling_check=True)
+    _reset()
+
+    def _uninstall(module):
+        try:
+            Commands.invoke(ctx, "uninstall", module, tests=False, no_dangling_check=True)
+        except:
+            _reset()
 
     while data['next']:
         import pudb
@@ -116,7 +124,7 @@ def run(config, ctx):
             )
             if result:
                 ctx.invoke(good)
-                Commands.invoke(ctx, "uninstall", module, tests=False, no_dangling_check=True)
+                _uninstall(module)
             else:
                 data.setdefault('current_try', 0)
                 if data['current_try', 0] < data['max_retries']:
@@ -127,7 +135,7 @@ def run(config, ctx):
                     if data['stop_after_first_error']:
                         break
                     else:
-                        Commands.invoke(ctx, "uninstall", module, tests=False, no_dangling_check=True)
+                        _uninstall(module)
         else:
             click.secho("Please test now and then call odoo bisect good/bad", fg="yellow")
             break
