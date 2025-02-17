@@ -118,7 +118,8 @@ def run(config, ctx):
                 ctx.invoke(good)
                 Commands.invoke(ctx, "uninstall", module, tests=False, no_dangling_check=True)
             else:
-                if data.get('current_try', 0) < data['max_retries']:
+                data.setdefault('current_try', 0)
+                if data['current_try', 0] < data['max_retries']:
                     data['current_try'] += 1
                     _save(data)
                 else:
