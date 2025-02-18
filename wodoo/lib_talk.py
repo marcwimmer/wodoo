@@ -269,19 +269,19 @@ def groups(config, name):
         _execute_sql(
             conn,
             sql=(
-                f"SELECT id FROM res_groups WHERE name ILIKE '%{name}%' "
+                f"SELECT id FROM res_groups WHERE name::text ILIKE '%{name}%' "
                 f" UNION "
-                f"SELECT res_id FROM ir_model_data WHERE model = 'res.groups' AND name ILIKE '%{name}%'"
+                f"SELECT res_id FROM ir_model_data WHERE model = 'res.groups' AND name::text ILIKE '%{name}%'"
             ),
             fetchall=True,
             return_columns=False,
         ),
     )
 
-    ids = ",".join(map(str, ids))
+    ids = ",".join(map(str, [0] + list(ids)))
     rows = _execute_sql(
         conn,
-        sql=(f"SELECT id, name FROM res_groups WHERE id in (0, {ids}) ORDER BY name"),
+        sql=(f"SELECT id, name FROM res_groups WHERE id in ({ids}) ORDER BY name"),
         fetchall=True,
         return_columns=True,
     )

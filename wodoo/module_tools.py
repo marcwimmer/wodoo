@@ -841,13 +841,6 @@ class Modules(object):
 
     # @profile
     def get_filtered_auto_install_modules_based_on_module_list(self, module_list):
-        def _transform_modulelist(module_list):
-            for mod in module_list:
-                try:
-                    objmod = Module.get_by_name(mod)
-                    yield objmod
-                except NotInAddonsPath:
-                    pass
 
         module_list = list(_transform_modulelist(module_list))
 
@@ -884,13 +877,13 @@ class Modules(object):
         return list(sorted(set(modules)))
 
     # @profile
-    def get_all_used_modules(self, include_uninstall=False):
+    def get_all_used_modules(self, include_uninstall=True):
         """
         Returns all modules that are directly or indirectly
         (auto install, depends) installed.
         """
         result = set()
-        modules = self.get_customs_modules(include_uninstall=True)
+        modules = self.get_customs_modules(include_uninstall=include_uninstall)
         auto_install_modules = (
             self.get_filtered_auto_install_modules_based_on_module_list(modules)
         )
@@ -1692,3 +1685,11 @@ def _determine_affected_modules_for_ir_field_and_related(config, fieldname, mode
     if module_of_field:
         affected_modules.append(module_of_field)
     return affected_modules
+
+def _transform_modulelist(module_list):
+    for mod in module_list:
+        try:
+            objmod = Module.get_by_name(mod)
+            yield objmod
+        except NotInAddonsPath:
+            pass

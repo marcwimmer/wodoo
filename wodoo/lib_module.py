@@ -34,6 +34,7 @@ from .tools import _update_setting
 from .tools import _get_setting
 from .tools import get_git_hash
 from .tools import start_postgres_if_local
+from .tools import _get_available_modules
 from .module_tools import _determine_affected_modules_for_ir_field_and_related
 from pathlib import Path
 from functools import partial
@@ -331,21 +332,6 @@ def _get_outdated_versioned_modules_of_deptree(modules):
                 new_version = tuple(odoo_version + list(new_version))
                 if new_version != version:
                     yield dep
-
-
-def _get_available_modules(ctx, param, incomplete):
-    from .odoo_config import MANIFEST
-
-    try:
-        manifest = MANIFEST()
-        if not manifest:
-            raise Exception("no manifest")
-    except:
-        return []
-    modules = manifest["install"]
-    if incomplete:
-        modules = [x for x in modules if incomplete in x]
-    return sorted(modules)
 
 
 @odoo_module.command(name="UPDATE")

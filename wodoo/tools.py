@@ -1817,3 +1817,18 @@ def _get_available_robottests(ctx, param, incomplete):
             testfiles = list(filter(lambda x: incomplete in x, testfiles))
     return sorted(testfiles)
 
+
+def _get_available_modules(ctx, param, incomplete):
+    from .odoo_config import MANIFEST
+
+    try:
+        manifest = MANIFEST()
+        if not manifest:
+            raise Exception("no manifest")
+    except:
+        return []
+    modules = manifest["install"]
+    if incomplete:
+        modules = [x for x in modules if incomplete in x]
+    return sorted(modules)
+

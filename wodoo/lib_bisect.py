@@ -8,6 +8,7 @@ from .odoo_config import customs_dir
 from .cli import cli, pass_config, Commands
 import click
 from .tools import abort
+from .tools import _get_available_modules
 
 
 def _get_file():
@@ -76,6 +77,16 @@ def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
 @pass_config
 def bad(config, ctx):
     data = _get_file()
+
+    def remove_descendants_from_todo(data, module):
+        from .module_tools import Modules, DBModules, Module
+        base_module = Module.get_by_name(module)
+        to_remove = [x.name for x in base_module.descendants]
+        while to_remove:
+            module = to_remove.pop()
+            if module in data['todo']:
+                data.remove(module)
+    remove_descendants_from_todo(data, data['next'])
     _get_next(data)
     _save(data)
 
@@ -88,6 +99,16 @@ def good(config, ctx):
     _get_next(data)
     _save(data)
 
+
+@bisect.command()
+@click.argument("module")
+@click.pass_context
+@pass_config
+def testdep(config, ctx, module):
+
+    data = _get_file()
+    removed = _remove_from_todo_because_module_failed(module)
+    click.secho(removed)
 
 @bisect.command()
 @click.pass_context
@@ -157,3 +178,21 @@ def status(config, ctx):
     click.secho(f"Good: {data['good']}", fg="green")
     click.secho(f"Bad: {data['bad']}", fg="green")
     click.secho(f"Next: {data['next']}", fg="green")
+
+
+@bisect.command()
+@click.argument(
+    "module", nargs=-1, required=False, shell_complete=_get_available_modules
+)
+@click.pass_context
+@pass_config
+def redo(config, ctx, module):
+    data = _get_file()
+    modules2 = []
+    for x in module:
+        modules2 += x.split(",")
+
+    data['todo'] += modules2
+    _save(data)
+    modules2 = ','.join(modules2)
+    click.secho(f"Added: {modules2}", fg="green")
