@@ -24,12 +24,12 @@ def _save(content):
 
 
 def _get_next(data):
-    if not data['todo']:
-        data['next'] = ""
+    if not data["todo"]:
+        data["next"] = ""
         return
     index = random.randint(0, len(data["todo"]) - 1)
-    data['next'] = data['todo'].pop(index)
-    data['current_try'] = 0
+    data["next"] = data["todo"].pop(index)
+    data["current_try"] = 0
 
 
 @cli.group(cls=AliasedGroup)
@@ -43,11 +43,10 @@ def bisect(config):
     "robotest_file", required=False, shell_complete=_get_available_robottests
 )
 @click.option(
-    "--dont-stop-after-first-error", is_flag=True,
+    "--dont-stop-after-first-error",
+    is_flag=True,
 )
-@click.option(
-    "--retries", default=1, help="Max retries if robotest fails"
-)
+@click.option("--retries", default=3, help="Max retries if robotest fails")
 @click.pass_context
 @pass_config
 def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
@@ -69,7 +68,18 @@ def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
     }
     _save(data)
     if not robotest_file:
-        click.secho("Please call odoo bisect run and then odoo bisect good/bad", fg='yellow')
+        click.secho(
+            """
+            No robotest file set. Please call:
+
+            > odoo bisect run 
+            
+            and then 
+
+            > odoo bisect good/bad
+            """,
+            fg="yellow",
+        )
 
 
 @bisect.command()
@@ -80,13 +90,15 @@ def bad(config, ctx):
 
     def remove_descendants_from_todo(data, module):
         from .module_tools import Modules, DBModules, Module
+
         base_module = Module.get_by_name(module)
         to_remove = [x.name for x in base_module.descendants]
         while to_remove:
             module = to_remove.pop()
-            if module in data['todo']:
+            if module in data["todo"]:
                 data.remove(module)
-    remove_descendants_from_todo(data, data['next'])
+
+    remove_descendants_from_todo(data, data["next"])
     _get_next(data)
     _save(data)
 
@@ -110,6 +122,7 @@ def testdep(config, ctx, module):
     removed = _remove_from_todo_because_module_failed(module)
     click.secho(removed)
 
+
 @bisect.command()
 @click.pass_context
 @pass_config
@@ -119,25 +132,31 @@ def run(config, ctx):
         abort("Requires devmode")
     if not config.force:
         abort("Please use the force mode!")
-    robotest_file = data['robotest_file']
+    robotest_file = data["robotest_file"]
 
     def _reset():
         Commands.invoke(ctx, "kill", machines=["postgres"])
         Commands.invoke(ctx, "reset-db")
         Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
-        Commands.invoke(ctx, "update", data['next'], tests=False, no_dangling_check=True)
+        Commands.invoke(
+            ctx, "update", data["next"], tests=False, no_dangling_check=True
+        )
+
     _reset()
 
     def _uninstall(module):
         try:
-            Commands.invoke(ctx, "uninstall", module, tests=False, no_dangling_check=True)
+            Commands.invoke(
+                ctx, "uninstall", module, tests=False, no_dangling_check=True
+            )
         except:
             _reset()
 
-    while data['next']:
+    while data["next"]:
         import pudb
+
         pudb.set_trace()
-        module = data['next']
+        module = data["next"]
 
         if robotest_file:
             result = Commands.invoke(
@@ -147,18 +166,20 @@ def run(config, ctx):
                 ctx.invoke(good)
                 _uninstall(module)
             else:
-                data.setdefault('current_try', 0)
-                if data['current_try', 0] < data['max_retries']:
-                    data['current_try'] += 1
+                data.setdefault("current_try", 0)
+                if data["current_try", 0] < data["max_retries"]:
+                    data["current_try"] += 1
                     _save(data)
                 else:
                     ctx.invoke(bad)
-                    if data['stop_after_first_error']:
+                    if data["stop_after_first_error"]:
                         break
                     else:
                         _uninstall(module)
         else:
-            click.secho("Please test now and then call odoo bisect good/bad", fg="yellow")
+            click.secho(
+                "Please test now and then call odoo bisect good/bad", fg="yellow"
+            )
             break
         data = _get_file()
         ctx.invoke(status)
@@ -192,7 +213,7 @@ def redo(config, ctx, module):
     for x in module:
         modules2 += x.split(",")
 
-    data['todo'] += modules2
+    data["todo"] += modules2
     _save(data)
-    modules2 = ','.join(modules2)
+    modules2 = ",".join(modules2)
     click.secho(f"Added: {modules2}", fg="green")

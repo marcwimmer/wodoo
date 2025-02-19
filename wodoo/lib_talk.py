@@ -236,10 +236,10 @@ def menus(config, name):
             if row[2]:
                 yield from get_parents(row[2])
 
-    ids = ",".join(map(str, ids))
+    ids = ",".join(map(str, [0] + list(ids)))
     rows = _execute_sql(
         conn,
-        sql=(f"SELECT id, name, parent_id FROM ir_ui_menu WHERE id in (0, {ids})"),
+        sql=(f"SELECT id, name, parent_id FROM ir_ui_menu WHERE id in ({ids})"),
         fetchall=True,
         return_columns=True,
     )
