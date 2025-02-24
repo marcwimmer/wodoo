@@ -191,7 +191,7 @@ def run(config, ctx):
 @bisect.command()
 @click.pass_context
 @pass_config
-def status(config, ctx):
+def bisect_status(config, ctx):
     data = _get_file()
     if not data:
         abort("No bisect started.")

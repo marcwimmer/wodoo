@@ -279,11 +279,18 @@ def build(
     if include_source:
         raise NotImplementedError("Please implement include source.")
 
+    platform = subprocess.check_output(
+        ["/usr/bin/uname", "-m"], encoding="utf8"
+    ).strip()
+    # options += ["--platform", platform]
+
     __dc(
         config,
         ["build"] + options + list(machines),
         env={
             "ODOO_VERSION": config.odoo_version,  # at you developer: do not mismatch with build args
+            "DOCKER_DEFAULT_PLATFORM": f"linux/{platform}",
+            "DOCKER_BUILDKIT": "1",
         },
     )
 
