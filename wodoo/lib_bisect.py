@@ -1,4 +1,5 @@
 # not really a bisect, but acts ilike a bisect
+import time
 import json
 import random
 from .tools import _get_available_robottests
@@ -10,6 +11,8 @@ import click
 from .tools import abort
 from .tools import _get_available_modules
 
+from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential
+
 
 def _get_file():
     bisect_file = customs_dir() / ".bisect"
@@ -20,7 +23,7 @@ def _get_file():
 
 def _save(content):
     bisect_file = customs_dir() / ".bisect"
-    bisect_file.write_text(json.dumps(content))
+    bisect_file.write_text(json.dumps(content, indent=4))
 
 
 def _get_next(data):
@@ -56,7 +59,7 @@ def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
     all_modules = sorted(manifest.get("install", []))
     data = {
         "todo": all_modules,
-        "next": all_modules[random.randint(0, len(all_modules) - 1)],
+        "next": None,
         "good": [],
         "bad": [],
         "turns": 0,
@@ -134,58 +137,95 @@ def run(config, ctx):
         abort("Please use the force mode!")
     robotest_file = data["robotest_file"]
 
-    def _reset():
-        Commands.invoke(ctx, "kill", machines=["postgres"])
-        Commands.invoke(ctx, "reset-db")
-        Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+    def _reset(module):
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+        )
+        def kill():
+            Commands.invoke(ctx, "kill", machines=["postgres"])
+
+        kill()
+
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+        )
+        def reset():
+            Commands.invoke(ctx, "reset-db")
+
+        reset()
+
         Commands.invoke(
-            ctx, "update", data["next"], tests=False, no_dangling_check=True
+            ctx, "wait_for_container_postgres", missing_ok=True
         )
 
-    _reset()
+        @retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+        )
+        def update():
+            Commands.invoke(ctx, "update", module=module, tests=False, no_dangling_check=True)
 
-    def _uninstall(module):
+        update()
+
+    def run_robot():
+        @retry(stop=stop_after_attempt(5), wait=wait_fixed(3))
+        def kill():
+            Commands.invoke(ctx, "kill")
+
+        kill()
         try:
-            Commands.invoke(
-                ctx, "uninstall", module, tests=False, no_dangling_check=True
+            result = Commands.invoke(
+                ctx,
+                "robot:run",
+                file=robotest_file,
+                no_sysexit=True,
+                no_install_further_modules=True,
             )
         except:
-            _reset()
+            result = False
+        return result
+
+    if not data['next']:
+        _get_next(data)
+        _save(data)
 
     while data["next"]:
-        import pudb
-
-        pudb.set_trace()
         module = data["next"]
+        try:
+            _reset(module)
+        except Exception as ex:
+            data = _get_file()
+            data.setdefault("failed_installations", {})
+            data["failed_installations"][module] = str(ex)
+            _save(data)
 
         if robotest_file:
-            result = Commands.invoke(
-                ctx, "robot:run", file=robotest_file, no_sysexit=True
-            )
+            result = run_robot()
             if result:
                 ctx.invoke(good)
-                _uninstall(module)
             else:
+                data = _get_file()
                 data.setdefault("current_try", 0)
-                if data["current_try", 0] < data["max_retries"]:
+                if data.get("current_try", 0) < data["max_retries"]:
                     data["current_try"] += 1
                     _save(data)
                 else:
                     ctx.invoke(bad)
                     if data["stop_after_first_error"]:
                         break
-                    else:
-                        _uninstall(module)
         else:
             click.secho(
                 "Please test now and then call odoo bisect good/bad", fg="yellow"
             )
             break
         data = _get_file()
-        ctx.invoke(status)
+        _save(data)
+        ctx.invoke(bisect_status)
 
     click.secho("Finding error module done!", fg="green")
-    ctx.invoke(status)
+    ctx.invoke(bisect_status)
 
 
 @bisect.command()

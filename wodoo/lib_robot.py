@@ -179,6 +179,9 @@ def do_new(ctx, config, name):
     is_flag=True,
     help="Use Visual Code to debug debugpy - connect the created profile.",
 )
+@click.option(
+    "-M", '--no-install-further-modules', is_flag=True,
+)
 @pass_config
 @click.pass_context
 def run(
@@ -200,6 +203,7 @@ def run(
     min_success_required,
     no_sysexit=False,
     debug=False,
+    no_install_further_modules=False
 ):
     PARAM = param
     del param
@@ -255,7 +259,7 @@ def run(
                     "CAUTION: Repeat is set, but not force mode, so database is not recreated."
                 )
 
-        if config.force:
+        if config.force and not no_install_further_modules:
             _prepare_fresh_robotest(ctx)
 
         if install_odoo_modules:
