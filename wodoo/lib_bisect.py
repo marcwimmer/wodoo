@@ -55,7 +55,8 @@ def bisect(config):
 def _get_projectname():
     import uuid
 
-    return f"bisect-{str(uuid.uuid4()).replace("-", "")}"
+    nomen = str(uuid.uuid4()).replace("-", "")
+    return f"bisect-{nomen}"
 
 
 @bisect.command()
