@@ -18,6 +18,19 @@ from .tools import __rmtree
 
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential
 
+ROBOT_SETTINGS = """
+RUN_CONSOLE=0
+RUN_PROXY_PUBLISHED=0
+RUN_VSCODE=0
+RUN_WEBSSH=0
+ODOO_QUEUEJOBS_CRON_IN_ONE_CONTAINER=0
+ODOO_CRON_IN_ONE_CONTAINER=0
+RUN_ODOO_QUEUEJOBS=1
+RUN_ODOO_CRONJOBS=1
+ODOO_DEMO=1
+ODOO_QUEUEJOBS_CHANNELS=root:4
+"""
+
 
 def cleanup_filestore(config, projectname):
     path = config.dirs["user_conf_dir"] / "files" / "filestore" / projectname
@@ -108,6 +121,7 @@ def start(config, ctx, robotest_file, stop_after_first_error, retries):
 @pass_config
 def bad(config, ctx):
     data = _get_file()
+    mod = data['next']
     data["bad"].append(data["next"])
     data["turns"] += 1
 
@@ -124,6 +138,9 @@ def bad(config, ctx):
     remove_descendants_from_todo(data, data["next"])
     _get_next(data)
     _save(data)
+    click.secho("-------------------------------", fg="red")
+    click.secho(f"BAD: {mod}", fg="red")
+    click.secho("-------------------------------", fg="red")
 
 
 @bisect.command()
@@ -131,10 +148,14 @@ def bad(config, ctx):
 @pass_config
 def good(config, ctx):
     data = _get_file()
+    mod = data['next']
     data["good"].append(data["next"])
     data["turns"] += 1
     _get_next(data)
     _save(data)
+    click.secho("-------------------------------", fg="green")
+    click.secho(f"GOOD: {mod}")
+    click.secho("-------------------------------", fg="green")
 
 
 @bisect.command()
@@ -149,9 +170,10 @@ def testdep(config, ctx, module):
 
 
 @bisect.command()
+@click.option("-1", "--one", is_flag=True)
 @click.pass_context
 @pass_config
-def run(config, ctx):
+def run(config, ctx, one):
     data = _get_file()
     if not config.devmode and not config.force:
         abort("Requires devmode")
@@ -189,13 +211,14 @@ def run(config, ctx):
         commando("build")
         commando("kill")
         commando("kill", "postgres")
+        commando("down")
         commando("down", "-v")
         commando("db", "reset")
-        commando("wait_for_container_postgres")
+        commando("wait-for-container-postgres")
         commando("update", module, "--no-restart", "--no-dangling-check")
         commando("kill")
         commando("up", "-d")
-        commando("wait_for_container_postgres")
+        commando("wait-for-container-postgres")
 
     @retry(
         stop=stop_after_attempt(data["max_retries"]),
@@ -229,13 +252,22 @@ def run(config, ctx):
 
         settings = orig_settings_file.read_text()
         # faster with console = false because projectname is an arg and then rebuild happens
-        settings += "\nRUN_CONSOLE=0"
-        settings += "\nRUN_PROXY_PUBLISHED=0"
+        settings += "\n" + ROBOT_SETTINGS
         settings_file.write_text(settings)
+
+    def cleanup():
+        commando("kill", "postgres", "--brutal")
+        commando("kill", "--brutal")
+        commando("down", "-v")
+        commando("kill", "--profile", "manual")
+        commando("rm", "--profile", "manual")
+        commando("down", "-v")
+        cleanup_filestore(config, config.project_name)
 
     while data["next"]:
         _set_projectname()
         module = data["next"]
+        result = None
         try:
             try:
                 _reset(module)
@@ -250,12 +282,6 @@ def run(config, ctx):
                         result = run_robot()
                     except:
                         result = False
-                    if result:
-                        ctx.invoke(good)
-                    else:
-                        ctx.invoke(bad)
-                        if data["stop_after_first_error"]:
-                            break
                 else:
                     click.secho(
                         "Please test now and then call odoo bisect good/bad",
@@ -263,14 +289,20 @@ def run(config, ctx):
                     )
                     break
         finally:
+            cleanup()
+            if result is not None:
+                if result:
+                    ctx.invoke(good)
+                else:
+                    ctx.invoke(bad)
+                    if data["stop_after_first_error"]:
+                        break
+
             data = _get_file()
             _get_next(data)
             _save(data)
-            commando("kill", "postgres", "--brutal")
-            commando("kill", "--brutal")
-            commando("down", "-v")
-            commando("rm", "--profile", "all")
-            cleanup_filestore(config, config.project_name)
+        if one:
+            break
         ctx.invoke(bisect_status)
 
     click.secho("Finding error module done!", fg="green")
@@ -295,9 +327,10 @@ def bisect_status(config, ctx):
     "module", nargs=-1, required=False, shell_complete=_get_available_modules
 )
 @click.option("--failed-installations", is_flag=True)
+@click.option("--bad", is_flag=True)
 @click.pass_context
 @pass_config
-def redo(config, ctx, module, failed_installations):
+def redo(config, ctx, module, failed_installations, bad):
     data = _get_file()
     modules2 = []
     for x in module:
@@ -306,6 +339,10 @@ def redo(config, ctx, module, failed_installations):
     if failed_installations:
         for k in list(data["failed_installations"].keys()):
             data["failed_installations"].pop(k)
+            modules2.append(k)
+    if bad:
+        for k in list(data["bad"]):
+            data['bad'].remove(k)
             modules2.append(k)
 
     data["todo"] += modules2
