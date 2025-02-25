@@ -18,8 +18,9 @@ from .tools import __rmtree
 
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential
 
+
 def cleanup_filestore(config, projectname):
-    path = config.dirs['user_conf_dir'] / 'files' / 'filestore' / projectname
+    path = config.dirs["user_conf_dir"] / "files" / "filestore" / projectname
     if path.exists():
         __rmtree(path)
 
@@ -50,8 +51,10 @@ def _get_next(data):
 def bisect(config):
     pass
 
+
 def _get_projectname():
     import uuid
+
     return f"bisect-{str(uuid.uuid4()).replace("-", "")}"
 
 
@@ -104,8 +107,8 @@ def start(config, ctx, robotest_file, stop_after_first_error, retries):
 @pass_config
 def bad(config, ctx):
     data = _get_file()
-    data['bad'].append(data['next'])
-    data['turns'] += 1
+    data["bad"].append(data["next"])
+    data["turns"] += 1
 
     def remove_descendants_from_todo(data, module):
         from .module_tools import Modules, DBModules, Module
@@ -115,7 +118,7 @@ def bad(config, ctx):
         while to_remove:
             module = to_remove.pop()
             if module in data["todo"]:
-                data['todo'].remove(module)
+                data["todo"].remove(module)
 
     remove_descendants_from_todo(data, data["next"])
     _get_next(data)
@@ -127,8 +130,8 @@ def bad(config, ctx):
 @pass_config
 def good(config, ctx):
     data = _get_file()
-    data['good'].append(data['next'])
-    data['turns'] += 1
+    data["good"].append(data["next"])
+    data["turns"] += 1
     _get_next(data)
     _save(data)
 
@@ -164,16 +167,21 @@ def run(config, ctx):
 
     def _commando(*params):
         start = datetime.now()
-        cmd =[sys.executable, sys.argv[0], "-f", "-p", config.project_name] + list(params)
+        cmd = [sys.executable, sys.argv[0], "-f", "-p", config.project_name] + list(
+            params
+        )
         nicecmd = cmd[1:]
-        nicecmd[0] = 'odoo'
+        nicecmd[0] = "odoo"
         click.secho(f"{' '.join(nicecmd)}", fg="green")
+        res = True
         try:
             subprocess.check_output(cmd)
         except Exception as ex:
             click.secho(f"Error: {ex}", fg="red")
+            res = False
         end = datetime.now()
         click.secho(f"Duration: {end-start}", fg="green")
+        return res
 
     def _reset(module):
         commando("reload", "--demo", "-I")
@@ -183,24 +191,25 @@ def run(config, ctx):
         commando("down", "-v")
         commando("db", "reset")
         commando("wait_for_container_postgres")
-        commando("update", module, '--no-restart', '--no-dangling-check')
+        commando("update", module, "--no-restart", "--no-dangling-check")
         commando("kill")
         commando("up", "-d")
         commando("wait_for_container_postgres")
 
     @retry(
-        stop=stop_after_attempt(data['max_retries']),
+        stop=stop_after_attempt(data["max_retries"]),
         wait=wait_exponential(multiplier=1, min=2, max=10),
     )
     def run_robot():
         try:
-            _commando("robot", "run", robotest_file, "--no-install-further-modules")
-            result = True
+            result = _commando(
+                "robot", "run", robotest_file, "--no-install-further-modules"
+            )
         except:
             result = False
         return result
 
-    if not data['next']:
+    if not data["next"]:
         _get_next(data)
         _save(data)
 
@@ -209,11 +218,13 @@ def run(config, ctx):
         name = _get_projectname()
         config.project_name = name
         config.PROJECT_NAME = name
-        os.environ['project_name'] = name
-        os.environ['PROJECT_NAME'] = name
+        os.environ["project_name"] = name
+        os.environ["PROJECT_NAME"] = name
 
-        orig_settings_file = config.dirs['user_conf_dir'] / f"settings.{current_projectname}"
-        settings_file = config.dirs['user_conf_dir'] / f"settings.{name}"
+        orig_settings_file = (
+            config.dirs["user_conf_dir"] / f"settings.{current_projectname}"
+        )
+        settings_file = config.dirs["user_conf_dir"] / f"settings.{name}"
 
         settings = orig_settings_file.read_text()
         # faster with console = false because projectname is an arg and then rebuild happens
@@ -246,7 +257,8 @@ def run(config, ctx):
                             break
                 else:
                     click.secho(
-                        "Please test now and then call odoo bisect good/bad", fg="yellow"
+                        "Please test now and then call odoo bisect good/bad",
+                        fg="yellow",
                     )
                     break
         finally:
@@ -256,6 +268,7 @@ def run(config, ctx):
             commando("kill", "postgres", "--brutal")
             commando("kill", "--brutal")
             commando("down", "-v")
+            commando("rm", "--profile", "all")
             cleanup_filestore(config, config.project_name)
         ctx.invoke(bisect_status)
 
@@ -290,8 +303,8 @@ def redo(config, ctx, module, failed_installations):
         modules2 += x.split(",")
 
     if failed_installations:
-        for k in list(data['failed_installations'].keys()):
-            data['failed_installations'].pop(k)
+        for k in list(data["failed_installations"].keys()):
+            data["failed_installations"].pop(k)
             modules2.append(k)
 
     data["todo"] += modules2
