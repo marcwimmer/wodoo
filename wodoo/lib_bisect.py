@@ -1,4 +1,8 @@
 # not really a bisect, but acts ilike a bisect
+from datetime import datetime
+import sys
+import subprocess
+import os
 import time
 import json
 import random
@@ -10,8 +14,14 @@ from .cli import cli, pass_config, Commands
 import click
 from .tools import abort
 from .tools import _get_available_modules
+from .tools import __rmtree
 
 from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential
+
+def cleanup_filestore(config, projectname):
+    path = config.dirs['user_conf_dir'] / 'files' / 'filestore' / projectname
+    if path.exists():
+        __rmtree(path)
 
 
 def _get_file():
@@ -40,6 +50,9 @@ def _get_next(data):
 def bisect(config):
     pass
 
+def _get_projectname():
+    import uuid
+    return f"bisect-{str(uuid.uuid4()).replace("-", "")}"
 
 
 @bisect.command()
@@ -47,13 +60,13 @@ def bisect(config):
     "robotest_file", required=False, shell_complete=_get_available_robottests
 )
 @click.option(
-    "--dont-stop-after-first-error",
+    "--stop-after-first-error",
     is_flag=True,
 )
 @click.option("--retries", default=3, help="Max retries if robotest fails")
 @click.pass_context
 @pass_config
-def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
+def start(config, ctx, robotest_file, stop_after_first_error, retries):
     from .odoo_config import MANIFEST
 
     manifest = MANIFEST()
@@ -66,7 +79,7 @@ def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
         "turns": 0,
         "done": [],
         "robotest_file": robotest_file,
-        "stop_after_first_error": not dont_stop_after_first_error,
+        "stop_after_first_error": stop_after_first_error,
         "max_retries": retries,
         "current_try": 0,
     }
@@ -142,24 +155,38 @@ def run(config, ctx):
         abort("Please use the force mode!")
     robotest_file = data["robotest_file"]
 
-    def _reset(module):
-        @retry(
-            stop=stop_after_attempt(10),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
-        )
-        def commando(*params, **kw):
-            click.secho(f"Executing: odoo {' '.join(params)}", fg="green")
-            Commands.invoke(ctx, *params, **kw)
+    @retry(
+        stop=stop_after_attempt(10),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+    )
+    def commando(*params):
+        return _commando(*params)
 
+    def _commando(*params):
+        start = datetime.now()
+        cmd =[sys.executable, sys.argv[0], "-f", "-p", config.project_name] + list(params)
+        nicecmd = cmd[1:]
+        nicecmd[0] = 'odoo'
+        click.secho(f"{' '.join(nicecmd)}", fg="green")
+        try:
+            subprocess.check_output(cmd)
+        except Exception as ex:
+            click.secho(f"Error: {ex}", fg="red")
+        end = datetime.now()
+        click.secho(f"Duration: {end-start}", fg="green")
+
+    def _reset(module):
+        commando("reload", "--demo", "-I")
+        commando("build")
         commando("kill")
-        commando("kill", machines=['postgres'])
-        commando("down", volumes=True)
-        commando("reset-db")
-        commando("wait_for_container_postgres", missing_ok=True)
-        commando("update", module=module, no_restart=True, tests=False, no_dangling_check=True)
+        commando("kill", "postgres")
+        commando("down", "-v")
+        commando("db", "reset")
+        commando("wait_for_container_postgres")
+        commando("update", module, '--no-restart', '--no-dangling-check')
         commando("kill")
-        commando("up", daemon=True)
-        commando("wait_for_container_postgres", missing_ok=True)
+        commando("up", "-d")
+        commando("wait_for_container_postgres")
 
     @retry(
         stop=stop_after_attempt(data['max_retries']),
@@ -167,13 +194,8 @@ def run(config, ctx):
     )
     def run_robot():
         try:
-            result = Commands.invoke(
-                ctx,
-                "robot:run",
-                file=robotest_file,
-                no_sysexit=True,
-                no_install_further_modules=True,
-            )
+            _commando("robot", "run", robotest_file, "--no-install-further-modules")
+            result = True
         except:
             result = False
         return result
@@ -182,8 +204,25 @@ def run(config, ctx):
         _get_next(data)
         _save(data)
 
-    import pudb;pudb.set_trace()
+    def _set_projectname():
+        current_projectname = config.PROJECT_NAME
+        name = _get_projectname()
+        config.project_name = name
+        config.PROJECT_NAME = name
+        os.environ['project_name'] = name
+        os.environ['PROJECT_NAME'] = name
+
+        orig_settings_file = config.dirs['user_conf_dir'] / f"settings.{current_projectname}"
+        settings_file = config.dirs['user_conf_dir'] / f"settings.{name}"
+
+        settings = orig_settings_file.read_text()
+        # faster with console = false because projectname is an arg and then rebuild happens
+        settings += "\nRUN_CONSOLE=0"
+        settings += "\nRUN_PROXY_PUBLISHED=0"
+        settings_file.write_text(settings)
+
     while data["next"]:
+        _set_projectname()
         module = data["next"]
         try:
             try:
@@ -214,6 +253,10 @@ def run(config, ctx):
             data = _get_file()
             _get_next(data)
             _save(data)
+            commando("kill", "postgres", "--brutal")
+            commando("kill", "--brutal")
+            commando("down", "-v")
+            cleanup_filestore(config, config.project_name)
         ctx.invoke(bisect_status)
 
     click.secho("Finding error module done!", fg="green")
@@ -237,13 +280,19 @@ def bisect_status(config, ctx):
 @click.argument(
     "module", nargs=-1, required=False, shell_complete=_get_available_modules
 )
+@click.option("--failed-installations", is_flag=True)
 @click.pass_context
 @pass_config
-def redo(config, ctx, module):
+def redo(config, ctx, module, failed_installations):
     data = _get_file()
     modules2 = []
     for x in module:
         modules2 += x.split(",")
+
+    if failed_installations:
+        for k in list(data['failed_installations'].keys()):
+            data['failed_installations'].pop(k)
+            modules2.append(k)
 
     data["todo"] += modules2
     _save(data)

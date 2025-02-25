@@ -765,7 +765,7 @@ def update(
 
 def _exec_commands(ctx, config, commands):
     for command in commands:
-        cmd = [sys.executable, sys.argv[0]] + command
+        cmd = [sys.executable, sys.argv[0]] + ["-p", config.PROJECT_NAME] + command
         env = deepcopy(os.environ)
         env["NO_BEFORE_ODOO_COMMAND"] = "1"
         subprocess.run(cmd, check=True, env=env)
