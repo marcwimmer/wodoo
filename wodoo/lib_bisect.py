@@ -41,6 +41,7 @@ def bisect(config):
     pass
 
 
+
 @bisect.command()
 @click.argument(
     "robotest_file", required=False, shell_complete=_get_available_robottests
@@ -90,6 +91,8 @@ def start(config, ctx, robotest_file, dont_stop_after_first_error, retries):
 @pass_config
 def bad(config, ctx):
     data = _get_file()
+    data['bad'].append(data['next'])
+    data['turns'] += 1
 
     def remove_descendants_from_todo(data, module):
         from .module_tools import Modules, DBModules, Module
@@ -99,7 +102,7 @@ def bad(config, ctx):
         while to_remove:
             module = to_remove.pop()
             if module in data["todo"]:
-                data.remove(module)
+                data['todo'].remove(module)
 
     remove_descendants_from_todo(data, data["next"])
     _get_next(data)
@@ -111,6 +114,8 @@ def bad(config, ctx):
 @pass_config
 def good(config, ctx):
     data = _get_file()
+    data['good'].append(data['next'])
+    data['turns'] += 1
     _get_next(data)
     _save(data)
 
@@ -139,42 +144,28 @@ def run(config, ctx):
 
     def _reset(module):
         @retry(
-            stop=stop_after_attempt(3),
+            stop=stop_after_attempt(10),
             wait=wait_exponential(multiplier=1, min=2, max=10),
         )
-        def kill():
-            Commands.invoke(ctx, "kill", machines=["postgres"])
+        def commando(*params, **kw):
+            click.secho(f"Executing: odoo {' '.join(params)}", fg="green")
+            Commands.invoke(ctx, *params, **kw)
 
-        kill()
+        commando("kill")
+        commando("kill", machines=['postgres'])
+        commando("down", volumes=True)
+        commando("reset-db")
+        commando("wait_for_container_postgres", missing_ok=True)
+        commando("update", module=module, no_restart=True, tests=False, no_dangling_check=True)
+        commando("kill")
+        commando("up", daemon=True)
+        commando("wait_for_container_postgres", missing_ok=True)
 
-        @retry(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
-        )
-        def reset():
-            Commands.invoke(ctx, "reset-db")
-
-        reset()
-
-        Commands.invoke(
-            ctx, "wait_for_container_postgres", missing_ok=True
-        )
-
-        @retry(
-            stop=stop_after_attempt(3),
-            wait=wait_exponential(multiplier=1, min=2, max=10),
-        )
-        def update():
-            Commands.invoke(ctx, "update", module=module, tests=False, no_dangling_check=True)
-
-        update()
-
+    @retry(
+        stop=stop_after_attempt(data['max_retries']),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+    )
     def run_robot():
-        @retry(stop=stop_after_attempt(5), wait=wait_fixed(3))
-        def kill():
-            Commands.invoke(ctx, "kill")
-
-        kill()
         try:
             result = Commands.invoke(
                 ctx,
@@ -191,37 +182,38 @@ def run(config, ctx):
         _get_next(data)
         _save(data)
 
+    import pudb;pudb.set_trace()
     while data["next"]:
         module = data["next"]
         try:
-            _reset(module)
-        except Exception as ex:
-            data = _get_file()
-            data.setdefault("failed_installations", {})
-            data["failed_installations"][module] = str(ex)
-            _save(data)
-
-        if robotest_file:
-            result = run_robot()
-            if result:
-                ctx.invoke(good)
-            else:
+            try:
+                _reset(module)
+            except Exception as ex:
                 data = _get_file()
-                data.setdefault("current_try", 0)
-                if data.get("current_try", 0) < data["max_retries"]:
-                    data["current_try"] += 1
-                    _save(data)
+                data.setdefault("failed_installations", {})
+                data["failed_installations"][module] = str(ex)
+                _save(data)
+            else:
+                if robotest_file:
+                    try:
+                        result = run_robot()
+                    except:
+                        result = False
+                    if result:
+                        ctx.invoke(good)
+                    else:
+                        ctx.invoke(bad)
+                        if data["stop_after_first_error"]:
+                            break
                 else:
-                    ctx.invoke(bad)
-                    if data["stop_after_first_error"]:
-                        break
-        else:
-            click.secho(
-                "Please test now and then call odoo bisect good/bad", fg="yellow"
-            )
-            break
-        data = _get_file()
-        _save(data)
+                    click.secho(
+                        "Please test now and then call odoo bisect good/bad", fg="yellow"
+                    )
+                    break
+        finally:
+            data = _get_file()
+            _get_next(data)
+            _save(data)
         ctx.invoke(bisect_status)
 
     click.secho("Finding error module done!", fg="green")
