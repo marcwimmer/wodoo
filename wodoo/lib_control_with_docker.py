@@ -291,6 +291,7 @@ def build(
             "ODOO_VERSION": config.odoo_version,  # at you developer: do not mismatch with build args
             "DOCKER_DEFAULT_PLATFORM": f"linux/{platform}",
             "DOCKER_BUILDKIT": "1",
+            "COMPOSE_BAKE": "true"
         },
     )
 
