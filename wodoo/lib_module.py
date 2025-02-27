@@ -16,7 +16,9 @@ import os
 import tempfile
 import click
 
+from tqdm import tqdm
 from copy import deepcopy
+from .odoo_config import get_conn_autoclose
 from gimera.repo import Repo
 from .tools import _make_sure_module_is_installed
 from .tools import get_hash
@@ -486,6 +488,8 @@ def make_sure_module_is_installed(ctx, config, module):
     "--no-scripts",
     is_flag=True,
 )
+@click.option(
+    "-P", "--no-progress", is_flag=True, help="No progress, but allows interactive debugging")
 @pass_config
 @click.pass_context
 def update(
@@ -514,6 +518,7 @@ def update(
     no_outdated_modules=False,
     stdout=False,
     no_scripts=False,
+    no_progress=False,
 ):
     """
     Just custom modules are updated, never the base modules (e.g. prohibits adding old stock-locations)
@@ -635,6 +640,24 @@ def update(
             ).write_text(datetime.now().strftime(DTF))
 
         def _technically_update(modules):
+            if not no_progress:
+                progress = ProgressBarDaemon(interval=0.2)
+                progress.start()
+
+            def _eval_progress(line):
+                def extract_progress(text):
+                    """Extracts module name and progress values from text like 'Loading module documents_project (192/510)'."""
+                    match = re.search(r'Loading module ([\w_]+) \((\d+)/(\d+)\)', text)
+                    if match:
+                        module_name, current, total = match.groups()
+                        return module_name, int(current), int(total)
+                    return None, None, None
+                module, prog, total = extract_progress(line)
+                if total:
+                    prog = int(prog)
+                    total = int(total)
+                    progress.update_progress(module, prog, total)
+                    progress.write(line)
             try:
                 modules = list(
                     map(lambda x: x.name if isinstance(x, Module) else x, modules)
@@ -665,7 +688,9 @@ def update(
                     _exec_update(
                         config,
                         params,
-                        non_interactive=non_interactive if not stdout else True,
+                        non_interactive=not no_progress,  # because of progressbar; non_interactive if not stdout else True,
+                        write_to_console=_eval_progress if not no_progress else None,
+                        # write_to_console=lambda line: progress.write(line),
                     )
                 )
                 if len(rc) == 1:
@@ -699,6 +724,8 @@ def update(
                 raise Exception(
                     ("Error at /update_modules.py - " "aborting update process.")
                 ) from ex
+            finally:
+                progress.stop()
 
         trycount = 0
         max_try_count = 5
@@ -1053,7 +1080,7 @@ def show_conflicting_modules(config):
     )
 
 
-def _exec_update(config, params, non_interactive=False, stdout=False):
+def _exec_update(config, params, non_interactive=False, stdout=False, write_to_console=True):
     params = ["odoo_update", "/update_modules.py"] + params
     if not non_interactive:
         yield __cmd_interactive(
@@ -1068,7 +1095,9 @@ def _exec_update(config, params, non_interactive=False, stdout=False):
         )
     else:
         try:
-            returncode, output = __dcrun(config, list(params), returnproc=True)
+            returncode, output = __dcrun(
+                config, list(params), returnproc=True, interactive=False, write_to_console=write_to_console
+            )
             yield returncode
             yield output
         except subprocess.CalledProcessError as ex:
@@ -1641,7 +1670,50 @@ def scan_addons_paths(config, ctx):
         click.secho(str(item))
 
 
+class ProgressBarDaemon(threading.Thread):
+    def __init__(self, interval=1.0):
+        super().__init__(daemon=True)
+        self.interval = interval
+        self.running = True
+        self.total = None
+        self.pbar = tqdm(
+            total=100,
+            bar_format='\033[95m{l_bar}{bar}\033[0m {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
+            dynamic_ncols=True,
+        )
 
+    def run(self):
+        while self.running:
+            self.pbar.refresh()
+            time.sleep(self.interval)
+
+    def get_total(self):
+        return self.get_to_install_modules()
+
+    def get_to_install_modules(self):
+        with get_conn_autoclose() as cr:
+            cr.execute(
+                "select count(*) from ir_module_module where state in ('to install', 'to upgrade')"
+            )
+            record = cr.fetchone()
+        return record[0]
+
+    def update_progress(self, module, progress, total):
+        self.pbar.total = total
+        self.pbar.n = progress
+        text = module.ljust(40)
+        self.pbar.set_description(text)
+
+    def write(self, line):
+        if self.pbar:
+            self.pbar.write(line)
+        else:
+            print(line)
+
+    def stop(self):
+        self.running = False
+        if self.pbar:
+            self.pbar.close()
 
 
 Commands.register(update)

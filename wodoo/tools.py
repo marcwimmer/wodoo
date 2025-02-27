@@ -563,6 +563,7 @@ def __dcrun(
     returnproc=False,
     detached=False,
     name=None,
+    write_to_console=None,
 ):
     ensure_project_name(config)
     env = _set_default_envs(env)
@@ -600,7 +601,10 @@ def __dcrun(
             output = ""
             for line in iter(process.stdout.readline, b""):
                 line = line.decode("utf-8").strip()
-                print(line)
+                if write_to_console is True:
+                    print(line)
+                elif write_to_console:
+                    write_to_console(line)
                 output += line + "\n"
 
             process.communicate()
