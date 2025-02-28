@@ -657,7 +657,7 @@ def update(
                     prog = int(prog)
                     total = int(total)
                     progress.update_progress(module, prog, total)
-                    progress.write(line)
+                progress.write(line)
             try:
                 modules = list(
                     map(lambda x: x.name if isinstance(x, Module) else x, modules)
