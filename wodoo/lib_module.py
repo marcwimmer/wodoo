@@ -572,6 +572,7 @@ def update(
     )
     from .module_tools import Modules, DBModules, Module
     from .odoo_config import MANIFEST
+    from .odoo_config import customs_dir
 
     if test_tags and default_test_tags:
         abort("Conflict: parameter test-tags and default-test-tags")
@@ -643,6 +644,7 @@ def update(
             if not no_progress:
                 progress = ProgressBarDaemon(interval=0.2)
                 progress.start()
+            output = []
 
             def _eval_progress(line):
                 def extract_progress(text):
@@ -657,7 +659,7 @@ def update(
                     prog = int(prog)
                     total = int(total)
                     progress.update_progress(module, prog, total)
-                progress.write(line)
+                output.append(line)
             try:
                 modules = list(
                     map(lambda x: x.name if isinstance(x, Module) else x, modules)
@@ -700,6 +702,9 @@ def update(
 
                 if stdout:
                     Path(stdout).write_text(output)
+
+                if not no_progress:
+                    (customs_dir() / 'update.log').write_text(''.join(output))
 
                 if rc:
                     if recover_view_error:
@@ -1681,6 +1686,7 @@ class ProgressBarDaemon(threading.Thread):
             bar_format='\033[95m{l_bar}{bar}\033[0m {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
             dynamic_ncols=True,
         )
+        self.pbar.set_description("Waiting for update process")
 
     def run(self):
         while self.running:
