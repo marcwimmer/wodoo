@@ -730,7 +730,8 @@ def update(
                     ("Error at /update_modules.py - " "aborting update process.")
                 ) from ex
             finally:
-                progress.stop()
+                if not no_progress:
+                    progress.stop()
 
         trycount = 0
         max_try_count = 5
