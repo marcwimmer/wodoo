@@ -709,6 +709,8 @@ def update(
                     update_log_file.write_text(''.join(output))
 
                 if rc:
+                    if not no_progress:
+                        click.secho(update_log_file.read_text())
                     if recover_view_error:
                         try:
                             _try_to_recover_view_error(config, output)
@@ -799,7 +801,6 @@ def update(
     if not no_progress:
         click.secho("Update-log here: ./update.log")
         __assure_gitignore(customs_dir() / '.gitignore', update_log_file.relative_to(customs_dir()))
-        click.secho((customs_dir() / 'update.log').read_text())
 
 
 def _exec_commands(ctx, config, commands):
