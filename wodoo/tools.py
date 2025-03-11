@@ -1136,7 +1136,7 @@ def __assure_gitignore(gitignore_file, content):
     if not p.exists():
         p.write_text(content + "\n")
         return
-    content = content.strip()
+    content = str(content).strip()
     filecontent = gitignore_file.read_text().strip() + "\n"
     exists = [
         l for l in filecontent.splitlines() if l.strip() == content

@@ -21,6 +21,7 @@ from copy import deepcopy
 from .odoo_config import get_conn_autoclose
 from gimera.repo import Repo
 from .tools import _make_sure_module_is_installed
+from .tools import __assure_gitignore
 from .tools import get_hash
 from .tools import get_directory_hash
 from .tools import sync_folder
@@ -577,6 +578,7 @@ def update(
     if test_tags and default_test_tags:
         abort("Conflict: parameter test-tags and default-test-tags")
 
+    update_log_file = (customs_dir() / 'update.log')
     start_postgres_if_local(ctx, config)
     manifest = MANIFEST()
     if manifest.get("before-odoo-update", []) and not no_scripts:
@@ -704,7 +706,7 @@ def update(
                     Path(stdout).write_text(output)
 
                 if not no_progress:
-                    (customs_dir() / 'update.log').write_text(''.join(output))
+                    update_log_file.write_text(''.join(output))
 
                 if rc:
                     if recover_view_error:
@@ -794,6 +796,10 @@ def update(
     duration = (arrow.get() - started).total_seconds()
     date = arrow.get().strftime("%Y-%m-%d %H:%M:%S")
     click.secho(f"Update done at {date} - duration {duration}s", fg="yellow")
+    if not no_progress:
+        click.secho("Update-log here: ./update.log")
+        __assure_gitignore(customs_dir() / '.gitignore', update_log_file.relative_to(customs_dir()))
+        click.secho((customs_dir() / 'update.log').read_text())
 
 
 def _exec_commands(ctx, config, commands):
