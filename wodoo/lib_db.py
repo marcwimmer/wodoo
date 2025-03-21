@@ -1,4 +1,3 @@
-import random
 import time
 import subprocess
 from pathlib import Path
@@ -29,7 +28,10 @@ def db(config):
     Database related actions.
     """
     click.echo(
-        (f"database-name: {config.dbname}, " f"in ram: {config.run_postgres_in_ram}")
+        (
+            f"database-name: {config.dbname}, "
+            f"in ram: {config.run_postgres_in_ram}"
+        )
     )
 
 
@@ -39,7 +41,9 @@ def db_health_check(config):
     conn = config.get_odoo_conn()
     click.secho((f"Connecting to {conn.host}:{conn.port}/{config.dbname}"))
     try:
-        _execute_sql(conn, "select * from pg_catalog.pg_tables;", fetchall=True)
+        _execute_sql(
+            conn, "select * from pg_catalog.pg_tables;", fetchall=True
+        )
     except Exception:  # pylint: disable=broad-except
         abort("Listing tables failed for connection to {conn.host}")
     else:
@@ -54,7 +58,9 @@ def drop_db(config, dbname):
         click.secho("Either DEVMODE or force required", fg="red")
         sys.exit(-1)
     conn = config.get_odoo_conn().clone(dbname="postgres")
-    _remove_postgres_connections(conn, sql_afterwards=f"drop database {dbname};")
+    _remove_postgres_connections(
+        conn, sql_afterwards=f"drop database {dbname};"
+    )
     click.echo(f"Database {dbname} dropped.")
 
 
@@ -64,7 +70,11 @@ def pgactivity(config):
     from .tools import DBConnection
 
     conn = DBConnection(
-        config.dbname, config.db_host, config.db_port, config.db_user, config.db_pwd
+        config.dbname,
+        config.db_host,
+        config.db_port,
+        config.db_user,
+        config.db_pwd,
     )
     __dcrun(
         config,
@@ -122,7 +132,9 @@ def pgcli(config, dbname, params, host, port, user, password):
 def psql(config, dbname, params, sql, non_interactive):
     dbname = dbname or config.dbname
     conn = config.get_odoo_conn(inside_container=True).clone(dbname=dbname)
-    return _psql(config, conn, params, sql=sql, interactive=not non_interactive)
+    return _psql(
+        config, conn, params, sql=sql, interactive=not non_interactive
+    )
 
 
 def _psql(
@@ -177,7 +189,13 @@ def _psql(
 
 
 def _pgcli(config, conn, params, use_docker_container=None):
-    _psql(config, conn, params, bin="pgcli", use_docker_container=use_docker_container)
+    _psql(
+        config,
+        conn,
+        params,
+        bin="pgcli",
+        use_docker_container=use_docker_container,
+    )
 
 
 def aggressive_drop_db(config, conn, dbname):
@@ -185,10 +203,13 @@ def aggressive_drop_db(config, conn, dbname):
         try:
             _dropdb(config, conn, dbname)
         except Exception as ex:
-            click.secho(f"Error at dropping db at attempt {i + 1}: {ex}", fg="red")
+            click.secho(
+                f"Error at dropping db at attempt {i + 1}: {ex}", fg="red"
+            )
             if config.run_postgres:
                 click.secho(
-                    f"Restarting postgres to remove any connections.", fg="yellow"
+                    f"Restarting postgres to remove any connections.",
+                    fg="yellow",
                 )
                 __dc(config, ["kill", "postgres"])
                 __dc(config, ["up", "-d", "postgres"])
@@ -209,6 +230,7 @@ def aggressive_drop_db(config, conn, dbname):
 @click.pass_context
 def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
     import psycopg2
+
     collatec = True
     dbname = dbname or config.dbname
     if not dbname:
@@ -221,7 +243,9 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
         try:
             with get_conn_autoclose() as cr:
                 if _is_db_initialized(cr):
-                    click.secho("Database already initialized. Skipping.", fg="yellow")
+                    click.secho(
+                        "Database already initialized. Skipping.", fg="yellow"
+                    )
                     return
         except Exception:
             abort(
@@ -268,7 +292,10 @@ def anonymize(ctx, config):
         sys.exit(-1)
 
     _make_sure_module_is_installed(
-        ctx, config, "anonymize", "https://github.com/marcwimmer/odoo-anonymize.git"
+        ctx,
+        config,
+        "anonymize",
+        "https://github.com/marcwimmer/odoo-anonymize.git",
     )
 
     Commands.invoke(
@@ -291,7 +318,10 @@ def cleardb(ctx, config, no_vacuum_full):
         sys.exit(-1)
 
     _make_sure_module_is_installed(
-        ctx, config, "cleardb", "https://github.com/marcwimmer/odoo-cleardb.git"
+        ctx,
+        config,
+        "cleardb",
+        "https://github.com/marcwimmer/odoo-cleardb.git",
     )
     str_no_vauum_full = "1" if no_vacuum_full else "0"
 
@@ -383,7 +413,8 @@ ORDER BY total_bytes DESC;
         rows = rows[:top]
     click.echo(
         tabulate(
-            rows, ["TABLE_NAME", "row_estimate", "total", "INDEX", "toast", "TABLE"]
+            rows,
+            ["TABLE_NAME", "row_estimate", "total", "INDEX", "toast", "TABLE"],
         )
     )
 
@@ -424,7 +455,8 @@ def excel(config, sql, file, base64):
         filepath = Path(os.getcwd()) / file
     else:
         filepath = Path(os.getcwd()) / (
-            f"{conn.dbname}_" f"{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
+            f"{conn.dbname}_"
+            f"{arrow.get().strftime('%Y-%m-%d%H-%M-%S')}.xlsx"
         )
 
     # Workbook() takes one, non-optional, argument
@@ -475,12 +507,16 @@ def pghba_conf_wide_open(config, no_scram):
 
         _execute_sql(conn, f"copy hba from '{pghba_conf}';")
         _execute_sql(
-            conn, ("delete from hba " "where lines like 'host%all%all%all%md5'")
+            conn,
+            ("delete from hba " "where lines like 'host%all%all%all%md5'"),
         )
         for method in ["trust", "scram", "md5"]:
             _execute_sql(
                 conn,
-                ("delete from hba " f"where lines like 'host%all%all%all%{method}'"),
+                (
+                    "delete from hba "
+                    f"where lines like 'host%all%all%all%{method}'"
+                ),
             )
 
         def trustline():
@@ -491,7 +527,9 @@ def pghba_conf_wide_open(config, no_scram):
                     trustline = "host all all all md5"
                 else:
                     trustline = "host all all all scram-sha-256"
-            _execute_sql(conn, (f"insert into hba(lines) values('{trustline}');"))
+            _execute_sql(
+                conn, (f"insert into hba(lines) values('{trustline}');")
+            )
 
         trustline()
 
@@ -524,9 +562,12 @@ def pghba_conf_wide_open(config, no_scram):
 
         _execute_sql(conn, f"copy hba from '{conf}' with (delimiter E'~');")
         _execute_sql(
-            conn, ("delete from hba " "where lines like '%password_encryption%'")
+            conn,
+            ("delete from hba " "where lines like '%password_encryption%'"),
         )
-        _execute_sql(conn, ("update hba set lines = replace(lines, '\t', ' ')"))
+        _execute_sql(
+            conn, ("update hba set lines = replace(lines, '\t', ' ')")
+        )
         if no_scram:
             _execute_sql(
                 conn,
@@ -552,11 +593,12 @@ def pghba_conf_wide_open(config, no_scram):
     adapt_pghba_conf()
     adapt_postgres_conf()
 
+
 def shorten_string(s, max_length=30):
     if len(s) <= max_length:
         return s
     half = (max_length - 3) // 2
-    res = s[:half] + '...' + s[-half:]
+    res = s[:half] + "..." + s[-half:]
     res = res.ljust(max_length, " ")
     res = res[:max_length]
     return res
@@ -571,39 +613,72 @@ def shorten_string(s, max_length=30):
 @click.option("-i", "--include", help="Actively filter on this")
 def jsonsnapshot(config, table_filter, output, limit, skip, include):
     conn = config.get_odoo_conn()
-    skip = list(filter(bool, map(lambda x: x.strip(), (skip or '').split(","))))
-    include = list(filter(bool, map(lambda x: x.strip(), (include or '').split(","))))
+    skip = list(
+        filter(bool, map(lambda x: x.strip(), (skip or "").split(",")))
+    )
+    include = list(
+        filter(bool, map(lambda x: x.strip(), (include or "").split(",")))
+    )
+
     if not skip:
-        skip = ['queue_job', "datapolice_increment", "ir_attachment", "mail_message"]
-    all_names = [x[0] for x in _execute_sql(conn, f"select table_name from information_schema.tables where table_schema = 'public' and table_type='BASE TABLE';", fetchall=True)]
+        skip = [
+            "queue_job",
+            "datapolice_increment",
+            "ir_attachment",
+            "mail_message",
+        ]
+    all_names = [
+        x[0]
+        for x in _execute_sql(
+            conn,
+            f"select table_name from information_schema.tables where table_schema = 'public' and table_type='BASE TABLE';",
+            fetchall=True,
+        )
+    ]
 
     if table_filter:
-        table_filter_splitted = list(map(lambda x: x.strip(), table_filter.split(",")))
-        all_names = list(filter(lambda name: any(x in name for x in table_filter_splitted), all_names))
+        table_filter_splitted = list(
+            map(lambda x: x.strip(), table_filter.split(","))
+        )
+        all_names = list(
+            filter(
+                lambda name: any(x in name for x in table_filter_splitted),
+                all_names,
+            )
+        )
 
-    progress = tqdm(            total=len(all_names),
-            bar_format='\033[95m{l_bar}{bar}\033[0m {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
-            dynamic_ncols=True)
-    
+    progress = tqdm(
+        total=len(all_names),
+        bar_format="\033[95m{l_bar}{bar}\033[0m {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+        dynamic_ncols=True,
+    )
+
     root_path = Path(output)
     root_path.mkdir(exist_ok=True, parents=True)
     count_records = 0
     for i, item in enumerate(all_names):
-        progress.n=i
+        progress.n = i
         progress.set_description(shorten_string(item, 30))
         progress.refresh()
-        columns, rows = _execute_sql(conn, f"select * from {item} limit 0", fetchall=True, return_columns=True)
+        columns, rows = _execute_sql(
+            conn,
+            f"select * from {item} limit 0",
+            fetchall=True,
+            return_columns=True,
+        )
         if item in skip and not include:
             continue
-        if include  and item not in include:
+        if include and item not in include:
             continue
 
         sql = f"select * from {item}"
-        if 'id' in columns:
+        if "id" in columns:
             sql = sql + " order by id desc"
         if limit:
             sql = sql + f" limit {limit}"
-        columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
+        columns, rows = _execute_sql(
+            conn, sql, fetchall=True, return_columns=True
+        )
         columns = list(sorted(columns))
         output_file = root_path / f"{item}.dat"
         output_file.write_text("")
@@ -612,10 +687,12 @@ def jsonsnapshot(config, table_filter, output, limit, skip, include):
 
         with open(output_file, "w") as f:
             for irow, row in enumerate(rows):
-                f.write("------------------------------------------------------------\n")
+                f.write(
+                    "------------------------------------------------------------\n"
+                )
                 for icolumn in range(len(columns)):
                     collabel = columns[icolumn].ljust(max_column_length, " ")
-                    value =str(row[icolumn]) .replace("\n", " ")
+                    value = str(row[icolumn]).replace("\n", " ")
                     f.write(f"{collabel}: {value}\n")
                 count_records += 1
     click.secho(f"Exported {count_records} records to {root_path}")

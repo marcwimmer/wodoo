@@ -1,0 +1,90 @@
+exclude: ^(addons-3rdparty/|addons-monitoring/|addons-intero/|addons-oca-bank-payment/|addons-oca-community-data-files/|addons-oca-connector/|addons-oca-crm/|addons-oca-edi/|addons-oca-partner-contact/|addons-oca-queue/|addons-oca-server-auth/|addons-oca-server-tools/|addons-oca-server-ux/|addons-oca-social/|addons-oca-web/|addons-zeit/|addons-zebroo/|docker-compose.yml|odoo.conf|run_test.sh|nginx.conf|test_report.py|README.md|.gitignore)
+repos:
+  - repo: https://github.com/myint/autoflake
+    rev: v2.2.0
+    hooks:
+      - id: autoflake
+        args:
+          - --expand-star-imports
+          - --ignore-init-module-imports
+          - --in-place
+          - --remove-all-unused-imports
+          - --remove-duplicate-keys
+  - repo: https://github.com/psf/black
+    rev: "23.3.0"
+    hooks:
+      - id: black
+        args:
+          - --line-length
+          - "79"
+        language_version: python3
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+      - id: check-xml
+      - id: trailing-whitespace
+      - id: check-byte-order-marker
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: check-docstring-first
+      - id: fix-encoding-pragma
+        args:
+          - --remove
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.7.1
+    hooks:
+      - id: prettier
+        files: \.(css|htm|html|js|json|jsx|less|md|scss|toml|ts|yaml|yml)$
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v2.7.1
+    hooks:
+      - id: prettier
+        files: \.(xml)$
+        additional_dependencies:
+          - prettier@2.7.1
+          - "@prettier/plugin-xml@2.2.0"
+        args:
+          - --tab-width
+          - "4"
+          - --print-width
+          - "100"
+          - --use-tabs
+          - "true"
+          - --bracket-same-line
+          - "true"
+          - --xml-self-closing-space
+          - "true"
+  - repo: https://github.com/pre-commit/mirrors-fixmyjs
+    rev: v2.0.0
+    hooks:
+      - id: fixmyjs
+        args:
+          - -c .jshintrc
+  - repo: https://github.com/pre-commit/mirrors-jshint
+    rev: v2.13.5
+    hooks:
+      - id: jshint
+  - repo: https://github.com/pre-commit/mirrors-csslint
+    rev: v1.0.5
+    hooks:
+      - id: csslint
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
+      - id: python-no-log-warn
+      - id: python-no-eval
+      - id: text-unicode-replacement-char
+      - id: python-check-mock-methods
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.1
+    hooks:
+      - id: forbid-crlf
+      - id: remove-crlf
+  - repo: https://github.com/dudefellah/pre-commit-openapi
+    rev: v0.0.1
+    hooks:
+      - id: check-openapi
