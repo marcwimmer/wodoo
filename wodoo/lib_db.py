@@ -1,3 +1,4 @@
+import random
 import time
 import subprocess
 from pathlib import Path
@@ -18,6 +19,7 @@ from .tools import print_prod_env
 from .tools import _exists_db
 from .odoo_config import get_conn_autoclose
 from .tools import __dc
+from tqdm import tqdm
 
 
 @cli.group(cls=AliasedGroup)
@@ -549,6 +551,74 @@ def pghba_conf_wide_open(config, no_scram):
 
     adapt_pghba_conf()
     adapt_postgres_conf()
+
+def shorten_string(s, max_length=30):
+    if len(s) <= max_length:
+        return s
+    half = (max_length - 3) // 2
+    res = s[:half] + '...' + s[-half:]
+    res = res.ljust(max_length, " ")
+    res = res[:max_length]
+    return res
+
+
+@db.command()
+@pass_config
+@click.argument("output", required=True)
+@click.option("-f", "--table-filter")
+@click.option("-l", "--limit")
+@click.option("-s", "--skip", help="Provide table names (comma separated)")
+@click.option("-i", "--include", help="Actively filter on this")
+def jsonsnapshot(config, table_filter, output, limit, skip, include):
+    conn = config.get_odoo_conn()
+    skip = list(filter(bool, map(lambda x: x.strip(), (skip or '').split(","))))
+    include = list(filter(bool, map(lambda x: x.strip(), (include or '').split(","))))
+    if not skip:
+        skip = ['queue_job', "datapolice_increment", "ir_attachment", "mail_message"]
+    all_names = [x[0] for x in _execute_sql(conn, f"select table_name from information_schema.tables where table_schema = 'public' and table_type='BASE TABLE';", fetchall=True)]
+
+    if table_filter:
+        table_filter_splitted = list(map(lambda x: x.strip(), table_filter.split(",")))
+        all_names = list(filter(lambda name: any(x in name for x in table_filter_splitted), all_names))
+
+    progress = tqdm(            total=len(all_names),
+            bar_format='\033[95m{l_bar}{bar}\033[0m {n_fmt}/{total_fmt} [{elapsed}<{remaining}]',
+            dynamic_ncols=True)
+    
+    root_path = Path(output)
+    root_path.mkdir(exist_ok=True, parents=True)
+    count_records = 0
+    for i, item in enumerate(all_names):
+        progress.n=i
+        progress.set_description(shorten_string(item, 30))
+        progress.refresh()
+        columns, rows = _execute_sql(conn, f"select * from {item} limit 0", fetchall=True, return_columns=True)
+        if item in skip and not include:
+            continue
+        if include  and item not in include:
+            continue
+
+        sql = f"select * from {item}"
+        if 'id' in columns:
+            sql = sql + " order by id desc"
+        if limit:
+            sql = sql + f" limit {limit}"
+        columns, rows = _execute_sql(conn, sql, fetchall=True, return_columns=True)
+        columns = list(sorted(columns))
+        output_file = root_path / f"{item}.dat"
+        output_file.write_text("")
+
+        max_column_length = max(map(len, columns))
+
+        with open(output_file, "w") as f:
+            for irow, row in enumerate(rows):
+                f.write("------------------------------------------------------------\n")
+                for icolumn in range(len(columns)):
+                    collabel = columns[icolumn].ljust(max_column_length, " ")
+                    value =str(row[icolumn]) .replace("\n", " ")
+                    f.write(f"{collabel}: {value}\n")
+                count_records += 1
+    click.secho(f"Exported {count_records} records to {root_path}")
 
 
 Commands.register(reset_db, "reset-db")
