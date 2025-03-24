@@ -20,6 +20,8 @@ from .odoo_config import get_conn_autoclose
 from .tools import __dc
 from tqdm import tqdm
 
+SEP = "------------------------------------------------------------"
+
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -596,12 +598,184 @@ def pghba_conf_wide_open(config, no_scram):
 
 def shorten_string(s, max_length=30):
     if len(s) <= max_length:
-        return s
+        return s.ljust(30)
     half = (max_length - 3) // 2
     res = s[:half] + "..." + s[-half:]
-    res = res.ljust(max_length, " ")
+    res = res.ljust(max_length)
     res = res[:max_length]
     return res
+
+
+def compare(file1, file2, ignore_magic, skip_no_id_tables):
+    def parse(file):
+        records = {}
+        idx = 0
+        record = None
+        for line in file.splitlines() + [SEP]:
+            if line == SEP:
+                if record:
+                    if "id" in record:
+                        records[record["id"]] = record
+                    else:
+                        if skip_no_id_tables:
+                            return {}
+                        records[idx] = record
+                record = {}
+                continue
+            key, value = line.split(": ", 1)
+            key = key.strip()
+            value = value.strip()
+            record[key] = value
+            idx += 1
+        return records
+
+    data1 = parse(file1.read_text())
+    data2 = parse(file2.read_text())
+
+    result = {"count": 0, "missing_left": [], "missing_right": [], "diffs": []}
+    for id, r1 in data1.items():
+        r2 = data2.get(id, None)
+        if r2 is None:
+            result["missing_right"].append(r1)
+            result["count"] += 1
+            continue
+        inc_count = False
+        for key, value in r1.items():
+            if ignore_magic and key in ["create_date", "write_date"]:
+                continue
+            value2 = r2.get(key)
+            if value != value2:
+                if "<memory at" not in value:
+                    inc_count = True
+                    result["diffs"].append(
+                        (
+                            {
+                                "id": id,
+                                "field": key,
+                                "value1": value,
+                                "value2": value2,
+                            }
+                        )
+                    )
+        if inc_count:
+            result["count"] += 1
+    for id, r2 in data1.items():
+        r1 = data1.get(id)
+        if r1 is None:
+            result["missing_left"].append(r2)
+            result["count"] += 1
+    return result
+
+
+@db.command()
+@pass_config
+@click.argument("path1", required=True)
+@click.argument("path2", required=True)
+@click.option("-D", "--no_details", is_flag=True)
+@click.option("-i", "--include")
+@click.option("-s", "--skip")
+@click.option(
+    "-I",
+    "--ignore-magic",
+    is_flag=True,
+    help="Ignore magic columns like create_date, write_date",
+)
+@click.option(
+    "--include-no-id-tables",
+    is_flag=True,
+    help="Ignore rel tables without id column",
+)
+def dbcompare(
+    config,
+    path1,
+    path2,
+    ignore_magic,
+    include,
+    include_no_id_tables,
+    skip,
+    no_details,
+):
+    path1 = Path(path1)
+    path2 = Path(path2)
+    missing_files = []
+    diffs = {}
+    files2 = list(sorted(path2.glob("*.dat")))
+    include = list(
+        filter(bool, map(lambda x: x.strip(), (include or "").split(",")))
+    )
+    skip = list(
+        filter(bool, map(lambda x: x.strip(), (skip or "").split(",")))
+    )
+    progress = tqdm(
+        total=len(files2),
+        bar_format="\033[95m{l_bar}{bar}\033[0m {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+        dynamic_ncols=True,
+    )
+
+    def includeme(file):
+        if skip:
+            if file.stem in skip:
+                return False
+        if not include:
+            return True
+        return file.stem in include
+
+    for i, file in enumerate(files2):
+        if not includeme(file):
+            continue
+        progress.n = i
+        progress.set_description(shorten_string(file.name, 30))
+        progress.refresh()
+        file = Path(file)
+        file1 = list(path1.glob(file.name))
+        if not file1:
+            missing_files.append(file)
+            continue
+        diffs[file] = compare(
+            file,
+            Path(file1[0]),
+            ignore_magic=ignore_magic,
+            skip_no_id_tables=not include_no_id_tables,
+        )
+    for file in path1.glob("*.dat"):
+        if not includeme(file):
+            continue
+        file2 = list(path2.glob(file.name))
+        if not file2:
+            missing_files.append(file)
+            continue
+
+    if not no_details:
+        for filename, value in diffs.items():
+            if not value["diffs"]:
+                continue
+            click.secho(f"Diff for same id: {filename.name}", fg="green")
+            for diff in value["diffs"]:
+                click.secho(
+                    f"{diff['field']}  {diff['value1']} <----> {diff['value2']}"
+                )
+    else:
+        for filename, value in diffs.items():
+            count = len(value["diffs"])
+            if count:
+                click.secho(f"Diffs in {filename}: {count}")
+
+    def print_missing(missings):
+        for missing in missings:
+            click.secho(f"{missing}")
+
+    for missing in missing_files:
+        click.secho(f"Missing: {missing}")
+    for key, value in diffs.items():
+        count_diffs = value["count"]
+        if not count_diffs:
+            continue
+        if value["missing_left"]:
+            click.secho(f"Only in {key}", fg="green")
+            print_missing(value["missing_left"])
+        if value["missing_right"]:
+            click.secho(f"Only in {key}", fg="green")
+            print_missing(value["missing_right"])
 
 
 @db.command()
@@ -611,7 +785,7 @@ def shorten_string(s, max_length=30):
 @click.option("-l", "--limit")
 @click.option("-s", "--skip", help="Provide table names (comma separated)")
 @click.option("-i", "--include", help="Actively filter on this")
-def jsonsnapshot(config, table_filter, output, limit, skip, include):
+def filesnapshot(config, table_filter, output, limit, skip, include):
     conn = config.get_odoo_conn()
     skip = list(
         filter(bool, map(lambda x: x.strip(), (skip or "").split(",")))
@@ -626,6 +800,8 @@ def jsonsnapshot(config, table_filter, output, limit, skip, include):
             "datapolice_increment",
             "ir_attachment",
             "mail_message",
+            "mail_followers",
+            "mail_tracking_value",
         ]
     all_names = [
         x[0]
@@ -656,20 +832,20 @@ def jsonsnapshot(config, table_filter, output, limit, skip, include):
     root_path = Path(output)
     root_path.mkdir(exist_ok=True, parents=True)
     count_records = 0
-    for i, item in enumerate(all_names):
+    for i, item in enumerate(sorted(all_names)):
         progress.n = i
         progress.set_description(shorten_string(item, 30))
-        progress.refresh()
+        # progress.refresh()
+        if item in skip and not include:
+            continue
+        if include and item not in include:
+            continue
         columns, rows = _execute_sql(
             conn,
             f"select * from {item} limit 0",
             fetchall=True,
             return_columns=True,
         )
-        if item in skip and not include:
-            continue
-        if include and item not in include:
-            continue
 
         sql = f"select * from {item}"
         if "id" in columns:
@@ -679,20 +855,29 @@ def jsonsnapshot(config, table_filter, output, limit, skip, include):
         columns, rows = _execute_sql(
             conn, sql, fetchall=True, return_columns=True
         )
-        columns = list(sorted(columns))
+        columns_sorted = list(sorted(columns))
         output_file = root_path / f"{item}.dat"
         output_file.write_text("")
 
         max_column_length = max(map(len, columns))
 
+        def iterate():
+            yield from rows
+            # if 'id' in columns:
+            #     idx = columns.index('id')
+            #     yield from sorted(rows, key=lambda x: x[idx], reverse=True)
+            # else:
+            #     yield from rows
+
         with open(output_file, "w") as f:
-            for irow, row in enumerate(rows):
-                f.write(
-                    "------------------------------------------------------------\n"
-                )
-                for icolumn in range(len(columns)):
+            for irow, row in enumerate(iterate()):
+                f.write(SEP + "\n")
+                for column in columns_sorted:
+                    icolumn = columns.index(column)
                     collabel = columns[icolumn].ljust(max_column_length, " ")
-                    value = str(row[icolumn]).replace("\n", " ")
+                    value = (
+                        str(row[icolumn]).replace("\n", " ").replace("\r", " ")
+                    )
                     f.write(f"{collabel}: {value}\n")
                 count_records += 1
     click.secho(f"Exported {count_records} records to {root_path}")
