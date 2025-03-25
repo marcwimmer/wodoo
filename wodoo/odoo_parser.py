@@ -8,7 +8,6 @@ import tempfile
 from .odoo_config import customs_dir
 from .odoo_config import plaintextfile
 from .odoo_config import translate_path_relative_to_customs_root
-from contextlib import contextmanager
 
 modified_filename = ""
 cache_models = {}
@@ -47,7 +46,9 @@ def get_view(inherit_id):
     with plaintextfile().open("r") as f:
         lines = f.readlines()
         lines = filter(lambda line: inherit_id in line, lines)
-        lines = filter(lambda line: re.search(rf"\D\ {inherit_id}\ \D", line), lines)
+        lines = filter(
+            lambda line: re.search(rf"\D\ {inherit_id}\ \D", line), lines
+        )
         lines = list(lines)
         if lines:
             return get_file_lineno(lines[0])
@@ -57,7 +58,9 @@ def get_view(inherit_id):
 def get_qweb_template(name):
     with plaintextfile().open("r") as f:
         lines = f.readlines()
-        lines = list(filter(lambda line: "~qweb" in line and name in line, lines))
+        lines = list(
+            filter(lambda line: "~qweb" in line and name in line, lines)
+        )
         if lines:
             return get_file_lineno(lines[0])
     return None, None
@@ -94,12 +97,13 @@ def walk_files(on_match, pattern, name):
             if file.name.startswith("."):
                 continue
 
-            lines = file.read_text(encoding="utf-8", errors="ignore").split("\n")
+            lines = file.read_text(encoding="utf-8", errors="ignore").split(
+                "\n"
+            )
             on_match(file, mod, lines)
 
 
 def _get_methods():
-
     result = []
 
     def on_match(filename, module, lines):
@@ -123,7 +127,9 @@ def _get_methods():
                         )
                         model = None
                         if len(linenums) > 0:
-                            model = cache_models[filename]["lines"][linenums[0]]
+                            model = cache_models[filename]["lines"][
+                                linenums[0]
+                            ]
 
                     result.append(
                         {
@@ -143,7 +149,6 @@ def _get_methods():
 
 
 def _get_fields():
-
     result = []
 
     def on_match(filename, module, lines):
@@ -194,7 +199,6 @@ def _get_fields():
 
 
 def _get_views():
-
     result = []
     for id in cache_xml_ids["ids"]:
         e = cache_xml_ids["ids"][id]
@@ -272,7 +276,6 @@ def _get_xml_ids():
         def append_result(
             model, xmlid, line, res_model, name="", ttype="", inherit_id=""
         ):
-
             if "." not in xmlid:
                 xmlid = "%s.%s" % (module.name, xmlid)
 
@@ -301,7 +304,9 @@ def _get_xml_ids():
                 id = r.attrib["id"]
                 model = r.attrib["model"]
 
-                res_model = r.xpath("field[@name='model' or @name='res_model']")
+                res_model = r.xpath(
+                    "field[@name='model' or @name='res_model']"
+                )
                 if len(res_model) > 0:
                     res_model = res_model[0].text
                 else:
@@ -317,7 +322,9 @@ def _get_xml_ids():
                         name = r.xpath("field[@name='name']")[0].text
                     if r.xpath("field[@name='inherit_id']"):
                         if r.xpath("field[@name='inherit_id']/@ref"):
-                            inherit_id = r.xpath("field[@name='inherit_id']/@ref")[0]
+                            inherit_id = r.xpath(
+                                "field[@name='inherit_id']/@ref"
+                            )[0]
                             if "." not in inherit_id:
                                 inherit_id = f"{module}.{inherit_id}"
                     ttype = ""
@@ -386,7 +393,9 @@ def _get_xml_ids():
                 inherit_id = ""
                 if r.get("inherit_id"):
                     inherit_id = r.get("inherit_id")
-                append_result(model, id, r.sourceline, "qweb", inherit_id=inherit_id)
+                append_result(
+                    model, id, r.sourceline, "qweb", inherit_id=inherit_id
+                )
 
     walk_files(on_match, "*.xml", "xml-ids")
     result.sort(key=lambda x: x["id"])
@@ -450,7 +459,6 @@ def _get_models():
                     r"class.*\(.*Model.*\)",
                 ]
                 if any(re.match(x, line) for x in osvregex):
-
                     _name = ""
                     _inherit = ""
 
@@ -459,14 +467,18 @@ def _get_models():
                         linenum1 += 1
 
                         if re.search(r"[\\\t\ ]_name.?=", line1):
-                            _name = re.search("[\\'\\\"]([^\\'^\\\"]*)[\\'\\\"]", line1)
+                            _name = re.search(
+                                "[\\'\\\"]([^\\'^\\\"]*)[\\'\\\"]", line1
+                            )
                             if not _name:
                                 # print "classname not found in: %s"%lines[i]
                                 pass
                             else:
                                 _name = _name.group(1)
                         elif re.search(r"[\\\t\ ]_inherit.?=", line1):
-                            match = re.search("[\\'\\\"]([^\\'^\\\"]*)[\\'\\\"]", line1)
+                            match = re.search(
+                                "[\\'\\\"]([^\\'^\\\"]*)[\\'\\\"]", line1
+                            )
                             if match:
                                 _inherit = match.group(1)
                         elif any(re.match(x, line1) for x in osvregex):
@@ -519,11 +531,12 @@ def update_cache(arg_modified_filename=None):
     """
     param: modified_filename - if given, then only this filename is parsed;
     """
-    from . import module_tools
-    from .module_tools import Module, Modules
+    from .module_tools import Module
 
     if arg_modified_filename:
-        arg_modified_filename = Path(arg_modified_filename).resolve().absolute()
+        arg_modified_filename = (
+            Path(arg_modified_filename).resolve().absolute()
+        )
     plainfile = plaintextfile()
     if not plainfile.is_file():
         arg_modified_filename = None
@@ -600,8 +613,12 @@ def update_cache(arg_modified_filename=None):
         )
         write_to_ast(models, "model", lambda item: item["model"])
         write_to_ast(xml_ids, "xmlid", lambda item: item["fullname"])
-        write_to_ast(methods, "method", lambda item: "{model}.{method}".format(**item))
-        write_to_ast(fields, "field", lambda item: "{model}.{field}".format(**item))
+        write_to_ast(
+            methods, "method", lambda item: "{model}.{method}".format(**item)
+        )
+        write_to_ast(
+            fields, "field", lambda item: "{model}.{field}".format(**item)
+        )
         write_to_ast(
             views,
             "view",
@@ -612,7 +629,9 @@ def update_cache(arg_modified_filename=None):
         write_to_ast(
             qwebtemplates,
             "qweb",
-            lambda item: "~{type} {id} [inherit_id={inherit_id}]".format(**item),
+            lambda item: "~{type} {id} [inherit_id={inherit_id}]".format(
+                **item
+            ),
         )
     finally:
         f.close()
@@ -686,7 +705,9 @@ def try_to_get_context(line_content, lines_before, filename):
         and last_attribute == "ref"
     ):
         return "group"
-    elif "<field " in line_content and re.search("name=['\"]model['\"]", line_content):
+    elif "<field " in line_content and re.search(
+        "name=['\"]model['\"]", line_content
+    ):
         return "model"
     elif "<field " in line_content and re.search(
         "name=['\"]model_id['\"]", line_content

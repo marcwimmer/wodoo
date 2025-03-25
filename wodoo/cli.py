@@ -85,14 +85,18 @@ def completion(execute):
         ):
             content += [f"\n{line}\n"]
             click.secho(
-                f"Inserted successfully\n{line}" "\n\nPlease restart you shell."
+                f"Inserted successfully\n{line}"
+                "\n\nPlease restart you shell."
             )
             rc_file.write_text("\n".join(content))
         else:
             click.secho("Nothing done - already existed.")
     else:
         click.secho(
-            "\n\n" f"Insert into {rc_file}\n\n" f"echo '{line}' >> {rc_file}" "\n\n"
+            "\n\n"
+            f"Insert into {rc_file}\n\n"
+            f"echo '{line}' >> {rc_file}"
+            "\n\n"
         )
     sys.exit(0)
 
@@ -105,7 +109,9 @@ def version(config):
     version = _get_version()
 
     images_sha = subprocess.check_output(
-        ["git", "log", "-n1", "--format=%H"], encoding="utf8", cwd=config.dirs["images"]
+        ["git", "log", "-n1", "--format=%H"],
+        encoding="utf8",
+        cwd=config.dirs["images"],
     ).strip()
     images_branch = subprocess.check_output(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],

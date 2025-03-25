@@ -1,27 +1,25 @@
 import json
 import arrow
 import time
-from datetime import datetime
-from pathlib import Path
 
 import click
 from tabulate import tabulate
 
 from .cli import Commands, cli, pass_config
 from .lib_clickhelpers import AliasedGroup
-from .odoo_config import MANIFEST, current_version, customs_dir
 from .tools import _execute_sql
 from .tools import _get_setting
+
 
 def _stringify_translated_dict(v):
     if isinstance(v, dict):
         res = []
         for k, d in v.items():
-            if k != 'en_US':
+            if k != "en_US":
                 continue
             res.append(d)
             # res.append(f"{k}: {d}")
-        return ', '.join(res)
+        return ", ".join(res)
     else:
         return v
 
@@ -103,7 +101,10 @@ def set_ribbon(ctx, config, name, quick):
         res = _execute_sql(config.get_odoo_conn(), SQL, fetchone=True)
         if not (res and res[0] == "installed"):
             Commands.invoke(
-                ctx, "update", module=["web_environment_ribbon"], no_dangling_check=True
+                ctx,
+                "update",
+                module=["web_environment_ribbon"],
+                no_dangling_check=True,
             )
 
     _execute_sql(
@@ -146,7 +147,10 @@ def restore_web_icons(ctx, config):
 
 
 @talk.command(
-    help=("If menu items are missing, then recomputing the parent store" "can help")
+    help=(
+        "If menu items are missing, then recomputing the parent store"
+        "can help"
+    )
 )
 @pass_config
 @click.pass_context
@@ -188,6 +192,7 @@ def progress(config):
 @pass_config
 def modules_overview(config):
     from .lib_src import _modules_overview
+
     res = _modules_overview(config)
     print("===")
     print(json.dumps(res, indent=4))
@@ -226,7 +231,8 @@ def menus(config, name):
         rows = _execute_sql(
             conn,
             sql=(
-                "SELECT id, name, parent_id FROM ir_ui_menu " f"WHERE id = {parent_id}"
+                "SELECT id, name, parent_id FROM ir_ui_menu "
+                f"WHERE id = {parent_id}"
             ),
             fetchall=True,
             return_columns=False,
@@ -239,7 +245,9 @@ def menus(config, name):
     ids = ",".join(map(str, [0] + list(ids)))
     rows = _execute_sql(
         conn,
-        sql=(f"SELECT id, name, parent_id FROM ir_ui_menu WHERE id in ({ids})"),
+        sql=(
+            f"SELECT id, name, parent_id FROM ir_ui_menu WHERE id in ({ids})"
+        ),
         fetchall=True,
         return_columns=True,
     )
@@ -247,7 +255,12 @@ def menus(config, name):
     for row in rows[1]:
         xml_id = _get_xml_id(conn, "ir.ui.menu", row[0])
         row = list(row)
-        path = "/".join(map(lambda x: _stringify_translated_dict(x[1]), reversed(list(get_parents(row[0])))))
+        path = "/".join(
+            map(
+                lambda x: _stringify_translated_dict(x[1]),
+                reversed(list(get_parents(row[0]))),
+            )
+        )
         row.insert(0, xml_id)
         row.insert(0, path)
         row = row[:2]
@@ -281,7 +294,9 @@ def groups(config, name):
     ids = ",".join(map(str, [0] + list(ids)))
     rows = _execute_sql(
         conn,
-        sql=(f"SELECT id, name FROM res_groups WHERE id in ({ids}) ORDER BY name"),
+        sql=(
+            f"SELECT id, name FROM res_groups WHERE id in ({ids}) ORDER BY name"
+        ),
         fetchall=True,
         return_columns=True,
     )
@@ -294,7 +309,9 @@ def groups(config, name):
         tablerows.append(row)
     cols = ["XML-ID", "Name"]
     click.secho(
-        tabulate(sorted(tablerows, key=lambda x: x[0]), cols, tablefmt="fancy_grid"),
+        tabulate(
+            sorted(tablerows, key=lambda x: x[0]), cols, tablefmt="fancy_grid"
+        ),
         fg="yellow",
     )
 
@@ -375,10 +392,14 @@ def queuejobs(config, interval):
             return_columns=True,
         )
         rows = list(rows)
-        rows[1] = sorted(rows[1], key=lambda x: x[1] == "total" and "zzzzzzzz" or x[1])
+        rows[1] = sorted(
+            rows[1], key=lambda x: x[1] == "total" and "zzzzzzzz" or x[1]
+        )
         data = {x[1]: x[0] for x in rows[1]}
 
-        click.secho(tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow")
+        click.secho(
+            tabulate(rows[1], rows[0], tablefmt="fancy_grid"), fg="yellow"
+        )
         if last_data:
             click.secho("Changes: ")
             now = arrow.get()
@@ -408,6 +429,7 @@ def queuejobs(config, interval):
         time.sleep(interval)
         last_data = data
         last_time = arrow.get()
+
 
 def _get_xmlid(conn, id, model):
     where = f"model = 'ir.ui.view' and res_id={id}"
@@ -446,12 +468,12 @@ def views(config, name, module, model, type):
 
     rows = list(rows)
     if type:
-        rows[1]  = list(filter(lambda x: x[2] == type, rows[1]))
+        rows[1] = list(filter(lambda x: x[2] == type, rows[1]))
 
     rows2 = []
     for row in rows[1]:
         row = list(row)
-        row.append(_get_xmlid(conn, row[0], 'ir.ui.view'))
+        row.append(_get_xmlid(conn, row[0], "ir.ui.view"))
         rows2.append(row)
     rows[0] = list(rows[0])
     rows[0].append("xmlid")

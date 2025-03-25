@@ -85,4 +85,5 @@ def pattern(path, patterns, run=True, seek=None, timeout=300):
 
     return check
 
+
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4

@@ -4,7 +4,7 @@ zfs create zfs_pool1/docker
 zfs create zfs_pool1/docker/volumes
 
 
-zfs list -o name,usedbychildren     # 
+zfs list -o name,usedbychildren     #
 docker/vlsa039t563j1yi1k4hum45or                                                0B
 docker/volumes                                                                100K
 docker/volumes/t1                                                               0B
@@ -16,8 +16,6 @@ better: zfs get -H -o value usedbychildren docker/volumes  mit -1 oder nicht
 
 import inquirer
 import time
-import os
-import json
 from .tools import abort
 from operator import itemgetter
 import subprocess
@@ -28,11 +26,9 @@ import tempfile
 import click
 from .tools import __dc
 from .tools import search_env_path, __get_postgres_volume_name
-from .cli import cli, pass_config
-from .lib_clickhelpers import AliasedGroup
 from pathlib import Path
 from .tools import abort
-from .tools import get_volume_fullpath, verbose
+from .tools import get_volume_fullpath
 
 HOWTO_PREPARE = """
 
@@ -103,7 +99,15 @@ def check_correct_zfs_setup(config):
     zfspool_or_zfsvolume = _get_zfs_pool_or_zfs_parent(PATH)
     zfspool_mountpath = (
         subprocess.check_output(
-            ["zfs", "get", "-H", "-o", "value", "mountpoint", zfspool_or_zfsvolume],
+            [
+                "zfs",
+                "get",
+                "-H",
+                "-o",
+                "value",
+                "mountpoint",
+                zfspool_or_zfsvolume,
+            ],
             encoding="utf8",
         )
         .splitlines()[-1]
@@ -129,7 +133,8 @@ def check_correct_zfs_setup(config):
 def _get_zfs_pool_or_zfs_parent(path):
     try:
         findmnt = subprocess.check_output(
-            ["findmnt", "--target", path, "--output", "SOURCE"], encoding="utf8"
+            ["findmnt", "--target", path, "--output", "SOURCE"],
+            encoding="utf8",
         ).splitlines()
     except subprocess.CalledProcessError:
         abort(f"No zfs pool found for {path}")
@@ -154,7 +159,8 @@ def _get_zfs_path(config):
         zfspool = _get_zfs_pool_or_zfs_parent(PATH)
 
         fstype = subprocess.check_output(
-            ["findmnt", "--target", PATH, "--output", "FSTYPE"], encoding="utf8"
+            ["findmnt", "--target", PATH, "--output", "FSTYPE"],
+            encoding="utf8",
         ).splitlines()
         if fstype[1].strip() != "zfs":
             abort(f"No zfs pool found for {PATH}")
@@ -194,7 +200,10 @@ def _get_possible_snapshot_paths(config):
     ]
 
     def matches(path):
-        return "/" + postgresvolume + "." in path or "/" + postgresvolume + "@" in path
+        return (
+            "/" + postgresvolume + "." in path
+            or "/" + postgresvolume + "@" in path
+        )
 
     snaps = list(filter(matches, snaps))
     yield from snaps
@@ -261,7 +270,9 @@ def _turn_into_subvolume(config):
     if filename.exists():
         raise Exception(f"Path {filename} should not exist.")
     if not fullpath.exists():
-        abort(f"{fullpath} does not exist. Did you start postgres? (odoo up -d)")
+        abort(
+            f"{fullpath} does not exist. Did you start postgres? (odoo up -d)"
+        )
 
     shutil.move(fullpath, filename)
     try:
@@ -294,13 +305,16 @@ def make_snapshot(ctx, config, name):
             answer = inquirer.prompt(
                 [
                     inquirer.Confirm(
-                        "continue", message=("Snapshot already exists - overwrite?")
+                        "continue",
+                        message=("Snapshot already exists - overwrite?"),
                     )
                 ]
             )
             if not answer["continue"]:
                 sys.exit(-1)
-        subprocess.check_call(["sudo", zfs, "destroy", snapshot[0]["fullpath"]])
+        subprocess.check_call(
+            ["sudo", zfs, "destroy", snapshot[0]["fullpath"]]
+        )
 
     assert " " not in name
     fullpath = _get_zfs_path(config) + "@" + name
@@ -326,7 +340,8 @@ def _try_umount(config):
         )
     except subprocess.CalledProcessError:
         click.secho(
-            f"Could not umount {zfs_full_path}. Perhaps not a problem.", fg="yellow"
+            f"Could not umount {zfs_full_path}. Perhaps not a problem.",
+            fg="yellow",
         )
 
 
@@ -345,7 +360,9 @@ def restore(config, name):
     snapshot = snapshot[0]
     zfs_full_path = _get_zfs_path(config)
     snapshots_of_volume = [
-        x for x in snapshots if x["fullpath"].split("@")[0].startswith(zfs_full_path)
+        x
+        for x in snapshots
+        if x["fullpath"].split("@")[0].startswith(zfs_full_path)
     ]
     try:
         index = list(map(lambda x: x["name"], snapshots_of_volume)).index(name)
@@ -356,7 +373,9 @@ def restore(config, name):
     full_next_path = _get_next_snapshotpath(config)
     _try_umount(config)
     if _is_zfs_path(zfs_full_path):
-        subprocess.check_call(["sudo", zfs, "rename", zfs_full_path, full_next_path])
+        subprocess.check_call(
+            ["sudo", zfs, "rename", zfs_full_path, full_next_path]
+        )
     snap_name = snapshot["fullpath"].split("@")[-1]
     snapshot_path = _get_zfs_path_for_snap_name(config, snap_name)
     __dc(config, ["rm", "-f"] + ["postgres"])
@@ -391,7 +410,9 @@ def remove(config, snapshot):
         snapshot = snapshots[0]
     if snapshot["fullpath"] in map(itemgetter("fullpath"), snapshots):
         _try_umount(config)
-        subprocess.check_call(["sudo", zfs, "destroy", "-R", snapshot["fullpath"]])
+        subprocess.check_call(
+            ["sudo", zfs, "destroy", "-R", snapshot["fullpath"]]
+        )
         remount(config)
 
 
@@ -400,7 +421,9 @@ def remove_volume(config):
     umount = search_env_path("umount")
     for path in _get_possible_snapshot_paths(config):
         try:
-            subprocess.check_call(["sudo", zfs, "set", "canmount=noauto", path])
+            subprocess.check_call(
+                ["sudo", zfs, "set", "canmount=noauto", path]
+            )
         except:
             click.secho(
                 "Failed to execute canmount=noauto, but perhaps not a problem. Trying to continue.",
@@ -411,7 +434,9 @@ def remove_volume(config):
         except:
             pass
 
-        fullpath = translate_poolPath_to_fullPath(Path(path).parent) / Path(path).name
+        fullpath = (
+            translate_poolPath_to_fullPath(Path(path).parent) / Path(path).name
+        )
         if fullpath.exists() or "@" in str(fullpath):
             try:
                 subprocess.check_call(
@@ -421,7 +446,9 @@ def remove_volume(config):
                     stdout=subprocess.PIPE,
                 )
             except:
-                click.secho(f"Failed to destroy zfs dataset at {path}.", fg="red")
+                click.secho(
+                    f"Failed to destroy zfs dataset at {path}.", fg="red"
+                )
                 time.sleep(1)
             click.secho(f"Removed: {path}", fg="yellow")
         else:
@@ -436,7 +463,16 @@ def translate_poolPath_to_fullPath(zfs_path):
         mountpoint = None
         try:
             mountpoint = subprocess.check_output(
-                ["sudo", zfs, "get", "mountpoint", "-H", "-o", "value", zfs_path],
+                [
+                    "sudo",
+                    zfs,
+                    "get",
+                    "mountpoint",
+                    "-H",
+                    "-o",
+                    "value",
+                    zfs_path,
+                ],
                 encoding="utf8",
             ).strip()
         except:

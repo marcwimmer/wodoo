@@ -1,13 +1,11 @@
 import subprocess
 import random
-from multiprocessing.dummy import Process
 import time
 import sys
 import uuid
 import arrow
 import json
 import base64
-from datetime import datetime
 import os
 import click
 
@@ -35,10 +33,8 @@ def robot(config):
 @pass_config
 @click.pass_context
 def setup(ctx, config):
-    from .module_tools import Module
     from .odoo_config import MANIFEST, customs_dir
     import yaml
-
 
     content = yaml.safe_load(open(customs_dir() / "gimera.yml", "r"))
     for branch in content["repos"]:
@@ -66,29 +62,33 @@ def setup(ctx, config):
 
     from gimera.gimera import apply as gimera
 
-    _setup_robot_env(config, ctx) 
+    _setup_robot_env(config, ctx)
 
     ctx.invoke(gimera, recursive=True, update=True, missing=True)
     if os.getenv("SILENT_ROBOT_SETUP") != "1":
         click.secho(
-            "Create now your first robo test with 'odoo robot new smoketest", fg="green"
+            "Create now your first robo test with 'odoo robot new smoketest",
+            fg="green",
         )
+
 
 def _setup_robot_env(config, ctx):
     # e.g. for robotcode extension used in vscdoe
     path = Path(os.path.expanduser("~/.robotenv"))
-    reqfile = config.dirs['images'] / 'robot' /  "requirements.txt"
+    reqfile = config.dirs["images"] / "robot" / "requirements.txt"
 
     if path.exists():
         return
-    click.secho("Setting up virtual environment for robotframework", fg="yellow")
+    click.secho(
+        "Setting up virtual environment for robotframework", fg="yellow"
+    )
     subprocess.run(["python3", "-m", "venv", path], check=True)
 
     click.secho("Installing requirements for robotframework", fg="yellow")
-    click.secho(reqfile.read_text(), fg='yellow')
-    subprocess.run([str(path / "bin" / "pip"), "install", "-r", reqfile], check=True)
-
-    
+    click.secho(reqfile.read_text(), fg="yellow")
+    subprocess.run(
+        [str(path / "bin" / "pip"), "install", "-r", reqfile], check=True
+    )
 
 
 @robot.command(name="new")
@@ -105,7 +105,11 @@ def do_new(ctx, config, name):
     testdir.mkdir(exist_ok=True)
 
     content_file = (
-        customs_dir() / "addons_robot" / "robot_utils" / "tests" / "test_template.robot"
+        customs_dir()
+        / "addons_robot"
+        / "robot_utils"
+        / "tests"
+        / "test_template.robot"
     )
     if not content_file.exists():
         raise Exception(f"File not found: {content_file}")
@@ -119,12 +123,17 @@ def do_new(ctx, config, name):
 
 
 @robot.command()
-@click.argument("file", required=False, shell_complete=_get_available_robottests)
+@click.argument(
+    "file", required=False, shell_complete=_get_available_robottests
+)
 @click.option("-u", "--user", default="admin")
 @click.option("-a", "--all", is_flag=True)
 @click.option("-n", "--test_name", is_flag=False)
 @click.option(
-    "-p", "--param", multiple=True, help="e.g. --param key1=value1 --param key2=value2"
+    "-p",
+    "--param",
+    multiple=True,
+    help="e.g. --param key1=value1 --param key2=value2",
 )
 @click.option("--parallel", default=1, help="Parallel runs of robots.")
 @click.option(
@@ -145,7 +154,9 @@ def do_new(ctx, config, name):
     "-j",
     "--output-json",
     is_flag=True,
-    help=("If set, then a json is printed to console, with detailed informations"),
+    help=(
+        "If set, then a json is printed to console, with detailed informations"
+    ),
 )
 @click.option(
     "--results-file", help="concrete filename where the results.json is stored"
@@ -180,7 +191,9 @@ def do_new(ctx, config, name):
     help="Use Visual Code to debug debugpy - connect the created profile.",
 )
 @click.option(
-    "-M", '--no-install-further-modules', is_flag=True,
+    "-M",
+    "--no-install-further-modules",
+    is_flag=True,
 )
 @pass_config
 @click.pass_context
@@ -203,13 +216,12 @@ def run(
     min_success_required,
     no_sysexit=False,
     debug=False,
-    no_install_further_modules=False
+    no_install_further_modules=False,
 ):
     PARAM = param
     del param
     started = arrow.utcnow()
 
-    from pathlib import Path
     from .odoo_config import customs_dir
     from .module_tools import DBModules
     from .odoo_config import MANIFEST
@@ -218,7 +230,9 @@ def run(
 
     if not config.devmode and not config.force:
         click.secho(
-            ("Devmode required to run unit tests. Database will be destroyed."),
+            (
+                "Devmode required to run unit tests. Database will be destroyed."
+            ),
             fg="red",
         )
         sys.exit(-1)
@@ -236,7 +250,9 @@ def run(
     from .robo_helpers import get_odoo_modules
 
     os.chdir(customs_dir())
-    odoo_modules = set(get_odoo_modules(config.verbose, filenames, customs_dir()))
+    odoo_modules = set(
+        get_odoo_modules(config.verbose, filenames, customs_dir())
+    )
     modules = [("install", "robot_utils")]
     if current_version() < 15.0:
         modules.append(("install", "web_selenium"))
@@ -287,7 +303,9 @@ def run(
                     module=install_modules_to_install,
                     no_dangling_check=True,
                 )
-                click.secho(f"Installed modules {','.join(install_modules_to_install)}")
+                click.secho(
+                    f"Installed modules {','.join(install_modules_to_install)}"
+                )
         if uninstall_odoo_modules:
 
             def installed(module):
@@ -296,7 +314,9 @@ def run(
                     abort(f"Could not get state for {module}")
                 return data["state"] == "installed"
 
-            modules_to_uninstall = list(filter(installed, uninstall_odoo_modules))
+            modules_to_uninstall = list(
+                filter(installed, uninstall_odoo_modules)
+            )
             if modules_to_uninstall:
                 click.secho(
                     (
@@ -442,6 +462,7 @@ def _run_test(
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
+
     Commands.invoke(ctx, "restart", machines=["seleniumdriver"])
 
     res = _eval_robot_output(
@@ -465,7 +486,9 @@ def _prepare_fresh_robotest(ctx):
     click.secho("Preparation of tests are done.", fg="yellow")
 
 
-@robot.command(help="Runs all robots defined in section 'robotests' (filepatterns)")
+@robot.command(
+    help="Runs all robots defined in section 'robotests' (filepatterns)"
+)
 @click.option(
     "--timeout",
     required=False,
@@ -486,7 +509,7 @@ def run_all(
     timeout,
     retry,
 ):
-    from .odoo_config import MANIFEST, customs_dir
+    from .odoo_config import customs_dir
     from .robo_helpers import _get_all_robottest_files
     from .odoo_config import customs_dir
 
@@ -517,7 +540,8 @@ def run_all(
             except Exception as ex:
                 retry += 1
                 click.secho(
-                    f"Retry at _prepare_fresh_robotest because of {ex}", fg="yellow"
+                    f"Retry at _prepare_fresh_robotest because of {ex}",
+                    fg="yellow",
                 )
                 time.sleep(random.randint(20, 60))
 

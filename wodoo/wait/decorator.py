@@ -7,8 +7,8 @@ def timeout(func):
     def _timeout(*args, **kwargs):
         TIMEOUT = 300
 
-        if 'timeout' in kwargs:
-            TIMEOUT = kwargs['timeout']
+        if "timeout" in kwargs:
+            TIMEOUT = kwargs["timeout"]
 
         start = time.time()
 
@@ -23,5 +23,6 @@ def timeout(func):
                     return False
 
     return _timeout
+
 
 # vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4

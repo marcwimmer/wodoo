@@ -40,7 +40,9 @@ def __choose_snapshot(config, take=False):
     if take:
         return take
 
-    answer = inquirer.prompt([inquirer.List("snapshot", "", choices=snapshots_choices)])
+    answer = inquirer.prompt(
+        [inquirer.List("snapshot", "", choices=snapshots_choices)]
+    )
     if not answer:
         sys.exit(0)
     snapshot = answer["snapshot"]
@@ -65,7 +67,6 @@ def do_list(config):
 @pass_config
 @click.pass_context
 def snapshot_make(ctx, config, name):
-
     config.snapshot_manager.assert_environment(config)
     if not name:
         name = arrow.get().strftime("%Y%m%d_%H%M%S")

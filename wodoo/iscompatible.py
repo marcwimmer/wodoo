@@ -78,7 +78,9 @@ def iscompatible(requirements, version):
 
     results = list()
 
-    for operator_string, requirement_string in parse_requirements(requirements):
+    for operator_string, requirement_string in parse_requirements(
+        requirements
+    ):
         operator = operators[operator_string]
         required = string_to_tuple(requirement_string)
         result = operator(version, required)
@@ -119,9 +121,7 @@ def parse_requirements(line):
     while not LINE_END.match(line, p):
         match = VERSION.match(line, p)
         if not match:
-            raise ValueError(
-                "Expected version spec in",
-                line, "at", line[p:])
+            raise ValueError("Expected version spec in", line, "at", line[p:])
 
         specs.append(match.group(*(1, 2)))
         p = match.end()
@@ -131,8 +131,8 @@ def parse_requirements(line):
             p = match.end()  # Skip comma
         elif not LINE_END.match(line, p):
             raise ValueError(
-                "Expected ',' or end-of-list in",
-                line, "at", line[p:])
+                "Expected ',' or end-of-list in", line, "at", line[p:]
+            )
 
     return specs
 
@@ -151,9 +151,11 @@ def string_to_tuple(version):
     return tuple(map(int, version.split(".")))
 
 
-operators = {"<":   operator.lt,
-             "<=":  operator.le,
-             "==":  operator.eq,
-             "!=":  operator.ne,
-             ">=":  operator.ge,
-             ">":   operator.gt}
+operators = {
+    "<": operator.lt,
+    "<=": operator.le,
+    "==": operator.eq,
+    "!=": operator.ne,
+    ">=": operator.ge,
+    ">": operator.gt,
+}

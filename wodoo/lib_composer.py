@@ -9,8 +9,6 @@ import time
 import collections
 import grp
 import base64
-import pwd
-from contextlib import contextmanager
 import platform
 from pathlib import Path
 import importlib.util
@@ -34,7 +32,6 @@ from .tools import __try_to_set_owner
 from .tools import whoami
 from .tools import abort
 from .tools import _get_version
-from .tools import rsync
 from .tools import __read_file
 from .tools import get_docker_version
 from .tools import _parse_yaml
@@ -61,7 +58,9 @@ def composer(config):
 
 
 @composer.command()
-@click.option("--full", is_flag=True, help="Otherwise environment is shortened.")
+@click.option(
+    "--full", is_flag=True, help="Otherwise environment is shortened."
+)
 @click.argument("service-name", required=False)
 @pass_config
 @click.pass_context
@@ -116,14 +115,21 @@ def _get_arch():
 @click.option("--headless", is_flag=True, help="Dont start a web-server")
 @click.option("--devmode", is_flag=True)
 @click.option(
-    "-c", "--additional_config", help="Base64 encoded configuration like in settings"
+    "-c",
+    "--additional_config",
+    help="Base64 encoded configuration like in settings",
 )
-@click.option("-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0")
-@click.option("--images-url", help="default: https://github.com/marcwimmer/odoo")
+@click.option(
+    "-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0"
+)
+@click.option(
+    "--images-url", help="default: https://github.com/marcwimmer/odoo"
+)
 @click.option("-I", "--no-update-images", is_flag=True)
 @click.option("--no-gimera-apply", is_flag=True)
 @click.option(
-    "--docker-compose", help="additional docker-compose files, separated by colon :"
+    "--docker-compose",
+    help="additional docker-compose files, separated by colon :",
 )
 @click.option("-s", "--include-src", help="include source")
 @pass_config
@@ -149,18 +155,21 @@ def do_reload(
     from .module_tools import NotInAddonsPath
 
     if headless and proxy_port:
-        click.secho(("Proxy Port and headless together not compatible."), fg="red")
+        click.secho(
+            ("Proxy Port and headless together not compatible."), fg="red"
+        )
         sys.exit(-1)
 
     if not no_update_images:
         _download_images(config, images_url)
     config.TARGETARCH = _get_arch()
 
-    click.secho(f"Current Project Name: {config.project_name}", bold=True, fg="green")
+    click.secho(
+        f"Current Project Name: {config.project_name}", bold=True, fg="green"
+    )
     SETTINGS_FILE = config.files.get("settings")
     if SETTINGS_FILE and SETTINGS_FILE.exists():
         SETTINGS_FILE.unlink()
-
 
     additional_config_file = None
     try:
@@ -169,7 +178,9 @@ def do_reload(
             additional_config_text = base64.b64decode(additional_config)
             additional_config_file.write_bytes(additional_config_text)
             additional_config = MyConfigParser(additional_config_file)
-            click.secho(f"Additional config provided in {additional_config_file}:")
+            click.secho(
+                f"Additional config provided in {additional_config_file}:"
+            )
             for line in additional_config_text.decode("utf-8").split("\n"):
                 click.secho("\t" + line)
 
@@ -182,7 +193,10 @@ def do_reload(
             "\n".join(
                 filter(
                     lambda x: not x.startswith("#"),
-                    map(lambda x: x.strip(), (additional_config or "").splitlines()),
+                    map(
+                        lambda x: x.strip(),
+                        (additional_config or "").splitlines(),
+                    ),
                 )
             )
         ) + "\n"
@@ -238,7 +252,9 @@ def internal_reload(
 ):
     threading.currentThread().config = config
     ensure_project_name(config)
-    additional_docker_configuration_files = additional_docker_configuration_files or []
+    additional_docker_configuration_files = (
+        additional_docker_configuration_files or []
+    )
     defaults = {
         "config": config,
         "db": db,
@@ -290,11 +306,15 @@ def internal_reload(
     _execute_after_reload(config)
 
     # update a possible robot file also
-    Commands.invoke(ctx, 'robot:make-var-file')
+    Commands.invoke(ctx, "robot:make-var-file")
 
     if float(ODOO_VERSION) >= 17.0:
-        if any(config.ODOO_PYTHON_VERSION.startswith(x) for x in ['3.9.', '3.8.', '3.7.']):
+        if any(
+            config.ODOO_PYTHON_VERSION.startswith(x)
+            for x in ["3.9.", "3.8.", "3.7."]
+        ):
             abort("Invalid python version - needs at least 3.10")
+
 
 def _execute_after_reload(config):
     execute_script(
@@ -310,6 +330,7 @@ def _set_defaults(config, defaults):
     defaults["project_name"] = config.project_name
     defaults["WODOO_VERSION"] = _get_version()
 
+
 def _do_compose(
     config,
     db="",
@@ -322,7 +343,6 @@ def _do_compose(
     """
     builds docker compose, proxy settings, setups odoo instances
     """
-    from .myconfigparser import MyConfigParser
     from .settings import _export_settings
 
     rows = []
@@ -374,9 +394,7 @@ def _download_images(config, images_url):
     effective_branch = config.ODOO_IMAGES_BRANCH or consts.IMAGES_REPO_BRANCH
 
     if effective_branch and effective_branch != current_branch:
-        subprocess.check_call(
-            ["git", "fetch"], cwd=config.dirs["images"]
-        )
+        subprocess.check_call(["git", "fetch"], cwd=config.dirs["images"])
         subprocess.check_call(
             ["git", "checkout", effective_branch], cwd=config.dirs["images"]
         )
@@ -388,7 +406,9 @@ def _download_images(config, images_url):
         for _ in range(10):
             trycount += 1
             try:
-                subprocess.check_call(["git", "pull"], cwd=config.dirs["images"])
+                subprocess.check_call(
+                    ["git", "pull"], cwd=config.dirs["images"]
+                )
             except Exception as ex:
                 if trycount < 5:
                     time.sleep(random.randint(5, 30))
@@ -569,7 +589,8 @@ def _prepare_yml_files_from_template_files(
             if not d.exists():
                 if config.verbose:
                     click.secho(
-                        f"Hint: you may use configuration file {d}", fg="magenta"
+                        f"Hint: you may use configuration file {d}",
+                        fg="magenta",
                     )
                 continue
             if d.is_file():
@@ -595,7 +616,9 @@ def _prepare_yml_files_from_template_files(
     _files = _files2
     del _files2
 
-    _prepare_docker_compose_files(config, config.files["docker_compose"], _files)
+    _prepare_docker_compose_files(
+        config, config.files["docker_compose"], _files
+    )
 
 
 def __resolve_custom_merge(whole_content, value):
@@ -627,7 +650,10 @@ def __get_sorted_contents(paths):
             order = "99999999"
         else:
             order = (
-                content.split("manage-order")[1].split("\n")[0].replace(":", "").strip()
+                content.split("manage-order")[1]
+                .split("\n")[0]
+                .replace(":", "")
+                .strip()
             )
         order = int(order)
 
@@ -646,7 +672,9 @@ def __set_environment_in_services(content):
 
         file = "$HOST_RUN_DIR/settings"
         if not [x for x in service["env_file"] if x == file]:
-            if service.get("labels", {}).get("odoo_framework.apply_env", "1") not in [
+            if service.get("labels", {}).get(
+                "odoo_framework.apply_env", "1"
+            ) not in [
                 0,
                 "0",
                 "false",
@@ -680,7 +708,9 @@ def post_process_complete_yaml_config(config, yml):
 
     # set container name to service name (to avoid dns names with _1)
     for service in yml["services"]:
-        yml["services"][service]["container_name"] = f"{config.project_name}_{service}"
+        yml["services"][service][
+            "container_name"
+        ] = f"{config.project_name}_{service}"
         # yml['services'][service]['hostname'] = service # otherwise odoo pgcli does not work
 
     # set label from configuration settings starting with DOCKER_LABEL=123
@@ -747,7 +777,9 @@ def __run_docker_compose_config(config, contents, env):
                 cmdline2 = buildcmd(files[: i + 1])
                 try:
                     click.secho(f"Testing {file}...", fg="green")
-                    conf = subprocess.check_output(cmdline2, cwd=temp_path, env=d)
+                    conf = subprocess.check_output(
+                        cmdline2, cwd=temp_path, env=d
+                    )
                 except:
                     click.secho(f"{file}:\n", fg="yellow")
                     click.secho(file.read_text())
@@ -816,7 +848,7 @@ def dict_merge(dct, merge_dct):
 
 def _prepare_docker_compose_files(config, dest_file, paths):
     from .myconfigparser import MyConfigParser
-    from .tools import abort, atomic_write
+    from .tools import atomic_write
     import yaml
 
     if not dest_file:
@@ -867,7 +899,6 @@ def _explode_referenced_machines(contents):
     a service is referenced; this service is copied in its own file to match later that reference by its service
     name in docker compose config
     """
-    import yaml
 
     needs_explosion = {}
 
@@ -902,7 +933,9 @@ def _apply_variables(config, contents, env):
     import yaml
 
     # add static yaml content to each machine
-    default_network = yaml.safe_load(config.files["config/default_network"].read_text())
+    default_network = yaml.safe_load(
+        config.files["config/default_network"].read_text()
+    )
 
     # extract further networks
     for content in contents:
@@ -959,7 +992,9 @@ def toggle_settings(ctx, config):
     questions = [
         inquirer.Checkbox(
             "run",
-            message="What services to run? {}/{}".format(config.customs, config.dbname),
+            message="What services to run? {}/{}".format(
+                config.customs, config.dbname
+            ),
             choices=choices,
             default=default,
         )
@@ -976,7 +1011,7 @@ def toggle_settings(ctx, config):
 
 
 def _use_file(config, path):
-    from . import odoo_config
+    pass
 
     def check():
         if "etc" in path.parts:
@@ -1076,15 +1111,21 @@ def _merge_odoo_dockerfile(config, include_src):
         if "odoo/images/odoo" in dockerfile:
             shutil.copy(dockerfile, config.files["odoo_docker_file"])
             dockerfile1 = dockerfile
-            service["build"]["dockerfile"] = str(config.files["odoo_docker_file"])
+            service["build"]["dockerfile"] = str(
+                config.files["odoo_docker_file"]
+            )
         del dockerfile
     content = yaml.dump(content, default_flow_style=False)
     config.files["docker_compose"].write_text(content)
 
     # copy dockerfile to new location
     if dockerfile1:
-        click.secho(f"Copying {dockerfile1} to {config.files['odoo_docker_file']}")
-        config.files["odoo_docker_file"].write_text(Path(dockerfile1).read_text())
+        click.secho(
+            f"Copying {dockerfile1} to {config.files['odoo_docker_file']}"
+        )
+        config.files["odoo_docker_file"].write_text(
+            Path(dockerfile1).read_text()
+        )
         for file in bashfind(config.WORKING_DIR, "Dockerfile.appendix"):
             dir = file.parent / f"Dockerfile.appendix.dir"
             appendix = file.read_text()
@@ -1094,7 +1135,9 @@ def _merge_odoo_dockerfile(config, include_src):
             file.write_text(content)
             # probably a dir?
             if dir.exists():
-                dest = config.dirs['images'] / 'odoo' / "Dockerfile.appendix.dir"
+                dest = (
+                    config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir"
+                )
                 if dest.exists() and dest.is_file():
                     dest.unlink()
                 dest.mkdir(parents=True, exist_ok=True)
@@ -1103,7 +1146,6 @@ def _merge_odoo_dockerfile(config, include_src):
                         shutil.copy(part, dest)
                     else:
                         shutil.copytree(part, dest / part.name)
-        
 
         # append common docker config
         odoo_docker_file = config.files["odoo_docker_file"]
@@ -1145,7 +1187,9 @@ def _complete_setting_name(ctx, param, incomplete):
 
     res = set([x["name"].strip() for x in params])
     if incomplete:
-        res = list(filter(lambda x: x.lower().startswith(incomplete.lower()), res))
+        res = list(
+            filter(lambda x: x.lower().startswith(incomplete.lower()), res)
+        )
     return sorted(res)
 
 
@@ -1182,7 +1226,9 @@ def _complete_services(ctx, param, incomplete):
 
     if incomplete:
         services = list(
-            filter(lambda x: x.lower().startswith(incomplete.lower()), services)
+            filter(
+                lambda x: x.lower().startswith(incomplete.lower()), services
+            )
         )
     return services
 
@@ -1195,8 +1241,7 @@ def _complete_services(ctx, param, incomplete):
 @click.option("--file", required=False, default="")
 @click.option("-R", "--no-reload", is_flag=True)
 def docker_service(ctx, config, name, value, no_reload, file):
-    from .myconfigparser import MyConfigParser
-    import yaml
+    pass
 
     if not value and not file:
         content = _parse_yaml(__read_file(config.files["docker_compose"]))
@@ -1243,7 +1288,9 @@ def queuejob_channels(ctx, config, name, amount):
     channels = content.split(",")
 
     if name:
-        channels = list(filter(lambda x: x.strip().split(":")[0] != name, channels))
+        channels = list(
+            filter(lambda x: x.strip().split(":")[0] != name, channels)
+        )
         channels.append(f"{name}:{amount}")
         file.write_text(",".join(channels))
         click.secho("Now restart the queuejob container", fg="yellow")
@@ -1252,10 +1299,11 @@ def queuejob_channels(ctx, config, name, amount):
 
 
 def before_reload(config):
-    customs_dir = Path('.')
-    file = customs_dir / 'devscripts' / "before_reload.py"
+    customs_dir = Path(".")
+    file = customs_dir / "devscripts" / "before_reload.py"
     if not file.exists():
         return
     subprocess.check_call(["python3", file])
+
 
 Commands.register(do_reload, "reload")

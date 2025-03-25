@@ -7,12 +7,10 @@ import tempfile
 import click
 from .tools import __dc
 from .tools import search_env_path, __get_postgres_volume_name
-from .cli import cli, pass_config
-from .lib_clickhelpers import AliasedGroup
 from pathlib import Path
 from .tools import get_volume_fullpath, get_docker_volumes
 
-SNAPSHOT_DIR = get_docker_volumes() / 'subvolumes'
+SNAPSHOT_DIR = get_docker_volumes() / "subvolumes"
 
 
 def _get_path(config):
@@ -88,7 +86,8 @@ def _turn_into_subvolume(path):
     if process.returncode != 0:
         err_msg = std_err.decode("utf-8").lower()
         if any(
-            x.lower() in err_msg for x in ["Not a Btrfs subvolume", "not a subvolume"]
+            x.lower() in err_msg
+            for x in ["Not a Btrfs subvolume", "not a subvolume"]
         ):
             click.secho(f"Turning {path} into a subvolume.")
             filename = path.parent / Path(tempfile.mktemp()).name
@@ -96,7 +95,9 @@ def _turn_into_subvolume(path):
                 raise Exception(f"Path {filename} should not exist.")
             shutil.move(path, filename)
             try:
-                subprocess.check_output(["sudo", "btrfs", "subvolume", "create", path])
+                subprocess.check_output(
+                    ["sudo", "btrfs", "subvolume", "create", path]
+                )
                 click.secho(
                     f"Writing back the files to original position: from {filename}/ to {path}/"
                 )

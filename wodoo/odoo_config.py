@@ -2,24 +2,17 @@ from contextlib import contextmanager
 from collections import Counter
 import shutil
 import tempfile
-from datetime import datetime
 
-from pyparsing import punc8bit
 
 try:
     import arrow
 except Exception:
     arrow = None
 from collections import OrderedDict
-import threading
 from . import click
 import json
 from pathlib import Path
 import os
-import time
-import subprocess
-from os.path import expanduser
-from .consts import VERSIONS
 from .tools import abort
 
 try:
@@ -143,7 +136,11 @@ class MANIFEST_CLASS(object):
         shutil.move(tfile, MANIFEST_FILE())
 
         if len(set(d["addons_paths"])) != len(d["addons_paths"]):
-            duplicates = [item for item, count in Counter(d["addons_paths"]).items() if count > 1]
+            duplicates = [
+                item
+                for item, count in Counter(d["addons_paths"]).items()
+                if count > 1
+            ]
             abort(f"Addons Paths contains duplicate entries: {duplicates}")
 
     def rewrite(self):

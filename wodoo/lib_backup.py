@@ -1,18 +1,10 @@
-from codecs import ignore_errors
 from .tools import try_ignore_exceptions
 import psycopg2
 import arrow
-import time
-import sys
 import uuid
 from .tools import abort
-import sys
-import docker
 import json
 import importlib.util
-from retrying import retry
-import traceback
-from threading import Thread
 import subprocess
 import shutil
 from datetime import datetime
@@ -24,7 +16,6 @@ from .tools import put_appendix_into_file
 from .tools import _dropdb
 from .tools import remove_webassets
 from .tools import __dc
-from .tools import __dc_out
 from .tools import docker_kill_container
 from .tools import _execute_sql
 from .tools import __rename_db_drop_target
@@ -41,7 +32,6 @@ from .tools import _get_filestore_folder
 from .tools import __try_to_set_owner
 from .tools import docker_list_containers
 from .tools import __get_postgres_volume_name
-from .tools import get_volume_fullpath
 from .tools import force_input_hostname
 
 import inspect
@@ -95,7 +85,8 @@ def backup_all(ctx, config, filename):
     ensure_project_name(config)
     config.force = True
     filename = Path(
-        filename or (config.dbname + arrow.get().strftime("%Y%m%d %H%M") + ".zip")
+        filename
+        or (config.dbname + arrow.get().strftime("%Y%m%d %H%M") + ".zip")
     )
     if len(filename.parts) == 1:
         filename = Path(config.dumps_path) / filename
@@ -105,14 +96,18 @@ def backup_all(ctx, config, filename):
         filepath_db = ctx.invoke(
             backup_db, filename=tmppath / "dump.sql", dumptype="plain"
         )
-        with autocleanpaper(tmppath / (filename.name + ".zip"), strict=True) as tmpfile:
+        with autocleanpaper(
+            tmppath / (filename.name + ".zip"), strict=True
+        ) as tmpfile:
             folder = _get_filestore_folder(config)
             with autocleanpaper() as fake_filestore:
                 symlink_file = fake_filestore / "filestore"
                 symlink_file.parent.mkdir(exist_ok=True, parents=True)
                 os.symlink(folder, symlink_file)
 
-                with autocleanpaper(folder / "zipped.zip", strict=True) as folderzip:
+                with autocleanpaper(
+                    folder / "zipped.zip", strict=True
+                ) as folderzip:
                     subprocess.check_call(
                         ["zip", "-r", folderzip, "filestore"],
                         cwd=fake_filestore,
@@ -223,14 +218,18 @@ def backup_files(config, filename):
 
 
 def __get_default_backup_filename(config):
-    return datetime.now().strftime(f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz")
+    return datetime.now().strftime(
+        f"{config.project_name}.odoo.%Y%m%d%H%M%S.dump.gz"
+    )
 
 
 @restore.command("show-dump-type")
 @click.argument("filename")
 @pass_config
 def get_dump_type(config, filename):
-    dump_type = _add_cronjob_scripts(config)["postgres"].__get_dump_type(filename)
+    dump_type = _add_cronjob_scripts(config)["postgres"].__get_dump_type(
+        filename
+    )
     click.echo(dump_type)
 
 
@@ -343,7 +342,12 @@ def _odoo_sh(ctx, config, filename, params):
                 filestore_dest = _get_filestore_destination(config)
                 click.secho(f"Transferring files to {filestore_dest}")
                 subprocess.check_call(
-                    ["rsync", str(filestore) + "/", str(filestore_dest) + "/", "-ar"]
+                    [
+                        "rsync",
+                        str(filestore) + "/",
+                        str(filestore_dest) + "/",
+                        "-ar",
+                    ]
                 )
                 # change owner to OWNER_UID
                 subprocess.check_call(
@@ -375,7 +379,10 @@ def _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets):
 @click.option("--no-remove-webassets", default=False, is_flag=True)
 @click.option("-j", "--workers", default=5)
 @click.option(
-    "--verify", default=False, is_flag=True, help="Wodoo-bin: checks postgres version"
+    "--verify",
+    default=False,
+    is_flag=True,
+    help="Wodoo-bin: checks postgres version",
 )
 @click.option(
     "-X",
@@ -408,7 +415,9 @@ def restore_db(
     dbname,
 ):
     if not filename:
-        filename = _inquirer_dump_file(config, "Choose filename to restore", dbfilter)
+        filename = _inquirer_dump_file(
+            config, "Choose filename to restore", dbfilter
+        )
     if not filename:
         return
     if not (dbname or config.dbname):
@@ -544,24 +553,25 @@ def _restore_dump(
             except psycopg2.errors.DuplicateDatabase:
                 _execute_sql(
                     conn.clone(dbname="postgres"),
-                    (
-                        f"drop database {DBNAME_RESTORING} "
-                        ";"
-                    ),
+                    (f"drop database {DBNAME_RESTORING} " ";"),
                     notransaction=True,
                 )
 
     # seems not to be needed
-    version = _get_postgres_version(conn.clone(dbname='template1'))
+    version = _get_postgres_version(conn.clone(dbname="template1"))
     if float(version) < 16:
         try_ignore_exceptions(
-            create_db, (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError), timeout=30
+            create_db,
+            (psycopg2.errors.AdminShutdown, psycopg2.InterfaceError),
+            timeout=30,
         )
 
     effective_host_name = config.DB_HOST
 
     if config.devmode and not no_dev_scripts:
-        click.echo("Option devmode is set, so cleanup-scripts are run afterwards")
+        click.echo(
+            "Option devmode is set, so cleanup-scripts are run afterwards"
+        )
     try:
         if config.use_docker:
             # if postgres docker is used, then make a temporary config to restart docker container
@@ -583,7 +593,9 @@ def _restore_dump(
                         "postgres",
                     ],
                 )
-                Commands.invoke(ctx, "wait_for_container_postgres", missing_ok=True)
+                Commands.invoke(
+                    ctx, "wait_for_container_postgres", missing_ok=True
+                )
                 effective_host_name = postgres_name
 
             cmd = [
@@ -632,7 +644,9 @@ def _restore_dump(
 
         _after_restore(ctx, conn, config, no_dev_scripts, no_remove_webassets)
         __rename_db_drop_target(
-            conn.clone(dbname="postgres"), DBNAME_RESTORING, dbname or config.dbname
+            conn.clone(dbname="postgres"),
+            DBNAME_RESTORING,
+            dbname or config.dbname,
         )
         _remove_postgres_connections(conn, dest_db)
 
@@ -669,8 +683,12 @@ def _inquirer_dump_file(config, message, _filter):
     BACKUPDIR = Path(config.dumps_path)
     __files = _get_dump_files(BACKUPDIR)
     if _filter:
-        __files = list(filter(lambda x: _filter.lower() in x[1].lower(), __files))
-    filename = inquirer.prompt([inquirer.List("filename", message, choices=__files)])
+        __files = list(
+            filter(lambda x: _filter.lower() in x[1].lower(), __files)
+        )
+    filename = inquirer.prompt(
+        [inquirer.List("filename", message, choices=__files)]
+    )
     if filename:
         filename = filename["filename"][1]
         return filename
@@ -740,7 +758,9 @@ def _backup_wodoobin(ctx, config, filename):
     with autocleanpaper() as tempfile_zip:
         _binary_zip(path, tempfile_zip)
 
-        put_appendix_into_file(f"WODOO_BIN\n{version}\n", tempfile_zip, filename)
+        put_appendix_into_file(
+            f"WODOO_BIN\n{version}\n", tempfile_zip, filename
+        )
 
     Commands.invoke(ctx, "up", daemon=True, machines=["postgres"])
 

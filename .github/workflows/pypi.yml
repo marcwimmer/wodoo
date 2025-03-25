@@ -9,10 +9,8 @@ permissions:
   contents: write
   packages: write
 
-
 jobs:
   build:
-
     runs-on: self-hosted
     env:
       ODOO_TEST: "16.0"
@@ -26,104 +24,106 @@ jobs:
       cancel-in-progress: true
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.10
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.10"
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-    - name: setup merge
-      run: |
-        set -x
-        git config --global user.email 'github-action@github.com'
-        git config --global user.name 'github-action@github.com'
-        git fetch
+      - name: setup merge
+        run: |
+          set -x
+          git config --global user.email 'github-action@github.com'
+          git config --global user.name 'github-action@github.com'
+          git fetch
 
-    - name: install pipx
-      run: |
-        sudo apt update && sudo apt install -y python3-dev \
-          python3-pip python3-venv python3-virtualenv
-        pip install pip -U
-        pip install pipx
+      - name: install pipx
+        run: |
+          sudo apt update && sudo apt install -y python3-dev \
+            python3-pip python3-venv python3-virtualenv
+          pip install pip -U
+          pip install pipx
 
-    - name: setup gimera
-      run: |
-        set -ex
-        pipx install gimera
-        pipx upgrade gimera
+      - name: setup gimera
+        run: |
+          set -ex
+          pipx install gimera
+          pipx upgrade gimera
 
-    - name: install woodo
-      run: |
-        pipx install -e --force .
-        echo "##################"
-        echo $PATH
-        echo "##################"
-        #WHY?
-        pipx runpip wodoo install requests==2.31.0  || true
+      - name: install woodo
+        run: |
+          pipx install -e --force .
+          echo "##################"
+          echo $PATH
+          echo "##################"
+          #WHY?
+          pipx runpip wodoo install requests==2.31.0  || true
 
-    - name: do some testing
-      run: |
-        set -x
-        TEMPODOODIR="./$(basename $(mktemp))/odoo"
-        mkdir -p "$TEMPODOODIR"
-        cd "$TEMPODOODIR"
-        $ODOOCMD init . "$ODOO_TEST"
-        docker ps
-        $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION -R
-        $ODOOCMD setting RUN_ODOO_CRONJOBS=0 -R
-        $ODOOCMD setting RUN_CRONJOBS=0 -R
-        $ODOOCMD setting DEVMODE=1 -R
-        $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
-        $ODOOCMD setting PROXY_PORT=${PROXY_PORT}
-        $ODOOCMD build 
-        $ODOOCMD kill || true
-        $ODOOCMD -f db reset
-        $ODOOCMD update crm
-        $ODOOCMD kill || true
-        $ODOOCMD -f down || true
+      - name: do some testing
+        run: |
+          set -x
+          TEMPODOODIR="./$(basename $(mktemp))/odoo"
+          mkdir -p "$TEMPODOODIR"
+          cd "$TEMPODOODIR"
+          git config --global init.defaultBranch main
+          export
+          $ODOOCMD init . "$ODOO_TEST"
+          docker ps
+          $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION -R
+          $ODOOCMD setting RUN_ODOO_CRONJOBS=0 -R
+          $ODOOCMD setting RUN_CRONJOBS=0 -R
+          $ODOOCMD setting DEVMODE=1 -R
+          $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
+          $ODOOCMD setting PROXY_PORT=${PROXY_PORT}
+          $ODOOCMD build
+          $ODOOCMD kill || true
+          $ODOOCMD -f db reset
+          $ODOOCMD update crm
+          $ODOOCMD kill || true
+          $ODOOCMD -f down || true
 
-    - name: increment version
-      run: |
-        python3 << EOF 
-        import re
-        from pathlib import Path
-        file = Path('setup.cfg')
-        lines = file.read_text()
-        find = re.findall(r'version = (.*)', lines)
-        old_version_string = find[-1]
-        old_version = f'version = {old_version_string}'
-        version = list(map(int, find[-1].split('.')))
-        version[-1] += 1
-        version_string = '.'.join(map(str, version))
-        new_version = 'version = ' + version_string
-        lines = lines.replace(old_version, new_version)
-        file.write_text(lines)
-        Path("wodoo/version.txt").write_text(version_string)
-        EOF
+      - name: increment version
+        run: |
+          python3 << EOF
+          import re
+          from pathlib import Path
+          file = Path('setup.cfg')
+          lines = file.read_text()
+          find = re.findall(r'version = (.*)', lines)
+          old_version_string = find[-1]
+          old_version = f'version = {old_version_string}'
+          version = list(map(int, find[-1].split('.')))
+          version[-1] += 1
+          version_string = '.'.join(map(str, version))
+          new_version = 'version = ' + version_string
+          lines = lines.replace(old_version, new_version)
+          file.write_text(lines)
+          Path("wodoo/version.txt").write_text(version_string)
+          EOF
 
-    - name: commit and tag new version
-      run: |
-        set -x
-        git fetch --tags
+      - name: commit and tag new version
+        run: |
+          set -x
+          git fetch --tags
 
-        COMMIT_MSG='autocommit by github action'
-        if [ $(git log -n1 | grep -q "$COMMIT_MSG") ]; then
-          echo "No new commit"
-          echo "DO_PYPI=0" >> "$GITHUB_ENV"
-        else
-          git add .
-          git commit -am "$COMMIT_MSG"
-          VERSION=$(cat wodoo/version.txt)
-          git tag ${VERSION}
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-          git push origin --tags
-          git push
-          python3 setup.py sdist
-          echo "DO_PYPI=1" >> "$GITHUB_ENV"
-        fi
+          COMMIT_MSG='autocommit by github action'
+          if [ $(git log -n1 | grep -q "$COMMIT_MSG") ]; then
+            echo "No new commit"
+            echo "DO_PYPI=0" >> "$GITHUB_ENV"
+          else
+            git add .
+            git commit -am "$COMMIT_MSG"
+            VERSION=$(cat wodoo/version.txt)
+            git tag ${VERSION}
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+            git push origin --tags
+            git push
+            python3 setup.py sdist
+            echo "DO_PYPI=1" >> "$GITHUB_ENV"
+          fi
 
-    - name: Publish to PyPi
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        password: ${{ secrets.PYPI_API_TOKEN }}
-      if: env.DO_PYPI == '1'
+      - name: Publish to PyPi
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+        if: env.DO_PYPI == '1'

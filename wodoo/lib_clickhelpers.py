@@ -25,7 +25,8 @@ if click:
                 cmd = click.Group.get_command(self, ctx, _cmd_name)
                 if type(cmd) == type(self):
                     filtered = filter(
-                        lambda cmd: cmd.startswith(cmd_name), cmd.list_commands(ctx)
+                        lambda cmd: cmd.startswith(cmd_name),
+                        cmd.list_commands(ctx),
                     )
                     matches += list(
                         map(

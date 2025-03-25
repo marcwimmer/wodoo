@@ -44,15 +44,11 @@ import json
 import inquirer
 from pathlib import Path
 import click
-import subprocess
 import shutil
-import tempfile
 import os
-import base64
 import sys
 import arrow
 from .tools import abort
-from .tools import __empty_dir
 
 
 def _normalize_robot_line(line):
@@ -122,12 +118,12 @@ def _get_required_odoo_modules_from_robot_file(filecontent):
             line = line.split(":", 1)[1].strip().split(",")
             line = [x.strip() for x in line]
             for module in line:
-                yield 'install', module
+                yield "install", module
         if "odoo-uninstall:" in line:
             line = line.split(":", 1)[1].strip().split(",")
             line = [x.strip() for x in line]
             for module in line:
-                yield 'uninstall', module
+                yield "uninstall", module
 
 
 def get_odoo_modules(verbose, test_files, root_dir):
@@ -172,14 +168,18 @@ def _eval_robot_output(
 
         if tabulate:
             click.secho(
-                tabulate(map(data, rows), headers=headers, tablefmt="fancy_grid"), fg=fg
+                tabulate(
+                    map(data, rows), headers=headers, tablefmt="fancy_grid"
+                ),
+                fg=fg,
             )
 
     print_row(list(filter(lambda x: x["all_ok"], test_results)), fg="green")
     print_row(list(filter(lambda x: not x["all_ok"], test_results)), fg="red")
 
     click.secho(
-        (f"Duration: {(arrow.utcnow() - started).total_seconds()}s"), fg=color_info
+        (f"Duration: {(arrow.utcnow() - started).total_seconds()}s"),
+        fg=color_info,
     )
 
     # move completed runs without token to parent to reduce the amount of intermediate files
@@ -205,7 +205,10 @@ def _eval_robot_output(
 
     click.secho(f"Outputs are generated in {find_results_path}", fg="yellow")
     click.secho(
-        ("Watch the logs online at: " f"{config.EXTERNAL_DOMAIN or 'http://localhost'}:{config.PROXY_PORT}/robot-output")
+        (
+            "Watch the logs online at: "
+            f"{config.EXTERNAL_DOMAIN or 'http://localhost'}:{config.PROXY_PORT}/robot-output"
+        )
     )
 
     for line in test_results:
@@ -232,7 +235,7 @@ def _select_robot_filename(file, run_all):
         # test if argument wants to use wildcart matching
         if "*" in file:
             wildcart_matches = []
-            for path in Path('.').glob(file):
+            for path in Path(".").glob(file):
                 wildcart_matches.append(str(path))
 
             if len(wildcart_matches) == 0:
@@ -263,7 +266,9 @@ def _select_robot_filename(file, run_all):
                         testset.append(Path(test))
 
                 if len(testset) == 0:
-                    click.secho(f"No matching tests in folder {file}", fg="red")
+                    click.secho(
+                        f"No matching tests in folder {file}", fg="red"
+                    )
                     sys.exit(-1)
 
                 return testset

@@ -52,7 +52,9 @@ def odoo17attrs(root_dir):
         left_operand = leaf[0]
         # Take care of right operand, don't add quotes if it's list/tuple/set/boolean/number, check if we have a true/false/1/0 string tho.
         right_operand = leaf[2]
-        if right_operand in ("True", "False", "1", "0") or type(right_operand) in (
+        if right_operand in ("True", "False", "1", "0") or type(
+            right_operand
+        ) in (
             list,
             tuple,
             set,
@@ -74,7 +76,9 @@ def odoo17attrs(root_dir):
         if stack in (True, False, "True", "False", 1, 0, "1", "0"):
             return stack
         last_parenthesis_index = max(
-            index for index, item in enumerate(stack[::-1]) if item not in ("|", "!")
+            index
+            for index, item in enumerate(stack[::-1])
+            if item not in ("|", "!")
         )
         stack = normalize_domain(stack)
         stack = stack[::-1]
@@ -90,14 +94,17 @@ def odoo17attrs(root_dir):
                 try:
                     right = result.pop()
                 except IndexError:
-                    res = left + ("%s" % " and" if leaf_or_operator == "&" else " or")
+                    res = left + (
+                        "%s" % " and" if leaf_or_operator == "&" else " or"
+                    )
                     result.append(res)
                     continue
                 form = "(%s %s %s)"
                 if index > last_parenthesis_index:
                     form = "%s %s %s"
                 result.append(
-                    form % (left, "and" if leaf_or_operator == "&" else "or", right)
+                    form
+                    % (left, "and" if leaf_or_operator == "&" else "or", right)
                 )
             else:
                 result.append(stringify_leaf(leaf_or_operator))
@@ -119,10 +126,14 @@ def odoo17attrs(root_dir):
     def prettify_output(html):
         for attr in NEW_ATTRS:
             html = re.sub(
-                f'<attribute name="{attr}">[ \n]+', f'<attribute name="{attr}">', html
+                f'<attribute name="{attr}">[ \n]+',
+                f'<attribute name="{attr}">',
+                html,
             )
         html = re.sub(f"[ \n]+</attribute>", f"</attribute>", html)
-        html = re.sub(r'<field name="([a-z_]+)">[ \n]+', r'<field name="\1">', html)
+        html = re.sub(
+            r'<field name="([a-z_]+)">[ \n]+', r'<field name="\1">', html
+        )
         html = re.sub(r"[ \n]+</field>", r"</field>", html)
         return html
 
@@ -141,15 +152,22 @@ def odoo17attrs(root_dir):
                 percent_d_results = {}
                 for percent_d in percent_d_regex.findall(contents):
                     contents = contents.replace(
-                        percent_d, "'REPLACEME%s'" % counter_for_percent_d_replace
+                        percent_d,
+                        "'REPLACEME%s'" % counter_for_percent_d_replace,
                     )
-                    percent_d_results[counter_for_percent_d_replace] = percent_d
+                    percent_d_results[
+                        counter_for_percent_d_replace
+                    ] = percent_d
                     counter_for_percent_d_replace += 1
                 soup = bs(contents, "xml")
                 tags_with_attrs = soup.select("[attrs]")
-                attribute_tags_name_attrs = soup.select('attribute[name="attrs"]')
+                attribute_tags_name_attrs = soup.select(
+                    'attribute[name="attrs"]'
+                )
                 tags_with_states = soup.select("[states]")
-                attribute_tags_name_states = soup.select('attribute[name="states"]')
+                attribute_tags_name_states = soup.select(
+                    'attribute[name="states"]'
+                )
                 if not (
                     tags_with_attrs
                     or attribute_tags_name_attrs
@@ -161,8 +179,12 @@ def odoo17attrs(root_dir):
                     "\n################################################################",
                     fg="green",
                 )
-                click.secho("##### Taking care of file -> %s" % xml_file, fg="green")
-                click.secho("\n########### Current tags found ###\n", fg="green")
+                click.secho(
+                    "##### Taking care of file -> %s" % xml_file, fg="green"
+                )
+                click.secho(
+                    "\n########### Current tags found ###\n", fg="green"
+                )
                 for t in (
                     tags_with_attrs
                     + attribute_tags_name_attrs
@@ -193,7 +215,10 @@ def odoo17attrs(root_dir):
                 # Management ot tags that have states=""
                 for state_tag in tags_with_states:
                     base_invisible = ""
-                    if "invisible" in state_tag.attrs and state_tag["invisible"]:
+                    if (
+                        "invisible" in state_tag.attrs
+                        and state_tag["invisible"]
+                    ):
                         base_invisible = state_tag["invisible"]
                         if not (
                             base_invisible.endswith("or")
@@ -215,7 +240,9 @@ def odoo17attrs(root_dir):
                     existing_invisible_tag = False
                     # I don't know why, looking for attribute[name="invisible"] does not work,
                     # but if it exists, I can find it with findAll attribute -> loop to name="invisible"
-                    for tag in attribute_tag_states.parent.findAll("attribute"):
+                    for tag in attribute_tag_states.parent.findAll(
+                        "attribute"
+                    ):
                         if tag["name"] == "invisible":
                             existing_invisible_tag = tag
                             break
@@ -252,7 +279,9 @@ def odoo17attrs(root_dir):
                     attribute_tag_states.decompose()
                     attribute_tags_states_after.append(existing_invisible_tag)
 
-                click.secho("\n########### Will be replaced by ###\n", fg="green")
+                click.secho(
+                    "\n########### Will be replaced by ###\n", fg="green"
+                )
                 for t in (
                     tags_with_attrs
                     + attribute_tags_after
@@ -279,7 +308,8 @@ def odoo17attrs(root_dir):
 
     if nofilesfound:
         click.secho(
-            'No XML Files with "attrs" or "states" found in dir " %s "' % root_dir,
+            'No XML Files with "attrs" or "states" found in dir " %s "'
+            % root_dir,
             fg="red",
         )
     else:

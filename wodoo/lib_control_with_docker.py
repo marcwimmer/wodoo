@@ -1,18 +1,9 @@
-import platform
 import sys
 import shutil
-import hashlib
 import os
-import tempfile
 import click
 from .tools import __dcrun
-from .tools import __assert_file_exists
-from .tools import __safe_filename
-from .tools import __read_file
-from .tools import __write_file
-from .tools import __append_line
 from .tools import _askcontinue
-from .tools import __get_odoo_commit
 from .tools import _is_container_running
 from .tools import _get_bash_for_machine
 from .tools import __cmd_interactive
@@ -21,7 +12,6 @@ from .tools import _wait_postgres
 from .tools import __replace_in_file
 from .tools import _wait_for_port
 from .tools import __dcexec
-from .tools import _get_machines
 from .tools import __dc
 from .tools import _get_host_ip
 from .tools import __needs_docker
@@ -96,17 +86,22 @@ def dev(ctx, config, build, kill):
     proxy_port = myconfig["PROXY_PORT"]
     roundcube_port = myconfig["ROUNDCUBE_PORT"]
     click.secho(
-        "Proxy Port: http://{}:{}".format(ip, proxy_port), fg="green", bold=True
+        "Proxy Port: http://{}:{}".format(ip, proxy_port),
+        fg="green",
+        bold=True,
     )
     click.secho(
-        "Mailclient : http://{}:{}".format(ip, roundcube_port), fg="green", bold=True
+        "Mailclient : http://{}:{}".format(ip, roundcube_port),
+        fg="green",
+        bold=True,
     )
 
     # execute script
     ScriptFile = config.files["start-dev"]
     if not ScriptFile.exists():
         click.secho(
-            f"Info: you may provide a startup script here: {ScriptFile}", fg="yellow"
+            f"Info: you may provide a startup script here: {ScriptFile}",
+            fg="yellow",
         )
     else:
         FNULL = open(os.devnull, "w")
@@ -175,7 +170,9 @@ def recreate(ctx, config, machines=[]):
     __dc(config, ["up", "--no-start", "--force-recreate"] + machines)
 
 
-def up(ctx, config, machines=[], daemon=False, remove_orphans=True, profile="all"):
+def up(
+    ctx, config, machines=[], daemon=False, remove_orphans=True, profile="all"
+):
     machines = list(machines)
     from .consts import resolve_profiles
 
@@ -291,7 +288,7 @@ def build(
             "ODOO_VERSION": config.odoo_version,  # at you developer: do not mismatch with build args
             "DOCKER_DEFAULT_PLATFORM": f"linux/{platform}",
             "DOCKER_BUILDKIT": "1",
-            "COMPOSE_BAKE": "true"
+            "COMPOSE_BAKE": "true",
         },
     )
 
@@ -323,7 +320,9 @@ def debug(ctx, config, machine, ports, cmd=None):
         shutil.copy(filepath, dest)
         __replace_in_file(dest, "__PORT__", ports or "33284")
         __replace_in_file(dest, "${NAME}", machine)
-        __replace_in_file(dest, "${DOCKER_COMPOSE_VERSION}", config.YAML_VERSION)
+        __replace_in_file(
+            dest, "${DOCKER_COMPOSE_VERSION}", config.YAML_VERSION
+        )
 
         # TODO make configurable in machines
         PORT = str({"odoo": 8069, "odoo_debug": 8069}.get(machine, 80))

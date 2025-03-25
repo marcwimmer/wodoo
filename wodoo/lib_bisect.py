@@ -3,20 +3,19 @@ from datetime import datetime
 import sys
 import subprocess
 import os
-import time
 import json
 import random
 from .tools import _get_available_robottests
-from .cli import cli, pass_config, Commands
+from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
 from .odoo_config import customs_dir
-from .cli import cli, pass_config, Commands
+from .cli import cli, pass_config
 import click
 from .tools import abort
 from .tools import _get_available_modules
 from .tools import __rmtree
 
-from tenacity import retry, stop_after_attempt, wait_fixed, wait_exponential
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 ROBOT_SETTINGS = """
 RUN_CONSOLE=0
@@ -106,9 +105,9 @@ def start(config, ctx, robotest_file, stop_after_first_error, retries):
             """
             No robotest file set. Please call:
 
-            > odoo bisect run 
-            
-            and then 
+            > odoo bisect run
+
+            and then
 
             > odoo bisect good/bad
             """,
@@ -121,12 +120,12 @@ def start(config, ctx, robotest_file, stop_after_first_error, retries):
 @pass_config
 def bad(config, ctx):
     data = _get_file()
-    mod = data['next']
+    mod = data["next"]
     data["bad"].append(data["next"])
     data["turns"] += 1
 
     def remove_descendants_from_todo(data, module):
-        from .module_tools import Modules, DBModules, Module
+        from .module_tools import Module
 
         base_module = Module.get_by_name(module)
         to_remove = [x.name for x in base_module.descendants]
@@ -148,7 +147,7 @@ def bad(config, ctx):
 @pass_config
 def good(config, ctx):
     data = _get_file()
-    mod = data['next']
+    mod = data["next"]
     data["good"].append(data["next"])
     data["turns"] += 1
     _get_next(data)
@@ -163,7 +162,6 @@ def good(config, ctx):
 @click.pass_context
 @pass_config
 def testdep(config, ctx, module):
-
     data = _get_file()
     removed = _remove_from_todo_because_module_failed(module)
     click.secho(removed)
@@ -190,9 +188,13 @@ def run(config, ctx, one):
 
     def _commando(*params):
         start = datetime.now()
-        cmd = [sys.executable, sys.argv[0], "-f", "-p", config.project_name] + list(
-            params
-        )
+        cmd = [
+            sys.executable,
+            sys.argv[0],
+            "-f",
+            "-p",
+            config.project_name,
+        ] + list(params)
         nicecmd = cmd[1:]
         nicecmd[0] = "odoo"
         click.secho(f"{' '.join(nicecmd)}", fg="green")
@@ -342,7 +344,7 @@ def redo(config, ctx, module, failed_installations, bad):
             modules2.append(k)
     if bad:
         for k in list(data["bad"]):
-            data['bad'].remove(k)
+            data["bad"].remove(k)
             modules2.append(k)
 
     data["todo"] += modules2

@@ -12,18 +12,12 @@ import stat
 from contextlib import contextmanager
 import re
 import inquirer
-import cProfile
-import functools
 
 try:
     import arrow
 except ImportError:
     pass
 from pathlib import Path
-import io
-import traceback
-import json
-import pipes
 import tempfile
 from datetime import datetime
 
@@ -42,8 +36,6 @@ import os
 import subprocess
 import time
 import sys
-from threading import Thread
-from queue import Queue
 import inspect
 from copy import deepcopy
 from passlib.context import CryptContext
@@ -51,7 +43,6 @@ from passlib.context import CryptContext
 try:
     import xmlrpclib
 except Exception:
-    import xmlrpc
     from xmlrpc import client as xmlrpclib
 
 
@@ -69,7 +60,10 @@ def get_calling_function_variables():
     for k, v in current_frame.f_back.f_back.f_back.f_back.f_locals.items():
         if k not in caller_locals:
             caller_locals[k] = v
-    for k, v in current_frame.f_back.f_back.f_back.f_back.f_back.f_locals.items():
+    for (
+        k,
+        v,
+    ) in current_frame.f_back.f_back.f_back.f_back.f_back.f_locals.items():
         if k not in caller_locals:
             caller_locals[k] = v
     return caller_locals
@@ -81,7 +75,8 @@ def odoorpc(config):
 
     if "ODOO_USER" not in os.environ:
         click.secho(
-            "Tip: set ODOO_USER and ODOO_PASSWORD in your environment", fg="yellow"
+            "Tip: set ODOO_USER and ODOO_PASSWORD in your environment",
+            fg="yellow",
         )
 
     odoo = odoorpc.ODOO("localhost", port=PROXY_PORT)
@@ -265,7 +260,9 @@ def _execute_sql(
         try:
             if hasattr(connection, "clone"):
                 connection = connection.clone(dbname="postgres")
-            _execute_sql(connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True)
+            _execute_sql(
+                connection, "SELECT * FROM pg_catalog.pg_tables;", no_try=True
+            )
         except Exception as e:
             click.secho(str(e), fg="red")
 
@@ -337,7 +334,9 @@ def docker_list_containers(project_name, service_name, status_filter=None):
     ]
     if status_filter:
         cmd += ["--filter", f"status={status_filter}"]
-    container_ids = subprocess.check_output(cmd, encoding="utf8").strip().splitlines()
+    container_ids = (
+        subprocess.check_output(cmd, encoding="utf8").strip().splitlines()
+    )
     return container_ids
 
 
@@ -387,7 +386,9 @@ def _wait_postgres(config, timeout=600):
                         )
                     )
 
-                raise Exception(f"Timeout waiting postgres reached: {timeout}seconds")
+                raise Exception(
+                    f"Timeout waiting postgres reached: {timeout}seconds"
+                )
             try:
                 _execute_sql(
                     conn.clone(dbname="postgres"),
@@ -446,7 +447,9 @@ def _is_container_running(config, machine_name):
 def is_up(config, *machine_name):
     assert len(machine_name) == 1
     click.echo(
-        "Running" if _is_container_running(config, machine_name[0]) else "Not Running",
+        "Running"
+        if _is_container_running(config, machine_name[0])
+        else "Not Running",
         machine_name[0],
     )
 
@@ -467,7 +470,9 @@ def _makedirs(path):
 def _remove_postgres_connections(connection, dbname, sql_afterwards=""):
     click.echo(f"Removing all current connections from {connection.dbname}")
     if os.getenv("POSTGRES_DONT_DROP_ACTIVITIES", "") == "1":
-        click.secho("It was asked to remove database sessions but POSTGRES_DONT_DROP_ACTIVITIES is set to 1 - so i wont do it")
+        click.secho(
+            "It was asked to remove database sessions but POSTGRES_DONT_DROP_ACTIVITIES is set to 1 - so i wont do it"
+        )
     if _exists_db(connection, dbname):
         SQL = f"""
             SELECT pg_terminate_backend(pg_stat_activity.pid)
@@ -475,7 +480,9 @@ def _remove_postgres_connections(connection, dbname, sql_afterwards=""):
             WHERE pg_stat_activity.datname = '{dbname}'
             AND pid <> pg_backend_pid();
             """
-        _execute_sql(connection.clone(dbname="postgres"), SQL, notransaction=True)
+        _execute_sql(
+            connection.clone(dbname="postgres"), SQL, notransaction=True
+        )
         if sql_afterwards:
             _execute_sql(
                 connection.clone(dbname="postgres"),
@@ -678,7 +685,9 @@ def __safeget(array, index, exception_on_missing, file_options=None):
 
 def get_docker_version():
     docker = search_env_path("docker")
-    version = subprocess.check_output([docker, "--version"], encoding="utf8").strip()
+    version = subprocess.check_output(
+        [docker, "--version"], encoding="utf8"
+    ).strip()
     # support for stripping debian specific version suffixes
     version = re.sub(r"\+dfsg[0-9]*,", "", version)
     # continue with normal version parsing
@@ -813,7 +822,9 @@ def __make_file_executable(filepath):
 
 def _get_user_primary_group(UID):
     id = search_env_path("id")
-    return subprocess.check_output([id, "-gn", str(UID)], encoding="utf8").strip()
+    return subprocess.check_output(
+        [id, "-gn", str(UID)], encoding="utf8"
+    ).strip()
 
 
 def verbose(txt):
@@ -847,13 +858,18 @@ def __try_to_set_owner(UID, path, abort_if_failed=True, verbose=False):
                     subprocess.check_output(["sudo", "chown", str(UID), line])
                 except Exception as ex:
                     if abort_if_failed:
-                        abort(f"Could not set owner {UID} " f"on path {line}; \n\n{ex}")
+                        abort(
+                            f"Could not set owner {UID} "
+                            f"on path {line}; \n\n{ex}"
+                        )
 
             try:
                 subprocess.check_output(["chgrp", str(primary_group), line])
             except:
                 try:
-                    subprocess.check_output(["sudo", "chgrp", str(primary_group), line])
+                    subprocess.check_output(
+                        ["sudo", "chgrp", str(primary_group), line]
+                    )
                 except:
                     pass
 
@@ -902,7 +918,11 @@ def _get_dump_files(backupdir, fnfilter=None):
 
     rows = []
     for i, file in enumerate(
-        sorted(filter(lambda x: _get_ctime(x), _files), reverse=True, key=_get_ctime)
+        sorted(
+            filter(lambda x: _get_ctime(x), _files),
+            reverse=True,
+            key=_get_ctime,
+        )
     ):
         filepath = backupdir / file
         delta = arrow.get() - arrow.get(filepath.stat().st_mtime)
@@ -990,7 +1010,9 @@ def remove_webassets(conn):
     finally:
         cr.close()
         conn.close()
-    click.secho("A restart is usually required, when deleting web assets.", fg="green")
+    click.secho(
+        "A restart is usually required, when deleting web assets.", fg="green"
+    )
 
 
 def get_dockercompose():
@@ -1003,7 +1025,9 @@ def get_dockercompose():
 
 
 def __running_as_root_or_sudo():
-    output = subprocess.check_output(["/usr/bin/id", "-u"]).strip().decode("utf-8")
+    output = (
+        subprocess.check_output(["/usr/bin/id", "-u"]).strip().decode("utf-8")
+    )
     return output == "0"
 
 
@@ -1039,6 +1063,7 @@ def __remove_tree(dir, retry=3, interval=2):
     if E:
         raise E
 
+
 def _get_crypt_context():
     from .odoo_config import current_version
 
@@ -1063,8 +1088,10 @@ def _get_crypt_context():
     else:
         raise NotImplementedError(current_version())
 
+
 def __hash_odoo_password(pwd):
     return _get_crypt_context().encrypt(pwd)
+
 
 def __verify_password(pwd, hash):
     try:
@@ -1088,7 +1115,13 @@ def sync_folder(dir, dest_dir, excludes=None):
     if not dir or not dest_dir or len(str(dir)) < 5 or len(str(dest_dir)) < 5:
         raise Exception("invalid dirs: {} {}".format(dir, dest_dir))
     if platform.system() in ["Linux", "Darwin"]:
-        cmd = ["rsync", str(dir) + "/", str(dest_dir) + "/", "-r", "--delete-after"]
+        cmd = [
+            "rsync",
+            str(dir) + "/",
+            str(dest_dir) + "/",
+            "-r",
+            "--delete-after",
+        ]
         for exclude in excludes or []:
             cmd += ["--exclude={}".format(exclude)]
         subprocess.check_call(cmd)
@@ -1138,9 +1171,7 @@ def __assure_gitignore(gitignore_file, content):
         return
     content = str(content).strip()
     filecontent = gitignore_file.read_text().strip() + "\n"
-    exists = [
-        l for l in filecontent.splitlines() if l.strip() == content
-    ]
+    exists = [l for l in filecontent.splitlines() if l.strip() == content]
     if not exists:
         with p.open("a") as f:
             f.write(content)
@@ -1177,7 +1208,9 @@ def measure_time(method):
         ended = datetime.now()
         duration = (ended - started).total_seconds()
         if os.getenv("WODOO_VERBOSE", "") == "1":
-            click.secho((f"Took: {duration} seconds for {method}"), fg="yellow")
+            click.secho(
+                (f"Took: {duration} seconds for {method}"), fg="yellow"
+            )
         return result
 
     return wrapper
@@ -1388,7 +1421,9 @@ def _get_version():
     from pathlib import Path
 
     current_dir = Path(
-        os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+        os.path.dirname(
+            os.path.abspath(inspect.getfile(inspect.currentframe()))
+        )
     )
     version = (current_dir / "version.txt").read_text().strip()
     return version
@@ -1397,7 +1432,9 @@ def _get_version():
 def get_filesystem_of_folder(path):
     df = search_env_path("df")
     lines = (
-        subprocess.check_output([df, "-T", path], encoding="utf8").strip().splitlines()
+        subprocess.check_output([df, "-T", path], encoding="utf8")
+        .strip()
+        .splitlines()
     )
     fstype = list(filter(bool, lines[1].replace("\t", " ").split(" ")))[1]
     return fstype
@@ -1424,7 +1461,9 @@ def is_git_clean(path=None, ignore_files=None):
         .splitlines()
     )
     status = list(
-        filter(lambda x: x.strip().split(" ", 1)[1] not in ignore_files, status)
+        filter(
+            lambda x: x.strip().split(" ", 1)[1] not in ignore_files, status
+        )
     )
     if status:
         click.secho(f"unclean git: {status}")
@@ -1444,12 +1483,17 @@ def whoami(id=False):
         return int(os.getenv("SUDO_UID"))
     elif os.getenv("SUDO_UID") and not id:
         return subprocess.check_output(
-            ["/usr/bin/id", "-u", "-n", os.environ["SUDO_UID"]], encoding="utf8"
+            ["/usr/bin/id", "-u", "-n", os.environ["SUDO_UID"]],
+            encoding="utf8",
         ).strip()
     elif id:
-        whoami = subprocess.check_output(["/usr/bin/id", "-u"], encoding="utf8").strip()
+        whoami = subprocess.check_output(
+            ["/usr/bin/id", "-u"], encoding="utf8"
+        ).strip()
         return int(whoami)
-    whoami = subprocess.check_output(["/usr/bin/whoami"], encoding="utf8").strip()
+    whoami = subprocess.check_output(
+        ["/usr/bin/whoami"], encoding="utf8"
+    ).strip()
     return whoami
 
 
@@ -1502,7 +1546,9 @@ def _get_default_project_name(restrict):
         root = Path(customs_root)
         if (root / "MANIFEST").exists():
             return root.name.replace(".", "_")
-    raise NoProjectNameException("No default project name could be determined.")
+    raise NoProjectNameException(
+        "No default project name could be determined."
+    )
 
 
 def _search_path(filename):
@@ -1567,13 +1613,15 @@ def _write_file(file, content):
     return False
 
 
-def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=False):
+def _make_sure_module_is_installed(
+    ctx, config, modulename, repo_url, update=False
+):
     from .module_tools import DBModules
-    from .module_tools import Modules, Module
+    from .module_tools import Module
     from .odoo_config import MANIFEST
     from .odoo_config import current_version
     from .module_tools import NotInAddonsPath
-    from .cli import cli, pass_config, Commands
+    from .cli import Commands
     from gimera.gimera import add as gimera_add
     from gimera.gimera import apply as gimera_apply
 
@@ -1592,7 +1640,13 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
                 branch=str(current_version()),
                 type="integrated",
             )
-            ctx.invoke(gimera_apply, repos=[str(path)], no_auto_commit=True, non_interactive=True, no_patches=True)
+            ctx.invoke(
+                gimera_apply,
+                repos=[str(path)],
+                no_auto_commit=True,
+                non_interactive=True,
+                no_patches=True,
+            )
 
             # if not yet there, then pack into "addons_framework"
             addons_paths = manifest.get("addons_paths", [])
@@ -1602,7 +1656,12 @@ def _make_sure_module_is_installed(ctx, config, modulename, repo_url, update=Fal
                 manifest["addons_paths"] = addons_paths
     if update:
         ctx.invoke(
-            gimera_apply, repos=[str(dest_path)], update=True, no_auto_commit=True, non_interactive=True, no_patches=True
+            gimera_apply,
+            repos=[str(dest_path)],
+            update=True,
+            no_auto_commit=True,
+            non_interactive=True,
+            no_patches=True,
         )
     install = manifest.get("install", [])
     if modulename not in install:
@@ -1759,13 +1818,15 @@ def print_prod_env(config):
 
 def force_input_hostname():
     hostname = socket.gethostname()
-    value = click.prompt(f"Please type the hostname of the machine again [{hostname}]")
+    value = click.prompt(
+        f"Please type the hostname of the machine again [{hostname}]"
+    )
     if value != hostname:
         abort(f"You typed {value} but {hostname} was expected.")
 
 
 def start_postgres_if_local(ctx, config):
-    from .cli import cli, pass_config, Commands
+    from .cli import Commands
 
     if config.run_postgres:
         Commands.invoke(ctx, "up", machines=["postgres"], daemon=True)
@@ -1797,6 +1858,7 @@ def _parse_yaml(content):
 
     return yaml.safe_load(content)
 
+
 def _is_db_initialized(cr):
     return _exists_table(cr, "ir_module_module")
 
@@ -1807,6 +1869,7 @@ def _output_clipboard_csv(rows):
     writer.writeheader()
     writer.writerows(rows)
 
+
 def _get_available_robottests(ctx, param, incomplete):
     from .robo_helpers import _get_all_robottest_files
     from .odoo_config import customs_dir
@@ -1816,7 +1879,9 @@ def _get_available_robottests(ctx, param, incomplete):
     testfiles = list(map(str, _get_all_robottest_files(path))) or []
     if incomplete:
         if "/" in incomplete:
-            testfiles = list(filter(lambda x: str(x).startswith(incomplete), testfiles))
+            testfiles = list(
+                filter(lambda x: str(x).startswith(incomplete), testfiles)
+            )
         else:
             testfiles = list(filter(lambda x: incomplete in x, testfiles))
     return sorted(testfiles)

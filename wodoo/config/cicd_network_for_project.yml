@@ -1,8 +1,8 @@
 services:
-    proxy:
-        networks:
-            - cicd_network
+  proxy:
+    networks:
+      - cicd_network
 networks:
-    cicd_network:
-        external:
-            name: __CICD_NETWORK_NAME__
+  cicd_network:
+    external:
+      name: __CICD_NETWORK_NAME__

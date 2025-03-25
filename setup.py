@@ -1,15 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import io
 import os
-import sys
-from glob import glob
-from shutil import rmtree
 from pathlib import Path
 from setuptools.config import read_configuration
 
-from setuptools import find_packages, setup, Command
-from setuptools.command.install import install
+from setuptools import find_packages, setup
 
 import inspect
 import os
@@ -24,7 +19,9 @@ NAME = metadata["name"]
 REQUIRED = list(
     filter(
         bool,
-        (current_dir / metadata["name"] / "requirements.txt").read_text().split("\n"),
+        (current_dir / metadata["name"] / "requirements.txt")
+        .read_text()
+        .split("\n"),
     )
 )
 
@@ -70,8 +67,9 @@ setup(
     # py_modules=['prlsnapshotter'],
     data_files=get_data_files(),
     install_requires=REQUIRED,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    packages=find_packages(
+        exclude=["tests", "*.tests", "*.tests.*", "tests.*"]
+    ),
     include_package_data=True,
-    cmdclass={
-    },
+    cmdclass={},
 )

@@ -1,6 +1,4 @@
 # used to read and write to settings
-import uuid
-import sys
 from pathlib import Path
 from .tools import atomic_write
 
@@ -56,7 +54,8 @@ class MyConfigParser:
                     import click
 
                     click.secho(
-                        f"Invalid configuration option '{line}' ignored.", fg="red"
+                        f"Invalid configuration option '{line}' ignored.",
+                        fg="red",
                     )
                     continue
                 (key, val) = line.rstrip("\n").split("=", 1)

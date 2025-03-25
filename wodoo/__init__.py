@@ -16,7 +16,9 @@ from .tools import _file2env
 from . import module_tools  # NOQA
 from . import odoo_config  # NOQA
 
-SCRIPT_DIRECTORY = Path(inspect.getfile(inspect.currentframe())).absolute().parent
+SCRIPT_DIRECTORY = (
+    Path(inspect.getfile(inspect.currentframe())).absolute().parent
+)
 
 
 os.environ["HOST_HOME"] = os.getenv("HOME", "")

@@ -1,4 +1,4 @@
-version: '${DOCKER_COMPOSE_VERSION}'
+version: "${DOCKER_COMPOSE_VERSION}"
 services:
-    ${NAME}:
-        command: /bin/bash -c "while true; do sleep 1; done"
+  ${NAME}:
+    command: /bin/bash -c "while true; do sleep 1; done"

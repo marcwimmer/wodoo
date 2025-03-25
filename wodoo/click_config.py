@@ -19,7 +19,12 @@ class Config(object):
             self.config.force = self.force
 
     def __init__(
-        self, quiet=False, project_name=None, force=False, verbose=False, version=None
+        self,
+        quiet=False,
+        project_name=None,
+        force=False,
+        verbose=False,
+        version=None,
     ):
         from .consts import YAML_VERSION
         from . import odoo_config  # NOQA
@@ -93,7 +98,9 @@ class Config(object):
         os.environ["PROJECT_NAME"] = self._project_name or ""
         os.environ["project_name"] = self._project_name or ""
         self._setup_files_and_folders()
-        os.environ["docker_compose"] = str(self.files.get("docker_compose")) or ""
+        os.environ["docker_compose"] = (
+            str(self.files.get("docker_compose")) or ""
+        )
         self.load_dynamic_modules()
         if self.verbose:
             print(self.files["docker_compose"])
@@ -178,7 +185,7 @@ class Config(object):
 
         from .consts import default_dirs, default_files, default_commands
 
-        for (input, output) in [
+        for input, output in [
             (default_dirs, self.dirs),
             (default_files, self.files),
             (default_commands, self.commands),

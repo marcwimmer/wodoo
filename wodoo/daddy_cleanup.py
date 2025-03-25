@@ -5,12 +5,11 @@ import arrow
 from pathlib import Path
 import calendar
 import humanize
-import argparse
 import pathlib
 import logging
 import datetime as dt
 import click
-from .cli import cli, pass_config, Commands
+from .cli import cli, pass_config
 from .tools import abort
 
 DTF = "%Y-%m-%d %H:%M:%S"
@@ -37,7 +36,6 @@ def _get_files_if_dir(path):
 
 
 def genPathInfos(arg_paths):
-
     for arg_path in arg_paths:
         po = pathlib.Path(arg_path)
         log.debug(po)
@@ -109,7 +107,9 @@ def get_bins():
 
     def get_years():
         for i in range(20):
-            year_end = arrow.get().replace(year=arrow.get().year - i, month=12, day=31)
+            year_end = arrow.get().replace(
+                year=arrow.get().year - i, month=12, day=31
+            )
             yield _return(
                 year_end.replace(day=1, month=1),
                 year_end,
@@ -146,7 +146,9 @@ def get_to_delete_files(path_list, days_notouch):
     # sort arrays by date reverse; at position[0] is the file
     # that will survive
     for k in bins.keys():
-        bins[k] = sorted(bins[k], key=lambda x: x.stat().st_mtime, reverse=True)
+        bins[k] = sorted(
+            bins[k], key=lambda x: x.stat().st_mtime, reverse=True
+        )
 
     # store pole positions in safe array
     [keep_safe.add(x[0]) for x in bins.values() if x]
@@ -199,7 +201,9 @@ def daddy_cleanup(config, path, dry_run, dont_touch):
     if config.verbose:
         log.setLevel(logging.DEBUG)
     path = [Path(os.getcwd()) / x for x in path]
-    deletion_candidates = list(sorted(set(get_to_delete_files(path, dont_touch))))
+    deletion_candidates = list(
+        sorted(set(get_to_delete_files(path, dont_touch)))
+    )
     if deletion_candidates:
         size = print_files(deletion_candidates)
         print("Going to delete ", humanize.naturalsize(size))

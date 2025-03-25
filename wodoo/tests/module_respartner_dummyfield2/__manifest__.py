@@ -3,5 +3,5 @@
     "depends": ["base"],
     "data": [
         "partnerview.xml",
-    ]
+    ],
 }

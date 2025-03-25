@@ -1,6 +1,5 @@
 import time
 import click
-from subprocess import Popen, PIPE
 
 import re
 import os
@@ -9,8 +8,6 @@ from .lib_clickhelpers import AliasedGroup
 from .tools import execute_script
 from .tools import force_input_hostname
 import subprocess
-import json
-from pathlib import Path
 from .tools import abort
 from .tools import ensure_project_name
 from .tools import print_prod_env
@@ -108,16 +105,22 @@ def remove_volumes(ctx, config, dry_run):
                 for group in re.findall(r"(\[[^\]]*])", output):
                     container_id = group[1:-1]
                     subprocess.run(["docker", "kill", container_id])
-                    subprocess.check_call(["docker", "rm", "-fv", container_id])
+                    subprocess.check_call(
+                        ["docker", "rm", "-fv", container_id]
+                    )
                     counter = 0
                     while counter < 5:
                         try:
                             output = subprocess.check_output(
-                                ["docker", "volume", "rm", "-f", vol], encoding="utf8"
+                                ["docker", "volume", "rm", "-f", vol],
+                                encoding="utf8",
                             )
                             break
                         except:
-                            click.secho(f"Removing the volume {vol} failed - waiting and retrying.", fg="red")
+                            click.secho(
+                                f"Removing the volume {vol} failed - waiting and retrying.",
+                                fg="red",
+                            )
                             time.sleep(2)
                             counter += 1
 
@@ -177,7 +180,9 @@ def up(ctx, config, machines, daemon):
 
     lib_up(ctx, config, machines, daemon, remove_orphans=True)
     execute_script(
-        config, config.files["after_up_script"], "Possible after up script here:"
+        config,
+        config.files["after_up_script"],
+        "Possible after up script here:",
     )
     if daemon:
         _status(config)
@@ -194,6 +199,7 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
     ensure_project_name(config)
     from .lib_control_with_docker import down as lib_down
     from .lib_db_snapshots_docker_zfs import NotZFS
+
     if not config.devmode:
         if not config.force:
             abort("Please provide force option on non live systems")
@@ -283,20 +289,26 @@ def attach(ctx, config, machine):
 @click.option("-rm", "--remove", is_flag=True)
 @pass_config
 @click.pass_context
-def build(ctx, config, machines, pull, no_cache, push, plain, include_source, remove):
+def build(
+    ctx, config, machines, pull, no_cache, push, plain, include_source, remove
+):
     import yaml
+
     ensure_project_name(config)
     if plain:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
     from .lib_control_with_docker import build as lib_build
+
     if not machines:
         compose = yaml.safe_load(config.files["docker_compose"].read_text())
         machines = []
-        for service in compose['services']:
-            if not compose['services'][service].get('build', {}).get('imgage'):
+        for service in compose["services"]:
+            if not compose["services"][service].get("build", {}).get("imgage"):
                 machines.append(service)
 
-    lib_build(ctx, config, machines, pull, no_cache, push, include_source, remove)
+    lib_build(
+        ctx, config, machines, pull, no_cache, push, include_source, remove
+    )
 
 
 @docker.command()
@@ -327,7 +339,9 @@ def run(ctx, config, machine, detached, name, args, **kwparams):
     ensure_project_name(config)
     from .lib_control_with_docker import run as lib_run
 
-    lib_run(ctx, config, machine, args, detached=detached, name=name, **kwparams)
+    lib_run(
+        ctx, config, machine, args, detached=detached, name=name, **kwparams
+    )
 
 
 @cli.command()
@@ -405,7 +419,9 @@ def _get_project_volumes(config):
         x for x in system_volumes if x.startswith(config.project_name + "_")
     ]
 
-    full_volume_names = list(filter(lambda x: x in system_volumes, full_volume_names))
+    full_volume_names = list(
+        filter(lambda x: x in system_volumes, full_volume_names)
+    )
     return full_volume_names
 
 
@@ -433,7 +449,6 @@ def show_volumes(config, filter):
 @pass_config
 @click.pass_context
 def transfer_volume_content(context, config, show_all, filter, no_backup):
-    import shutil
     import inquirer
     from pathlib import Path
     from .lib_control_with_docker import _get_volume_size
@@ -456,14 +471,20 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
 
     if show_all:
         volumes = list(map(add_size, volumes))
-        volumes_filtered_to_project = [x for x in volumes if config.project_name in x]
+        volumes_filtered_to_project = [
+            x for x in volumes if config.project_name in x
+        ]
 
         volumes1 = volumes
         volumes2 = volumes_filtered_to_project
 
     else:
-        volumes_filtered_to_project = [x for x in volumes if config.project_name in x]
-        volumes_filtered_to_project = list(map(add_size, volumes_filtered_to_project))
+        volumes_filtered_to_project = [
+            x for x in volumes if config.project_name in x
+        ]
+        volumes_filtered_to_project = list(
+            map(add_size, volumes_filtered_to_project)
+        )
 
         volumes1 = volumes_filtered_to_project
         volumes2 = volumes_filtered_to_project
@@ -484,7 +505,9 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
     questions = [
         inquirer.List(
             "volume",
-            message="Select Destination:".format(config.customs, config.dbname),
+            message="Select Destination:".format(
+                config.customs, config.dbname
+            ),
             choices=volumes2,
         ),
     ]
@@ -498,7 +521,9 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
     tasks.append(f"rsync -ar --delete-after {source.name} to {dest.name}")
     for i, task in enumerate(tasks):
         click.secho(f"{i}. {task}")
-    answer = inquirer.prompt([inquirer.Confirm("continue", message=("Continue?"))])
+    answer = inquirer.prompt(
+        [inquirer.Confirm("continue", message=("Continue?"))]
+    )
     if not answer["continue"]:
         return
     Commands.invoke(context, "down")
@@ -552,9 +577,18 @@ def docker_sizes(context, config):
             yaml.safe_load(output)["services"].keys(),
         )
     )
-    out = subprocess.check_output(
-        ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}\tSize: {{.Size}}"]
-    ).decode('utf8').splitlines()
+    out = (
+        subprocess.check_output(
+            [
+                "docker",
+                "images",
+                "--format",
+                "{{.Repository}}:{{.Tag}}\tSize: {{.Size}}",
+            ]
+        )
+        .decode("utf8")
+        .splitlines()
+    )
     sizes = {}
     for line in out:
         name, size = line.split(":", 1)

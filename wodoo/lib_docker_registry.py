@@ -7,7 +7,6 @@ import yaml
 from pathlib import Path
 import subprocess
 import sys
-from datetime import datetime
 import os
 import click
 from .tools import __dc
@@ -156,11 +155,13 @@ def _get_service_tagname(config, service_name):
     if config.DOCKER_IMAGE_TAG:
         current_sha = config.DOCKER_IMAGE_TAG
         click.secho(
-            f"DOCKER_IMAGE_TAG is set with value: {config.DOCKER_IMAGE_TAG}", fg="green"
+            f"DOCKER_IMAGE_TAG is set with value: {config.DOCKER_IMAGE_TAG}",
+            fg="green",
         )
     else:
         click.secho(
-            f"DOCKER_IMAGE_TAG is not set - falling back to a default", fg="yellow"
+            f"DOCKER_IMAGE_TAG is not set - falling back to a default",
+            fg="yellow",
         )
     if not current_sha:
         if (Path(os.getcwd()) / ".git").exists():
@@ -207,7 +208,7 @@ def _apply_tags(config):
 
     for service, item in compose["services"].items():
         tag = _get_service_tagname(config, service)
-        item['labels']['registry_applied'] = '1'
+        item["labels"]["registry_applied"] = "1"
         if item.get("image"):
             continue
         elif item.get("build"):
@@ -216,7 +217,9 @@ def _apply_tags(config):
         else:
             raise NotImplementedError("Only build or image is supported")
         if config.verbose:
-            click.secho((f"Applying {tag} on {expected_image_name}"), fg="yellow")
+            click.secho(
+                (f"Applying {tag} on {expected_image_name}"), fg="yellow"
+            )
         try:
             subprocess.check_call(["docker", "tag", expected_image_name, tag])
         except:
@@ -224,7 +227,9 @@ def _apply_tags(config):
                 f"Could not tag: {expected_image_name}. Perhaps not a prob for external images.",
                 fg="yellow",
             )
-        click.secho((f"Applied tag {tag} on {expected_image_name}"), fg="green")
+        click.secho(
+            (f"Applied tag {tag} on {expected_image_name}"), fg="green"
+        )
         yield tag
 
 
@@ -232,6 +237,6 @@ def _rewrite_compose_with_tags(config, yml):
     # set hub source for all images, that are built:
     for service_name, service in yml["services"].items():
         if config.HUB_URL:
-            if 'build' in service:
+            if "build" in service:
                 service.pop("build")
                 service["image"] = _get_service_tagname(config, service_name)

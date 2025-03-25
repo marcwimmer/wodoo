@@ -28,53 +28,53 @@ Application Options:
 Stats of all paths passed as arguments to `dtreetrawl` is printed to the standard output, errors to standard error.
 After the stats of trawled entries, a summary of that run for the root path follows. When multiple paths are given as arguments, stats continue to print to the standard output.
 
-
 `tentry` fields:
 
- - entry/path name
- - base name of the path
- - level from root
- - file type
- - referent name if it's a symlink
- - file size in bytes
- - inode number
- - number of directory entries
- - permission in octal notation
- - hard link count
- - ownership: user and group id
- - I/O block size
- - allocated blocks
- - last status change (ctime)
- - last file access (atime)
- - last file modification (mtime)
- - hash
+- entry/path name
+- base name of the path
+- level from root
+- file type
+- referent name if it's a symlink
+- file size in bytes
+- inode number
+- number of directory entries
+- permission in octal notation
+- hard link count
+- ownership: user and group id
+- I/O block size
+- allocated blocks
+- last status change (ctime)
+- last file access (atime)
+- last file modification (mtime)
+- hash
 
 `dstat` fields:
 
- - root path name of this run
- - elapsed time in seconds
- - start time
- - follow symlink
- - hash exclude name
- - hash exclude content
- - hash symlink ref name
- - hash directory entry names
- - root hash
- - hash type
- - depth
- - total size
- - total entries
- - total directories
- - total regular files
- - total symlinks
- - total block devices
- - total char devices
- - total sockets
- - total FIFOs/pipes
+- root path name of this run
+- elapsed time in seconds
+- start time
+- follow symlink
+- hash exclude name
+- hash exclude content
+- hash symlink ref name
+- hash directory entry names
+- root hash
+- hash type
+- depth
+- total size
+- total entries
+- total directories
+- total regular files
+- total symlinks
+- total block devices
+- total char devices
+- total sockets
+- total FIFOs/pipes
 
 #### Human readable output
 
 `dtreetrawl -f -F --hash .`
+
 ```
 ...
 ... //clipped
@@ -83,7 +83,7 @@ After the stats of trawled entries, a summary of that run for the root path foll
 	Base name                    : README.md
 	Level                        : 1
 	Type                         : regular file
-	Referent name                : 
+	Referent name                :
 	File size                    : 7483 bytes
 	I-node number                : 305946
 	No. directory entries        : 0
@@ -95,7 +95,7 @@ After the stats of trawled entries, a summary of that run for the root path foll
 	Last status change           : Sat, 20 Jan 18 14:33:11 +0530
 	Last file access             : Sun, 21 Jan 18 21:42:24 +0530
 	Last file modification       : Sat, 20 Jan 18 14:33:11 +0530
-	Hash                         : 
+	Hash                         :
 
 Stats for /home/lab/dtreetrawl:
 	Elapsed time                 : 0.063725 s
@@ -122,6 +122,7 @@ Stats for /home/lab/dtreetrawl:
 #### JSON output
 
 `dtreetrawl -f -F --hash -j .`
+
 ```
 ...
 ... //clipped
@@ -175,9 +176,10 @@ Stats for /home/lab/dtreetrawl:
 ... //clipped
 ...
 ```
-#### Parsable terse output
-In the terse output, each `trawlentry`/`tentry`/`tent` is surrounded by the set delimiter/separator twice. That is, say if the delimiter is `:`, then, at the begining and end of the tentry, `::` will be placed; fields within the tentry will be separated by `:`. A successful run is followed by a summary(`dstat`), to differentiate it from the tentries, it will have only a single delimiter at the begining and ending. `trawlentry` starts with a double delimiter, `dstat` starts with a single delimiter.
 
+#### Parsable terse output
+
+In the terse output, each `trawlentry`/`tentry`/`tent` is surrounded by the set delimiter/separator twice. That is, say if the delimiter is `:`, then, at the begining and end of the tentry, `::` will be placed; fields within the tentry will be separated by `:`. A successful run is followed by a summary(`dstat`), to differentiate it from the tentries, it will have only a single delimiter at the begining and ending. `trawlentry` starts with a double delimiter, `dstat` starts with a single delimiter.
 
 Fields appear in the same order as listed. Fields that are not applicable are left blank, which leads to adjacent delimiters.
 
@@ -199,9 +201,8 @@ File type notation:
         CHR   character device
         FIFO  FIFO/pipes
 
-
-
 `dtreetrawl -f -F -t -d ":" --hash .`
+
 ```
 ...
 ... //clipped
@@ -213,11 +214,12 @@ File type notation:
 
 ```
 
-
 #### Dependencies
+
 Linux, GCC & GLib-2.0
 
 #### To compile and install from source(preferred):
+
 ```
 make clean
 make
@@ -228,6 +230,7 @@ make uninstall
 ```
 
 #### To install from RPM(centos):
+
 ```
 # Pull the RPM
 wget https://github.com/six-k/dtreetrawl/releases/download/dtreetrawl-1.0/dtreetrawl-1.0-1.el7.centos.x86_64.rpm
@@ -245,15 +248,17 @@ yum localinstall dtreetrawl-1.0-1.el7.centos.x86_64.rpm
 ```
 
 #### To run the pre compiled binary, clone or fork this repo and `cd` to the directory:
+
 `./dtreetrawl -h`
 
-```./dtreetrawl --hash -d ":" -c "sha1" -- /stairway/to/heaven /eastblue/southblue/allblue```
+`./dtreetrawl --hash -d ":" -c "sha1" -- /stairway/to/heaven /eastblue/southblue/allblue`
 
 To run this by name, symlink this to one of the shell's search PATH:
-```ln -s /path/to/dtreetrawl/dtreetrawl /usr/local/bin/dtreetrawl```
+`ln -s /path/to/dtreetrawl/dtreetrawl /usr/local/bin/dtreetrawl`
 
 #### Acknowledgements
+
 Folks at [Fractalio](https://fractalio.com) have been kind enough to test this
 tool at production sites and reporting bugs.
-[Purushotham](https://github.com/purushotham-s) & 
+[Purushotham](https://github.com/purushotham-s) &
 [Gugan](https://github,com/GuGu910) have been a huge help.

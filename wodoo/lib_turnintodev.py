@@ -2,7 +2,6 @@ import traceback
 import arrow
 import re
 import click
-import os
 from .tools import remove_webassets
 from .tools import _execute_sql
 from .cli import cli, pass_config, Commands
@@ -45,7 +44,8 @@ def set_password_all_users(config, ctx, password, default):
         _execute_sql(conn, sql)
 
     # update a possible robot file also
-    Commands.invoke(ctx, 'robot:make-var-file', userpassword=password)
+    Commands.invoke(ctx, "robot:make-var-file", userpassword=password)
+
 
 @turn_into_dev.command()
 @click.argument("username", required=True)
@@ -55,8 +55,12 @@ def set_password_all_users(config, ctx, password, default):
 def user_password(config, ctx, username, password):
     pwd = __hash_odoo_password(password)
     conn = config.get_odoo_conn().clone()
-    _execute_sql(conn, (f"update res_users set password='{pwd}' where login='{username}'"))
+    _execute_sql(
+        conn,
+        (f"update res_users set password='{pwd}' where login='{username}'"),
+    )
     click.secho(f"Password set to {pwd} for user {username}", fg="green")
+
 
 @turn_into_dev.command()
 @click.argument("password")
@@ -156,7 +160,9 @@ def __turn_into_devdb(ctx, config, conn):
                     return not res[0]
                 return False
 
-            if any(list(ignore_line(comment) for comment in comment[0].split(";"))):
+            if any(
+                list(ignore_line(comment) for comment in comment[0].split(";"))
+            ):
                 continue
         try:
             print(line)

@@ -6,7 +6,7 @@ from .decorator import timeout
 
 
 @timeout
-def closed(port, host='localhost', timeout=300):
+def closed(port, host="localhost", timeout=300):
     try:
         s = socket.create_connection((host, port), timeout)
         s.close()
@@ -15,7 +15,7 @@ def closed(port, host='localhost', timeout=300):
 
 
 @timeout
-def open(port, host='localhost', timeout=300):
+def open(port, host="localhost", timeout=300):
     try:
         s = socket.create_connection((host, port), timeout)
         s.close()
