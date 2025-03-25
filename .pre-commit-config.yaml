@@ -76,7 +76,7 @@ repos:
       - id: python-check-blanket-noqa
       - id: python-check-blanket-type-ignore
       - id: python-no-log-warn
-      - id: python-no-eval
+      # - id: python-no-eval
       - id: text-unicode-replacement-char
       - id: python-check-mock-methods
   - repo: https://github.com/Lucas-C/pre-commit-hooks

@@ -1,9 +1,7 @@
 import time
-from tabulate import tabulate
 from pathlib import Path
 from queue import Queue
 import threading
-from click.shell_completion import CompletionItem
 import json
 import yaml
 import shutil
@@ -16,20 +14,12 @@ from .odoo_config import MANIFEST
 from .odoo_config import customs_dir
 from .cli import cli, pass_config, Commands
 from .lib_clickhelpers import AliasedGroup
-from .tools import split_hub_url
-from .tools import autocleanpaper
-from .tools import copy_dir_contents, rsync
 from .tools import abort
-from .tools import __assure_gitignore
-from .tools import _write_file
 from .tools import bashfind
 from .tools import cwd
-from .tools import __rmtree
-from .tools import _get_customs_root
 from .tools import _get_xml_id
 from .tools import pretty_xml
 from .tools import _execute_sql
-from .tools import exe
 from .tools import odoorpc
 from .tools import _output_clipboard_csv
 
@@ -51,13 +41,19 @@ def _find_duplicate_modules():
     _identify_duplicate_modules(all_modules)
 
 
-def _apply_gimera_if_required(ctx, path, content, force_do=False, no_fetch=None):
+def _apply_gimera_if_required(
+    ctx, path, content, force_do=False, no_fetch=None
+):
     from gimera.gimera import apply as gimera
 
     with cwd(path):
         for repo in content["repos"]:
             repo_path = path / repo["path"]
-            if repo["type"] == "submodule" or force_do or not repo_path.exists():
+            if (
+                repo["type"] == "submodule"
+                or force_do
+                or not repo_path.exists()
+            ):
                 ctx.invoke(
                     gimera,
                     repos=[repo["path"]],
@@ -72,7 +68,8 @@ def _apply_gimera_if_required(ctx, path, content, force_do=False, no_fetch=None)
 
         if changed:
             click.secho(
-                "Restarting reloading because gimera apply was done", fg="yellow"
+                "Restarting reloading because gimera apply was done",
+                fg="yellow",
             )
             Commands.invoke(ctx, "reload", no_apply_gimera=True)
 
@@ -139,7 +136,9 @@ def update_ast(filename):
     click.echo("Updating ast - can take about one minute")
     update_cache(filename or None)
     click.echo(
-        "Updated ast - took {} seconds".format((datetime.now() - started).seconds)
+        "Updated ast - took {} seconds".format(
+            (datetime.now() - started).seconds
+        )
     )
 
 
@@ -217,7 +216,9 @@ class OdooShRepo(object):
     def __init__(self, version):
         self.envkey = "ODOOSH_REPO"
         if self.envkey not in os.environ.keys():
-            abort("Please define ODOOSH_REPO env to point to checked out Ninja-Odoosh.")
+            abort(
+                "Please define ODOOSH_REPO env to point to checked out Ninja-Odoosh."
+            )
         self.version = str(version)
         self.root = Path(os.environ["ODOOSH_REPO"])
         self.ocapath = self.root / "OCA"
@@ -226,7 +227,9 @@ class OdooShRepo(object):
 
     def iterate_all_modules(self, version, path=None):
         path = path or self.ocapath
-        for path in bashfind(path=self.root, type="d", wholename=f"*/{version}/*"):
+        for path in bashfind(
+            path=self.root, type="d", wholename=f"*/{version}/*"
+        ):
             if ".git" in path.parts:
                 continue
             if path.parent.name != str(version):
@@ -239,7 +242,9 @@ class OdooShRepo(object):
         from .module_tools import Modules
 
         modules = Modules()
-        all_modules = modules.get_all_modules_installed_by_manifest(current_modules)
+        all_modules = modules.get_all_modules_installed_by_manifest(
+            current_modules
+        )
         for module in self.iterate_all_modules(current_version()):
             manifest = module.manifest_dict
             if manifest.get("auto_install"):
@@ -262,7 +267,7 @@ class OdooShRepo(object):
                 yield paths
 
     def find_module(self, modulename, ttype="OCA", exact_match=True):
-        from .odoo_config import current_version, customs_dir
+        pass
 
         if not exact_match:
             modulename = f"*{modulename}*"
@@ -301,9 +306,14 @@ def rewrite_manifest(config, ctx):
     manifest.rewrite()
 
 
-@src.command(help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST")
+@src.command(
+    help="Fetches OCA modules from odoo.sh ninja mentioned in MANIFEST"
+)
 @click.argument(
-    "module", nargs=-1, shell_complete=_get_available_oca_modules, required=True
+    "module",
+    nargs=-1,
+    shell_complete=_get_available_oca_modules,
+    required=True,
 )
 @click.pass_context
 @pass_config
@@ -315,7 +325,7 @@ def fetch_modules(config, ctx, module):
 
     from .tools import rsync
     from .odoo_config import customs_dir
-    from .module_tools import Modules, Module
+    from .module_tools import Modules
 
     modules = Modules()
     odoosh = OdooShRepo(current_version())
@@ -357,7 +367,7 @@ def fetch_modules(config, ctx, module):
 
 def _identify_duplicate_modules(check):
     # remove duplicate modules or at least identify them:
-    from .module_tools import Modules, Module
+    from .module_tools import Module
 
     src = customs_dir()
     ignore_paths = []
@@ -406,7 +416,7 @@ def pretty_print_manifest():
 @pass_config
 @click.argument("module")
 def security(config, module, model):
-    from .module_tools import Modules, Module
+    from .module_tools import Modules
 
     modules = Modules()
     module = modules.get_by_name(module)
@@ -457,7 +467,10 @@ def delete_modules_not_in_manifest(config, ctx, dry_run):
 @pass_config
 def restore_view(config, ctx, path):
     odoo = odoorpc(config)
-    langs = [x.code for x in odoo.env['res.lang'].browse(odoo.env["res.lang"].search([]))]
+    langs = [
+        x.code
+        for x in odoo.env["res.lang"].browse(odoo.env["res.lang"].search([]))
+    ]
     path = Path(path)
     content = path.read_text()
     xmlid = Path(path.name.split(".xmlid.")[1]).stem
@@ -467,14 +480,21 @@ def restore_view(config, ctx, path):
     module, name = xmlid.split(".")[0], ".".join(xmlid.split(".")[1:])
     data = odoo.env["ir.model.data"].browse(
         odoo.env["ir.model.data"].search(
-            [("module", "=", module), ("name", "=", name), ("model", "=", "ir.ui.view")]
+            [
+                ("module", "=", module),
+                ("name", "=", name),
+                ("model", "=", "ir.ui.view"),
+            ]
         )
     )
     view_id = data[0].res_id
     odoo.env["ir.ui.view"].browse(view_id).write(
-        {"arch_db": content}, context={"lang": lang, 'mickey': 'mouse'}
+        {"arch_db": content}, context={"lang": lang, "mickey": "mouse"}
     )
-    click.secho(f"View [{view_id}] {module}.{name} updated successfully for language {lang}", fg="green")
+    click.secho(
+        f"View [{view_id}] {module}.{name} updated successfully for language {lang}",
+        fg="green",
+    )
 
 
 @src.command()
@@ -495,7 +515,10 @@ def grab_views(config, ctx):
     threads = []
     stats = {"views": 0}
     q = Queue()
-    langs = [x.code for x in odoo.env['res.lang'].browse(odoo.env["res.lang"].search([]))]
+    langs = [
+        x.code
+        for x in odoo.env["res.lang"].browse(odoo.env["res.lang"].search([]))
+    ]
 
     def check_view():
         while not q.empty():
@@ -507,17 +530,24 @@ def grab_views(config, ctx):
                         p = round(count / len(rows) * 100, 1)
                         click.secho(f"...threading progress {p}%", fg="yellow")
 
-                    viewdb = odoo.env['ir.ui.view'].read([view[0]], ["arch_db", "priority", "active"], context={"lang": lang})[0]
-                    xml = viewdb['arch_db']
-                    prio = viewdb['priority']
-                    active = 'on' if viewdb['active'] else 'off'
+                    viewdb = odoo.env["ir.ui.view"].read(
+                        [view[0]],
+                        ["arch_db", "priority", "active"],
+                        context={"lang": lang},
+                    )[0]
+                    xml = viewdb["arch_db"]
+                    prio = viewdb["priority"]
+                    active = "on" if viewdb["active"] else "off"
                     xmlid = _get_xml_id(config, "ir.ui.view", view[0])
                     model = view[3] or "no-model"
                     name = view[1]
                     id = view[0]
 
                     if xmlid:
-                        filepath = root / f"{model}.xmlid.{xmlid}.lang.{lang}.{prio}.{active}.xml"
+                        filepath = (
+                            root
+                            / f"{model}.xmlid.{xmlid}.lang.{lang}.{prio}.{active}.xml"
+                        )
                     else:
                         filepath = (
                             root
@@ -553,7 +583,9 @@ def grab_views(config, ctx):
     if all_files:
         for file in all_files:
             file.unlink()
-            click.secho(f"View does not exist anymore: {file.relative_to(root)}")
+            click.secho(
+                f"View does not exist anymore: {file.relative_to(root)}"
+            )
 
 
 @src.command()
@@ -569,13 +601,16 @@ def compare_views(config, ctx, threads, match):
     conn = config.get_odoo_conn()
 
     click.secho(
-        'name="%(project_task_action_from_partner)d muss ersetzt werden', fg="red"
+        'name="%(project_task_action_from_partner)d muss ersetzt werden',
+        fg="red",
     )
     time.sleep(5)
 
     def compare_view(file_content, res_id, lang, info, the_model):
         view = _execute_sql(
-            conn, f"select arch_db from ir_ui_view where id={res_id}", fetchone=True
+            conn,
+            f"select arch_db from ir_ui_view where id={res_id}",
+            fetchone=True,
         )
         if not view:
             click.secho(f"VIEW vanished with id: {res_id} ({info})", fg="red")
@@ -605,7 +640,9 @@ def compare_views(config, ctx, threads, match):
                         Path("/tmp/1").write_bytes(
                             pretty_xml(file_content.encode("utf8"))
                         )
-                        Path("/tmp/2").write_bytes(pretty_xml(_arch.encode("utf8")))
+                        Path("/tmp/2").write_bytes(
+                            pretty_xml(_arch.encode("utf8"))
+                        )
                         subprocess.run(
                             ["/bin/diff", "--color", "-w", "/tmp/1", "/tmp/2"]
                         )
@@ -623,11 +660,14 @@ def compare_views(config, ctx, threads, match):
                 content = file.read_text()
                 if ".xmlid." in file.stem:
                     try:
-                        module, name, lang = file.stem.split(".xmlid.")[1].split(".", 4)
+                        module, name, lang = file.stem.split(".xmlid.")[
+                            1
+                        ].split(".", 4)
                         model = file.stem.split(".xmlid.")[0]
                     except:
                         click.secho(
-                            f"Invalid File Format: {file.relative_to(root)}", fg="red"
+                            f"Invalid File Format: {file.relative_to(root)}",
+                            fg="red",
                         )
                         return
                     xmlid = ".".join([module, name])
@@ -695,10 +735,10 @@ def grab_models(config, ctx):
                 }
                 fields = _execute_sql(
                     conn,
-                    f"select name, ttype, compute, relation, translate, readonly from ir_model_fields where model = '{model}'",
+                    f"select name, ttype, compute, relation, translate, readonly from ir_model_fields where model = '{model}' order by model",
                     fetchall=True,
                 )
-                for field in fields:
+                for field in sorted(fields, key=lambda x: x[0]):
                     data["fields"].append(
                         {
                             "name": field[0],
@@ -726,12 +766,15 @@ def grab_models(config, ctx):
 
 @src.command()
 @click.argument(
-    "module", nargs=-1, shell_complete=_get_available_oca_modules, required=False
+    "module",
+    nargs=-1,
+    shell_complete=_get_available_oca_modules,
+    required=False,
 )
 @click.pass_context
 @pass_config
 def convert_odoo17_attrs(config, ctx, module):
-    from .module_tools import Modules, DBModules, Module
+    from .module_tools import Modules, Module
     from .lib_src_replace_attrs import odoo17attrs
 
     modules = Modules()
@@ -748,21 +791,20 @@ def convert_odoo17_attrs(config, ctx, module):
 @click.option("-c", "--customs", is_flag=True, help="Only customized modules.")
 @pass_config
 def srcstats(config, ctx, customs):
-    from .module_tools import Modules, DBModules, Module
-    from .lib_src_replace_attrs import odoo17attrs
+    pass
 
     res = []
 
     all_modules = _modules_overview(config)
 
-    for m in sorted(all_modules, key=lambda x: x['name']):
-        if customs and not m['is_customs']:
+    for m in sorted(all_modules, key=lambda x: x["name"]):
+        if customs and not m["is_customs"]:
             continue
-        m.pop('description')
+        m.pop("description")
         res.append(m)
 
-    
     _output_clipboard_csv(res)
+
 
 def _modules_overview(config):
     from .module_tools import Module, Modules
@@ -804,8 +846,7 @@ def _modules_overview(config):
 @click.pass_context
 @pass_config
 def analyze(config, ctx, sha):
-    from .module_tools import Modules, DBModules, Module
-    from .lib_src_replace_attrs import odoo17attrs
+    from .module_tools import Module
 
     result = {
         "manifests_changed": set(),
