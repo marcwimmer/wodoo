@@ -96,6 +96,9 @@ def collect_all(root_dir, parent, robo_file_content):
                 if not str(filepath).startswith("/"):
                     filepath = parent / filepath
                 if not filepath.exists():
+                    import pudb
+
+                    pudb.set_trace()
                     abort((f"Could not find file {filepath}"))
                 content = filepath.read_text()
                 yield from collect_all(root_dir, filepath.parent, content)
@@ -144,7 +147,7 @@ def get_odoo_modules(verbose, test_files, root_dir):
 
     for file in test_files:
         file_content = file.read_text()
-        yield from collect_all(root_dir, root_dir, file_content)
+        yield from collect_all(root_dir, file.parent, file_content)
 
 
 def _eval_robot_output(
