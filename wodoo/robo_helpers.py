@@ -70,6 +70,8 @@ def _get_all_robottest_files(path=None):
             continue
         if "library" in _file.parts:
             continue
+        if _file.name == "test_template.robot":
+            continue
         if not _file.parts[-1].endswith(".robot"):
             continue
 
