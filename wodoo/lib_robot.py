@@ -527,7 +527,7 @@ def run_all(
         click.secho(f"Running robotest {file}")
 
         for i in range(retry):
-            click.secho(f"Try #{i + 1} of {retry}")
+            click.secho(f"Try #{i + 1} of {retry} for {file}")
             try:
                 res = ctx.invoke(
                     run,
