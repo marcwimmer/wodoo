@@ -151,12 +151,9 @@ def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
         else:
             __dc(config, ["stop", "-t", "2"] + list(machines), profile=profile)
     except subprocess.CalledProcessError as e:
-        if "is not running" in (e.stderr or "") or "is not running" in (
-            e.stdout or ""
-        ):
-            pass
-        else:
-            raise
+        pass
+        # was not possible to handle the not running error
+        # chat gpt also suggests to maximally handle no such container or container not running
 
 
 def force_kill(ctx, config, machine, profile="auto"):
