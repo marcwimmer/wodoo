@@ -151,7 +151,11 @@ def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
         else:
             __dc(config, ["stop", "-t", "2"] + list(machines), profile=profile)
     except subprocess.CalledProcessError as e:
-        if "is not running" not in e.stderr:
+        if "is not running" in (e.stderr or "") or "is not running" in (
+            e.stdout or ""
+        ):
+            pass
+        else:
             raise
 
 
