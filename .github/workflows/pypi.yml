@@ -83,6 +83,7 @@ jobs:
           $ODOOCMD -f down || true
       - name: cleanup
         if: always()
+        run: |
           $ODOOCMD kill || true
           $ODOOCMD -f down || true
 
