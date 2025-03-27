@@ -145,10 +145,14 @@ def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
             __dc(
                 config, ["stop", "-t", "20"] + safe_stop, profile=profile
             )  # persist data
-    if config.devmode:
-        __dc(config, ["kill"] + list(machines), profile=profile)
-    else:
-        __dc(config, ["stop", "-t", "2"] + list(machines), profile=profile)
+    try:
+        if config.devmode:
+            __dc(config, ["kill"] + list(machines), profile=profile)
+        else:
+            __dc(config, ["stop", "-t", "2"] + list(machines), profile=profile)
+    except subprocess.CalledProcessError as e:
+        if "is not running" not in e.stderr:
+            raise
 
 
 def force_kill(ctx, config, machine, profile="auto"):
