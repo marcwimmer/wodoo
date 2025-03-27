@@ -78,7 +78,7 @@ def _get_all_robottest_files(path=None):
     return testfiles
 
 
-def collect_all(root_dir, robo_file_content):
+def collect_all(root_dir, parent, robo_file_content):
     """collects files in all directories by glob pattern being in a directory with subdir name and copies
     the files to dest_folder
 
@@ -92,11 +92,13 @@ def collect_all(root_dir, robo_file_content):
             line = _normalize_robot_line(line)
             if line.startswith("Resource") and line.endswith(".robot"):
                 filepath = line.split("  ")[1]
-                filepath = root_dir / filepath
+                filepath = Path(filepath.replace("${EXECDIR}", str(root_dir)))
+                if not str(filepath).startswith("/"):
+                    filepath = parent / filepath
                 if not filepath.exists():
                     abort((f"Could not find file {filepath}"))
                 content = filepath.read_text()
-                yield from collect_all(filepath.resolve().parent, content)
+                yield from collect_all(root_dir, filepath.parent, content)
 
     except Exception as ex:  # pylint: disable=broad-except
         abort(str(ex))
@@ -135,11 +137,14 @@ def get_odoo_modules(verbose, test_files, root_dir):
     Returns:
         bytes: the archive in bytes format
     """
+    from .odoo_config import customs_dir
+
+    root_dir = customs_dir()
     test_files = [x.absolute() for x in test_files]
 
     for file in test_files:
         file_content = file.read_text()
-        yield from collect_all(file.parent, file_content)
+        yield from collect_all(root_dir, root_dir, file_content)
 
 
 def _eval_robot_output(
