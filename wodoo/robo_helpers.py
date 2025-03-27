@@ -98,9 +98,6 @@ def collect_all(root_dir, parent, robo_file_content):
                 if not str(filepath).startswith("/"):
                     filepath = parent / filepath
                 if not filepath.exists():
-                    import pudb
-
-                    pudb.set_trace()
                     abort((f"Could not find file {filepath}"))
                 content = filepath.read_text()
                 yield from collect_all(root_dir, filepath.parent, content)
