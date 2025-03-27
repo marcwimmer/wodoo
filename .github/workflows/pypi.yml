@@ -81,6 +81,10 @@ jobs:
           $ODOOCMD update crm
           $ODOOCMD kill || true
           $ODOOCMD -f down || true
+      - name: cleanup
+        if: always()
+          $ODOOCMD kill || true
+          $ODOOCMD -f down || true
 
       - name: increment version
         run: |
