@@ -564,6 +564,9 @@ def update(
     """
     started = arrow.get()
 
+    if float(config.odoo_version) < 14.0:
+        no_progress = True
+
     param_module = module
 
     if recover_view_error and not non_interactive:
