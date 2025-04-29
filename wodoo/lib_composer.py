@@ -41,6 +41,8 @@ from .odoo_config import MANIFEST
 from .tools import execute_script
 from .tools import ensure_project_name
 from .tools import update_docker_service
+from .tools import autocleanpaper
+from .tools import sync_folder
 
 import inspect
 import os
@@ -120,7 +122,9 @@ def _get_arch():
     help="Base64 encoded configuration like in settings",
 )
 @click.option(
-    "-cR", "--additional_config_raw", help="like ODOO_DEMO=1;RUN_PROXY=0"
+    "-cR",
+    "--additional_config_raw",
+    help="like ODOO_DEMO=1;RUN_PROXY=0; you can pass internally a 'dict' here, which is converted",
 )
 @click.option(
     "--images-url", help="default: https://github.com/marcwimmer/odoo"
@@ -208,20 +212,22 @@ def do_reload(
         if docker_compose:
             docker_compose = docker_compose.split(":")
 
+        if include_src:
+            additional_config += "\nSRC_EXTRA=0"
+
         try:
             internal_reload(
-                ctx,
-                config,
-                db,
-                demo,
-                devmode,
-                headless,
-                proxy_port,
-                mailclient_gui_port,
-                additional_config,
+                ctx=ctx,
+                config=config,
+                db=db,
+                demo=demo,
+                devmode=devmode,
+                headless=headless,
+                proxy_port=proxy_port,
+                mailclient_gui_port=mailclient_gui_port,
+                additional_config=additional_config,
                 additional_docker_configuration_files=docker_compose,
                 no_gimera_apply=no_gimera_apply,
-                include_src=include_src,
             )
         except NotInAddonsPath as ex:
             abort(str(ex))
@@ -242,13 +248,11 @@ def internal_reload(
     demo,
     devmode,
     headless,
-    local,
     proxy_port,
     mailclient_gui_port,
     additional_config=None,
     additional_docker_configuration_files=None,
     no_gimera_apply=False,
-    include_src=False,
 ):
     threading.currentThread().config = config
     ensure_project_name(config)
@@ -259,10 +263,11 @@ def internal_reload(
         "config": config,
         "db": db,
         "demo": demo,
-        "LOCAL_SETTINGS": "1" if local else "0",
         "CUSTOMS_DIR": config.WORKING_DIR,
         "QUEUEJOB_CHANNELS_FILE": config.files["queuejob_channels_file"],
     }
+    from .myconfigparser import MyConfigParser
+
     if devmode:
         defaults["DEVMODE"] = 1
     if demo:
@@ -283,8 +288,12 @@ def internal_reload(
         defaults["ROUNDCUBE_PORT"] = mailclient_gui_port
 
     if additional_config:
-        for key in additional_config.keys():
-            defaults[key] = additional_config[key]
+        with autocleanpaper() as paper:
+            paper.write_text(additional_config)
+            addconfig = MyConfigParser(paper)
+            for key in addconfig.keys():
+                defaults[key] = addconfig[key]
+            del addconfig
 
         click.secho("Additional config: {defaults}")
 
@@ -300,7 +309,6 @@ def internal_reload(
         **defaults,
         additional_docker_configuration_files=additional_docker_configuration_files,
         no_gimera_apply=no_gimera_apply,
-        include_src=include_src,
     )
 
     _execute_after_reload(config)
@@ -369,7 +377,7 @@ def _do_compose(
     _prepare_yml_files_from_template_files(
         config, additional_docker_configuration_files
     )
-    _merge_odoo_dockerfile(config, include_src=include_src)
+    _merge_odoo_dockerfile(config)
 
     click.echo("Built the docker-compose file.")
 
@@ -772,6 +780,9 @@ def __run_docker_compose_config(config, contents, env):
             conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         except:
             # find culprit
+            import pudb
+
+            pudb.set_trace()
             for i in range(len(files)):
                 file = files[i]
                 cmdline2 = buildcmd(files[: i + 1])
@@ -1090,7 +1101,7 @@ def _use_file(config, path):
     return res
 
 
-def _merge_odoo_dockerfile(config, include_src):
+def _merge_odoo_dockerfile(config):
     """
     If customs contains dockerfile, then append their execution
     in the main dockerfile
@@ -1155,7 +1166,7 @@ def _merge_odoo_dockerfile(config, include_src):
         )
 
         # include source code
-        if include_src:
+        if not config.SRC_EXTRA:
             append_odoo_src(config, odoo_docker_file)
 
     else:
@@ -1164,7 +1175,15 @@ def _merge_odoo_dockerfile(config, include_src):
 
 
 def append_odoo_src(config, path):
-    content = "ADD {src} /opt/src"
+    linkdir = config.dirs["images"] / "odoo" / "src" / config.project_name
+    linkdir.parent.mkdir(parents=True, exist_ok=True)
+    # Remove existing symlink or file if necessary
+    sync_folder(config.CUSTOMS_DIR, linkdir, excludes=[".git"])
+    content = f"""
+RUN mkdir /opt/src
+COPY ./src/{config.project_name} /opt/src
+RUN find /opt/src -name .git -type d -exec rm -rf {{}} \;
+    """
     path.write_text(path.read_text() + "\n" + content)
 
 

@@ -1109,6 +1109,7 @@ def abort(msg, nr=1):
 def sync_folder(dir, dest_dir, excludes=None):
     import platform
 
+    click.secho(f"Syncing folders {dir} -> {dest_dir}", fg="yellow")
     dir = Path(dir)
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(exist_ok=True, parents=True)
@@ -1119,7 +1120,9 @@ def sync_folder(dir, dest_dir, excludes=None):
             "rsync",
             str(dir) + "/",
             str(dest_dir) + "/",
+            "--info=progress2",
             "-r",
+            "-l",
             "--delete-after",
         ]
         for exclude in excludes or []:

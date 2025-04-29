@@ -80,9 +80,18 @@ def _get_projectname():
     is_flag=True,
 )
 @click.option("--retries", default=3, help="Max retries if robotest fails")
+@click.option("--use-snap", help="Choose a snap name which is restored")
 @click.pass_context
 @pass_config
-def start(config, ctx, robotest_file, stop_after_first_error, retries):
+def start(
+    config,
+    ctx,
+    shell_command,
+    robotest_file,
+    stop_after_first_error,
+    retries,
+    use_snap,
+):
     from .odoo_config import MANIFEST
 
     manifest = MANIFEST()
@@ -95,12 +104,14 @@ def start(config, ctx, robotest_file, stop_after_first_error, retries):
         "turns": 0,
         "done": [],
         "robotest_file": robotest_file,
+        "shell_command": shell_command,
         "stop_after_first_error": stop_after_first_error,
         "max_retries": retries,
         "current_try": 0,
+        "snap": use_snap,
     }
     _save(data)
-    if not robotest_file:
+    if not robotest_file and not shell_command:
         click.secho(
             """
             No robotest file set. Please call:
@@ -110,6 +121,10 @@ def start(config, ctx, robotest_file, stop_after_first_error, retries):
             and then
 
             > odoo bisect good/bad
+
+            OR:
+            - set a robotest file
+            - provide a shell command
             """,
             fg="yellow",
         )
@@ -208,14 +223,17 @@ def run(config, ctx, one):
         click.secho(f"Duration: {end-start}", fg="green")
         return res
 
-    def _reset(module):
+    def _reset(module, data):
         commando("reload", "--demo", "-I")
         commando("build")
         commando("kill")
         commando("kill", "postgres")
-        commando("down")
-        commando("down", "-v")
-        commando("db", "reset")
+        if data.get("snap"):
+            commando("snap", "restore", data["snap"])
+        else:
+            commando("down")
+            commando("down", "-v")
+            commando("db", "reset")
         commando("wait-for-container-postgres")
         commando("update", module, "--no-restart", "--no-dangling-check")
         commando("kill")
@@ -272,7 +290,7 @@ def run(config, ctx, one):
         result = None
         try:
             try:
-                _reset(module)
+                _reset(module, data)
             except Exception as ex:
                 data = _get_file()
                 data.setdefault("failed_installations", {})

@@ -834,7 +834,9 @@ def update(
     )
 
     if uninstall or all_modules:
-        _uninstall_marked_modules(ctx, config, manifest.get("uninstall", []))
+        _uninstall_marked_modules(
+            ctx, config, manifest.get("uninstall", []), no_restart
+        )
 
     # check danglings
     if not no_dangling_check and all_modules:
@@ -874,7 +876,7 @@ def _uninstall_devmode_modules(ctx, config, manifest):
     if config.devmode and manifest.get("devmode_uninstall", []):
         for mod in manifest["devmode_uninstall"]:
             _uninstall_marked_modules(
-                ctx, config, manifest["devmode_uninstall"]
+                ctx, config, manifest["devmode_uninstall"], False
             )
 
 
@@ -1012,7 +1014,7 @@ def uninstall(ctx, config, modules):
     _uninstall_marked_modules(ctx, config, modules)
 
 
-def _uninstall_marked_modules(ctx, config, modules):
+def _uninstall_marked_modules(ctx, config, modules, no_restart=False):
     """
     Checks for file "uninstall" in customs root and sets modules to uninstalled.
     """
@@ -1036,6 +1038,8 @@ def _uninstall_marked_modules(ctx, config, modules):
     manifest_modules = get_all_modules_installed_by_manifest(config)
 
     uninstalled = False
+    effective_uninstall = []
+    errors = []
     for module in modules:
         try:
             objmod = Module.get_by_name(module)
@@ -1044,32 +1048,58 @@ def _uninstall_marked_modules(ctx, config, modules):
                     if not Module.get_by_name(desc).manifest_dict.get(
                         "auto_install"
                     ):
-                        abort(
-                            f"{objmod.name} has {desc.name} as descendant which is still in the install section"
+                        errors.append(
+                            (
+                                f"{objmod.name} has {desc.name} as descendant "
+                                "which is still in the install section"
+                            )
                         )
         except NotInAddonsPath:
             pass
-
-        click.secho(f"Uninstall {module}", fg="red")
-        lib_shell(
-            config,
-            (
-                "self.env['ir.module.module'].search(["
-                f"('name', '=', '{module}'),"
-                "('state', 'in', "
-                "['to upgrade', 'to install', 'installed']"
-                ")]).module_uninstall()\n"
-                "self.env.cr.commit()"
-            ),
+        else:
+            effective_uninstall.append(module)
+    if errors:
+        abort("\n".join(errors))
+    if effective_uninstall:
+        module_comma = ",".join(
+            map(lambda x: f"'{x}'", sorted(effective_uninstall))
         )
+        if len(effective_uninstall) > 10:
+            click.secho(
+                f"Uninstalling {len(effective_uninstall)} modules", fg="red"
+            )
+        else:
+            click.secho(f"Uninstall {module_comma}", fg="red")
+        module_comma = f"[{module_comma}]"
+        cmd = f"""
+modules =self.env['ir.module.module'].search([('state', 'in', ['to upgrade', 'to install', 'installed'])])
+modules = modules.filtered(lambda x: x.name in {module_comma})
+for module in modules:
+    try:
+        print("-----------------------------------------------------------")
+        print("Uninstalling: " + module.name)
+        print("-----------------------------------------------------------")
+        module.module_uninstall()
+        self.env.cr.commit()
+    except Exception as ex:
+        print("-----------------------------------------------------------")
+        print("ERROR UNINSTALL " + module.name)
+        print(ex)
+        print("-----------------------------------------------------------")
+    finally:
+        env.clear()
+        env.cr.rollback()
+            """
+        lib_shell(config, cmd)
         del module
         uninstalled = True
 
-    if uninstalled:
+    if uninstalled and not no_restart:
         Commands.invoke(ctx, "restart", machines=["odoo"])
 
     modules = [x for x in modules if DBModules.is_module_installed(x)]
     if modules:
+        click.secho(cmd, fg="yellow")
         abort(f"Failed to uninstall: {','.join(modules)}")
 
 

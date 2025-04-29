@@ -36,6 +36,7 @@ from . import lib_lang  # NOQA
 from . import lib_module  # NOQA
 from . import lib_setup  # NOQA
 from . import lib_src  # NOQA
+from . import lib_bakery  # NOQA
 from . import lib_docker_registry  # NOQA
 from . import lib_turnintodev  # NOQA
 from . import lib_talk  # NOQA

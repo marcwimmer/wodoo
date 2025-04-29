@@ -1,3 +1,7 @@
+# 0.6.1
+
+- bakery added: create self running images compatible with kubernetes and aws
+
 # 0.5.45
 
 - added detached mode at run and profiles
