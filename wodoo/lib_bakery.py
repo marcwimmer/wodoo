@@ -137,9 +137,13 @@ def bake(ctx, config, params, no_update_images):
           * odoo setting RUN_POSTGRES=0
           * odoo setting RUN_CRONJOBS=0
         """,
+        "7. Setting up connection to database and other settings",
     ]
     for tip in tips:
         click.secho(tip, fg="green")
+
+    for config in WHITELIST_PROPS:
+        click.secho(f"\todoo setting {config}", fg="green")
 
 
 def _get_metadata(ctx, config):
