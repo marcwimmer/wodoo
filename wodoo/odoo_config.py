@@ -53,7 +53,7 @@ def get_odoo_addons_paths(
 
 
 def customs_dir():
-    env_customs_dir = os.getenv("CUSTOMS_DIR")
+    env_customs_dir = os.getenv("CUSTOMS_DIR") or os.getenv("HOST_CUSTOMS_DIR")
     if not env_customs_dir:
         manifest_file = Path(os.getcwd()) / "MANIFEST"
         if manifest_file.exists():

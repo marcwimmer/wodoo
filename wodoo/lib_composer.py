@@ -263,7 +263,7 @@ def internal_reload(
         "config": config,
         "db": db,
         "demo": demo,
-        "CUSTOMS_DIR": config.WORKING_DIR,
+        "HOST_CUSTOMS_DIR": config.WORKING_DIR,
         "QUEUEJOB_CHANNELS_FILE": config.files["queuejob_channels_file"],
     }
     from .myconfigparser import MyConfigParser
