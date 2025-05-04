@@ -1199,7 +1199,7 @@ def show_conflicting_modules(config):
 def _exec_update(
     config, params, non_interactive=False, stdout=False, write_to_console=True
 ):
-    params = ["odoo_update", "/update_modules.py"] + params
+    params = ["odoo_update", "/odoolib/update_modules.py"] + params
     if not non_interactive:
         yield __cmd_interactive(
             config,
