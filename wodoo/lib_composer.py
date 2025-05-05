@@ -1178,7 +1178,7 @@ def append_odoo_src(config, path):
     linkdir = config.dirs["images"] / "odoo" / "src" / config.project_name
     linkdir.parent.mkdir(parents=True, exist_ok=True)
     # Remove existing symlink or file if necessary
-    sync_folder(config.CUSTOMS_DIR, linkdir, excludes=[".git"])
+    sync_folder(config.HOST_CUSTOMS_DIR, linkdir, excludes=[".git"])
     content = f"""
 RUN mkdir /opt/src
 COPY ./src/{config.project_name} /opt/src
