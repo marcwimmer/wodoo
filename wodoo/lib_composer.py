@@ -780,9 +780,6 @@ def __run_docker_compose_config(config, contents, env):
             conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
         except:
             # find culprit
-            import pudb
-
-            pudb.set_trace()
             for i in range(len(files)):
                 file = files[i]
                 cmdline2 = buildcmd(files[: i + 1])
