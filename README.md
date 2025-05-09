@@ -195,6 +195,7 @@ The used odoo instance must be placed in /odoo.
         "web",
         "field_onchange"
     ],
+    "python_version": "3.11.10",
     "version": 17.0,
     "install": [ ...  ],
     "uninstall": [

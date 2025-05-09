@@ -492,6 +492,12 @@ def setup_settings_file(config, db, demo, **forced_values):
             settings[k] = v
             settings.write()
 
+    # take PYTHON VERSION from MANIFEST
+    if not settings.get("ODOO_PYTHON_VERSION"):
+        m = MANIFEST()
+        if m.get("python_version", None):
+            settings["ODOO_PYTHON_VERSION"] = m["python_version"]
+
 
 def _execute_after_compose(config, yml):
     """
