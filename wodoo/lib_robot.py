@@ -638,5 +638,18 @@ def make_variable_file(ctx, config, userpassword=None):
     __assure_gitignore(customs_dir() / ".gitignore", ".robot-vars")
 
 
+@robot.command(name="list", help="Creates .robot-vars")
+@pass_config
+@click.pass_context
+def do_list(ctx, config):
+    from .robo_helpers import _get_all_robottest_files
+
+    files = _get_all_robottest_files()
+    click.secho("!!!")
+    for file in files:
+        click.secho(file)
+    click.secho("!!!")
+
+
 Commands.register(make_variable_file, "robot:make-var-file")
 Commands.register(run, "robot:run")

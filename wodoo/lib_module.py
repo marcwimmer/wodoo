@@ -1249,9 +1249,24 @@ def _get_all_unittest_files(config):
 
 
 @odoo_module.command()
+@click.option(
+    "-m",
+    "--manifest",
+    help="Evaluate 'tests' section in MANIFEST",
+    is_flag=True,
+)
 @pass_config
-def list_unit_test_files(config):
+def list_unit_test_files(config, manifest):
+    from .odoo_config import MANIFEST
+
     files = _get_all_unittest_files(config)
+
+    if manifest:
+        tests = MANIFEST().get("tests", [])
+        files = list(
+            filter(lambda file: str(Path(file).parent.parent) in tests, files)
+        )
+
     click.secho("!!!")
     for file in files:
         click.secho(file)
