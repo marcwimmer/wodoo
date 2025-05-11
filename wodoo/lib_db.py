@@ -265,7 +265,10 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
         try:
             _execute_sql(conn, cmd, notransaction=True)
             break
-        except psycopg2.errors.DuplicateDatabase:
+        except (
+            psycopg2.errors.UniqueViolation,
+            psycopg2.errors.DuplicateDatabase,
+        ):
             aggressive_drop_db(config, conn, dbname)
 
     # since odoo version 12 "-i base -d <name>" is required
