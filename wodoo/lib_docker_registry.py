@@ -45,7 +45,9 @@ def login(config):
 
     def _login():
         if not hub["username"]:
-            abort("No username configured in hub url - no login possible.")
+            abort(
+                "No username configured in hub url - no login possible. Configure it in the hub url please with the format:\nuser:password@registry.itewimmer.de:443/prefix"
+            )
         click.secho(f"Using {hub['username']}", fg="yellow")
         res = subprocess.check_output(
             [
