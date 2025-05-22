@@ -1105,6 +1105,29 @@ def _use_file(config, path):
     return res
 
 
+def get_docker_host_ip():
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "network",
+                "inspect",
+                "bridge",
+                "--format",
+                "{{(index .IPAM.Config 0).Gateway}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        gateway_ip = result.stdout.strip()
+        click.secho(f"Docker host IP (bridge gateway): {gateway_ip}")
+        return gateway_ip
+    except subprocess.CalledProcessError as e:
+        click.secho("Failed to inspect Docker network:")
+        abort(str(e))
+
+
 def _merge_odoo_dockerfile(config):
     """
     If customs contains dockerfile, then append their execution
@@ -1171,8 +1194,14 @@ def _merge_odoo_dockerfile(config):
 
         # replace some vars:
         hostname, fqdn, ip = get_host_info()
+        if not config.BUILD_HOST_IP:
+            build_host_ip = hostname
+        else:
+            build_host_ip = config.BUILD_HOST_IP
         odoo_docker_file.write_text(
-            odoo_docker_file.read_text().replace("<BUILD_HOST_IP>", hostname)
+            odoo_docker_file.read_text().replace(
+                "<BUILD_HOST_IP>", build_host_ip
+            )
         )
         # include source code
         if not config.SRC_EXTRA:
@@ -1191,7 +1220,7 @@ def append_odoo_src(config, path):
     content = f"""
 RUN mkdir /opt/src
 COPY ./src/{config.project_name} /opt/src
-RUN find /opt/src -name .git -type d -exec rm -rf {{}} \;
+RUN find /opt/src -name .git -type d -exec rm -rf {{}} \\;
     """
     path.write_text(path.read_text() + "\n" + content)
 
