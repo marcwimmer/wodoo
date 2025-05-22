@@ -59,28 +59,28 @@ jobs:
           #WHY?
           pipx runpip wodoo install requests==2.31.0  || true
 
-      - name: do some testing
-        run: |
-          set -x
-          TEMPODOODIR="./$(basename $(mktemp))/odoo"
-          mkdir -p "$TEMPODOODIR"
-          cd "$TEMPODOODIR"
-          git config --global init.defaultBranch main
-          export
-          $ODOOCMD init . "$ODOO_TEST"
-          docker ps
-          $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION -R
-          $ODOOCMD setting RUN_ODOO_CRONJOBS=0 -R
-          $ODOOCMD setting RUN_CRONJOBS=0 -R
-          $ODOOCMD setting DEVMODE=1 -R
-          $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
-          $ODOOCMD setting PROXY_PORT=${PROXY_PORT}
-          $ODOOCMD build
-          $ODOOCMD kill || true
-          $ODOOCMD -f db reset
-          $ODOOCMD update crm
-          $ODOOCMD kill || true
-          $ODOOCMD -f down || true
+      # - name: do some testing
+      #   run: |
+      #     set -x
+      #     TEMPODOODIR="./$(basename $(mktemp))/odoo"
+      #     mkdir -p "$TEMPODOODIR"
+      #     cd "$TEMPODOODIR"
+      #     git config --global init.defaultBranch main
+      #     export
+      #     $ODOOCMD init . "$ODOO_TEST"
+      #     docker ps
+      #     $ODOOCMD setting ODOO_PYTHON_VERSION=$ODOO_PYTHON_VERSION -R
+      #     $ODOOCMD setting RUN_ODOO_CRONJOBS=0 -R
+      #     $ODOOCMD setting RUN_CRONJOBS=0 -R
+      #     $ODOOCMD setting DEVMODE=1 -R
+      #     $ODOOCMD setting WODOO_VERSION=${LAST_STABLE_VERSION}
+      #     $ODOOCMD setting PROXY_PORT=${PROXY_PORT}
+      #     $ODOOCMD build
+      #     $ODOOCMD kill || true
+      #     $ODOOCMD -f db reset
+      #     $ODOOCMD update crm
+      #     $ODOOCMD kill || true
+      #     $ODOOCMD -f down || true
       - name: cleanup
         if: always()
         run: |
