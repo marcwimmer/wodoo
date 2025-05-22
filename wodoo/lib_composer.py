@@ -1188,8 +1188,13 @@ def _merge_odoo_dockerfile(config):
 
         # replace some vars:
         hostname, fqdn, ip = get_host_info()
+        import pudb;pudb.set_trace()
+        if not config.BUILD_HOST_IP:
+            build_host_ip = hostname
+        else:
+            build_host_ip = config.BUILD_HOST_IP
         odoo_docker_file.write_text(
-            odoo_docker_file.read_text().replace("<BUILD_HOST_IP>", hostname)
+            odoo_docker_file.read_text().replace("<BUILD_HOST_IP>", build_host_ip)
         )
         # include source code
         if not config.SRC_EXTRA:

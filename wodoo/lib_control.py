@@ -105,9 +105,7 @@ def remove_volumes(ctx, config, dry_run):
                 for group in re.findall(r"(\[[^\]]*])", output):
                     container_id = group[1:-1]
                     subprocess.run(["docker", "kill", container_id])
-                    subprocess.check_call(
-                        ["docker", "rm", "-fv", container_id]
-                    )
+                    subprocess.check_call(["docker", "rm", "-fv", container_id])
                     counter = 0
                     while counter < 5:
                         try:
@@ -278,25 +276,6 @@ def attach(ctx, config, machine):
 
     lib_attach(ctx, config, machine)
 
-def create_network(name="aptcache-net"):
-    # Check if the network already exists
-    result = subprocess.run(
-        ["docker", "network", "ls", "--filter", f"name=^{name}$", "--format", "{{.Name}}"],
-        capture_output=True, text=True
-    )
-
-    if name in result.stdout.splitlines():
-        click.secho(f"Network '{name}' already exists.", fg='green')
-        return
-
-    # Create the network
-    click.secho(f"Creating Docker network '{name}'...", fg='yellow')
-    try:
-        subprocess.run(["docker", "network", "create", name], check=True)
-        click.secho(f"Network '{name}' created successfully.", fg='green')
-    except subprocess.CalledProcessError as e:
-        abort(str(e))
-
 def start_apt_cacher():
     container_name = "apt-cacher"
     image_name = "sameersbn/apt-cacher-ng:latest"
@@ -361,48 +340,6 @@ def create_network(name="aptcache-net"):
         abort(str(e))
 
 
-def start_apt_cacher():
-    container_name = "apt-cacher"
-    image_name = "sameersbn/apt-cacher-ng:latest"
-    network = "aptcache-net"  # necessary so name resolution works
-    port_mapping = "3142:3142"
-
-    # Check if container is already running
-    result = subprocess.run(
-        ["docker", "ps", "-q", "-f", f"name={container_name}"],
-        capture_output=True,
-        text=True,
-    )
-    if result.stdout.strip():
-        click.secho(f"Container '{container_name}' is already running.")
-        return
-
-    create_network(network)
-
-    # If not running, start it
-    click.secho(f"Starting container '{container_name}'...", fg="blue")
-    cmd = [
-        "docker",
-        "run",
-        "-d",
-        "--name",
-        container_name,
-        "--network",
-        network,
-        "-p",
-        port_mapping,
-        image_name,
-    ]
-
-    try:
-        subprocess.run(cmd, check=True)
-        click.secho(
-            f"Container '{container_name}' started on port 3142.", fg="green"
-        )
-    except subprocess.CalledProcessError as e:
-        abort(str(e))
-
-
 @docker.command()
 @click.argument("machines", nargs=-1)
 @click.option("--no-cache", is_flag=True)
@@ -413,12 +350,8 @@ def start_apt_cacher():
 @click.option("-rm", "--remove", is_flag=True)
 @pass_config
 @click.pass_context
-def build(
-    ctx, config, machines, pull, no_cache, push, plain, include_source, remove
-):
+def build(ctx, config, machines, pull, no_cache, push, plain, include_source, remove):
     import yaml
-    start_apt_cacher()
-
     start_apt_cacher()
 
     ensure_project_name(config)
@@ -433,9 +366,7 @@ def build(
             if not compose["services"][service].get("build", {}).get("imgage"):
                 machines.append(service)
 
-    lib_build(
-        ctx, config, machines, pull, no_cache, push, include_source, remove
-    )
+    lib_build(ctx, config, machines, pull, no_cache, push, include_source, remove)
 
 
 @docker.command()
@@ -466,9 +397,7 @@ def run(ctx, config, machine, detached, name, args, **kwparams):
     ensure_project_name(config)
     from .lib_control_with_docker import run as lib_run
 
-    lib_run(
-        ctx, config, machine, args, detached=detached, name=name, **kwparams
-    )
+    lib_run(ctx, config, machine, args, detached=detached, name=name, **kwparams)
 
 
 @cli.command()
@@ -546,9 +475,7 @@ def _get_project_volumes(config):
         x for x in system_volumes if x.startswith(config.project_name + "_")
     ]
 
-    full_volume_names = list(
-        filter(lambda x: x in system_volumes, full_volume_names)
-    )
+    full_volume_names = list(filter(lambda x: x in system_volumes, full_volume_names))
     return full_volume_names
 
 
@@ -598,20 +525,14 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
 
     if show_all:
         volumes = list(map(add_size, volumes))
-        volumes_filtered_to_project = [
-            x for x in volumes if config.project_name in x
-        ]
+        volumes_filtered_to_project = [x for x in volumes if config.project_name in x]
 
         volumes1 = volumes
         volumes2 = volumes_filtered_to_project
 
     else:
-        volumes_filtered_to_project = [
-            x for x in volumes if config.project_name in x
-        ]
-        volumes_filtered_to_project = list(
-            map(add_size, volumes_filtered_to_project)
-        )
+        volumes_filtered_to_project = [x for x in volumes if config.project_name in x]
+        volumes_filtered_to_project = list(map(add_size, volumes_filtered_to_project))
 
         volumes1 = volumes_filtered_to_project
         volumes2 = volumes_filtered_to_project
@@ -632,9 +553,7 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
     questions = [
         inquirer.List(
             "volume",
-            message="Select Destination:".format(
-                config.customs, config.dbname
-            ),
+            message="Select Destination:".format(config.customs, config.dbname),
             choices=volumes2,
         ),
     ]
@@ -648,9 +567,7 @@ def transfer_volume_content(context, config, show_all, filter, no_backup):
     tasks.append(f"rsync -ar --delete-after {source.name} to {dest.name}")
     for i, task in enumerate(tasks):
         click.secho(f"{i}. {task}")
-    answer = inquirer.prompt(
-        [inquirer.Confirm("continue", message=("Continue?"))]
-    )
+    answer = inquirer.prompt([inquirer.Confirm("continue", message=("Continue?"))])
     if not answer["continue"]:
         return
     Commands.invoke(context, "down")
