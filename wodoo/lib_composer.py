@@ -1188,7 +1188,6 @@ def _merge_odoo_dockerfile(config):
 
         # replace some vars:
         hostname, fqdn, ip = get_host_info()
-        import pudb;pudb.set_trace()
         if not config.BUILD_HOST_IP:
             build_host_ip = hostname
         else:
