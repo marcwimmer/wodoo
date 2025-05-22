@@ -1,4 +1,5 @@
 # used to read and write to settings
+import os
 from pathlib import Path
 from .tools import atomic_write
 
@@ -105,14 +106,17 @@ class MyConfigParser:
             file.write_text("\n".join(_update_lines()) + "\n")
 
     def __getitem__(self, key):
-        try:
-            return _get_ignore_case_item(self.configOptions, key)
-        except KeyError:
-            if isinstance(key, int):
-                keys = self.configOptions.keys()
-                return _get_ignore_case_item(self.configOptions[keys[key]])
-            else:
-                raise KeyError(f"Key {key} doesn't exist in {self.fileName}")
+        for data in (self.configOptions, os.environ):
+            try:
+                return _get_ignore_case_item(data, key)
+            except KeyError:
+                if isinstance(key, int):
+                    keys = data.keys()
+                    return _get_ignore_case_item(data[keys[key]])
+                else:
+                    raise KeyError(
+                        f"Key {key} doesn't exist in {self.fileName}"
+                    )
 
     def __setitem__(self, key, value):
         if isinstance(value, list):
