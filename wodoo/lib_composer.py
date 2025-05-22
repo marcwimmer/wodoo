@@ -1104,6 +1104,23 @@ def _use_file(config, path):
             click.secho(f"ignoring file: {path}", fg="yellow")
     return res
 
+def get_docker_host_ip():
+    try:
+        result = subprocess.run(
+            [
+                "docker", "network", "inspect", "bridge",
+                "--format", "{{(index .IPAM.Config 0).Gateway}}"
+            ],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        gateway_ip = result.stdout.strip()
+        click.secho(f"Docker host IP (bridge gateway): {gateway_ip}")
+        return gateway_ip
+    except subprocess.CalledProcessError as e:
+        click.secho("Failed to inspect Docker network:")
+        abort(str(e))
 
 def _merge_odoo_dockerfile(config):
     """

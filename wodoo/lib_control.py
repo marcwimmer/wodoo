@@ -278,6 +278,59 @@ def attach(ctx, config, machine):
 
     lib_attach(ctx, config, machine)
 
+def create_network(name="aptcache-net"):
+    # Check if the network already exists
+    result = subprocess.run(
+        ["docker", "network", "ls", "--filter", f"name=^{name}$", "--format", "{{.Name}}"],
+        capture_output=True, text=True
+    )
+
+    if name in result.stdout.splitlines():
+        click.secho(f"Network '{name}' already exists.", fg='green')
+        return
+
+    # Create the network
+    click.secho(f"Creating Docker network '{name}'...", fg='yellow')
+    try:
+        subprocess.run(["docker", "network", "create", name], check=True)
+        click.secho(f"Network '{name}' created successfully.", fg='green')
+    except subprocess.CalledProcessError as e:
+        abort(str(e))
+
+def start_apt_cacher():
+    container_name = "apt-cacher"
+    image_name = "sameersbn/apt-cacher-ng:latest"
+    network = "aptcache-net"  # necessary so name resolution works
+    port_mapping = "3142:3142"
+
+    # Check if container is already running
+    result = subprocess.run(
+        ["docker", "ps", "-q", "-f", f"name={container_name}"],
+        capture_output=True,
+        text=True
+    )
+    if result.stdout.strip():
+        click.secho(f"Container '{container_name}' is already running.")
+        return
+
+    create_network(network)
+
+    # If not running, start it
+    click.secho(f"Starting container '{container_name}'...", fg='blue')
+    cmd = [
+        "docker", "run", "-d",
+        "--name", container_name,
+        "--network", network,
+        "-p", port_mapping,
+        image_name
+    ]
+
+    try:
+        subprocess.run(cmd, check=True)
+        click.secho(f"Container '{container_name}' started on port 3142.", fg='green')
+    except subprocess.CalledProcessError as e:
+        abort(str(e))
+
 
 def create_network(name="aptcache-net"):
     # Check if the network already exists
@@ -364,6 +417,7 @@ def build(
     ctx, config, machines, pull, no_cache, push, plain, include_source, remove
 ):
     import yaml
+    start_apt_cacher()
 
     start_apt_cacher()
 
