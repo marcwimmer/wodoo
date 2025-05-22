@@ -523,6 +523,10 @@ def run_all(
     files = _get_all_robottest_files()
     files = [customsdir / file for file in files]
 
+    click.secho("Testing following files:")
+    for file in files:
+        click.secho(f"  {file}", fg="green")
+
     for file in files:
         click.secho(f"Running robotest {file}")
 

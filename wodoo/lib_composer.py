@@ -1,4 +1,5 @@
 import traceback
+import socket
 import threading
 from .tools import bashfind
 import json
@@ -1168,6 +1169,11 @@ def _merge_odoo_dockerfile(config):
             odoo_docker_file.read_text() + "\n" + common.read_text()
         )
 
+        # replace some vars:
+        hostname, fqdn, ip = get_host_info()
+        odoo_docker_file.write_text(
+            odoo_docker_file.read_text().replace("<BUILD_HOST_IP>", hostname)
+        )
         # include source code
         if not config.SRC_EXTRA:
             append_odoo_src(config, odoo_docker_file)
@@ -1326,6 +1332,40 @@ def before_reload(config):
     if not file.exists():
         return
     subprocess.check_call(["python3", file])
+
+
+def get_docker_host_ip():
+    try:
+        result = subprocess.run(
+            [
+                "docker",
+                "network",
+                "inspect",
+                "bridge",
+                "--format",
+                "{{(index .IPAM.Config 0).Gateway}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        gateway_ip = result.stdout.strip()
+        click.secho(f"Docker host IP (bridge gateway): {gateway_ip}")
+        return gateway_ip
+    except subprocess.CalledProcessError as e:
+        click.secho("Failed to inspect Docker network:")
+        abort(str(e))
+
+
+def get_host_info():
+    hostname = socket.gethostname()
+    fqdn = socket.getfqdn()
+    try:
+        local_ip = socket.gethostbyname(hostname)
+    except socket.gaierror:
+        local_ip = "Unknown"
+
+    return hostname, fqdn, local_ip
 
 
 Commands.register(do_reload, "reload")

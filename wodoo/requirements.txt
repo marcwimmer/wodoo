@@ -12,6 +12,7 @@ lxml
 docker-compose==1.29.2
 buttervolume>=3.7
 pudb==2022.1.3
+urwid==2.6.16
 gimera>=0.6.69
 shellingham
 xlsxwriter>=1.1.2
