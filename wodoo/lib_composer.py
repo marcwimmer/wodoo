@@ -549,7 +549,7 @@ def setup_settings_file(ctx, config, db, demo, **forced_values):
         if m.get("python_version", None):
             settings["ODOO_PYTHON_VERSION"] = m["python_version"]
 
-    for k, v in m.get("settings", {}):
+    for k, v in m.get("settings", {}).items():
         settings[k] = v
 
 
