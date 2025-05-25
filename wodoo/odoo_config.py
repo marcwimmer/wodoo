@@ -189,6 +189,7 @@ def get_settings():
         settings_path = Path("/tmp/settings")
         content = ""
         for k, v in os.environ.items():
+            v = v.replace("\n", " ")
             content += f"{k}={v}\n"
         settings_path.write_text(content)
     else:

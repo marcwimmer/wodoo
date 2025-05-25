@@ -31,3 +31,8 @@ DOCKER_LABEL_ODOOCOMPOSE=1
 RESTART_CONTAINERS=0
 IMAGES_URL=https://github.com/marcwimmer/wodoo-images
 IMAGES_BRANCH=master
+
+
+RUN_APT_CACHER=1
+PYPI_SERVER=https://pypi.zebroo.de/simple
+APT_OPTIONS=-o Acquire::Retries=5

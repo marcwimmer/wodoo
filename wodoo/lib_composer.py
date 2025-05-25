@@ -1,5 +1,7 @@
 import traceback
 import socket
+
+import netifaces
 import threading
 from .tools import bashfind
 import json
@@ -238,8 +240,43 @@ def do_reload(
             additional_config_file.unlink()
 
 
+def get_local_ips():
+    ips = []
+    for iface in netifaces.interfaces():
+        addrs = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])
+        for addr in addrs:
+            ip = addr.get("addr")
+            if ip and not ip.startswith("127."):
+                ips.append(ip)
+    return ips
+
+
+def choose_ip(ips):
+    import inquirer
+
+    choices = ips + ["Enter manually..."]
+    questions = [
+        inquirer.List(
+            "ip",
+            message="Choose an IP address",
+            choices=choices,
+        )
+    ]
+    answers = inquirer.prompt(questions)
+    if answers["ip"] == "Enter manually...":
+        manual = inquirer.text(message="Enter IP address:")
+        return manual
+    return answers["ip"]
+
+
 def get_arch():
     return platform.uname().machine  # aarch64
+
+
+def setup_apt_cacher_host(ctx, settings):
+    ips = list(sorted(get_local_ips()))
+    ip = choose_ip(ips)
+    ctx.invoke(setting, name="APT_PROXY_IP", value=ip, no_reload=False)
 
 
 def internal_reload(
@@ -310,6 +347,7 @@ def internal_reload(
         **defaults,
         additional_docker_configuration_files=additional_docker_configuration_files,
         no_gimera_apply=no_gimera_apply,
+        ctx=ctx,
     )
 
     _execute_after_reload(config)
@@ -347,6 +385,7 @@ def _do_compose(
     additional_docker_configuration_files=None,
     no_gimera_apply=False,
     include_src=False,
+    ctx=None,
     **forced_values,
 ):
     """
@@ -370,7 +409,7 @@ def _do_compose(
 
     defaults = {}
     _set_defaults(config, defaults)
-    setup_settings_file(config, db, demo, **defaults)
+    setup_settings_file(ctx, config, db, demo, **defaults)
     _export_settings(config, forced_values)
     _prepare_filesystem(config)
     _execute_after_settings(config)
@@ -380,7 +419,18 @@ def _do_compose(
     )
     _merge_odoo_dockerfile(config)
 
+    _redo_if_settings_missing(ctx, config)
+
     click.echo("Built the docker-compose file.")
+
+
+def _redo_if_settings_missing(ctx, config):
+    from .myconfigparser import MyConfigParser
+
+    settings = MyConfigParser(config.files["settings"])
+    if not settings.get("APT_PROXY_IP"):
+        if settings.get("RUN_APT_CACHER") in ["1", ""]:
+            setup_apt_cacher_host(ctx, settings)
 
 
 def _download_images(config, images_url):
@@ -474,7 +524,7 @@ def get_db_name(db, project_name):
     return db
 
 
-def setup_settings_file(config, db, demo, **forced_values):
+def setup_settings_file(ctx, config, db, demo, **forced_values):
     """
     Cleans run/settings and sets minimal settings;
     Puts default values in settings.d to override any values
@@ -494,10 +544,13 @@ def setup_settings_file(config, db, demo, **forced_values):
             settings.write()
 
     # take PYTHON VERSION from MANIFEST
+    m = MANIFEST()
     if not settings.get("ODOO_PYTHON_VERSION"):
-        m = MANIFEST()
         if m.get("python_version", None):
             settings["ODOO_PYTHON_VERSION"] = m["python_version"]
+
+    for k, v in m.get("settings", {}):
+        settings[k] = v
 
 
 def _execute_after_compose(config, yml):
@@ -1192,17 +1245,6 @@ def _merge_odoo_dockerfile(config):
             odoo_docker_file.read_text() + "\n" + common.read_text()
         )
 
-        # replace some vars:
-        hostname, fqdn, ip = get_host_info()
-        if not config.BUILD_HOST_IP:
-            build_host_ip = hostname
-        else:
-            build_host_ip = config.BUILD_HOST_IP
-        odoo_docker_file.write_text(
-            odoo_docker_file.read_text().replace(
-                "<BUILD_HOST_IP>", build_host_ip
-            )
-        )
         # include source code
         if not config.SRC_EXTRA:
             append_odoo_src(config, odoo_docker_file)
