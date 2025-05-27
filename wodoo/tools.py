@@ -1904,3 +1904,8 @@ def _get_available_modules(ctx, param, incomplete):
     if incomplete:
         modules = [x for x in modules if incomplete in x]
     return sorted(modules)
+
+
+def is_interactive():
+    v = os.getenv("WODOO_INTERACTIVE", "1")
+    return v == "1"

@@ -18,6 +18,7 @@ jobs:
       ODOOCMD: "/home/githubrunner/.local/bin/odoo"
       LAST_STABLE_VERSION: "0.5.91"
       PROXY_PORT: 3333
+      WODOO_INTERACTIVE: 0
 
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
