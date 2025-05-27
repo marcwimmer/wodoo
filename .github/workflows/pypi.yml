@@ -15,10 +15,11 @@ jobs:
     env:
       ODOO_TEST: "16.0"
       ODOO_PYTHON_VERSION: "3.11.10"
-      ODOOCMD: "/home/githubrunner/.local/bin/odoo"
+      ODOOCMD: "odoo"
       LAST_STABLE_VERSION: "0.5.91"
       PROXY_PORT: 3333
       WODOO_INTERACTIVE: 0
+      GIMERA_NO_PRECOMMIT: 1
 
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,12 +27,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          clean: true
       - name: Set up Python 3.10
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: setup merge
+        shell: bash -l {0}
         run: |
           set -x
           git config --global user.email 'github-action@github.com'
@@ -39,6 +43,7 @@ jobs:
           git fetch
 
       - name: install pipx
+        shell: bash -l {0}
         run: |
           sudo apt update && sudo apt install -y python3-dev \
             python3-pip python3-venv python3-virtualenv
@@ -46,12 +51,14 @@ jobs:
           pip install pipx
 
       - name: setup gimera
+        shell: bash -l {0}
         run: |
           set -ex
           pipx install gimera
           pipx upgrade gimera
 
       - name: install woodo
+        shell: bash -l {0}
         run: |
           pipx install -e --force .
           echo "##################"
@@ -61,6 +68,7 @@ jobs:
           pipx runpip wodoo install requests==2.31.0  || true
 
       - name: do some testing
+        shell: bash -l {0}
         run: |
           set -x
           TEMPODOODIR="./$(basename $(mktemp))/odoo"
@@ -83,12 +91,14 @@ jobs:
           $ODOOCMD kill || true
           $ODOOCMD -f down || true
       - name: cleanup
+        shell: bash -l {0}
         if: always()
         run: |
           $ODOOCMD kill || true
           $ODOOCMD -f down || true
 
       - name: increment version
+        shell: bash -l {0}
         run: |
           python3 << EOF
           import re
@@ -108,6 +118,7 @@ jobs:
           EOF
 
       - name: commit and tag new version
+        shell: bash -l {0}
         run: |
           set -x
           git fetch --tags
