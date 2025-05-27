@@ -378,6 +378,11 @@ def shell(config, command="", queuejobs=False):
     cmd = [
         "run",
         "--rm",
+        "-it",
+        "-e",
+        "TERM=xterm-256color",
+        "-e",
+        "PYTHONUNBUFFERED=1",
         "odoo",
         "/odoolib/shell.py",
     ]

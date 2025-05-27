@@ -714,6 +714,7 @@ def __cmd_interactive(config, *params, return_proc=False):
     if return_proc:
         return proc
     return proc.returncode
+
     # ctrl+c leads always to error otherwise
     # if proc.returncode:
     # raise Exception("command failed: {}".format(" ".join(params)))
