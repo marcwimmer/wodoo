@@ -11,7 +11,7 @@ requests<2.32.0
 lxml
 docker-compose==1.29.2
 buttervolume>=3.7
-pudb==2022.1.3
+pudb==2025.1
 urwid==2.6.16
 gimera>=0.6.69
 shellingham
