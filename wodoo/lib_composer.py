@@ -536,12 +536,6 @@ def setup_settings_file(ctx, config, db, demo, **forced_values):
     vals["DBNAME"] = get_db_name(db, config.project_name)
     if demo:
         vals["ODOO_DEMO"] = "1" if demo else "0"
-    vals.update(forced_values)
-
-    for k, v in vals.items():
-        if settings.get(k, "") != v:
-            settings[k] = v
-            settings.write()
 
     # take PYTHON VERSION from MANIFEST
     m = MANIFEST()
@@ -551,6 +545,13 @@ def setup_settings_file(ctx, config, db, demo, **forced_values):
 
     for k, v in m.get("settings", {}).items():
         settings[k] = v
+
+    # at end:
+    vals.update(forced_values)
+    for k, v in vals.items():
+        if settings.get(k, "") != v:
+            settings[k] = v
+            settings.write()
 
 
 def _execute_after_compose(config, yml):
