@@ -436,6 +436,10 @@ def _redo_if_settings_missing(ctx, config):
 def _download_images(config, images_url):
     from . import consts
 
+    click.secho("--------------------------------------------------")
+    click.secho("Downloading Odoo Images", fg="green", bold=True)
+    click.secho("--------------------------------------------------")
+
     if not config.dirs["images"].exists():
         subprocess.check_call(
             [
@@ -466,7 +470,14 @@ def _download_images(config, images_url):
             trycount += 1
             try:
                 subprocess.check_call(
-                    ["git", "pull"], cwd=config.dirs["images"]
+                    [
+                        "git",
+                        "pull",
+                        "--rebase=false",
+                        "--autostash",
+                        "--quiet",
+                    ],
+                    cwd=config.dirs["images"],
                 )
             except Exception as ex:
                 if trycount < 5:

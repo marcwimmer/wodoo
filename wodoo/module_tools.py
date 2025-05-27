@@ -400,7 +400,10 @@ def get_template_dir():
     if not path.exists():
         subprocess.check_call(["git", "clone", url, path])
     try:
-        subprocess.check_call(["git", "pull"], cwd=path)
+        subprocess.check_call(
+            ["git", "pull", "--rebase=false", "--autostash", "--quiet"],
+            cwd=path,
+        )
     except:
         if path.exists():
             rmtree(None, path)
