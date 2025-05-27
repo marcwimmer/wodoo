@@ -260,7 +260,6 @@ def build(
     no_cache=False,
     push=False,
     include_source=False,
-    remove=False,
 ):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
@@ -268,8 +267,6 @@ def build(
     options = []
     if pull:
         options += ["--pull"]
-    if remove:
-        options += ["--force-rm"]
     if no_cache:
         options += ["--no-cache"]
         if "--pull" not in options:
