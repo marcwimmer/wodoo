@@ -369,11 +369,10 @@ def create_network(name="aptcache-net"):
 @click.option("--push", is_flag=True)
 @click.option("-p", "--plain", is_flag=True)
 @click.option("-s", "--include-source", is_flag=True)
-@click.option("-rm", "--remove", is_flag=True)
 @pass_config
 @click.pass_context
 def build(
-    ctx, config, machines, pull, no_cache, push, plain, include_source, remove
+    ctx, config, machines, pull, no_cache, push, plain, include_source
 ):
     import yaml
 
@@ -392,7 +391,7 @@ def build(
                 machines.append(service)
 
     lib_build(
-        ctx, config, machines, pull, no_cache, push, include_source, remove
+        ctx, config, machines, pull, no_cache, push, include_source
     )
 
 

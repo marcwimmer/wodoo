@@ -707,13 +707,20 @@ def __get_cmd(config, profile="auto"):
     return cmd
 
 
-def __cmd_interactive(config, *params, return_proc=False):
+def __cmd_interactive(config, *params):
     cmd = __get_cmd(config) + list(params)
-    proc = subprocess.Popen(cmd)
-    proc.wait()
-    if return_proc:
-        return proc
-    return proc.returncode
+    tty = sys.stdin.isatty()
+    params = {}
+    if not tty:
+        cmd = [x for x in cmd if x not in ['-it', '--interactive', '--tty']]
+        params['capture_output'] = True
+        params['text'] = True
+    res = subprocess.run(cmd, **params)
+    if res.returncode:
+        click.secho(
+            f"Command failed with return code: {res.returncode}:\n{cmd}\n\n{res.stdout}\n{res.stderr}",
+            fg="red",
+        )
 
     # ctrl+c leads always to error otherwise
     # if proc.returncode:
