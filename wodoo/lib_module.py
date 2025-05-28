@@ -1072,7 +1072,7 @@ def _uninstall_marked_modules(ctx, config, modules, no_restart=False):
             click.secho(f"Uninstall {module_comma}", fg="red")
         module_comma = f"[{module_comma}]"
         cmd = f"""
-modules =self.env['ir.module.module'].search([('state', 'in', ['to upgrade', 'to install', 'installed'])])
+modules = self.env['ir.module.module'].search([('state', 'in', ['to upgrade', 'to install', 'installed'])])
 modules = modules.filtered(lambda x: x.name in {module_comma})
 for module in modules:
     try:
