@@ -421,6 +421,7 @@ def _do_compose(
         config, additional_docker_configuration_files
     )
     _merge_odoo_dockerfile(config)
+    import pudb;pudb.set_trace()
     _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
 
 
