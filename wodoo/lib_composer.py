@@ -420,8 +420,8 @@ def _do_compose(
     _prepare_yml_files_from_template_files(
         config, additional_docker_configuration_files
     )
-    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
     _merge_odoo_dockerfile(config)
+    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
 
 
     _redo_if_settings_missing(ctx, config)
