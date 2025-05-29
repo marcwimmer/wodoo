@@ -420,8 +420,8 @@ def _do_compose(
     _prepare_yml_files_from_template_files(
         config, additional_docker_configuration_files
     )
-    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
     _merge_odoo_dockerfile(config)
+    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
 
 
     _redo_if_settings_missing(ctx, config)
@@ -438,6 +438,7 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
     content = yaml.safe_load(content)
     dockerfile1 = None
     images_dir = config.dirs["images"]
+    to_del = set()
     for service_name in content["services"]:
         service = content['services'][service_name]
         if service.get("image"):
@@ -451,19 +452,23 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
                 'args': {},
             }
 
+        delete_source = False
         if service.get("build", {}).get("dockerfile"):
             src_dockerfile = Path(service['build']['dockerfile'])
             if not str(src_dockerfile).startswith("/"):
                 src_dockerfile = Path(buildcontext) / src_dockerfile
         else:
             src_dockerfile = Path(service['build']['context']) / "Dockerfile"
+        delete_source = str(src_dockerfile).startswith(str(config.dirs['run']))
         trgt_dockerfile = config.dirs["run"] / "Dockerfiles" / service_name
         trgt_dockerfile.parent.mkdir(parents=True, exist_ok=True)
         src = src_dockerfile.read_text()
         src = _replace_docker_snippets(config, src)
         trgt_dockerfile.write_text(src)
+        if delete_source:
+            to_del.add(src_dockerfile)
         service['build']['dockerfile'] = str(trgt_dockerfile)
-
+    [x.unlink() for x in to_del]
     content = yaml.dump(content, default_flow_style=False)
     config.files["docker_compose"].write_text(content)
 
