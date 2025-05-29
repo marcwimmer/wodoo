@@ -420,12 +420,55 @@ def _do_compose(
     _prepare_yml_files_from_template_files(
         config, additional_docker_configuration_files
     )
+    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
     _merge_odoo_dockerfile(config)
+
 
     _redo_if_settings_missing(ctx, config)
 
     click.echo("Built the docker-compose file.")
 
+def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config):
+    import yaml
+
+    from .myconfigparser import MyConfigParser
+    settings = MyConfigParser(config.files["settings"])
+
+    content = config.files["docker_compose"].read_text()
+    content = yaml.safe_load(content)
+    dockerfile1 = None
+    images_dir = config.dirs["images"]
+    for service_name in content["services"]:
+        service = content['services'][service_name]
+        if service.get("image"):
+            continue
+        if service.get("build", {}).get("dockerfile"):
+            continue
+        if 'build' not in service:
+            service['build'] = {
+                'context': config.dirs['images'] / service_name,
+                'args': {},
+            }
+        src_dockerfile = Path(service['build']['context']) / "Dockerfile"
+        trgt_dockerfile = config.dirs["run"] / "Dockerfiles" / service_name
+        trgt_dockerfile.parent.mkdir(parents=True, exist_ok=True)
+        src = src_dockerfile.read_text()
+        src = _replace_docker_snippets(config, src)
+        trgt_dockerfile.write_text(src)
+        service['build']['dockerfile'] = str(trgt_dockerfile)
+
+    content = yaml.dump(content, default_flow_style=False)
+    config.files["docker_compose"].write_text(content)
+
+def _replace_docker_snippets(config, dockerfilecontent):
+
+    for snippet in (config.dirs['images'] / 'common_snippets').glob('*'):
+        content = snippet.read_text()
+        name = f"___SNIPPET_{snippet.stem.upper()}___"
+        dockerfilecontent = dockerfilecontent.replace(
+            name, content
+        )
+    return dockerfilecontent
 
 def _redo_if_settings_missing(ctx, config):
     from .myconfigparser import MyConfigParser
