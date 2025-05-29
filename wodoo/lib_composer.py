@@ -442,13 +442,19 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
         service = content['services'][service_name]
         if service.get("image"):
             continue
+        buildcontext = service.get("build", {}).get("context")
+        if not buildcontext:
+            buildcontext = images_dir / service_name
         if 'build' not in service:
             service['build'] = {
-                'context': config.dirs['images'] / service_name,
+                'context': buildcontext,
                 'args': {},
             }
+
         if service.get("build", {}).get("dockerfile"):
             src_dockerfile = Path(service['build']['dockerfile'])
+            if not str(src_dockerfile).startswith("/"):
+                src_dockerfile = Path(buildcontext) / src_dockerfile
         else:
             src_dockerfile = Path(service['build']['context']) / "Dockerfile"
         trgt_dockerfile = config.dirs["run"] / "Dockerfiles" / service_name
