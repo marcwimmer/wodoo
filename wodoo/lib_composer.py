@@ -421,17 +421,22 @@ def _do_compose(
         config, additional_docker_configuration_files
     )
     _merge_odoo_dockerfile(config)
-    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
-
+    _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(
+        config
+    )
 
     _redo_if_settings_missing(ctx, config)
 
     click.echo("Built the docker-compose file.")
 
-def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config):
+
+def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(
+    config,
+):
     import yaml
 
     from .myconfigparser import MyConfigParser
+
     settings = MyConfigParser(config.files["settings"])
 
     content = config.files["docker_compose"].read_text()
@@ -440,26 +445,26 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
     images_dir = config.dirs["images"]
     to_del = set()
     for service_name in content["services"]:
-        service = content['services'][service_name]
+        service = content["services"][service_name]
         if service.get("image"):
             continue
         buildcontext = service.get("build", {}).get("context")
         if not buildcontext:
             buildcontext = images_dir / service_name
-        if 'build' not in service:
-            service['build'] = {
-                'context': buildcontext,
-                'args': {},
+        if "build" not in service:
+            service["build"] = {
+                "context": buildcontext,
+                "args": {},
             }
 
         delete_source = False
         if service.get("build", {}).get("dockerfile"):
-            src_dockerfile = Path(service['build']['dockerfile'])
+            src_dockerfile = Path(service["build"]["dockerfile"])
             if not str(src_dockerfile).startswith("/"):
                 src_dockerfile = Path(buildcontext) / src_dockerfile
         else:
-            src_dockerfile = Path(service['build']['context']) / "Dockerfile"
-        delete_source = str(src_dockerfile).startswith(str(config.dirs['run']))
+            src_dockerfile = Path(service["build"]["context"]) / "Dockerfile"
+        delete_source = str(src_dockerfile).startswith(str(config.dirs["run"]))
         trgt_dockerfile = config.dirs["run"] / "Dockerfiles" / service_name
         trgt_dockerfile.parent.mkdir(parents=True, exist_ok=True)
         src = src_dockerfile.read_text()
@@ -467,20 +472,19 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(config)
         trgt_dockerfile.write_text(src)
         if delete_source:
             to_del.add(src_dockerfile)
-        service['build']['dockerfile'] = str(trgt_dockerfile)
+        service["build"]["dockerfile"] = str(trgt_dockerfile)
     [x.unlink() for x in to_del]
     content = yaml.dump(content, default_flow_style=False)
     config.files["docker_compose"].write_text(content)
 
-def _replace_docker_snippets(config, dockerfilecontent):
 
-    for snippet in (config.dirs['images'] / 'common_snippets').glob('*'):
+def _replace_docker_snippets(config, dockerfilecontent):
+    for snippet in (config.dirs["images"] / "common_snippets").glob("*"):
         content = snippet.read_text()
-        name = f"___SNIPPET_{snippet.stem.upper()}___"
-        dockerfilecontent = dockerfilecontent.replace(
-            name, content
-        )
+        name = f"#___SNIPPET_{snippet.stem.upper()}___"
+        dockerfilecontent = dockerfilecontent.replace(name, content)
     return dockerfilecontent
+
 
 def _redo_if_settings_missing(ctx, config):
     from .myconfigparser import MyConfigParser
