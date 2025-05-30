@@ -707,9 +707,11 @@ def _prepare_yml_files_from_template_files(
     # - also replace all environment variables
     _files = []
 
+    manifest = MANIFEST()
+    customs_dir = odoo_config.customs_dir()
     for dir in [
         config.dirs["images"],
-        odoo_config.customs_dir(),
+        customs_dir,
         Path("/etc/odoo/"),
     ]:
         if not dir.exists():
@@ -718,7 +720,14 @@ def _prepare_yml_files_from_template_files(
             _files += [dir]
         else:
             for file in bashfind(dir, "docker-compose*.yml"):
-                _files.append(file)
+                ignore = False
+                if dir == customs_dir:
+                    ignore = str(
+                        file.relative_to(customs_dir)
+                    ) in manifest.get("ignore_compose_files", [])
+
+                if not ignore:
+                    _files.append(file)
 
     if config.restrict and config.restrict.get("docker-compose"):
         _files += config.restrict["docker-compose"]
