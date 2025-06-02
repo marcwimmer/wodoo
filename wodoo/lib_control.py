@@ -12,6 +12,8 @@ from .tools import abort
 from .tools import ensure_project_name
 from .tools import print_prod_env
 
+APT_CACHER_CONTAINER_NAME = "apt-cacher"
+
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -280,7 +282,7 @@ def attach(ctx, config, machine):
 
 
 def start_apt_cacher():
-    container_name = "apt-cacher"
+    container_name = APT_CACHER_CONTAINER_NAME
     image_name = "sameersbn/apt-cacher-ng:latest"
     network = "aptcache-net"  # necessary so name resolution works
     port_mapping = "3142:3142"
@@ -362,6 +364,82 @@ def create_network(name="aptcache-net"):
         abort(str(e))
 
 
+@docker.command(help="ls /var/cache/apt/apt-cacher-ng")
+@click.argument("cache", nargs=-1)
+@pass_config
+@click.pass_context
+def clear_apt_cache(ctx, config, cache):
+    # Check if container is already running
+    result = subprocess.run(
+        ["docker", "ps", "-q", "-f", f"name={APT_CACHER_CONTAINER_NAME}"],
+        capture_output=True,
+        text=True,
+    )
+    containerid = result.stdout.strip()
+    if not containerid:
+        click.secho(f"Container '{APT_CACHER_CONTAINER_NAME}' is not running.")
+        return
+    if not cache:
+        result = subprocess.run(
+            [
+                "docker",
+                "exec",
+                "-it",
+                containerid,
+                "find",
+                "/var/cache/apt-cacher-ng/",
+                "-maxdepth",
+                "1",
+                "-type",
+                "d",
+                "-printf",
+                "%f\n",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        options = []
+        for line in result.stdout.splitlines()[1:]:
+            if line.strip() in ["_xstore", "var"]:
+                continue
+            options.append(line)
+        import inquirer
+
+        todelete = inquirer.prompt(
+            [
+                inquirer.List(
+                    "filename", "Choose cache to delete", choices=options
+                )
+            ]
+        )["filename"]
+        if not todelete:
+            abort("No cache selected, aborting.")
+        todelete = [todelete]
+
+    else:
+        todelete = cache
+    for cache in todelete:
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                "-it",
+                containerid,
+                "rm",
+                "-Rf",
+                "/var/cache/apt-cacher-ng/{cache}",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        click.secho(
+            f"Removed cache {cache} from {APT_CACHER_CONTAINER_NAME}",
+            fg="green",
+        )
+    click.secho("Stopping apt proxy...", fg="green")
+    subprocess.run(["docker", "kill", containerid])
+
+
 @docker.command()
 @click.argument("machines", nargs=-1)
 @click.option("--no-cache", is_flag=True)
@@ -371,9 +449,7 @@ def create_network(name="aptcache-net"):
 @click.option("-s", "--include-source", is_flag=True)
 @pass_config
 @click.pass_context
-def build(
-    ctx, config, machines, pull, no_cache, push, plain, include_source
-):
+def build(ctx, config, machines, pull, no_cache, push, plain, include_source):
     import yaml
 
     start_apt_cacher()
@@ -390,9 +466,7 @@ def build(
             if not compose["services"][service].get("build", {}).get("imgage"):
                 machines.append(service)
 
-    lib_build(
-        ctx, config, machines, pull, no_cache, push, include_source
-    )
+    lib_build(ctx, config, machines, pull, no_cache, push, include_source)
 
 
 @docker.command()
