@@ -288,27 +288,50 @@ def start_apt_cacher():
     port_mapping = "3142:3142"
 
     def setup_options():
-        subprocess.run(
-            [
-                "docker",
-                "exec",
-                container_name,
-                "sh",
-                "-c",
-                "echo 'ExThreshold: 0' >> /etc/apt-cacher-ng/acng.conf",
-            ]
+        ancg_conf = (
+            subprocess.run(
+                [
+                    "docker",
+                    "exec",
+                    container_name,
+                    "cat",
+                    "/etc/apt-cacher-ng/acng.conf",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            .stdout.strip()
+            .splitlines()
         )
-        subprocess.run(
-            [
-                "docker",
-                "exec",
-                container_name,
-                "sh",
-                "-c",
-                "echo 'PassThroughPattern: .*Release|.*Packages|.*Sources' >> /etc/apt-cacher-ng/acng.conf",
-            ]
-        )
-        subprocess.run(["docker", "restart", container_name])
+        ancg_conf = [
+            line.strip()
+            for line in ancg_conf
+            if line.strip() and not line.startswith("#")
+        ]
+        print("\n".join(ancg_conf))
+        if not any("ExThreshold" in line for line in ancg_conf):
+            subprocess.run(
+                [
+                    "docker",
+                    "exec",
+                    container_name,
+                    "sh",
+                    "-c",
+                    "echo 'ExThreshold: 0' >> /etc/apt-cacher-ng/acng.conf",
+                ]
+            )
+            subprocess.run(
+                [
+                    "docker",
+                    "exec",
+                    container_name,
+                    "sh",
+                    "-c",
+                    "echo 'PassThroughPattern: .*Release|.*Packages|.*Sources' >> /etc/apt-cacher-ng/acng.conf",
+                ]
+            )
+            subprocess.run(["docker", "restart", container_name])
 
     # Check if container is already running
     result = subprocess.run(
