@@ -287,6 +287,29 @@ def start_apt_cacher():
     network = "aptcache-net"  # necessary so name resolution works
     port_mapping = "3142:3142"
 
+    def setup_options():
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                container_name,
+                "sh",
+                "-c",
+                "echo 'ExThreshold: 0' >> /etc/apt-cacher-ng/acng.conf",
+            ]
+        )
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                container_name,
+                "sh",
+                "-c",
+                "echo 'PassThroughPattern: .*Release|.*Packages|.*Sources' >> /etc/apt-cacher-ng/acng.conf",
+            ]
+        )
+        subprocess.run(["docker", "restart", container_name])
+
     # Check if container is already running
     result = subprocess.run(
         ["docker", "ps", "-q", "-f", f"name={container_name}"],
@@ -294,6 +317,7 @@ def start_apt_cacher():
         text=True,
     )
     if result.stdout.strip():
+        setup_options()
         click.secho(f"Container '{container_name}' is already running.")
         return
 
@@ -333,6 +357,8 @@ def start_apt_cacher():
         )
     except subprocess.CalledProcessError as e:
         abort(str(e))
+
+    setup_options()
 
 
 def create_network(name="aptcache-net"):
