@@ -18,7 +18,6 @@ pass_config = click.make_pass_decorator(Config, ensure=True)
 @click.group(cls=AliasedGroup)
 @click.option("-f", "--force", is_flag=True)
 @click.option("-v", "--verbose", is_flag=True)
-@click.option("--version", is_flag=True)
 @click.option(
     "-xs",
     "--restrict-setting",
@@ -42,7 +41,6 @@ def cli(
     restrict_setting,
     restrict_docker_compose,
     chdir,
-    version,
 ):
     config.force = force
     config.verbose = verbose
