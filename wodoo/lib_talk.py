@@ -34,14 +34,17 @@ def talk(config):
 @click.argument("name", required=False, nargs=-1)
 @click.option("-M", "--module")
 @click.option("-m", "--model")
+@click.option("-r", "--resid")
 @pass_config
-def xmlids(config, name, module, model):
+def xmlids(config, name, module, model, resid):
     conn = config.get_odoo_conn()
     where = " where 1 = 1"
     if model:
         where += f" AND model = '{model}'"
     if module:
         where += f" AND module = '{model}'"
+    if resid:
+        where += f" AND res_id = {resid}"
     for name in name:
         where += (
             f" and ( (model ilike '%{name}%' or "
@@ -51,7 +54,7 @@ def xmlids(config, name, module, model):
     rows = _execute_sql(
         conn,
         sql=(
-            "SELECT module||'.'|| name as xmlid, model, res_id from ir_model_data "
+            "SELECT module||'.'|| name as xmlid, model, res_id, noupdate from ir_model_data "
             f"{where} "
             "order by module, name, model "
         ),
