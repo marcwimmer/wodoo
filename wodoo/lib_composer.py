@@ -336,7 +336,8 @@ def internal_reload(
                 defaults[key] = addconfig[key]
             del addconfig
 
-        click.secho("Additional config: {defaults}")
+        if defaults:
+            click.secho(f"Additional config: {defaults}")
 
     ODOO_VERSION = str(MANIFEST()["version"]).split(".")[0]
     KEY_ODOO_VERSION = f"RUN_ODOO_VERSION_{ODOO_VERSION}"
