@@ -318,10 +318,13 @@ def start_apt_cacher():
             if line.strip() and not line.startswith("#")
         ]
         print("\n".join(ancg_conf))
-        if not any("ExThreshold: 0" in line for line in ancg_conf):
+        if not any("ExThreshold: 0" in line for line in ancg_conf) or not any(
+            "DlMaxRetries: 5" in line for line in ancg_conf
+        ):
             for option in [
                 "ExThreshold: 0",
                 "PassThroughPattern: .*Release|.*Packages|.*Sources",
+                "DlMaxRetries: 5",
             ]:
                 click.secho(f"Adding option: {option}", fg="yellow")
                 subprocess.run(
