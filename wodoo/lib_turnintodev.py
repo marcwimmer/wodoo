@@ -108,7 +108,7 @@ def __turn_into_devdb(ctx, config, conn):
         config.dirs["images"]
         / "odoo"
         / "config"
-        / str(current_version())
+        / str(int(current_version()))
         / "turndb2dev.sql"
     )
     sql = sql_file.read_text()
