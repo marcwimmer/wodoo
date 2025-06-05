@@ -924,6 +924,7 @@ def __run_docker_compose_config(config, contents, env):
 
         def buildcmd(files):
             cmdline = [] + config.files["docker_compose_bin"]
+            cmdline += ["-p", config.project_name]
             for profile in all_profiles:
                 cmdline += ["--profile", profile]
             for file_path in files:
