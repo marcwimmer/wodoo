@@ -93,7 +93,7 @@ def config(ctx, config, service_name, full=True):
     if service_name:
         content = {service_name: content["services"][service_name]}
 
-    content = yaml.dump(content, default_flow_style=False)
+    content = _yamldump(content)
     process = subprocess.Popen(["/usr/bin/less"], stdin=subprocess.PIPE)
     process.stdin.write(content.encode("utf-8"))
     process.communicate()
@@ -380,6 +380,8 @@ def _set_defaults(config, defaults):
     defaults["NETWORK_NAME"] = config.project_name
     defaults["project_name"] = config.project_name
     defaults["WODOO_VERSION"] = _get_version()
+    m = MANIFEST()
+    defaults["ODOO_VERSION_INT"] = int(m["version"])
 
 
 def _do_compose(
@@ -475,7 +477,7 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(
             to_del.add(src_dockerfile)
         service["build"]["dockerfile"] = str(trgt_dockerfile)
     [x.unlink() for x in to_del]
-    content = yaml.dump(content, default_flow_style=False)
+    content = _yamldump(content)
     config.files["docker_compose"].write_text(content)
 
 
@@ -868,7 +870,7 @@ def post_process_complete_yaml_config(config, yml):
     # set label from configuration settings starting with DOCKER_LABEL=123
     for service in yml["services"]:
         service = yml["services"][service]
-        for key in service["environment"]:
+        for key in service.get("environment", []):
             if key.startswith("DOCKER_LABEL_"):
                 label_name = key[len("DOCKER_LABEL_") :]
                 label_value = service["environment"][key]
@@ -883,22 +885,49 @@ def post_process_complete_yaml_config(config, yml):
     return yml
 
 
+def _yamldump(content):
+    import yaml
+
+    class NoAliasDumper(yaml.SafeDumper):
+        def ignore_aliases(self, data):
+            return True
+
+    file_content = yaml.dump(
+        content, default_flow_style=False, sort_keys=False
+    )  # , Dumper=NoAliasDumper)
+    return file_content
+
+
 def __run_docker_compose_config(config, contents, env):
     import yaml
 
     temp_path = Path(tempfile.mkdtemp())
+    temp_path = Path("/tmp/a")
+    temp_path.mkdir(parents=True, exist_ok=True)
 
     try:
         files = []
+        all_profiles = []
         for i, content in enumerate(contents):
             file_path = temp_path / f"docker-compose-{str(i).zfill(5)}.yml"
-            file_content = yaml.dump(content, default_flow_style=False)
+            for service in content.get("services", []):
+                if not content["services"][service].get("profiles"):
+                    content["services"][service]["profiles"] = ["auto"]
+                for profile in content["services"][service].get(
+                    "profiles", []
+                ):
+                    if profile not in all_profiles:
+                        all_profiles.append(profile)
+
+            file_content = _yamldump(content)
             file_path.write_text(file_content)
             files.append(file_path)
             del file_path
 
         def buildcmd(files):
-            cmdline = [] + config.files['docker_compose_bin']
+            cmdline = [] + config.files["docker_compose_bin"]
+            for profile in all_profiles:
+                cmdline += ["--profile", profile]
             for file_path in files:
                 cmdline += [
                     "-f",
@@ -917,9 +946,20 @@ def __run_docker_compose_config(config, contents, env):
         except KeyError:
             d["DOCKER_GROUP_ID"] = "0"
 
-        (temp_path / "cmd").write_text(" ".join(map(str, cmdline)))
+        content = []
+        for k, v in d.items():
+            content.append(f"export {k}={v}")
+        content.append(" ".join(map(str, cmdline)))
+        (temp_path / "cmd").write_text("\n".join(content))
         try:
-            conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
+            proc = subprocess.run(
+                cmdline,
+                cwd=temp_path,
+                env=d,
+                capture_output=True,
+                check=True,
+                text=True,
+            )
         except:
             # find culprit
             for i in range(len(files)):
@@ -936,13 +976,13 @@ def __run_docker_compose_config(config, contents, env):
                     break
 
             conf = subprocess.check_output(cmdline, cwd=temp_path, env=d)
-            sys.exit(-1)
-        conf = yaml.safe_load(conf)
+        conf = yaml.safe_load(proc.stdout)
         return conf
 
     finally:
-        if temp_path.exists():
-            shutil.rmtree(temp_path)
+        # if temp_path.exists():
+        #     shutil.rmtree(temp_path)
+        pass
 
 
 def dict_merge(dct, merge_dct):
@@ -999,7 +1039,6 @@ def dict_merge(dct, merge_dct):
 def _prepare_docker_compose_files(config, dest_file, paths):
     from .myconfigparser import MyConfigParser
     from .tools import atomic_write
-    import yaml
 
     if not dest_file:
         raise Exception("require destination path")
@@ -1024,7 +1063,7 @@ def _prepare_docker_compose_files(config, dest_file, paths):
     content = post_process_complete_yaml_config(config, content)
     content = _execute_after_compose(config, content)
     with atomic_write(dest_file) as file:
-        file.write_text(yaml.dump(content, default_flow_style=False))
+        file.write_text(_yamldump(content))
 
 
 def _fix_contents(contents):
@@ -1105,7 +1144,7 @@ def _apply_variables(config, contents, env):
         __set_environment_in_services(content)
         content["networks"] = copy.deepcopy(default_network["networks"])
 
-        content = yaml.dump(content, default_flow_style=False)
+        content = _yamldump(content)
         content = __replace_all_envs_in_str(content, env)
         content = yaml.safe_load(content)
         yield content
@@ -1288,7 +1327,7 @@ def _merge_odoo_dockerfile(config):
                 config.files["odoo_docker_file"]
             )
         del dockerfile
-    content = yaml.dump(content, default_flow_style=False)
+    content = _yamldump(content)
     config.files["docker_compose"].write_text(content)
 
     # copy dockerfile to new location
