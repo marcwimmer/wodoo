@@ -361,9 +361,6 @@ def _wait_postgres(config, timeout=600):
             .splitlines()
         )
 
-        import docker
-
-        client = docker.from_env()
         postgres_containers = []
         for container_id in container_ids:
             if not container_id:
@@ -712,9 +709,9 @@ def __cmd_interactive(config, *params):
     tty = sys.stdin.isatty()
     params = {}
     if not tty:
-        cmd = [x for x in cmd if x not in ['-it', '--interactive', '--tty']]
-        params['capture_output'] = True
-        params['text'] = True
+        cmd = [x for x in cmd if x not in ["-it", "--interactive", "--tty"]]
+        params["capture_output"] = True
+        params["text"] = True
     res = subprocess.run(cmd, **params)
     if res.returncode:
         click.secho(
