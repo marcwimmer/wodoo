@@ -902,8 +902,6 @@ def __run_docker_compose_config(config, contents, env):
     import yaml
 
     temp_path = Path(tempfile.mkdtemp())
-    temp_path = Path("/tmp/a")
-    temp_path.mkdir(parents=True, exist_ok=True)
 
     try:
         files = []
@@ -980,9 +978,8 @@ def __run_docker_compose_config(config, contents, env):
         return conf
 
     finally:
-        # if temp_path.exists():
-        #     shutil.rmtree(temp_path)
-        pass
+        if temp_path.exists():
+            shutil.rmtree(temp_path)
 
 
 def dict_merge(dct, merge_dct):
