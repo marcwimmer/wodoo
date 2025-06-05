@@ -208,6 +208,12 @@ class Config(object):
             for k, v in list(d.items()):
                 if not v:
                     continue
+                if isinstance(v, list):
+                    _d = {k: v[0]}
+                    make_absolute(_d)
+                    v[0] = _d[k]
+                    del _d
+                    continue
                 skip = False
                 v = replace_keys(v, key_values)
 

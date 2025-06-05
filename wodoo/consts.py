@@ -80,9 +80,13 @@ default_files = {
     "pgcli_history": "${run}/pgcli_history",
 }
 
+if not default_files['docker_compose_bin']:
+    default_files['docker_compose_bin'] = [_search_path("docker"), "compose"]
+else:
+    default_files['docker_compose_bin'] = [default_files['docker_compose_bin']]
+
 default_commands = {
-    "dc": [
-        "${docker_compose_bin}",
+    "dc": default_files['docker_compose_bin'] + [
         "-p",
         "${project_name}",
         "-f",
