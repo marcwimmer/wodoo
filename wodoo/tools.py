@@ -1574,7 +1574,6 @@ def _search_path(filename):
         if (path / filename).exists():
             return str(path / filename)
 
-
 def _get_customs_root(p):
     # arg_dir = p
     if p:

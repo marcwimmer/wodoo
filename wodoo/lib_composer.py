@@ -898,9 +898,7 @@ def __run_docker_compose_config(config, contents, env):
             del file_path
 
         def buildcmd(files):
-            cmdline = [
-                str(config.files["docker_compose_bin"]),
-            ]
+            cmdline = [] + config.files['docker_compose_bin']
             for file_path in files:
                 cmdline += [
                     "-f",
