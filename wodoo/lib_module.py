@@ -726,6 +726,11 @@ def update(
                     params += ["--test-tags=" + _effective_test_tags()]
                 if server_wide_modules:
                     params += ["--server-wide-modules", server_wide_modules]
+                if manifest.get("upgrade_path", []):
+                    params += [
+                        "--upgrade_path",
+                        ",".join(manifest["upgrade_path"]),
+                    ]
                 if log:
                     params += [f"--log={log}"]
                 params += ["--config-file=" + config_file]
@@ -1638,10 +1643,24 @@ def migrate():
         (
             "To migrate odoo 14.0 to 15.0 you would do:\n\n"
             "  * odoo download-openupgrade\n"
-            "  * change gimera.yml to point to odoo 15 (and other modules)\n"
-            "  * change version in MANIFEST to version 15\n"
+            "  * change gimera.yml to point to newer odoo version (and other modules)\n"
+            "  * change version in MANIFEST to new version\n"
+            "  * gimera purge\n"
             "  * gimera apply --update \n"
-            "  * odoo update --config-file config_migration\n"
+            "  * add 'openupgrade' to MANIFEST['addons-paths']\n"
+            "  * add 'openupgrade_framework' to server-wide-modules\n"
+            "  * add: MANIFEST['upgrade_path'] = ['/opt/src/openupgrade/openupgrade_scripts/scripts']\n"
+            "  * odoo update config_migration\n"
+            " \n"
+            "  NOTE:  there is also an official odoo upgrade helper at: https://github.com/OCA/openupgrade\n"
+            "  To install this official package: \n"
+            "  1. gimera.yml:\n"
+            "    - branch: master\n"
+            "       path: upgrade-util\n"
+            "       type: integrated\n"
+            "       url: https://github.com/odoo/upgrade-util.git\n"
+            "  2. MANIFEST:\n"
+            '    - ["update_path"] = ["upgrade_util/src"]\n'
             "\n"
         ),
         fg="green",
