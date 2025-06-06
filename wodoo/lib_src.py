@@ -368,10 +368,13 @@ def fetch_modules(config, ctx, module):
 def _identify_duplicate_modules(check):
     # remove duplicate modules or at least identify them:
     from .module_tools import Module
+    from .odoo_config import MANIFEST
+
+    odoo_dir = MANIFEST().get("odoo_dir", "odoo")
 
     src = customs_dir()
     ignore_paths = []
-    for x in ["odoo", "enterprise", "themes"]:
+    for x in [odoo_dir, "enterprise", "themes"]:
         ignore_paths.append((src / x).resolve().absolute())
 
     all_dirs = list(

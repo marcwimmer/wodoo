@@ -200,6 +200,8 @@ The used odoo instance must be placed in /odoo.
     ],
     "python_version": "3.11.10",
     "version": 17.0,
+    "upgrade_path": [paths to upgrade src of https://github.com/odoo/upgrade-utils],
+    "odoo_dir": "odoo", # default
     "install": [ ...  ],
     "uninstall": [
         "web_tree_many2one_clickable",
