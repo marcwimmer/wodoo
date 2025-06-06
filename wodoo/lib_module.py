@@ -728,7 +728,7 @@ def update(
                     params += ["--server-wide-modules", server_wide_modules]
                 if manifest.get("upgrade_path", []):
                     params += [
-                        "--upgrade_path",
+                        "--upgrade-path",
                         ",".join(manifest["upgrade_path"]),
                     ]
                 if log:
