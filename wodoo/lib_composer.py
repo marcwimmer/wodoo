@@ -381,7 +381,7 @@ def _set_defaults(config, defaults):
     defaults["project_name"] = config.project_name
     defaults["WODOO_VERSION"] = _get_version()
     m = MANIFEST()
-    defaults["ODOO_VERSION_INT"] = int(m["version"])
+    defaults["ODOO_VERSION_INT"] = int(float(m["version"]))
 
 
 def _do_compose(
