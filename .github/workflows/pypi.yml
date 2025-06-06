@@ -86,6 +86,7 @@ jobs:
           $ODOOCMD setting PROXY_PORT=${PROXY_PORT}
           $ODOOCMD build
           $ODOOCMD kill || true
+          $ODOOCMD -f down -v || true
           $ODOOCMD -f db reset
           $ODOOCMD update crm
           $ODOOCMD kill || true
