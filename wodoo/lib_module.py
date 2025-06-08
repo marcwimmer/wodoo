@@ -1491,7 +1491,7 @@ def _get_global_hash_paths(relative_to_customs_dir=False):
     manifest = MANIFEST()
 
     customs_dir_path = customs_dir()
-    odoo_dir = manifest.get("odoo_dir", "odoo")
+    odoo_dir = manifest.odoo_dir
     odoo_path = customs_dir_path / odoo_dir
     global_hash_paths = [
         odoo_path / "odoo",

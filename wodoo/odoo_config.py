@@ -31,10 +31,12 @@ def get_odoo_addons_paths(
     if additional_addons_paths:
         addons_paths += additional_addons_paths
 
+    odoo_dir = m.odoo_dir
+
     if current_version() <= 9.0:
         MUST = ["odoo/openerp/addons", "odoo/addons"]
     else:
-        MUST = ["odoo/odoo/addons", "odoo/addons"]
+        MUST = [f"{odoo_dir}/odoo/addons", f"{odoo_dir}/addons"]
     for must in reversed(MUST):
         if must in addons_paths:
             continue
@@ -145,6 +147,12 @@ class MANIFEST_CLASS(object):
 
     def rewrite(self):
         self._update(self._get_data())
+
+    @property
+    def odoo_dir(self):
+        data = self._get_data()
+        odoo_dir = data.get("odoo_dir", "odoo")
+        return odoo_dir
 
 
 def MANIFEST():
