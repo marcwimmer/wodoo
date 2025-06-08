@@ -1,4 +1,5 @@
 import time
+import json
 from pathlib import Path
 from queue import Queue
 import threading
@@ -929,3 +930,32 @@ def splitdiff(diffoutput):
 
         if module:
             yield module, line
+
+
+@src.command()
+@click.pass_context
+@pass_config
+def reset_module_versions(config, ctx):
+    from .module_tools import Modules, Module
+
+    modules = Modules()
+    all_modules = modules.get_all_modules_installed_by_manifest()
+    must_version = str(MANIFEST().get("version", None))
+    for module in all_modules:
+        m = Module.get_by_name(module)
+        manifest = m.manifest_dict
+        version = manifest.get("version", None)
+        if not version:
+            continue
+        if len(version.split(".")) == 2:
+            continue
+        if int(version.split(".")[0]) < 10:
+            continue
+        version = ".".join(version.split(".")[2:])
+        version = f"{must_version}.{version}"
+        manifest["version"] = version
+        click.secho(
+            f"{m.name} -> {version}",
+            fg="yellow",
+        )
+        m.write_manifest(manifest)

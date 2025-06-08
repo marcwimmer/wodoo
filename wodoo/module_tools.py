@@ -1220,12 +1220,17 @@ class Module(object):
         return self._manifest_path
 
     @property
+    def manifest_file(self):
+        path = customs_dir() / self.manifest_path
+        return path
+
+    @property
     def manifest_dict(self):
         if not self._manifest_dict:
             try:
                 if not self.manifest_path:
                     abort(f"Could not find manifest path for {self.name}")
-                path = customs_dir() / self.manifest_path
+                path = self.manifest_file
                 content = path.read_text()
                 content = "\n".join(
                     filter(
