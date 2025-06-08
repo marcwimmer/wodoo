@@ -283,6 +283,13 @@ def build(
     ).strip()
     # options += ["--platform", platform]
 
+    # update wodoo src before:
+    subprocess.run(
+        ["docker", "build", "-t", "wodoo-src:latest", "."],
+        cwd=config.dirs["images"] / "wodoo",
+        check=True,
+    )
+
     __dc(
         config,
         ["build"] + options + list(machines),

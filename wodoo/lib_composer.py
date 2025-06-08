@@ -944,6 +944,7 @@ def __run_docker_compose_config(config, contents, env):
             d["DOCKER_GROUP_ID"] = str(grp.getgrnam("docker").gr_gid)
         except KeyError:
             d["DOCKER_GROUP_ID"] = "0"
+        d["DOCKER_BUILDKIT"] = "1"
 
         content = []
         for k, v in d.items():
