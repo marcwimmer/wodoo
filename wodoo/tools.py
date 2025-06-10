@@ -1574,6 +1574,7 @@ def _search_path(filename):
         if (path / filename).exists():
             return str(path / filename)
 
+
 def _get_customs_root(p):
     # arg_dir = p
     if p:
@@ -1913,6 +1914,7 @@ def is_interactive():
     v = os.getenv("WODOO_INTERACTIVE", "1")
     return v == "1"
 
+
 def create_network(name="aptcache-net"):
     # Check if the network already exists
     result = subprocess.run(
@@ -1941,3 +1943,45 @@ def create_network(name="aptcache-net"):
     except subprocess.CalledProcessError as e:
         abort(str(e))
 
+
+def remove_comments(content):
+    content = [
+        line.strip()
+        for line in content
+        if line.strip() and not line.startswith("#")
+    ]
+    return content
+
+
+def copy_into_docker(strcontent, container_name, dest_path):
+    with autocleanpaper() as tfile:
+        tfile.write_text(strcontent)
+
+        subprocess.run(
+            [
+                "docker",
+                "cp",
+                tfile,
+                f"{container_name}:{dest_path}",
+            ]
+        )
+
+
+def docker_get_file_content(container_name, file_path):
+    content = (
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                container_name,
+                "cat",
+                file_path,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        .stdout.strip()
+        .splitlines()
+    )
+    return content
