@@ -138,7 +138,7 @@ def start_apt_cacher(config):
     except subprocess.CalledProcessError as e:
         abort(str(e))
 
-    update_ancg_conf()
+    update_ancg_conf(config)
 
 
 @apt.command()
