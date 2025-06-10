@@ -1,24 +1,17 @@
-
 from .tools import create_network
 
-import time
 import click
 
-import re
-import os
-from .cli import cli, pass_config, Commands
+from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
-from .tools import execute_script
-from .tools import force_input_hostname
 import subprocess
 from .tools import abort
-from .tools import ensure_project_name
-from .tools import print_prod_env
 from .tools import autocleanpaper
 
 
 APT_CACHER_CONTAINER_NAME = "apt-cacher"
 config_file = "/etc/apt-cacher-ng/acng.conf"
+
 
 @cli.group(cls=AliasedGroup)
 @pass_config
@@ -102,7 +95,7 @@ def start_apt_cacher():
                     ]
                 )
                 subprocess.run(["docker", "restart", container_name])
-        click.secho("\n".join(conf), fg='blue')
+        click.secho("\n".join(conf), fg="blue")
 
     # Check if container is already running
     result = subprocess.run(
@@ -154,24 +147,30 @@ def start_apt_cacher():
 
     setup_options()
 
+
 @apt.command()
 @pass_config
 @click.pass_context
 def attach(ctx, config):
-    subprocess.run(["docker", "exec", "-it", APT_CACHER_CONTAINER_NAME, "bash"])
+    subprocess.run(
+        ["docker", "exec", "-it", APT_CACHER_CONTAINER_NAME, "bash"]
+    )
+
 
 @apt.command()
 @pass_config
 @click.pass_context
 def show_config(ctx, config):
     conf = _get_apt_cacher_config()
-    click.secho('\n'.join(conf), fg='green')
+    click.secho("\n".join(conf), fg="green")
+
 
 @apt.command()
 @pass_config
 @click.pass_context
 def restart(ctx, config):
     subprocess.run(["docker", "restart", APT_CACHER_CONTAINER_NAME])
+
 
 @apt.command()
 @pass_config
@@ -255,3 +254,12 @@ def clear(ctx, config, cache):
         )
     click.secho("Stopping apt proxy...", fg="green")
     subprocess.run(["docker", "kill", containerid])
+
+
+@apt.command
+@apt.command()
+@pass_config
+@click.pass_context
+def reset(ctx, config):
+    click.secho("Removing apt cacher with volumes.")
+    subprocess.run(["docker", "rm", "-f", APT_CACHER_CONTAINER_NAME])
