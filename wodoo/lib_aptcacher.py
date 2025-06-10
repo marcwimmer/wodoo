@@ -161,7 +161,7 @@ def config(ctx, config):
 @apt.command()
 @pass_config
 @click.pass_context
-def restart(ctx, config):
+def aptrestart(ctx, config):
     subprocess.run(["docker", "restart", APT_CACHER_CONTAINER_NAME])
 
 
