@@ -228,9 +228,15 @@ def aggressive_drop_db(config, conn, dbname):
 @click.argument("dbname", required=False)
 @click.option("--do-not-install-base", is_flag=True)
 @click.option("-W", "--no-overwrite", is_flag=True)
+@click.option(
+    "-P",
+    "--no-progress",
+    is_flag=True,
+    help="No progress, but allows interactive debugging",
+)
 @pass_config
 @click.pass_context
-def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
+def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite, no_progress):
     import psycopg2
 
     collatec = True
@@ -285,6 +291,7 @@ def reset_db(ctx, config, dbname, do_not_install_base, no_overwrite):
             non_interactive=True,
             no_outdated_modules=True,
             no_scripts=True,
+            no_progress=no_progress,
         )
 
 
