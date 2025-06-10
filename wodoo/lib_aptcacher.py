@@ -73,9 +73,9 @@ def start_apt_cacher():
                 ".*apt\.postgres\.org.*",
                 ".*apt*.postgresql*.org.*",
                 ".*Release$",
+                ".*InRelease$",
                 ".*Packages$",
                 ".*Sources$",
-                "http://apt.postgresql.org/pub/repos/apt/dists/bullseye-pgdg/InRelease",
             ],
             "DlMaxRetries": "5",
         }
@@ -102,7 +102,7 @@ def start_apt_cacher():
                     ]
                 )
                 subprocess.run(["docker", "restart", container_name])
-        click.secho("\n".join(ancg_conf), fg='blue')
+        click.secho("\n".join(conf), fg='blue')
 
     # Check if container is already running
     result = subprocess.run(
