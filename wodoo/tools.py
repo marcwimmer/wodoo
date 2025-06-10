@@ -1912,3 +1912,32 @@ def _get_available_modules(ctx, param, incomplete):
 def is_interactive():
     v = os.getenv("WODOO_INTERACTIVE", "1")
     return v == "1"
+
+def create_network(name="aptcache-net"):
+    # Check if the network already exists
+    result = subprocess.run(
+        [
+            "docker",
+            "network",
+            "ls",
+            "--filter",
+            f"name=^{name}$",
+            "--format",
+            "{{.Name}}",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if name in result.stdout.splitlines():
+        click.secho(f"Network '{name}' already exists.", fg="green")
+        return
+
+    # Create the network
+    click.secho(f"Creating Docker network '{name}'...", fg="yellow")
+    try:
+        subprocess.run(["docker", "network", "create", name], check=True)
+        click.secho(f"Network '{name}' created successfully.", fg="green")
+    except subprocess.CalledProcessError as e:
+        abort(str(e))
+

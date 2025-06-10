@@ -44,6 +44,7 @@ from . import lib_linting  # NOQA
 from . import lib_robot  # NOQA
 from . import daddy_cleanup  # NOQA
 from . import lib_bisect  # NOQA
+from . import lib_aptcacher  # NOQA
 
 # import container specific commands
 from .tools import abort  # NOQA
