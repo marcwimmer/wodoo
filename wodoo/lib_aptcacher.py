@@ -256,7 +256,6 @@ def clear(ctx, config, cache):
     subprocess.run(["docker", "kill", containerid])
 
 
-@apt.command
 @apt.command()
 @pass_config
 @click.pass_context
