@@ -37,5 +37,5 @@ IMAGES_BRANCH=master
 
 RUN_APT_CACHER=1
 PYPI_SERVER=https://pypi.zebroo.de/root/prod/+simple
-APT_OPTIONS=-o Acquire::Retries=5
+APT_OPTIONS=-o Acquire::Retries=5 -o Acquire::http::proxy::apt.postgresql.org="DIRECT"
 NO_SOFFICE=1
