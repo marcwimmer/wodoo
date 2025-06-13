@@ -153,7 +153,7 @@ def attach(ctx, config):
 @apt.command()
 @pass_config
 @click.pass_context
-def config(ctx, config):
+def aptconfig(ctx, config):
     conf = _get_apt_cacher_config()
     click.secho("\n".join(conf), fg="green")
 
