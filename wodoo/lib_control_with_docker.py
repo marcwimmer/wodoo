@@ -13,6 +13,7 @@ from .tools import __replace_in_file
 from .tools import _wait_for_port
 from .tools import __dcexec
 from .tools import __dc
+from .tools import __dc_out
 from .tools import _get_host_ip
 from .tools import __needs_docker
 import subprocess
@@ -120,6 +121,14 @@ def execute(config, machine, args):
     __dcexec(config, args)
 
 
+def get_all_running_containers(config, profiles=None):
+    cmd = ["ps"]
+    for profile in profiles or []:
+        cmd += ["--profile", profile]
+    output = __dc_out(config, cmd + ["--format", "table {{.Service}}"]).strip()
+    return output.splitlines()[1:]
+
+
 def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
     """
     kills running machine
@@ -129,24 +138,26 @@ def do_kill(ctx, config, machines=[], brutal=False, profile="auto"):
     """
     SAFE_KILL = []
 
-    for machine in (config.safe_kill or "").split(","):
-        if getattr(config, "run_{}".format(machine)):
-            SAFE_KILL.append(machine)
+    if not brutal:
+        for machine in (config.safe_kill or "").split(","):
+            if getattr(config, "run_{}".format(machine)):
+                SAFE_KILL.append(machine)
 
     machines = list(machines)
-    if not brutal and not config.devmode:
-        safe_stop = []
-        for machine in SAFE_KILL:
-            if not machines or machine in machines:
-                if _is_container_running(config, machine):
-                    safe_stop += [machine]
+    if not machines:
+        machines = get_all_running_containers(config, profiles=profile)
+    safe_stop = []
+    for machine in SAFE_KILL:
+        if not machines or machine in machines:
+            if _is_container_running(config, machine):
+                safe_stop += [machine]
 
-        if safe_stop:
-            __dc(
-                config, ["stop", "-t", "20"] + safe_stop, profile=profile
-            )  # persist data
+    if safe_stop:
+        __dc(
+            config, ["stop", "-t", "20"] + safe_stop, profile=profile
+        )  # persist data
     try:
-        if config.devmode:
+        if brutal:
             __dc(config, ["kill"] + list(machines), profile=profile)
         else:
             __dc(config, ["stop", "-t", "2"] + list(machines), profile=profile)

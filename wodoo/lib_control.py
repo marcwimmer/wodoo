@@ -69,10 +69,13 @@ def execute(config, machine, args):
 @click.pass_context
 def do_kill(ctx, config, machines, brutal, profile):
     ensure_project_name(config)
+    if config.devmode:
+        click.secho("Being brutal because in devmode", fg="red")
+        brutal = True
     if config.use_docker:
         from .lib_control_with_docker import do_kill as lib_do_kill
 
-        lib_do_kill(ctx, config, machines, brutal=False, profile=profile)
+        lib_do_kill(ctx, config, machines, brutal=brutal, profile=profile)
 
 
 @docker.command()
@@ -564,7 +567,7 @@ def docker_sizes(context, config):
     from .tools import __dc_out
     from tabulate import tabulate
 
-    output = __dc_out(config, ["config"]).decode("utf-8")
+    output = __dc_out(config, ["config"])
     # docker-compose config | grep "image:" | awk '{print $2}'
     # docker images --format "{{.Repository}}:{{.Tag}} Size: {{.Size}}"
     import yaml
