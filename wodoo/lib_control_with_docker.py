@@ -123,9 +123,9 @@ def execute(config, machine, args):
 
 def get_all_running_containers(config, profiles=None):
     cmd = ["ps"]
-    for profile in profiles or []:
-        cmd += ["--profile", profile]
-    output = __dc_out(config, cmd + ["--format", "table {{.Service}}"]).strip()
+    output = __dc_out(
+        config, cmd + ["--format", "table {{.Service}}"], profile=profiles
+    ).strip()
     return output.splitlines()[1:]
 
 
