@@ -280,8 +280,10 @@ def build(
         options += ["--pull"]
     if no_cache:
         options += ["--no-cache"]
-        if "--pull" not in options:
-            options += ["--pull"]
+        # if "--pull" not in options:
+        #     # options += ["--pull"]
+        #     pass
+        # error with wodoo src image
 
     if config.verbose:
         os.environ["BUILDKIT_PROGRESS"] = "plain"
@@ -295,11 +297,11 @@ def build(
     # options += ["--platform", platform]
 
     # update wodoo src before:
-    subprocess.run(
-        ["docker", "build", "-t", "wodoo-src:latest", "."],
-        cwd=config.dirs["images"] / "wodoo",
-        check=True,
-    )
+    # subprocess.run(
+    #     ["docker", "build", "-t", "wodoo-src", "."],
+    #     cwd=config.dirs["images"] / "wodoo",
+    #     check=True,
+    # )
 
     __dc(
         config,
