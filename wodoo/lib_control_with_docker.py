@@ -297,11 +297,11 @@ def build(
     # options += ["--platform", platform]
 
     # update wodoo src before:
-    # subprocess.run(
-    #     ["docker", "build", "-t", "wodoo-src", "."],
-    #     cwd=config.dirs["images"] / "wodoo",
-    #     check=True,
-    # )
+    subprocess.run(
+        ["docker", "build", "-t", "wodoo_src", "."],
+        cwd=config.dirs["images"] / "wodoo",
+        check=True,
+    )
 
     __dc(
         config,
