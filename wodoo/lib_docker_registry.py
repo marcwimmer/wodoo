@@ -98,7 +98,9 @@ def regpull(ctx, config, machines):
 
     if not machines:
         machines = list(
-            yaml.load(config.files["docker_compose"].read_text())["services"]
+            yaml.safe_load(config.files["docker_compose"].read_text())[
+                "services"
+            ]
         )
     click.secho(f"Pulling {','.join(machines)}")
     __dc(config, ["pull"] + machines)
@@ -203,7 +205,7 @@ def _apply_tags(config):
     of the project. The production system can fetch the image by their
     sha then.
     """
-    compose = yaml.load(config.files["docker_compose"].read_text())
+    compose = yaml.safe_load(config.files["docker_compose"].read_text())
     hub = config.hub_url
     hub = hub.split("/")
     assert config.project_name
