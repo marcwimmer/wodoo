@@ -81,7 +81,7 @@ def bake(ctx, config, params, no_update_images):
         additional_config_raw=metadata_str,
         no_update_images=no_update_images,
     )
-    output_env_file = customs_dir() / "{project_name}.env"
+    output_env_file = customs_dir() / f"{project_name}.env"
     output_env_file.write_text(
         "\n".join(
             map(
