@@ -721,6 +721,7 @@ def __cmd_interactive(config, *params):
             f"Command failed with return code: {res.returncode}:\n{cmd}\n\n{res.stdout}\n{res.stderr}",
             fg="red",
         )
+    return res.returncode
 
     # ctrl+c leads always to error otherwise
     # if proc.returncode:
