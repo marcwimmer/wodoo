@@ -9,7 +9,6 @@ tabulate>=0.8.3
 psycopg2-binary>=2.9.9
 requests<2.32.0
 lxml
-buttervolume>=3.7
 pudb>=2025.1
 urwid==2.6.16
 gimera>=0.6.69
