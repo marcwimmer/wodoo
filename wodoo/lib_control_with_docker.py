@@ -271,6 +271,7 @@ def build(
     no_cache=False,
     push=False,
     include_source=False,
+    platform=None,
 ):
     """
     no parameter all machines, first parameter machine name and passes other params; e.g. ./odoo build asterisk --no-cache"
@@ -291,9 +292,10 @@ def build(
     if include_source:
         raise NotImplementedError("Please implement include source.")
 
-    platform = subprocess.check_output(
-        ["/usr/bin/uname", "-m"], encoding="utf8"
-    ).strip()
+    if not platform:
+        platform = subprocess.check_output(
+            ["/usr/bin/uname", "-m"], encoding="utf8"
+        ).strip()
     # options += ["--platform", platform]
 
     # update wodoo src before:
@@ -303,11 +305,15 @@ def build(
         check=True,
     )
 
+    # if platform:
+    #     import pudb;pudb.set_trace()
+    #     options += ["--platform", platform]
+
     __dc(
         config,
         ["build"] + options + list(machines),
         env={
-            "ODOO_VERSION": config.odoo_version,  # at you developer: do not mismatch with build args
+            "ODOO_VERSION": config.odoo_version,
             "DOCKER_DEFAULT_PLATFORM": f"linux/{platform}",
             "DOCKER_BUILDKIT": "1",
             "COMPOSE_BAKE": "true",
