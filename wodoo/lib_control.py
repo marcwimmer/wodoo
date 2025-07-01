@@ -295,7 +295,12 @@ def build(ctx, config, machines, pull, no_cache, push, plain, include_source):
     import yaml
     from .lib_aptcacher import start_apt_cacher
 
-    start_apt_cacher(config)
+    from .myconfigparser import MyConfigParser
+
+    settings = MyConfigParser(config.files["settings"])
+
+    if settings.get("RUN_APT_CACHER") in ["1", ""]:
+        start_apt_cacher(config)
 
     ensure_project_name(config)
     if plain:
