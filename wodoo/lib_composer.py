@@ -482,10 +482,20 @@ def _copy_all_dockerfiles_to_run_dir_and_set_dockerfile_in_dockercompose(
 
 
 def _replace_docker_snippets(config, dockerfilecontent):
-    for snippet in (config.dirs["images"] / "common_snippets").glob("*"):
-        content = snippet.read_text()
-        name = f"#___SNIPPET_{snippet.stem.upper()}___"
-        dockerfilecontent = dockerfilecontent.replace(name, content)
+    counter = 0
+    while "#___SNIPPET" in dockerfilecontent:
+        counter += 1
+        for snippet in (config.dirs["images"] / "common_snippets").glob("*"):
+            content = snippet.read_text()
+            name = f"#___SNIPPET_{snippet.stem.upper()}___"
+            dockerfilecontent = dockerfilecontent.replace(name, content)
+        if counter > 100:
+            import re
+
+            snippets = "\n".join(
+                map(str, re.findall(r"#___SNIPPET_.*", dockerfilecontent))
+            )
+            raise RecursionError(f"Not resolved or endless loop: ", snippets)
     return dockerfilecontent
 
 
