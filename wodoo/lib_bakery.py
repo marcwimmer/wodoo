@@ -111,6 +111,7 @@ def bake(ctx, config, params, no_update_images):
         * the path /longpolling  or /websocket (since V16) must point to that service
         * either setup your own nginx or use the proxy container
         * TIP: when using the proxy container set PROXY_ODOO_HOST to the full qualified container name of odoo port 8069
+        * TIP: when using the proxy container set PROXY_DNS_SERVER to a valid dns server in your environment (default 127.0.0.11)
         """,
         "3. a new database is not initialized automatically - just take an existing dump or make a new dump locally",
         """
