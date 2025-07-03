@@ -144,7 +144,7 @@ def start_apt_cacher(config):
 @apt.command()
 @pass_config
 @click.pass_context
-def attach(ctx, config):
+def aptattach(ctx, config):
     subprocess.run(
         ["docker", "exec", "-it", APT_CACHER_CONTAINER_NAME, "bash"]
     )
