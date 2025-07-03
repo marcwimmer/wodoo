@@ -4,6 +4,7 @@ HUB_URL=registry.name:port/user/project:version
 """
 
 import yaml
+import getpass
 from pathlib import Path
 import subprocess
 import sys
@@ -45,9 +46,15 @@ def login(config):
 
     def _login():
         if not hub["username"]:
-            abort(
-                "No username configured in hub url - no login possible. Configure it in the hub url please with the format:\nuser:password@registry.itewimmer.de:443/prefix"
+            username = getpass.getpass(
+                f"Enter your username for {hub['url']}: "
             )
+        else:
+            username = hub["username"]
+        if not hub["password"]:
+            password = getpass.getpass("Enter your password: ")
+        else:
+            password = hub["password"]
         click.secho(f"Using {hub['username']}", fg="yellow")
         res = subprocess.check_output(
             [
@@ -55,9 +62,9 @@ def login(config):
                 "login",
                 f"{hub['url']}",
                 "-u",
-                hub["username"],
+                username,
                 "-p",
-                hub["password"],
+                password,
             ],
             encoding="utf-8",
         )
