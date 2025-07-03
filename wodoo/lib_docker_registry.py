@@ -4,7 +4,6 @@ HUB_URL=registry.name:port/user/project:version
 """
 
 import yaml
-import getpass
 from pathlib import Path
 import subprocess
 import sys
@@ -76,10 +75,26 @@ def login(config):
         return
 
 
+def _get_base_tag(config):
+    request_file = config.dirs["run"] / "requirements.odoo.hash"
+    if not request_file.exists():
+        abort(
+            "Please run wodoo requirements.odoo first to create the requirements.odoo.hash file."
+        )
+    base_tag = request_file.read_text().strip()
+
+
 @docker_registry.command()
 @pass_config
+@click.option(
+    "-b",
+    "--baseimage",
+    is_flag=True,
+    help="Pushes without source code by using a tag of the requirements.odoo.hash and platform combination. With regpull those base images can be quickly pulled and used again.",
+)
+@click.argument("machines", nargs=-1)
 @click.pass_context
-def regpush(ctx, config):
+def regpush(ctx, config, baseimage, machines):
     hub = split_hub_url(config)
     if hub["username"]:
         ctx.invoke(login)
@@ -90,10 +105,16 @@ def regpush(ctx, config):
 
 
 @docker_registry.command()
+@click.option(
+    "-b",
+    "--baseimage",
+    is_flag=True,
+    help="Pushes without source code by using a tag of the requirements.odoo.hash and platform combination. With regpull those base images can be quickly pulled and used again.",
+)
 @click.argument("machines", nargs=-1)
 @pass_config
 @click.pass_context
-def regpull(ctx, config, machines):
+def regpull(ctx, config, baseimage, machines):
     if not config.REGISTRY:
         abort(
             "Please set REGISTRY=1 in configuration and reload. "

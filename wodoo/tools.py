@@ -1967,25 +1967,24 @@ def copy_into_docker(strcontent, container_name, dest_path):
                 "cp",
                 tfile,
                 f"{container_name}:{dest_path}",
-            ]
+            ],
+            check=True,
         )
 
 
 def docker_get_file_content(container_name, file_path):
-    content = (
-        subprocess.run(
-            [
-                "docker",
-                "exec",
-                container_name,
-                "cat",
-                file_path,
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        .stdout.strip()
-        .splitlines()
+    res = subprocess.run(
+        [
+            "docker",
+            "exec",
+            container_name,
+            "cat",
+            str(file_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     )
+    content = res.stdout.strip()
+    content = content.splitlines()
     return content

@@ -36,13 +36,13 @@ def _get_apt_cacher_config():
     )
 
 
-def update_ancg_conf(config):
-    ancg_conf = _get_apt_cacher_config()
+def update_acng_conf(config):
+    acng_conf = _get_apt_cacher_config()
     options = json.loads(
         (config.dirs["images"] / "apt_cacher" / "acng.conf").read_text()
     )
     conf = []
-    for line in ancg_conf:
+    for line in acng_conf:
         if any(line.startswith(f"{option}: ") for option in options):
             continue
         conf.append(line)
@@ -51,27 +51,29 @@ def update_ancg_conf(config):
             value = [value]
         for value in value:
             conf.append(f"{option}: {value}")
-    if ancg_conf != conf:
+    if acng_conf != conf:
         copy_into_docker(
             "\n".join(conf) + "\n", APT_CACHER_CONTAINER_NAME, config_file
         )
         subprocess.run(["docker", "restart", APT_CACHER_CONTAINER_NAME])
-    click.secho("\n".join(ancg_conf), fg="blue")
+    click.secho("\n".join(acng_conf), fg="blue")
 
 
 def update_mirrors(config):
     changed = False
-    for file in (config.dirs["images"] / "apt_cacher").glob("*"):
+    for file in (config.dirs["images"] / "apt_cacher" / "mirrors").glob("*"):
         if str(file).endswith(".orig"):
             continue
-        filepath_docker = Path("/usr/lib/apt-cacher-ng") / file.name
+        if not file.is_file():
+            continue
+        filepath_docker = Path("/etc/apt-cacher-ng") / file.name
         try:
             content = docker_get_file_content(
                 APT_CACHER_CONTAINER_NAME, filepath_docker
             )
         except:
             content = []
-        newcontent = file.splitlines()
+        newcontent = file.read_text().splitlines()
         if newcontent != content:
             copy_into_docker(
                 "\n".join(newcontent) + "\n",
@@ -96,8 +98,13 @@ def start_apt_cacher(config):
         capture_output=True,
         text=True,
     )
+
+    def update():
+        update_acng_conf(config)
+        update_mirrors(config)
+
     if result.stdout.strip():
-        update_ancg_conf(config)
+        update()
         click.secho(f"Container '{container_name}' is already running.")
         return
 
@@ -138,7 +145,7 @@ def start_apt_cacher(config):
     except subprocess.CalledProcessError as e:
         abort(str(e))
 
-    update_ancg_conf(config)
+    update()
 
 
 @apt.command()
