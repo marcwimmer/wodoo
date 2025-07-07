@@ -12,7 +12,7 @@ from .tools import docker_get_file_content
 from .tools import copy_into_docker
 
 
-APT_CACHER_CONTAINER_NAME = "apt-cacher"
+APT_CACHER_CONTAINER_NAME = "squid-deb-proxy"
 config_file = "/etc/apt-cacher-ng/acng.conf"
 
 
@@ -88,9 +88,10 @@ def update_mirrors(config):
 
 def start_apt_cacher(config):
     container_name = APT_CACHER_CONTAINER_NAME
-    image_name = "sameersbn/apt-cacher-ng:latest"
+    # image_name = "sameersbn/apt-cacher-ng:latest"
+    image_name = "apt_cacher"
     network = "aptcache-net"  # necessary so name resolution works
-    port_mapping = "3142:3142"
+    port_mapping = "3142:8000"
 
     # Check if container is already running
     result = subprocess.run(
@@ -100,6 +101,7 @@ def start_apt_cacher(config):
     )
 
     def update():
+        return
         update_acng_conf(config)
         update_mirrors(config)
 
@@ -109,6 +111,8 @@ def start_apt_cacher(config):
         return
 
     create_network(network)
+    cmd = ["docker", "build", "-t", image_name, "."]
+    subprocess.run(cmd, check=True, cwd=config.dirs["images"] / "apt_cacher")
 
     # If not running, start it
     result = subprocess.run(
