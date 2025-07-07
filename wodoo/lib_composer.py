@@ -1371,9 +1371,11 @@ def _merge_odoo_dockerfile(config):
         # append common docker config
         odoo_docker_file = config.files["odoo_docker_file"]
         common = config.dirs["images"] / "odoo" / "config" / "common.docker"
-        odoo_docker_file.write_text(
-            odoo_docker_file.read_text() + "\n" + common.read_text()
-        )
+        ODOO_VERSION = str(MANIFEST()["version"]).split(".")[0]
+        if float(ODOO_VERSION) >= 14.0:
+            odoo_docker_file.write_text(
+                odoo_docker_file.read_text() + "\n" + common.read_text()
+            )
 
         # include source code
         if not config.SRC_EXTRA:
