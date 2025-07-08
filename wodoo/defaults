@@ -36,7 +36,6 @@ IMAGES_BRANCH=master
 
 
 RUN_APT_CACHER=1
-PYPI_SERVER=https://pypi.zebroo.de/root/prod/+simple
 APT_OPTIONS=-o Acquire::Retries=2
 PIP_OPTIONS=--no-cache-dir --index-url ${PYPI_SERVER} --trusted-host ${PYPI_SERVER}
 NO_SOFFICE=1
