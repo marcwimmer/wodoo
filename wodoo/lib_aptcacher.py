@@ -190,5 +190,5 @@ def setup(ctx, config):
         ctx, "setting", name="APT_PROXY_IP", value=apt_proxy, no_reload=True
     )
     Commands.invoke(
-        ctx, "setting", name="PYPI_PROXY_IP", value=pypi_proxy, no_reload=False
+        ctx, "setting", name="PIP_PROXY_IP", value=pypi_proxy, no_reload=False
     )
