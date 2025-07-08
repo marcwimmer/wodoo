@@ -1,4 +1,5 @@
 import platform
+import netifaces
 import passlib
 import csv
 import inspect
@@ -1988,3 +1989,36 @@ def docker_get_file_content(container_name, file_path):
     content = res.stdout.strip()
     content = content.splitlines()
     return content
+
+
+def get_local_ips():
+    ips = []
+    for iface in netifaces.interfaces():
+        addrs = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])
+        for addr in addrs:
+            ip = addr.get("addr")
+            if ip and not ip.startswith("127."):
+                ips.append(ip)
+    return ips
+
+
+def choose_ip(ips):
+    import inquirer
+
+    choices = ips + ["Enter manually..."]
+    questions = [
+        inquirer.List(
+            "ip",
+            message="Choose an IP address",
+            choices=choices,
+        )
+    ]
+    answers = inquirer.prompt(questions)
+    if answers["ip"] == "Enter manually...":
+        manual = inquirer.text(message="Enter IP address:")
+        return manual
+    return answers["ip"]
+
+
+def get_arch():
+    return platform.uname().machine  # aarch64

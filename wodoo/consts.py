@@ -17,7 +17,7 @@ VERSIONS = [
 ]
 YAML_VERSION = "3.7"
 DEFAULT_IMAGES_REPO = "https://github.com/marcwimmer/wodoo-images"
-IMAGES_REPO_BRANCH = "2025-05a"
+IMAGES_REPO_BRANCH = "2025-05b"
 
 
 def resolve_profiles(profile):
@@ -80,13 +80,14 @@ default_files = {
     "pgcli_history": "${run}/pgcli_history",
 }
 
-if not default_files['docker_compose_bin']:
-    default_files['docker_compose_bin'] = [_search_path("docker"), "compose"]
+if not default_files["docker_compose_bin"]:
+    default_files["docker_compose_bin"] = [_search_path("docker"), "compose"]
 else:
-    default_files['docker_compose_bin'] = [default_files['docker_compose_bin']]
+    default_files["docker_compose_bin"] = [default_files["docker_compose_bin"]]
 
 default_commands = {
-    "dc": default_files['docker_compose_bin'] + [
+    "dc": default_files["docker_compose_bin"]
+    + [
         "-p",
         "${project_name}",
         "-f",

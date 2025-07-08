@@ -1,7 +1,6 @@
 import traceback
 import socket
 
-import netifaces
 import threading
 from .tools import bashfind
 import json
@@ -27,7 +26,6 @@ import copy
 import click
 from . import module_tools
 from . import tools
-from .tools import is_interactive
 from .tools import update_setting
 from .tools import __replace_all_envs_in_str
 from .tools import __running_as_root_or_sudo
@@ -239,47 +237,6 @@ def do_reload(
     finally:
         if additional_config_file and additional_config_file.exists():
             additional_config_file.unlink()
-
-
-def get_local_ips():
-    ips = []
-    for iface in netifaces.interfaces():
-        addrs = netifaces.ifaddresses(iface).get(netifaces.AF_INET, [])
-        for addr in addrs:
-            ip = addr.get("addr")
-            if ip and not ip.startswith("127."):
-                ips.append(ip)
-    return ips
-
-
-def choose_ip(ips):
-    import inquirer
-
-    choices = ips + ["Enter manually..."]
-    questions = [
-        inquirer.List(
-            "ip",
-            message="Choose an IP address",
-            choices=choices,
-        )
-    ]
-    answers = inquirer.prompt(questions)
-    if answers["ip"] == "Enter manually...":
-        manual = inquirer.text(message="Enter IP address:")
-        return manual
-    return answers["ip"]
-
-
-def get_arch():
-    return platform.uname().machine  # aarch64
-
-
-def setup_apt_cacher_host(ctx, settings):
-    ips = list(sorted(get_local_ips()))
-    ip = choose_ip(ips)
-    if not is_interactive():
-        abort("Please define system wide APT_PROXY_IP")
-    ctx.invoke(setting, name="APT_PROXY_IP", value=ip, no_reload=False)
 
 
 def internal_reload(
@@ -505,7 +462,7 @@ def _redo_if_settings_missing(ctx, config):
     settings = MyConfigParser(config.files["settings"])
     if not settings.get("APT_PROXY_IP"):
         if settings.get("RUN_APT_CACHER") in ["1", ""]:
-            setup_apt_cacher_host(ctx, settings)
+            abort("Please setup apt cacher host first. And pypi cacher.")
 
 
 def _download_images(config, images_url):
@@ -1572,3 +1529,4 @@ def get_host_info():
 
 
 Commands.register(do_reload, "reload")
+Commands.register(setting, "setting")

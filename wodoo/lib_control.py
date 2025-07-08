@@ -309,14 +309,15 @@ def build(
     platform,
 ):
     import yaml
-    from .lib_aptcacher import start_apt_cacher
+    from .lib_aptcacher import start_squid_proxy, start_proxpi
 
     from .myconfigparser import MyConfigParser
 
     settings = MyConfigParser(config.files["settings"])
 
     if settings.get("RUN_APT_CACHER") in ["1", ""]:
-        start_apt_cacher(config)
+        start_squid_proxy(config)
+        start_proxpi(config)
 
     ensure_project_name(config)
     if plain:
