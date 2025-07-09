@@ -309,7 +309,7 @@ def build(
     platform,
 ):
     import yaml
-    from .lib_aptcacher import start_squid_proxy, start_proxpi
+    from .lib_cached_build import start_squid_proxy, start_proxpi
 
     from .myconfigparser import MyConfigParser
 
