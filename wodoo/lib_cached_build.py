@@ -14,7 +14,7 @@ PROXPI_CONTAINER_NAME = "proxpi-cacher"
 
 @cli.group(cls=AliasedGroup)
 @pass_config
-def cached_build(config):
+def cache(config):
     pass
 
 
@@ -105,7 +105,7 @@ def start_proxpi(config):
     )
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def apt_attach(ctx, config):
@@ -114,28 +114,28 @@ def apt_attach(ctx, config):
     )
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def proxpi_attach(ctx, config):
     subprocess.run(["docker", "exec", "-it", PROXPI_CONTAINER_NAME, "bash"])
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def apt_restart(ctx, config):
     subprocess.run(["docker", "restart", APT_CACHER_CONTAINER_NAME])
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def pypi_restart(ctx, config):
     subprocess.run(["docker", "restart", PROXPI_CONTAINER_NAME])
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def apt_reset(ctx, config):
@@ -143,7 +143,7 @@ def apt_reset(ctx, config):
     subprocess.run(["docker", "rm", "-f", APT_CACHER_CONTAINER_NAME])
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def pypi_reset(ctx, config):
@@ -151,7 +151,7 @@ def pypi_reset(ctx, config):
     subprocess.run(["docker", "rm", "-f", PROXPI_CONTAINER_NAME])
 
 
-@cached_build.command()
+@cache.command()
 @pass_config
 @click.pass_context
 def setup(ctx, config):
