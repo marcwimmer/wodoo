@@ -1168,6 +1168,7 @@ def copy_dir_contents(dir, dest_dir, exclude=None):
             shutil.copy(str(x.absolute()), str(dest_path))
         else:
             shutil.copytree(str(x.absolute()), str(dest_path))
+    __try_to_set_owner(whoami(), dest_dir, abort_if_failed=False)
 
 
 def _get_host_ip():
@@ -1481,6 +1482,25 @@ def is_git_clean(path=None, ignore_files=None):
     if status:
         click.secho(f"unclean git: {status}")
     return not status
+
+
+def fix_sudo_user_rights(path):
+    if not os.getenv("SUDO_USER"):
+        return
+    subprocess.check_call(
+        [
+            "find",
+            path,
+            "-not",
+            "-user",
+            os.getenv("SUDO_USER"),
+            "-exec",
+            "chown",
+            os.getenv("SUDO_USER"),
+            "{}",
+            ";",
+        ]
+    )
 
 
 def whoami(id=False):

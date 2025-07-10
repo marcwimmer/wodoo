@@ -338,7 +338,7 @@ class DBModules(object):
 
 def make_customs(config, ctx, path, version, odoosh):
     from gimera.gimera import apply as gimera
-    from .tools import abort
+    from .tools import abort, whoami
     import click
 
     if not path.exists():
@@ -383,6 +383,7 @@ def make_customs(config, ctx, path, version, odoosh):
         __assure_gitignore(path / ".gitignore", "/" + repo + "/")
     subprocess.call(["git", "add", "."], cwd=path)
     subprocess.call(["git", "commit", "-am", "init"], cwd=path)
+    os.environ["GIMERA_NO_PRECOMMIT"] = "1"
     ctx.invoke(gimera, recursive=True, update=True)
     try_to_set_owner(whoami(), path)
     subprocess.call(["odoo reload"], shell=True, cwd=path)
