@@ -64,6 +64,7 @@ def setup(ctx, config):
 
     _setup_robot_env(config, ctx)
 
+    os.environ["GIMERA_NO_PRECOMMIT"] = "1"
     ctx.invoke(gimera, recursive=True, update=True, missing=True)
     if os.getenv("SILENT_ROBOT_SETUP") != "1":
         click.secho(
