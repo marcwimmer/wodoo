@@ -47,7 +47,8 @@ class Config(object):
         self.files = {}
         self.commands = {}
 
-        self.project_name = project_name
+        if project_name:
+            self.project_name = project_name
 
     def _collect_files(self, files):
         import click
