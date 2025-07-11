@@ -1556,6 +1556,12 @@ def download_file(url):
 def _get_default_project_name(restrict):
     from .exceptions import NoProjectNameException
 
+    if (
+        os.environ.get("project_name")
+        and os.environ.get("DOCKER_MACHINE") == "1"
+    ):
+        return os.environ.get("project_name", None)
+
     def _get_project_name_from_file(path):
         path = Path(path)
         if not path.exists():
