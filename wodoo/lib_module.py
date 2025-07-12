@@ -22,6 +22,7 @@ from .tools import _make_sure_module_is_installed
 from .tools import __assure_gitignore
 from .tools import get_hash
 from .tools import get_directory_hash
+from .tools import is_docker_available
 from .tools import sync_folder
 from .tools import __dcrun
 from .tools import __cmd_interactive
@@ -608,7 +609,8 @@ def update(
         update_log_file,
         verbose=True,
     )
-    start_postgres_if_local(ctx, config)
+    if is_docker_available():
+        start_postgres_if_local(ctx, config)
     manifest = MANIFEST()
     if manifest.get("before-odoo-update", []) and not no_scripts:
         if os.getenv("NO_BEFORE_ODOO_COMMAND") != "1":

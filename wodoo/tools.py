@@ -830,6 +830,14 @@ def __make_file_executable(filepath):
     os.chmod(filepath, st.st_mode | stat.S_IEXEC)
 
 
+def is_docker_available():
+    try:
+        search_env_path('docker')
+    except:
+        return False
+    else:
+        return True
+
 def _get_user_primary_group(UID):
     id = search_env_path("id")
     return subprocess.check_output(

@@ -398,6 +398,9 @@ def logall(config, machines, follow, lines):
 
 
 def shell(config, command="", queuejobs=False):
+    if os.getenv("DOCKER_MACHINE") == "1":
+        subprocess.run(["/odoolib/entrypoint.sh", "/odoolib/shell.py"])
+        return
     cmd = [
         "run",
         "--rm",

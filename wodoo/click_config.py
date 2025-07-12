@@ -89,7 +89,11 @@ class Config(object):
     @project_name.setter
     def project_name(self, value):
         self._project_name = value
-        if self._project_name:
+        if os.getenv("DOCKER_HOST_RUN_DIR") and os.getenv("DOCKER_MACHINE") == "1":
+            self.HOST_RUN_DIR = (
+                Path(os.environ["DOCKER_HOST_RUN_DIR"])
+            )
+        elif self._project_name:
             self.HOST_RUN_DIR = (
                 Path(os.environ["HOME"]) / ".odoo" / "run" / self._project_name
             )
@@ -118,6 +122,15 @@ class Config(object):
     def forced(self):
         return Config.Forced(self)
 
+    @property
+    def manifest(self):
+        m = self.WORKING_DIR / "MANIFEST"
+        return eval(m.read_text())
+
+    @property
+    def odoo_version(self):
+        return float(self.manifest['version'])
+
     def __getattribute__(self, name):
         try:
             value = super(Config, self).__getattribute__(name)
@@ -137,13 +150,20 @@ class Config(object):
                 convert = "asbool"
                 name = name[: -len("_as_bool")]
 
-            for tries in [name, name.lower(), name.upper()]:
+            candidates = [name, name.lower(), name.upper()]
+            for tries in candidates:
                 value = ""
                 if tries not in myconfig.keys():
                     continue
 
                 value = myconfig.get(tries, "")
                 break
+            else:
+                if os.getenv("DOCKER_MACHINE") == "1":
+                    for tries in candidates:
+                        if tries in os.environ:
+                            value = os.environ[tries]
+                            break
 
             if convert:
                 if convert == "asint":
