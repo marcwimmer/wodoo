@@ -641,7 +641,7 @@ def update(
             )
 
         if not no_restart:
-            if config.use_docker:
+            if config.use_docker and is_docker_available():
                 Commands.invoke(
                     ctx, "kill", machines=get_services(config, "odoo_base")
                 )
@@ -1206,6 +1206,9 @@ def show_conflicting_modules(config):
 def _exec_update(
     config, params, non_interactive=False, stdout=False, write_to_console=True
 ):
+    if os.getenv("DOCKER_MACHINE") == "1":
+        ret =  subprocess.run([os.getenv("WODOO_PYTHON")] + ["/odoolib/update_modules.py"] + params)
+        yield ret.returncode
     params = ["odoo_update", "/odoolib/update_modules.py"] + params
     if not non_interactive:
         yield __cmd_interactive(
