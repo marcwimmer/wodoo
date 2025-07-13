@@ -9,6 +9,7 @@ import subprocess
 import sys
 import os
 import click
+import getpass
 from .tools import __dc
 from .cli import cli, pass_config
 from .lib_clickhelpers import AliasedGroup
@@ -131,7 +132,7 @@ def regpull(ctx, config, baseimage, machines):
             ]
         )
     click.secho(f"Pulling {','.join(machines)}")
-    __dc(config, ["pull"] + machines)
+    __dc(config, ["pull"] + list(machines))
 
 
 @docker_registry.command()
