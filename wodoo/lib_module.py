@@ -22,6 +22,7 @@ from .tools import _make_sure_module_is_installed
 from .tools import __assure_gitignore
 from .tools import get_hash
 from .tools import get_directory_hash
+from .tools import is_docker_available
 from .tools import sync_folder
 from .tools import __dcrun
 from .tools import __cmd_interactive
@@ -608,7 +609,8 @@ def update(
         update_log_file,
         verbose=True,
     )
-    start_postgres_if_local(ctx, config)
+    if is_docker_available():
+        start_postgres_if_local(ctx, config)
     manifest = MANIFEST()
     if manifest.get("before-odoo-update", []) and not no_scripts:
         if os.getenv("NO_BEFORE_ODOO_COMMAND") != "1":
@@ -639,7 +641,7 @@ def update(
             )
 
         if not no_restart:
-            if config.use_docker:
+            if config.use_docker and is_docker_available():
                 Commands.invoke(
                     ctx, "kill", machines=get_services(config, "odoo_base")
                 )
@@ -1204,6 +1206,9 @@ def show_conflicting_modules(config):
 def _exec_update(
     config, params, non_interactive=False, stdout=False, write_to_console=True
 ):
+    if os.getenv("DOCKER_MACHINE") == "1":
+        ret =  subprocess.run([os.getenv("WODOO_PYTHON")] + ["/odoolib/update_modules.py"] + params)
+        yield ret.returncode
     params = ["odoo_update", "/odoolib/update_modules.py"] + params
     if not non_interactive:
         yield __cmd_interactive(
