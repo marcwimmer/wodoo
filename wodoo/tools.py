@@ -512,7 +512,7 @@ def _merge_env_dict(env):
     for k, v in os.environ.items():
         res[k] = v
     for k, v in env.items():
-        res[k] = v
+        res[k] = str(v)
     return res
 
 
@@ -832,11 +832,12 @@ def __make_file_executable(filepath):
 
 def is_docker_available():
     try:
-        search_env_path('docker')
+        search_env_path("docker")
     except:
         return False
     else:
         return True
+
 
 def _get_user_primary_group(UID):
     id = search_env_path("id")
