@@ -815,7 +815,7 @@ def update(
             else:
                 break
 
-        if not no_restart and config.use_docker:
+        if not no_restart and config.use_docker and os.getenv("DOCKER_MACHINE") != "1":
             Commands.invoke(ctx, "restart", machines=["odoo"])
             if config.run_odoocronjobs:
                 Commands.invoke(ctx, "restart", machines=["odoo_cronjobs"])
@@ -1102,7 +1102,8 @@ for module in modules:
         uninstalled = True
 
     if uninstalled and not no_restart:
-        Commands.invoke(ctx, "restart", machines=["odoo"])
+        if os.getenv("DOCKER_MACHINE") != "1":
+            Commands.invoke(ctx, "restart", machines=["odoo"])
 
     modules = [x for x in modules if DBModules.is_module_installed(x)]
     if modules:
@@ -1209,31 +1210,32 @@ def _exec_update(
     if os.getenv("DOCKER_MACHINE") == "1":
         ret =  subprocess.run([os.getenv("WODOO_PYTHON")] + ["/odoolib/update_modules.py"] + params)
         yield ret.returncode
-    params = ["odoo_update", "/odoolib/update_modules.py"] + params
-    if not non_interactive:
-        yield __cmd_interactive(
-            config,
-            *(
-                [
-                    "run",
-                    "--rm",
-                ]
-                + params
-            ),
-        )
     else:
-        try:
-            returncode, output = __dcrun(
+        params = ["odoo_update", "/odoolib/update_modules.py"] + params
+        if not non_interactive:
+            yield __cmd_interactive(
                 config,
-                list(params),
-                returnproc=True,
-                interactive=False,
-                write_to_console=write_to_console,
+                *(
+                    [
+                        "run",
+                        "--rm",
+                    ]
+                    + params
+                ),
             )
-            yield returncode
-            yield output
-        except subprocess.CalledProcessError as ex:
-            yield ex.returncode
+        else:
+            try:
+                returncode, output = __dcrun(
+                    config,
+                    list(params),
+                    returnproc=True,
+                    interactive=False,
+                    write_to_console=write_to_console,
+                )
+                yield returncode
+                yield output
+            except subprocess.CalledProcessError as ex:
+                yield ex.returncode
 
 
 def _get_unittests_from_module(module_name):

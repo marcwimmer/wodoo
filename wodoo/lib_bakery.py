@@ -141,6 +141,12 @@ def bake(ctx, config, params, no_update_images):
           * odoo setting RUN_CRONJOBS=0
         """,
         "7. Setting up connection to database and other settings",
+        "8. To configure odoo container to make updates at startup, configure:",
+        """
+          * UPDATE_ON_STARTUP=1
+          * UPDATE_PARAMS=--i18n  --> parameter for update command; e.g. in this case for force update translations
+          * PERSIST_UPDATE_LOG=/path/to/persist/   <!-- update log will be put here
+        """
     ]
     for tip in tips:
         click.secho(tip, fg="green")
