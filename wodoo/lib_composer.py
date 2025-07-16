@@ -1304,6 +1304,10 @@ def _merge_odoo_dockerfile(config):
         config.files["odoo_docker_file"].write_text(
             Path(dockerfile1).read_text()
         )
+        appendix_dir_root = config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir" 
+        if appendix_dir_root.exists():
+            shutil.rmtree(appendix_dir_root)
+
         for file in bashfind(config.WORKING_DIR, "Dockerfile.appendix"):
             dir = file.parent
             appendix = file.read_text()
@@ -1314,7 +1318,7 @@ def _merge_odoo_dockerfile(config):
             file.write_text(content)
             # probably a dir?
             dest = (
-                config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir"
+                config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir" / dir.name
             )
             if dest.exists() and dest.is_file():
                 dest.unlink()
