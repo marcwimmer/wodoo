@@ -1305,25 +1305,25 @@ def _merge_odoo_dockerfile(config):
             Path(dockerfile1).read_text()
         )
         for file in bashfind(config.WORKING_DIR, "Dockerfile.appendix"):
-            dir = file.parent / f"Dockerfile.appendix.dir"
+            dir = file.parent
             appendix = file.read_text()
+            del file
             file = config.files["odoo_docker_file"]
             content = file.read_text() + "\n" + appendix
             content = content.replace("${PROJECT_NAME}", config.project_name)
             file.write_text(content)
             # probably a dir?
-            if dir.exists():
-                dest = (
-                    config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir"
-                )
-                if dest.exists() and dest.is_file():
-                    dest.unlink()
-                dest.mkdir(parents=True, exist_ok=True)
-                for part in dir.iterdir():
-                    if part.is_file():
-                        shutil.copy(part, dest)
-                    else:
-                        shutil.copytree(part, dest / part.name)
+            dest = (
+                config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir"
+            )
+            if dest.exists() and dest.is_file():
+                dest.unlink()
+            dest.mkdir(parents=True, exist_ok=True)
+            for part in dir.iterdir():
+                if part.is_file():
+                    shutil.copy(part, dest)
+                else:
+                    shutil.copytree(part, dest / part.name)
 
         # append common docker config
         odoo_docker_file = config.files["odoo_docker_file"]
