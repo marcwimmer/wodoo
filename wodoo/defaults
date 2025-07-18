@@ -35,5 +35,5 @@ IMAGES_BRANCH=master
 
 RUN_APT_CACHER=1
 APT_OPTIONS=-o Acquire::Retries=2
-PIP_OPTIONS=--no-cache-dir --no-build-isolation --index-url $PIP_PROXY_IP --trusted-host $PIP_PROXY_IP
+PIP_OPTIONS=--no-cache-dir --no-build-isolation --index-url http://$PIP_PROXY_IP/index --trusted-host $PIP_PROXY_IP
 NO_SOFFICE=1
