@@ -1678,12 +1678,42 @@ def migrate():
 
 
 @odoo_module.command()
+@click.option(
+    "--skip-odoo",
+    is_flag=True,
+    help="Skip odoo modules (default: False)",
+)
+@click.option(
+    "--skip-enterprise",
+    is_flag=True,   
+    help="Skip enterprise modules (default: False)",
+)
+@click.option(
+    "--skip-oca",
+    is_flag=True,
+    help="Skip OCA modules (default: False)",
+)
 @pass_config
 @click.pass_context
-def list_modules(ctx, config):
+def list_modules(ctx, config, skip_odoo, skip_enterprise, skip_oca):
     modules = list(sorted(get_all_modules_installed_by_manifest(config)))
+    from .module_tools import Modules, Module
+    from .odoo_config import MANIFEST
+    m = MANIFEST()
+    odoo_dir = m.get("odoo_dir", "odoo")
+
+    def _filter(module):
+        m = Module.get_by_name(module)
+        if skip_odoo and str(m.path).startswith(odoo_dir + "/"):
+            return False
+        if skip_enterprise and str(m.path).startswith("enterprise/"):
+            return False
+        if skip_oca and 'oca' in str(m.path).split("/")[0].lower():
+            return False
+        return True
+
     print("---")
-    for m in modules:
+    for m in [x for x in modules if _filter(x)]:
         print(m)
 
 
