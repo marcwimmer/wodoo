@@ -1353,7 +1353,7 @@ def append_odoo_src(config, path):
     # Remove existing symlink or file if necessary
     sync_folder(config.HOST_CUSTOMS_DIR, linkdir, excludes=[".git"])
     content = f"""
-RUN mkdir /opt/src
+RUN mkdir -p /opt/src
 COPY ./src/{config.project_name} /opt/src
 RUN find /opt/src -name .git -type d -exec rm -rf {{}} \\;
     """
