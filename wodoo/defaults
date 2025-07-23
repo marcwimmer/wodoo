@@ -26,8 +26,6 @@ SAFE_KILL=redis,postgres
 PSYCOPG_TIMEOUT=30
 
 
-USE_APT_MIRRORS=0
-
 # set customized docker label for identifying all containers
 DOCKER_LABEL_ODOOCOMPOSE=1
 RESTART_CONTAINERS=0
@@ -37,5 +35,5 @@ IMAGES_BRANCH=master
 
 RUN_APT_CACHER=1
 APT_OPTIONS=-o Acquire::Retries=2
-PIP_OPTIONS=--no-cache-dir --no-build-isolation --index-url ${PYPI_SERVER} --trusted-host ${PYPI_SERVER}
+PIP_OPTIONS=--no-cache-dir --no-build-isolation --index-url http://$PIP_PROXY_IP/index --trusted-host $PIP_PROXY_IP
 NO_SOFFICE=1

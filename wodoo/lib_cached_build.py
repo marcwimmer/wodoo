@@ -28,19 +28,14 @@ def start_container(
         text=True,
     )
 
-    def update():
-        return
-        update_acng_conf(config)
-        update_mirrors(config)
-
     if result.stdout.strip():
-        update()
         click.secho(f"Container '{container_name}' is already running.")
         return
 
     create_network(network)
-    cmd = ["docker", "build", "-t", image_name, "."]
-    subprocess.run(cmd, check=True, cwd=config.dirs["images"] / "apt_cacher")
+    if build_path:
+        cmd = ["docker", "build", "-t", image_name, "."]
+        subprocess.run(cmd, check=True, cwd=build_path)
 
     # If not running, start it
     result = subprocess.run(
@@ -78,9 +73,6 @@ def start_container(
     except subprocess.CalledProcessError as e:
         abort(str(e))
 
-    update()
-
-
 def start_squid_proxy(config):
     image_name = "squid-deb-cacher-wodoo"
     start_container(
@@ -89,7 +81,7 @@ def start_squid_proxy(config):
         image_name,
         config.dirs["images"] / "apt_cacher",
         network="aptcache-net",
-        port_mapping="3142:8000",
+        port_mapping=config.APT_PROXY_IP + ":8000",
     )
 
 
@@ -101,7 +93,7 @@ def start_proxpi(config):
         image_name,
         None,
         network="proxpi-net",
-        port_mapping="3143:8000",
+        port_mapping=config.PIP_PROXY_IP + ":5000",
     )
 
 

@@ -1304,26 +1304,30 @@ def _merge_odoo_dockerfile(config):
         config.files["odoo_docker_file"].write_text(
             Path(dockerfile1).read_text()
         )
+        appendix_dir_root = config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir" 
+        if appendix_dir_root.exists():
+            shutil.rmtree(appendix_dir_root)
+
         for file in bashfind(config.WORKING_DIR, "Dockerfile.appendix"):
-            dir = file.parent / f"Dockerfile.appendix.dir"
+            dir = file.parent
             appendix = file.read_text()
+            del file
             file = config.files["odoo_docker_file"]
             content = file.read_text() + "\n" + appendix
             content = content.replace("${PROJECT_NAME}", config.project_name)
             file.write_text(content)
             # probably a dir?
-            if dir.exists():
-                dest = (
-                    config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir"
-                )
-                if dest.exists() and dest.is_file():
-                    dest.unlink()
-                dest.mkdir(parents=True, exist_ok=True)
-                for part in dir.iterdir():
-                    if part.is_file():
-                        shutil.copy(part, dest)
-                    else:
-                        shutil.copytree(part, dest / part.name)
+            dest = (
+                config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir" / dir.name
+            )
+            if dest.exists() and dest.is_file():
+                dest.unlink()
+            dest.mkdir(parents=True, exist_ok=True)
+            for part in dir.iterdir():
+                if part.is_file():
+                    shutil.copy(part, dest)
+                else:
+                    shutil.copytree(part, dest / part.name)
 
         # append common docker config
         odoo_docker_file = config.files["odoo_docker_file"]
@@ -1349,7 +1353,7 @@ def append_odoo_src(config, path):
     # Remove existing symlink or file if necessary
     sync_folder(config.HOST_CUSTOMS_DIR, linkdir, excludes=[".git"])
     content = f"""
-RUN mkdir /opt/src
+RUN mkdir -p /opt/src
 COPY ./src/{config.project_name} /opt/src
 RUN find /opt/src -name .git -type d -exec rm -rf {{}} \\;
     """

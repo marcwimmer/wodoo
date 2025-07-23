@@ -815,7 +815,7 @@ def update(
             else:
                 break
 
-        if not no_restart and config.use_docker:
+        if not no_restart and config.use_docker and os.getenv("DOCKER_MACHINE") != "1":
             Commands.invoke(ctx, "restart", machines=["odoo"])
             if config.run_odoocronjobs:
                 Commands.invoke(ctx, "restart", machines=["odoo_cronjobs"])
@@ -1102,7 +1102,8 @@ for module in modules:
         uninstalled = True
 
     if uninstalled and not no_restart:
-        Commands.invoke(ctx, "restart", machines=["odoo"])
+        if os.getenv("DOCKER_MACHINE") != "1":
+            Commands.invoke(ctx, "restart", machines=["odoo"])
 
     modules = [x for x in modules if DBModules.is_module_installed(x)]
     if modules:
@@ -1209,31 +1210,32 @@ def _exec_update(
     if os.getenv("DOCKER_MACHINE") == "1":
         ret =  subprocess.run([os.getenv("WODOO_PYTHON")] + ["/odoolib/update_modules.py"] + params)
         yield ret.returncode
-    params = ["odoo_update", "/odoolib/update_modules.py"] + params
-    if not non_interactive:
-        yield __cmd_interactive(
-            config,
-            *(
-                [
-                    "run",
-                    "--rm",
-                ]
-                + params
-            ),
-        )
     else:
-        try:
-            returncode, output = __dcrun(
+        params = ["odoo_update", "/odoolib/update_modules.py"] + params
+        if not non_interactive:
+            yield __cmd_interactive(
                 config,
-                list(params),
-                returnproc=True,
-                interactive=False,
-                write_to_console=write_to_console,
+                *(
+                    [
+                        "run",
+                        "--rm",
+                    ]
+                    + params
+                ),
             )
-            yield returncode
-            yield output
-        except subprocess.CalledProcessError as ex:
-            yield ex.returncode
+        else:
+            try:
+                returncode, output = __dcrun(
+                    config,
+                    list(params),
+                    returnproc=True,
+                    interactive=False,
+                    write_to_console=write_to_console,
+                )
+                yield returncode
+                yield output
+            except subprocess.CalledProcessError as ex:
+                yield ex.returncode
 
 
 def _get_unittests_from_module(module_name):
@@ -1676,12 +1678,42 @@ def migrate():
 
 
 @odoo_module.command()
+@click.option(
+    "--skip-odoo",
+    is_flag=True,
+    help="Skip odoo modules (default: False)",
+)
+@click.option(
+    "--skip-enterprise",
+    is_flag=True,   
+    help="Skip enterprise modules (default: False)",
+)
+@click.option(
+    "--skip-oca",
+    is_flag=True,
+    help="Skip OCA modules (default: False)",
+)
 @pass_config
 @click.pass_context
-def list_modules(ctx, config):
+def list_modules(ctx, config, skip_odoo, skip_enterprise, skip_oca):
     modules = list(sorted(get_all_modules_installed_by_manifest(config)))
+    from .module_tools import Modules, Module
+    from .odoo_config import MANIFEST
+    m = MANIFEST()
+    odoo_dir = m.get("odoo_dir", "odoo")
+
+    def _filter(module):
+        m = Module.get_by_name(module)
+        if skip_odoo and str(m.path).startswith(odoo_dir + "/"):
+            return False
+        if skip_enterprise and str(m.path).startswith("enterprise/"):
+            return False
+        if skip_oca and 'oca' in str(m.path).split("/")[0].lower():
+            return False
+        return True
+
     print("---")
-    for m in modules:
+    for m in [x for x in modules if _filter(x)]:
         print(m)
 
 
