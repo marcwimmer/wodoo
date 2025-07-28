@@ -1287,6 +1287,7 @@ def _merge_odoo_dockerfile(config):
         if not dockerfile:
             continue
         if "odoo/images/odoo" in dockerfile:
+            Path(config.files["odoo_docker_file"]).parent.mkdir(exist_ok=True, parents=True)
             shutil.copy(dockerfile, config.files["odoo_docker_file"])
             dockerfile1 = dockerfile
             service["build"]["dockerfile"] = str(
@@ -1301,6 +1302,7 @@ def _merge_odoo_dockerfile(config):
         click.secho(
             f"Copying {dockerfile1} to {config.files['odoo_docker_file']}"
         )
+        config.files["odoo_docker_file"].parent.mkdir(exist_ok=True, parents=True)
         config.files["odoo_docker_file"].write_text(
             Path(dockerfile1).read_text()
         )
