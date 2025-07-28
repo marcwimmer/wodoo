@@ -471,7 +471,7 @@ def _run_test(
         finally:
             # ensure that the seleniumdriver is stopped
             Commands.invoke(ctx, "kill", machines=[selenium_service_name])
-            Commands.invoke(ctx, "remove", machines=[selenium_service_name])
+            Commands.invoke(ctx, "rm", machines=[selenium_service_name])
             click.secho(
                 f"Stopped seleniumdriver {selenium_service_name} container",
                 fg="yellow",
