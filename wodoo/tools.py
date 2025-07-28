@@ -2057,3 +2057,16 @@ def choose_ip(ips):
 
 def get_arch():
     return platform.uname().machine  # aarch64
+
+def _yamldump(content):
+    import yaml
+
+    class NoAliasDumper(yaml.SafeDumper):
+        def ignore_aliases(self, data):
+            return True
+
+    file_content = yaml.dump(
+        content, default_flow_style=False, sort_keys=False
+    )  # , Dumper=NoAliasDumper)
+    return file_content
+

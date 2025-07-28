@@ -1,4 +1,5 @@
 import subprocess
+from copy import deepcopy
 import random
 import time
 import sys
@@ -18,6 +19,7 @@ from .tools import __empty_dir
 from .tools import abort
 from .tools import __assure_gitignore
 from .tools import _get_available_robottests
+from .tools import _yamldump
 from pathlib import Path
 
 ROBOT_UTILS_GIT = "marcwimmer/odoo-robot_utils"
@@ -428,6 +430,10 @@ def _run_test(
 
         return params
 
+    unique_robotname = f"robot_{uuid.uuid4()}"
+    # copy robot and seleniumdriver template to have an instance
+    selenium_service_name = _clone_seleniumdriver_template(ctx, config, unique_robotname)
+
     token = arrow.get().strftime("%Y-%m-%d_%H%M%S_") + str(uuid.uuid4())
     data = json.dumps(
         {
@@ -436,6 +442,7 @@ def _run_test(
             "results_file": results_file or "",
             "debug": debug,
             "params": params(),
+            "SELENIUM_SERVICE_NAME": selenium_service_name,
         }
     )
     data = base64.b64encode(data.encode("utf-8")).decode("utf8")
@@ -458,13 +465,21 @@ def _run_test(
             env=os.environ,
         )
     else:
-        __dcrun(config, params, pass_stdin=data, interactive=True)
+        try:
+            Commands.invoke(ctx, "up", daemon=True, machines=[selenium_service_name])
+            __dcrun(config, params, pass_stdin=data, interactive=True)
+        finally:
+            # ensure that the seleniumdriver is stopped
+            Commands.invoke(ctx, "kill", machines=[selenium_service_name])
+            Commands.invoke(ctx, "rm", machines=[selenium_service_name])
+            click.secho(
+                f"Stopped seleniumdriver {selenium_service_name} container",
+                fg="yellow",
+            )
     del data
 
     output_path = config.HOST_RUN_DIR / "odoo_outdir" / "robot_output"
     from .robo_helpers import _eval_robot_output
-
-    Commands.invoke(ctx, "restart", machines=["seleniumdriver"])
 
     res = _eval_robot_output(
         config,
@@ -476,6 +491,16 @@ def _run_test(
         results_file=results_file,
     )
     return res
+
+def _clone_seleniumdriver_template(ctx, config, appendix):
+    import yaml
+    yml = yaml.safe_load(open(config.files['docker_compose'], "r"))
+    
+    service_name = f"seleniumdriver_{appendix}"
+    yml['services'][service_name] = deepcopy(yml['services']['seleniumdriver_template'])
+    yml['services'][service_name]['container_name'] = service_name
+    config.files['docker_compose'].write_text(_yamldump(yml))
+    return service_name
 
 
 def _prepare_fresh_robotest(ctx):
