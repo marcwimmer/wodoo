@@ -46,6 +46,7 @@ from .tools import update_docker_service
 from .tools import autocleanpaper
 from .tools import sync_folder
 from .tools import _yamldump
+from .tools import _shell_complete_services
 
 import inspect
 import os
@@ -66,7 +67,9 @@ def composer(config):
 @click.option(
     "--full", is_flag=True, help="Otherwise environment is shortened."
 )
-@click.argument("service-name", required=False)
+@click.argument(
+    "service-name", required=False, shell_complete=_shell_complete_services
+)
 @pass_config
 @click.pass_context
 def config(ctx, config, service_name, full=True):
@@ -1292,7 +1295,9 @@ def _merge_odoo_dockerfile(config):
         config.files["odoo_docker_file"].write_text(
             Path(dockerfile1).read_text()
         )
-        appendix_dir_root = config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir" 
+        appendix_dir_root = (
+            config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir"
+        )
         if appendix_dir_root.exists():
             shutil.rmtree(appendix_dir_root)
 
@@ -1306,7 +1311,10 @@ def _merge_odoo_dockerfile(config):
             file.write_text(content)
             # probably a dir?
             dest = (
-                config.dirs["images"] / "odoo" / "Dockerfile.appendix.dir" / dir.name
+                config.dirs["images"]
+                / "odoo"
+                / "Dockerfile.appendix.dir"
+                / dir.name
             )
             if dest.exists() and dest.is_file():
                 dest.unlink()
@@ -1400,23 +1408,10 @@ def setting(ctx, config, name, value, no_reload):
             ctx.invoke(do_reload)
 
 
-def _complete_services(ctx, param, incomplete):
-    content = _parse_yaml(__read_file(config.files["docker_compose"]))
-    services = content.get("services", {}).keys()
-
-    if incomplete:
-        services = list(
-            filter(
-                lambda x: x.lower().startswith(incomplete.lower()), services
-            )
-        )
-    return services
-
-
 @composer.command()
 @pass_config
 @click.pass_context
-@click.argument("name", required=True, shell_complete=_complete_services)
+@click.argument("name", required=True, shell_complete=_shell_complete_services)
 @click.argument("value", required=False, default="")
 @click.option("--file", required=False, default="")
 @click.option("-R", "--no-reload", is_flag=True)

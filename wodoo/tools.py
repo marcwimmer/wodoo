@@ -1642,6 +1642,52 @@ def _shell_complete_file(ctx, param, incomplete):
     return sorted(map(str, files))
 
 
+def _shell_complete_machines(ctx, param, incomplete):
+    project_name = _get_default_project_name(None)
+    dc = _get_default_docker_compose_file()
+    if not project_name or not dc.exists():
+        return []
+    cmd = [
+        "docker",
+        "compose",
+        "-f",
+        str(dc),
+        "ps",
+    ]
+    machines = (
+        subprocess.check_output(cmd, encoding="utf8").strip().splitlines()
+    )
+    machines = list(map(lambda x: x.split(" ")[0], machines))
+    machines = list(map(lambda x: x[len(project_name) + 1 :], machines))
+    if incomplete:
+        machines = list(filter(lambda x: incomplete in x, machines))
+    return machines
+
+
+def _get_default_docker_compose_file():
+    project_name = _get_default_project_name(None)
+    f = Path(
+        os.path.expanduser(f"~/.odoo/run/{project_name}/docker-compose.yml")
+    )
+    return f
+
+
+def _shell_complete_services(ctx, param, incomplete):
+    f = _get_default_docker_compose_file()
+    if not f.exists():
+        return []
+    content = _parse_yaml(__read_file(f))
+    services = content.get("services", {}).keys()
+
+    if incomplete:
+        services = list(
+            filter(
+                lambda x: x.lower().startswith(incomplete.lower()), services
+            )
+        )
+    return list(map(str, services))
+
+
 def ensure_project_name(config):
     if not config.project_name:
         abort("Project name missing.")
@@ -2058,6 +2104,7 @@ def choose_ip(ips):
 def get_arch():
     return platform.uname().machine  # aarch64
 
+
 def _yamldump(content):
     import yaml
 
@@ -2069,4 +2116,3 @@ def _yamldump(content):
         content, default_flow_style=False, sort_keys=False
     )  # , Dumper=NoAliasDumper)
     return file_content
-

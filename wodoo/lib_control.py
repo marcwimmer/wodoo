@@ -11,6 +11,7 @@ import subprocess
 from .tools import abort
 from .tools import ensure_project_name
 from .tools import print_prod_env
+from .tools import _shell_complete_machines
 
 
 @cli.group(cls=AliasedGroup)
@@ -389,7 +390,7 @@ def runbash(ctx, config, machine, args, **kwparams):
 
 
 @cli.command(name="logs")
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_machines)
 @click.option("-n", "--lines", required=False, type=int, default=200)
 @click.option("-f", "--follow", is_flag=True)
 @pass_config
