@@ -12,6 +12,7 @@ from .tools import abort
 from .tools import ensure_project_name
 from .tools import print_prod_env
 from .tools import _shell_complete_machines
+from .tools import _shell_complete_services
 
 
 @cli.group(cls=AliasedGroup)
@@ -52,7 +53,9 @@ def ps(config):
 
 
 @docker.command(name="exec")
-@click.argument("machine", required=True)
+@click.argument(
+    "machine", required=True, shell_complete=_shell_complete_machines
+)
 @click.argument("args", nargs=-1)
 @pass_config
 def execute(config, machine, args):
@@ -63,7 +66,7 @@ def execute(config, machine, args):
 
 
 @docker.command(name="kill")
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_machines)
 @click.option("-b", "--brutal", is_flag=True, help="dont wait")
 @click.option("-p", "--profile")
 @pass_config
@@ -134,6 +137,7 @@ def remove_volumes(ctx, config, dry_run):
 
 @docker.command()
 @pass_config
+@click.argument("machine", nargs=-1, shell_complete=_shell_complete_machines)
 @click.pass_context
 def force_kill(ctx, config, machine):
     if config.use_docker:
@@ -162,10 +166,10 @@ def wait_for_port(config, host, port):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_services)
 @pass_config
 @click.pass_context
-def recreate(ctx, config, machines):
+def recreate(ctx, config, machines, shell_complete=_shell_complete_services):
     ensure_project_name(config)
     if config.use_docker:
         from .lib_control_with_docker import recreate as lib_recreate
@@ -173,7 +177,7 @@ def recreate(ctx, config, machines):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_services)
 @click.option("-d", "--daemon", is_flag=True)
 @pass_config
 @click.pass_context
@@ -193,7 +197,7 @@ def up(ctx, config, machines, daemon):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_services)
 @click.option("-v", "--volumes", is_flag=True)
 @click.option("--remove-orphans", is_flag=True)
 @click.option("--postgres-volume", is_flag=True)
@@ -227,7 +231,7 @@ def down(ctx, config, machines, volumes, remove_orphans, postgres_volume):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_machines)
 @pass_config
 @click.pass_context
 def stop(ctx, config, machines):
@@ -238,7 +242,7 @@ def stop(ctx, config, machines):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_machines)
 @pass_config
 @click.pass_context
 def rebuild(ctx, config, machines):
@@ -249,7 +253,7 @@ def rebuild(ctx, config, machines):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_machines)
 @click.option("-p", "--profile", default="auto")
 @pass_config
 @click.pass_context
@@ -261,7 +265,7 @@ def restart(ctx, config, machines, profile):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_machines)
 @click.option("-p", "--profile", default="auto")
 @pass_config
 @click.pass_context
@@ -273,7 +277,9 @@ def rm(ctx, config, machines, profile):
 
 
 @docker.command()
-@click.argument("machine", required=True)
+@click.argument(
+    "machine", required=True, shell_complete=_shell_complete_machines
+)
 @pass_config
 @click.pass_context
 def attach(ctx, config, machine):
@@ -284,7 +290,7 @@ def attach(ctx, config, machine):
 
 
 @docker.command()
-@click.argument("machines", nargs=-1)
+@click.argument("machines", nargs=-1, shell_complete=_shell_complete_services)
 @click.option("--no-cache", is_flag=True)
 @click.option("--pull", is_flag=True)
 @click.option("--push", is_flag=True)
@@ -345,7 +351,9 @@ def build(
 
 
 @docker.command()
-@click.argument("machine", required=True)
+@click.argument(
+    "machine", required=True, shell_complete=_shell_complete_services
+)
 @click.option("-c", "--command", required=False, help="Like /odoolib/debug.py")
 @click.option("-p", "--ports", is_flag=True, help="With Port 33284")
 @click.option("--port", help="Define the debug port")
@@ -362,7 +370,9 @@ def debug(ctx, config, machine, ports, command, port):
 
 
 @cli.command()
-@click.argument("machine", required=True)
+@click.argument(
+    "machine", required=True, shell_complete=_shell_complete_services
+)
 @click.argument("args", nargs=-1)
 @click.option("-d", "--detached", is_flag=True)
 @click.option("-n", "--name")
@@ -378,7 +388,9 @@ def run(ctx, config, machine, detached, name, args, **kwparams):
 
 
 @cli.command()
-@click.argument("machine", required=True)
+@click.argument(
+    "machine", required=True, shell_complete=_shell_complete_services
+)
 @click.argument("args", nargs=-1)
 @pass_config
 @click.pass_context
