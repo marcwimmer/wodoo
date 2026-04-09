@@ -1,0 +1,22 @@
+[tool.towncrier]
+name = "wodoo"
+filename = "CHANGELOG.md"
+directory = "changelog.d"
+title_format = "# {version}"
+underlines = ["", "", ""]
+issue_format = ""
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bug Fixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "misc"
+name = "Misc"
+showcontent = false

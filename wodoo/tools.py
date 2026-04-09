@@ -997,6 +997,10 @@ def remove_webassets(conn):
     ignore_url_str = ""
     for url in urls_to_ignore:
         ignore_url_str += f" and url != '{url}'"
+    # Preserve Odoo 17+ custom SCSS attachments (/_custom/ prefix).
+    # These contain user-specific website theme customizations (fonts, colors)
+    # set via the website builder and must survive asset cache clears.
+    ignore_url_str += " and url not like '/_custom/%'"
 
     queries = [
         f"delete from ir_attachment where res_model = 'ir.ui.view' and name ilike '%assets_%' {ignore_url_str};",

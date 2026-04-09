@@ -1,3 +1,13 @@
+# 0.6.101
+
+## Bug Fixes
+
+- Preserve Odoo 17+ ``/_custom/`` SCSS attachments when running ``remove-web-assets``.
+  These attachments store website theme customizations (fonts, colors) set via the website
+  builder and were incorrectly deleted during asset cache clears, causing themes to lose
+  their font and color settings after a module update or migration.
+
+
 # 0.6.1
 
 - bakery added: create self running images compatible with kubernetes and aws
